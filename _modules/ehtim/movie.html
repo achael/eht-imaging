@@ -183,7 +183,6 @@
 <span class="c1">#    You should have received a copy of the GNU General Public License</span>
 <span class="c1">#    along with this program.  If not, see &lt;http://www.gnu.org/licenses/&gt;.</span>
 
-
 <span class="kn">from</span> <span class="nn">__future__</span> <span class="kn">import</span> <span class="n">division</span>
 <span class="kn">from</span> <span class="nn">__future__</span> <span class="kn">import</span> <span class="n">print_function</span>
 
@@ -779,6 +778,7 @@
 
 <div class="viewcode-block" id="Movie.switch_polrep"><a class="viewcode-back" href="../../movie.html#ehtim.movie.Movie.switch_polrep">[docs]</a>    <span class="k">def</span> <span class="nf">switch_polrep</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">polrep_out</span><span class="o">=</span><span class="s1">&#39;stokes&#39;</span><span class="p">,</span> <span class="n">pol_prim_out</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Return a new movie with the polarization representation changed</span>
+
 <span class="sd">           Args:</span>
 <span class="sd">               polrep_out (str):  the polrep of the output data</span>
 <span class="sd">               pol_prim_out (str): The default movie: I,Q,U or V for Stokes,</span>
@@ -1381,6 +1381,7 @@
                 <span class="n">seed</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Generate baselines from an array object and observe the movie.</span>
 
+<span class="sd">           Args:</span>
 <span class="sd">               array (Array): an array object containing sites with which to generate baselines</span>
 <span class="sd">               tint (float): the scan integration time in seconds</span>
 <span class="sd">               tadv (float): the uniform cadence between scans in seconds</span>
@@ -1416,19 +1417,19 @@
 <span class="sd">               inv_jones (bool): if True, applies estimated inverse Jones matrix</span>
 <span class="sd">                                 (not including random terms) to calibrate data</span>
 
-<span class="sd">               tau (float): the base opacity at all sites,</span>
-<span class="sd">                            or a dict giving one opacity per site</span>
+<span class="sd">               tau (float): the base opacity at all sites, or a dict giving one opacity per site</span>
 <span class="sd">               taup (float): the fractional std. dev. of the random error on the opacities</span>
-<span class="sd">               gain_offset (float): the base gain offset at all sites,</span>
+<span class="sd">               gain_offset (float): the base gain offset at all sites</span>
 <span class="sd">                                    or a dict giving one gain offset per site</span>
 <span class="sd">               gainp (float): the fractional std. dev. of the random error on the gains</span>
-<span class="sd">               dterm_offset (float): the base dterm offset at all sites,</span>
+<span class="sd">               dterm_offset (float): the base dterm offset at all sites</span>
 <span class="sd">                                     or a dict giving one dterm offset per site</span>
 
 <span class="sd">               seed (int): seeds the random component of noise added. DO NOT set to 0!</span>
 
 <span class="sd">           Returns:</span>
 <span class="sd">               (Obsdata): an observation object</span>
+
 <span class="sd">        &quot;&quot;&quot;</span>
 
         <span class="c1"># Generate empty observation</span>

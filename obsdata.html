@@ -170,40 +170,371 @@
 <span class="target" id="module-ehtim.obsdata"></span><dl class="class">
 <dt id="ehtim.obsdata.Obsdata">
 <em class="property">class </em><code class="descclassname">ehtim.obsdata.</code><code class="descname">Obsdata</code><span class="sig-paren">(</span><em>ra</em>, <em>dec</em>, <em>rf</em>, <em>bw</em>, <em>datatable</em>, <em>tarr</em>, <em>scantable=None</em>, <em>polrep='stokes'</em>, <em>source='SgrA'</em>, <em>mjd=51544</em>, <em>timetype='UTC'</em>, <em>ampcal=True</em>, <em>phasecal=True</em>, <em>opacitycal=True</em>, <em>dcal=True</em>, <em>frcal=True</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/obsdata.html#Obsdata"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.obsdata.Obsdata" title="Permalink to this definition">¶</a></dt>
-<dd><p>A polarimetric VLBI observation of visibility amplitudes and phases (in Jy).
-ehc.</p>
-<blockquote>
-<div><dl class="docutils">
-<dt>Attributes:</dt>
-<dd><p class="first">source (str): The source name
-ra (float): The source Right Ascension in fractional hours
-dec (float): The source declination in fractional degrees
-mjd (int): The integer MJD of the observation
-tstart (float): The start time of the observation in hours
-tstop (float): The end time of the observation in hours
-rf (float): The observation frequency in Hz
-bw (float): The observation bandwidth in Hz
-timetype (str): How to interpret tstart and tstop; either ‘GMST’ or ‘UTC’
-polrep (str): polarization representation, either ‘stokes’ or ‘circ’</p>
-<p>tarr (numpy.recarray): The array of telescope data with datatype DTARR
-tkey (dict): A dictionary of rows in the tarr for each site name
-data (numpy.recarray): the basic data with datatype DTPOL_STOKES or DTPOL_CIRC
-scantable (numpy.recarray): The array of scan information</p>
-<p>ampcal (bool): True if amplitudes calibrated
-phasecal (bool): True if phases calibrated
-opacitycal (bool): True if time-dependent opacities correctly accounted for in sigmas
-frcal (bool): True if feed rotation calibrated out of visibilities
-dcal (bool): True if D terms calibrated out of visibilities</p>
-<p class="last">amp (numpy.recarray): An array of (averaged) visibility amplitudes
-bispec (numpy.recarray): An array of (averaged) bispectra
-cphase (numpy.recarray): An array of (averaged) closure phases
-cphase_diag (numpy.recarray): An array of (averaged) diagonalized closure phases
-camp (numpy.recarray): An array of (averaged) closure amplitudes
-logcamp (numpy.recarray): An array of (averaged) log closure amplitudes
-logcamp_diag (numpy.recarray): An array of (averaged) diagonalized log closure amps</p>
-</dd>
-</dl>
-</div></blockquote>
+<dd><p>A polarimetric VLBI observation of visibility amplitudes and phases (in Jy).</p>
+<dl class="attribute">
+<dt id="ehtim.obsdata.Obsdata.source">
+<code class="descname">source</code><a class="headerlink" href="#ehtim.obsdata.Obsdata.source" title="Permalink to this definition">¶</a></dt>
+<dd><p>The source name</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Type:</th><td class="field-body"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)">str</a></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="ehtim.obsdata.Obsdata.ra">
+<code class="descname">ra</code><a class="headerlink" href="#ehtim.obsdata.Obsdata.ra" title="Permalink to this definition">¶</a></dt>
+<dd><p>The source Right Ascension in fractional hours</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Type:</th><td class="field-body"><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.8)">float</a></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="ehtim.obsdata.Obsdata.dec">
+<code class="descname">dec</code><a class="headerlink" href="#ehtim.obsdata.Obsdata.dec" title="Permalink to this definition">¶</a></dt>
+<dd><p>The source declination in fractional degrees</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Type:</th><td class="field-body"><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.8)">float</a></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="ehtim.obsdata.Obsdata.mjd">
+<code class="descname">mjd</code><a class="headerlink" href="#ehtim.obsdata.Obsdata.mjd" title="Permalink to this definition">¶</a></dt>
+<dd><p>The integer MJD of the observation</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Type:</th><td class="field-body"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.8)">int</a></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="ehtim.obsdata.Obsdata.tstart">
+<code class="descname">tstart</code><a class="headerlink" href="#ehtim.obsdata.Obsdata.tstart" title="Permalink to this definition">¶</a></dt>
+<dd><p>The start time of the observation in hours</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Type:</th><td class="field-body"><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.8)">float</a></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="ehtim.obsdata.Obsdata.tstop">
+<code class="descname">tstop</code><a class="headerlink" href="#ehtim.obsdata.Obsdata.tstop" title="Permalink to this definition">¶</a></dt>
+<dd><p>The end time of the observation in hours</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Type:</th><td class="field-body"><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.8)">float</a></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="ehtim.obsdata.Obsdata.rf">
+<code class="descname">rf</code><a class="headerlink" href="#ehtim.obsdata.Obsdata.rf" title="Permalink to this definition">¶</a></dt>
+<dd><p>The observation frequency in Hz</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Type:</th><td class="field-body"><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.8)">float</a></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="ehtim.obsdata.Obsdata.bw">
+<code class="descname">bw</code><a class="headerlink" href="#ehtim.obsdata.Obsdata.bw" title="Permalink to this definition">¶</a></dt>
+<dd><p>The observation bandwidth in Hz</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Type:</th><td class="field-body"><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.8)">float</a></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="ehtim.obsdata.Obsdata.timetype">
+<code class="descname">timetype</code><a class="headerlink" href="#ehtim.obsdata.Obsdata.timetype" title="Permalink to this definition">¶</a></dt>
+<dd><p>How to interpret tstart and tstop; either ‘GMST’ or ‘UTC’</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Type:</th><td class="field-body"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)">str</a></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="ehtim.obsdata.Obsdata.polrep">
+<code class="descname">polrep</code><a class="headerlink" href="#ehtim.obsdata.Obsdata.polrep" title="Permalink to this definition">¶</a></dt>
+<dd><p>polarization representation, either ‘stokes’ or ‘circ’</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Type:</th><td class="field-body"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)">str</a></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="ehtim.obsdata.Obsdata.tarr">
+<code class="descname">tarr</code><a class="headerlink" href="#ehtim.obsdata.Obsdata.tarr" title="Permalink to this definition">¶</a></dt>
+<dd><p>The array of telescope data with datatype DTARR</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Type:</th><td class="field-body">numpy.recarray</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="ehtim.obsdata.Obsdata.tkey">
+<code class="descname">tkey</code><a class="headerlink" href="#ehtim.obsdata.Obsdata.tkey" title="Permalink to this definition">¶</a></dt>
+<dd><p>A dictionary of rows in the tarr for each site name</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Type:</th><td class="field-body"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.8)">dict</a></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="ehtim.obsdata.Obsdata.data">
+<code class="descname">data</code><a class="headerlink" href="#ehtim.obsdata.Obsdata.data" title="Permalink to this definition">¶</a></dt>
+<dd><p>the basic data with datatype DTPOL_STOKES or DTPOL_CIRC</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Type:</th><td class="field-body">numpy.recarray</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="ehtim.obsdata.Obsdata.scantable">
+<code class="descname">scantable</code><a class="headerlink" href="#ehtim.obsdata.Obsdata.scantable" title="Permalink to this definition">¶</a></dt>
+<dd><p>The array of scan information</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Type:</th><td class="field-body">numpy.recarray</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="ehtim.obsdata.Obsdata.ampcal">
+<code class="descname">ampcal</code><a class="headerlink" href="#ehtim.obsdata.Obsdata.ampcal" title="Permalink to this definition">¶</a></dt>
+<dd><p>True if amplitudes calibrated</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Type:</th><td class="field-body"><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.8)">bool</a></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="ehtim.obsdata.Obsdata.phasecal">
+<code class="descname">phasecal</code><a class="headerlink" href="#ehtim.obsdata.Obsdata.phasecal" title="Permalink to this definition">¶</a></dt>
+<dd><p>True if phases calibrated</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Type:</th><td class="field-body"><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.8)">bool</a></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="ehtim.obsdata.Obsdata.opacitycal">
+<code class="descname">opacitycal</code><a class="headerlink" href="#ehtim.obsdata.Obsdata.opacitycal" title="Permalink to this definition">¶</a></dt>
+<dd><p>True if time-dependent opacities correctly accounted for in sigmas</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Type:</th><td class="field-body"><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.8)">bool</a></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="ehtim.obsdata.Obsdata.frcal">
+<code class="descname">frcal</code><a class="headerlink" href="#ehtim.obsdata.Obsdata.frcal" title="Permalink to this definition">¶</a></dt>
+<dd><p>True if feed rotation calibrated out of visibilities</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Type:</th><td class="field-body"><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.8)">bool</a></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="ehtim.obsdata.Obsdata.dcal">
+<code class="descname">dcal</code><a class="headerlink" href="#ehtim.obsdata.Obsdata.dcal" title="Permalink to this definition">¶</a></dt>
+<dd><p>True if D terms calibrated out of visibilities</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Type:</th><td class="field-body"><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.8)">bool</a></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="ehtim.obsdata.Obsdata.amp">
+<code class="descname">amp</code><a class="headerlink" href="#ehtim.obsdata.Obsdata.amp" title="Permalink to this definition">¶</a></dt>
+<dd><p>An array of (averaged) visibility amplitudes</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Type:</th><td class="field-body">numpy.recarray</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="ehtim.obsdata.Obsdata.bispec">
+<code class="descname">bispec</code><a class="headerlink" href="#ehtim.obsdata.Obsdata.bispec" title="Permalink to this definition">¶</a></dt>
+<dd><p>An array of (averaged) bispectra</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Type:</th><td class="field-body">numpy.recarray</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="ehtim.obsdata.Obsdata.cphase">
+<code class="descname">cphase</code><a class="headerlink" href="#ehtim.obsdata.Obsdata.cphase" title="Permalink to this definition">¶</a></dt>
+<dd><p>An array of (averaged) closure phases</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Type:</th><td class="field-body">numpy.recarray</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="ehtim.obsdata.Obsdata.cphase_diag">
+<code class="descname">cphase_diag</code><a class="headerlink" href="#ehtim.obsdata.Obsdata.cphase_diag" title="Permalink to this definition">¶</a></dt>
+<dd><p>An array of (averaged) diagonalized closure phases</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Type:</th><td class="field-body">numpy.recarray</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="ehtim.obsdata.Obsdata.camp">
+<code class="descname">camp</code><a class="headerlink" href="#ehtim.obsdata.Obsdata.camp" title="Permalink to this definition">¶</a></dt>
+<dd><p>An array of (averaged) closure amplitudes</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Type:</th><td class="field-body">numpy.recarray</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="ehtim.obsdata.Obsdata.logcamp">
+<code class="descname">logcamp</code><a class="headerlink" href="#ehtim.obsdata.Obsdata.logcamp" title="Permalink to this definition">¶</a></dt>
+<dd><p>An array of (averaged) log closure amplitudes</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Type:</th><td class="field-body">numpy.recarray</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="ehtim.obsdata.Obsdata.logcamp_diag">
+<code class="descname">logcamp_diag</code><a class="headerlink" href="#ehtim.obsdata.Obsdata.logcamp_diag" title="Permalink to this definition">¶</a></dt>
+<dd><p>An array of (averaged) diagonalized log closure amps</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Type:</th><td class="field-body">numpy.recarray</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
 <dl class="method">
 <dt id="ehtim.obsdata.Obsdata.add_all">
 <code class="descname">add_all</code><span class="sig-paren">(</span><em>avg_time=0</em>, <em>return_type='rec'</em>, <em>count='max'</em>, <em>debias=True</em>, <em>snrcut=0.0</em>, <em>err_type='predicted'</em>, <em>num_samples=1000</em>, <em>round_s=0.1</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/obsdata.html#Obsdata.add_all"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.obsdata.Obsdata.add_all" title="Permalink to this definition">¶</a></dt>
@@ -1010,19 +1341,25 @@ if ‘max’ use all closure phases up to reordering</li>
 <code class="descname">filter_subscan_dropouts</code><span class="sig-paren">(</span><em>perc=0</em>, <em>return_type='rec'</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/obsdata.html#Obsdata.filter_subscan_dropouts"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.obsdata.Obsdata.filter_subscan_dropouts" title="Permalink to this definition">¶</a></dt>
 <dd><p>Filtration to drop data and ensure that we only average parts with same timestamp.
 Potentially this could reduce risk of non-closing errors.</p>
-<blockquote>
-<div><dl class="docutils">
-<dt>Args:</dt>
-<dd><dl class="first docutils">
-<dt>perc (float): drop baseline from scan if it has less than this fraction</dt>
-<dd>of median baseline observation time during the scan</dd>
-</dl>
-<p class="last">return_type (str): data frame (‘df’) or recarray (‘rec’)</p>
-</dd>
-<dt>Returns:</dt>
-<dd>(Obsdata): a observation object with flagged data points removed</dd>
-</dl>
-</div></blockquote>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>perc</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.8)"><em>float</em></a>) – drop baseline from scan if it has less than this fraction
+of median baseline observation time during the scan</li>
+<li><strong>return_type</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)"><em>str</em></a>) – data frame (‘df’) or recarray (‘rec’)</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">a observation object with flagged data points removed</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">(<a class="reference internal" href="#ehtim.obsdata.Obsdata" title="ehtim.obsdata.Obsdata">Obsdata</a>)</p>
+</td>
+</tr>
+</tbody>
+</table>
 </dd></dl>
 
 <dl class="method">

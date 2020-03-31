@@ -234,7 +234,7 @@
 <div class="viewcode-block" id="Obsdata"><a class="viewcode-back" href="../../obsdata.html#ehtim.obsdata.Obsdata">[docs]</a><span class="k">class</span> <span class="nc">Obsdata</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
 
     <span class="sd">&quot;&quot;&quot;A polarimetric VLBI observation of visibility amplitudes and phases (in Jy).</span>
-<span class="sd">ehc.</span>
+
 <span class="sd">       Attributes:</span>
 <span class="sd">           source (str): The source name</span>
 <span class="sd">           ra (float): The source Right Ascension in fractional hours</span>
@@ -2486,12 +2486,12 @@
         <span class="sd">&quot;&quot;&quot;Filtration to drop data and ensure that we only average parts with same timestamp.</span>
 <span class="sd">           Potentially this could reduce risk of non-closing errors.</span>
 
-<span class="sd">            Args:</span>
-<span class="sd">                perc (float): drop baseline from scan if it has less than this fraction</span>
+<span class="sd">           Args:</span>
+<span class="sd">               perc (float): drop baseline from scan if it has less than this fraction</span>
 <span class="sd">                              of median baseline observation time during the scan</span>
-<span class="sd">                return_type (str): data frame (&#39;df&#39;) or recarray (&#39;rec&#39;)</span>
+<span class="sd">               return_type (str): data frame (&#39;df&#39;) or recarray (&#39;rec&#39;)</span>
 
-<span class="sd">            Returns:</span>
+<span class="sd">           Returns:</span>
 <span class="sd">               (Obsdata): a observation object with flagged data points removed</span>
 <span class="sd">        &quot;&quot;&quot;</span>
 
