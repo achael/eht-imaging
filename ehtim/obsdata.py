@@ -67,7 +67,7 @@ TARRPOS = 5
 class Obsdata(object):
 
     """A polarimetric VLBI observation of visibility amplitudes and phases (in Jy).
-ehc.
+
        Attributes:
            source (str): The source name
            ra (float): The source Right Ascension in fractional hours
@@ -2319,12 +2319,12 @@ ehc.
         """Filtration to drop data and ensure that we only average parts with same timestamp.
            Potentially this could reduce risk of non-closing errors.
 
-            Args:
-                perc (float): drop baseline from scan if it has less than this fraction
+           Args:
+               perc (float): drop baseline from scan if it has less than this fraction
                               of median baseline observation time during the scan
-                return_type (str): data frame ('df') or recarray ('rec')
+               return_type (str): data frame ('df') or recarray ('rec')
 
-            Returns:
+           Returns:
                (Obsdata): a observation object with flagged data points removed
         """
 

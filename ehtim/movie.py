@@ -16,7 +16,6 @@
 #    You should have received a copy of the GNU General Public License
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-
 from __future__ import division
 from __future__ import print_function
 
@@ -612,6 +611,7 @@ class Movie(object):
 
     def switch_polrep(self, polrep_out='stokes', pol_prim_out=None):
         """Return a new movie with the polarization representation changed
+
            Args:
                polrep_out (str):  the polrep of the output data
                pol_prim_out (str): The default movie: I,Q,U or V for Stokes,
@@ -1214,6 +1214,7 @@ class Movie(object):
                 seed=False):
         """Generate baselines from an array object and observe the movie.
 
+           Args:
                array (Array): an array object containing sites with which to generate baselines
                tint (float): the scan integration time in seconds
                tadv (float): the uniform cadence between scans in seconds
@@ -1249,19 +1250,19 @@ class Movie(object):
                inv_jones (bool): if True, applies estimated inverse Jones matrix
                                  (not including random terms) to calibrate data
 
-               tau (float): the base opacity at all sites,
-                            or a dict giving one opacity per site
+               tau (float): the base opacity at all sites, or a dict giving one opacity per site
                taup (float): the fractional std. dev. of the random error on the opacities
-               gain_offset (float): the base gain offset at all sites,
+               gain_offset (float): the base gain offset at all sites
                                     or a dict giving one gain offset per site
                gainp (float): the fractional std. dev. of the random error on the gains
-               dterm_offset (float): the base dterm offset at all sites,
+               dterm_offset (float): the base dterm offset at all sites
                                      or a dict giving one dterm offset per site
 
                seed (int): seeds the random component of noise added. DO NOT set to 0!
 
            Returns:
                (Obsdata): an observation object
+
         """
 
         # Generate empty observation
