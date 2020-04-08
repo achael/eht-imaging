@@ -630,8 +630,8 @@ def make_jones(obs, opacitycal=True, ampcal=True, phasecal=True, dcal=True,
     if caltable_path and len(datatables) > 0:
         from ehtim.caltable import Caltable #TODO blah circular imports
         caltable = Caltable(obs_tmp.ra, obs_tmp.dec, obs_tmp.rf, obs_tmp.bw,
-                                           datatables, obs_tmp.tarr, source=obs_tmp.source,
-                                           mjd=obs_tmp.mjd, timetype=obs_tmp.timetype)
+                            datatables, obs_tmp.tarr, source=obs_tmp.source,
+                            mjd=obs_tmp.mjd, timetype=obs_tmp.timetype)
 
         caltable.save_txt(obs_tmp, datadir=caltable_path+'_simdata_caltable')
 

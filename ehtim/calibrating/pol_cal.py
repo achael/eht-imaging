@@ -31,9 +31,10 @@ import matplotlib.pyplot as plt
 import time
 
 MAXIT=1000
-###################################################################################################################################
+
+###################################################################################################
 #Polarimetric Calibration
-###################################################################################################################################
+###################################################################################################
 
 def leakage_cal(obs, im=None, sites=[], leakage_tol=.1, pol_fit = ['RL','LR'], dtype='vis',
                 const_fpol=False, inverse=False,  minimizer_method='L-BFGS-B',
@@ -95,7 +96,8 @@ def leakage_cal(obs, im=None, sites=[], leakage_tol=.1, pol_fit = ['RL','LR'], d
         print("No stations specified for leakage calibration: defaulting to calibrating all !")
         sites = allsites
 
-    # Set all leakage terms in obs_test to zero (we will only correct leakage for those sites with new solutions)
+    # Set all leakage terms in obs_test to zero 
+    # (we will only correct leakage for those sites with new solutions)
     for j in range(len(obs_test.tarr)):
         if obs_test.tarr[j]['site'] in sites: continue
         obs_test.tarr[j]['dr'] = obs_test.tarr[j]['dl'] = 0.0j

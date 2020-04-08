@@ -658,8 +658,7 @@ class Caltable(object):
         sites = self.data.keys()
         ntele = len(sites)
 
-        for s in range(0, ntele):
-            site = sites[s]
+        for site in sites:
             self.data[site]['rscale'] = 1 / self.data[site]['rscale']
             self.data[site]['lscale'] = 1 / self.data[site]['lscale']
 
