@@ -44,7 +44,6 @@ from . import linearize_energy as le
 
 from ehtim.const_def import *
 from ehtim.observing.obs_helpers import *
-from IPython import display
 
 ##################################################################################################
 # Constants & Definitions

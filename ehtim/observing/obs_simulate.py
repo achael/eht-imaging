@@ -515,7 +515,7 @@ def make_jones(obs, opacitycal=True, ampcal=True, phasecal=True, dcal=True,
             gainR_constant = goff * obsh.hashrandn(site, gainr_string, str(goff), seed)
             gainL_constant = goff * obsh.hashrandn(site, gainl_string, str(goff), seed)
 
-            # Enforce mean gain < 1
+            # Enforce mean log  gain < 1            
             if neggains:
                 gainR_constant = -np.abs(gainR_constant)
                 gainL_constant = -np.abs(gainL_constant)
@@ -533,6 +533,12 @@ def make_jones(obs, opacitycal=True, ampcal=True, phasecal=True, dcal=True,
                     (1.0 + gain_mult * obsh.hashrandn(site, 'gain', str(time), str(gain_mult), seed))
                     for time in times_stable_amp
                 ), float)))
+
+                gainR = np.abs(gainR)
+                gainL = np.abs(gainL)
+                if neggains:
+                    gainR = np.exp(-np.abs(np.log(gainR)))
+                    gainL = np.exp(-np.abs(np.log(gainL)))
 
             # Total gain (correlated sampling)
             else:

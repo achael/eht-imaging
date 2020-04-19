@@ -41,8 +41,6 @@ from ehtim.imaging.imager_utils import *
 
 import ehtim.scattering as so
 
-from IPython import display
-
 from multiprocessing import Pool
 from functools import partial
 
@@ -2175,10 +2173,6 @@ def plot_im_List_Set(im_List_List, plot_log_amplitude=False, ipynb=False):
 
     plt.draw()
 
-    if ipynb:
-        display.clear_output()
-        display.display(plt.gcf())
-
 def plot_im_List(im_List, plot_log_amplitude=False, ipynb=False):
 
     plt.ion()
@@ -2207,10 +2201,6 @@ def plot_im_List(im_List, plot_log_amplitude=False, ipynb=False):
 
     plt.draw()
 
-    if ipynb:
-        display.clear_output()
-        display.display(plt.gcf())
-
 def plot_i_dynamic(im_List, Prior, nit, chi2, s, s_dynamic, ipynb=False):
 
     plt.ion()
@@ -2234,10 +2224,6 @@ def plot_i_dynamic(im_List, Prior, nit, chi2, s, s_dynamic, ipynb=False):
 
 
     plt.draw()
-
-    if ipynb:
-        display.clear_output()
-        display.display(plt.gcf())
 
 ##################################################################################################
 #BU blazar CLEAN file loading functions

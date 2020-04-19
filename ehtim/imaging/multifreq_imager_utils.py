@@ -41,8 +41,6 @@ from ehtim.const_def import *
 from ehtim.observing.obs_helpers import *
 from ehtim.statistics.dataframes import *
 
-from IPython import display
-
 NORM_REGULARIZER = True 
 EPSILON = 1.e-12
 

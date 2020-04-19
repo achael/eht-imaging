@@ -21,7 +21,6 @@ import copy
 import sys
 
 import matplotlib.pyplot as plt
-from IPython import display
 
 PROPERROR = True
 
@@ -1688,10 +1687,6 @@ def plot_im_List(im_List, title_List=[], ipynb=False):
 
         plt.draw()
 
-    if ipynb:
-        display.clear_output()
-        display.display(plt.gcf())
-
 
 def plot_Flow(Im, theta, init_x, init_y, flowbasis_x, flowbasis_y, initTheta, step=4, ipynb=False):
     
@@ -1726,14 +1721,6 @@ def plot_Flow(Im, theta, init_x, init_y, flowbasis_x, flowbasis_y, initTheta, st
     #plt.ylim(plt.ylim()[::-1])
     # Display
     plt.draw()
-    if ipynb:
-        display.clear_output()
-        display.display(plt.gcf())   
-
-
-
-    
-    
     
     
     

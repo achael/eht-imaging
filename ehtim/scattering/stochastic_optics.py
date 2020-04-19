@@ -11,7 +11,6 @@ import scipy.integrate as integrate
 from scipy.optimize import minimize
 
 import matplotlib.pyplot as plt
-from IPython import display
 
 import ehtim.image as image
 import ehtim.movie as movie
@@ -784,6 +783,3 @@ def plot_scatt(im_unscatt, im_ea, im_scatt, im_phase, Prior, nit, chi2, ipynb=Fa
 
     # Display
     plt.draw()
-    if ipynb:
-        display.clear_output()
-        display.display(plt.gcf())
