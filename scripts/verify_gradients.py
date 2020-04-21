@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+
 # This is a rough script to verify the consistency of Fourier transform types and to check gradients of the various image regularization options
 
 from __future__ import division
