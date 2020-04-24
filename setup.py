@@ -6,7 +6,7 @@ def read(fname):
 
 if __name__ == "__main__":
     setup(name="ehtim",
-          version = "1.1.1",
+          version = "1.1.2",
           author = "Andrew Chael",
           author_email = "achael@cfa.harvard.edu",
           description = ("Python code to load, simulate, and manipulate VLBI "+
@@ -24,6 +24,13 @@ if __name__ == "__main__":
                       "ehtim.plotting",
                       "ehtim.scattering",
                       "ehtim.statistics"],
+          scripts=["scripts/calibrate.py",
+                   "scripts/cleanup.py",
+                   "scripts/cli_blur_comp.py",
+                   "scripts/gendata.py",
+                   "scripts/imaging.py",
+                   "scripts/imgsum.py",
+                   "scripts/verify_gradients.py"],
           long_description=read('README.rst'),
           install_requires=["astropy",
                             "ephem",
@@ -39,4 +46,3 @@ if __name__ == "__main__":
                             "scipy",
                             "scikit-image"]
     )
-
