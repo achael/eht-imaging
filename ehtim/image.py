@@ -3801,7 +3801,12 @@ def load_image(image, display=False, aipscc=False):
             (boolean):  False if the image cannot be read
     """
 
-    if isinstance(image, str):
+    is_unicode = False
+    try:
+        if isinstance(image, basestring): is_unicode = True
+    except NameError: # python 3
+        pass
+    if isinstance(image, str) or is_unicode:
         if image.endswith('.fits'):
             im = ehtim.io.load.load_im_fits(image, aipscc=aipscc)
         elif image.endswith('.txt'):
