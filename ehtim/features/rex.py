@@ -47,8 +47,8 @@ import ehtim.const_def as ehc
 EP = 1.e-16
 BIG = 1./EP
 
-IMSIZE = 160*ehc.RADPERUAS #250*ehc.RADPERUAS  # FOV of resampled image (muas)
-NPIX = 160      #128             # pixels in resampled image
+IMSIZE = 160*ehc.RADPERUAS  # 250*ehc.RADPERUAS  # FOV of resampled image (muas)
+NPIX = 160  # 128             # pixels in resampled image
 
 NRAYS = 360       # number of angular rays in final profile
 NRS = 100         # number of radial points in final profile
@@ -56,8 +56,8 @@ NRS = 100         # number of radial points in final profile
 RMAX = 50               # maximum radius in every profile slice (muas)
 RMIN = 5         # radius threshold for averaging inside ring (muas)
 
-RPRIOR_MIN = 15. #5.   # minimum radius for search (muas)
-RPRIOR_MAX = 50. #60.  # maximum radius for search (muas)
+RPRIOR_MIN = 15.  # 5.   # minimum radius for search (muas)
+RPRIOR_MAX = 50.  # 60.  # maximum radius for search (muas)
 NRAYS_SEARCH = 25  # number of angular rays in search profiles
 NRS_SEARCH = 50   # number of radial points in search profiles
 THRESH = 0.05     # thresholding level for the images in the search
@@ -76,7 +76,7 @@ POSTPROCDIR = '.'  # default postprocessing directory
 class Profiles(object):
 
     def __init__(self, im, x0, y0, profs, thetas, rmin=RMIN, rmax=RMAX, flux_norm=NORMFLUX,
-                 profsQ=[],profsU=[]):
+                 profsQ=[], profsU=[]):
 
         self.x0 = x0
         self.y0 = y0
@@ -283,30 +283,30 @@ class Profiles(object):
         self.RingFlux = brightflux + dimflux
         self.RingAsym2 = ((brightflux-dimflux)/(brightflux+dimflux), brightflux/dimflux)
 
-        # Polarization brightness ratio 
+        # Polarization brightness ratio
         # AC TODO FOR PAPER VIII ANALYSIS
-        self.RingAsymPol = (0.,0.)
-        self.RingAsymPol = (0.,0.)
+        self.RingAsymPol = (0., 0.)
         if len(self.im.qvec) > 0 and len(self.im.uvec) > 0:
             pvec = np.sqrt(self.im.qvec**2 + self.im.uvec**2)
             pvec_C = (self.im.qvec + 1j*self.im.uvec)
 
             ringanglesPol = []
-            ringasymsPol = []
+            # ringasymsPol = []
             for i in range(self.lhloc, self.rhloc+1):
                 angprof = self.profilesP.T[i]
                 # simple maximum AC TODO
                 ringanglesPol.append(self.thetas[np.argmax(angprof)])
 
                 # weighted avg
-                #angle_asym = self.calc_ringangle_asymmetry(angprof)
-                #ringanglesPol.append(angle_asym[0])
-                #ringasymsPol.append(angle_asym[1])
+                # angle_asym = self.calc_ringangle_asymmetry(angprof)
+                # ringanglesPol.append(angle_asym[0])
+                # ringasymsPol.append(angle_asym[1])
 
             self.RingAnglePol = (scipy.stats.circmean(ringanglesPol),
                                  scipy.stats.circstd(ringanglesPol))
 
             cangle = self.RingAnglePol[0]
+
             def anglemask_pol(x, y):
                 ang = np.mod(-np.arctan2(y-y0_c, x-x0_c)+np.pi/2., 2*np.pi)
                 # return ang
@@ -321,17 +321,16 @@ class Profiles(object):
             # combine masks and get the bright and dim pol flux
             maskvec_brighthalf = maskvec_annulus * maskvec_ang
             maskvec_dimhalf = maskvec_annulus * ~maskvec_ang
-            #maskvec_brighthalf = maskvec_ang
-            #maskvec_dimhalf = ~maskvec_ang
+            # maskvec_brighthalf = maskvec_ang
+            # maskvec_dimhalf = ~maskvec_ang
 
             # calculate polarized asymmetry /  birghtness ratio
             brightflux_pol_C = np.abs(np.sum(pvec_C[(maskvec_brighthalf)]))
             dimflux_pol_C = np.abs(np.sum(pvec_C[(maskvec_dimhalf)]))
             brightflux_pol = np.sum(pvec[(maskvec_brighthalf)])
             dimflux_pol = np.sum(pvec[(maskvec_dimhalf)])
-            self.RingAsymPol = ((brightflux_pol_C/dimflux_pol_C), 
-                                 brightflux_pol/dimflux_pol)
-
+            self.RingAsymPol = ((brightflux_pol_C/dimflux_pol_C),
+                                brightflux_pol/dimflux_pol)
 
         # calculate dynamic range
         mask = self.im.copy()
@@ -723,17 +722,19 @@ def compute_ring_profile(im, x0, y0, title="",
     # polarization profiles
     profsQ = []
     profsU = []
-    if len(im.qvec)>0 and len(im.uvec>0) and pol_profs:
+    if len(im.qvec) > 0 and len(im.uvec > 0) and pol_profs:
         qarr = im.qvec.reshape(im.ydim, im.xdim)[::-1] * factor  # in brightness temperature K
         uarr = im.uvec.reshape(im.ydim, im.xdim)[::-1] * factor  # in brightness temperature K
         interpQ = scipy.interpolate.interp2d(ys, xs, qarr, kind='cubic')
         interpU = scipy.interpolate.interp2d(ys, xs, uarr, kind='cubic')
+
         def ringValsQ(theta):
             xxs = x0 - rs*np.sin(theta)
             yys = y0 + rs*np.cos(theta)
 
             vals = [interpQ(xxs[i], yys[i])[0] for i in np.arange(len(rs))]
             return vals
+
         def ringValsU(theta):
             xxs = x0 - rs*np.sin(theta)
             yys = y0 + rs*np.cos(theta)
@@ -813,7 +814,7 @@ def FindProfileSingle(imname, postprocdir,
 
         # blur image if requested
         if blur > 0:
-            im_raw = im_raw.blur_circ(blur*ehc.RADPERUAS,blur*ehc.RADPERUAS)
+            im_raw = im_raw.blur_circ(blur*ehc.RADPERUAS, blur*ehc.RADPERUAS)
 
         # center image and regrid to uniform pixel size and fox
         im = di.center_core(im_raw)
@@ -956,7 +957,7 @@ def FindProfiles(foldername, postprocdir, processes=-1,
     """find profiles for all images  in a directory
     """
 
-    foldername = os.path.abspath(foldername)    
+    foldername = os.path.abspath(foldername)
     imlist = np.array(glob.glob(foldername + '/*.fits'))
     ext = '.fits'
 
