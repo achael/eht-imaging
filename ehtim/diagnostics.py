@@ -25,6 +25,7 @@ from builtins import object
 
 import numpy as np
 
+
 def sumdown_lin(y, n=16):
     """Sum segments of a line together to reduce its size
     """

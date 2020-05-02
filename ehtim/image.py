@@ -3037,8 +3037,8 @@ class Image(object):
            Args:
                pol (str): which polarization image to plot. Default is self.pol_prim
                           pol='spec' will plot spectral index!
-               cfun (str): matplotlib.pyplot color function. 
-                           False changes with 'pol',  but is 'afmhot' for most 
+               cfun (str): matplotlib.pyplot color function.
+                           False changes with 'pol',  but is 'afmhot' for most
                interp (str): image interpolation 'gauss' or 'lin'
 
                scale (str): image scaling in ['log','gamma','lin']
@@ -3176,11 +3176,11 @@ class Image(object):
         if not plotp:  # Plot a single polarization image
             cbar_lims_p = ()
 
-            if pol.lower() == 'spec':                
+            if pol.lower() == 'spec':
                 imvec = self.specvec
                 unit = r'$\alpha$'
                 factor = 1
-                cbar_lims_p = [-5,5]
+                cbar_lims_p = [-5, 5]
                 cfun_p = 'jet'
             elif pol.lower() == 'm':
                 imvec = self.mvec
@@ -3260,7 +3260,7 @@ class Image(object):
                 cbar_lims[1] = cbar_lims[1] / (10.**power)
                 imarr[imarr > cbar_lims[1]] = cbar_lims[1]
                 imarr[imarr < cbar_lims[0]] = cbar_lims[0]
-                
+
             if has_title:
                 plt.title("%s %.2f GHz %s" % (self.source, self.rf / 1e9, pol), fontsize=16)
 
@@ -3803,8 +3803,9 @@ def load_image(image, display=False, aipscc=False):
 
     is_unicode = False
     try:
-        if isinstance(image, basestring): is_unicode = True
-    except NameError: # python 3
+        if isinstance(image, basestring):
+            is_unicode = True
+    except NameError:  # python 3
         pass
     if isinstance(image, str) or is_unicode:
         if image.endswith('.fits'):

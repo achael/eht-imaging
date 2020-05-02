@@ -43,6 +43,7 @@ INTERPOLATION_KINDS = ['linear', 'nearest', 'zero', 'slinear',
 # Movie object
 ###################################################################################################
 
+
 class Movie(object):
 
     """A polarimetric movie (in units of Jy/pixel).
@@ -684,7 +685,8 @@ class Movie(object):
         # Assemble the new movie
         frames = movdict[pol_prim_out]
         if len(frames) == 0:
-            raise Exception("for switch_polrep to %s with pol_prim_out=%s, \n" % (polrep_out, pol_prim_out) +
+            raise Exception("switch_polrep to " +
+                            "%s with pol_prim_out=%s, \n" % (polrep_out, pol_prim_out) +
                             "output movie is not defined")
 
         # Make new  movie with primary polarization
@@ -1058,7 +1060,7 @@ class Movie(object):
                                      ttype=ttype, fft_pad_factor=fft_pad_factor,
                                      zero_empty_pol=True, verbose=verbose)
             verbose = False
-            
+
             # Put visibilities into the obsdata
             if obs.polrep == 'stokes':
                 obsdata['vis'] = data[0]
@@ -1160,7 +1162,8 @@ class Movie(object):
                                                  neggains=neggains,
                                                  gainp=gainp, taup=taup, gain_offset=gain_offset,
                                                  dterm_offset=dterm_offset,
-                                                 caltable_path=caltable_path, seed=seed, sigmat=sigmat)
+                                                 caltable_path=caltable_path,
+                                                 seed=seed, sigmat=sigmat)
 
             obs = ehtim.obsdata.Obsdata(obs.ra, obs.dec, obs.rf, obs.bw, obsdata, obs.tarr,
                                         source=obs.source, mjd=obs.mjd, polrep=obs_in.polrep,
@@ -1376,7 +1379,7 @@ class Movie(object):
                 continue
             scankeys = list(vex.sched[i_scan]['scan'].keys())
             subarray = vex.array.make_subarray([vex.sched[i_scan]['scan'][key]['site']
-                                               for key in scankeys])
+                                                for key in scankeys])
 
             if snapshot == 1.0:
                 t_int = np.max(np.array([vex.sched[i_scan]['scan'][site]
@@ -1388,7 +1391,7 @@ class Movie(object):
 
             vex_scan_length_mjd = vex.sched[i_scan]['scan'][0]['scan_sec']/3600.0/24.0
             vex_scan_stop_mjd = vex_scan_start_mjd + vex_scan_length_mjd
-                
+
             print("Scan MJD Range: ", vex_scan_start_mjd, vex_scan_stop_mjd)
 
             if vex_scan_start_mjd < movie_start or vex_scan_stop_mjd > movie_end:

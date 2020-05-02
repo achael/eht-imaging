@@ -60,7 +60,8 @@ DAT_DEFAULT = {'vis': 100}
 
 POL_PRIM_SOLVE = "amp_phase"  # this means we solve for polarization in the m, chi basis
 POL_WHICH_SOLVE = (0, 1, 1)   # this means that pol imaging solves for m & chi (not I), for now
-MF_WHICH_SOLVE = (1, 1, 0)    # this means that mf imaging solves for I0 and alpha (not beta), for now
+# this means that mf imaging solves for I0 and alpha (not beta), for now
+MF_WHICH_SOLVE = (1, 1, 0)
 
 ###################################################################################################
 # Imager object
@@ -379,9 +380,11 @@ class Imager(object):
         if not np.any(self._embed_mask):
             raise Exception("clipfloor_next too large: all prior pixels have been clipped!")
 
+        xmax = self.prior_next.xdim//2
+        ymax = self.prior_next.ydim//2
         coord = np.array([[[x, y]
-                         for x in np.arange(self.prior_next.xdim//2, -self.prior_next.xdim//2, -1)]
-                         for y in np.arange(self.prior_next.ydim//2, -self.prior_next.ydim//2, -1)])
+                           for x in np.arange(xmax, -ymax, -1)]
+                          for y in np.arange(ymax, -ymax, -1)])
 
         coord = coord.reshape(self.prior_next.ydim * self.prior_next.xdim, 2)
         coord = coord * self.prior_next.psize
@@ -894,7 +897,6 @@ class Imager(object):
 
         # First some preliminary definitions
         wavelength = ehc.C/self.obs_next.rf*100.0  # Observing wavelength [cm]
-        wavelengthbar = wavelength/(2.0*np.pi)  # lambda/(2pi) [cm]
         N = self.prior_next.xdim
 
         # Field of view, in cm, at the scattering screen
@@ -1566,7 +1568,7 @@ class Imager(object):
 
                 # Scattering screen regularization term
                 chisq_epsilon = sum(EpsilonList*EpsilonList)/((N*N-1.0)/2.0)
-                regterm_scattering = self.alpha_phi_next * (chisq_epsilon - 1.0)
+                # regterm_scattering = self.alpha_phi_next * (chisq_epsilon - 1.0)
 
                 outstr = "i: %d " % self._nit
 

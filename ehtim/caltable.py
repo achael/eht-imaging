@@ -496,7 +496,8 @@ class Caltable(object):
             else:
                 datatable = bl_obs
 
-        calobs = ehtim.obsdata.Obsdata(obs.ra, obs.dec, obs.rf, obs.bw, np.array(datatable), obs.tarr,
+        calobs = ehtim.obsdata.Obsdata(obs.ra, obs.dec, obs.rf, obs.bw,
+                                       np.array(datatable), obs.tarr,
                                        polrep=obs.polrep, scantable=obs.scans, source=obs.source,
                                        mjd=obs.mjd, ampcal=obs.ampcal, phasecal=obs.phasecal,
                                        opacitycal=obs.opacitycal, dcal=obs.dcal,
@@ -656,7 +657,6 @@ class Caltable(object):
     def invert_gains(self):
 
         sites = self.data.keys()
-        ntele = len(sites)
 
         for site in sites:
             self.data[site]['rscale'] = 1 / self.data[site]['rscale']
