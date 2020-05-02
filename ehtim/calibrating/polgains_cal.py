@@ -32,7 +32,6 @@ from multiprocessing import cpu_count, Pool
 
 import ehtim.obsdata
 import ehtim.parloop as parloop
-from . import cal_helpers as calh
 import ehtim.observing.obs_helpers as obsh
 import ehtim.const_def as ehc
 
@@ -300,7 +299,8 @@ def get_polgains_scan_cal(args):
     return get_polgains_scan_cal2(*args)
 
 
-def get_polgains_scan_cal2(i, n, scan, reference, sites, method, pad_amp, caltable, show_solution, msgtype):
+def get_polgains_scan_cal2(i, n, scan, reference, sites, method, pad_amp, caltable,
+                           show_solution, msgtype):
 
     if n > 1:
         global counter
