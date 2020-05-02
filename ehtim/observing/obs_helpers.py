@@ -556,12 +556,11 @@ def rbf_kernel_covariance(x, sigma):
     Returns:
        cov (ndarray): Covariance matrix
     """
-    x = np.expand_dims(x, 1) if x.ndim==1 else x
+    x = np.expand_dims(x, 1) if x.ndim == 1 else x
     norm = -0.5 * scipy.spatial.distance.cdist(x, x, 'sqeuclidean') / sigma**2
     cov = np.exp(norm)
     cov *= 1.0 / cov.sum(axis=0)
     return cov
-
 
 
 def sgra_kernel_uv(rf, u, v):
@@ -666,6 +665,7 @@ def cerror_hash(sigma, *args):
 
     return err
 
+
 def hashmultivariaterandn(size, cov, *args):
     """set the seed according to a collection of arguments and return random multivariate gaussian var
     """
@@ -673,6 +673,7 @@ def hashmultivariaterandn(size, cov, *args):
     mean = np.zeros(size)
     noise = np.random.multivariate_normal(mean, cov, check_valid='ignore')
     return noise
+
 
 def hashrandn(*args):
     """set the seed according to a collection of arguments and return random gaussian var
@@ -1161,8 +1162,10 @@ def reduce_quad_minimal(obs, datarr, ctype='camp'):
             outgroup = []
 
         # determine a minimal set of quadrangles
-        sites = np.array(
-            list(set(np.hstack((timegroup['t1'], timegroup['t2'], timegroup['t3'], timegroup['t4'])))))
+        sites = np.array(list(set(np.hstack((timegroup['t1'],
+                                             timegroup['t2'],
+                                             timegroup['t3'],
+                                             timegroup['t4'])))))
         if len(sites) < 4:
             continue
         quads = quad_minimal_set(sites, obs.tarr, obs.tkey)

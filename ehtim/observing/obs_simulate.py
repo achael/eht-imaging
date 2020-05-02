@@ -64,7 +64,7 @@ def make_uvpoints(array, ra, dec, rf, bw, tint, tadv, tstart, tstop,
            elevmin (float): station minimum elevation in degrees
            elevmax (float): station maximum elevation in degrees
            tau (float): the base opacity at all sites, or a dict giving one opacity per site
-           fix_theta_GMST (bool): if True, stops earth rotation to sample fixed u,v points 
+           fix_theta_GMST (bool): if True, stops earth rotation to sample fixed u,v points
        Returns:
            (Obsdata): an observation object with all visibilities zeroed
     """
@@ -515,7 +515,7 @@ def make_jones(obs, opacitycal=True, ampcal=True, phasecal=True, dcal=True,
             gainR_constant = goff * obsh.hashrandn(site, gainr_string, str(goff), seed)
             gainL_constant = goff * obsh.hashrandn(site, gainl_string, str(goff), seed)
 
-            # Enforce mean log  gain < 1            
+            # Enforce mean log  gain < 1
             if neggains:
                 gainR_constant = -np.abs(gainR_constant)
                 gainL_constant = -np.abs(gainL_constant)
@@ -542,7 +542,7 @@ def make_jones(obs, opacitycal=True, ampcal=True, phasecal=True, dcal=True,
 
             # Total gain (correlated sampling)
             else:
-                scan_start_times = scans[:,0]
+                scan_start_times = scans[:, 0]
                 cov = obsh.rbf_kernel_covariance(scan_start_times, sigmat)
                 gainR = np.sqrt(np.abs(
                     (1 + gainR_constant) *
@@ -559,7 +559,6 @@ def make_jones(obs, opacitycal=True, ampcal=True, phasecal=True, dcal=True,
                 ))
                 gainL_interpolateor = interp1d(scan_start_times, gainL, kind='zero')
                 gainL = gainL_interpolateor(times_stable_amp)
-
 
         # Opacity attenuation of amplitude gain
         if not opacitycal:
@@ -634,7 +633,7 @@ def make_jones(obs, opacitycal=True, ampcal=True, phasecal=True, dcal=True,
 
     # Save a calibration table with the synthetic gains and dterms added
     if caltable_path and len(datatables) > 0:
-        from ehtim.caltable import Caltable #TODO blah circular imports
+        from ehtim.caltable import Caltable  # TODO blah circular imports
         caltable = Caltable(obs_tmp.ra, obs_tmp.dec, obs_tmp.rf, obs_tmp.bw,
                             datatables, obs_tmp.tarr, source=obs_tmp.source,
                             mjd=obs_tmp.mjd, timetype=obs_tmp.timetype)
@@ -902,7 +901,7 @@ def apply_jones_inverse(obs, opacitycal=True, dcal=True, frcal=True, verbose=Tru
 
        Args:
            opacitycal (bool): if False, estimated opacity terms are applied in the inverse gains
-           dcal (bool): if False, estimated inverse d-terms are applied to the inverse Jones matrices
+           dcal (bool): if False, estimated inverse d-terms applied to the inverse Jones matrices
            frcal (bool): if False, inverse feed rotation angle terms are applied to Jones matrices.
 
        Returns:
@@ -1048,7 +1047,7 @@ def add_noise(obs, add_th_noise=True, opacitycal=True, ampcal=True, phasecal=Tru
 
     if verbose:
         print("Adding gain + phase errors to data and applying a priori calibration . . . ")
-    
+
     if verbose and not opacitycal:
         print("   Applying opacity attenuation AND estimated opacity corrections: opacitycal-->True")
     if verbose and not ampcal:
@@ -1170,8 +1169,8 @@ def add_noise(obs, add_th_noise=True, opacitycal=True, ampcal=True, phasecal=Tru
     if not opacitycal:
 
         # Use estimated opacity to compute the ESTIMATED noise
-        tau_est = np.sqrt(np.exp(taus[:, 0]/(ehc.EP+np.sin(elevs[:, 0]*ehc.DEGREE)
-                                             ) + taus[:, 1]/(ehc.EP+np.sin(elevs[:, 1]*ehc.DEGREE))))
+        tau_est = np.sqrt(np.exp(taus[:, 0]/(ehc.EP+np.sin(elevs[:, 0]*ehc.DEGREE)) +
+                                 taus[:, 1]/(ehc.EP+np.sin(elevs[:, 1]*ehc.DEGREE))))
 
         # Opacity Errors
         tau1 = np.abs(np.fromiter((taus[i, 0] * (1.0 + taup * obsh.hashrandn(sites[i, 0], 'tau', times_stable_amp[i], seed))
