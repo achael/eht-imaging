@@ -7,6 +7,13 @@
 
 """
 from __future__ import division
+from __future__ import print_function
+
+from builtins import str
+from builtins import range
+from builtins import object
+
+import ehtim.observing
 from ehtim.const_def import *
 from ehtim.imaging.imager_utils import imager_func
 import ehtim.imaging
@@ -33,14 +40,11 @@ import ehtim.obsdata
 import ehtim.array
 import ehtim.movie
 import ehtim.image
-from __future__ import print_function
-from builtins import str
-from builtins import range
+
 
 import warnings
 warnings.filterwarnings(
     "ignore", message="numpy.dtype size changed, may indicate binary incompatibility.")
-
 
 # necessary to prevent hangs from astropy iers bug in astropy v 2.0.8
 #from astropy.utils import iers
