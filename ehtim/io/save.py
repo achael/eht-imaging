@@ -28,7 +28,7 @@ import astropy.io.fits as fits
 import datetime
 import h5py
 
-import ehtim.io.writeData
+import ehtim.io.writeoifits
 import ehtim.io.oifits
 from astropy.time import Time
 

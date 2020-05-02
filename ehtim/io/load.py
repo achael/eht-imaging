@@ -41,7 +41,6 @@ import ehtim.observing
 
 import ehtim.io.oifits
 import ehtim.const_def as ehc
-import ehtim.observing.obs_helpers as obsh
 
 import warnings
 warnings.filterwarnings("ignore", message="Mean of empty slice")
@@ -1505,7 +1504,9 @@ def load_obs_oifits(filename, flux=1.0):
                        )  # convert to single number
 
     # return timeobs
-    time = np.transpose(np.tile(np.array([(ttime.mktime((timeobs[i] + datetime.timedelta(days=1)).timetuple())) / (60.0 * 60.0)
+    time = np.transpose(np.tile(np.array([(ttime.mktime((timeobs[i] +
+                                                        datetime.timedelta(days=1)).timetuple())
+                                           ) / (60.0 * 60.0)
                                           for i in range(len(timeobs))]), [nWavelengths, 1]))
 
     # integration time
