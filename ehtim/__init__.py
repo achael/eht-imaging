@@ -53,7 +53,7 @@ warnings.filterwarnings(
 try:
     import pkg_resources
     version = pkg_resources.get_distribution("ehtim").version
-    print("Welcome to eht-imaging! v ", version)
+    print("Welcome to eht-imaging! v", version)
 except:
     print("Welcome to eht-imaging!")
 

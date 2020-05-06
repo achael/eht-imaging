@@ -116,13 +116,13 @@ class Image(object):
             if pol_prim is None:
                 pol_prim = 'I'
             if pol_prim == 'I':
-                self._imdict = {'I': imvec, 'Q': [], 'U': [], 'V': []}
+                self._imdict = {'I': imvec, 'Q': np.array([]), 'U': np.array([]), 'V': np.array([])}
             elif pol_prim == 'V':
-                self._imdict = {'I': [], 'Q': [], 'U': [], 'V': imvec}
+                self._imdict = {'I': np.array([]), 'Q': np.array([]), 'U': np.array([]), 'V': imvec}
             elif pol_prim == 'Q':
-                self._imdict = {'I': [], 'Q': imvec, 'U': [], 'V': []}
+                self._imdict = {'I': np.array([]), 'Q': imvec, 'U': np.array([]), 'V': np.array([])}
             elif pol_prim == 'U':
-                self._imdict = {'I': [], 'Q': [], 'U': imvec, 'V': []}
+                self._imdict = {'I': np.array([]), 'Q': np.array([]), 'U': imvec, 'V': np.array([])}
             else:
                 raise Exception("for polrep=='stokes', pol_prim must be 'I','Q','U', or 'V'!")
 
@@ -131,9 +131,9 @@ class Image(object):
                 print("polrep is 'circ' and no pol_prim specified! Setting pol_prim='RR'")
                 pol_prim = 'RR'
             if pol_prim == 'RR':
-                self._imdict = {'RR': imvec, 'LL': [], 'RL': [], 'LR': []}
+                self._imdict = {'RR': imvec, 'LL': np.array([]), 'RL': np.array([]), 'LR': np.array([])}
             elif pol_prim == 'LL':
-                self._imdict = {'RR': [], 'LL': imvec, 'RL': [], 'LR': []}
+                self._imdict = {'RR': np.array([]), 'LL': imvec, 'RL': np.array([]), 'LR': np.array([])}
             else:
                 raise Exception("for polrep=='circ', pol_prim must be 'RR' or 'LL'!")
         else:
@@ -142,8 +142,8 @@ class Image(object):
         # multifrequency spectral index, curvature arrays
         # TODO -- higher orders?
         # TODO -- don't initialize to zero?
-        avec = []  # np.zeros(imvec.shape)
-        bvec = []  # np.zeros(imvec.shape)
+        avec = np.array([])  # np.zeros(imvec.shape)
+        bvec = np.array([])  # np.zeros(imvec.shape)
         self._mflist = [avec, bvec]
 
         # Save the image dimension data
@@ -181,7 +181,6 @@ class Image(object):
         if len(vec) != self.xdim * self.ydim:
             raise Exception("imvec size is not consistent with xdim*ydim!")
 
-        # TODO -- more checks on the consistency of the imvec with the existing pol data???
         self._imdict[self.pol_prim] = vec
 
     @property
@@ -208,123 +207,179 @@ class Image(object):
 
     @property
     def ivec(self):
-        if self.polrep != 'stokes':
-            raise Exception("ivec is not defined unless self.polrep=='stokes'")
+#        if self.polrep != 'stokes':
+#            raise Exception("ivec is not defined unless self.polrep=='stokes'")
 
-        ivec = self._imdict['I']
+        ivec = np.array([])
+        if self.polrep == 'stokes':
+            ivec = self._imdict['I']
+        elif self.polrep == 'circ':
+            if len(self.rrvec) != 0 and len(self.llvec) != 0:
+                ivec = 0.5 * (self.rrvec + self.llvec)
+
         return ivec
 
     @ivec.setter
     def ivec(self, vec):
         if len(vec) != self.xdim * self.ydim:
             raise Exception("vec size is not consistent with xdim*ydim!")
+        if self.polrep != 'stokes':
+            raise Exception("ivec cannot be set unless self.polrep=='stokes'")
 
-        # TODO -- more checks on the consistency of the imvec with the existing pol data???
         self._imdict['I'] = vec
 
     @property
     def qvec(self):
-        if self.polrep != 'stokes':
-            raise Exception("qvec is not defined unless self.polrep=='stokes'")
+#        if self.polrep != 'stokes':
+#            raise Exception("qvec is not defined unless self.polrep=='stokes'")
 
-        qvec = self._imdict['Q']
+        qvec = np.array([])
+        if self.polrep == 'stokes':
+            qvec = self._imdict['Q']
+        elif self.polrep == 'circ':
+            if len(self.rlvec) != 0 and len(self.lrvec) != 0:
+                qvec = np.real(0.5 * (self.lrvec + self.rlvec))
+
         return qvec
 
     @qvec.setter
     def qvec(self, vec):
         if len(vec) != self.xdim * self.ydim:
             raise Exception("vec size is not consistent with xdim*ydim!")
+        if self.polrep != 'stokes':
+            raise Exception("ivec cannot be set unless self.polrep=='stokes'")
 
-        # TODO -- more checks on the consistency of the imvec with the existing pol data???
         self._imdict['Q'] = vec
 
     @property
     def uvec(self):
-        if self.polrep != 'stokes':
-            raise Exception("uvec is not defined unless self.polrep=='stokes'")
+#        if self.polrep != 'stokes':
+#            raise Exception("qvec is not defined unless self.polrep=='stokes'")
 
-        uvec = self._imdict['U']
+        uvec = np.array([])
+        if self.polrep == 'stokes':
+            uvec = self._imdict['U']
+        elif self.polrep == 'circ':
+            if len(self.rlvec) != 0 and len(self.lrvec) != 0:
+                uvec = np.real(0.5j * (self.lrvec - self.rlvec))
+
         return uvec
 
     @uvec.setter
     def uvec(self, vec):
         if len(vec) != self.xdim * self.ydim:
             raise Exception("vec size is not consistent with xdim*ydim!")
+        if self.polrep != 'stokes':
+            raise Exception("uvec cannot be set unless self.polrep=='stokes'")
 
-        # TODO -- more checks on the consistency of the imvec with the existing pol data???
         self._imdict['U'] = vec
 
     @property
     def vvec(self):
-        if self.polrep != 'stokes':
-            raise Exception("vvec is not defined unless self.polrep=='stokes'")
+#        if self.polrep != 'stokes':
+#            raise Exception("vvec is not defined unless self.polrep=='stokes'")
 
-        vvec = self._imdict['V']
+        vvec = np.array([])
+        if self.polrep == 'stokes':
+            vvec = self._imdict['V']
+        elif self.polrep == 'circ':
+            if len(self.rrvec) != 0 and len(self.llvec) != 0:
+                vvec = 0.5 * (self.rrvec - self.llvec)
+
         return vvec
 
     @vvec.setter
     def vvec(self, vec):
         if len(vec) != self.xdim * self.ydim:
             raise Exception("vec size is not consistent with xdim*ydim!")
+        if self.polrep != 'stokes':
+            raise Exception("vvec cannot be set unless self.polrep=='stokes'")
 
-        # TODO -- more checks on the consistency of the imvec with the existing pol data???
         self._imdict['V'] = vec
 
     @property
     def rrvec(self):
-        if self.polrep != 'circ':
-            raise Exception("rrvec is not defined unless self.polrep=='circ'")
+#        if self.polrep != 'circ':
+#            raise Exception("rrvec is not defined unless self.polrep=='circ'")
 
-        rrvec = self._imdict['RR']
+        rrvec = np.array([])
+        if self.polrep == 'circ':
+            rrvec = self._imdict['RR']
+        elif self.polrep == 'stokes':
+            if len(self.ivec) != 0 and len(self.vvec) != 0:
+                rrvec = (self.ivec + self.vvec)
+
         return rrvec
 
     @rrvec.setter
     def rrvec(self, vec):
         if len(vec) != self.xdim * self.ydim:
             raise Exception("vec size is not consistent with xdim*ydim!")
+        if self.polrep != 'circ':
+            raise Exception("rrvec cannot be set unless self.polrep=='circ'")
 
-        # TODO -- more checks on the consistency of the imvec with the existing pol data???
         self._imdict['RR'] = vec
 
     @property
     def llvec(self):
-        if self.polrep != 'circ':
-            raise Exception("rrvec is not defined unless self.polrep=='circ'")
+#        if self.polrep != 'circ':
+#            raise Exception("llvec is not defined unless self.polrep=='circ'")
 
-        llvec = self._imdict['LL']
+        llvec = np.array([])
+        if self.polrep == 'circ':
+            llvec = self._imdict['LL']
+        elif self.polrep == 'stokes':
+            if len(self.ivec) != 0 and len(self.vvec) != 0:
+                llvec = (self.ivec - self.vvec)
+
         return llvec
 
     @llvec.setter
     def llvec(self, vec):
         if len(vec) != self.xdim * self.ydim:
             raise Exception("vec size is not consistent with xdim*ydim!")
+        if self.polrep != 'circ':
+            raise Exception("llvec cannot be set unless self.polrep=='circ'")
 
-        # TODO -- more checks on the consistency of the imvec with the existing pol data???
         self._imdict['LL'] = vec
 
     @property
     def rlvec(self):
-        if self.polrep != 'circ':
-            raise Exception("rlvec is not defined unless self.polrep=='circ'")
+#        if self.polrep != 'circ':
+#            raise Exception("rlvec is not defined unless self.polrep=='circ'")
 
-        rlvec = self._imdict['RL']
+        rlvec = np.array([])
+        if self.polrep == 'circ':
+            rlvec = self._imdict['RL']
+        elif self.polrep == 'stokes':
+            if len(self.qvec) != 0 and len(self.uvec) != 0:
+                rlvec = (self.qvec + 1j * self.uvec)
+
         return rlvec
 
     @rlvec.setter
     def rlvec(self, vec):
         if len(vec) != self.xdim * self.ydim:
             raise Exception("vec size is not consistent with xdim*ydim!")
+        if self.polrep != 'circ':
+            raise Exception("rlvec cannot be set unless self.polrep=='circ'")
 
-        # TODO -- more checks on the consistency of the imvec with the existing pol data???
         self._imdict['RL'] = vec
 
     @property
     def lrvec(self):
         """Return the imvec of LR"""
-        if self.polrep != 'circ':
-            raise Exception("lrvec is not defined unless self.polrep=='circ'")
+#        if self.polrep != 'circ':
+#            raise Exception("lrvec is not defined unless self.polrep=='circ'")
 
-        lrvec = self._imdict['LR']
+        lrvec = np.array([])
+        if self.polrep == 'circ':
+            lrvec = self._imdict['LR']
+        elif self.polrep == 'stokes':
+            if len(self.qvec) != 0 and len(self.uvec) != 0:
+                lrvec = (self.qvec - 1j * self.uvec)
+
+
         return lrvec
 
     @lrvec.setter
@@ -333,9 +388,20 @@ class Image(object):
 
         if len(vec) != self.xdim * self.ydim:
             raise Exception("vec size is not consistent with xdim*ydim!")
+        if self.polrep != 'circ':
+            raise Exception("lrvec cannot be set unless self.polrep=='circ'")
 
-        # TODO -- more checks on the consistency of the imvec with the existing pol data???
         self._imdict['LR'] = vec
+
+    @property
+    def pvec(self):
+        """Return the polarization magnitude for each pixel"""
+        if self.polrep == 'circ':
+            pvec = np.abs(self.rlvec)
+        elif self.polrep == 'stokes':
+            pvec = np.abs(self.qvec + 1j * self.uvec)
+
+        return pvec
 
     @property
     def mvec(self):
@@ -426,8 +492,46 @@ class Image(object):
         barr = np.fft.ifft2(np.fft.ifftshift(barr_fft))
         return np.real(barr.flatten())
 
+    def get_polvec(self, pol):
+        """Get the imvec corresponding to the chosen polarization
+        """
+        if self.polrep == 'stokes' and pol is None:
+            pol = 'I'
+        elif self.polrep == 'circ' and pol is None:
+            pol = 'RR'
+
+        if pol.lower() == 'i':
+            outvec = self.ivec
+        elif pol.lower() == 'q':
+            outvec = self.qvec
+        elif pol.lower() == 'u':
+            outvec = self.uvec
+        elif pol.lower() == 'v':
+            outvec = self.vvec
+        elif pol.lower() == 'rr':
+            outvec = self.rrvec
+        elif pol.lower() == 'll':
+            outvec = self.llvec
+        elif pol.lower() == 'lr':
+            outvec = self.lrvec
+        elif pol.lower() == 'rl':
+            outvec = self.rlvec
+        elif pol.lower() == 'p':
+            outvec = self.pvec
+        elif pol.lower() == 'm':
+            outvec = self.mvec
+        elif pol.lower() == 'chi' or pol.lower() =='evpa':
+            outvec = self.chivec
+        elif pol.lower() == 'e':
+            outvec = self.evec
+        elif pol.lower() == 'b':
+            outvec = self.bvec
+        else:
+            raise Exception("Requested polvec type not recognized!")
+        return outvec
+
     def image_args(self):
-        """"Copy arguments for making a  new Image into a list and dictonary
+        """Copy arguments for making a  new Image into a list and dictonary
         """
 
         arglist = [self.imarr(), self.psize, self.ra, self.dec]
@@ -574,15 +678,15 @@ class Image(object):
                 imdict = {'I': self.ivec, 'Q': self.qvec, 'U': self.uvec, 'V': self.vvec}
             else:
                 if len(self.rrvec) == 0 or len(self.llvec) == 0:
-                    ivec = []
-                    vvec = []
+                    ivec = np.array([])
+                    vvec = np.array([])
                 else:
                     ivec = 0.5 * (self.rrvec + self.llvec)
                     vvec = 0.5 * (self.rrvec - self.llvec)
 
                 if len(self.rlvec) == 0 or len(self.lrvec) == 0:
-                    qvec = []
-                    uvec = []
+                    qvec = np.array([])
+                    uvec = np.array([])
                 else:
                     qvec = np.real(0.5 * (self.lrvec + self.rlvec))
                     uvec = np.real(0.5j * (self.lrvec - self.rlvec))
@@ -594,15 +698,15 @@ class Image(object):
                 imdict = {'RR': self.rrvec, 'LL': self.llvec, 'RL': self.rlvec, 'LR': self.lrvec}
             else:
                 if len(self.ivec) == 0 or len(self.vvec) == 0:
-                    rrvec = []
-                    llvec = []
+                    rrvec = np.array([])
+                    llvec = np.array([])
                 else:
                     rrvec = (self.ivec + self.vvec)
                     llvec = (self.ivec - self.vvec)
 
                 if len(self.qvec) == 0 or len(self.uvec) == 0:
-                    rlvec = []
-                    lrvec = []
+                    rlvec = np.array([])
+                    lrvec = np.array([])
                 else:
                     rlvec = (self.qvec + 1j * self.uvec)
                     lrvec = (self.qvec - 1j * self.uvec)
@@ -620,10 +724,6 @@ class Image(object):
         argdict['polrep'] = polrep_out
         argdict['pol_prim'] = pol_prim_out
         newim = Image(*arglist, **argdict)
-
-        # newim = Image(imvec.reshape(self.ydim,self.xdim), self.psize, self.ra, self.dec, self.pa,
-        #              polrep=polrep_out, pol_prim=pol_prim_out, time=self.time,
-        #              rf=self.rf, source=self.source, mjd=self.mjd, pulse=self.pulse)
 
         # Add in any other polarizations
         for pol in list(imdict.keys()):
@@ -712,7 +812,7 @@ class Image(object):
         """Return the 2D image array of a given pol parameter.
 
            Args:
-               pol (str): I,Q,U or V for Stokes, or RR,LL,LR,RL for Circular
+               pol (str): I,Q,U or V for Stokes, or RR,LL,LR,RL for Circ
 
            Returns:
                (numpy.array): 2D image array of dimension (ydim, xdim)
@@ -721,25 +821,32 @@ class Image(object):
         if pol is None:
             pol = self.pol_prim
 
-        imarr = np.array([])
-        if self.polrep == 'stokes':
-            if pol == "I" and len(self.ivec):
-                imarr = self.ivec.reshape(self.ydim, self.xdim)
-            elif pol == "Q" and len(self.qvec):
-                imarr = self.qvec.reshape(self.ydim, self.xdim)
-            elif pol == "U" and len(self.uvec):
-                imarr = self.uvec.reshape(self.ydim, self.xdim)
-            elif pol == "V" and len(self.vvec):
-                imarr = self.vvec.reshape(self.ydim, self.xdim)
-        elif self.polrep == 'circ':
-            if pol == "RR" and len(self.rrvec):
-                imarr = self.rrvec.reshape(self.ydim, self.xdim)
-            elif pol == "LL" and len(self.llvec):
-                imarr = self.llvec.reshape(self.ydim, self.xdim)
-            elif pol == "RL" and len(self.rlvec):
-                imarr = self.rlvec.reshape(self.ydim, self.xdim)
-            elif pol == "LR" and len(self.lrvec):
-                imarr = self.lrvec.reshape(self.ydim, self.xdim)
+        imvec = self.get_polvec(pol)
+        if len(imvec):
+            imarr = imvec.reshape(self.ydim, self.xdim)
+        else:
+            imarr = np.array([])
+        return  imarr
+
+#        imarr = np.array([])
+#        if self.polrep == 'stokes':
+#            if pol == "I" and len(self.ivec):
+#                imarr = self.ivec.reshape(self.ydim, self.xdim)
+#            elif pol == "Q" and len(self.qvec):
+#                imarr = self.qvec.reshape(self.ydim, self.xdim)
+#            elif pol == "U" and len(self.uvec):
+#                imarr = self.uvec.reshape(self.ydim, self.xdim)
+#            elif pol == "V" and len(self.vvec):
+#                imarr = self.vvec.reshape(self.ydim, self.xdim)
+#        elif self.polrep == 'circ':
+#            if pol == "RR" and len(self.rrvec):
+#                imarr = self.rrvec.reshape(self.ydim, self.xdim)
+#            elif pol == "LL" and len(self.llvec):
+#                imarr = self.llvec.reshape(self.ydim, self.xdim)
+#            elif pol == "RL" and len(self.rlvec):
+#                imarr = self.rlvec.reshape(self.ydim, self.xdim)
+#            elif pol == "LR" and len(self.lrvec):
+#                imarr = self.lrvec.reshape(self.ydim, self.xdim)
 
         return imarr
 
@@ -862,12 +969,14 @@ class Image(object):
 
         if pol is None:
             pol = self.pol_prim
-        if not (pol in list(self._imdict.keys())):
-            raise Exception("for polrep==%s, pol must be in " %
-                            self.polrep + ",".join(list(self._imdict.keys())))
-
+        imvec = self.get_polvec(pol)
         pdim = self.psize
-        imvec = self._imdict[pol]
+
+#        if not (pol in list(self._imdict.keys())):
+#            raise Exception("for polrep==%s, pol must be in " %
+#                            self.polrep + ",".join(list(self._imdict.keys())))
+#        imvec = self._imdict[pol]
+
         if len(imvec):
             xlist = np.arange(0, -self.xdim, -1) * pdim + (pdim * self.xdim) / 2.0 - pdim / 2.0
             ylist = np.arange(0, -self.ydim, -1) * pdim + (pdim * self.ydim) / 2.0 - pdim / 2.0
@@ -922,7 +1031,7 @@ class Image(object):
                 mfarr = np.pad(mfarr, ((pady, pady), (padx, padx)), 'constant')
                 mfvec_out = mfarr.flatten()
             else:
-                mfvec_out = []
+                mfvec_out = np.array([])
             mflist_out.append(mfvec_out)
         outim._mflist = mflist_out
 
@@ -1002,7 +1111,7 @@ class Image(object):
                 mfarr = im_new(mfvec)
                 mfvec_out = mfarr.flatten()
             else:
-                mfvec_out = []
+                mfvec_out = np.array([])
             mflist_out.append(mfvec_out)
         outim._mflist = mflist_out
 
@@ -1067,7 +1176,7 @@ class Image(object):
                 mfarr = interp_imvec(mfvec)
                 mfvec_out = mfarr.flatten()
             else:
-                mfvec_out = []
+                mfvec_out = np.array([])
             mflist_out.append(mfvec_out)
         outim._mflist = mflist_out
 
@@ -1140,7 +1249,7 @@ class Image(object):
                 mfarr = rot_imvec(mfvec)
                 mfvec_out = mfarr.flatten()
             else:
-                mfvec_out = []
+                mfvec_out = np.array([])
             mflist_out.append(mfvec_out)
         outim._mflist = mflist_out
 
@@ -1185,7 +1294,7 @@ class Image(object):
                 mfarr = shift_imvec(mfvec)
                 mfvec_out = mfarr.flatten()
             else:
-                mfvec_out = []
+                mfvec_out = np.array([])
             mflist_out.append(mfvec_out)
         outim._mflist = mflist_out
 
@@ -1236,7 +1345,7 @@ class Image(object):
                 mfarr = np.real(np.fft.ifft2(np.fft.fft2(mfarr) * rotate))
                 mfvec_out = mfarr.flatten()
             else:
-                mfvec_out = []
+                mfvec_out = np.array([])
             mflist_out.append(mfvec_out)
         outim._mflist = mflist_out
 
@@ -1313,7 +1422,7 @@ class Image(object):
                 mfarr = blur(mfarr, gauss)
                 mfvec_out = mfarr.flatten()
             else:
-                mfvec_out = []
+                mfvec_out = np.array([])
             mflist_out.append(mfvec_out)
         outim._mflist = mflist_out
 
@@ -1370,7 +1479,7 @@ class Image(object):
                 mfarr = blur(mfarr, sigmap)
                 mfvec_out = mfarr.flatten()
             else:
-                mfvec_out = []
+                mfvec_out = np.array([])
             mflist_out.append(mfvec_out)
         outim._mflist = mflist_out
 
@@ -1428,7 +1537,7 @@ class Image(object):
                 mfarr = gradim(mfvec)
                 mfvec_out = mfarr.flatten()
             else:
-                mfvec_out = []
+                mfvec_out = np.array([])
             mflist_out.append(mfvec_out)
         outim._mflist = mflist_out
 
@@ -1532,7 +1641,7 @@ class Image(object):
                 mfvec_out = copy.deepcopy(mfvec)
                 mfvec_out[~maskvec] = 0.
             else:
-                mfvec_out = []
+                mfvec_out = np.array([])
             mflist_out.append(mfvec_out)
         outim._mflist = mflist_out
 
@@ -2485,7 +2594,7 @@ class Image(object):
 
         return obs
 
-    def compare_images(self, im2, psize=None, target_fov=None, blur_frac=0.0,
+    def compare_images(self, im_compare, pol=None, psize=None,target_fov=None, blur_frac=0.0,
                        beamparams=[1., 1., 1.], metric=['nxcorr', 'nrmse', 'rssd'],
                        blursmall=False, shift=True):
         """Compare to another image by computing normalized cross correlation,
@@ -2493,6 +2602,8 @@ class Image(object):
            Returns metrics only for the primary polarization imvec!
 
            Args:
+               im_compare (Image): the image to compare to
+               pol (str): which polarization image to compare. Default is self.pol_prim
                psize (float): pixel size of comparison image (rad).
                               If None it is the smallest of the input image pizel sizes
                target_fov (float): fov of the comparison image (rad).
@@ -2510,6 +2621,8 @@ class Image(object):
         """
 
         im1 = self.copy()
+        im2 = im_compare.switch_polrep(polrep_out=im1.polrep, pol_prim_out=im1.pol_prim)
+
         if im1.polrep != im2.polrep:
             raise Exception("In find_shift, im1 and im2 must have the same polrep!")
         if im1.pol_prim != im2.pol_prim:
@@ -2517,7 +2630,7 @@ class Image(object):
 
         # Shift the comparison image to maximize normalized cross-corr.
         [idx, xcorr, im1_pad, im2_pad] = im1.find_shift(im2, psize=psize, target_fov=target_fov,
-                                                        beamparams=beamparams,
+                                                        beamparams=beamparams, pol=pol,
                                                         blur_frac=blur_frac, blursmall=blursmall)
 
         if not isinstance(shift, bool):
@@ -2527,17 +2640,19 @@ class Image(object):
 
         # Compute error metrics
         error = []
+        imvec1 = im1_pad.get_polvec(pol)
+        imvec2 = im2_shift.get_polvec(pol)
         if 'nxcorr' in metric:
             error.append(xcorr[idx[0], idx[1]] / (im1_pad.xdim * im1_pad.ydim))
         if 'nrmse' in metric:
-            error.append(np.sqrt(np.sum(((im1_pad.imvec - im2_shift.imvec)**2 * im1_pad.psize**2)) /
-                                 np.sum((im1_pad.imvec)**2 * im1_pad.psize**2)))
+            error.append(np.sqrt(np.sum((np.abs(imvec1 - imvec2)**2 * im1_pad.psize**2)) /
+                                 np.sum((imvec1)**2 * im1_pad.psize**2)))
         if 'rssd' in metric:
-            error.append(np.sqrt(np.sum((im1_pad.imvec - im2_shift.imvec)**2) * im1_pad.psize**2))
+            error.append(np.sqrt(np.sum(np.abs(imvec1 - imvec2)**2) * im1_pad.psize**2))
 
         return (error, im1_pad, im2_shift)
 
-    def align_images(self, im_list, shift=True, final_fov=False, scale='lin',
+    def align_images(self, im_list, pol=None, shift=True, final_fov=False, scale='lin',
                      gamma=0.5, dynamic_range=[1.e3]):
         """Align all the images in im_list to the current image (self)
            Aligns all images by comparison of the primary pol image.
@@ -2546,6 +2661,7 @@ class Image(object):
                im_list (list): list of images to align to the current image
                shift (list): list of manual image shifts,
                              otherwise use the shift from maximum cross-correlation
+               pol (str): which polarization image to compare. Default is self.pol_prim
                final_fov (float): fov of the comparison image (rad).
                              If False it is the largestinput image fov
 
@@ -2587,7 +2703,7 @@ class Image(object):
         shifts = []
         for i in range(0, len(im_list)):
             (idx, _, im0_pad_orig, im_pad) = im0.find_shift(im_list[i], target_fov=2 * max_fov,
-                                                            psize=psize,
+                                                            psize=psize, pol=pol,
                                                             scale=scale, gamma=gamma,
                                                             dynamic_range=dynamic_range[i + 1])
 
@@ -2603,14 +2719,15 @@ class Image(object):
 
         return (im_list_shift, shifts, im0_pad)
 
-    def find_shift(self, im2, psize=None, target_fov=None,
+    def find_shift(self, im_compare, pol=None, psize=None, target_fov=None,
                    beamparams=[1., 1., 1.], blur_frac=0.0, blursmall=False,
                    scale='lin', gamma=0.5, dynamic_range=1.e3):
         """Find image shift that maximizes normalized cross correlation with a second image im2.
            Finds shift only by comparison of the primary pol image.
 
            Args:
-               im2 (Image): image with respect with to switch
+               im_compare (Image): image with respect with to switch
+               pol (str): which polarization image to compare. Default is self.pol_prim
                psize (float): pixel size of comparison image (rad).
                               If None it is the smallest of the input image pizel sizes
                target_fov (float): fov of the comparison image (rad).
@@ -2629,6 +2746,9 @@ class Image(object):
         """
 
         im1 = self.copy()
+        im2 = im_compare.switch_polrep(polrep_out=im1.polrep, pol_prim_out=im1.pol_prim)
+        if pol=='RL' or pol=='LR':
+            raise Exception("Find_shift currently doesn't work with complex RL or LR imvecs!")
         if im1.polrep != im2.polrep:
             raise Exception("In find_shift, im1 and im2 must have the same polrep!")
         if im1.pol_prim != im2.pol_prim:
@@ -2645,21 +2765,21 @@ class Image(object):
 
         # Blur images, then pad
         if ((blur_frac > 0.0) * (blursmall is True)):
-            im1 = im1.blur_gauss(beamparams, blur_frac)
-            im2 = im2.blur_gauss(beamparams, blur_frac)
+            im1 = im1.blur_gauss(beamparams, blur_frac, blur_frac)
+            im2 = im2.blur_gauss(beamparams, blur_frac, blur_frac)
 
         im1_pad = im1.regrid_image(target_fov, npix)
         im2_pad = im2.regrid_image(target_fov, npix)
 
         # or, pad images, then blur
         if ((blur_frac > 0.0) * (blursmall is False)):
-            im1_pad = im1_pad.blur_gauss(beamparams, blur_frac)
-            im2_pad = im2_pad.blur_gauss(beamparams, blur_frac)
+            im1_pad = im1_pad.blur_gauss(beamparams, blur_frac, blur_frac)
+            im2_pad = im2_pad.blur_gauss(beamparams, blur_frac, blur_frac)
 
         # Rescale the image vectors into log or gamma scale
-        # TODO -- what about negative values? threshold?
-        im1_pad_vec = im1_pad.imvec
-        im2_pad_vec = im2_pad.imvec
+        # TODO -- what about negative values? complex values?
+        im1_pad_vec = im1_pad.get_polvec(pol)
+        im2_pad_vec = im2_pad.get_polvec(pol)
         if scale == 'log':
             im1_pad_vec[im1_pad_vec < 0.0] = 0.0
             im1_pad_vec = np.log(im1_pad_vec + np.max(im1_pad_vec) / dynamic_range)
@@ -3192,7 +3312,7 @@ class Image(object):
                 imvec = self.mvec * self.ivec
                 unit = r'$\|P|$'
                 cfun_p = 'afmhot'
-            elif pol.lower() == 'chi':
+            elif pol.lower() == 'chi' or pol.lower() == 'evpa':
                 imvec = self.chivec / ehc.DEGREE
                 unit = r'$\chi (^\circ)$'
                 factor = 1
