@@ -201,7 +201,8 @@ def sample_1model_xy(x, y, model_type, params, psize=1.*RADPERUAS):
     elif model_type[:9] == 'stretched':
         params_stretch = params.copy()
         params_stretch['F0'] /= params['stretch']
-        return sample_1model_xy(*stretch_xy(x, y, params), model_type[10:], params_stretch, psize)
+	x, y = stretch_xy(x, y, params)
+        return sample_1model_xy(x, y, model_type[10:], params_stretch, psize)
     else:
         print('Model ' + model_type + ' not recognized!')
         return 0.0
@@ -257,7 +258,8 @@ def sample_1model_uv(u, v, model_type, params):
         params_stretch = params.copy()        
         params_stretch['x0'] = 0.0
         params_stretch['y0'] = 0.0
-        return sample_1model_uv(*stretch_uv(u,v,params), model_type[10:], params_stretch) * np.exp(1j * 2.0 * np.pi * (u * params['x0'] + v * params['y0'])) 
+ 	u, v = stretch_uv(u,v,params)
+        return sample_1model_uv(u, v, model_type[10:], params_stretch) * np.exp(1j * 2.0 * np.pi * (u * params['x0'] + v * params['y0'])) 
     else:
         print('Model ' + model_type + ' not recognized!')
         return 0.0
