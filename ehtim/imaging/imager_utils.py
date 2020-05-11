@@ -537,6 +537,7 @@ def regularizer(imvec, nprior, mask, flux, xdim, ydim, psize, stype, **kwargs):
     norm_reg = kwargs.get('norm_reg', NORM_REGULARIZER)
     beam_size = kwargs.get('beam_size', psize)
     alpha_A = kwargs.get('alpha_A', 1.0)
+    epsilon = kwargs.get('epsilon_tv', 0.)
 
     if stype == "flux":
         s = -sflux(imvec, nprior, flux, norm_reg=norm_reg)
@@ -557,7 +558,7 @@ def regularizer(imvec, nprior, mask, flux, xdim, ydim, psize, stype, **kwargs):
     elif stype == "tv":
         if np.any(np.invert(mask)):
             imvec = embed(imvec, mask, randomfloor=True)
-        s = -stv(imvec, xdim, ydim, psize, flux, norm_reg=norm_reg, beam_size=beam_size)
+        s = -stv(imvec, xdim, ydim, psize, flux, norm_reg=norm_reg, beam_size=beam_size, epsilon=epsilon)
     elif stype == "tv2":
         if np.any(np.invert(mask)):
             imvec = embed(imvec, mask, randomfloor=True)
@@ -591,6 +592,7 @@ def regularizergrad(imvec, nprior, mask, flux, xdim, ydim, psize, stype, **kwarg
     norm_reg = kwargs.get('norm_reg', NORM_REGULARIZER)
     beam_size = kwargs.get('beam_size', psize)
     alpha_A = kwargs.get('alpha_A', 1.0)
+    epsilon = kwargs.get('epsilon_tv', 0.)
 
     if stype == "flux":
         s = -sfluxgrad(imvec, nprior, flux, norm_reg=norm_reg)
@@ -611,7 +613,7 @@ def regularizergrad(imvec, nprior, mask, flux, xdim, ydim, psize, stype, **kwarg
     elif stype == "tv":
         if np.any(np.invert(mask)):
             imvec = embed(imvec, mask, randomfloor=True)
-        s = -stvgrad(imvec, xdim, ydim, psize, flux, norm_reg=norm_reg, beam_size=beam_size)
+        s = -stvgrad(imvec, xdim, ydim, psize, flux, norm_reg=norm_reg, beam_size=beam_size, epsilon=epsilon)
         s = s[mask]
     elif stype == "tv2":
         if np.any(np.invert(mask)):
@@ -2297,7 +2299,7 @@ def sl1grad(imvec, priorvec, flux, norm_reg=NORM_REGULARIZER):
     l1grad = -np.sign(imvec)
     return l1grad/norm
 
-def sl1w(imvec, priorvec, flux, norm_reg=NORM_REGULARIZER):
+def sl1w(imvec, priorvec, flux, norm_reg=NORM_REGULARIZER, epsilon=EP):
 
     """Weighted L1 norm regularizer a la SMILI
     """
@@ -2305,27 +2307,27 @@ def sl1w(imvec, priorvec, flux, norm_reg=NORM_REGULARIZER):
     if norm_reg:
         norm = 1 # should be ok? 
         #This is SMILI normalization
-        #norm = np.sum((np.sqrt(priorvec**2 + EP) + EP)/np.sqrt(priorvec**2 + EP))
+        #norm = np.sum((np.sqrt(priorvec**2 + epsilon) + epsilon)/np.sqrt(priorvec**2 + epsilon))
     else: norm = 1
 
-    num = np.sqrt(imvec**2 + EP)
-    denom =  np.sqrt(priorvec**2 + EP) + EP
+    num = np.sqrt(imvec**2 + epsilon)
+    denom =  np.sqrt(priorvec**2 + epsilon) + epsilon
 
     l1w =  -np.sum(num/denom)
     return l1w/norm
 
 
-def sl1wgrad(imvec, priorvec, flux, norm_reg=NORM_REGULARIZER):
+def sl1wgrad(imvec, priorvec, flux, norm_reg=NORM_REGULARIZER, epsilon=EP):
     """Weighted L1 norm gradient
     """
     if norm_reg:
         norm = 1 # should be ok? 
         #This is SMILI normalization
-        #norm = np.sum((np.sqrt(priorvec**2 + EP) + EP)/np.sqrt(priorvec**2 + EP))
+        #norm = np.sum((np.sqrt(priorvec**2 + epsilon) + epsilon)/np.sqrt(priorvec**2 + epsilon))
     else: norm = 1
 
-    num = imvec / np.sqrt(imvec**2 + EP)
-    denom =  np.sqrt(priorvec**2 + EP) + EP
+    num = imvec / np.sqrt(imvec**2 + epsilon)
+    denom =  np.sqrt(priorvec**2 + epsilon) + epsilon
 
     l1wgrad = - num / denom
     return l1wgrad/norm
@@ -2399,7 +2401,8 @@ def sgsgrad(imvec, priorvec, flux, norm_reg=NORM_REGULARIZER):
     entropygrad= -np.log(imvec/priorvec)
     return entropygrad/norm
 
-def stv(imvec, nx, ny, psize, flux, norm_reg=NORM_REGULARIZER, beam_size=None):
+#TODO: epsilon is 0 by default for backwards compatibilitys
+def stv(imvec, nx, ny, psize, flux, norm_reg=NORM_REGULARIZER, beam_size=None, epsilon=0.):
     """Total variation regularizer
     """
     if beam_size is None: beam_size = psize
@@ -2410,10 +2413,11 @@ def stv(imvec, nx, ny, psize, flux, norm_reg=NORM_REGULARIZER, beam_size=None):
     impad = np.pad(im, 1, mode='constant', constant_values=0)
     im_l1 = np.roll(impad, -1, axis=0)[1:ny+1, 1:nx+1]
     im_l2 = np.roll(impad, -1, axis=1)[1:ny+1, 1:nx+1]
-    out = -np.sum(np.sqrt(np.abs(im_l1 - im)**2 + np.abs(im_l2 - im)**2))
+    out = -np.sum(np.sqrt(np.abs(im_l1 - im)**2 + np.abs(im_l2 - im)**2) + epsilon)
     return out/norm
 
-def stvgrad(imvec, nx, ny, psize, flux, norm_reg=NORM_REGULARIZER, beam_size=None):
+#TODO: epsilon is 0 by default for backwards compatibility
+def stvgrad(imvec, nx, ny, psize, flux, norm_reg=NORM_REGULARIZER, beam_size=None, epsilon=0.):
     """Total variation gradient
     """
     if beam_size is None: beam_size = psize
@@ -2432,9 +2436,9 @@ def stvgrad(imvec, nx, ny, psize, flux, norm_reg=NORM_REGULARIZER, beam_size=Non
     im_l1r2 = np.roll(np.roll(impad, -1, axis=0), 1, axis=1)[1:ny+1, 1:nx+1]
 
     #add together terms and return
-    g1 = (2*im - im_l1 - im_l2) / np.sqrt((im - im_l1)**2 + (im - im_l2)**2)
-    g2 = (im - im_r1) / np.sqrt((im - im_r1)**2 + (im_r1l2 - im_r1)**2)
-    g3 = (im - im_r2) / np.sqrt((im - im_r2)**2 + (im_l1r2 - im_r2)**2)
+    g1 = (2*im - im_l1 - im_l2) / np.sqrt((im - im_l1)**2 + (im - im_l2)**2 + epsilon)
+    g2 = (im - im_r1) / np.sqrt((im - im_r1)**2 + (im_r1l2 - im_r1)**2 + epsilon)
+    g3 = (im - im_r2) / np.sqrt((im - im_r2)**2 + (im_l1r2 - im_r2)**2 + epsilon)
 
     #mask the first row column gradient terms that don't exist
     mask1 = np.zeros(im.shape)
@@ -2673,7 +2677,6 @@ def sgauss_grad(imvec, xdim, ydim, psize, major, minor, PA):
     xx = xlist * psize
     yy = ylist * psize
 
-
     #the centroid parameters
     x0 = np.sum(xx*im) / np.sum(im)
     y0 = np.sum(yy*im) / np.sum(im)
@@ -2682,7 +2685,6 @@ def sgauss_grad(imvec, xdim, ydim, psize, major, minor, PA):
     sigxx = (np.sum((xx - x0)**2.*im)/np.sum(im))
     sigyy = (np.sum((yy - y0)**2.*im)/np.sum(im))
     sigxy = (np.sum((xx - x0)*(yy- y0)*im)/np.sum(im))
-
 
     #now we compute the gradients of all quantities 
     #gradient of centroid 

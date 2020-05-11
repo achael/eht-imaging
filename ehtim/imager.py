@@ -60,8 +60,13 @@ DAT_DEFAULT = {'vis': 100}
 
 POL_PRIM_SOLVE = "amp_phase"  # this means we solve for polarization in the m, chi basis
 POL_WHICH_SOLVE = (0, 1, 1)   # this means that pol imaging solves for m & chi (not I), for now
-# this means that mf imaging solves for I0 and alpha (not beta), for now
-MF_WHICH_SOLVE = (1, 1, 0)
+MF_WHICH_SOLVE = (1, 1, 0)    # this means that mf imaging solves for I0 and alpha (not beta), for now
+
+REGPARAMS_DEFAULT = {'major':50*ehc.RADPERUAS,
+                     'minor':50*ehc.RADPERUAS,
+                     'PA':0.,
+                     'alpha_A':1.0,
+                     'epsilon_tv':0.0}
 
 ###################################################################################################
 # Imager object
@@ -155,7 +160,7 @@ class Imager(object):
         self.norm_init = kwargs.get('norm_init', True)
         self.norm_reg = kwargs.get('norm_reg', False)
         self.beam_size = self.obslist_next[0].res()
-        self.regparams = {k: kwargs.get(k, 1.0) for k in ('major', 'minor', 'PA', 'alpha_A')}
+        self.regparams = {k: kwargs.get(k, REGPARAMS_DEFAULT[k]) for k in REGPARAMS_DEFAULT.keys()}
 
         self.chisq_transform = False
         self.chisq_offset_gradient = 0.0

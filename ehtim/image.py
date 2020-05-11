@@ -2764,7 +2764,7 @@ class Image(object):
         npix = int(target_fov / psize)
 
         # Blur images, then pad
-        if ((blur_frac > 0.0) * (blursmall is True)):
+        if ((blur_frac > 0.0) and (blursmall is True)):
             im1 = im1.blur_gauss(beamparams, blur_frac, blur_frac)
             im2 = im2.blur_gauss(beamparams, blur_frac, blur_frac)
 
@@ -2772,7 +2772,7 @@ class Image(object):
         im2_pad = im2.regrid_image(target_fov, npix)
 
         # or, pad images, then blur
-        if ((blur_frac > 0.0) * (blursmall is False)):
+        if ((blur_frac > 0.0) and (blursmall is False)):
             im1_pad = im1_pad.blur_gauss(beamparams, blur_frac, blur_frac)
             im2_pad = im2_pad.blur_gauss(beamparams, blur_frac, blur_frac)
 
