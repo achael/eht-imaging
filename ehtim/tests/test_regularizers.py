@@ -6,7 +6,7 @@ import ehtim as eh
 import time
 import ehtim.imaging.imager_utils as iu
 
-im = eh.image.load_txt('models/avery_sgra_eofn.txt')
+im = eh.image.load_txt('../../models/avery_sgra_eofn.txt')
 im.pulse = eh.observing.pulses.deltaPulse2D
    
 # mask
