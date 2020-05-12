@@ -57,7 +57,7 @@ def solve_singleImage(mu, Lambda_orig, obs, measurement='visibility', numLinIter
 
 ##################################################################################################
 
-def forwardUpdates_apxImgs(mu, Lambda_orig, obs_List, A_orig, Q_orig, measurement='visibility', numLinIters=5, interiorPriors=False, mask=[]):
+def forwardUpdates_apxImgs(mu, Lambda_orig, obs_List, A_orig, Q_orig, init_images, measurement='visibility', numLinIters=5, interiorPriors=False, mask=[]):
     
     if measurement=='visibility':
         numLinIters = 1
@@ -81,16 +81,16 @@ def forwardUpdates_apxImgs(mu, Lambda_orig, obs_List, A_orig, Q_orig, measuremen
     zero_im.imvec = 0.0*zero_im.imvec
     
     # intitilize the prediction and update mean and covariances
-    z_List_t_t = [];
-    P_List_t_t = [];
+    z_List_t_t = []; # Mean of the hidden (state) image at t given data up to time t
+    P_List_t_t = []; # Covariance of the hidden (state) image at t given data up to time t
     # update list
     for t in range(0,len(obs_List)):
         z_List_t_t.append(zero_im.copy())
         P_List_t_t.append(np.zeros(Lambda[0].shape))
-    # prediction 1 list
+    # prediction 1 list: prediction at time t given all information up to t-1
     z_List_t_tm1 = copy.deepcopy(z_List_t_t)
     P_List_t_tm1 = copy.deepcopy(P_List_t_t)
-    # prediction 2 list
+    # prediction 2 list: prediction at time t given all information up to t-1 (possibly intermediate state variable)
     z_star_List_t_tm1 = copy.deepcopy(z_List_t_t)
     P_star_List_t_tm1 = copy.deepcopy(P_List_t_t)
     # initialize linearization z's
@@ -104,7 +104,7 @@ def forwardUpdates_apxImgs(mu, Lambda_orig, obs_List, A_orig, Q_orig, measuremen
         sys.stdout.write('\rForward timestep %i of %i total timesteps...' % (t,len(obs_List)))
         sys.stdout.flush()
         #print('forward timestep: ' + str(t))
-    
+    	# Duplicate mean and covariance if needed
         if len(mu) == 1:
             mu_t = mu[0]
             Lambda_t = Lambda[0]
@@ -114,6 +114,7 @@ def forwardUpdates_apxImgs(mu, Lambda_orig, obs_List, A_orig, Q_orig, measuremen
         
         
         # predict
+	# Initialization of hidden state mean and covariance
         if t==0:
             z_star_List_t_tm1[t].imvec = copy.deepcopy(mu_t.imvec)
             P_star_List_t_tm1[t] = copy.deepcopy(Lambda_t)
@@ -136,11 +137,18 @@ def forwardUpdates_apxImgs(mu, Lambda_orig, obs_List, A_orig, Q_orig, measuremen
         #tmp = z_star_List_t_tm1[t].copy()
         #tmp.imvec = np.diag(P_star_List_t_tm1[t])
         #tmp.display(cbar_unit = ('m-Jy', '$\mu$-arcseconds$^2$'), export_pdf='/Users/klbouman/Downloads/forward_stdev_' + str(t) + '.png' , has_title = False, label_type = 'none', has_cbar = False) # cbar_lims = (0,0.0025),
-
-        # update
-        z_List_lin[t] = z_star_List_t_tm1[t].copy()
+        
+	# update according to user provided  initialization or take z_star_List_t_tm1 as an initialization
+        if init_images is None:
+            init_images_t = z_star_List_t_tm1[t].copy()
+        elif len(init_images) == 1:
+            init_images_t = init_images[0]
+        else:
+            init_images_t = init_images[t]
+        z_List_lin[t] = init_images_t.copy()
         
         for k in range(0,numLinIters):
+	    # F is the derivative of the Forward model with respect to the unknown parameters
             meas, idealmeas, F, measCov, valid = getMeasurementTerms(obs_List[t], z_List_lin[t], measurement=measurement, mask=mask)
             if valid:
                 z_List_t_t[t].imvec[mask], P_List_t_t[t] = prodGaussiansLem2(F, measCov, meas, z_star_List_t_tm1[t].imvec[mask], P_star_List_t_tm1[t])
@@ -352,8 +360,13 @@ def smoothingUpdates(z_t_t, P_t_t, z_t_tm1, P_t_tm1, A_orig, mask=[]):
     
 
     
-def computeSuffStatistics(mu, Lambda, obs_List, Upsilon, theta, init_x, init_y, flowbasis_x, flowbasis_y, initTheta, method='phase', measurement='visibility', interiorPriors=False, numLinIters=1, apxImgs=False, compute_expVal_tm1_t=True, mask=[]):
-    
+def computeSuffStatistics(mu, Lambda, obs_List, Upsilon, theta, init_x, init_y, flowbasis_x, flowbasis_y, initTheta, init_images=None, method='phase', measurement='visibility', interiorPriors=False, numLinIters=1, apxImgs=False, compute_expVal_tm1_t=True, mask=[]):
+    """
+    :param mu: (list - len(mu)=num_time_steps or 1): every element is an image object which contains the mean image
+        at given timestep. If list length is one mean image is duplicated for all time steps
+    :param Lambda: (list - len(mu)=num_time_steps or 1): every element is a 2D numpy array which contains the
+        covariance at a given timestep. If list length is one, the cov image is duplicated for all time steps.
+    """
     if not len(mask):
         mask = np.ones(mu[0].imvec.shape)>0
         
@@ -369,7 +382,7 @@ def computeSuffStatistics(mu, Lambda, obs_List, Upsilon, theta, init_x, init_y, 
     Q = Upsilon
          
     if apxImgs == False:
-        loglikelihood, z_t_tm1, P_t_tm1, z_t_t, P_t_t, apxImgs = forwardUpdates_apxImgs(mu, Lambda, obs_List, A, Q, measurement=measurement, interiorPriors=interiorPriors, numLinIters=numLinIters, mask=mask)
+        loglikelihood, z_t_tm1, P_t_tm1, z_t_t, P_t_t, apxImgs = forwardUpdates_apxImgs(mu, Lambda, obs_List, A, Q, init_images=init_images, measurement=measurement, interiorPriors=interiorPriors, numLinIters=numLinIters, mask=mask)
     else:
         loglikelihood, z_t_tm1, P_t_tm1, z_t_t, P_t_t = forwardUpdates(mu, Lambda, obs_List, A, Q, measurement=measurement, interiorPriors=interiorPriors, apxImgs=apxImgs, mask=mask)
 
