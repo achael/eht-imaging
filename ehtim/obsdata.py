@@ -496,7 +496,9 @@ class Obsdata(object):
                 datalist.append(np.array([obs for obs in group]))
         else:
             # Group measurements by scan
-            if np.any([scan is None for scan in self.scans]) or len(self.scans) == 0:
+            if ((self.scans is None) or 
+                 np.any([scan is None for scan in self.scans]) or
+                 len(self.scans) == 0):
                 print("No scan table in observation. Adding scan table before gathering...")
                 self.add_scans()
 
@@ -517,7 +519,7 @@ class Obsdata(object):
                 (list): list of single-scan Obsdata objects
         """
 
-        tilst = self.tlist(t_gather=t_gather, scan_gather=scan_gather)
+        tlist = self.tlist(t_gather=t_gather, scan_gather=scan_gather)
 
         print("Splitting Observation File into " + str(len(tlist)) + " times")
         arglist, argdict = self.obsdata_args()
@@ -525,7 +527,7 @@ class Obsdata(object):
         # note that the tarr of the output includes all sites,
         # even those that don't participate in the scan
         splitlist = []
-        for tdata in tlist():
+        for tdata in tlist:
             arglist[DATPOS] = tdata
             splitlist.append(Obsdata(*arglist, **argdict))
 
