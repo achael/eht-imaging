@@ -506,6 +506,31 @@ class Obsdata(object):
 
         return np.array(datalist)
 
+    def split_obs(self, t_gather=0., scan_gather=False):
+        """Split single observation into multiple observation files, one per scan..
+
+           Args:
+                t_gather (float): Grouping timescale (in seconds). 0.0 indicates no grouping.
+                scan_gather (bool): If true, gather data into scans
+
+            Returns:
+                (list): list of single-scan Obsdata objects
+        """
+
+        tilst = self.tlist(t_gather=t_gather, scan_gather=scan_gather)
+
+        print("Splitting Observation File into " + str(len(tlist)) + " times")
+        arglist, argdict = self.obsdata_args()
+
+        # note that the tarr of the output includes all sites,
+        # even those that don't participate in the scan
+        splitlist = []
+        for tdata in tlist():
+            arglist[DATPOS] = tdata
+            splitlist.append(Obsdata(*arglist, **argdict))
+
+        return splitlist
+
     def bllist(self, conj=False):
         """Group the data in a list of same baseline datatables.
 
@@ -900,26 +925,6 @@ class Obsdata(object):
 
         return res
 
-    def split_obs(self):
-        """Split single observation into multiple observation files, one per scan.
-
-           Args:
-
-           Returns:
-                (list): list of single-scan Obsdata objects
-        """
-
-        print("Splitting Observation File into " + str(len(self.tlist())) + " scans")
-        arglist, argdict = self.obsdata_args()
-
-        # note that the tarr of the output includes all sites,
-        # even those that don't participate in the scan
-        splitlist = []
-        for tdata in self.tlist():
-            arglist[DATPOS] = tdata
-            splitlist.append(Obsdata(*arglist, **argdict))
-
-        return splitlist
 
     def chisq(self, im_or_mov, dtype='vis', pol='I', ttype='nfft', mask=[], **kwargs):
         """Give the reduced chi^2 of the observation for the specified image and datatype.

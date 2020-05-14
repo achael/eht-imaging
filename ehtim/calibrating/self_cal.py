@@ -181,7 +181,7 @@ def self_cal(obs, im, sites=[], method="both", pol='I', minimizer_method='BFGS',
             out.cphase = obs.cphase
 
     # close multiprocessing jobs
-    if processes != -1:
+    if processes >= 0:
         pool.close()
 
     return out
@@ -295,8 +295,8 @@ def self_cal_scan(scan, im, V_scan=[], sites=[], polrep='stokes', pol='I', metho
             np.sum((verr.imag * sigma_inv[nan_mask])**2)
 
         # prior on the gains
-        chisq_g = np.sum(np.log(np.abs(g))**2 / ((np.abs(g) > 1) *
-                                                 gain_tol[0] + (np.abs(g) <= 1) * gain_tol[1])**2)
+        chisq_g = np.sum(np.log(np.abs(g))**2 / 
+                         ((np.abs(g) > 1) * gain_tol[0] + (np.abs(g) <= 1) * gain_tol[1])**2)
 
         return chisq + chisq_g
 

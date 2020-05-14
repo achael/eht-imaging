@@ -53,9 +53,9 @@ warnings.filterwarnings(
 try:
     import pkg_resources
     version = pkg_resources.get_distribution("ehtim").version
-    print("Welcome to eht-imaging! v", version)
+    print("Welcome to eht-imaging! v", version,'\n')
 except:
-    print("Welcome to eht-imaging!")
+    print("Welcome to eht-imaging!\n")
 
 
 def logo():
