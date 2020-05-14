@@ -772,7 +772,6 @@ def grad_logcamp(imvec, Amatrices):
     i2 = np.dot(Amatrices[1], imvec)
     i3 = np.dot(Amatrices[2], imvec)
     i4 = np.dot(Amatrices[3], imvec)
-    log_clamp_samples = np.log(np.abs(i1)) + np.log(np.abs(i2)) - np.log(np.abs(i3)) - np.log(np.abs(i4))
 
     pt1 = 1/i1
     pt2 = 1/i2
@@ -781,15 +780,6 @@ def grad_logcamp(imvec, Amatrices):
     out = np.real(pt1[:,None] * Amatrices[0] + pt2[:,None] * Amatrices[1] + \
                   pt3[:,None] *  Amatrices[2] + pt4[:,None] * Amatrices[3])
     return out
-
-
-
-
-
-
-
-
-
 
 
 def mergeObs(obs_List):
