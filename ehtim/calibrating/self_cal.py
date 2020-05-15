@@ -228,8 +228,13 @@ def self_cal_scan(scan, im, V_scan=[], sites=[], polrep='stokes', pol='I', metho
         A = obsh.ftmatrix(im.psize, im.xdim, im.ydim, uv, pulse=im.pulse)
         V_scan = np.dot(A, im.imvec)
 
-    if isinstance(gain_tol, float) or isinstance(gain_tol, int):
-        gain_tol = [gain_tol, gain_tol]
+    # convert gain tolerance to lookup table if needed
+    if type(gain_tol) is not dict:
+        gain_tol = {'default':gain_tol}
+    # convert any 1-sided tolerance to 2-sided tolerance parameterization
+    for (key, val) in gain_tol.items():
+        if type(val) == float or type(val) == int:
+            gain_tol[key] = [val, val]
 
     # create a dictionary to keep track of gains
     tkey = {b: a for a, b in enumerate(sites)}
@@ -282,6 +287,10 @@ def self_cal_scan(scan, im, V_scan=[], sites=[], polrep='stokes', pol='I', metho
         g1 = g[g1_keys]
         g2 = g[g2_keys]
 
+        # build site specific tolerance parameters
+        tol0 = np.array([gain_tol.get(s, gain_tol['default'])[0] for s in sites])
+        tol1 = np.array([gain_tol.get(s, gain_tol['default'])[1] for s in sites])
+
         if method == 'amp':
             verr = np.abs(vis) - g1 * g2.conj() * np.abs(V_scan)
         else:
@@ -295,8 +304,9 @@ def self_cal_scan(scan, im, V_scan=[], sites=[], polrep='stokes', pol='I', metho
             np.sum((verr.imag * sigma_inv[nan_mask])**2)
 
         # prior on the gains
-        chisq_g = np.sum(np.log(np.abs(g))**2 / 
-                         ((np.abs(g) > 1) * gain_tol[0] + (np.abs(g) <= 1) * gain_tol[1])**2)
+        # don't count the last (default missing site) gain dummy value
+        chisq_g = np.sum(np.log(np.abs(g[:-1]))**2 /
+                         ((np.abs(g[:-1]) > 1) * tol0 + (np.abs(g[:-1]) <= 1) * tol1)**2)
 
         return chisq + chisq_g
 
