@@ -3729,6 +3729,7 @@ class Obsdata(object):
             for bl in bldata:
                 t1 = bl['t1'][0]
                 t2 = bl['t2'][0]
+
                 bllist.append((t1, t2))
                 colors.append(cdict[(t1, t2)])
 

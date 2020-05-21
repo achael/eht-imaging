@@ -156,7 +156,7 @@ def load_txt(fname, ephemdir='ephemeris'):
 
        Args:
            fname (str) : path to input array file
-           ephemdir (str) : path to directroy with 2TLE ephemerides for spacecraft
+           ephemdir (str) : path to directory with 2TLE ephemerides for spacecraft
        Returns:
            Array: an Array object loaded from file
     """

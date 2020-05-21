@@ -2836,6 +2836,7 @@ class Image(object):
         im = self.copy()
         maxval = np.max(im.imvec)
         meanval = np.mean(im.imvec)
+
         im_norm = im.imvec / (maxval + .01 * meanval)
         im_norm = im_norm
         im_norm = im_norm.astype('float')  # is it a problem if it's double??

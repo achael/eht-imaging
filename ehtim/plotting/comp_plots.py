@@ -775,6 +775,7 @@ def plotall_obs_im_cphases(obs, imlist,
             if display_mode == 'individual':
                 ax = False
                 axislabels = axislabels
+
             else:
                 ax = plt.subplot2grid((nrows, ncols), (nplot/ncols, nplot % ncols), fig=fig)
                 axislabels = False

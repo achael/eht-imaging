@@ -6,15 +6,16 @@ def read(fname):
 
 if __name__ == "__main__":
     setup(name="ehtim",
+
           version = "1.2",
+
           author = "Andrew Chael",
-          author_email = "achael@cfa.harvard.edu",
-          description = ("Python code to load, simulate, and manipulate VLBI "+
-                         "datasets and a collection of imaging functions in "+
-                         "total intensity and polarization."),
+          author_email = "achael@princeton.edu",
+          description = "Imaging, analysis, and simulation software for radio interferometry",
           license = "GPLv3",
           keywords = "imaging astronomy EHT polarimetry",
           url = "https://github.com/achael/eht-imaging",
+          download_url = "https://github.com/achael/eht-imaging/archive/v1.2.1.tar.gz",
           packages = ["ehtim",
                       "scripts",
                       "ehtim.calibrating",
@@ -25,6 +26,13 @@ if __name__ == "__main__":
                       "ehtim.features",
                       "ehtim.scattering",
                       "ehtim.statistics"],
+          scripts=["scripts/calibrate.py",
+                   "scripts/cleanup.py",
+                   "scripts/cli_blur_comp.py",
+                   "scripts/gendata.py",
+                   "scripts/imaging.py",
+                   "scripts/imgsum.py",
+                   "scripts/verify_gradients.py"],
           long_description=read('README.rst'),
           install_requires=["numpy",
                             "scipy",
@@ -37,6 +45,15 @@ if __name__ == "__main__":
                           # "networkx", # optional, only needed if using image_agreements()
                           # "requests", # optional; only needed if using dynamical imaging
                           # "scikit-image", #optional; only needed for hough transforms  
-                            "future"]
+                            "future"],
+          classifiers=[
+            'Development Status :: 3 - Alpha',     
+            'Intended Audience :: Developers',    
+            'Topic :: Software Development :: Build Tools',
+            'License :: OSI Approved :: GNU General Public License v3 (GPLv3)',
+            'Programming Language :: Python :: 3.8',
+            'Programming Language :: Python :: 2.7',
+          ],
+
          )
 

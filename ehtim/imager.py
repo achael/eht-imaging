@@ -736,7 +736,7 @@ class Imager(object):
         return self._stop_list[-1]
 
     def transform_last(self):
-        """Return last image transfrom used.
+        """Return last image transform used.
         """
         if self.nruns == 0:
             print("No imager runs yet!")
