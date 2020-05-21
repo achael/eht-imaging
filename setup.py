@@ -6,7 +6,9 @@ def read(fname):
 
 if __name__ == "__main__":
     setup(name="ehtim",
+
           version = "1.2",
+
           author = "Andrew Chael",
           author_email = "achael@cfa.harvard.edu",
           description = ("Python code to load, simulate, and manipulate VLBI "+
