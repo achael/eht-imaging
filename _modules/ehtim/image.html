@@ -283,13 +283,13 @@
             <span class="k">if</span> <span class="n">pol_prim</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
                 <span class="n">pol_prim</span> <span class="o">=</span> <span class="s1">&#39;I&#39;</span>
             <span class="k">if</span> <span class="n">pol_prim</span> <span class="o">==</span> <span class="s1">&#39;I&#39;</span><span class="p">:</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">_imdict</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;I&#39;</span><span class="p">:</span> <span class="n">imvec</span><span class="p">,</span> <span class="s1">&#39;Q&#39;</span><span class="p">:</span> <span class="p">[],</span> <span class="s1">&#39;U&#39;</span><span class="p">:</span> <span class="p">[],</span> <span class="s1">&#39;V&#39;</span><span class="p">:</span> <span class="p">[]}</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_imdict</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;I&#39;</span><span class="p">:</span> <span class="n">imvec</span><span class="p">,</span> <span class="s1">&#39;Q&#39;</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([]),</span> <span class="s1">&#39;U&#39;</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([]),</span> <span class="s1">&#39;V&#39;</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([])}</span>
             <span class="k">elif</span> <span class="n">pol_prim</span> <span class="o">==</span> <span class="s1">&#39;V&#39;</span><span class="p">:</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">_imdict</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;I&#39;</span><span class="p">:</span> <span class="p">[],</span> <span class="s1">&#39;Q&#39;</span><span class="p">:</span> <span class="p">[],</span> <span class="s1">&#39;U&#39;</span><span class="p">:</span> <span class="p">[],</span> <span class="s1">&#39;V&#39;</span><span class="p">:</span> <span class="n">imvec</span><span class="p">}</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_imdict</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;I&#39;</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([]),</span> <span class="s1">&#39;Q&#39;</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([]),</span> <span class="s1">&#39;U&#39;</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([]),</span> <span class="s1">&#39;V&#39;</span><span class="p">:</span> <span class="n">imvec</span><span class="p">}</span>
             <span class="k">elif</span> <span class="n">pol_prim</span> <span class="o">==</span> <span class="s1">&#39;Q&#39;</span><span class="p">:</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">_imdict</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;I&#39;</span><span class="p">:</span> <span class="p">[],</span> <span class="s1">&#39;Q&#39;</span><span class="p">:</span> <span class="n">imvec</span><span class="p">,</span> <span class="s1">&#39;U&#39;</span><span class="p">:</span> <span class="p">[],</span> <span class="s1">&#39;V&#39;</span><span class="p">:</span> <span class="p">[]}</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_imdict</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;I&#39;</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([]),</span> <span class="s1">&#39;Q&#39;</span><span class="p">:</span> <span class="n">imvec</span><span class="p">,</span> <span class="s1">&#39;U&#39;</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([]),</span> <span class="s1">&#39;V&#39;</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([])}</span>
             <span class="k">elif</span> <span class="n">pol_prim</span> <span class="o">==</span> <span class="s1">&#39;U&#39;</span><span class="p">:</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">_imdict</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;I&#39;</span><span class="p">:</span> <span class="p">[],</span> <span class="s1">&#39;Q&#39;</span><span class="p">:</span> <span class="p">[],</span> <span class="s1">&#39;U&#39;</span><span class="p">:</span> <span class="n">imvec</span><span class="p">,</span> <span class="s1">&#39;V&#39;</span><span class="p">:</span> <span class="p">[]}</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_imdict</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;I&#39;</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([]),</span> <span class="s1">&#39;Q&#39;</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([]),</span> <span class="s1">&#39;U&#39;</span><span class="p">:</span> <span class="n">imvec</span><span class="p">,</span> <span class="s1">&#39;V&#39;</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([])}</span>
             <span class="k">else</span><span class="p">:</span>
                 <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;for polrep==&#39;stokes&#39;, pol_prim must be &#39;I&#39;,&#39;Q&#39;,&#39;U&#39;, or &#39;V&#39;!&quot;</span><span class="p">)</span>
 
@@ -298,9 +298,9 @@
                 <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;polrep is &#39;circ&#39; and no pol_prim specified! Setting pol_prim=&#39;RR&#39;&quot;</span><span class="p">)</span>
                 <span class="n">pol_prim</span> <span class="o">=</span> <span class="s1">&#39;RR&#39;</span>
             <span class="k">if</span> <span class="n">pol_prim</span> <span class="o">==</span> <span class="s1">&#39;RR&#39;</span><span class="p">:</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">_imdict</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;RR&#39;</span><span class="p">:</span> <span class="n">imvec</span><span class="p">,</span> <span class="s1">&#39;LL&#39;</span><span class="p">:</span> <span class="p">[],</span> <span class="s1">&#39;RL&#39;</span><span class="p">:</span> <span class="p">[],</span> <span class="s1">&#39;LR&#39;</span><span class="p">:</span> <span class="p">[]}</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_imdict</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;RR&#39;</span><span class="p">:</span> <span class="n">imvec</span><span class="p">,</span> <span class="s1">&#39;LL&#39;</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([]),</span> <span class="s1">&#39;RL&#39;</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([]),</span> <span class="s1">&#39;LR&#39;</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([])}</span>
             <span class="k">elif</span> <span class="n">pol_prim</span> <span class="o">==</span> <span class="s1">&#39;LL&#39;</span><span class="p">:</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">_imdict</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;RR&#39;</span><span class="p">:</span> <span class="p">[],</span> <span class="s1">&#39;LL&#39;</span><span class="p">:</span> <span class="n">imvec</span><span class="p">,</span> <span class="s1">&#39;RL&#39;</span><span class="p">:</span> <span class="p">[],</span> <span class="s1">&#39;LR&#39;</span><span class="p">:</span> <span class="p">[]}</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_imdict</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;RR&#39;</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([]),</span> <span class="s1">&#39;LL&#39;</span><span class="p">:</span> <span class="n">imvec</span><span class="p">,</span> <span class="s1">&#39;RL&#39;</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([]),</span> <span class="s1">&#39;LR&#39;</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([])}</span>
             <span class="k">else</span><span class="p">:</span>
                 <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;for polrep==&#39;circ&#39;, pol_prim must be &#39;RR&#39; or &#39;LL&#39;!&quot;</span><span class="p">)</span>
         <span class="k">else</span><span class="p">:</span>
@@ -309,8 +309,8 @@
         <span class="c1"># multifrequency spectral index, curvature arrays</span>
         <span class="c1"># TODO -- higher orders?</span>
         <span class="c1"># TODO -- don&#39;t initialize to zero?</span>
-        <span class="n">avec</span> <span class="o">=</span> <span class="p">[]</span>  <span class="c1"># np.zeros(imvec.shape)</span>
-        <span class="n">bvec</span> <span class="o">=</span> <span class="p">[]</span>  <span class="c1"># np.zeros(imvec.shape)</span>
+        <span class="n">avec</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([])</span>  <span class="c1"># np.zeros(imvec.shape)</span>
+        <span class="n">bvec</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([])</span>  <span class="c1"># np.zeros(imvec.shape)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_mflist</span> <span class="o">=</span> <span class="p">[</span><span class="n">avec</span><span class="p">,</span> <span class="n">bvec</span><span class="p">]</span>
 
         <span class="c1"># Save the image dimension data</span>
@@ -348,7 +348,6 @@
         <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">vec</span><span class="p">)</span> <span class="o">!=</span> <span class="bp">self</span><span class="o">.</span><span class="n">xdim</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">ydim</span><span class="p">:</span>
             <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;imvec size is not consistent with xdim*ydim!&quot;</span><span class="p">)</span>
 
-        <span class="c1"># TODO -- more checks on the consistency of the imvec with the existing pol data???</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_imdict</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">pol_prim</span><span class="p">]</span> <span class="o">=</span> <span class="n">vec</span>
 
     <span class="nd">@property</span>
@@ -375,123 +374,179 @@
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">ivec</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">polrep</span> <span class="o">!=</span> <span class="s1">&#39;stokes&#39;</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;ivec is not defined unless self.polrep==&#39;stokes&#39;&quot;</span><span class="p">)</span>
+<span class="c1">#        if self.polrep != &#39;stokes&#39;:</span>
+<span class="c1">#            raise Exception(&quot;ivec is not defined unless self.polrep==&#39;stokes&#39;&quot;)</span>
 
-        <span class="n">ivec</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_imdict</span><span class="p">[</span><span class="s1">&#39;I&#39;</span><span class="p">]</span>
+        <span class="n">ivec</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([])</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">polrep</span> <span class="o">==</span> <span class="s1">&#39;stokes&#39;</span><span class="p">:</span>
+            <span class="n">ivec</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_imdict</span><span class="p">[</span><span class="s1">&#39;I&#39;</span><span class="p">]</span>
+        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">polrep</span> <span class="o">==</span> <span class="s1">&#39;circ&#39;</span><span class="p">:</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">rrvec</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">0</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">llvec</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="n">ivec</span> <span class="o">=</span> <span class="mf">0.5</span> <span class="o">*</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">rrvec</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">llvec</span><span class="p">)</span>
+
         <span class="k">return</span> <span class="n">ivec</span>
 
     <span class="nd">@ivec</span><span class="o">.</span><span class="n">setter</span>
     <span class="k">def</span> <span class="nf">ivec</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">vec</span><span class="p">):</span>
         <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">vec</span><span class="p">)</span> <span class="o">!=</span> <span class="bp">self</span><span class="o">.</span><span class="n">xdim</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">ydim</span><span class="p">:</span>
             <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;vec size is not consistent with xdim*ydim!&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">polrep</span> <span class="o">!=</span> <span class="s1">&#39;stokes&#39;</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;ivec cannot be set unless self.polrep==&#39;stokes&#39;&quot;</span><span class="p">)</span>
 
-        <span class="c1"># TODO -- more checks on the consistency of the imvec with the existing pol data???</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_imdict</span><span class="p">[</span><span class="s1">&#39;I&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">vec</span>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">qvec</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">polrep</span> <span class="o">!=</span> <span class="s1">&#39;stokes&#39;</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;qvec is not defined unless self.polrep==&#39;stokes&#39;&quot;</span><span class="p">)</span>
+<span class="c1">#        if self.polrep != &#39;stokes&#39;:</span>
+<span class="c1">#            raise Exception(&quot;qvec is not defined unless self.polrep==&#39;stokes&#39;&quot;)</span>
 
-        <span class="n">qvec</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_imdict</span><span class="p">[</span><span class="s1">&#39;Q&#39;</span><span class="p">]</span>
+        <span class="n">qvec</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([])</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">polrep</span> <span class="o">==</span> <span class="s1">&#39;stokes&#39;</span><span class="p">:</span>
+            <span class="n">qvec</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_imdict</span><span class="p">[</span><span class="s1">&#39;Q&#39;</span><span class="p">]</span>
+        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">polrep</span> <span class="o">==</span> <span class="s1">&#39;circ&#39;</span><span class="p">:</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">rlvec</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">0</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">lrvec</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="n">qvec</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">real</span><span class="p">(</span><span class="mf">0.5</span> <span class="o">*</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">lrvec</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">rlvec</span><span class="p">))</span>
+
         <span class="k">return</span> <span class="n">qvec</span>
 
     <span class="nd">@qvec</span><span class="o">.</span><span class="n">setter</span>
     <span class="k">def</span> <span class="nf">qvec</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">vec</span><span class="p">):</span>
         <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">vec</span><span class="p">)</span> <span class="o">!=</span> <span class="bp">self</span><span class="o">.</span><span class="n">xdim</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">ydim</span><span class="p">:</span>
             <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;vec size is not consistent with xdim*ydim!&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">polrep</span> <span class="o">!=</span> <span class="s1">&#39;stokes&#39;</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;ivec cannot be set unless self.polrep==&#39;stokes&#39;&quot;</span><span class="p">)</span>
 
-        <span class="c1"># TODO -- more checks on the consistency of the imvec with the existing pol data???</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_imdict</span><span class="p">[</span><span class="s1">&#39;Q&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">vec</span>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">uvec</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">polrep</span> <span class="o">!=</span> <span class="s1">&#39;stokes&#39;</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;uvec is not defined unless self.polrep==&#39;stokes&#39;&quot;</span><span class="p">)</span>
+<span class="c1">#        if self.polrep != &#39;stokes&#39;:</span>
+<span class="c1">#            raise Exception(&quot;qvec is not defined unless self.polrep==&#39;stokes&#39;&quot;)</span>
 
-        <span class="n">uvec</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_imdict</span><span class="p">[</span><span class="s1">&#39;U&#39;</span><span class="p">]</span>
+        <span class="n">uvec</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([])</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">polrep</span> <span class="o">==</span> <span class="s1">&#39;stokes&#39;</span><span class="p">:</span>
+            <span class="n">uvec</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_imdict</span><span class="p">[</span><span class="s1">&#39;U&#39;</span><span class="p">]</span>
+        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">polrep</span> <span class="o">==</span> <span class="s1">&#39;circ&#39;</span><span class="p">:</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">rlvec</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">0</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">lrvec</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="n">uvec</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">real</span><span class="p">(</span><span class="mf">0.5</span><span class="n">j</span> <span class="o">*</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">lrvec</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">rlvec</span><span class="p">))</span>
+
         <span class="k">return</span> <span class="n">uvec</span>
 
     <span class="nd">@uvec</span><span class="o">.</span><span class="n">setter</span>
     <span class="k">def</span> <span class="nf">uvec</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">vec</span><span class="p">):</span>
         <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">vec</span><span class="p">)</span> <span class="o">!=</span> <span class="bp">self</span><span class="o">.</span><span class="n">xdim</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">ydim</span><span class="p">:</span>
             <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;vec size is not consistent with xdim*ydim!&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">polrep</span> <span class="o">!=</span> <span class="s1">&#39;stokes&#39;</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;uvec cannot be set unless self.polrep==&#39;stokes&#39;&quot;</span><span class="p">)</span>
 
-        <span class="c1"># TODO -- more checks on the consistency of the imvec with the existing pol data???</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_imdict</span><span class="p">[</span><span class="s1">&#39;U&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">vec</span>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">vvec</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">polrep</span> <span class="o">!=</span> <span class="s1">&#39;stokes&#39;</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;vvec is not defined unless self.polrep==&#39;stokes&#39;&quot;</span><span class="p">)</span>
+<span class="c1">#        if self.polrep != &#39;stokes&#39;:</span>
+<span class="c1">#            raise Exception(&quot;vvec is not defined unless self.polrep==&#39;stokes&#39;&quot;)</span>
 
-        <span class="n">vvec</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_imdict</span><span class="p">[</span><span class="s1">&#39;V&#39;</span><span class="p">]</span>
+        <span class="n">vvec</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([])</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">polrep</span> <span class="o">==</span> <span class="s1">&#39;stokes&#39;</span><span class="p">:</span>
+            <span class="n">vvec</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_imdict</span><span class="p">[</span><span class="s1">&#39;V&#39;</span><span class="p">]</span>
+        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">polrep</span> <span class="o">==</span> <span class="s1">&#39;circ&#39;</span><span class="p">:</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">rrvec</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">0</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">llvec</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="n">vvec</span> <span class="o">=</span> <span class="mf">0.5</span> <span class="o">*</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">rrvec</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">llvec</span><span class="p">)</span>
+
         <span class="k">return</span> <span class="n">vvec</span>
 
     <span class="nd">@vvec</span><span class="o">.</span><span class="n">setter</span>
     <span class="k">def</span> <span class="nf">vvec</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">vec</span><span class="p">):</span>
         <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">vec</span><span class="p">)</span> <span class="o">!=</span> <span class="bp">self</span><span class="o">.</span><span class="n">xdim</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">ydim</span><span class="p">:</span>
             <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;vec size is not consistent with xdim*ydim!&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">polrep</span> <span class="o">!=</span> <span class="s1">&#39;stokes&#39;</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;vvec cannot be set unless self.polrep==&#39;stokes&#39;&quot;</span><span class="p">)</span>
 
-        <span class="c1"># TODO -- more checks on the consistency of the imvec with the existing pol data???</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_imdict</span><span class="p">[</span><span class="s1">&#39;V&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">vec</span>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">rrvec</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">polrep</span> <span class="o">!=</span> <span class="s1">&#39;circ&#39;</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;rrvec is not defined unless self.polrep==&#39;circ&#39;&quot;</span><span class="p">)</span>
+<span class="c1">#        if self.polrep != &#39;circ&#39;:</span>
+<span class="c1">#            raise Exception(&quot;rrvec is not defined unless self.polrep==&#39;circ&#39;&quot;)</span>
 
-        <span class="n">rrvec</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_imdict</span><span class="p">[</span><span class="s1">&#39;RR&#39;</span><span class="p">]</span>
+        <span class="n">rrvec</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([])</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">polrep</span> <span class="o">==</span> <span class="s1">&#39;circ&#39;</span><span class="p">:</span>
+            <span class="n">rrvec</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_imdict</span><span class="p">[</span><span class="s1">&#39;RR&#39;</span><span class="p">]</span>
+        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">polrep</span> <span class="o">==</span> <span class="s1">&#39;stokes&#39;</span><span class="p">:</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ivec</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">0</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">vvec</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="n">rrvec</span> <span class="o">=</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ivec</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">vvec</span><span class="p">)</span>
+
         <span class="k">return</span> <span class="n">rrvec</span>
 
     <span class="nd">@rrvec</span><span class="o">.</span><span class="n">setter</span>
     <span class="k">def</span> <span class="nf">rrvec</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">vec</span><span class="p">):</span>
         <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">vec</span><span class="p">)</span> <span class="o">!=</span> <span class="bp">self</span><span class="o">.</span><span class="n">xdim</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">ydim</span><span class="p">:</span>
             <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;vec size is not consistent with xdim*ydim!&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">polrep</span> <span class="o">!=</span> <span class="s1">&#39;circ&#39;</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;rrvec cannot be set unless self.polrep==&#39;circ&#39;&quot;</span><span class="p">)</span>
 
-        <span class="c1"># TODO -- more checks on the consistency of the imvec with the existing pol data???</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_imdict</span><span class="p">[</span><span class="s1">&#39;RR&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">vec</span>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">llvec</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">polrep</span> <span class="o">!=</span> <span class="s1">&#39;circ&#39;</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;rrvec is not defined unless self.polrep==&#39;circ&#39;&quot;</span><span class="p">)</span>
+<span class="c1">#        if self.polrep != &#39;circ&#39;:</span>
+<span class="c1">#            raise Exception(&quot;llvec is not defined unless self.polrep==&#39;circ&#39;&quot;)</span>
 
-        <span class="n">llvec</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_imdict</span><span class="p">[</span><span class="s1">&#39;LL&#39;</span><span class="p">]</span>
+        <span class="n">llvec</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([])</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">polrep</span> <span class="o">==</span> <span class="s1">&#39;circ&#39;</span><span class="p">:</span>
+            <span class="n">llvec</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_imdict</span><span class="p">[</span><span class="s1">&#39;LL&#39;</span><span class="p">]</span>
+        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">polrep</span> <span class="o">==</span> <span class="s1">&#39;stokes&#39;</span><span class="p">:</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ivec</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">0</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">vvec</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="n">llvec</span> <span class="o">=</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ivec</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">vvec</span><span class="p">)</span>
+
         <span class="k">return</span> <span class="n">llvec</span>
 
     <span class="nd">@llvec</span><span class="o">.</span><span class="n">setter</span>
     <span class="k">def</span> <span class="nf">llvec</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">vec</span><span class="p">):</span>
         <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">vec</span><span class="p">)</span> <span class="o">!=</span> <span class="bp">self</span><span class="o">.</span><span class="n">xdim</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">ydim</span><span class="p">:</span>
             <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;vec size is not consistent with xdim*ydim!&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">polrep</span> <span class="o">!=</span> <span class="s1">&#39;circ&#39;</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;llvec cannot be set unless self.polrep==&#39;circ&#39;&quot;</span><span class="p">)</span>
 
-        <span class="c1"># TODO -- more checks on the consistency of the imvec with the existing pol data???</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_imdict</span><span class="p">[</span><span class="s1">&#39;LL&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">vec</span>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">rlvec</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">polrep</span> <span class="o">!=</span> <span class="s1">&#39;circ&#39;</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;rlvec is not defined unless self.polrep==&#39;circ&#39;&quot;</span><span class="p">)</span>
+<span class="c1">#        if self.polrep != &#39;circ&#39;:</span>
+<span class="c1">#            raise Exception(&quot;rlvec is not defined unless self.polrep==&#39;circ&#39;&quot;)</span>
 
-        <span class="n">rlvec</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_imdict</span><span class="p">[</span><span class="s1">&#39;RL&#39;</span><span class="p">]</span>
+        <span class="n">rlvec</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([])</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">polrep</span> <span class="o">==</span> <span class="s1">&#39;circ&#39;</span><span class="p">:</span>
+            <span class="n">rlvec</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_imdict</span><span class="p">[</span><span class="s1">&#39;RL&#39;</span><span class="p">]</span>
+        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">polrep</span> <span class="o">==</span> <span class="s1">&#39;stokes&#39;</span><span class="p">:</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">qvec</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">0</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">uvec</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="n">rlvec</span> <span class="o">=</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">qvec</span> <span class="o">+</span> <span class="mi">1</span><span class="n">j</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">uvec</span><span class="p">)</span>
+
         <span class="k">return</span> <span class="n">rlvec</span>
 
     <span class="nd">@rlvec</span><span class="o">.</span><span class="n">setter</span>
     <span class="k">def</span> <span class="nf">rlvec</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">vec</span><span class="p">):</span>
         <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">vec</span><span class="p">)</span> <span class="o">!=</span> <span class="bp">self</span><span class="o">.</span><span class="n">xdim</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">ydim</span><span class="p">:</span>
             <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;vec size is not consistent with xdim*ydim!&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">polrep</span> <span class="o">!=</span> <span class="s1">&#39;circ&#39;</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;rlvec cannot be set unless self.polrep==&#39;circ&#39;&quot;</span><span class="p">)</span>
 
-        <span class="c1"># TODO -- more checks on the consistency of the imvec with the existing pol data???</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_imdict</span><span class="p">[</span><span class="s1">&#39;RL&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">vec</span>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">lrvec</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Return the imvec of LR&quot;&quot;&quot;</span>
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">polrep</span> <span class="o">!=</span> <span class="s1">&#39;circ&#39;</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;lrvec is not defined unless self.polrep==&#39;circ&#39;&quot;</span><span class="p">)</span>
+<span class="c1">#        if self.polrep != &#39;circ&#39;:</span>
+<span class="c1">#            raise Exception(&quot;lrvec is not defined unless self.polrep==&#39;circ&#39;&quot;)</span>
 
-        <span class="n">lrvec</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_imdict</span><span class="p">[</span><span class="s1">&#39;LR&#39;</span><span class="p">]</span>
+        <span class="n">lrvec</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([])</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">polrep</span> <span class="o">==</span> <span class="s1">&#39;circ&#39;</span><span class="p">:</span>
+            <span class="n">lrvec</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_imdict</span><span class="p">[</span><span class="s1">&#39;LR&#39;</span><span class="p">]</span>
+        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">polrep</span> <span class="o">==</span> <span class="s1">&#39;stokes&#39;</span><span class="p">:</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">qvec</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">0</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">uvec</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="n">lrvec</span> <span class="o">=</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">qvec</span> <span class="o">-</span> <span class="mi">1</span><span class="n">j</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">uvec</span><span class="p">)</span>
+
+
         <span class="k">return</span> <span class="n">lrvec</span>
 
     <span class="nd">@lrvec</span><span class="o">.</span><span class="n">setter</span>
@@ -500,9 +555,20 @@
 
         <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">vec</span><span class="p">)</span> <span class="o">!=</span> <span class="bp">self</span><span class="o">.</span><span class="n">xdim</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">ydim</span><span class="p">:</span>
             <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;vec size is not consistent with xdim*ydim!&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">polrep</span> <span class="o">!=</span> <span class="s1">&#39;circ&#39;</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;lrvec cannot be set unless self.polrep==&#39;circ&#39;&quot;</span><span class="p">)</span>
 
-        <span class="c1"># TODO -- more checks on the consistency of the imvec with the existing pol data???</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_imdict</span><span class="p">[</span><span class="s1">&#39;LR&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">vec</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">pvec</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Return the polarization magnitude for each pixel&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">polrep</span> <span class="o">==</span> <span class="s1">&#39;circ&#39;</span><span class="p">:</span>
+            <span class="n">pvec</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">rlvec</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">polrep</span> <span class="o">==</span> <span class="s1">&#39;stokes&#39;</span><span class="p">:</span>
+            <span class="n">pvec</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">qvec</span> <span class="o">+</span> <span class="mi">1</span><span class="n">j</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">uvec</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">pvec</span>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">mvec</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
@@ -593,8 +659,46 @@
         <span class="n">barr</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">fft</span><span class="o">.</span><span class="n">ifft2</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">fft</span><span class="o">.</span><span class="n">ifftshift</span><span class="p">(</span><span class="n">barr_fft</span><span class="p">))</span>
         <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">real</span><span class="p">(</span><span class="n">barr</span><span class="o">.</span><span class="n">flatten</span><span class="p">())</span>
 
+<div class="viewcode-block" id="Image.get_polvec"><a class="viewcode-back" href="../../image.html#ehtim.image.Image.get_polvec">[docs]</a>    <span class="k">def</span> <span class="nf">get_polvec</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pol</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Get the imvec corresponding to the chosen polarization</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">polrep</span> <span class="o">==</span> <span class="s1">&#39;stokes&#39;</span> <span class="ow">and</span> <span class="n">pol</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">pol</span> <span class="o">=</span> <span class="s1">&#39;I&#39;</span>
+        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">polrep</span> <span class="o">==</span> <span class="s1">&#39;circ&#39;</span> <span class="ow">and</span> <span class="n">pol</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">pol</span> <span class="o">=</span> <span class="s1">&#39;RR&#39;</span>
+
+        <span class="k">if</span> <span class="n">pol</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="o">==</span> <span class="s1">&#39;i&#39;</span><span class="p">:</span>
+            <span class="n">outvec</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">ivec</span>
+        <span class="k">elif</span> <span class="n">pol</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="o">==</span> <span class="s1">&#39;q&#39;</span><span class="p">:</span>
+            <span class="n">outvec</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">qvec</span>
+        <span class="k">elif</span> <span class="n">pol</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="o">==</span> <span class="s1">&#39;u&#39;</span><span class="p">:</span>
+            <span class="n">outvec</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">uvec</span>
+        <span class="k">elif</span> <span class="n">pol</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="o">==</span> <span class="s1">&#39;v&#39;</span><span class="p">:</span>
+            <span class="n">outvec</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">vvec</span>
+        <span class="k">elif</span> <span class="n">pol</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="o">==</span> <span class="s1">&#39;rr&#39;</span><span class="p">:</span>
+            <span class="n">outvec</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">rrvec</span>
+        <span class="k">elif</span> <span class="n">pol</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="o">==</span> <span class="s1">&#39;ll&#39;</span><span class="p">:</span>
+            <span class="n">outvec</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">llvec</span>
+        <span class="k">elif</span> <span class="n">pol</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="o">==</span> <span class="s1">&#39;lr&#39;</span><span class="p">:</span>
+            <span class="n">outvec</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">lrvec</span>
+        <span class="k">elif</span> <span class="n">pol</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="o">==</span> <span class="s1">&#39;rl&#39;</span><span class="p">:</span>
+            <span class="n">outvec</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">rlvec</span>
+        <span class="k">elif</span> <span class="n">pol</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="o">==</span> <span class="s1">&#39;p&#39;</span><span class="p">:</span>
+            <span class="n">outvec</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">pvec</span>
+        <span class="k">elif</span> <span class="n">pol</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="o">==</span> <span class="s1">&#39;m&#39;</span><span class="p">:</span>
+            <span class="n">outvec</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">mvec</span>
+        <span class="k">elif</span> <span class="n">pol</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="o">==</span> <span class="s1">&#39;chi&#39;</span> <span class="ow">or</span> <span class="n">pol</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="o">==</span><span class="s1">&#39;evpa&#39;</span><span class="p">:</span>
+            <span class="n">outvec</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">chivec</span>
+        <span class="k">elif</span> <span class="n">pol</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="o">==</span> <span class="s1">&#39;e&#39;</span><span class="p">:</span>
+            <span class="n">outvec</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">evec</span>
+        <span class="k">elif</span> <span class="n">pol</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="o">==</span> <span class="s1">&#39;b&#39;</span><span class="p">:</span>
+            <span class="n">outvec</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">bvec</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;Requested polvec type not recognized!&quot;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">outvec</span></div>
+
 <div class="viewcode-block" id="Image.image_args"><a class="viewcode-back" href="../../image.html#ehtim.image.Image.image_args">[docs]</a>    <span class="k">def</span> <span class="nf">image_args</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;&quot;Copy arguments for making a  new Image into a list and dictonary</span>
+        <span class="sd">&quot;&quot;&quot;Copy arguments for making a  new Image into a list and dictonary</span>
 <span class="sd">        &quot;&quot;&quot;</span>
 
         <span class="n">arglist</span> <span class="o">=</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">imarr</span><span class="p">(),</span> <span class="bp">self</span><span class="o">.</span><span class="n">psize</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">ra</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">dec</span><span class="p">]</span>
@@ -741,15 +845,15 @@
                 <span class="n">imdict</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;I&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">ivec</span><span class="p">,</span> <span class="s1">&#39;Q&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">qvec</span><span class="p">,</span> <span class="s1">&#39;U&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">uvec</span><span class="p">,</span> <span class="s1">&#39;V&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">vvec</span><span class="p">}</span>
             <span class="k">else</span><span class="p">:</span>
                 <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">rrvec</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span> <span class="ow">or</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">llvec</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
-                    <span class="n">ivec</span> <span class="o">=</span> <span class="p">[]</span>
-                    <span class="n">vvec</span> <span class="o">=</span> <span class="p">[]</span>
+                    <span class="n">ivec</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([])</span>
+                    <span class="n">vvec</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([])</span>
                 <span class="k">else</span><span class="p">:</span>
                     <span class="n">ivec</span> <span class="o">=</span> <span class="mf">0.5</span> <span class="o">*</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">rrvec</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">llvec</span><span class="p">)</span>
                     <span class="n">vvec</span> <span class="o">=</span> <span class="mf">0.5</span> <span class="o">*</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">rrvec</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">llvec</span><span class="p">)</span>
 
                 <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">rlvec</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span> <span class="ow">or</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">lrvec</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
-                    <span class="n">qvec</span> <span class="o">=</span> <span class="p">[]</span>
-                    <span class="n">uvec</span> <span class="o">=</span> <span class="p">[]</span>
+                    <span class="n">qvec</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([])</span>
+                    <span class="n">uvec</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([])</span>
                 <span class="k">else</span><span class="p">:</span>
                     <span class="n">qvec</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">real</span><span class="p">(</span><span class="mf">0.5</span> <span class="o">*</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">lrvec</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">rlvec</span><span class="p">))</span>
                     <span class="n">uvec</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">real</span><span class="p">(</span><span class="mf">0.5</span><span class="n">j</span> <span class="o">*</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">lrvec</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">rlvec</span><span class="p">))</span>
@@ -761,15 +865,15 @@
                 <span class="n">imdict</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;RR&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">rrvec</span><span class="p">,</span> <span class="s1">&#39;LL&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">llvec</span><span class="p">,</span> <span class="s1">&#39;RL&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">rlvec</span><span class="p">,</span> <span class="s1">&#39;LR&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">lrvec</span><span class="p">}</span>
             <span class="k">else</span><span class="p">:</span>
                 <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ivec</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span> <span class="ow">or</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">vvec</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
-                    <span class="n">rrvec</span> <span class="o">=</span> <span class="p">[]</span>
-                    <span class="n">llvec</span> <span class="o">=</span> <span class="p">[]</span>
+                    <span class="n">rrvec</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([])</span>
+                    <span class="n">llvec</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([])</span>
                 <span class="k">else</span><span class="p">:</span>
                     <span class="n">rrvec</span> <span class="o">=</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ivec</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">vvec</span><span class="p">)</span>
                     <span class="n">llvec</span> <span class="o">=</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ivec</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">vvec</span><span class="p">)</span>
 
                 <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">qvec</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span> <span class="ow">or</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">uvec</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
-                    <span class="n">rlvec</span> <span class="o">=</span> <span class="p">[]</span>
-                    <span class="n">lrvec</span> <span class="o">=</span> <span class="p">[]</span>
+                    <span class="n">rlvec</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([])</span>
+                    <span class="n">lrvec</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([])</span>
                 <span class="k">else</span><span class="p">:</span>
                     <span class="n">rlvec</span> <span class="o">=</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">qvec</span> <span class="o">+</span> <span class="mi">1</span><span class="n">j</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">uvec</span><span class="p">)</span>
                     <span class="n">lrvec</span> <span class="o">=</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">qvec</span> <span class="o">-</span> <span class="mi">1</span><span class="n">j</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">uvec</span><span class="p">)</span>
@@ -787,10 +891,6 @@
         <span class="n">argdict</span><span class="p">[</span><span class="s1">&#39;polrep&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">polrep_out</span>
         <span class="n">argdict</span><span class="p">[</span><span class="s1">&#39;pol_prim&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">pol_prim_out</span>
         <span class="n">newim</span> <span class="o">=</span> <span class="n">Image</span><span class="p">(</span><span class="o">*</span><span class="n">arglist</span><span class="p">,</span> <span class="o">**</span><span class="n">argdict</span><span class="p">)</span>
-
-        <span class="c1"># newim = Image(imvec.reshape(self.ydim,self.xdim), self.psize, self.ra, self.dec, self.pa,</span>
-        <span class="c1">#              polrep=polrep_out, pol_prim=pol_prim_out, time=self.time,</span>
-        <span class="c1">#              rf=self.rf, source=self.source, mjd=self.mjd, pulse=self.pulse)</span>
 
         <span class="c1"># Add in any other polarizations</span>
         <span class="k">for</span> <span class="n">pol</span> <span class="ow">in</span> <span class="nb">list</span><span class="p">(</span><span class="n">imdict</span><span class="o">.</span><span class="n">keys</span><span class="p">()):</span>
@@ -879,7 +979,7 @@
         <span class="sd">&quot;&quot;&quot;Return the 2D image array of a given pol parameter.</span>
 
 <span class="sd">           Args:</span>
-<span class="sd">               pol (str): I,Q,U or V for Stokes, or RR,LL,LR,RL for Circular</span>
+<span class="sd">               pol (str): I,Q,U or V for Stokes, or RR,LL,LR,RL for Circ</span>
 
 <span class="sd">           Returns:</span>
 <span class="sd">               (numpy.array): 2D image array of dimension (ydim, xdim)</span>
@@ -888,25 +988,32 @@
         <span class="k">if</span> <span class="n">pol</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
             <span class="n">pol</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">pol_prim</span>
 
-        <span class="n">imarr</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([])</span>
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">polrep</span> <span class="o">==</span> <span class="s1">&#39;stokes&#39;</span><span class="p">:</span>
-            <span class="k">if</span> <span class="n">pol</span> <span class="o">==</span> <span class="s2">&quot;I&quot;</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ivec</span><span class="p">):</span>
-                <span class="n">imarr</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">ivec</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ydim</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">xdim</span><span class="p">)</span>
-            <span class="k">elif</span> <span class="n">pol</span> <span class="o">==</span> <span class="s2">&quot;Q&quot;</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">qvec</span><span class="p">):</span>
-                <span class="n">imarr</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">qvec</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ydim</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">xdim</span><span class="p">)</span>
-            <span class="k">elif</span> <span class="n">pol</span> <span class="o">==</span> <span class="s2">&quot;U&quot;</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">uvec</span><span class="p">):</span>
-                <span class="n">imarr</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">uvec</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ydim</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">xdim</span><span class="p">)</span>
-            <span class="k">elif</span> <span class="n">pol</span> <span class="o">==</span> <span class="s2">&quot;V&quot;</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">vvec</span><span class="p">):</span>
-                <span class="n">imarr</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">vvec</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ydim</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">xdim</span><span class="p">)</span>
-        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">polrep</span> <span class="o">==</span> <span class="s1">&#39;circ&#39;</span><span class="p">:</span>
-            <span class="k">if</span> <span class="n">pol</span> <span class="o">==</span> <span class="s2">&quot;RR&quot;</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">rrvec</span><span class="p">):</span>
-                <span class="n">imarr</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">rrvec</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ydim</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">xdim</span><span class="p">)</span>
-            <span class="k">elif</span> <span class="n">pol</span> <span class="o">==</span> <span class="s2">&quot;LL&quot;</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">llvec</span><span class="p">):</span>
-                <span class="n">imarr</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">llvec</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ydim</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">xdim</span><span class="p">)</span>
-            <span class="k">elif</span> <span class="n">pol</span> <span class="o">==</span> <span class="s2">&quot;RL&quot;</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">rlvec</span><span class="p">):</span>
-                <span class="n">imarr</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">rlvec</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ydim</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">xdim</span><span class="p">)</span>
-            <span class="k">elif</span> <span class="n">pol</span> <span class="o">==</span> <span class="s2">&quot;LR&quot;</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">lrvec</span><span class="p">):</span>
-                <span class="n">imarr</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">lrvec</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ydim</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">xdim</span><span class="p">)</span>
+        <span class="n">imvec</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_polvec</span><span class="p">(</span><span class="n">pol</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">imvec</span><span class="p">):</span>
+            <span class="n">imarr</span> <span class="o">=</span> <span class="n">imvec</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ydim</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">xdim</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">imarr</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([])</span>
+        <span class="k">return</span>  <span class="n">imarr</span>
+
+<span class="c1">#        imarr = np.array([])</span>
+<span class="c1">#        if self.polrep == &#39;stokes&#39;:</span>
+<span class="c1">#            if pol == &quot;I&quot; and len(self.ivec):</span>
+<span class="c1">#                imarr = self.ivec.reshape(self.ydim, self.xdim)</span>
+<span class="c1">#            elif pol == &quot;Q&quot; and len(self.qvec):</span>
+<span class="c1">#                imarr = self.qvec.reshape(self.ydim, self.xdim)</span>
+<span class="c1">#            elif pol == &quot;U&quot; and len(self.uvec):</span>
+<span class="c1">#                imarr = self.uvec.reshape(self.ydim, self.xdim)</span>
+<span class="c1">#            elif pol == &quot;V&quot; and len(self.vvec):</span>
+<span class="c1">#                imarr = self.vvec.reshape(self.ydim, self.xdim)</span>
+<span class="c1">#        elif self.polrep == &#39;circ&#39;:</span>
+<span class="c1">#            if pol == &quot;RR&quot; and len(self.rrvec):</span>
+<span class="c1">#                imarr = self.rrvec.reshape(self.ydim, self.xdim)</span>
+<span class="c1">#            elif pol == &quot;LL&quot; and len(self.llvec):</span>
+<span class="c1">#                imarr = self.llvec.reshape(self.ydim, self.xdim)</span>
+<span class="c1">#            elif pol == &quot;RL&quot; and len(self.rlvec):</span>
+<span class="c1">#                imarr = self.rlvec.reshape(self.ydim, self.xdim)</span>
+<span class="c1">#            elif pol == &quot;LR&quot; and len(self.lrvec):</span>
+<span class="c1">#                imarr = self.lrvec.reshape(self.ydim, self.xdim)</span>
 
         <span class="k">return</span> <span class="n">imarr</span></div>
 
@@ -1029,12 +1136,14 @@
 
         <span class="k">if</span> <span class="n">pol</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
             <span class="n">pol</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">pol_prim</span>
-        <span class="k">if</span> <span class="ow">not</span> <span class="p">(</span><span class="n">pol</span> <span class="ow">in</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_imdict</span><span class="o">.</span><span class="n">keys</span><span class="p">())):</span>
-            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;for polrep==</span><span class="si">%s</span><span class="s2">, pol must be in &quot;</span> <span class="o">%</span>
-                            <span class="bp">self</span><span class="o">.</span><span class="n">polrep</span> <span class="o">+</span> <span class="s2">&quot;,&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_imdict</span><span class="o">.</span><span class="n">keys</span><span class="p">())))</span>
-
+        <span class="n">imvec</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_polvec</span><span class="p">(</span><span class="n">pol</span><span class="p">)</span>
         <span class="n">pdim</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">psize</span>
-        <span class="n">imvec</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_imdict</span><span class="p">[</span><span class="n">pol</span><span class="p">]</span>
+
+<span class="c1">#        if not (pol in list(self._imdict.keys())):</span>
+<span class="c1">#            raise Exception(&quot;for polrep==%s, pol must be in &quot; %</span>
+<span class="c1">#                            self.polrep + &quot;,&quot;.join(list(self._imdict.keys())))</span>
+<span class="c1">#        imvec = self._imdict[pol]</span>
+
         <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">imvec</span><span class="p">):</span>
             <span class="n">xlist</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="o">-</span><span class="bp">self</span><span class="o">.</span><span class="n">xdim</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span> <span class="o">*</span> <span class="n">pdim</span> <span class="o">+</span> <span class="p">(</span><span class="n">pdim</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">xdim</span><span class="p">)</span> <span class="o">/</span> <span class="mf">2.0</span> <span class="o">-</span> <span class="n">pdim</span> <span class="o">/</span> <span class="mf">2.0</span>
             <span class="n">ylist</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="o">-</span><span class="bp">self</span><span class="o">.</span><span class="n">ydim</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span> <span class="o">*</span> <span class="n">pdim</span> <span class="o">+</span> <span class="p">(</span><span class="n">pdim</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">ydim</span><span class="p">)</span> <span class="o">/</span> <span class="mf">2.0</span> <span class="o">-</span> <span class="n">pdim</span> <span class="o">/</span> <span class="mf">2.0</span>
@@ -1089,7 +1198,7 @@
                 <span class="n">mfarr</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">pad</span><span class="p">(</span><span class="n">mfarr</span><span class="p">,</span> <span class="p">((</span><span class="n">pady</span><span class="p">,</span> <span class="n">pady</span><span class="p">),</span> <span class="p">(</span><span class="n">padx</span><span class="p">,</span> <span class="n">padx</span><span class="p">)),</span> <span class="s1">&#39;constant&#39;</span><span class="p">)</span>
                 <span class="n">mfvec_out</span> <span class="o">=</span> <span class="n">mfarr</span><span class="o">.</span><span class="n">flatten</span><span class="p">()</span>
             <span class="k">else</span><span class="p">:</span>
-                <span class="n">mfvec_out</span> <span class="o">=</span> <span class="p">[]</span>
+                <span class="n">mfvec_out</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([])</span>
             <span class="n">mflist_out</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">mfvec_out</span><span class="p">)</span>
         <span class="n">outim</span><span class="o">.</span><span class="n">_mflist</span> <span class="o">=</span> <span class="n">mflist_out</span>
 
@@ -1169,7 +1278,7 @@
                 <span class="n">mfarr</span> <span class="o">=</span> <span class="n">im_new</span><span class="p">(</span><span class="n">mfvec</span><span class="p">)</span>
                 <span class="n">mfvec_out</span> <span class="o">=</span> <span class="n">mfarr</span><span class="o">.</span><span class="n">flatten</span><span class="p">()</span>
             <span class="k">else</span><span class="p">:</span>
-                <span class="n">mfvec_out</span> <span class="o">=</span> <span class="p">[]</span>
+                <span class="n">mfvec_out</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([])</span>
             <span class="n">mflist_out</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">mfvec_out</span><span class="p">)</span>
         <span class="n">outim</span><span class="o">.</span><span class="n">_mflist</span> <span class="o">=</span> <span class="n">mflist_out</span>
 
@@ -1234,7 +1343,7 @@
                 <span class="n">mfarr</span> <span class="o">=</span> <span class="n">interp_imvec</span><span class="p">(</span><span class="n">mfvec</span><span class="p">)</span>
                 <span class="n">mfvec_out</span> <span class="o">=</span> <span class="n">mfarr</span><span class="o">.</span><span class="n">flatten</span><span class="p">()</span>
             <span class="k">else</span><span class="p">:</span>
-                <span class="n">mfvec_out</span> <span class="o">=</span> <span class="p">[]</span>
+                <span class="n">mfvec_out</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([])</span>
             <span class="n">mflist_out</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">mfvec_out</span><span class="p">)</span>
         <span class="n">outim</span><span class="o">.</span><span class="n">_mflist</span> <span class="o">=</span> <span class="n">mflist_out</span>
 
@@ -1307,7 +1416,7 @@
                 <span class="n">mfarr</span> <span class="o">=</span> <span class="n">rot_imvec</span><span class="p">(</span><span class="n">mfvec</span><span class="p">)</span>
                 <span class="n">mfvec_out</span> <span class="o">=</span> <span class="n">mfarr</span><span class="o">.</span><span class="n">flatten</span><span class="p">()</span>
             <span class="k">else</span><span class="p">:</span>
-                <span class="n">mfvec_out</span> <span class="o">=</span> <span class="p">[]</span>
+                <span class="n">mfvec_out</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([])</span>
             <span class="n">mflist_out</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">mfvec_out</span><span class="p">)</span>
         <span class="n">outim</span><span class="o">.</span><span class="n">_mflist</span> <span class="o">=</span> <span class="n">mflist_out</span>
 
@@ -1352,7 +1461,7 @@
                 <span class="n">mfarr</span> <span class="o">=</span> <span class="n">shift_imvec</span><span class="p">(</span><span class="n">mfvec</span><span class="p">)</span>
                 <span class="n">mfvec_out</span> <span class="o">=</span> <span class="n">mfarr</span><span class="o">.</span><span class="n">flatten</span><span class="p">()</span>
             <span class="k">else</span><span class="p">:</span>
-                <span class="n">mfvec_out</span> <span class="o">=</span> <span class="p">[]</span>
+                <span class="n">mfvec_out</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([])</span>
             <span class="n">mflist_out</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">mfvec_out</span><span class="p">)</span>
         <span class="n">outim</span><span class="o">.</span><span class="n">_mflist</span> <span class="o">=</span> <span class="n">mflist_out</span>
 
@@ -1403,7 +1512,7 @@
                 <span class="n">mfarr</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">real</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">fft</span><span class="o">.</span><span class="n">ifft2</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">fft</span><span class="o">.</span><span class="n">fft2</span><span class="p">(</span><span class="n">mfarr</span><span class="p">)</span> <span class="o">*</span> <span class="n">rotate</span><span class="p">))</span>
                 <span class="n">mfvec_out</span> <span class="o">=</span> <span class="n">mfarr</span><span class="o">.</span><span class="n">flatten</span><span class="p">()</span>
             <span class="k">else</span><span class="p">:</span>
-                <span class="n">mfvec_out</span> <span class="o">=</span> <span class="p">[]</span>
+                <span class="n">mfvec_out</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([])</span>
             <span class="n">mflist_out</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">mfvec_out</span><span class="p">)</span>
         <span class="n">outim</span><span class="o">.</span><span class="n">_mflist</span> <span class="o">=</span> <span class="n">mflist_out</span>
 
@@ -1480,7 +1589,7 @@
                 <span class="n">mfarr</span> <span class="o">=</span> <span class="n">blur</span><span class="p">(</span><span class="n">mfarr</span><span class="p">,</span> <span class="n">gauss</span><span class="p">)</span>
                 <span class="n">mfvec_out</span> <span class="o">=</span> <span class="n">mfarr</span><span class="o">.</span><span class="n">flatten</span><span class="p">()</span>
             <span class="k">else</span><span class="p">:</span>
-                <span class="n">mfvec_out</span> <span class="o">=</span> <span class="p">[]</span>
+                <span class="n">mfvec_out</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([])</span>
             <span class="n">mflist_out</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">mfvec_out</span><span class="p">)</span>
         <span class="n">outim</span><span class="o">.</span><span class="n">_mflist</span> <span class="o">=</span> <span class="n">mflist_out</span>
 
@@ -1537,7 +1646,7 @@
                 <span class="n">mfarr</span> <span class="o">=</span> <span class="n">blur</span><span class="p">(</span><span class="n">mfarr</span><span class="p">,</span> <span class="n">sigmap</span><span class="p">)</span>
                 <span class="n">mfvec_out</span> <span class="o">=</span> <span class="n">mfarr</span><span class="o">.</span><span class="n">flatten</span><span class="p">()</span>
             <span class="k">else</span><span class="p">:</span>
-                <span class="n">mfvec_out</span> <span class="o">=</span> <span class="p">[]</span>
+                <span class="n">mfvec_out</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([])</span>
             <span class="n">mflist_out</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">mfvec_out</span><span class="p">)</span>
         <span class="n">outim</span><span class="o">.</span><span class="n">_mflist</span> <span class="o">=</span> <span class="n">mflist_out</span>
 
@@ -1595,7 +1704,7 @@
                 <span class="n">mfarr</span> <span class="o">=</span> <span class="n">gradim</span><span class="p">(</span><span class="n">mfvec</span><span class="p">)</span>
                 <span class="n">mfvec_out</span> <span class="o">=</span> <span class="n">mfarr</span><span class="o">.</span><span class="n">flatten</span><span class="p">()</span>
             <span class="k">else</span><span class="p">:</span>
-                <span class="n">mfvec_out</span> <span class="o">=</span> <span class="p">[]</span>
+                <span class="n">mfvec_out</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([])</span>
             <span class="n">mflist_out</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">mfvec_out</span><span class="p">)</span>
         <span class="n">outim</span><span class="o">.</span><span class="n">_mflist</span> <span class="o">=</span> <span class="n">mflist_out</span>
 
@@ -1699,7 +1808,7 @@
                 <span class="n">mfvec_out</span> <span class="o">=</span> <span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="n">mfvec</span><span class="p">)</span>
                 <span class="n">mfvec_out</span><span class="p">[</span><span class="o">~</span><span class="n">maskvec</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.</span>
             <span class="k">else</span><span class="p">:</span>
-                <span class="n">mfvec_out</span> <span class="o">=</span> <span class="p">[]</span>
+                <span class="n">mfvec_out</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([])</span>
             <span class="n">mflist_out</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">mfvec_out</span><span class="p">)</span>
         <span class="n">outim</span><span class="o">.</span><span class="n">_mflist</span> <span class="o">=</span> <span class="n">mflist_out</span>
 
@@ -2652,7 +2761,7 @@
 
         <span class="k">return</span> <span class="n">obs</span></div>
 
-<div class="viewcode-block" id="Image.compare_images"><a class="viewcode-back" href="../../image.html#ehtim.image.Image.compare_images">[docs]</a>    <span class="k">def</span> <span class="nf">compare_images</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">im2</span><span class="p">,</span> <span class="n">psize</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">target_fov</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">blur_frac</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span>
+<div class="viewcode-block" id="Image.compare_images"><a class="viewcode-back" href="../../image.html#ehtim.image.Image.compare_images">[docs]</a>    <span class="k">def</span> <span class="nf">compare_images</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">im_compare</span><span class="p">,</span> <span class="n">pol</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">psize</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span><span class="n">target_fov</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">blur_frac</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span>
                        <span class="n">beamparams</span><span class="o">=</span><span class="p">[</span><span class="mf">1.</span><span class="p">,</span> <span class="mf">1.</span><span class="p">,</span> <span class="mf">1.</span><span class="p">],</span> <span class="n">metric</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;nxcorr&#39;</span><span class="p">,</span> <span class="s1">&#39;nrmse&#39;</span><span class="p">,</span> <span class="s1">&#39;rssd&#39;</span><span class="p">],</span>
                        <span class="n">blursmall</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">shift</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Compare to another image by computing normalized cross correlation,</span>
@@ -2660,6 +2769,8 @@
 <span class="sd">           Returns metrics only for the primary polarization imvec!</span>
 
 <span class="sd">           Args:</span>
+<span class="sd">               im_compare (Image): the image to compare to</span>
+<span class="sd">               pol (str): which polarization image to compare. Default is self.pol_prim</span>
 <span class="sd">               psize (float): pixel size of comparison image (rad).</span>
 <span class="sd">                              If None it is the smallest of the input image pizel sizes</span>
 <span class="sd">               target_fov (float): fov of the comparison image (rad).</span>
@@ -2677,6 +2788,8 @@
 <span class="sd">        &quot;&quot;&quot;</span>
 
         <span class="n">im1</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+        <span class="n">im2</span> <span class="o">=</span> <span class="n">im_compare</span><span class="o">.</span><span class="n">switch_polrep</span><span class="p">(</span><span class="n">polrep_out</span><span class="o">=</span><span class="n">im1</span><span class="o">.</span><span class="n">polrep</span><span class="p">,</span> <span class="n">pol_prim_out</span><span class="o">=</span><span class="n">im1</span><span class="o">.</span><span class="n">pol_prim</span><span class="p">)</span>
+
         <span class="k">if</span> <span class="n">im1</span><span class="o">.</span><span class="n">polrep</span> <span class="o">!=</span> <span class="n">im2</span><span class="o">.</span><span class="n">polrep</span><span class="p">:</span>
             <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;In find_shift, im1 and im2 must have the same polrep!&quot;</span><span class="p">)</span>
         <span class="k">if</span> <span class="n">im1</span><span class="o">.</span><span class="n">pol_prim</span> <span class="o">!=</span> <span class="n">im2</span><span class="o">.</span><span class="n">pol_prim</span><span class="p">:</span>
@@ -2684,7 +2797,7 @@
 
         <span class="c1"># Shift the comparison image to maximize normalized cross-corr.</span>
         <span class="p">[</span><span class="n">idx</span><span class="p">,</span> <span class="n">xcorr</span><span class="p">,</span> <span class="n">im1_pad</span><span class="p">,</span> <span class="n">im2_pad</span><span class="p">]</span> <span class="o">=</span> <span class="n">im1</span><span class="o">.</span><span class="n">find_shift</span><span class="p">(</span><span class="n">im2</span><span class="p">,</span> <span class="n">psize</span><span class="o">=</span><span class="n">psize</span><span class="p">,</span> <span class="n">target_fov</span><span class="o">=</span><span class="n">target_fov</span><span class="p">,</span>
-                                                        <span class="n">beamparams</span><span class="o">=</span><span class="n">beamparams</span><span class="p">,</span>
+                                                        <span class="n">beamparams</span><span class="o">=</span><span class="n">beamparams</span><span class="p">,</span> <span class="n">pol</span><span class="o">=</span><span class="n">pol</span><span class="p">,</span>
                                                         <span class="n">blur_frac</span><span class="o">=</span><span class="n">blur_frac</span><span class="p">,</span> <span class="n">blursmall</span><span class="o">=</span><span class="n">blursmall</span><span class="p">)</span>
 
         <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">shift</span><span class="p">,</span> <span class="nb">bool</span><span class="p">):</span>
@@ -2694,17 +2807,19 @@
 
         <span class="c1"># Compute error metrics</span>
         <span class="n">error</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">imvec1</span> <span class="o">=</span> <span class="n">im1_pad</span><span class="o">.</span><span class="n">get_polvec</span><span class="p">(</span><span class="n">pol</span><span class="p">)</span>
+        <span class="n">imvec2</span> <span class="o">=</span> <span class="n">im2_shift</span><span class="o">.</span><span class="n">get_polvec</span><span class="p">(</span><span class="n">pol</span><span class="p">)</span>
         <span class="k">if</span> <span class="s1">&#39;nxcorr&#39;</span> <span class="ow">in</span> <span class="n">metric</span><span class="p">:</span>
             <span class="n">error</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">xcorr</span><span class="p">[</span><span class="n">idx</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">idx</span><span class="p">[</span><span class="mi">1</span><span class="p">]]</span> <span class="o">/</span> <span class="p">(</span><span class="n">im1_pad</span><span class="o">.</span><span class="n">xdim</span> <span class="o">*</span> <span class="n">im1_pad</span><span class="o">.</span><span class="n">ydim</span><span class="p">))</span>
         <span class="k">if</span> <span class="s1">&#39;nrmse&#39;</span> <span class="ow">in</span> <span class="n">metric</span><span class="p">:</span>
-            <span class="n">error</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(((</span><span class="n">im1_pad</span><span class="o">.</span><span class="n">imvec</span> <span class="o">-</span> <span class="n">im2_shift</span><span class="o">.</span><span class="n">imvec</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span> <span class="o">*</span> <span class="n">im1_pad</span><span class="o">.</span><span class="n">psize</span><span class="o">**</span><span class="mi">2</span><span class="p">))</span> <span class="o">/</span>
-                                 <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">((</span><span class="n">im1_pad</span><span class="o">.</span><span class="n">imvec</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span> <span class="o">*</span> <span class="n">im1_pad</span><span class="o">.</span><span class="n">psize</span><span class="o">**</span><span class="mi">2</span><span class="p">)))</span>
+            <span class="n">error</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">((</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">imvec1</span> <span class="o">-</span> <span class="n">imvec2</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span> <span class="o">*</span> <span class="n">im1_pad</span><span class="o">.</span><span class="n">psize</span><span class="o">**</span><span class="mi">2</span><span class="p">))</span> <span class="o">/</span>
+                                 <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">((</span><span class="n">imvec1</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span> <span class="o">*</span> <span class="n">im1_pad</span><span class="o">.</span><span class="n">psize</span><span class="o">**</span><span class="mi">2</span><span class="p">)))</span>
         <span class="k">if</span> <span class="s1">&#39;rssd&#39;</span> <span class="ow">in</span> <span class="n">metric</span><span class="p">:</span>
-            <span class="n">error</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">((</span><span class="n">im1_pad</span><span class="o">.</span><span class="n">imvec</span> <span class="o">-</span> <span class="n">im2_shift</span><span class="o">.</span><span class="n">imvec</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span> <span class="o">*</span> <span class="n">im1_pad</span><span class="o">.</span><span class="n">psize</span><span class="o">**</span><span class="mi">2</span><span class="p">))</span>
+            <span class="n">error</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">imvec1</span> <span class="o">-</span> <span class="n">imvec2</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span> <span class="o">*</span> <span class="n">im1_pad</span><span class="o">.</span><span class="n">psize</span><span class="o">**</span><span class="mi">2</span><span class="p">))</span>
 
         <span class="k">return</span> <span class="p">(</span><span class="n">error</span><span class="p">,</span> <span class="n">im1_pad</span><span class="p">,</span> <span class="n">im2_shift</span><span class="p">)</span></div>
 
-<div class="viewcode-block" id="Image.align_images"><a class="viewcode-back" href="../../image.html#ehtim.image.Image.align_images">[docs]</a>    <span class="k">def</span> <span class="nf">align_images</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">im_list</span><span class="p">,</span> <span class="n">shift</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">final_fov</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">scale</span><span class="o">=</span><span class="s1">&#39;lin&#39;</span><span class="p">,</span>
+<div class="viewcode-block" id="Image.align_images"><a class="viewcode-back" href="../../image.html#ehtim.image.Image.align_images">[docs]</a>    <span class="k">def</span> <span class="nf">align_images</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">im_list</span><span class="p">,</span> <span class="n">pol</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">shift</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">final_fov</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">scale</span><span class="o">=</span><span class="s1">&#39;lin&#39;</span><span class="p">,</span>
                      <span class="n">gamma</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span> <span class="n">dynamic_range</span><span class="o">=</span><span class="p">[</span><span class="mf">1.e3</span><span class="p">]):</span>
         <span class="sd">&quot;&quot;&quot;Align all the images in im_list to the current image (self)</span>
 <span class="sd">           Aligns all images by comparison of the primary pol image.</span>
@@ -2713,6 +2828,7 @@
 <span class="sd">               im_list (list): list of images to align to the current image</span>
 <span class="sd">               shift (list): list of manual image shifts,</span>
 <span class="sd">                             otherwise use the shift from maximum cross-correlation</span>
+<span class="sd">               pol (str): which polarization image to compare. Default is self.pol_prim</span>
 <span class="sd">               final_fov (float): fov of the comparison image (rad).</span>
 <span class="sd">                             If False it is the largestinput image fov</span>
 
@@ -2754,7 +2870,7 @@
         <span class="n">shifts</span> <span class="o">=</span> <span class="p">[]</span>
         <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">im_list</span><span class="p">)):</span>
             <span class="p">(</span><span class="n">idx</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">im0_pad_orig</span><span class="p">,</span> <span class="n">im_pad</span><span class="p">)</span> <span class="o">=</span> <span class="n">im0</span><span class="o">.</span><span class="n">find_shift</span><span class="p">(</span><span class="n">im_list</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">target_fov</span><span class="o">=</span><span class="mi">2</span> <span class="o">*</span> <span class="n">max_fov</span><span class="p">,</span>
-                                                            <span class="n">psize</span><span class="o">=</span><span class="n">psize</span><span class="p">,</span>
+                                                            <span class="n">psize</span><span class="o">=</span><span class="n">psize</span><span class="p">,</span> <span class="n">pol</span><span class="o">=</span><span class="n">pol</span><span class="p">,</span>
                                                             <span class="n">scale</span><span class="o">=</span><span class="n">scale</span><span class="p">,</span> <span class="n">gamma</span><span class="o">=</span><span class="n">gamma</span><span class="p">,</span>
                                                             <span class="n">dynamic_range</span><span class="o">=</span><span class="n">dynamic_range</span><span class="p">[</span><span class="n">i</span> <span class="o">+</span> <span class="mi">1</span><span class="p">])</span>
 
@@ -2770,14 +2886,15 @@
 
         <span class="k">return</span> <span class="p">(</span><span class="n">im_list_shift</span><span class="p">,</span> <span class="n">shifts</span><span class="p">,</span> <span class="n">im0_pad</span><span class="p">)</span></div>
 
-<div class="viewcode-block" id="Image.find_shift"><a class="viewcode-back" href="../../image.html#ehtim.image.Image.find_shift">[docs]</a>    <span class="k">def</span> <span class="nf">find_shift</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">im2</span><span class="p">,</span> <span class="n">psize</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">target_fov</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+<div class="viewcode-block" id="Image.find_shift"><a class="viewcode-back" href="../../image.html#ehtim.image.Image.find_shift">[docs]</a>    <span class="k">def</span> <span class="nf">find_shift</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">im_compare</span><span class="p">,</span> <span class="n">pol</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">psize</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">target_fov</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
                    <span class="n">beamparams</span><span class="o">=</span><span class="p">[</span><span class="mf">1.</span><span class="p">,</span> <span class="mf">1.</span><span class="p">,</span> <span class="mf">1.</span><span class="p">],</span> <span class="n">blur_frac</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">blursmall</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
                    <span class="n">scale</span><span class="o">=</span><span class="s1">&#39;lin&#39;</span><span class="p">,</span> <span class="n">gamma</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span> <span class="n">dynamic_range</span><span class="o">=</span><span class="mf">1.e3</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Find image shift that maximizes normalized cross correlation with a second image im2.</span>
 <span class="sd">           Finds shift only by comparison of the primary pol image.</span>
 
 <span class="sd">           Args:</span>
-<span class="sd">               im2 (Image): image with respect with to switch</span>
+<span class="sd">               im_compare (Image): image with respect with to switch</span>
+<span class="sd">               pol (str): which polarization image to compare. Default is self.pol_prim</span>
 <span class="sd">               psize (float): pixel size of comparison image (rad).</span>
 <span class="sd">                              If None it is the smallest of the input image pizel sizes</span>
 <span class="sd">               target_fov (float): fov of the comparison image (rad).</span>
@@ -2796,6 +2913,9 @@
 <span class="sd">        &quot;&quot;&quot;</span>
 
         <span class="n">im1</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+        <span class="n">im2</span> <span class="o">=</span> <span class="n">im_compare</span><span class="o">.</span><span class="n">switch_polrep</span><span class="p">(</span><span class="n">polrep_out</span><span class="o">=</span><span class="n">im1</span><span class="o">.</span><span class="n">polrep</span><span class="p">,</span> <span class="n">pol_prim_out</span><span class="o">=</span><span class="n">im1</span><span class="o">.</span><span class="n">pol_prim</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">pol</span><span class="o">==</span><span class="s1">&#39;RL&#39;</span> <span class="ow">or</span> <span class="n">pol</span><span class="o">==</span><span class="s1">&#39;LR&#39;</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;Find_shift currently doesn&#39;t work with complex RL or LR imvecs!&quot;</span><span class="p">)</span>
         <span class="k">if</span> <span class="n">im1</span><span class="o">.</span><span class="n">polrep</span> <span class="o">!=</span> <span class="n">im2</span><span class="o">.</span><span class="n">polrep</span><span class="p">:</span>
             <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;In find_shift, im1 and im2 must have the same polrep!&quot;</span><span class="p">)</span>
         <span class="k">if</span> <span class="n">im1</span><span class="o">.</span><span class="n">pol_prim</span> <span class="o">!=</span> <span class="n">im2</span><span class="o">.</span><span class="n">pol_prim</span><span class="p">:</span>
@@ -2811,22 +2931,22 @@
         <span class="n">npix</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">target_fov</span> <span class="o">/</span> <span class="n">psize</span><span class="p">)</span>
 
         <span class="c1"># Blur images, then pad</span>
-        <span class="k">if</span> <span class="p">((</span><span class="n">blur_frac</span> <span class="o">&gt;</span> <span class="mf">0.0</span><span class="p">)</span> <span class="o">*</span> <span class="p">(</span><span class="n">blursmall</span> <span class="ow">is</span> <span class="kc">True</span><span class="p">)):</span>
-            <span class="n">im1</span> <span class="o">=</span> <span class="n">im1</span><span class="o">.</span><span class="n">blur_gauss</span><span class="p">(</span><span class="n">beamparams</span><span class="p">,</span> <span class="n">blur_frac</span><span class="p">)</span>
-            <span class="n">im2</span> <span class="o">=</span> <span class="n">im2</span><span class="o">.</span><span class="n">blur_gauss</span><span class="p">(</span><span class="n">beamparams</span><span class="p">,</span> <span class="n">blur_frac</span><span class="p">)</span>
+        <span class="k">if</span> <span class="p">((</span><span class="n">blur_frac</span> <span class="o">&gt;</span> <span class="mf">0.0</span><span class="p">)</span> <span class="ow">and</span> <span class="p">(</span><span class="n">blursmall</span> <span class="ow">is</span> <span class="kc">True</span><span class="p">)):</span>
+            <span class="n">im1</span> <span class="o">=</span> <span class="n">im1</span><span class="o">.</span><span class="n">blur_gauss</span><span class="p">(</span><span class="n">beamparams</span><span class="p">,</span> <span class="n">blur_frac</span><span class="p">,</span> <span class="n">blur_frac</span><span class="p">)</span>
+            <span class="n">im2</span> <span class="o">=</span> <span class="n">im2</span><span class="o">.</span><span class="n">blur_gauss</span><span class="p">(</span><span class="n">beamparams</span><span class="p">,</span> <span class="n">blur_frac</span><span class="p">,</span> <span class="n">blur_frac</span><span class="p">)</span>
 
         <span class="n">im1_pad</span> <span class="o">=</span> <span class="n">im1</span><span class="o">.</span><span class="n">regrid_image</span><span class="p">(</span><span class="n">target_fov</span><span class="p">,</span> <span class="n">npix</span><span class="p">)</span>
         <span class="n">im2_pad</span> <span class="o">=</span> <span class="n">im2</span><span class="o">.</span><span class="n">regrid_image</span><span class="p">(</span><span class="n">target_fov</span><span class="p">,</span> <span class="n">npix</span><span class="p">)</span>
 
         <span class="c1"># or, pad images, then blur</span>
-        <span class="k">if</span> <span class="p">((</span><span class="n">blur_frac</span> <span class="o">&gt;</span> <span class="mf">0.0</span><span class="p">)</span> <span class="o">*</span> <span class="p">(</span><span class="n">blursmall</span> <span class="ow">is</span> <span class="kc">False</span><span class="p">)):</span>
-            <span class="n">im1_pad</span> <span class="o">=</span> <span class="n">im1_pad</span><span class="o">.</span><span class="n">blur_gauss</span><span class="p">(</span><span class="n">beamparams</span><span class="p">,</span> <span class="n">blur_frac</span><span class="p">)</span>
-            <span class="n">im2_pad</span> <span class="o">=</span> <span class="n">im2_pad</span><span class="o">.</span><span class="n">blur_gauss</span><span class="p">(</span><span class="n">beamparams</span><span class="p">,</span> <span class="n">blur_frac</span><span class="p">)</span>
+        <span class="k">if</span> <span class="p">((</span><span class="n">blur_frac</span> <span class="o">&gt;</span> <span class="mf">0.0</span><span class="p">)</span> <span class="ow">and</span> <span class="p">(</span><span class="n">blursmall</span> <span class="ow">is</span> <span class="kc">False</span><span class="p">)):</span>
+            <span class="n">im1_pad</span> <span class="o">=</span> <span class="n">im1_pad</span><span class="o">.</span><span class="n">blur_gauss</span><span class="p">(</span><span class="n">beamparams</span><span class="p">,</span> <span class="n">blur_frac</span><span class="p">,</span> <span class="n">blur_frac</span><span class="p">)</span>
+            <span class="n">im2_pad</span> <span class="o">=</span> <span class="n">im2_pad</span><span class="o">.</span><span class="n">blur_gauss</span><span class="p">(</span><span class="n">beamparams</span><span class="p">,</span> <span class="n">blur_frac</span><span class="p">,</span> <span class="n">blur_frac</span><span class="p">)</span>
 
         <span class="c1"># Rescale the image vectors into log or gamma scale</span>
-        <span class="c1"># TODO -- what about negative values? threshold?</span>
-        <span class="n">im1_pad_vec</span> <span class="o">=</span> <span class="n">im1_pad</span><span class="o">.</span><span class="n">imvec</span>
-        <span class="n">im2_pad_vec</span> <span class="o">=</span> <span class="n">im2_pad</span><span class="o">.</span><span class="n">imvec</span>
+        <span class="c1"># TODO -- what about negative values? complex values?</span>
+        <span class="n">im1_pad_vec</span> <span class="o">=</span> <span class="n">im1_pad</span><span class="o">.</span><span class="n">get_polvec</span><span class="p">(</span><span class="n">pol</span><span class="p">)</span>
+        <span class="n">im2_pad_vec</span> <span class="o">=</span> <span class="n">im2_pad</span><span class="o">.</span><span class="n">get_polvec</span><span class="p">(</span><span class="n">pol</span><span class="p">)</span>
         <span class="k">if</span> <span class="n">scale</span> <span class="o">==</span> <span class="s1">&#39;log&#39;</span><span class="p">:</span>
             <span class="n">im1_pad_vec</span><span class="p">[</span><span class="n">im1_pad_vec</span> <span class="o">&lt;</span> <span class="mf">0.0</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.0</span>
             <span class="n">im1_pad_vec</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">im1_pad_vec</span> <span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">im1_pad_vec</span><span class="p">)</span> <span class="o">/</span> <span class="n">dynamic_range</span><span class="p">)</span>
@@ -3204,8 +3324,8 @@
 <span class="sd">           Args:</span>
 <span class="sd">               pol (str): which polarization image to plot. Default is self.pol_prim</span>
 <span class="sd">                          pol=&#39;spec&#39; will plot spectral index!</span>
-<span class="sd">               cfun (str): matplotlib.pyplot color function. </span>
-<span class="sd">                           False changes with &#39;pol&#39;,  but is &#39;afmhot&#39; for most </span>
+<span class="sd">               cfun (str): matplotlib.pyplot color function.</span>
+<span class="sd">                           False changes with &#39;pol&#39;,  but is &#39;afmhot&#39; for most</span>
 <span class="sd">               interp (str): image interpolation &#39;gauss&#39; or &#39;lin&#39;</span>
 
 <span class="sd">               scale (str): image scaling in [&#39;log&#39;,&#39;gamma&#39;,&#39;lin&#39;]</span>
@@ -3343,11 +3463,11 @@
         <span class="k">if</span> <span class="ow">not</span> <span class="n">plotp</span><span class="p">:</span>  <span class="c1"># Plot a single polarization image</span>
             <span class="n">cbar_lims_p</span> <span class="o">=</span> <span class="p">()</span>
 
-            <span class="k">if</span> <span class="n">pol</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="o">==</span> <span class="s1">&#39;spec&#39;</span><span class="p">:</span>                
+            <span class="k">if</span> <span class="n">pol</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="o">==</span> <span class="s1">&#39;spec&#39;</span><span class="p">:</span>
                 <span class="n">imvec</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">specvec</span>
                 <span class="n">unit</span> <span class="o">=</span> <span class="sa">r</span><span class="s1">&#39;$\alpha$&#39;</span>
                 <span class="n">factor</span> <span class="o">=</span> <span class="mi">1</span>
-                <span class="n">cbar_lims_p</span> <span class="o">=</span> <span class="p">[</span><span class="o">-</span><span class="mi">5</span><span class="p">,</span><span class="mi">5</span><span class="p">]</span>
+                <span class="n">cbar_lims_p</span> <span class="o">=</span> <span class="p">[</span><span class="o">-</span><span class="mi">5</span><span class="p">,</span> <span class="mi">5</span><span class="p">]</span>
                 <span class="n">cfun_p</span> <span class="o">=</span> <span class="s1">&#39;jet&#39;</span>
             <span class="k">elif</span> <span class="n">pol</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="o">==</span> <span class="s1">&#39;m&#39;</span><span class="p">:</span>
                 <span class="n">imvec</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">mvec</span>
@@ -3359,7 +3479,7 @@
                 <span class="n">imvec</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">mvec</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">ivec</span>
                 <span class="n">unit</span> <span class="o">=</span> <span class="sa">r</span><span class="s1">&#39;$\|P|$&#39;</span>
                 <span class="n">cfun_p</span> <span class="o">=</span> <span class="s1">&#39;afmhot&#39;</span>
-            <span class="k">elif</span> <span class="n">pol</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="o">==</span> <span class="s1">&#39;chi&#39;</span><span class="p">:</span>
+            <span class="k">elif</span> <span class="n">pol</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="o">==</span> <span class="s1">&#39;chi&#39;</span> <span class="ow">or</span> <span class="n">pol</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="o">==</span> <span class="s1">&#39;evpa&#39;</span><span class="p">:</span>
                 <span class="n">imvec</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">chivec</span> <span class="o">/</span> <span class="n">ehc</span><span class="o">.</span><span class="n">DEGREE</span>
                 <span class="n">unit</span> <span class="o">=</span> <span class="sa">r</span><span class="s1">&#39;$\chi (^\circ)$&#39;</span>
                 <span class="n">factor</span> <span class="o">=</span> <span class="mi">1</span>
@@ -3427,7 +3547,7 @@
                 <span class="n">cbar_lims</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="n">cbar_lims</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">/</span> <span class="p">(</span><span class="mf">10.</span><span class="o">**</span><span class="n">power</span><span class="p">)</span>
                 <span class="n">imarr</span><span class="p">[</span><span class="n">imarr</span> <span class="o">&gt;</span> <span class="n">cbar_lims</span><span class="p">[</span><span class="mi">1</span><span class="p">]]</span> <span class="o">=</span> <span class="n">cbar_lims</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
                 <span class="n">imarr</span><span class="p">[</span><span class="n">imarr</span> <span class="o">&lt;</span> <span class="n">cbar_lims</span><span class="p">[</span><span class="mi">0</span><span class="p">]]</span> <span class="o">=</span> <span class="n">cbar_lims</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
-                
+
             <span class="k">if</span> <span class="n">has_title</span><span class="p">:</span>
                 <span class="n">plt</span><span class="o">.</span><span class="n">title</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">%s</span><span class="s2"> </span><span class="si">%.2f</span><span class="s2"> GHz </span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">source</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">rf</span> <span class="o">/</span> <span class="mf">1e9</span><span class="p">,</span> <span class="n">pol</span><span class="p">),</span> <span class="n">fontsize</span><span class="o">=</span><span class="mi">16</span><span class="p">)</span>
 
@@ -3968,7 +4088,13 @@
 <span class="sd">            (boolean):  False if the image cannot be read</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
-    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">image</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+    <span class="n">is_unicode</span> <span class="o">=</span> <span class="kc">False</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">image</span><span class="p">,</span> <span class="n">basestring</span><span class="p">):</span>
+            <span class="n">is_unicode</span> <span class="o">=</span> <span class="kc">True</span>
+    <span class="k">except</span> <span class="ne">NameError</span><span class="p">:</span>  <span class="c1"># python 3</span>
+        <span class="k">pass</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">image</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span> <span class="ow">or</span> <span class="n">is_unicode</span><span class="p">:</span>
         <span class="k">if</span> <span class="n">image</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="s1">&#39;.fits&#39;</span><span class="p">):</span>
             <span class="n">im</span> <span class="o">=</span> <span class="n">ehtim</span><span class="o">.</span><span class="n">io</span><span class="o">.</span><span class="n">load</span><span class="o">.</span><span class="n">load_im_fits</span><span class="p">(</span><span class="n">image</span><span class="p">,</span> <span class="n">aipscc</span><span class="o">=</span><span class="n">aipscc</span><span class="p">)</span>
         <span class="k">elif</span> <span class="n">image</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="s1">&#39;.txt&#39;</span><span class="p">):</span>

@@ -662,7 +662,7 @@ used to caluclate the Gaussian FWHM.</li>
 
 <dl class="method">
 <dt id="ehtim.image.Image.align_images">
-<code class="descname">align_images</code><span class="sig-paren">(</span><em>im_list, shift=True, final_fov=False, scale='lin', gamma=0.5, dynamic_range=[1000.0]</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/image.html#Image.align_images"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.image.Image.align_images" title="Permalink to this definition">¶</a></dt>
+<code class="descname">align_images</code><span class="sig-paren">(</span><em>im_list, pol=None, shift=True, final_fov=False, scale='lin', gamma=0.5, dynamic_range=[1000.0]</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/image.html#Image.align_images"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.image.Image.align_images" title="Permalink to this definition">¶</a></dt>
 <dd><p>Align all the images in im_list to the current image (self)
 Aligns all images by comparison of the primary pol image.</p>
 <table class="docutils field-list" frame="void" rules="none">
@@ -673,6 +673,7 @@ Aligns all images by comparison of the primary pol image.</p>
 <li><strong>im_list</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.8)"><em>list</em></a>) – list of images to align to the current image</li>
 <li><strong>shift</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.8)"><em>list</em></a>) – list of manual image shifts,
 otherwise use the shift from maximum cross-correlation</li>
+<li><strong>pol</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)"><em>str</em></a>) – which polarization image to compare. Default is self.pol_prim</li>
 <li><strong>final_fov</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.8)"><em>float</em></a>) – fov of the comparison image (rad).
 If False it is the largestinput image fov</li>
 <li><strong>scale</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)"><em>str</em></a>) – compare images in ‘log’,’lin’,or ‘gamma’ scale</li>
@@ -832,7 +833,7 @@ A non-integer shift is used, which wraps the image when rotating.</p>
 
 <dl class="method">
 <dt id="ehtim.image.Image.compare_images">
-<code class="descname">compare_images</code><span class="sig-paren">(</span><em>im2, psize=None, target_fov=None, blur_frac=0.0, beamparams=[1.0, 1.0, 1.0], metric=['nxcorr', 'nrmse', 'rssd'], blursmall=False, shift=True</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/image.html#Image.compare_images"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.image.Image.compare_images" title="Permalink to this definition">¶</a></dt>
+<code class="descname">compare_images</code><span class="sig-paren">(</span><em>im_compare, pol=None, psize=None, target_fov=None, blur_frac=0.0, beamparams=[1.0, 1.0, 1.0], metric=['nxcorr', 'nrmse', 'rssd'], blursmall=False, shift=True</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/image.html#Image.compare_images"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.image.Image.compare_images" title="Permalink to this definition">¶</a></dt>
 <dd><p>Compare to another image by computing normalized cross correlation,
 normalized root mean squared error, or square root of the sum of squared differences.
 Returns metrics only for the primary polarization imvec!</p>
@@ -841,6 +842,8 @@ Returns metrics only for the primary polarization imvec!</p>
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>im_compare</strong> (<a class="reference internal" href="#ehtim.image.Image" title="ehtim.image.Image"><em>Image</em></a>) – the image to compare to</li>
+<li><strong>pol</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)"><em>str</em></a>) – which polarization image to compare. Default is self.pol_prim</li>
 <li><strong>psize</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.8)"><em>float</em></a>) – pixel size of comparison image (rad).
 If None it is the smallest of the input image pizel sizes</li>
 <li><strong>target_fov</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.8)"><em>float</em></a>) – fov of the comparison image (rad).
@@ -1023,7 +1026,7 @@ False changes with ‘pol’,  but is ‘afmhot’ for most</li>
 
 <dl class="method">
 <dt id="ehtim.image.Image.find_shift">
-<code class="descname">find_shift</code><span class="sig-paren">(</span><em>im2, psize=None, target_fov=None, beamparams=[1.0, 1.0, 1.0], blur_frac=0.0, blursmall=False, scale='lin', gamma=0.5, dynamic_range=1000.0</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/image.html#Image.find_shift"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.image.Image.find_shift" title="Permalink to this definition">¶</a></dt>
+<code class="descname">find_shift</code><span class="sig-paren">(</span><em>im_compare, pol=None, psize=None, target_fov=None, beamparams=[1.0, 1.0, 1.0], blur_frac=0.0, blursmall=False, scale='lin', gamma=0.5, dynamic_range=1000.0</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/image.html#Image.find_shift"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.image.Image.find_shift" title="Permalink to this definition">¶</a></dt>
 <dd><p>Find image shift that maximizes normalized cross correlation with a second image im2.
 Finds shift only by comparison of the primary pol image.</p>
 <table class="docutils field-list" frame="void" rules="none">
@@ -1031,7 +1034,8 @@ Finds shift only by comparison of the primary pol image.</p>
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
-<li><strong>im2</strong> (<a class="reference internal" href="#ehtim.image.Image" title="ehtim.image.Image"><em>Image</em></a>) – image with respect with to switch</li>
+<li><strong>im_compare</strong> (<a class="reference internal" href="#ehtim.image.Image" title="ehtim.image.Image"><em>Image</em></a>) – image with respect with to switch</li>
+<li><strong>pol</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)"><em>str</em></a>) – which polarization image to compare. Default is self.pol_prim</li>
 <li><strong>psize</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.8)"><em>float</em></a>) – pixel size of comparison image (rad).
 If None it is the smallest of the input image pizel sizes</li>
 <li><strong>target_fov</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.8)"><em>float</em></a>) – fov of the comparison image (rad).
@@ -1165,6 +1169,12 @@ Returns parameters only for the primary polarization!</p>
 </dd></dl>
 
 <dl class="method">
+<dt id="ehtim.image.Image.get_polvec">
+<code class="descname">get_polvec</code><span class="sig-paren">(</span><em>pol</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/image.html#Image.get_polvec"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.image.Image.get_polvec" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get the imvec corresponding to the chosen polarization</p>
+</dd></dl>
+
+<dl class="method">
 <dt id="ehtim.image.Image.grad">
 <code class="descname">grad</code><span class="sig-paren">(</span><em>gradtype='abs'</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/image.html#Image.grad"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.image.Image.grad" title="Permalink to this definition">¶</a></dt>
 <dd><p>Return the gradient image</p>
@@ -1214,7 +1224,7 @@ Returns metrics only for the primary polarization imvec!</p>
 <dl class="method">
 <dt id="ehtim.image.Image.image_args">
 <code class="descname">image_args</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/image.html#Image.image_args"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.image.Image.image_args" title="Permalink to this definition">¶</a></dt>
-<dd><p>“Copy arguments for making a  new Image into a list and dictonary</p>
+<dd><p>Copy arguments for making a  new Image into a list and dictonary</p>
 </dd></dl>
 
 <dl class="method">
@@ -1225,7 +1235,7 @@ Returns metrics only for the primary polarization imvec!</p>
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>pol</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)"><em>str</em></a>) – I,Q,U or V for Stokes, or RR,LL,LR,RL for Circular</td>
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>pol</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)"><em>str</em></a>) – I,Q,U or V for Stokes, or RR,LL,LR,RL for Circ</td>
 </tr>
 <tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">2D image array of dimension (ydim, xdim)</td>
 </tr>
@@ -1549,6 +1559,12 @@ If False it is the largestinput image fov</li>
 </tr>
 </tbody>
 </table>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="ehtim.image.Image.pvec">
+<code class="descname">pvec</code><a class="headerlink" href="#ehtim.image.Image.pvec" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return the polarization magnitude for each pixel</p>
 </dd></dl>
 
 <dl class="method">

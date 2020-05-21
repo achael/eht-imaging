@@ -1,0 +1,471 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>ehtim.plotting.comparisons &mdash; ehtim 0.1.1 documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+  
+
+  
+
+  
+        <link rel="index" title="Index"
+              href="../../../genindex.html"/>
+        <link rel="search" title="Search" href="../../../search.html"/>
+    <link rel="top" title="ehtim 0.1.1 documentation" href="../../../index.html"/>
+        <link rel="up" title="Module code" href="../../index.html"/> 
+
+  
+  <script src="../../../_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+   
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="../../../index.html" class="icon icon-home"> ehtim
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                0.1
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <p class="caption"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../image.html">Image</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../array.html">Array</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../obsdata.html">Obsdata</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../movie.html">Movie</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../vex.html">Vex</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../imager.html">Imager</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../calibration.html">Calibration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../plotting.html">Plotting</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../scattering.html">Scattering</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../statistics.html">Statistics</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">ehtim</a>
+        
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../../index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="../../index.html">Module code</a> &raquo;</li>
+        
+      <li>ehtim.plotting.comparisons</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for ehtim.plotting.comparisons</h1><div class="highlight"><pre>
+<span></span><span class="c1"># comparisons.py</span>
+<span class="c1"># Image Consistency Comparisons</span>
+<span class="c1">#</span>
+<span class="c1">#    Copyright (C) 2018 Katie Bouman</span>
+<span class="c1">#</span>
+<span class="c1">#    This program is free software: you can redistribute it and/or modify</span>
+<span class="c1">#    it under the terms of the GNU General Public License as published by</span>
+<span class="c1">#    the Free Software Foundation, either version 3 of the License, or</span>
+<span class="c1">#    (at your option) any later version.</span>
+<span class="c1">#</span>
+<span class="c1">#    This program is distributed in the hope that it will be useful,</span>
+<span class="c1">#    but WITHOUT ANY WARRANTY; without even the implied warranty of</span>
+<span class="c1">#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the</span>
+<span class="c1">#    GNU General Public License for more details.</span>
+<span class="c1">#</span>
+<span class="c1">#    You should have received a copy of the GNU General Public License</span>
+<span class="c1">#    along with this program.  If not, see &lt;http://www.gnu.org/licenses/&gt;.</span>
+
+<span class="kn">from</span> <span class="nn">__future__</span> <span class="kn">import</span> <span class="n">division</span>
+<span class="kn">from</span> <span class="nn">__future__</span> <span class="kn">import</span> <span class="n">print_function</span>
+
+<span class="kn">from</span> <span class="nn">builtins</span> <span class="kn">import</span> <span class="nb">str</span>
+<span class="kn">from</span> <span class="nn">builtins</span> <span class="kn">import</span> <span class="nb">range</span>
+<span class="kn">from</span> <span class="nn">builtins</span> <span class="kn">import</span> <span class="nb">object</span>
+
+<span class="kn">import</span> <span class="nn">sys</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
+<span class="kn">from</span> <span class="nn">matplotlib.offsetbox</span> <span class="kn">import</span> <span class="p">(</span><span class="n">OffsetImage</span><span class="p">,</span> <span class="n">AnnotationBbox</span><span class="p">)</span>
+<span class="kn">from</span> <span class="nn">itertools</span> <span class="kn">import</span> <span class="n">cycle</span>
+
+<span class="k">try</span><span class="p">:</span>
+    <span class="kn">import</span> <span class="nn">networkx</span> <span class="k">as</span> <span class="nn">nx</span>
+<span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Warning: networkx not installed! Cannot use image_agreements()&quot;</span><span class="p">)</span>
+
+
+<span class="kn">import</span> <span class="nn">ehtim.const_def</span> <span class="k">as</span> <span class="nn">ehc</span>
+
+
+<span class="k">def</span> <span class="nf">image_consistency</span><span class="p">(</span><span class="n">imarr</span><span class="p">,</span> <span class="n">beamparams</span><span class="p">,</span> <span class="n">metric</span><span class="o">=</span><span class="s1">&#39;nxcorr&#39;</span><span class="p">,</span>
+                      <span class="n">blursmall</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">beam_max</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span> <span class="n">beam_steps</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span> <span class="n">savepath</span><span class="o">=</span><span class="p">[]):</span>
+
+    <span class="c1"># get the pixel sizes and fov to compare images at</span>
+    <span class="p">(</span><span class="n">min_psize</span><span class="p">,</span> <span class="n">max_fov</span><span class="p">)</span> <span class="o">=</span> <span class="n">get_psize_fov</span><span class="p">(</span><span class="n">imarr</span><span class="p">)</span>
+
+    <span class="c1"># initialize matrix matrix</span>
+    <span class="n">metric_mtx</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">([</span><span class="nb">len</span><span class="p">(</span><span class="n">imarr</span><span class="p">),</span> <span class="nb">len</span><span class="p">(</span><span class="n">imarr</span><span class="p">),</span> <span class="n">beam_steps</span><span class="p">])</span>
+
+    <span class="c1"># get the different fracsteps</span>
+    <span class="n">fracsteps</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">beam_max</span><span class="p">,</span> <span class="n">beam_steps</span><span class="p">)</span>
+
+    <span class="c1"># loop over the different beam sizes</span>
+    <span class="k">for</span> <span class="n">fracidx</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">beam_steps</span><span class="p">):</span>
+        <span class="c1"># print(fracidx)</span>
+        <span class="c1"># look at every pair of images and compute their beam convolved metrics</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">imarr</span><span class="p">)):</span>
+            <span class="n">img1</span> <span class="o">=</span> <span class="n">imarr</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+            <span class="k">if</span> <span class="n">fracsteps</span><span class="p">[</span><span class="n">fracidx</span><span class="p">]</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="n">img1</span> <span class="o">=</span> <span class="n">img1</span><span class="o">.</span><span class="n">blur_gauss</span><span class="p">(</span><span class="n">beamparams</span><span class="p">,</span> <span class="n">fracsteps</span><span class="p">[</span><span class="n">fracidx</span><span class="p">])</span>
+
+            <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">imarr</span><span class="p">)):</span>
+                <span class="n">img2</span> <span class="o">=</span> <span class="n">imarr</span><span class="p">[</span><span class="n">j</span><span class="p">]</span>
+                <span class="k">if</span> <span class="n">fracsteps</span><span class="p">[</span><span class="n">fracidx</span><span class="p">]</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+                    <span class="n">img2</span> <span class="o">=</span> <span class="n">img2</span><span class="o">.</span><span class="n">blur_gauss</span><span class="p">(</span><span class="n">beamparams</span><span class="p">,</span> <span class="n">fracsteps</span><span class="p">[</span><span class="n">fracidx</span><span class="p">])</span>
+
+                <span class="c1"># compute image comparision under a specified blur_frac</span>
+                <span class="p">(</span><span class="n">error</span><span class="p">,</span> <span class="n">im1_pad</span><span class="p">,</span> <span class="n">im2_shift</span><span class="p">)</span> <span class="o">=</span> <span class="n">img1</span><span class="o">.</span><span class="n">compare_images</span><span class="p">(</span><span class="n">img2</span><span class="p">,</span> <span class="n">metric</span><span class="o">=</span><span class="p">[</span><span class="n">metric</span><span class="p">],</span>
+                                                                  <span class="n">psize</span><span class="o">=</span><span class="n">min_psize</span><span class="p">,</span>
+                                                                  <span class="n">target_fov</span><span class="o">=</span><span class="n">max_fov</span><span class="p">,</span>
+                                                                  <span class="n">blur_frac</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span>
+                                                                  <span class="n">beamparams</span><span class="o">=</span><span class="n">beamparams</span><span class="p">)</span>
+
+                <span class="c1"># if specified save the shifted images used for comparision</span>
+                <span class="k">if</span> <span class="n">savepath</span><span class="p">:</span>
+                    <span class="n">im1_pad</span><span class="o">.</span><span class="n">save_fits</span><span class="p">(</span><span class="n">savepath</span> <span class="o">+</span> <span class="s1">&#39;/&#39;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">i</span><span class="p">)</span> <span class="o">+</span> <span class="s1">&#39;_&#39;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">fracidx</span><span class="p">)</span> <span class="o">+</span> <span class="s1">&#39;.fits&#39;</span><span class="p">)</span>
+                    <span class="n">im2_shift</span><span class="o">.</span><span class="n">save_fits</span><span class="p">(</span><span class="n">savepath</span> <span class="o">+</span> <span class="s1">&#39;/&#39;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">j</span><span class="p">)</span> <span class="o">+</span> <span class="s1">&#39;_&#39;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">fracidx</span><span class="p">)</span> <span class="o">+</span> <span class="s1">&#39;.fits&#39;</span><span class="p">)</span>
+
+                <span class="c1"># save the metric value in a matrix</span>
+                <span class="n">metric_mtx</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">,</span> <span class="n">fracidx</span><span class="p">]</span> <span class="o">=</span> <span class="n">error</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+
+    <span class="k">return</span> <span class="p">(</span><span class="n">metric_mtx</span><span class="p">,</span> <span class="n">fracsteps</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="get_psize_fov"><a class="viewcode-back" href="../../../plotting.html#ehtim.plotting.comparisons.get_psize_fov">[docs]</a><span class="k">def</span> <span class="nf">get_psize_fov</span><span class="p">(</span><span class="n">imarr</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Look over an array of images and determine the min pixel size and max fov</span>
+<span class="sd">       that can be used consistently across them</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">min_psize</span> <span class="o">=</span> <span class="mi">100</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">imarr</span><span class="p">)):</span>
+        <span class="k">if</span> <span class="n">i</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">max_fov</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">([</span><span class="n">imarr</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">psize</span><span class="o">*</span><span class="n">imarr</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">xdim</span><span class="p">,</span> <span class="n">imarr</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">psize</span><span class="o">*</span><span class="n">imarr</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">ydim</span><span class="p">])</span>
+            <span class="n">min_psize</span> <span class="o">=</span> <span class="n">imarr</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">psize</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">max_fov</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">([</span><span class="n">max_fov</span><span class="p">,</span> <span class="n">imarr</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">psize</span><span class="o">*</span><span class="n">imarr</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">xdim</span><span class="p">,</span> <span class="n">imarr</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">psize</span><span class="o">*</span><span class="n">imarr</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">ydim</span><span class="p">])</span>
+            <span class="n">min_psize</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">min</span><span class="p">([</span><span class="n">min_psize</span><span class="p">,</span> <span class="n">imarr</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">psize</span><span class="p">])</span>
+    <span class="k">return</span> <span class="p">(</span><span class="n">min_psize</span><span class="p">,</span> <span class="n">max_fov</span><span class="p">)</span></div>
+
+
+<span class="k">def</span> <span class="nf">image_agreements</span><span class="p">(</span><span class="n">imarr</span><span class="p">,</span> <span class="n">beamparams</span><span class="p">,</span> <span class="n">metric_mtx</span><span class="p">,</span> <span class="n">fracsteps</span><span class="p">,</span> <span class="n">cutoff</span><span class="o">=</span><span class="mf">0.95</span><span class="p">):</span>
+
+    <span class="k">if</span> <span class="s1">&#39;networkx&#39;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">sys</span><span class="o">.</span><span class="n">modules</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;networkx not installed: cannot use image_agreements()!&quot;</span><span class="p">)</span>
+
+    <span class="p">(</span><span class="n">min_psize</span><span class="p">,</span> <span class="n">max_fov</span><span class="p">)</span> <span class="o">=</span> <span class="n">get_psize_fov</span><span class="p">(</span><span class="n">imarr</span><span class="p">)</span>
+
+    <span class="n">im_cliques_fraclevels</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">cliques_fraclevels</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">fracidx</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">fracsteps</span><span class="p">)):</span>
+        <span class="c1"># print(fracidx)</span>
+
+        <span class="n">slice_metric_mtx</span> <span class="o">=</span> <span class="n">metric_mtx</span><span class="p">[:,</span> <span class="p">:,</span> <span class="n">fracidx</span><span class="p">]</span>
+        <span class="n">cuttoffidx</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">slice_metric_mtx</span> <span class="o">&gt;=</span> <span class="n">cutoff</span><span class="p">)</span>
+        <span class="n">consistant</span> <span class="o">=</span> <span class="nb">zip</span><span class="p">(</span><span class="o">*</span><span class="n">cuttoffidx</span><span class="p">)</span>
+
+        <span class="c1"># make graph</span>
+        <span class="n">G</span> <span class="o">=</span> <span class="n">nx</span><span class="o">.</span><span class="n">Graph</span><span class="p">()</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">consistant</span><span class="p">)):</span>
+            <span class="n">G</span><span class="o">.</span><span class="n">add_edge</span><span class="p">(</span><span class="n">consistant</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="mi">0</span><span class="p">],</span> <span class="n">consistant</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="mi">1</span><span class="p">])</span>
+
+        <span class="c1"># find all cliques</span>
+        <span class="n">cliques</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">nx</span><span class="o">.</span><span class="n">find_cliques</span><span class="p">(</span><span class="n">G</span><span class="p">))</span>
+        <span class="c1"># print(cliques)</span>
+
+        <span class="n">cliques_fraclevels</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">cliques</span><span class="p">)</span>
+
+        <span class="n">im_clique</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">cliques</span><span class="p">)):</span>
+            <span class="n">clique</span> <span class="o">=</span> <span class="n">cliques</span><span class="p">[</span><span class="n">c</span><span class="p">]</span>
+            <span class="n">im_avg</span> <span class="o">=</span> <span class="n">imarr</span><span class="p">[</span><span class="n">clique</span><span class="p">[</span><span class="mi">0</span><span class="p">]]</span><span class="o">.</span><span class="n">blur_gauss</span><span class="p">(</span><span class="n">beamparams</span><span class="p">,</span> <span class="n">fracsteps</span><span class="p">[</span><span class="n">fracidx</span><span class="p">])</span>
+
+            <span class="k">for</span> <span class="n">n</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">clique</span><span class="p">)):</span>
+                <span class="n">imcomp</span> <span class="o">=</span> <span class="n">imarr</span><span class="p">[</span><span class="n">clique</span><span class="p">[</span><span class="n">n</span><span class="p">]]</span><span class="o">.</span><span class="n">blur_gauss</span><span class="p">(</span><span class="n">beamparams</span><span class="p">,</span> <span class="n">fracsteps</span><span class="p">[</span><span class="n">fracidx</span><span class="p">])</span>
+                <span class="p">(</span><span class="n">error</span><span class="p">,</span> <span class="n">im_avg</span><span class="p">,</span> <span class="n">im2_shift</span><span class="p">)</span> <span class="o">=</span> <span class="n">im_avg</span><span class="o">.</span><span class="n">compare_images</span><span class="p">(</span><span class="n">imcomp</span><span class="p">,</span> <span class="n">metric</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;xcorr&#39;</span><span class="p">],</span>
+                                                                   <span class="n">psize</span><span class="o">=</span><span class="n">min_psize</span><span class="p">,</span>
+                                                                   <span class="n">target_fov</span><span class="o">=</span><span class="n">max_fov</span><span class="p">,</span>
+                                                                   <span class="n">blur_frac</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span>
+                                                                   <span class="n">beamparams</span><span class="o">=</span><span class="n">beamparams</span><span class="p">)</span>
+                <span class="n">im_avg</span><span class="o">.</span><span class="n">imvec</span> <span class="o">=</span> <span class="p">(</span><span class="n">im_avg</span><span class="o">.</span><span class="n">imvec</span> <span class="o">+</span> <span class="n">im2_shift</span><span class="o">.</span><span class="n">imvec</span><span class="p">)</span> <span class="o">/</span> <span class="mf">2.0</span>
+
+            <span class="n">im_clique</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">im_avg</span><span class="o">.</span><span class="n">copy</span><span class="p">())</span>
+
+        <span class="n">im_cliques_fraclevels</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">im_clique</span><span class="p">)</span>
+
+    <span class="k">return</span><span class="p">(</span><span class="n">cliques_fraclevels</span><span class="p">,</span> <span class="n">im_cliques_fraclevels</span><span class="p">)</span>
+
+
+<span class="k">def</span> <span class="nf">change_cut_off</span><span class="p">(</span><span class="n">metric_mtx</span><span class="p">,</span> <span class="n">fracsteps</span><span class="p">,</span> <span class="n">imarr</span><span class="p">,</span> <span class="n">beamparams</span><span class="p">,</span> <span class="n">cutoff</span><span class="o">=</span><span class="mf">0.95</span><span class="p">,</span> <span class="n">zoom</span><span class="o">=</span><span class="mf">0.1</span><span class="p">,</span> <span class="n">fov</span><span class="o">=</span><span class="mi">1</span><span class="p">):</span>
+    <span class="p">(</span><span class="n">cliques_fraclevels</span><span class="p">,</span> <span class="n">im_cliques_fraclevels</span><span class="p">)</span> <span class="o">=</span> <span class="n">image_agreements</span><span class="p">(</span>
+        <span class="n">imarr</span><span class="p">,</span> <span class="n">beamparams</span><span class="p">,</span> <span class="n">metric_mtx</span><span class="p">,</span> <span class="n">fracsteps</span><span class="p">,</span> <span class="n">cutoff</span><span class="o">=</span><span class="n">cutoff</span><span class="p">)</span>
+    <span class="n">generate_consistency_plot</span><span class="p">(</span><span class="n">cliques_fraclevels</span><span class="p">,</span> <span class="n">im_cliques_fraclevels</span><span class="p">,</span> <span class="n">metric_mtx</span><span class="o">=</span><span class="n">metric_mtx</span><span class="p">,</span>
+                              <span class="n">fracsteps</span><span class="o">=</span><span class="n">fracsteps</span><span class="p">,</span> <span class="n">beamparams</span><span class="o">=</span><span class="n">beamparams</span><span class="p">,</span> <span class="n">zoom</span><span class="o">=</span><span class="n">zoom</span><span class="p">,</span> <span class="n">fov</span><span class="o">=</span><span class="n">fov</span><span class="p">)</span>
+
+
+<span class="k">def</span> <span class="nf">generate_consistency_plot</span><span class="p">(</span><span class="n">clique_fraclevels</span><span class="p">,</span> <span class="n">im_clique_fraclevels</span><span class="p">,</span> <span class="n">zoom</span><span class="o">=</span><span class="mf">0.1</span><span class="p">,</span> <span class="n">fov</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">show</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                              <span class="n">framesize</span><span class="o">=</span><span class="p">(</span><span class="mi">20</span><span class="p">,</span> <span class="mi">10</span><span class="p">),</span> <span class="n">fracsteps</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">cutoff</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">r_offset</span><span class="o">=</span><span class="mi">1</span><span class="p">):</span>
+
+    <span class="n">fig</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="n">framesize</span><span class="p">)</span>
+    <span class="n">cycol</span> <span class="o">=</span> <span class="n">cycle</span><span class="p">(</span><span class="s1">&#39;bgrcmk&#39;</span><span class="p">)</span>
+
+    <span class="n">x_loc</span> <span class="o">=</span> <span class="p">[]</span>
+
+    <span class="k">for</span> <span class="n">c</span><span class="p">,</span> <span class="n">column</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">clique_fraclevels</span><span class="p">):</span>
+        <span class="n">colorc</span> <span class="o">=</span> <span class="n">cycol</span><span class="o">.</span><span class="n">next</span><span class="p">()</span>
+        <span class="n">x_loc</span><span class="o">.</span><span class="n">append</span><span class="p">(((</span><span class="mf">20.</span><span class="o">/</span><span class="nb">len</span><span class="p">(</span><span class="n">clique_fraclevels</span><span class="p">))</span><span class="o">*</span><span class="n">c</span><span class="p">))</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">column</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">continue</span>
+
+        <span class="k">for</span> <span class="n">r</span><span class="p">,</span> <span class="n">row</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">column</span><span class="p">):</span>
+
+            <span class="c1"># adding the images</span>
+            <span class="n">lenx</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">clique_fraclevels</span><span class="p">)</span>
+            <span class="n">leny</span> <span class="o">=</span> <span class="mi">0</span>
+            <span class="k">for</span> <span class="n">li</span> <span class="ow">in</span> <span class="n">clique_fraclevels</span><span class="p">:</span>
+                <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">li</span><span class="p">)</span> <span class="o">&gt;</span> <span class="n">leny</span><span class="p">:</span>
+                    <span class="n">leny</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">li</span><span class="p">)</span>
+            <span class="n">sample_image</span> <span class="o">=</span> <span class="n">im_clique_fraclevels</span><span class="p">[</span><span class="n">c</span><span class="p">][</span><span class="n">r</span><span class="p">]</span><span class="o">.</span><span class="n">regrid_image</span><span class="p">(</span>
+                <span class="n">fov</span><span class="o">*</span><span class="n">im_clique_fraclevels</span><span class="p">[</span><span class="n">c</span><span class="p">][</span><span class="n">r</span><span class="p">]</span><span class="o">.</span><span class="n">fovx</span><span class="p">(),</span> <span class="mi">512</span><span class="p">)</span>
+            <span class="n">arr_img</span> <span class="o">=</span> <span class="n">sample_image</span><span class="o">.</span><span class="n">imvec</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">sample_image</span><span class="o">.</span><span class="n">xdim</span><span class="p">,</span> <span class="n">sample_image</span><span class="o">.</span><span class="n">ydim</span><span class="p">)</span>
+            <span class="n">imagebox</span> <span class="o">=</span> <span class="n">OffsetImage</span><span class="p">(</span><span class="n">arr_img</span><span class="p">,</span> <span class="n">zoom</span><span class="o">=</span><span class="n">zoom</span><span class="p">,</span> <span class="n">cmap</span><span class="o">=</span><span class="s1">&#39;afmhot&#39;</span><span class="p">)</span>
+
+            <span class="n">imagebox</span><span class="o">.</span><span class="n">image</span><span class="o">.</span><span class="n">axes</span> <span class="o">=</span> <span class="n">ax</span>
+
+            <span class="n">ab</span> <span class="o">=</span> <span class="n">AnnotationBbox</span><span class="p">(</span><span class="n">imagebox</span><span class="p">,</span> <span class="p">((</span><span class="mf">20.</span><span class="o">/</span><span class="n">lenx</span><span class="p">)</span><span class="o">*</span><span class="n">c</span><span class="o">+</span><span class="n">r_offset</span><span class="p">,</span> <span class="p">(</span><span class="mf">20.</span><span class="o">/</span><span class="n">leny</span><span class="p">)</span><span class="o">*</span><span class="n">r</span><span class="p">),</span>
+                                <span class="n">xycoords</span><span class="o">=</span><span class="s1">&#39;data&#39;</span><span class="p">,</span>
+                                <span class="n">pad</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span>
+                                <span class="n">arrowprops</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
+
+            <span class="n">ax</span><span class="o">.</span><span class="n">add_artist</span><span class="p">(</span><span class="n">ab</span><span class="p">)</span>
+
+            <span class="c1"># adding the arrows</span>
+            <span class="k">if</span> <span class="n">c</span><span class="o">+</span><span class="mi">1</span> <span class="o">!=</span> <span class="nb">len</span><span class="p">(</span><span class="n">clique_fraclevels</span><span class="p">):</span>
+                <span class="k">for</span> <span class="n">a</span><span class="p">,</span> <span class="n">ro</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">clique_fraclevels</span><span class="p">[</span><span class="n">c</span><span class="o">+</span><span class="mi">1</span><span class="p">]):</span>
+                    <span class="k">if</span> <span class="nb">set</span><span class="p">(</span><span class="n">row</span><span class="p">)</span><span class="o">.</span><span class="n">issubset</span><span class="p">(</span><span class="n">ro</span><span class="p">):</span>
+                        <span class="n">px</span> <span class="o">=</span> <span class="n">c</span><span class="o">+</span><span class="mi">1</span>
+                        <span class="n">px</span> <span class="o">=</span> <span class="p">((</span><span class="mf">20.</span><span class="o">/</span><span class="n">lenx</span><span class="p">)</span><span class="o">*</span><span class="n">px</span><span class="p">)</span> <span class="o">+</span> <span class="n">r_offset</span>
+                        <span class="n">py</span> <span class="o">=</span> <span class="n">a</span>
+                        <span class="n">py</span> <span class="o">=</span> <span class="p">(</span><span class="mf">20.</span><span class="o">/</span><span class="n">leny</span><span class="p">)</span><span class="o">*</span><span class="n">py</span>
+                        <span class="k">break</span>
+
+                <span class="n">xx</span> <span class="o">=</span> <span class="p">(</span><span class="mf">20.</span><span class="o">/</span><span class="n">lenx</span><span class="p">)</span><span class="o">*</span><span class="n">c</span> <span class="o">+</span> <span class="p">(</span><span class="mf">8.</span><span class="o">/</span><span class="n">lenx</span><span class="p">)</span> <span class="o">+</span> <span class="n">r_offset</span>
+                <span class="n">yy</span> <span class="o">=</span> <span class="p">(</span><span class="mf">20.</span><span class="o">/</span><span class="n">leny</span><span class="p">)</span><span class="o">*</span><span class="n">r</span>
+                <span class="n">ax</span><span class="o">.</span><span class="n">arrow</span><span class="p">(</span><span class="n">xx</span><span class="p">,</span> <span class="n">yy</span><span class="p">,</span>
+                         <span class="n">px</span> <span class="o">-</span> <span class="n">xx</span> <span class="o">-</span> <span class="p">(</span><span class="mf">9.</span><span class="o">/</span><span class="n">lenx</span><span class="p">),</span> <span class="n">py</span> <span class="o">-</span> <span class="n">yy</span><span class="p">,</span>
+                         <span class="n">head_width</span><span class="o">=</span><span class="mf">0.05</span><span class="p">,</span>
+                         <span class="n">head_length</span><span class="o">=</span><span class="mf">0.1</span><span class="p">,</span>
+                         <span class="n">color</span><span class="o">=</span><span class="n">colorc</span>
+                         <span class="p">)</span>
+            <span class="n">row</span><span class="o">.</span><span class="n">sort</span><span class="p">()</span>
+            <span class="c1"># adding the text</span>
+            <span class="n">txtstring</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">row</span><span class="p">)</span>
+            <span class="n">ax</span><span class="o">.</span><span class="n">text</span><span class="p">((</span><span class="mf">20.</span><span class="o">/</span><span class="n">lenx</span><span class="p">)</span><span class="o">*</span><span class="n">c</span><span class="p">,</span> <span class="p">(</span><span class="mf">20.</span><span class="o">/</span><span class="n">leny</span><span class="p">)</span><span class="o">*</span><span class="p">(</span><span class="n">r</span><span class="o">-</span><span class="mf">0.5</span><span class="p">),</span> <span class="n">txtstring</span><span class="p">,</span> <span class="n">fontsize</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span>
+                    <span class="n">horizontalalignment</span><span class="o">=</span><span class="s1">&#39;center&#39;</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s1">&#39;black&#39;</span><span class="p">,</span> <span class="n">zorder</span><span class="o">=</span><span class="mi">1000</span><span class="p">)</span>
+
+    <span class="n">ax</span><span class="o">.</span><span class="n">set_xlim</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">22</span><span class="p">)</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">set_ylim</span><span class="p">(</span><span class="o">-</span><span class="mi">10</span><span class="p">,</span> <span class="mi">22</span><span class="p">)</span>
+
+    <span class="n">ax</span><span class="o">.</span><span class="n">set_xticks</span><span class="p">(</span><span class="n">x_loc</span><span class="p">)</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">set_xticklabels</span><span class="p">(</span><span class="n">fracsteps</span><span class="p">)</span>
+
+    <span class="n">ax</span><span class="o">.</span><span class="n">set_yticks</span><span class="p">([])</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">set_yticklabels</span><span class="p">([])</span>
+
+    <span class="n">ax</span><span class="o">.</span><span class="n">spines</span><span class="p">[</span><span class="s1">&#39;right&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">set_visible</span><span class="p">(</span><span class="kc">False</span><span class="p">)</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">spines</span><span class="p">[</span><span class="s1">&#39;top&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">set_visible</span><span class="p">(</span><span class="kc">False</span><span class="p">)</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">spines</span><span class="p">[</span><span class="s1">&#39;left&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">set_visible</span><span class="p">(</span><span class="kc">False</span><span class="p">)</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">spines</span><span class="p">[</span><span class="s1">&#39;bottom&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">set_visible</span><span class="p">(</span><span class="kc">False</span><span class="p">)</span>
+
+    <span class="n">ax</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s1">&#39;Blurred comparison of all images; cutoff=</span><span class="si">{0}</span><span class="s1">, fov (uas)=</span><span class="si">{1}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+        <span class="nb">str</span><span class="p">(</span><span class="n">cutoff</span><span class="p">),</span> <span class="nb">str</span><span class="p">(</span><span class="n">im_clique_fraclevels</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">][</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">fovx</span><span class="p">()</span><span class="o">/</span><span class="n">ehc</span><span class="o">.</span><span class="n">RADPERUAS</span><span class="p">)))</span>
+
+<span class="c1">#     for item in [fig, ax]:</span>
+<span class="c1">#         item.patch.set_visible(False)</span>
+<span class="c1">#     fig.patch.set_visible(False)</span>
+<span class="c1">#     ax.axis(&#39;off&#39;)</span>
+    <span class="k">if</span> <span class="n">show</span> <span class="ow">is</span> <span class="kc">True</span><span class="p">:</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+</pre></div>
+
+           </div>
+           <div class="articleComments">
+            
+           </div>
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2017, Andrew Chael.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'../../../',
+            VERSION:'0.1.1',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true,
+            SOURCELINK_SUFFIX: '.txt'
+        };
+    </script>
+      <script type="text/javascript" src="../../../_static/jquery.js"></script>
+      <script type="text/javascript" src="../../../_static/underscore.js"></script>
+      <script type="text/javascript" src="../../../_static/doctools.js"></script>
+      <script type="text/javascript" src="../../../_static/language_data.js"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="../../../_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>
