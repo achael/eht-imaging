@@ -8,13 +8,20 @@ The package contains several primary classes for loading, simulating, and manipu
 
 Installation
 ------------
-Download the latest version from the `GitHub repository <https://github.com/achael/eht-imaging>`_, change to the main directory and run:
+
+The latest stable version (`1.2.1 <https://github.com/achael/eht-imaging/releases/tag/v1.2.1>`_) is available on `PyPi <https://pypi.org/project/ehtim/1.2/>`_. Simply install pip and run
+
+.. code-block:: bash
+
+    pip install ehtim
+
+Incremental updates are developed on the `dev branch <https://github.com/achael/eht-imaging/tree/dev>`_. To use the very latest (unstable) code, checkout dev, change to the main eht-imaging directory, and run:
 
 .. code-block:: bash
 
     pip install .
 
-This will install most of the required libraries automatically (`numpy <http://www.numpy.org/>`_, `scipy <http://www.scipy.org/>`_, `matplotlib <http://www.matplotlib.org/>`_, `astropy <http://www.astropy.org/>`_, `ephem <http://pypi.python.org/pypi/pyephem/>`_, `future <http://pypi.python.org/pypi/future>`_, `h5py <http://www.h5py.org/>`_, and `pandas <http://www.pandas.pydata.org/>`_).
+Installing with pip will update most of the required libraries automatically (`numpy <http://www.numpy.org/>`_, `scipy <http://www.scipy.org/>`_, `matplotlib <http://www.matplotlib.org/>`_, `astropy <http://www.astropy.org/>`_, `ephem <http://pypi.python.org/pypi/pyephem/>`_, `future <http://pypi.python.org/pypi/future>`_, `h5py <http://www.h5py.org/>`_, and `pandas <http://www.pandas.pydata.org/>`_).
 
 **If you want to use fast fourier transforms, you will also need to separately install** `NFFT <https://github.com/NFFT/nfft>`_ **and its** `pynfft wrapper <https://github.com/ghisvail/pyNFFT/>`_. The simplest way is to use `conda <https://anaconda.org/conda-forge/pynfft/>`__ to install both:
 
