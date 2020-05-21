@@ -15,7 +15,7 @@ if __name__ == "__main__":
           license = "GPLv3",
           keywords = "imaging astronomy EHT polarimetry",
           url = "https://github.com/achael/eht-imaging",
-          download_url = "https://github.com/achael/eht-imaging/archive/v1.2.tar.gz",
+          download_url = "https://github.com/achael/eht-imaging/archive/v1.2.1.tar.gz",
           packages = ["ehtim",
                       "scripts",
                       "ehtim.calibrating",
