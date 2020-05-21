@@ -11,7 +11,6 @@ import scipy.integrate as integrate
 from scipy.optimize import minimize
 
 import matplotlib.pyplot as plt
-from IPython import display
 
 import ehtim.image as image
 import ehtim.movie as movie
@@ -380,8 +379,8 @@ class ScatteringModel(object):
         Nx = EpsilonScreen.shape[1]
         Ny = EpsilonScreen.shape[0]
 
-        if Nx%2 == 0:
-            print("The image dimension should really be odd...")
+#        if Nx%2 == 0:
+#            print("The image dimension should really be odd...")
 
         #Now we'll calculate the power spectrum for each pixel in Fourier space
         screen_x_offset_pixels = (Vx_km_per_s*1.e5) * (t_hr*3600.0) / (FOV/float(Nx))
@@ -548,18 +547,21 @@ class ScatteringModel(object):
                Scattered_Movie: Either a movie object or a list of images, depending on the flag Return_Image_List.
             """
 
-        if type(Unscattered_Movie) != movie.Movie and framedur_sec == None:
-            print("If scattering a list of images of static image, the framedur must be specified!")
+        print("Warning!! assuming a constant frame duration, but Movie objects now support unequally spaced frames!")
+
+        if type(Unscattered_Movie) != movie.Movie and framedur_sec is None:
+            print("If scattering a list of images or static image, the framedur must be specified!")
             return
 
-        if type(Unscattered_Movie) == image.Image and N_frames == None:
+        if type(Unscattered_Movie) == image.Image and N_frames is None:
             print("If scattering a static image, the total number of frames must be specified (N_frames)!")
             return
 
-        if framedur_sec == None:
-            framedur_sec = Unscattered_Movie.framedur
-
-        print("Frame Duration (seconds):",framedur_sec)
+        # time list in hr
+        if hasattr(Unscattered_Movie, 'times'):
+            tlist_hr = Unscattered_Movie.times
+        else:
+            tlist_hr = [framedur_sec/3600.0*j for j in range(N_frames)]
 
         if type(Unscattered_Movie) == movie.Movie:
             N = Unscattered_Movie.xdim
@@ -599,7 +601,7 @@ class ScatteringModel(object):
 
         def get_frame(j):
             if type(Unscattered_Movie) == movie.Movie:
-                im = image.Image(Unscattered_Movie.frames[j].reshape((N,N)), psize, ra, dec, rf, pulse, source, mjd)
+                im = image.Image(Unscattered_Movie.frames[j].reshape((N,N)), psize=psize, ra=ra, dec=dec, rf=rf, pulse=pulse, source=source, mjd=mjd)
                 if len(Unscattered_Movie.qframes) > 0:
                     im.add_qu(Unscattered_Movie.qframes[j].reshape((N,N)), Unscattered_Movie.uframes[j].reshape((N,N)))
 
@@ -617,12 +619,14 @@ class ScatteringModel(object):
         if Epsilon_Screen.shape[0] == 0:
             Epsilon_Screen = MakeEpsilonScreen(N, N)
 
-        scattered_im_List = [ self.Scatter(get_frame(j), Epsilon_Screen, obs_frequency_Hz = obs_frequency_Hz, Vx_km_per_s = Vx_km_per_s, Vy_km_per_s = Vy_km_per_s, t_hr=framedur_sec/3600.0*j, sqrtQ=sqrtQ, Linearized_Approximation=Linearized_Approximation, Force_Positivity=Force_Positivity) for j in range(N_frames)]
+        scattered_im_List = [ self.Scatter(get_frame(j), Epsilon_Screen, obs_frequency_Hz = obs_frequency_Hz, Vx_km_per_s = Vx_km_per_s, Vy_km_per_s = Vy_km_per_s, 
+                              t_hr=tlist_hr[j], sqrtQ=sqrtQ, Linearized_Approximation=Linearized_Approximation, Force_Positivity=Force_Positivity) for j in range(N_frames)]
 
         if Return_Image_List == True:
             return scattered_im_List
 
-        Scattered_Movie = movie.Movie( [im.imvec.reshape((im.xdim,im.ydim)) for im in scattered_im_List], framedur = framedur_sec, psize = psize, ra = ra, dec = dec, rf=rf, pulse=pulse, source=source, mjd=mjd, start_hr=start_hr)
+        Scattered_Movie = movie.Movie( [im.imvec.reshape((im.xdim,im.ydim)) for im in scattered_im_List],
+                                       times=tlist_hr, psize = psize, ra = ra, dec = dec, rf=rf, pulse=pulse, source=source, mjd=mjd)
 
         if has_pol:
             Scattered_Movie_Q = [im.qvec.reshape((im.xdim,im.ydim)) for im in scattered_im_List]
@@ -779,6 +783,3 @@ def plot_scatt(im_unscatt, im_ea, im_scatt, im_phase, Prior, nit, chi2, ipynb=Fa
 
     # Display
     plt.draw()
-    if ipynb:
-        display.clear_output()
-        display.display(plt.gcf())

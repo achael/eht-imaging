@@ -3,10 +3,11 @@ from __future__ import print_function
 
 import numpy as np
 import ehtim as eh
+from ehtim.imaging.imager_utils import chisqdata, chisqgrad, chisq
 import time
 
-im = eh.image.load_txt('models/avery_sgra_eofn.txt')
-eht = eh.array.load_txt('arrays/EHT2019.txt')
+im = eh.image.load_txt('../../models/avery_sgra_eofn.txt')
+eht = eh.array.load_txt('../../arrays/EHT2019.txt')
 
 PADFAC=10
 PRAD_FFT = 12
@@ -59,13 +60,13 @@ if len(mask) >0 and np.any(np.invert(mask)):
 # Testing the chi^2
 for dtype in ['vis', 'bs', 'amp', 'cphase', 'camp', 'logcamp']:
     print('\nTesting',dtype)
-    chisqdata_dft = eh.imager.chisqdata(obs_dft, prior, mask, dtype, ttype='direct')
-    chisqdata_fft = eh.imager.chisqdata(obs_dft, prior, mask, dtype, ttype='fast', fft_pad_factor=PADFAC,p_rad=PRAD_FFT)
-    chisqdata_nfft = eh.imager.chisqdata(obs_dft, prior, mask, dtype, ttype='nfft', fft_pad_factor=PADFAC,p_rad=PRAD_NFFT)
+    chisqdata_dft = chisqdata(obs_dft, prior, mask, dtype, ttype='direct')
+    chisqdata_fft = chisqdata(obs_dft, prior, mask, dtype, ttype='fast', fft_pad_factor=PADFAC,p_rad=PRAD_FFT)
+    chisqdata_nfft = chisqdata(obs_dft, prior, mask, dtype, ttype='nfft', fft_pad_factor=PADFAC,p_rad=PRAD_NFFT)
   
-    chisq_dft = eh.imager.chisq(test_imvec, chisqdata_dft[2], chisqdata_dft[0], chisqdata_dft[1], dtype, ttype='direct', mask=mask)
-    chisq_fft = eh.imager.chisq(test_imvec, chisqdata_fft[2], chisqdata_fft[0], chisqdata_fft[1], dtype, ttype='fast', mask=mask)
-    chisq_nfft = eh.imager.chisq(test_imvec, chisqdata_nfft[2], chisqdata_nfft[0], chisqdata_nfft[1], dtype, ttype='nfft', mask=mask)
+    chisq_dft = chisq(test_imvec, chisqdata_dft[2], chisqdata_dft[0], chisqdata_dft[1], dtype, ttype='direct', mask=mask)
+    chisq_fft = chisq(test_imvec, chisqdata_fft[2], chisqdata_fft[0], chisqdata_fft[1], dtype, ttype='fast', mask=mask)
+    chisq_nfft = chisq(test_imvec, chisqdata_nfft[2], chisqdata_nfft[0], chisqdata_nfft[1], dtype, ttype='nfft', mask=mask)
     print("\n")
     print("chisq_dft: %f" % chisq_dft)
     print("chisq_fft: %f" % chisq_fft)
@@ -79,13 +80,13 @@ for dtype in ['vis', 'bs', 'amp', 'cphase', 'camp', 'logcamp']:
 for dtype in ['vis', 'bs', 'amp', 'cphase', 'camp', 'logcamp']:
     print('\nTesting',dtype)
     print('------------------------------')
-    chisqdata_dft = eh.imager.chisqdata(obs_dft, prior, mask, dtype, ttype='direct')
-    chisqdata_fft = eh.imager.chisqdata(obs_dft, prior, mask, dtype, ttype='fast', fft_pad_factor=PADFAC,p_rad=PRAD_FFT)
-    chisqdata_nfft = eh.imager.chisqdata(obs_dft, prior, mask, dtype, ttype='nfft', fft_pad_factor=PADFAC,p_rad=PRAD_NFFT)
+    chisqdata_dft = chisqdata(obs_dft, prior, mask, dtype, ttype='direct')
+    chisqdata_fft = chisqdata(obs_dft, prior, mask, dtype, ttype='fast', fft_pad_factor=PADFAC,p_rad=PRAD_FFT)
+    chisqdata_nfft = chisqdata(obs_dft, prior, mask, dtype, ttype='nfft', fft_pad_factor=PADFAC,p_rad=PRAD_NFFT)
   
-    chisq_dft_grad = eh.imager.chisqgrad(test_imvec, chisqdata_dft[2], chisqdata_dft[0], chisqdata_dft[1], dtype, ttype='direct', mask=mask)
-    chisq_fft_grad = eh.imager.chisqgrad(test_imvec, chisqdata_fft[2], chisqdata_fft[0], chisqdata_fft[1], dtype, ttype='fast', mask=mask)
-    chisq_nfft_grad = eh.imager.chisqgrad(test_imvec, chisqdata_nfft[2], chisqdata_nfft[0], chisqdata_nfft[1], dtype, ttype='nfft', mask=mask)
+    chisq_dft_grad = chisqgrad(test_imvec, chisqdata_dft[2], chisqdata_dft[0], chisqdata_dft[1], dtype, ttype='direct', mask=mask)
+    chisq_fft_grad = chisqgrad(test_imvec, chisqdata_fft[2], chisqdata_fft[0], chisqdata_fft[1], dtype, ttype='fast', mask=mask)
+    chisq_nfft_grad =chisqgrad(test_imvec, chisqdata_nfft[2], chisqdata_nfft[0], chisqdata_nfft[1], dtype, ttype='nfft', mask=mask)
     #print("chisq_dft_grad:",chisq_dft_grad.reshape((im.ydim,im.xdim))[47:53,47:53])
     #print("chisq_fft_grad:",chisq_fft_grad.reshape((im.ydim,im.xdim))[47:53,47:53])
     compare_floor = np.min(np.abs(chisq_dft_grad))*1.e-20 + 1.e-100

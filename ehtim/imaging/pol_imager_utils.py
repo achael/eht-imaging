@@ -1,4 +1,4 @@
-# obsdata.py
+# pol_imager_utils.py
 # General imager functions for polarimetric VLBI data
 #
 #    Copyright (C) 2018 Andrew Chael
@@ -44,7 +44,6 @@ from . import linearize_energy as le
 
 from ehtim.const_def import *
 from ehtim.observing.obs_helpers import *
-from IPython import display
 
 ##################################################################################################
 # Constants & Definitions
@@ -109,6 +108,9 @@ def pol_imager_func(Obsdata, InitIm, Prior,
 
            clipfloor (float): The Stokes I Jy/pixel level above which prior image pixels are varied
            grads (bool): If True, analytic gradients are used
+           norm_reg (bool): If True, normalizes regularizer terms
+           beam_size (float): beam size in radians for normalizing the regularizers
+           flux (float): The total flux of the output image in Jy
 
            maxit (int): Maximum number of minimizer iterations
            stop (float): The convergence criterion
@@ -124,9 +126,13 @@ def pol_imager_func(Obsdata, InitIm, Prior,
     clipfloor = kwargs.get('clipfloor', -1)
     ttype = kwargs.get('ttype','direct')
     grads = kwargs.get('grads',True)
-    #mcv_transform = kwargs.get('logim',True) #transform m,chi with mcv (see below)
+    #mcv_transform = kwargs.get('logim',True) f#transform m,chi with mcv (see below)
     norm_init = kwargs.get('norm_init',False)
     show_updates = kwargs.get('show_updates',True)
+
+    beam_size = kwargs.get('beam_size',Obsdata.res())
+    flux = kwargs.get('flux',InitIm.total_flux())
+    kwargs['beam_size'] = beam_size
 
     # Make sure data and regularizer options are ok
     if not d1 and not d2:
@@ -193,29 +199,39 @@ def pol_imager_func(Obsdata, InitIm, Prior,
 
     # Define the chi^2 and chi^2 gradient
     def chisq1(imtuple):
-        return polchisq(imtuple, A1, data1, sigma1, d1, ttype=ttype, mask=embed_mask, pol_prim=pol_prim)
+        return polchisq(imtuple, A1, data1, sigma1, d1, ttype=ttype,
+                        mask=embed_mask, pol_prim=pol_prim)
 
     def chisq1grad(imtuple):
-        return polchisqgrad(imtuple, A1, data1, sigma1, d1, ttype=ttype, mask=embed_mask, pol_prim=pol_prim, pol_solve=pol_solve)
+        return polchisqgrad(imtuple, A1, data1, sigma1, d1, ttype=ttype, mask=embed_mask,
+                            pol_prim=pol_prim, pol_solve=pol_solve)
 
     def chisq2(imtuple):
-        return polchisq(imtuple, A2, data2, sigma2, d2, ttype=ttype, mask=embed_mask, pol_prim=pol_prim)
+        return polchisq(imtuple, A2, data2, sigma2, d2, ttype=ttype, mask=embed_mask,
+                        pol_prim=pol_prim)
 
     def chisq2grad(imtuple):
-        return polchisqgrad(imtuple, A2, data2, sigma2, d2, ttype=ttype, mask=embed_mask, pol_prim=pol_prim,pol_solve=pol_solve)
+        return polchisqgrad(imtuple, A2, data2, sigma2, d2, ttype=ttype, mask=embed_mask,
+                            pol_prim=pol_prim,pol_solve=pol_solve)
 
     # Define the regularizer and regularizer gradient
     def reg1(imtuple):
-        return polregularizer(imtuple, embed_mask, Prior.xdim, Prior.ydim, Prior.psize, s1, pol_prim=pol_prim)
+        return polregularizer(imtuple, embed_mask, flux, 
+                              Prior.xdim, Prior.ydim, Prior.psize, s1, **kwargs)
+        return polregularizer(imtuple, embed_mask, Prior.xdim, Prior.ydim, Prior.psize, s1, 
+                              pol_prim=pol_prim,norm_reg=norm_reg)
 
     def reg1grad(imtuple):
-        return polregularizergrad(imtuple, embed_mask, Prior.xdim, Prior.ydim, Prior.psize, s1, pol_prim=pol_prim,pol_solve=pol_solve)
+        return polregularizergrad(imtuple, embed_mask, flux, 
+                                  Prior.xdim, Prior.ydim, Prior.psize, s1, **kwargs)
 
     def reg2(imtuple):
-        return polregularizer(imtuple, embed_mask, Prior.xdim, Prior.ydim, Prior.psize, s2, pol_prim=pol_prim)
+        return polregularizer(imtuple, embed_mask, flux, 
+                              Prior.xdim, Prior.ydim, Prior.psize, s2, **kwargs)
 
     def reg2grad(imtuple):
-        return  polregularizergrad(imtuple, embed_mask, Prior.xdim, Prior.ydim, Prior.psize, s2, pol_prim=pol_prim,pol_solve=pol_solve)
+        return  polregularizergrad(imtuple, embed_mask, flux, 
+                                   Prior.xdim, Prior.ydim, Prior.psize, s2, **kwargs)
 
 
     # Define the objective function and gradient
@@ -528,6 +544,9 @@ def polchisq(imtuple, A, data, sigma, dtype, ttype='direct', mask=[], pol_prim="
         raise Exception("FFT not yet implemented in polchisq!")
 
     elif ttype== 'nfft':
+        if len(mask)>0 and np.any(np.invert(mask)):
+            imtuple = embed_pol(imtuple, mask, randomfloor=True)
+
         if dtype == 'pvis':
             chisq = chisq_p_nfft(imtuple, A, data, sigma, pol_prim)
 
@@ -566,6 +585,9 @@ def polchisqgrad(imtuple, A, data, sigma, dtype, ttype='direct',
         raise Exception("FFT not yet implemented in polchisqgrad!")
 
     elif ttype== 'nfft':
+        if len(mask)>0 and np.any(np.invert(mask)):
+            imtuple = embed_pol(imtuple, mask, randomfloor=True)
+
         if dtype == 'pvis':
             chisqgrad = chisqgrad_p_nfft(imtuple, A, data, sigma, pol_prim,pol_solve)
 
@@ -575,35 +597,51 @@ def polchisqgrad(imtuple, A, data, sigma, dtype, ttype='direct',
         elif dtype == 'pbs':
             chisqgrad = chisqgrad_pbs_nffts(imtuple, A, data, sigma, pol_prim,pol_solve)
 
+        if len(mask)>0 and np.any(np.invert(mask)):
+            chisqgrad = np.array((chisqgrad[0][mask],chisqgrad[1][mask],chisqgrad[2][mask]))
+
     return chisqgrad
 
 
-def polregularizer(imtuple, mask, xdim, ydim, psize, stype, pol_prim="amp_phase"):
+def polregularizer(imtuple, mask, flux, xdim, ydim, psize, stype, **kwargs):
+
+    norm_reg = kwargs.get('norm_reg', NORM_REGULARIZER)
+    pol_prim = kwargs.get('pol_prim', 'amp_phase')
+    pol_solve = kwargs.get('pol_solve', (0,1,1))
+    beam_size = kwargs.get('beam_size',1)
+
     if stype == "msimple":
-        reg = -sm(imtuple, pol_prim)
+        reg = -sm(imtuple, flux, pol_prim, norm_reg=norm_reg)
     elif stype == "hw":
-        reg = -shw(imtuple, pol_prim)
+        reg = -shw(imtuple, flux, pol_prim, norm_reg=norm_reg)
     elif stype == "ptv":
         if np.any(np.invert(mask)):
             imtuple = embed_pol(imtuple, mask, randomfloor=True)
-        reg = -stv_pol(imtuple, xdim, ydim, pol_prim)
+        reg = -stv_pol(imtuple, flux, xdim, ydim, psize, pol_prim, 
+                       norm_reg=norm_reg, beam_size=beam_size)
     else:
         reg = 0
 
     return reg
 
-def polregularizergrad(imtuple, mask, xdim, ydim, psize, stype, pol_prim="amp_phase",pol_solve=(0,1,1)):
+def polregularizergrad(imtuple, mask, flux, xdim, ydim, psize, stype, **kwargs):
+
+    norm_reg = kwargs.get('norm_reg', NORM_REGULARIZER)
+    pol_prim = kwargs.get('pol_prim', 'amp_phase')
+    pol_solve = kwargs.get('pol_solve', (0,1,1))
+    beam_size = kwargs.get('beam_size',1)
 
     if stype == "msimple":
-        reggrad = -smgrad(imtuple, pol_prim,pol_solve)
+        reggrad = -smgrad(imtuple, flux, pol_prim, pol_solve, norm_reg=norm_reg)
     elif stype == "hw":
-        reggrad = -shwgrad(imtuple, pol_prim,pol_solve)
+        reggrad = -shwgrad(imtuple, flux, pol_prim, pol_solve, norm_reg=norm_reg)
     elif stype == "ptv":
         if np.any(np.invert(mask)):
             imtuple = embed_pol(imtuple, mask, randomfloor=True)
-        reggrad = -stv_pol_grad(imtuple, xdim, ydim, pol_prim,pol_solve)
+        reggrad = -stv_pol_grad(imtuple, flux, xdim, ydim, psize, pol_prim, pol_solve,
+                                norm_reg=norm_reg, beam_size=beam_size)
         if np.any(np.invert(mask)):
-            reggrad = (reggrad[0][mask],reggrad[1][mask],reggrad[2][mask])
+            reggrad = np.array((reggrad[0][mask],reggrad[1][mask],reggrad[2][mask]))
     else:
         reggrad = np.zeros((3,len(imtuple[0])))
 
@@ -1076,17 +1114,26 @@ def chisqgrad_pbs(imtuple, Amatrices, bis_p, sigma, pol_prim="amp_phase",pol_sol
 # Polarimetric Entropy and Gradient Functions
 ##################################################################################################
 
-def sm(imtuple, pol_prim="amp_phase"):
+def sm(imtuple, flux, pol_prim="amp_phase", 
+       norm_reg=NORM_REGULARIZER):
     """I log m entropy
     """
+    if norm_reg: norm = flux
+    else: norm = 1
+
     iimage = imtuple[0]    
     mimage = make_m_image(imtuple, pol_prim) 
     S = -np.sum(iimage * np.log(mimage))
-    return S
+    return S/norm
 
-def smgrad(imtuple, pol_prim="amp_phase",pol_solve=(0,1,1)):
+def smgrad(imtuple, flux, pol_prim="amp_phase",pol_solve=(0,1,1),
+           norm_reg=NORM_REGULARIZER):
     """I log m entropy gradient
     """
+
+    if norm_reg: norm = flux
+    else: norm = 1
+
     iimage = imtuple[0]    
     zeros  =  np.zeros(len(iimage))
     mimage = make_m_image(imtuple, pol_prim) 
@@ -1103,20 +1150,26 @@ def smgrad(imtuple, pol_prim="amp_phase",pol_solve=(0,1,1)):
     else:
         raise Exception("polarimetric representation %s not added to pol gradient yet!" % pol_prim)
 
-    return np.array(out)
+    return np.array(out)/norm
           
-def shw(imtuple, pol_prim="amp_phase"):
+def shw(imtuple, flux, pol_prim="amp_phase", norm_reg=NORM_REGULARIZER):
     """Holdaway-Wardle polarimetric entropy
     """
     
+    if norm_reg: norm = flux
+    else: norm = 1
+
     iimage = imtuple[0]    
     mimage = make_m_image(imtuple, pol_prim) 
     S = -np.sum(iimage * (((1+mimage)/2) * np.log((1+mimage)/2) + ((1-mimage)/2) * np.log((1-mimage)/2)))
-    return S
+    return S/norm
 
-def shwgrad(imtuple, pol_prim="amp_phase",pol_solve=(0,1,1)):
+def shwgrad(imtuple, flux, pol_prim="amp_phase",pol_solve=(0,1,1),
+            norm_reg=NORM_REGULARIZER):
     """Gradient of the Holdaway-Wardle polarimetric entropy
     """
+    if norm_reg: norm = flux
+    else: norm = 1
 
     iimage = imtuple[0]
     zeros =  np.zeros(len(iimage))
@@ -1132,11 +1185,16 @@ def shwgrad(imtuple, pol_prim="amp_phase",pol_solve=(0,1,1)):
     else:
         raise Exception("polarimetric representation %s not added to pol gradient yet!" % pol_prim)
 
-    return np.array(out)
+    return np.array(out)/norm
 
-def stv_pol(imtuple, nx, ny, pol_prim="amp_phase"):
+def stv_pol(imtuple, flux, nx, ny, psize, pol_prim="amp_phase", 
+            norm_reg=NORM_REGULARIZER, beam_size=None):
     """Total variation of I*m*exp(2Ichi)"""
     
+    if beam_size is None: beam_size = psize
+    if norm_reg: norm = flux*psize / beam_size
+    else: norm = 1
+
     pimage = make_p_image(imtuple, pol_prim)
     im = pimage.reshape(ny, nx)
 
@@ -1144,10 +1202,15 @@ def stv_pol(imtuple, nx, ny, pol_prim="amp_phase"):
     im_l1 = np.roll(impad, -1, axis=0)[1:ny+1, 1:nx+1]
     im_l2 = np.roll(impad, -1, axis=1)[1:ny+1, 1:nx+1]
     S = -np.sum(np.sqrt(np.abs(im_l1 - im)**2 + np.abs(im_l2 - im)**2))
-    return S
+    return S/norm
 
-def stv_pol_grad(imtuple, nx, ny, pol_prim="amp_phase",pol_solve=(0,1,1)):
+def stv_pol_grad(imtuple, flux, nx, ny, psize, pol_prim="amp_phase", pol_solve=(0,1,1), 
+             norm_reg=NORM_REGULARIZER, beam_size=None):
     """Total variation entropy gradient"""
+
+    if beam_size is None: beam_size = psize
+    if norm_reg: norm = flux*psize / beam_size
+    else: norm = 1
 
     iimage = imtuple[0]   
     zeros =  np.zeros(len(iimage)) 
@@ -1201,7 +1264,7 @@ def stv_pol_grad(imtuple, nx, ny, pol_prim="amp_phase",pol_solve=(0,1,1)):
     else:
         raise Exception("polarimetric representation %s not added to pol gradient yet!" % pol_prim)
 
-    return out
+    return out/norm
 
 
 ##################################################################################################
@@ -1290,7 +1353,6 @@ def chisqdata_m_nfft(Obsdata, Prior, mask, **kwargs):
     uv = np.hstack((mdata['u'].reshape(-1,1), mdata['v'].reshape(-1,1)))
     m = mdata['m']
     sigmam = mdata['msigma']
-    A = ftmatrix(Prior.psize, Prior.xdim, Prior.ydim, uv, pulse=Prior.pulse, mask=mask)
 
     # get NFFT info
     npad = int(fft_pad_factor * np.max((Prior.xdim, Prior.ydim)))

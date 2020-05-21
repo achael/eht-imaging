@@ -23,6 +23,7 @@ from builtins import map
 from builtins import range
 
 import numpy as np 
+
 try:
     import pandas as pd
 except ImportError:
@@ -179,9 +180,11 @@ def coh_avg_vis(obs,dt=0,scan_avg=False,return_type='rec',err_type='predicted',n
             def meanerrF(x):
                 x = np.asarray(x)
                 x = x[x==x]
-                try: ret = np.sqrt(np.sum(x**2)/len(x)**2)
-                except: ret = np.nan +1j*np.nan
+                
+                if len(x)>0: ret = np.sqrt(np.sum(x**2)/len(x)**2)
+                else: ret = np.nan +1j*np.nan
                 return ret
+              
             aggregated[vis1] = meanF
             aggregated[vis2] = meanF
             aggregated[vis3] = meanF
@@ -221,6 +224,82 @@ def coh_avg_vis(obs,dt=0,scan_avg=False,return_type='rec',err_type='predicted',n
                 return df_to_rec(vis_avg,'vis_circ')
         elif return_type=='df':
             return vis_avg
+
+
+def coh_moving_avg_vis(obs,dt=50,return_type='rec'):
+    """coherently averages visibilities with moving window
+    Args:
+        obs: ObsData object
+        dt (float): averaging window size in seconds
+        return_type (str): 'rec' for numpy record array (as used by ehtim), 'df' for data frame
+     Returns:
+        vis: coherently averaged visibilities on same grid
+    """
+    min_periods=1
+    if dt <= 0:
+        raise Exception('Time dt must be positive!')
+    if obs.polrep=='stokes':
+        vis1='vis'; vis2='qvis'; vis3='uvis'; vis4='vvis'
+        sig1='sigma'; sig2='qsigma'; sig3='usigma'; sig4='vsigma'
+    elif obs.polrep=='circ':
+        vis1='rrvis'; vis2='llvis'; vis3='rlvis'; vis4='lrvis'
+        sig1='rrsigma'; sig2='llsigma'; sig3='rlsigma'; sig4='lrsigma'
+
+    vis = make_df(obs)
+    vis = vis.sort_values(['baseline','datetime']).reset_index().copy()
+    #vis['total_seconds'] = list(map(lambda x: int(x.total_seconds()), vis['datetime'] - vis['datetime'].min()))
+    vis['total_seconds'] = [pd.Timestamp(x) for x in vis.datetime]
+    vis['roll_vis'] = list(zip(vis['total_seconds'],vis[vis1],vis[vis2],vis[vis3],vis[vis4],vis['datetime']))
+    vis['roll_sig'] = list(zip(vis['total_seconds'],vis[sig1],vis[sig2],vis[sig3],vis[sig4],vis['datetime']))
+
+    roll_vis_local = lambda x: roll_vis(x,dt=str(int(dt))+'s',min_periods=min_periods)
+    roll_sig_local = lambda x: roll_sig(x,dt=str(int(dt))+'s',min_periods=min_periods)
+    vis_avg_roll_vis = vis[['baseline','roll_vis']].groupby('baseline').transform(roll_vis_local)['roll_vis'].copy()
+    vis_avg_roll_sig = vis[['baseline','roll_sig']].groupby('baseline').transform(roll_sig_local)['roll_sig'].copy()
+    
+    for cou,col in enumerate([vis1,vis2,vis3,vis4]):
+        vis[col] = [x[2*cou] + 1j*x[2*cou+1] for x in vis_avg_roll_vis]
+    for cou,col in enumerate([sig1,sig2,sig3,sig4]):
+        vis[col] = [x[cou] for x in vis_avg_roll_sig]
+    #shift to match with original data
+    vis.datetime = vis.datetime.apply(lambda x: x-datetime.timedelta(seconds=dt))
+    vis.time = vis.time - dt/2.0/3600.
+    if return_type=='rec':
+        if obs.polrep=='stokes':
+            return df_to_rec(vis.copy(),'vis')
+        elif obs.polrep=='circ':
+            return df_to_rec(vis.copy(),'vis_circ')
+    elif return_type=='df':
+        return vis.copy()
+
+
+def roll_vis(ser,dt='1s',min_periods=1):
+    """functtion helper for coh_moving_avg_vis
+    """
+    foo = pd.DataFrame({'REvis1': [np.real(x[1]) for x in ser],'IMvis1': [np.imag(x[1]) for x in ser],
+                        'REvis2': [np.real(x[2]) for x in ser],'IMvis2': [np.imag(x[2]) for x in ser],
+                        'REvis3': [np.real(x[3]) for x in ser],'IMvis3': [np.imag(x[3]) for x in ser],
+                        'REvis4': [np.real(x[4]) for x in ser],'IMvis4': [np.imag(x[4]) for x in ser]},
+                        index=[x[0] for x in ser])
+    avg = foo.rolling(dt, min_periods=min_periods).mean()
+    avg_list = list(zip(avg['REvis1'],avg['IMvis1'],avg['REvis2'],avg['IMvis2'],avg['REvis3'],avg['IMvis3'],avg['REvis4'],avg['IMvis4'],[x[5] for x in ser]))
+    return avg_list
+
+def roll_sig(ser,dt='1s',min_periods=1):
+    """functtion helper for coh_moving_avg_vis
+    """
+    foo = pd.DataFrame({'sig1': [x[1]**2 for x in ser],'sig2': [x[2]**2 for x in ser],
+                   'sig3': [x[3]**2 for x in ser],'sig4': [x[4]**2 for x in ser]},
+                   index=[x[0] for x in ser])
+    avg0 = foo.rolling(dt, min_periods=min_periods).mean()
+    sumSq = foo.rolling(dt, min_periods=min_periods).sum()
+    avg = pd.DataFrame({},index=[x[0] for x in ser]) 
+    avg['sig1'] = (avg0['sig1']**1.0)/(sumSq['sig1']**0.5)
+    avg['sig2'] = (avg0['sig2']**1.0)/(sumSq['sig2']**0.5)
+    avg['sig3'] = (avg0['sig3']**1.0)/(sumSq['sig3']**0.5)
+    avg['sig4'] = (avg0['sig4']**1.0)/(sumSq['sig4']**0.5)
+    avg_list = list(zip(avg['sig1'],avg['sig2'],avg['sig3'],avg['sig4'],[x[5] for x in ser]))
+    return avg_list
 
 def incoh_avg_vis(obs,dt=0,debias=True,scan_avg=False,return_type='rec',rec_type='vis',err_type='predicted',num_samples=int(1e3)):
     """incoherently averages visibilities
@@ -347,6 +426,68 @@ def make_cphase_df(obs,band='unknown',polarization='unknown',mode='all',count='m
     df['source'] = sour
     return df
 
+def make_cphase_diag_df(obs,vtype='vis',band='unknown',polarization='unknown',count='min',round_s=0.1,snrcut=0.,uv_min=False):
+
+    """generate DataFrame of diagonalized closure phases
+
+    Args: 
+        obs: ObsData object
+        round_s: accuracy of datetime object in seconds
+
+    Returns:
+        df: diagonalized closure phase data in DataFrame format
+    """
+
+    data=obs.c_phases_diag(vtype=vtype,count=count,snrcut=snrcut,uv_min=uv_min)
+    sour=obs.source
+
+    tarr = []
+    dcparr = []
+    dcperrarr = []
+    triangle_arr = []
+    u_arr = []
+    v_arr = []
+    tform_arr = []
+    for d in data:
+        tarr.append(list(d[0]['time']))
+        dcparr.append(list(d[0]['cphase']))
+        dcperrarr.append(list(d[0]['sigmacp']))
+
+        triarr = []
+        u = []
+        v = []
+        for ant in d[1]:
+            triarr.append(ant[0][0]+'-'+ant[1][0]+'-'+ant[2][0])
+        for iu in d[2]:
+            u.append((iu[0][0],iu[1][0],iu[2][0]))
+        for iv in d[3]:
+            v.append((iv[0][0],iv[1][0],iv[2][0]))
+
+        for i in range(len(d[0])):
+            triangle_arr.append(triarr)
+            u_arr.append(u)
+            v_arr.append(v)
+            tform_arr.append(list(d[4].view('f8')))
+
+    df = pd.DataFrame()
+    df['time'] = np.concatenate(tarr)
+    df['cphase'] = np.concatenate(dcparr)
+    df['sigmacp'] = np.concatenate(dcperrarr)
+    df['triangles'] = triangle_arr
+    df['u'] = u_arr
+    df['v'] = v_arr
+    df['tform_matrix'] = tform_arr
+
+    df['fmjd'] = df['time']/24.
+    df['mjd'] = obs.mjd + df['fmjd']
+    df['datetime'] = Time(df['mjd'], format='mjd').datetime
+    df['datetime'] = list(map(lambda x: round_time(x,round_s=round_s),df['datetime']))
+    df['jd'] = Time(df['mjd'], format='mjd').jd
+    df['polarization'] = polarization
+    df['band'] = band
+    df['source'] = sour
+    return df
+
 def make_camp_df(obs,ctype='logcamp',debias=False,band='unknown',polarization='unknown',mode='all',count='max',round_s=0.1,snrcut=0.):
 
     """generate DataFrame of closure amplitudes
@@ -372,6 +513,68 @@ def make_camp_df(obs,ctype='logcamp',debias=False,band='unknown',polarization='u
     df['band'] = band
     df['source'] = sour
     df['catype'] = ctype
+    return df
+
+def make_logcamp_diag_df(obs,debias=True,band='unknown',polarization='unknown',mode='all',count='min',round_s=0.1,snrcut=0.):
+
+    """generate DataFrame of closure amplitudes
+
+    Args: 
+        obs: ObsData object
+        round_s: accuracy of datetime object in seconds
+
+    Returns:
+        df: closure amplitude data in DataFrame format
+    """
+
+    data = obs.c_log_amplitudes_diag(mode=mode,count=count,debias=debias,snrcut=snrcut)
+    sour=obs.source
+
+    tarr = []
+    dlcaarr = []
+    dlcaerrarr = []
+    quadrangle_arr = []
+    u_arr = []
+    v_arr = []
+    tform_arr = []
+    for d in data:
+        tarr.append(list(d[0]['time']))
+        dlcaarr.append(list(d[0]['camp']))
+        dlcaerrarr.append(list(d[0]['sigmaca']))
+
+        quadarr = []
+        u = []
+        v = []
+        for ant in d[1]:
+            quadarr.append(ant[0][0]+'-'+ant[1][0]+'-'+ant[2][0]+'-'+ant[3][0])
+        for iu in d[2]:
+            u.append((iu[0][0],iu[1][0],iu[2][0],iu[3][0]))
+        for iv in d[3]:
+            v.append((iv[0][0],iv[1][0],iv[2][0],iv[3][0]))
+
+        for i in range(len(d[0])):
+            quadrangle_arr.append(quadarr)
+            u_arr.append(u)
+            v_arr.append(v)
+            tform_arr.append(list(d[4].view('f8')))
+
+    df = pd.DataFrame()
+    df['time'] = np.concatenate(tarr)
+    df['camp'] = np.concatenate(dlcaarr)
+    df['sigmaca'] = np.concatenate(dlcaerrarr)
+    df['quadrangles'] = quadrangle_arr
+    df['u'] = u_arr
+    df['v'] = v_arr
+    df['tform_matrix'] = tform_arr
+
+    df['fmjd'] = df['time']/24.
+    df['mjd'] = obs.mjd + df['fmjd']
+    df['datetime'] = Time(df['mjd'], format='mjd').datetime
+    df['datetime'] = list(map(lambda x: round_time(x,round_s=round_s),df['datetime']))
+    df['jd'] = Time(df['mjd'], format='mjd').jd
+    df['polarization'] = polarization
+    df['band'] = band
+    df['source'] = sour
     return df
 
 def make_bsp_df(obs,band='unknown',polarization='unknown',mode='all',count='min',round_s=0.1,snrcut=0., uv_min=False):
@@ -443,6 +646,9 @@ def average_cphases(cdf,dt,return_type='rec',err_type='predicted',num_samples=10
         cdf2['sigmacp'] = [0.5*(x[1][1]-x[1][0]) for x in list(cdf2['dummy'])]
 
     # snrcut
+    # CHECK 
+    if snrcut==0:
+        snrcut=EP
     cdf2 = cdf2[cdf2['sigmacp'] < 180./np.pi/snrcut].copy()  # TODO CHECK
 
     #round datetime
@@ -487,7 +693,7 @@ def average_bispectra(cdf,dt,return_type='rec',num_samples=int(1e3), snrcut=0.):
     cdf2 = cdf2.groupby(grouping).agg(aggregated).reset_index()
 
     # snrcut
-    cdf2 = cdf2[np.abs(cdf2['bispec']/cdf2['sigmacp']) > snrcut].copy()  # TODO CHECK
+    cdf2 = cdf2[np.abs(cdf2['bispec']/cdf2['sigmab']) > snrcut].copy()  # TODO CHECK
 
     #round datetime
     cdf2['datetime'] =  list(map(lambda x: t0 + datetime.timedelta(seconds= int(dt*x)), cdf2['round_time']))
@@ -560,26 +766,32 @@ def df_to_rec(df,product_type):
 
     Args:
         df: DataFrame to convert
-        product_type: vis, cphase, camp
+        product_type: vis, cphase, camp, amp, bispec, cphase_diag, logcamp_diag
     """
     if product_type=='cphase':
-         out= df[['time','t1','t2','t3','u1','v1','u2','v2','u3','v3','cphase','sigmacp']].to_records(index=False)
-         return np.array(out,dtype=DTCPHASE)
+        out= df[['time','t1','t2','t3','u1','v1','u2','v2','u3','v3','cphase','sigmacp']].to_records(index=False)
+        return np.array(out,dtype=DTCPHASE)
     elif product_type=='camp':
-         out=  df[['time','t1','t2','t3','t4','u1','v1','u2','v2','u3','v3','u4','v4','camp','sigmaca']].to_records(index=False)
-         return np.array(out,dtype=DTCAMP)
+        out=  df[['time','t1','t2','t3','t4','u1','v1','u2','v2','u3','v3','u4','v4','camp','sigmaca']].to_records(index=False)
+        return np.array(out,dtype=DTCAMP)
     elif product_type=='vis':
-         out=  df[['time','tint','t1','t2','tau1','tau2','u','v','vis','qvis','uvis','vvis','sigma','qsigma','usigma','vsigma']].to_records(index=False)
-         return np.array(out,dtype=DTPOL_STOKES)
+        out=  df[['time','tint','t1','t2','tau1','tau2','u','v','vis','qvis','uvis','vvis','sigma','qsigma','usigma','vsigma']].to_records(index=False)
+        return np.array(out,dtype=DTPOL_STOKES)
     elif product_type=='vis_circ':
-         out=  df[['time','tint','t1','t2','tau1','tau2','u','v','rrvis','llvis','rlvis','lrvis','rrsigma','llsigma','rlsigma','lrsigma']].to_records(index=False)
-         return np.array(out,dtype=DTPOL_CIRC)
+        out=  df[['time','tint','t1','t2','tau1','tau2','u','v','rrvis','llvis','rlvis','lrvis','rrsigma','llsigma','rlsigma','lrsigma']].to_records(index=False)
+        return np.array(out,dtype=DTPOL_CIRC)
     elif product_type=='amp':
-         out=  df[['time','tint','t1','t2','u','v','amp','sigma']].to_records(index=False)
-         return np.array(out,dtype=DTAMP)
+        out=  df[['time','tint','t1','t2','u','v','amp','sigma']].to_records(index=False)
+        return np.array(out,dtype=DTAMP)
     elif product_type=='bispec':
-         out=  df[['time','t1','t2','t3','u1','v1','u2','v2','u3','v3','bispec','sigmab']].to_records(index=False)
-         return np.array(out,dtype=DTBIS)
+        out=  df[['time','t1','t2','t3','u1','v1','u2','v2','u3','v3','bispec','sigmab']].to_records(index=False)
+        return np.array(out,dtype=DTBIS)
+    elif product_type=='cphase_diag':
+        out= df[['time','cphase','sigmacp','triangles','u','v','tform_matrix']].to_records(index=False)
+        return np.array(out,dtype=DTCPHASEDIAG)
+    elif product_type=='logcamp_diag':
+        out= df[['time','camp','sigmaca','quadrangles','u','v','tform_matrix']].to_records(index=False)
+        return np.array(out,dtype=DTLOGCAMPDIAG)
 
 
 def round_time(t,round_s=0.1):

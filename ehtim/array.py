@@ -16,6 +16,9 @@
 #    You should have received a copy of the GNU General Public License
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+from __future__ import division
+from __future__ import print_function
+
 from builtins import str
 from builtins import range
 from builtins import object
@@ -25,20 +28,22 @@ import numpy as np
 import ehtim.observing.obs_simulate as simobs
 import ehtim.io.save
 import ehtim.io.load
+import ehtim.const_def as ehc
 
-from ehtim.const_def import *
-from ehtim.observing.obs_helpers import *
-
-###########################################################################################################################################
+###################################################################################################
 # Array object
-###########################################################################################################################################
+###################################################################################################
+
+
 class Array(object):
+
     """A VLBI array of telescopes with site locations, SEFDs, and other data.
 
        Attributes:
            tarr (numpy.recarray): The array of telescope data with datatype DTARR
            tkey (dict): A dictionary of rows in the tarr for each site name
-           ephem (dict): A dictionary of TLEs for each space antenna, Space antennas have x=y=z=0 in the tarr
+           ephem (dict): A dictionary of TLEs for each space antenna,
+                         Space antennas have x=y=z=0 in the tarr
     """
 
     def __init__(self, tarr, ephem={}):
@@ -47,39 +52,40 @@ class Array(object):
 
         # check to see if ephemeris is correct
         for line in self.tarr:
-            if np.any(np.isnan([line['x'],line['y'],line['z']])):
+            if np.any(np.isnan([line['x'], line['y'], line['z']])):
                 sitename = str(line['site'])
                 try:
                     elen = len(ephem[sitename])
                 except NameError:
-                    raise Exception ('no ephemeris for site %s !' % sitename)
+                    raise Exception('no ephemeris for site %s !' % sitename)
                 if elen != 3:
 
-                    raise Exception ('wrong ephemeris format for site %s !' % sitename)
+                    raise Exception('wrong ephemeris format for site %s !' % sitename)
 
         # Dictionary of array indices for site names
         self.tkey = {self.tarr[i]['site']: i for i in range(len(self.tarr))}
 
     def listbls(self):
         """List all baselines.
-           
+
            Args:
-           Returns: 
+           Returns:
                 numpy.array : array of baselines
         """
 
         bls = []
         for i1 in sorted(self.tarr['site']):
             for i2 in sorted(self.tarr['site']):
-                if not ([i1,i2] in bls) and not ([i2,i1] in bls) and i1 != i2:
-                    bls.append([i1,i2])
+                if not ([i1, i2] in bls) and not ([i2, i1] in bls) and i1 != i2:
+                    bls.append([i1, i2])
+        bls = np.array(bls)
 
-        return np.array(bls)
+        return bls
 
-    def obsdata(self, ra, dec, rf, bw, tint, tadv, tstart, tstop, mjd=MJD_DEFAULT, timetype='UTC',
-                      polrep='stokes', elevmin=ELEV_LOW, elevmax=ELEV_HIGH, 
-                      tau=TAUDEF, fix_theta_GMST=False):
-
+    def obsdata(self, ra, dec, rf, bw, tint, tadv, tstart, tstop,
+                mjd=ehc.MJD_DEFAULT, timetype='UTC', polrep='stokes',
+                elevmin=ehc.ELEV_LOW, elevmax=ehc.ELEV_HIGH,
+                tau=ehc.TAUDEF, fix_theta_GMST=False):
         """Generate u,v points and baseline uncertainties.
 
            Args:
@@ -102,23 +108,23 @@ class Array(object):
         """
 
         obsarr = simobs.make_uvpoints(self, ra, dec, rf, bw,
-                                            tint, tadv, tstart, tstop,
-                                            mjd=mjd, polrep=polrep, tau=tau,
-                                            elevmin=elevmin, elevmax=elevmax,
-                                            timetype=timetype, fix_theta_GMST = fix_theta_GMST)
+                                      tint, tadv, tstart, tstop,
+                                      mjd=mjd, polrep=polrep, tau=tau,
+                                      elevmin=elevmin, elevmax=elevmax,
+                                      timetype=timetype, fix_theta_GMST=fix_theta_GMST)
 
         uniquetimes = np.sort(np.unique(obsarr['time']))
-        scans = np.array([[time-0.5*tadv, time+0.5*tadv] for time in uniquetimes]) 
-        source=str(ra) + ":" + str(dec)
-        obs = ehtim.obsdata.Obsdata(ra, dec, rf, bw, obsarr, self.tarr, 
+        scans = np.array([[time - 0.5 * tadv, time + 0.5 * tadv] for time in uniquetimes])
+        source = str(ra) + ":" + str(dec)
+        obs = ehtim.obsdata.Obsdata(ra, dec, rf, bw, obsarr, self.tarr,
                                     source=source, mjd=mjd, timetype=timetype, polrep=polrep,
-                                    ampcal=True, phasecal=True, opacitycal=True, 
+                                    ampcal=True, phasecal=True, opacitycal=True,
                                     dcal=True, frcal=True,
                                     scantable=scans)
         return obs
 
     def make_subarray(self, sites):
-        """Make a subarray from the Array object array that only includes the sites listed in sites.
+        """Make a subarray from the Array object array that only includes the sites listed.
 
            Args:
                sites (list) : list of sites in the subarray
@@ -127,7 +133,8 @@ class Array(object):
         """
         all_sites = [t[0] for t in self.tarr]
         mask = np.array([t in sites for t in all_sites])
-        return Array(self.tarr[mask],ephem=self.ephem)
+        subarr = Array(self.tarr[mask], ephem=self.ephem)
+        return subarr
 
     def save_txt(self, fname):
         """Save the array data in a text file.
@@ -135,14 +142,16 @@ class Array(object):
            Args:
                fname (str) : path to output array file
         """
-        ehtim.io.save.save_array_txt(self,fname)
+        ehtim.io.save.save_array_txt(self, fname)
         return
 
-###########################################################################################################################################
-#Array creation functions
-###########################################################################################################################################
+##########################################################################
+# Array creation functions
+##########################################################################
+
+
 def load_txt(fname, ephemdir='ephemeris'):
-    """Read an array from a text file. 
+    """Read an array from a text file.
        Sites with x=y=z=0 are spacecraft, TLE ephemerides read from ephemdir.
 
        Args:

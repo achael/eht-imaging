@@ -36,11 +36,10 @@ from ehtim.const_def import * #Note: C is m/s rather than cm/s.
 from ehtim.observing.obs_helpers import *
 import ehtim.obsdata as obsdata
 import ehtim.image as image
+import ehtim.movie as movie
 from ehtim.imaging.imager_utils import *
 
 import ehtim.scattering as so
-
-from IPython import display
 
 from multiprocessing import Pool
 from functools import partial
@@ -134,8 +133,6 @@ def align_left(im,min_frac=0.1,opposite_frac_thresh=0.05):
 ##################################################################################################
 # Movie Export Tools
 ##################################################################################################
-
-
 def export_multipanel_movie(im_List_Set, out='movie.mp4', fps=10, dpi=120, scale='linear', dynamic_range=1000.0, pad_factor=1, verbose=False, xlim = None, ylim = None, titles = [], size=8.0):
     # Example: di.export_multipanel_movie([im_List,im_List_2],scale='log',xlim=[1000,-1000],ylim=[-3000,500],dynamic_range=[1000,5000], titles = ['43 GHz (BU)','15 GHz (MOJAVE)'])
     import matplotlib
@@ -871,15 +868,15 @@ ttype = 'nfft', fft_pad_factor=2):
     ninit_List = [ninit_embed_List[i][embed_mask_List[i]] for i in range(N_frame)]
 
     print ("Calculating lists/matrices for chi-squared terms...")
-    A1_List = [None,] * N_frame
-    A2_List = [None,] * N_frame
-    A3_List = [None,] * N_frame
-    data1_List = [[],] * N_frame
-    data2_List = [[],] * N_frame
-    data3_List = [[],] * N_frame
-    sigma1_List = [None,] * N_frame
-    sigma2_List = [None,] * N_frame
-    sigma3_List = [None,] * N_frame
+    A1_List = [None for _ in range(N_frame)]
+    A2_List = [None for _ in range(N_frame)]
+    A3_List = [None for _ in range(N_frame)]
+    data1_List = [[] for _ in range(N_frame)]
+    data2_List = [[] for _ in range(N_frame)]
+    data3_List = [[] for _ in range(N_frame)]
+    sigma1_List = [None for _ in range(N_frame)]
+    sigma2_List = [None for _ in range(N_frame)]
+    sigma3_List = [None for _ in range(N_frame)]
 
     # Get data and Fourier matrices for the data terms
     for i in range(N_frame):
@@ -1077,7 +1074,7 @@ ttype = 'nfft', fft_pad_factor=2):
     return outim
 
 
-def dynamical_imaging(Obsdata_List, InitIm_List, Prior, Flow_Init = [], flux_List = [],
+def dynamical_imaging(obs_input, init_ims, Prior, Flow_Init = None, flux_List = None,
 d1='vis', d2=False, d3=False,
 alpha_d1=10, alpha_d2=10, alpha_d3=10,
 systematic_noise1=0.0, systematic_noise2=0.0, systematic_noise3=0.0,
@@ -1096,8 +1093,12 @@ recalculate_chisqdata = True,  ttype = 'nfft', fft_pad_factor=2, **kwargs):
     """Run dynamical imaging.
 
        Args:
-           Obsdata_List (List): List of Obsdata objects, one per reconstructed frame. Some can have empty data arrays.
-           InitIm_List (List): List of initial images, each an Image object, one per reconstructed frame.
+           obs_input (List or Obsdata): Observation. Form can be either:
+                                     1. List of Obsdata objects, one per reconstructed frame. Some can have empty data arrays.
+                                     2. Single Obsdata object. 
+           init_ims (List or Movie): List of initial images. List can be either:    
+                                     1. Each an Image object, one per reconstructed frame.
+                                     2. A Movie object, where the frames will be used
            Prior (Image): The Image object with the prior image
            Flow_Init: Optional initialization for imaging with R_flow
            flux_List (List): Optional specification of the total flux density for each frame
@@ -1136,6 +1137,36 @@ minimizer_method = 'L-BFGS-B', update_interval = 1
     """
 
     global A1_List, A2_List, A3_List, data1_List, data2_List, data3_List, sigma1_List, sigma2_List, sigma3_List
+
+    # Make a list of frames if a movie is passed
+    if type(init_ims) == list:
+        InitIm_List = init_ims
+    else:
+        InitIm_List = init_ims.im_list()
+
+    # Make a list of observations if a single Obsdata object is passed
+    if type(obs_input) == list:
+        Obsdata_List = obs_input
+    else:
+        # Create one obsdata object for every frame
+        Obsdata_List = [obs_input.copy() for _ in InitIm_List]
+        # Populate each frame; for now just gather observations by nearest frame
+        tlist = obs_input.tlist()
+        obs_mjds = [obs_input.mjd + o['time'][0]/24.0 for o in tlist]
+        frame_mjds = [im.mjd + im.time/24.0 for im in InitIm_List]
+        idx_list = [np.argmin(np.abs(frame_mjds - obs_mjds[j])) for j in range(len(obs_mjds))]
+
+        c = 0
+        for j in range(len(frame_mjds)):
+            Obsdata_List[j].mjd  = InitIm_List[j].mjd
+            try: 
+                Obsdata_List[j].data = np.concatenate(tlist[[x == j for x in idx_list]])
+            except: 
+                Obsdata_List[j].data = []
+                c = c + 1
+                pass
+        if c > 0:
+            print("%d/%d frames have no data"%(c,len(frame_mjds)))
 
     N_frame = len(Obsdata_List)
     N_pixel = Prior.xdim #pixel dimension
@@ -1211,32 +1242,34 @@ minimizer_method = 'L-BFGS-B', update_interval = 1
         print ("If a flow is used, then each frame must have the same prior!")
         return
 
-    logprior_List = [None,] * N_frame
-    loginit_List = [None,] * N_frame
+    logprior_List = [None for _ in range(N_frame)]
+    loginit_List = [None for _ in range(N_frame)]
 
-    nprior_embed_List = [None,] * N_frame
-    nprior_List = [None,] * N_frame
+    nprior_embed_List = [None for _ in range(N_frame)]
+    nprior_List = [None for _ in range(N_frame)]
 
     ninit_embed_List = [InitIm_List[i].imvec for i in range(N_frame)]
     ninit_List = [ninit_embed_List[i][embed_mask_List[i]] for i in range(N_frame)]
 
     if (recalculate_chisqdata == True and ttype == 'direct') or ttype != 'direct':
         print ("Calculating lists/matrices for chi-squared terms...")
-        A1_List = [None,] * N_frame
-        A2_List = [None,] * N_frame
-        A3_List = [None,] * N_frame
-        data1_List = [[],] * N_frame
-        data2_List = [[],] * N_frame
-        data3_List = [[],] * N_frame
-        sigma1_List = [None,] * N_frame
-        sigma2_List = [None,] * N_frame
-        sigma3_List = [None,] * N_frame
+        A1_List = [None for _ in range(N_frame)]
+        A2_List = [None for _ in range(N_frame)]
+        A3_List = [None for _ in range(N_frame)]
+        data1_List = [[] for _ in range(N_frame)]
+        data2_List = [[] for _ in range(N_frame)]
+        data3_List = [[] for _ in range(N_frame)]
+        sigma1_List = [None for _ in range(N_frame)]
+        sigma2_List = [None for _ in range(N_frame)]
+        sigma3_List = [None for _ in range(N_frame)]
 
     # Get data and Fourier matrices for the data terms
     for i in range(N_frame):
         pixel_max = np.max(InitIm_List[i].imvec)
         prior_flux_rescale = 1.0
-        if len(flux_List) > 0:
+        if not flux_List:
+            pass
+        else:
             prior_flux_rescale = flux_List[i]/Prior.total_flux()
 
         nprior_embed_List[i] = Prior.imvec * prior_flux_rescale
@@ -1249,9 +1282,19 @@ minimizer_method = 'L-BFGS-B', update_interval = 1
             continue
 
         if (recalculate_chisqdata == True and ttype == 'direct') or ttype != 'direct':
-            (data1_List[i], sigma1_List[i], A1_List[i]) = chisqdata(Obsdata_List[i], Prior, embed_mask_List[i], d1, ttype=ttype, fft_pad_factor=fft_pad_factor, systematic_noise=systematic_noise1)
-            (data2_List[i], sigma2_List[i], A2_List[i]) = chisqdata(Obsdata_List[i], Prior, embed_mask_List[i], d2, ttype=ttype, fft_pad_factor=fft_pad_factor, systematic_noise=systematic_noise2)
-            (data3_List[i], sigma3_List[i], A3_List[i]) = chisqdata(Obsdata_List[i], Prior, embed_mask_List[i], d3, ttype=ttype, fft_pad_factor=fft_pad_factor, systematic_noise=systematic_noise3)
+            # Try to create the chisqdata. These can throw errors, for instance when no closure quantities exist in a frame with data
+            try: 
+                (data1_List[i], sigma1_List[i], A1_List[i]) = chisqdata(Obsdata_List[i], Prior, embed_mask_List[i], d1, ttype=ttype, fft_pad_factor=fft_pad_factor, systematic_noise=systematic_noise1)
+            except:
+                pass
+            try:
+                (data2_List[i], sigma2_List[i], A2_List[i]) = chisqdata(Obsdata_List[i], Prior, embed_mask_List[i], d2, ttype=ttype, fft_pad_factor=fft_pad_factor, systematic_noise=systematic_noise2)
+            except:
+                pass
+            try:
+                (data3_List[i], sigma3_List[i], A3_List[i]) = chisqdata(Obsdata_List[i], Prior, embed_mask_List[i], d3, ttype=ttype, fft_pad_factor=fft_pad_factor, systematic_noise=systematic_noise3)
+            except:
+                pass
 
     # Coordinate matrix for COM constraint
     coord = np.array([[[x,y] for x in np.linspace(Prior.xdim/2,-Prior.xdim/2,Prior.xdim)]
@@ -1709,16 +1752,19 @@ minimizer_method = 'L-BFGS-B', update_interval = 1
         pool.close()
 
     #Return Frames
-
     outim = [image.Image(Frames[i].reshape(Prior.ydim, Prior.xdim), Prior.psize,
                          Prior.ra, Prior.dec, rf=Obsdata_List[i].rf, source=Prior.source,
-                         mjd=Prior.mjd, pulse=Prior.pulse) for i in range(N_frame)]
+                         mjd=InitIm_List[i].mjd, time=InitIm_List[i].time, pulse=Prior.pulse) for i in range(N_frame)]
+
+    if type(init_ims) == list:
+        pass
+    else: 
+        outim = movie.merge_im_list(outim)
 
     if R_flow['alpha'] == 0.0 and stochastic_optics == False:
         return outim
     else:
-        return {'Frames':outim, 'Flow':Flow, 'EpsilonList':EpsilonList }
-
+        return {'Movie':outim, 'Frames':outim, 'Flow':Flow, 'EpsilonList':EpsilonList }
 
 
 def multifreq_dynamical_imaging(Obsdata_Multifreq_List, InitIm_Multifreq_List, Prior, flux_Multifreq_List = [],
@@ -2127,10 +2173,6 @@ def plot_im_List_Set(im_List_List, plot_log_amplitude=False, ipynb=False):
 
     plt.draw()
 
-    if ipynb:
-        display.clear_output()
-        display.display(plt.gcf())
-
 def plot_im_List(im_List, plot_log_amplitude=False, ipynb=False):
 
     plt.ion()
@@ -2159,10 +2201,6 @@ def plot_im_List(im_List, plot_log_amplitude=False, ipynb=False):
 
     plt.draw()
 
-    if ipynb:
-        display.clear_output()
-        display.display(plt.gcf())
-
 def plot_i_dynamic(im_List, Prior, nit, chi2, s, s_dynamic, ipynb=False):
 
     plt.ion()
@@ -2186,10 +2224,6 @@ def plot_i_dynamic(im_List, Prior, nit, chi2, s, s_dynamic, ipynb=False):
 
 
     plt.draw()
-
-    if ipynb:
-        display.clear_output()
-        display.display(plt.gcf())
 
 ##################################################################################################
 #BU blazar CLEAN file loading functions
