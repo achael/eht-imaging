@@ -2913,15 +2913,15 @@ class Obsdata(object):
                 vlist.append((cp['v1'], cp['v2'], cp['v3']))
 
                 # matrix entry for first leg of triangle
-                ind1 = ((viss_here['t1'] == cp['t1']) and (viss_here['t2'] == cp['t2']))
+                ind1 = ((viss_here['t1'] == cp['t1']) & (viss_here['t2'] == cp['t2']))
                 design_mat[ic, ind1] = 1.0
 
                 # matrix entry for second leg of triangle
-                ind2 = ((viss_here['t1'] == cp['t2']) and (viss_here['t2'] == cp['t3']))
+                ind2 = ((viss_here['t1'] == cp['t2']) & (viss_here['t2'] == cp['t3']))
                 design_mat[ic, ind2] = 1.0
 
                 # matrix entry for third leg of triangle
-                ind3 = ((viss_here['t1'] == cp['t3']) and (viss_here['t2'] == cp['t1']))
+                ind3 = ((viss_here['t1'] == cp['t3']) & (viss_here['t2'] == cp['t1']))
                 design_mat[ic, ind3] = 1.0
 
             # construct the covariance matrix
@@ -3427,19 +3427,19 @@ class Obsdata(object):
                 vlist.append((lca['v1'], lca['v2'], lca['v3'], lca['v4']))
 
                 # matrix entry for first leg of quadrangle
-                ind1 = ((viss_here['t1'] == lca['t1']) and (viss_here['t2'] == lca['t2']))
+                ind1 = ((viss_here['t1'] == lca['t1']) & (viss_here['t2'] == lca['t2']))
                 design_mat[il, ind1] = 1.0
 
                 # matrix entry for second leg of quadrangle
-                ind2 = ((viss_here['t1'] == lca['t3']) and (viss_here['t2'] == lca['t4']))
+                ind2 = ((viss_here['t1'] == lca['t3']) & (viss_here['t2'] == lca['t4']))
                 design_mat[il, ind2] = 1.0
 
                 # matrix entry for third leg of quadrangle
-                ind3 = ((viss_here['t1'] == lca['t1']) and (viss_here['t2'] == lca['t4']))
+                ind3 = ((viss_here['t1'] == lca['t1']) & (viss_here['t2'] == lca['t4']))
                 design_mat[il, ind3] = -1.0
 
                 # matrix entry for fourth leg of quadrangle
-                ind4 = ((viss_here['t1'] == lca['t2']) and (viss_here['t2'] == lca['t3']))
+                ind4 = ((viss_here['t1'] == lca['t2']) & (viss_here['t2'] == lca['t3']))
                 design_mat[il, ind4] = -1.0
 
             # construct the covariance matrix
