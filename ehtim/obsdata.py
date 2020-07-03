@@ -183,7 +183,6 @@ class Obsdata(object):
             self.tstop += 24.0
 
         # Saved closure quantity arrays
-        # TODO should we precompute these?
         self.amp = None
         self.bispec = None
         self.cphase = None
@@ -212,7 +211,7 @@ class Obsdata(object):
                (Obsdata): a copy of the Obsdata object.
         """
 
-        # TODO: Is this right? Do we want to copy over e.g. closure tables?
+        # TODO: Do we want to copy over e.g. closure tables?
         newobs = copy.deepcopy(self)
 
         return newobs
@@ -1643,7 +1642,7 @@ class Obsdata(object):
         xlist = np.arange(0, -npix, -1) * pdim + (pdim * npix) / 2.0 - pdim / 2.0
 
         # TODO -- use NFFT
-        # TODO -- more different beam weightings
+        # TODO -- different beam weightings
         im = np.array([[np.mean(weights * np.cos(-2 * np.pi * (i * u + j * v)))
                         for i in xlist]
                        for j in xlist])
@@ -2671,7 +2670,7 @@ class Obsdata(object):
 
             # Maximal  Set
             elif count == 'max':
-                tris = list(it.combinations(sites, 3))
+                tris = np.sort(list(it.combinations(sites, 3)))
 
             elif count == 'min-cut0bl':
                 tris = obsh.tri_minimal_set(sites, self.tarr, self.tkey)
@@ -2804,7 +2803,6 @@ class Obsdata(object):
         if mode == 'all':
             out = np.array(cps)
 
-#        print("\n")
         return out
 
     def c_phases_diag(self, vtype='vis', count='min', ang_unit='deg',
@@ -2959,19 +2957,23 @@ class Obsdata(object):
         print("\n")
         return out
 
-    def bispectra_tri(self, site1, site2, site3, snrcut=0.,
-                      vtype='vis', timetype=False, bs=[], force_recompute=False):
+    def bispectra_tri(self, site1, site2, site3, 
+                      vtype='vis', timetype=False, snrcut=0., method='from_maxset', 
+                      bs=[], force_recompute=False):
+
         """Return complex bispectrum  over time on a triangle (1-2-3).
 
            Args:
                site1 (str): station 1 name
                site2 (str): station 2 name
                site3 (str): station 3 name
+
                vtype (str): The visibilty type from which to assemble bispectra
                             ('vis','qvis','uvis','vvis','pvis')
                timetype (str): 'UTC' or 'GMST'
                snrcut (float): flag bispectra with snr lower than this
 
+               method (str): 'from_maxset' (old, default), 'from_vis' (new, more robust)
                bs (list): optionally pass in the precomputed, time-sorted bispectra
                force_recompute (bool): if True, recompute bispectra instead of using saved data
 
@@ -2981,115 +2983,173 @@ class Obsdata(object):
         if timetype is False:
             timetype = self.timetype
 
-        # Get bispectra (maximal set)
-        if ((len(bs) == 0) and not (self.bispec is None) and not (len(self.bispec) == 0) and
-                not force_recompute):
-            bs = self.bispec
-        elif (len(bs) == 0) or force_recompute:
-            bs = self.bispectra(mode='all', count='max', vtype=vtype,
-                                timetype=timetype, snrcut=snrcut)
+        if method=='from_maxset' and (vtype in ['lrvis','pvis','rlvis']):
+            print ("Warning! method='from_maxset' default in bispectra_tri() is inconsistent with vtype=%s" % vtype)
+            print ("Switching to method='from_vis'")
+            method = 'from_vis'
 
-        # Get requested closure phases over time
         tri = (site1, site2, site3)
         outdata = []
-        for obs in bs:
-            obstri = (obs['t1'], obs['t2'], obs['t3'])
-            if set(obstri) == set(tri):
-                t1 = copy.deepcopy(obs['t1'])
-                t2 = copy.deepcopy(obs['t2'])
-                t3 = copy.deepcopy(obs['t3'])
-                u1 = copy.deepcopy(obs['u1'])
-                u2 = copy.deepcopy(obs['u2'])
-                u3 = copy.deepcopy(obs['u3'])
-                v1 = copy.deepcopy(obs['v1'])
-                v2 = copy.deepcopy(obs['v2'])
-                v3 = copy.deepcopy(obs['v3'])
 
-                # Reorder baselines and flip the sign of the closure phase if necessary
-                if t1 == site1:
-                    if t2 == site2:
-                        pass
-                    else:
-                        obs['t2'] = t3
-                        obs['t3'] = t2
+        # get selected bispectra from the maximal set
+        # TODO: verify consistency/performance of from_vis, and delete this method
+        if method=='from_maxset':
 
-                        obs['u1'] = -u3
-                        obs['v1'] = -v3
-                        obs['u2'] = -u2
-                        obs['v2'] = -v2
-                        obs['u3'] = -u1
-                        obs['v3'] = -v1
-                        obs['bispec'] = np.conjugate(obs['bispec'])
+            if ((len(bs) == 0) and not (self.bispec is None) and not (len(self.bispec) == 0) and
+                    not force_recompute):
+                bs = self.bispec
+            elif (len(bs) == 0) or force_recompute:
+                bs = self.bispectra(mode='all', count='max', vtype=vtype,
+                                    timetype=timetype, snrcut=snrcut)
 
-                elif t1 == site2:
-                    if t2 == site3:
-                        obs['t1'] = t3
-                        obs['t2'] = t1
-                        obs['t3'] = t2
+            # Get requested bispectra over time
+            for obs in bs:
+                obstri = (obs['t1'], obs['t2'], obs['t3'])
+                if set(obstri) == set(tri):
+                    t1 = copy.deepcopy(obs['t1'])
+                    t2 = copy.deepcopy(obs['t2'])
+                    t3 = copy.deepcopy(obs['t3'])
+                    u1 = copy.deepcopy(obs['u1'])
+                    u2 = copy.deepcopy(obs['u2'])
+                    u3 = copy.deepcopy(obs['u3'])
+                    v1 = copy.deepcopy(obs['v1'])
+                    v2 = copy.deepcopy(obs['v2'])
+                    v3 = copy.deepcopy(obs['v3'])
 
-                        obs['u1'] = u3
-                        obs['v1'] = v3
-                        obs['u2'] = u1
-                        obs['v2'] = v1
-                        obs['u3'] = u2
-                        obs['v3'] = v2
+                    # Reorder baselines and flip the sign of the closure phase if necessary
+                    if t1 == site1:
+                        if t2 == site2:
+                            pass
+                        else:
+                            obs['t2'] = t3
+                            obs['t3'] = t2
 
-                    else:
-                        obs['t1'] = t2
-                        obs['t2'] = t1
+                            obs['u1'] = -u3
+                            obs['v1'] = -v3
+                            obs['u2'] = -u2
+                            obs['v2'] = -v2
+                            obs['u3'] = -u1
+                            obs['v3'] = -v1
+                            obs['bispec'] = np.conjugate(obs['bispec'])
 
-                        obs['u1'] = -u1
-                        obs['v1'] = -v1
-                        obs['u2'] = -u3
-                        obs['v2'] = -v3
-                        obs['u3'] = -u2
-                        obs['v3'] = -v2
-                        obs['bispec'] = np.conjugate(obs['bispec'])
+                    elif t1 == site2:
+                        if t2 == site3:
+                            obs['t1'] = t3
+                            obs['t2'] = t1
+                            obs['t3'] = t2
 
-                elif t1 == site3:
-                    if t2 == site1:
-                        obs['t1'] = t2
-                        obs['t2'] = t3
-                        obs['t3'] = t1
+                            obs['u1'] = u3
+                            obs['v1'] = v3
+                            obs['u2'] = u1
+                            obs['v2'] = v1
+                            obs['u3'] = u2
+                            obs['v3'] = v2
 
-                        obs['u1'] = u2
-                        obs['v1'] = v2
-                        obs['u2'] = u3
-                        obs['v2'] = v3
-                        obs['u3'] = u1
-                        obs['v3'] = v1
+                        else:
+                            obs['t1'] = t2
+                            obs['t2'] = t1
 
-                    else:
-                        obs['t1'] = t3
-                        obs['t3'] = t1
+                            obs['u1'] = -u1
+                            obs['v1'] = -v1
+                            obs['u2'] = -u3
+                            obs['v2'] = -v3
+                            obs['u3'] = -u2
+                            obs['v3'] = -v2
+                            obs['bispec'] = np.conjugate(obs['bispec'])
 
-                        obs['u1'] = -u2
-                        obs['v1'] = -v2
-                        obs['u2'] = -u1
-                        obs['v2'] = -v1
-                        obs['u3'] = -u3
-                        obs['v3'] = -v3
-                        obs['bispec'] = np.conjugate(obs['bispec'])
+                    elif t1 == site3:
+                        if t2 == site1:
+                            obs['t1'] = t2
+                            obs['t2'] = t3
+                            obs['t3'] = t1
 
-                outdata.append(np.array(obs, dtype=ehc.DTBIS))
-                continue
+                            obs['u1'] = u2
+                            obs['v1'] = v2
+                            obs['u2'] = u3
+                            obs['v2'] = v3
+                            obs['u3'] = u1
+                            obs['v3'] = v1
 
-        return np.array(outdata)
+                        else:
+                            obs['t1'] = t3
+                            obs['t3'] = t1
 
-    def cphase_tri(self, site1, site2, site3, snrcut=0., vtype='vis', ang_unit='deg',
-                   timetype=False, cphases=[], force_recompute=False):
+                            obs['u1'] = -u2
+                            obs['v1'] = -v2
+                            obs['u2'] = -u1
+                            obs['v2'] = -v1
+                            obs['u3'] = -u3
+                            obs['v3'] = -v3
+                            obs['bispec'] = np.conjugate(obs['bispec'])
+
+                    outdata.append(np.array(obs, dtype=ehc.DTBIS))
+                    continue
+
+        # get selected bispectra from the visibilities directly
+        # taken from bispectra() method
+        elif method=='from_vis':
+
+            # get all equal-time data, and loop  over to construct bispectra
+            tlist = self.tlist(conj=True)
+            for tdata in tlist:
+
+                time = tdata[0]['time']
+                if timetype in ['GMST', 'gmst'] and self.timetype == 'UTC':
+                    time = obsh.utc_to_gmst(time, self.mjd)
+                if timetype in ['UTC', 'utc'] and self.timetype == 'GMST':
+                    time = obsh.gmst_to_utc(time, self.mjd)
+
+                # Create a dictionary of baselines at the current time incl. conjugates;
+                l_dict = {}
+                for dat in tdata:
+                    l_dict[(dat['t1'], dat['t2'])] = dat
+
+                # Select triangle entries in the data dictionary
+                try:
+                    l1 = l_dict[(tri[0], tri[1])]
+                    l2 = l_dict[(tri[1], tri[2])]
+                    l3 = l_dict[(tri[2], tri[0])]
+                except KeyError:
+                    continue
+
+                (bi, bisig) = obsh.make_bispectrum(l1, l2, l3, vtype, polrep=self.polrep)
+
+                # Cut out low snr points
+                if np.abs(bi) / bisig < snrcut:
+                    continue
+
+                # Append to the equal-time list
+                outdata.append(np.array((time,
+                                         tri[0], tri[1], tri[2],
+                                         l1['u'], l1['v'],
+                                         l2['u'], l2['v'],
+                                         l3['u'], l3['v'],
+                                         bi, 
+                                         bisig),
+                               dtype=ehc.DTBIS))
+        else:
+            raise Exception("keyword 'method' in bispectra_tri() must be either 'from_cphase' or 'from_vis'")
+
+        outdata = np.array(outdata)
+        return outdata
+
+    def cphase_tri(self, site1, site2, site3, vtype='vis', ang_unit='deg',
+                   timetype=False, snrcut=0., method='from_maxset', 
+                   cphases=[], force_recompute=False):
         """Return closure phase  over time on a triangle (1-2-3).
 
            Args:
                site1 (str): station 1 name
                site2 (str): station 2 name
                site3 (str): station 3 name
+
                vtype (str): The visibilty type from which to assemble closure phases
-                            ('vis','qvis','uvis','vvis','pvis')
+                            (e.g., 'vis','qvis','uvis','vvis','pvis')
                ang_unit (str): If 'deg', return closure phases in degrees, else return in radians
                timetype (str): 'GMST' or 'UTC'
                snrcut (float): flag bispectra with snr lower than this
 
+               method (str): 'from_maxset' (old, default), 'from_vis' (new, more robust)
                cphases (list): optionally pass in the precomputed time-sorted cphases
                force_recompute (bool): if True, do not use save closure phase tables
 
@@ -3100,101 +3160,159 @@ class Obsdata(object):
         if timetype is False:
             timetype = self.timetype
 
-        # Get closure phases (maximal set)
-        if ((len(cphases) == 0) and not (self.cphase is None) and not (len(self.cphase) == 0) and
-                not force_recompute):
-            cphases = self.cphase
+        if method=='from_maxset' and (vtype in ['lrvis','pvis','rlvis']):
+            print ("Warning! method='from_maxset' default in cphase_tri() is inconsistent with vtype=%s" % vtype)
+            print ("Switching to method='from_vis'")
+            method = 'from_vis'
 
-        elif (len(cphases) == 0) or force_recompute:
-            cphases = self.c_phases(mode='all', count='max', vtype=vtype, ang_unit=ang_unit,
-                                    timetype=timetype, snrcut=snrcut)
-
-        # Get requested closure phases over time
         tri = (site1, site2, site3)
         outdata = []
-        for obs in cphases:
-            obstri = (obs['t1'], obs['t2'], obs['t3'])
-            if set(obstri) == set(tri):
-                t1 = copy.deepcopy(obs['t1'])
-                t2 = copy.deepcopy(obs['t2'])
-                t3 = copy.deepcopy(obs['t3'])
-                u1 = copy.deepcopy(obs['u1'])
-                u2 = copy.deepcopy(obs['u2'])
-                u3 = copy.deepcopy(obs['u3'])
-                v1 = copy.deepcopy(obs['v1'])
-                v2 = copy.deepcopy(obs['v2'])
-                v3 = copy.deepcopy(obs['v3'])
 
-                # Reorder baselines and flip the sign of the closure phase if necessary
-                if t1 == site1:
-                    if t2 == site2:
-                        pass
-                    else:
-                        obs['t2'] = t3
-                        obs['t3'] = t2
+        # get selected closure phases from the maximal set
+        # TODO: verify consistency/performance of from_vis, and delete this method
+        if method=='from_maxset':
+                
+            # Get closure phases (maximal set)
+            if ((len(cphases) == 0) and not (self.cphase is None) and not (len(self.cphase) == 0) and
+                    not force_recompute):
+                cphases = self.cphase
 
-                        obs['u1'] = -u3
-                        obs['v1'] = -v3
-                        obs['u2'] = -u2
-                        obs['v2'] = -v2
-                        obs['u3'] = -u1
-                        obs['v3'] = -v1
-                        obs['cphase'] *= -1
+            elif (len(cphases) == 0) or force_recompute:
+                cphases = self.c_phases(mode='all', count='max', vtype=vtype, ang_unit=ang_unit,
+                                        timetype=timetype, snrcut=snrcut)
 
-                elif t1 == site2:
-                    if t2 == site3:
-                        obs['t1'] = t3
-                        obs['t2'] = t1
-                        obs['t3'] = t2
+            # Get requested closure phases over time
+            for obs in cphases:
+                obstri = (obs['t1'], obs['t2'], obs['t3'])
+                if set(obstri) == set(tri):
+                    t1 = copy.deepcopy(obs['t1'])
+                    t2 = copy.deepcopy(obs['t2'])
+                    t3 = copy.deepcopy(obs['t3'])
+                    u1 = copy.deepcopy(obs['u1'])
+                    u2 = copy.deepcopy(obs['u2'])
+                    u3 = copy.deepcopy(obs['u3'])
+                    v1 = copy.deepcopy(obs['v1'])
+                    v2 = copy.deepcopy(obs['v2'])
+                    v3 = copy.deepcopy(obs['v3'])
 
-                        obs['u1'] = u3
-                        obs['v1'] = v3
-                        obs['u2'] = u1
-                        obs['v2'] = v1
-                        obs['u3'] = u2
-                        obs['v3'] = v2
+                    # Reorder baselines and flip the sign of the closure phase if necessary
+                    if t1 == site1:
+                        if t2 == site2:
+                            pass
+                        else:
+                            obs['t2'] = t3
+                            obs['t3'] = t2
 
-                    else:
-                        obs['t1'] = t2
-                        obs['t2'] = t1
+                            obs['u1'] = -u3
+                            obs['v1'] = -v3
+                            obs['u2'] = -u2
+                            obs['v2'] = -v2
+                            obs['u3'] = -u1
+                            obs['v3'] = -v1
+                            obs['cphase'] *= -1
 
-                        obs['u1'] = -u1
-                        obs['v1'] = -v1
-                        obs['u2'] = -u3
-                        obs['v2'] = -v3
-                        obs['u3'] = -u2
-                        obs['v3'] = -v2
-                        obs['cphase'] *= -1
+                    elif t1 == site2:
+                        if t2 == site3:
+                            obs['t1'] = t3
+                            obs['t2'] = t1
+                            obs['t3'] = t2
 
-                elif t1 == site3:
-                    if t2 == site1:
-                        obs['t1'] = t2
-                        obs['t2'] = t3
-                        obs['t3'] = t1
+                            obs['u1'] = u3
+                            obs['v1'] = v3
+                            obs['u2'] = u1
+                            obs['v2'] = v1
+                            obs['u3'] = u2
+                            obs['v3'] = v2
 
-                        obs['u1'] = u2
-                        obs['v1'] = v2
-                        obs['u2'] = u3
-                        obs['v2'] = v3
-                        obs['u3'] = u1
-                        obs['v3'] = v1
+                        else:
+                            obs['t1'] = t2
+                            obs['t2'] = t1
 
-                    else:
-                        obs['t1'] = t3
-                        obs['t3'] = t1
+                            obs['u1'] = -u1
+                            obs['v1'] = -v1
+                            obs['u2'] = -u3
+                            obs['v2'] = -v3
+                            obs['u3'] = -u2
+                            obs['v3'] = -v2
+                            obs['cphase'] *= -1
 
-                        obs['u1'] = -u2
-                        obs['v1'] = -v2
-                        obs['u2'] = -u1
-                        obs['v2'] = -v1
-                        obs['u3'] = -u3
-                        obs['v3'] = -v3
-                        obs['cphase'] *= -1
+                    elif t1 == site3:
+                        if t2 == site1:
+                            obs['t1'] = t2
+                            obs['t2'] = t3
+                            obs['t3'] = t1
 
-                outdata.append(np.array(obs, dtype=ehc.DTCPHASE))
-                continue
+                            obs['u1'] = u2
+                            obs['v1'] = v2
+                            obs['u2'] = u3
+                            obs['v2'] = v3
+                            obs['u3'] = u1
+                            obs['v3'] = v1
 
-        return np.array(outdata)
+                        else:
+                            obs['t1'] = t3
+                            obs['t3'] = t1
+
+                            obs['u1'] = -u2
+                            obs['v1'] = -v2
+                            obs['u2'] = -u1
+                            obs['v2'] = -v1
+                            obs['u3'] = -u3
+                            obs['v3'] = -v3
+                            obs['cphase'] *= -1
+
+                    outdata.append(np.array(obs, dtype=ehc.DTCPHASE))
+                    continue
+
+        # get selected closure phases from the visibilities directly
+        # taken from bispectra() method
+        elif method=='from_vis':
+            if ang_unit == 'deg': angle = ehc.DEGREE
+            else: angle = 1.0
+
+            # get all equal-time data, and loop  over to construct closure phase
+            tlist = self.tlist(conj=True)
+            for tdata in tlist:
+
+                time = tdata[0]['time']
+                if timetype in ['GMST', 'gmst'] and self.timetype == 'UTC':
+                    time = obsh.utc_to_gmst(time, self.mjd)
+                if timetype in ['UTC', 'utc'] and self.timetype == 'GMST':
+                    time = obsh.gmst_to_utc(time, self.mjd)
+
+                # Create a dictionary of baselines at the current time incl. conjugates;
+                l_dict = {}
+                for dat in tdata:
+                    l_dict[(dat['t1'], dat['t2'])] = dat
+
+                # Select triangle entries in the data dictionary
+                try:
+                    l1 = l_dict[(tri[0], tri[1])]
+                    l2 = l_dict[(tri[1], tri[2])]
+                    l3 = l_dict[(tri[2], tri[0])]
+                except KeyError:
+                    continue
+
+                (bi, bisig) = obsh.make_bispectrum(l1, l2, l3, vtype, polrep=self.polrep)
+
+                # Cut out low snr points
+                if np.abs(bi) / bisig < snrcut:
+                    continue
+
+                # Append to the equal-time list
+                outdata.append(np.array((time,
+                                         tri[0], tri[1], tri[2],
+                                         l1['u'], l1['v'],
+                                         l2['u'], l2['v'],
+                                         l3['u'], l3['v'],
+                                         np.real(np.angle(bi) / angle),
+                                         np.real(bisig / np.abs(bi) / angle)),
+                               dtype=ehc.DTCPHASE))
+        else:
+            raise Exception("keyword 'method' in cphase_tri() must be either 'from_cphase' or 'from_vis'")
+
+        outdata = np.array(outdata)
+        return outdata
 
     def c_amplitudes(self, vtype='vis', mode='all', count='min', ctype='camp', debias=True,
                      timetype=False, snrcut=0.):
@@ -3265,7 +3383,7 @@ class Obsdata(object):
             # Maximal Set
             elif count == 'max':
                 # Find all quadrangles
-                quadsets = list(it.combinations(sites, 4))
+                quadsets = np.sort(list(it.combinations(sites, 4)))
                 # Include 3 closure amplitudes on each quadrangle
                 quadsets = np.array([(q, [q[0], q[2], q[1], q[3]], [q[0], q[1], q[3], q[2]])
                                      for q in quadsets]).reshape((-1, 4))
@@ -3295,12 +3413,10 @@ class Obsdata(object):
                                                               polrep=self.polrep,
                                                               ctype=ctype, debias=debias)
 
-                if ctype == 'camp':
-                    if camp / camperr < snrcut:
-                        continue
-                elif ctype == 'logcamp':  # TODO -- check this!
-                    if 1. / camperr < snrcut:
-                        continue
+                if ctype == 'camp' and camp / camperr < snrcut:
+                    continue
+                elif ctype == 'logcamp' and 1. / camperr < snrcut:
+                    continue
 
                 # Add the closure amplitudes to the equal-time list
                 # Our site convention is (12)(34)/(14)(23)
@@ -3475,8 +3591,9 @@ class Obsdata(object):
         print("\n")
         return out
 
-    def camp_quad(self, site1, site2, site3, site4, snrcut=0.,
-                  vtype='vis', ctype='camp', debias=True, timetype=False,
+    def camp_quad(self, site1, site2, site3, site4, 
+                  vtype='vis', ctype='camp', debias=True, timetype=False, snrcut=0.,
+                  method='from_maxset',
                   camps=[], force_recompute=False):
         """Return closure phase over time on a quadrange (1-2)(3-4)/(1-4)(2-3).
 
@@ -3485,6 +3602,7 @@ class Obsdata(object):
                site2 (str): station 2 name
                site3 (str): station 3 name
                site4 (str): station 4 name
+
                vtype (str): The visibilty type from which to assemble closure amplitudes
                             ('vis','qvis','uvis','vvis','pvis')
                ctype (str): The closure amplitude type ('camp' or 'logcamp')
@@ -3492,6 +3610,7 @@ class Obsdata(object):
                timetype (str): 'UTC' or 'GMST'
                snrcut (float): flag closure amplitudes with snr lower than this
 
+               method (str): 'from_maxset' (old, default), 'from_vis' (new, more robust)
                camps (list): optionally pass in the time-sorted, precomputed camps
                force_recompute (bool): if True, do not use save closure amplitude data
 
@@ -3502,44 +3621,89 @@ class Obsdata(object):
         if timetype is False:
             timetype = self.timetype
 
+
+        if method=='from_maxset' and (vtype in ['lrvis','pvis','rlvis']):
+            print ("Warning! method='from_maxset' default in camp_quad() is inconsistent with vtype=%s" % vtype)
+            print ("Switching to method='from_vis'")
+            method = 'from_vis'
+
         quad = (site1, site2, site3, site4)
-        b1 = set((site1, site2))
-        b2 = set((site3, site4))
-
-        r1 = set((site1, site4))
-        r2 = set((site2, site3))
-
-        # Get the closure amplitudes
         outdata = []
 
-        # Get closure amplitudes (maximal set)
-        if (((ctype == 'camp') and (len(camps) == 0)) and not (self.camp is None) and
-                not (len(self.camp) == 0) and not force_recompute):
-            camps = self.camp
-        elif (((ctype == 'logcamp') and (len(camps) == 0)) and not (self.logcamp is None) and
-              not (len(self.logcamp) == 0) and not force_recompute):
-            camps = self.logcamp
-        elif (len(camps) == 0) or force_recompute:
-            camps = self.c_amplitudes(mode='all', count='max', vtype=vtype, ctype=ctype,
-                                      debias=debias, timetype=timetype, snrcut=snrcut)
+        # get selected closure amplitudes from the maximal set
+        # TODO: verify consistency/performance of from_vis, and delete this method
+        if method=='from_maxset':
+            if (((ctype == 'camp') and (len(camps) == 0)) and not (self.camp is None) and
+                    not (len(self.camp) == 0) and not force_recompute):
+                camps = self.camp
+            elif (((ctype == 'logcamp') and (len(camps) == 0)) and not (self.logcamp is None) and
+                  not (len(self.logcamp) == 0) and not force_recompute):
+                camps = self.logcamp
+            elif (len(camps) == 0) or force_recompute:
+                camps = self.c_amplitudes(mode='all', count='max', vtype=vtype, ctype=ctype,
+                                          debias=debias, timetype=timetype, snrcut=snrcut)
 
-        # camps does not contain inverses
-        for obs in camps:
+            # blue bls in numerator, red in denominator
+            b1 = set((site1, site2))
+            b2 = set((site3, site4))
+            r1 = set((site1, site4))
+            r2 = set((site2, site3))
 
-            num = [set((obs['t1'], obs['t2'])), set((obs['t3'], obs['t4']))]
-            denom = [set((obs['t1'], obs['t4'])), set((obs['t2'], obs['t3']))]
+            for obs in camps: # camps does not contain inverses!
 
-            obsquad = (obs['t1'], obs['t2'], obs['t3'], obs['t4'])
-            if set(quad) == set(obsquad):
+                num = [set((obs['t1'], obs['t2'])), set((obs['t3'], obs['t4']))]
+                denom = [set((obs['t1'], obs['t4'])), set((obs['t2'], obs['t3']))]
 
-                # is this either  the closure amplitude or inverse?
-                rightup = (b1 in num) and (b2 in num) and (r1 in denom) and (r2 in denom)
-                wrongup = (b1 in denom) and (b2 in denom) and (r1 in num) and (r2 in num)
-                if not (rightup or wrongup):
-                    continue
+                obsquad = (obs['t1'], obs['t2'], obs['t3'], obs['t4'])
+                if set(quad) == set(obsquad):
 
-                # flip the inverse closure amplitudes
-                if wrongup:
+                    # is this either  the closure amplitude or inverse?
+                    rightup = (b1 in num) and (b2 in num) and (r1 in denom) and (r2 in denom)
+                    wrongup = (b1 in denom) and (b2 in denom) and (r1 in num) and (r2 in num)
+                    if not (rightup or wrongup):
+                        continue
+
+                    # flip the inverse closure amplitudes
+                    if wrongup:
+                        t1old = copy.deepcopy(obs['t1'])
+                        u1old = copy.deepcopy(obs['u1'])
+                        v1old = copy.deepcopy(obs['v1'])
+                        t2old = copy.deepcopy(obs['t2'])
+                        u2old = copy.deepcopy(obs['u2'])
+                        v2old = copy.deepcopy(obs['v2'])
+                        t3old = copy.deepcopy(obs['t3'])
+                        u3old = copy.deepcopy(obs['u3'])
+                        v3old = copy.deepcopy(obs['v3'])
+                        t4old = copy.deepcopy(obs['t4'])
+                        u4old = copy.deepcopy(obs['u4'])
+                        v4old = copy.deepcopy(obs['v4'])
+                        campold = copy.deepcopy(obs['camp'])
+                        csigmaold = copy.deepcopy(obs['sigmaca'])
+
+                        obs['t1'] = t1old
+                        obs['t2'] = t4old
+                        obs['t3'] = t3old
+                        obs['t4'] = t2old
+
+                        obs['u1'] = u3old
+                        obs['v1'] = v3old
+
+                        obs['u2'] = -u4old
+                        obs['v2'] = -v4old
+
+                        obs['u3'] = u1old
+                        obs['v3'] = v1old
+
+                        obs['u4'] = -u2old
+                        obs['v4'] = -v2old
+
+                        if ctype == 'logcamp':
+                            obs['camp'] = -campold
+                            obs['sigmaca'] = csigmaold
+                        else:
+                            obs['camp'] = 1. / campold
+                            obs['sigmaca'] = csigmaold / (campold**2)
+
                     t1old = copy.deepcopy(obs['t1'])
                     u1old = copy.deepcopy(obs['u1'])
                     v1old = copy.deepcopy(obs['v1'])
@@ -3552,106 +3716,131 @@ class Obsdata(object):
                     t4old = copy.deepcopy(obs['t4'])
                     u4old = copy.deepcopy(obs['u4'])
                     v4old = copy.deepcopy(obs['v4'])
-                    campold = copy.deepcopy(obs['camp'])
-                    csigmaold = copy.deepcopy(obs['sigmaca'])
 
-                    obs['t1'] = t1old
-                    obs['t2'] = t4old
-                    obs['t3'] = t3old
-                    obs['t4'] = t2old
+                    # this is all same closure amplitude, but the ordering of labels is different
+                    # return the label ordering that the user requested!
+                    if (obs['t2'], obs['t1'], obs['t4'], obs['t3']) == quad:
+                        obs['t1'] = t2old
+                        obs['t2'] = t1old
+                        obs['t3'] = t4old
+                        obs['t4'] = t3old
 
-                    obs['u1'] = u3old
-                    obs['v1'] = v3old
+                        obs['u1'] = -u1old
+                        obs['v1'] = -v1old
 
-                    obs['u2'] = -u4old
-                    obs['v2'] = -v4old
+                        obs['u2'] = -u2old
+                        obs['v2'] = -v2old
 
-                    obs['u3'] = u1old
-                    obs['v3'] = v1old
+                        obs['u3'] = u4old
+                        obs['v3'] = v4old
 
-                    obs['u4'] = -u2old
-                    obs['v4'] = -v2old
+                        obs['u4'] = u3old
+                        obs['v4'] = v3old
 
-                    if ctype == 'logcamp':
-                        obs['camp'] = -campold
-                        obs['sigmaca'] = csigmaold
-                    else:
-                        obs['camp'] = 1. / campold
-                        obs['sigmaca'] = csigmaold / (campold**2)
+                    elif (obs['t3'], obs['t4'], obs['t1'], obs['t2']) == quad:
+                        obs['t1'] = t3old
+                        obs['t2'] = t4old
+                        obs['t3'] = t1old
+                        obs['t4'] = t2old
 
-                t1old = copy.deepcopy(obs['t1'])
-                u1old = copy.deepcopy(obs['u1'])
-                v1old = copy.deepcopy(obs['v1'])
-                t2old = copy.deepcopy(obs['t2'])
-                u2old = copy.deepcopy(obs['u2'])
-                v2old = copy.deepcopy(obs['v2'])
-                t3old = copy.deepcopy(obs['t3'])
-                u3old = copy.deepcopy(obs['u3'])
-                v3old = copy.deepcopy(obs['v3'])
-                t4old = copy.deepcopy(obs['t4'])
-                u4old = copy.deepcopy(obs['u4'])
-                v4old = copy.deepcopy(obs['v4'])
+                        obs['u1'] = u2old
+                        obs['v1'] = v2old
 
-                # this is all same closure amplitude, but the ordering of labels is different
-                # return the label ordering that the user requested!
-                if (obs['t2'], obs['t1'], obs['t4'], obs['t3']) == quad:
-                    obs['t1'] = t2old
-                    obs['t2'] = t1old
-                    obs['t3'] = t4old
-                    obs['t4'] = t3old
+                        obs['u2'] = u1old
+                        obs['v2'] = v1old
 
-                    obs['u1'] = -u1old
-                    obs['v1'] = -v1old
+                        obs['u3'] = -u4old
+                        obs['v3'] = -v4old
 
-                    obs['u2'] = -u2old
-                    obs['v2'] = -v2old
+                        obs['u4'] = -u3old
+                        obs['v4'] = -v3old
 
-                    obs['u3'] = u4old
-                    obs['v3'] = v4old
+                    elif (obs['t4'], obs['t3'], obs['t2'], obs['t1']) == quad:
+                        obs['t1'] = t4old
+                        obs['t2'] = t3old
+                        obs['t3'] = t2old
+                        obs['t4'] = t1old
 
-                    obs['u4'] = u3old
-                    obs['v4'] = v3old
+                        obs['u1'] = -u2old
+                        obs['v1'] = -v2old
 
-                elif (obs['t3'], obs['t4'], obs['t1'], obs['t2']) == quad:
-                    obs['t1'] = t3old
-                    obs['t2'] = t4old
-                    obs['t3'] = t1old
-                    obs['t4'] = t2old
+                        obs['u2'] = -u1old
+                        obs['v2'] = -v1old
 
-                    obs['u1'] = u2old
-                    obs['v1'] = v2old
+                        obs['u3'] = -u3old
+                        obs['v3'] = -v3old
 
-                    obs['u2'] = u1old
-                    obs['v2'] = v1old
+                        obs['u4'] = -u4old
+                        obs['v4'] = -v4old
 
-                    obs['u3'] = -u4old
-                    obs['v3'] = -v4old
+                    # append to output array
+                    outdata.append(np.array(obs, dtype=ehc.DTCAMP))
 
-                    obs['u4'] = -u3old
-                    obs['v4'] = -v3old
+        # get selected bispectra from the visibilities directly
+        # taken from c_ampitudes() method
+        elif method=='from_vis':
 
-                elif (obs['t4'], obs['t3'], obs['t2'], obs['t1']) == quad:
-                    obs['t1'] = t4old
-                    obs['t2'] = t3old
-                    obs['t3'] = t2old
-                    obs['t4'] = t1old
+            # get all equal-time data, and loop  over to construct closure amplitudes
+            tlist = self.tlist(conj=True)
+            for tdata in tlist:
 
-                    obs['u1'] = -u2old
-                    obs['v1'] = -v2old
+                time = tdata[0]['time']
+                if timetype in ['GMST', 'gmst'] and self.timetype == 'UTC':
+                    time = obsh.utc_to_gmst(time, self.mjd)
+                if timetype in ['UTC', 'utc'] and self.timetype == 'GMST':
+                    time = obsh.gmst_to_utc(time, self.mjd)
+                sites = np.array(list(set(np.hstack((tdata['t1'], tdata['t2'])))))
+                if len(sites) < 4:
+                    continue
 
-                    obs['u2'] = -u1old
-                    obs['v2'] = -v1old
+                # Create a dictionary of baselines at the current time incl. conjugates;
+                l_dict = {}
+                for dat in tdata:
+                    l_dict[(dat['t1'], dat['t2'])] = dat
 
-                    obs['u3'] = -u3old
-                    obs['v3'] = -v3old
+                # Select quadrangle entries in the data dictionary
+                # Blue is numerator, red is denominator
+                if (quad[0], quad[1]) not in l_dict.keys():
+                    continue
+                if (quad[2], quad[3]) not in l_dict.keys():
+                    continue
+                if (quad[1], quad[2]) not in l_dict.keys():
+                    continue
+                if (quad[0], quad[3]) not in l_dict.keys():
+                    continue
 
-                    obs['u4'] = -u4old
-                    obs['v4'] = -v4old
+                try:
+                    blue1 = l_dict[quad[0], quad[1]]
+                    blue2 = l_dict[quad[2], quad[3]]
+                    red1 = l_dict[quad[0], quad[3]]
+                    red2 = l_dict[quad[1], quad[2]]
+                except KeyError:
+                    continue
 
-                # append to output array
-                outdata.append(np.array(obs, dtype=ehc.DTCAMP))
+                # Compute the closure amplitude and the error
+                (camp, camperr) = obsh.make_closure_amplitude(blue1, blue2, red1, red2, vtype,
+                                                              polrep=self.polrep,
+                                                              ctype=ctype, debias=debias)
 
-        return np.array(outdata)
+                if ctype == 'camp' and camp / camperr < snrcut:
+                    continue
+                elif ctype == 'logcamp' and 1. / camperr < snrcut:
+                    continue
+
+                # Add the closure amplitudes to the equal-time list
+                # Our site convention is (12)(34)/(14)(23)
+                outdata.append(np.array((time,
+                                         quad[0], quad[1], quad[2], quad[3],
+                                         blue1['u'], blue1['v'], blue2['u'], blue2['v'],
+                                         red1['u'], red1['v'], red2['u'], red2['v'],
+                                         camp, camperr),
+                                         dtype=ehc.DTCAMP))
+
+        else:
+            raise Exception("keyword 'method' in camp_quad() must be either 'from_cphase' or 'from_vis'")
+
+        outdata = np.array(outdata)
+        return outdata
 
     def plotall(self, field1, field2,
                 conj=False, debias=True, tag_bl=False, ang_unit='deg', timetype=False,
@@ -3713,7 +3902,7 @@ class Obsdata(object):
             # make a color coding dictionary
             cdict = {}
             ii = 0
-            baselines = list(it.combinations(self.tarr['site'], 2))
+            baselines = np.sort(list(it.combinations(self.tarr['site'], 2)))
             for baseline in baselines:
                 cdict[(baseline[0], baseline[1])] = clist[ii % len(clist)]
                 cdict[(baseline[1], baseline[0])] = clist[ii % len(clist)]
