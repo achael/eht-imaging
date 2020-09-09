@@ -608,7 +608,6 @@ def make_jones(obs, opacitycal=True, ampcal=True, phasecal=True, dcal=True,
         # If field rotation has been corrected, but leakage has NOT been corrected,
         # the leakage needs to rotate doubly
         elif frcal and not dcal:
-
             fr_angle_D = 2.0*(tarr[i]['fr_elev']*el_angles + tarr[i]
                               ['fr_par']*par_angles + tarr[i]['fr_off']*ehc.DEGREE)
 

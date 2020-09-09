@@ -772,6 +772,9 @@ def load_array_txt(filename, ephemdir='ephemeris'):
     """
 
     tdata = np.loadtxt(filename, dtype=bytes, comments='#').astype(str)
+    if tdata[0][0].lower() == 'site':
+        tdata = tdata[1:]
+
     path = os.path.dirname(filename)
 
     tdataout = []
