@@ -843,7 +843,8 @@ class Imager(object):
 
             # Change of variables
             if 'mcv' in self.transform_next:
-                self._xtuple = polutils.mcv_r(self._inittuple)
+                if self.pol_next == 'P' or self.pol_next == 'IP' or self.pol_next == 'IQU':
+                    self._xtuple = polutils.mcv_r(self._inittuple)
             else:
                 raise Exception("Polarimetric imaging only works with mcv transform!")
 
@@ -1358,7 +1359,8 @@ class Imager(object):
 
         # Chain rule term for change of variables
         if 'mcv' in self.transform_next:
-            grad *= polutils.mchain(cvcur) # note: mchain is only not 1 for 'm' variables
+            if self.pol_next == 'P' or self.pol_next == 'IP' or self.pol_next == 'IQU':
+                grad *= polutils.mchain(cvcur) # note: mchain is only not 1 for 'm' variables
 
         if 'log' in self.transform_next:
             if self.pol_next == 'P' or self.pol_next == 'IP' or self.pol_next == 'IQU':
