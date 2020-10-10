@@ -130,7 +130,6 @@ class Imager(object):
 
         # Polarization
         self.pol_next = kwargs.get('pol', self.init_next.pol_prim)
-        print(self.pol_next)
 
         # Weighting/debiasing/snr cut/systematic noise
         self.debias_next = kwargs.get('debias', True)
@@ -389,7 +388,7 @@ class Imager(object):
     def make_image_P(self, grads=True, **kwargs):
         """Make Stokes P polarimetric image using current imager settings.
         """
-        print(kwargs)
+
         return self.make_image(pol='P', grads=grads, **kwargs)
 
     def make_image_IP(self, grads=True, **kwargs):
@@ -1254,7 +1253,8 @@ class Imager(object):
 
         # Image change of variables
         if 'mcv' in self.transform_next:
-            imcur = polutils.mcv(imcur)
+            if self.pol_next == 'P' or self.pol_next == 'IP' or self.pol_next == 'IQU':
+                imcur = polutils.mcv(imcur)
 
         if 'log' in self.transform_next:
             if self.pol_next == 'P' or self.pol_next == 'IP' or self.pol_next == 'IQU':
@@ -1311,8 +1311,9 @@ class Imager(object):
 
         # Image change of variables
         if 'mcv' in self.transform_next:
-            cvcur = imcur.copy()
-            imcur = polutils.mcv(imcur)
+            if self.pol_next == 'P' or self.pol_next == 'IP' or self.pol_next == 'IQU':
+                cvcur = imcur.copy()
+                imcur = polutils.mcv(imcur)
 
         if 'log' in self.transform_next:
             if self.pol_next == 'P' or self.pol_next == 'IP' or self.pol_next == 'IQU':
@@ -1374,7 +1375,7 @@ class Imager(object):
             grad = polutils.pack_poltuple(grad, pol_which_solve)
 
         # repack gradient for multifrequency imaging
-        if self.mf_next:
+        elif self.mf_next:
             grad = mfutils.pack_mftuple(grad, MF_WHICH_SOLVE)
 
         return grad
@@ -1397,8 +1398,10 @@ class Imager(object):
                     imcur = imvec
 
                 # Image change of variables
+
                 if 'mcv' in self.transform_next:
-                    imcur = polutils.mcv(imcur)
+                    if self.pol_next == 'P' or self.pol_next == 'IP' or self.pol_next == 'IQU':
+                        imcur = polutils.mcv(imcur)
 
                 if 'log' in self.transform_next:
                     if self.pol_next == 'P' or self.pol_next == 'IP' or self.pol_next == 'IQU':

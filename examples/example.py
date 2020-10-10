@@ -8,11 +8,15 @@ import matplotlib.pyplot as plt
 import numpy as np
 import ehtim as eh
 from   ehtim.calibrating import self_cal as sc
+import time
 #from  ehtim.plotting import self_cal as sc
+plt.close('all')
+
+ttype = 'direct'
 
 # Load the image and the array
-im = eh.image.load_txt('../models/avery_sgra_eofn.txt')
-eht = eh.array.load_txt('../arrays/EHT2017.txt')
+im = eh.image.load_txt('./models/avery_sgra_eofn.txt')
+eht = eh.array.load_txt('./arrays/EHT2017.txt')
 
 # Look at the image
 im.display()
@@ -35,19 +39,19 @@ obs = im.observe(eht, tint_sec, tadv_sec, tstart_hr, tstop_hr, bw_hz,
 #obs = obs.deblur()
 
 # These are some simple plots you can check
-obs.plotall('u','v', conj=True) # uv coverage
-obs.plotall('uvdist','amp') # amplitude with baseline distance'
-obs.plot_bl('SMA','ALMA','phase') # visibility phase on a baseline over time
+#obs.plotall('u','v', conj=True) # uv coverage
+#obs.plotall('uvdist','amp') # amplitude with baseline distance'
+#obs.plot_bl('SMA','ALMA','phase') # visibility phase on a baseline over time
 
 # You can check out the dirty image, dirty beam, and clean beam
-npix = 64
+npix = 32
 fov = 1.5*im.xdim * im.psize # slightly enlarge the field of view
-dim = obs.dirtyimage(npix, fov)
-dbeam = obs.dirtybeam(npix, fov)
-cbeam = obs.cleanbeam(npix,fov)
-dim.display()
-dbeam.display()
-cbeam.display()
+#dim = obs.dirtyimage(npix, fov)
+#dbeam = obs.dirtybeam(npix, fov)
+#cbeam = obs.cleanbeam(npix,fov)
+#dim.display()
+#dbeam.display()
+#cbeam.display()
 
 # Resolution
 beamparams = obs.fit_beam() # fitted beam parameters (fwhm_maj, fwhm_min, theta) in radians
@@ -60,7 +64,7 @@ print("Nominal Resolution: " ,res)
 #obs.save_uvfits('obs.uvp') # exports a UVFITS file modeled on template.UVP
 
 # Generate an image prior
-npix = 32
+npix = 128
 fov = 1*im.fovx()
 zbl = im.total_flux() # total flux
 prior_fwhm = 200*eh.RADPERUAS # Gaussian size in microarcssec
@@ -70,11 +74,12 @@ gaussprior = emptyprior.add_gauss(zbl, (prior_fwhm, prior_fwhm, 0, 0, 0))
 
 # Image total flux with bispectrum
 flux = zbl
+tt = time.time()
 out  = eh.imager_func(obs, gaussprior, gaussprior, flux,
                       d1='bs', s1='simple',
                       alpha_s1=1, alpha_d1=100,
                       alpha_flux=100, alpha_cm=50,
-                      maxit=100, ttype='nfft')
+                      maxit=100, ttype=ttype, show_updates=False)
 
 # Blur the image with a circular beam and image again to help convergance
 out = out.blur_circ(res)
@@ -82,40 +87,40 @@ out = eh.imager_func(obs, out, out, flux,
                 d1='bs', s1='tv',
                 alpha_s1=1, alpha_d1=50,
                 alpha_flux=100, alpha_cm=50,
-                maxit=100,ttype='nfft')
+                maxit=100,ttype=ttype, show_updates=False)
 
 out = out.blur_circ(res/2.0)
 out = eh.imager_func(obs, out, out, flux,
                 d1='bs', s1='tv',
                 alpha_s1=1, alpha_d1=10,
                 alpha_flux=100, alpha_cm=50,
-                maxit=100,ttype='nfft')
+                maxit=100,ttype=ttype, show_updates=False)
+
+print ("total time: ", time.time() - tt)
+## Self - calibrate and image with vis amplitudes
+#obs_sc = sc.self_cal(obs, out)
+
+#out_sc = out.blur_circ(res)
+#out_sc = eh.imager_func(obs_sc, out_sc, out_sc, flux,
+#                   d1='vis', s1='simple',
+#                   alpha_s1=1, alpha_d1=100,
+#                   alpha_flux=100, alpha_cm=50,
+#                   maxit=50,ttype='nfft')
 
 
-# Self - calibrate and image with vis amplitudes
-obs_sc = sc.self_cal(obs, out)
-
-out_sc = out.blur_circ(res)
-out_sc = eh.imager_func(obs_sc, out_sc, out_sc, flux,
-                   d1='vis', s1='simple',
-                   alpha_s1=1, alpha_d1=100,
-                   alpha_flux=100, alpha_cm=50,
-                   maxit=50,ttype='nfft')
-
-
-# Compare the visibility amplitudes to the data
-out = out_sc
-eh.comp_plots.plotall_obs_im_compare(obs, out,'uvdist','amp', clist=['b','m'],conj=True)
+## Compare the visibility amplitudes to the data
+#out = out_sc
+#eh.comp_plots.plotall_obs_im_compare(obs, out,'uvdist','amp', clist=['b','m'],conj=True)
 
 # Blur the final image with 1/2 the clean beam
 outblur = out.blur_gauss(beamparams, 0.5)
 out.display()
 
-# Save the images
-outname = "test"
-out.save_txt(outname + '.txt')
-out.save_fits(outname + '.fits')
-outblur.save_txt(outname + '_blur.txt')
-outblur.save_fits(outname + '_blur.fits')
+## Save the images
+#outname = "test"
+#out.save_txt(outname + '.txt')
+#out.save_fits(outname + '.fits')
+#outblur.save_txt(outname + '_blur.txt')
+#outblur.save_fits(outname + '_blur.fits')
 
 

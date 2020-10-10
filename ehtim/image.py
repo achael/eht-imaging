@@ -1457,6 +1457,18 @@ class Image(object):
         arglist[0] = imarr_blur
         outim = Image(*arglist, **argdict)
 
+        # Blur spectral index and copy over
+        mflist_out = []
+        for mfvec in self._mflist:
+            if len(mfvec):
+                mfarr = mfvec.reshape(self.ydim, self.xdim)
+                mfarr = blur(mfarr, sigmap)
+                mfvec_out = mfarr.flatten()
+            else:
+                mfvec_out = np.array([])
+            mflist_out.append(mfvec_out)
+        outim._mflist = mflist_out
+
         # Blur all polarizations and copy over
         for pol in list(self._imdict.keys()):
             if pol == self.pol_prim:
@@ -1471,17 +1483,6 @@ class Image(object):
                     polarr = blur(polarr, sigmap)
                 outim.add_pol_image(polarr, pol)
 
-        # Blur spectral index and copy over
-        mflist_out = []
-        for mfvec in self._mflist:
-            if len(mfvec):
-                mfarr = mfvec.reshape(self.ydim, self.xdim)
-                mfarr = blur(mfarr, sigmap)
-                mfvec_out = mfarr.flatten()
-            else:
-                mfvec_out = np.array([])
-            mflist_out.append(mfvec_out)
-        outim._mflist = mflist_out
 
         return outim
 
@@ -3146,7 +3147,7 @@ class Image(object):
                 scale='lin', gamma=0.5, dynamic_range=1.e3,
                 plotp=False, plot_stokes=False, nvec=20,
                 vec_cfun=None,
-                pcut=0.1, mcut=0.01, log_offset=False,
+                scut=0, pcut=0.1, mcut=0.01, log_offset=False,
                 label_type='ticks', has_title=True, alpha=1,
                 has_cbar=True, only_cbar=False, cbar_lims=(), cbar_unit=('Jy', 'pixel'),
                 export_pdf="", pdf_pad_inches=0.0, show=True, beamparams=None,
@@ -3171,6 +3172,7 @@ class Image(object):
                nvec (int): number of polarimetric vectors to plot
                vec_cfun (str): color function for vectors colored by |m|
 
+               scut (float): minimum stokes I value for displaying spectral index
                pcut (float): minimum stokes I value for displaying polarimetric vectors
                              (fraction of maximum Stokes I)
                mcut (float): minimum fractional polarization value for displaying vectors
@@ -3298,13 +3300,18 @@ class Image(object):
             cbar_lims_p = ()
 
             if pol.lower() == 'spec':
-                imvec = self.specvec
+                imvec = self.specvec.copy()
+
+                # mask out low total intensity values
+                mask = self.imvec < (scut * np.max(self.imvec))
+                imvec[mask] = 0
+
                 unit = r'$\alpha$'
                 factor = 1
                 cbar_lims_p = [-5, 5]
-                cfun_p = 'jet'
+                cfun_p = 'seismic'
             elif pol.lower() == 'm':
-                imvec = self.mvec
+                imvec = self.mvec.copy()
                 unit = r'$\|\breve{m}|$'
                 factor = 1
                 cbar_lims_p = [0, 1]
@@ -3314,17 +3321,17 @@ class Image(object):
                 unit = r'$\|P|$'
                 cfun_p = 'afmhot'
             elif pol.lower() == 'chi' or pol.lower() == 'evpa':
-                imvec = self.chivec / ehc.DEGREE
+                imvec = self.chivec.copy() / ehc.DEGREE
                 unit = r'$\chi (^\circ)$'
                 factor = 1
                 cbar_lims_p = [0, 180]
                 cfun_p = 'hsv'
             elif pol.lower() == 'e':
-                imvec = self.evec
+                imvec = self.evec.copy()
                 unit = r'$E$-mode'
                 cfun_p = 'Spectral'
             elif pol.lower() == 'b':
-                imvec = self.bvec
+                imvec = self.bvec.copy()
                 unit = r'$B$-mode'
                 cfun_p = 'Spectral'
             else:
