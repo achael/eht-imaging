@@ -1307,8 +1307,8 @@ def load_obs_uvfits(filename, polrep='stokes', flipbl=False, allow_singlepol=Tru
     t2 = data['BASELINE'][mask].astype(int) - t1 * 256
     t1 = t1 - 1
     t2 = t2 - 1
-    t1 = np.array([tarr[i]['site'] for i in t1])
-    t2 = np.array([tarr[i]['site'] for i in t2])
+    t1 = np.array([tarr[np.where(tnums==i)[0][0]]['site'] for i in t1])
+    t2 = np.array([tarr[np.where(tnums==i)[0][0]]['site'] for i in t2])
 
     # Opacities (not in standard files)
     try:
