@@ -862,7 +862,7 @@ class Imager(object):
 
         # Set prior & initial image vectors for multifrequency imaging
         elif self.mf_next:
-            self._nimage = len(self.prior_next.imvec)
+
             if self.norm_init:
                 nprior_I = (self.flux_next * self.prior_next.imvec /
                             np.sum((self.prior_next.imvec)[self._embed_mask]))[self._embed_mask]
@@ -871,22 +871,27 @@ class Imager(object):
             else:
                 nprior_I = self.prior_next.imvec[self._embed_mask]
                 ninit_I = self.init_next.imvec[self._embed_mask]
+
             if len(self.init_next.specvec):
-                ninit_a = self.init_next.specvec
+                ninit_a = self.init_next.specvec[self._embed_mask]
             else:
-                ninit_a = np.zeros(self._nimage)
-            if len(self.init_next.curvvec):
-                ninit_b = self.init_next.curvvec
-            else:
-                ninit_b = np.zeros(self._nimage)
+                ninit_a = np.zeros(self._nimage)[self._embed_mask]
             if len(self.prior_next.specvec):
-                nprior_a = self.prior_next.specvec
+                nprior_a = self.prior_next.specvec[self._embed_mask]
             else:
-                nprior_a = np.zeros(self._nimage)
+                nprior_a = np.zeros(self._nimage)[self._embed_mask]
+
+            if len(self.init_next.curvvec):
+                ninit_b = self.init_next.curvvec[self._embed_mask]
+            else:
+                ninit_b = np.zeros(self._nimage)[self._embed_mask]
             if len(self.prior_next.curvvec):
-                nprior_b = self.init_next.curvvec
+                nprior_b = self.init_next.curvvec[self._embed_mask]
             else:
-                nprior_b = np.zeros(self._nimage)
+                nprior_b = np.zeros(self._nimage)[self._embed_mask]
+
+            self._nimage = len(ninit_I)
+
             self.inittuple = np.array((ninit_I, ninit_a, ninit_b))
             self.priortuple = np.array((nprior_I, nprior_a, nprior_b))
 
@@ -901,7 +906,7 @@ class Imager(object):
 
         # Set prior & initial image vectors for single stokes or RR/LL imaging
         else:
-            self._nimage = len(self.prior_next.imvec)
+
             if self.norm_init:
                 self._nprior = (self.flux_next * self.prior_next.imvec /
                                 np.sum((self.prior_next.imvec)[self._embed_mask]))[self._embed_mask]
@@ -911,6 +916,7 @@ class Imager(object):
                 self._nprior = self.prior_next.imvec[self._embed_mask]
                 ninit = self.init_next.imvec[self._embed_mask]
 
+            self._nimage = len(ninit)
             # Change of variables
             if 'log' in self.transform_next:
                 self._xinit = np.log(ninit)

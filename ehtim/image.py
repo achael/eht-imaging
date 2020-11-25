@@ -3202,8 +3202,10 @@ class Image(object):
 
         if (interp in ['gauss', 'gaussian', 'Gaussian', 'Gauss']):
             interp = 'gaussian'
+        elif (interp in ['linear','bilinear']):
+            interp = 'bilinear'
         else:
-            interp = 'linear'
+            interp = 'none'
 
         if not(beamparams is None or beamparams is False):
             if beamparams[0] > self.fovx() or beamparams[1] > self.fovx():
@@ -3708,7 +3710,7 @@ class Image(object):
                 ax.axes.get_xaxis().set_visible(False)
                 ax.axes.get_yaxis().set_visible(False)
 
-        elif label_type == 'none':
+        elif label_type == 'none' or label_type is None:
             plt.axis('off')
             ax = plt.gca()
             if axis is None:
