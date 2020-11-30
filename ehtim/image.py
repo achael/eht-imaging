@@ -2971,7 +2971,7 @@ class Image(object):
                        for v in np.arange(-u_max, u_max * 1.001, u_max / 4.0)])
         u = uv[:, 0]
         v = uv[:, 1]
-        vis = np.dot(ehtim.obsdata.ftmatrix(self.psize, self.xdim, self.ydim, uv, pulse=self.pulse),
+        vis = np.dot(obsh.ftmatrix(self.psize, self.xdim, self.ydim, uv, pulse=self.pulse),
                      self.imvec)
 
         if paramguess is None:
