@@ -1171,9 +1171,9 @@ def add_noise(obs, add_th_noise=True, opacitycal=True, ampcal=True, phasecal=Tru
             gain_mult_1 = np.fromiter((gainp for i in range(len(times))), float)
             gain_mult_2 = np.fromiter((gainp for i in range(len(times))), float)
 
-        gain1_constant = np.fromiter((goff1[i] * obsh.hashrandn(sites[i, 0], 'gain', str(goff1[i]), seed))
+        gain1_constant = np.fromiter((goff1[i] * obsh.hashrandn(sites[i, 0], 'gain', str(goff1[i]), seed)
                                      for i in range(len(times))), float)
-        gain2_constant = np.fromiter((goff2[i] * obsh.hashrandn(sites[i, 1], 'gain', str(goff2[i]), seed))
+        gain2_constant = np.fromiter((goff2[i] * obsh.hashrandn(sites[i, 1], 'gain', str(goff2[i]), seed)
                                      for i in range(len(times))), float)
 
         if neggains:
@@ -1182,12 +1182,12 @@ def add_noise(obs, add_th_noise=True, opacitycal=True, ampcal=True, phasecal=Tru
 
         if sigmat is None:
             gain1_var = np.fromiter((gain_mult_1[i] * obsh.hashrandn(sites[i, 0], 'gain',
-                                                                           times_stable_amp[i],
-                                                                           str(gain_mult_1[i]), seed))
+                                                                     times_stable_amp[i],
+                                                                     str(gain_mult_1[i]), seed)
                                     for i in range(len(times))), float)
             gain1_var = np.fromiter((gain_mult_2[i] * obsh.hashrandn(sites[i, 1], 'gain',
-                                                                           times_stable_amp[i],
-                                                                           str(gain_mult_2[i]), seed))
+                                                                     times_stable_amp[i],
+                                                                     str(gain_mult_2[i]), seed)
                                     for i in range(len(times))), float)
         else:
             raise Exception("correlated gains not supported in old add_noise! Use jones=True")
