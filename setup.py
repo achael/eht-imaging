@@ -13,7 +13,6 @@ if __name__ == "__main__":
           author_email = "achael@princeton.edu",
           description = "Imaging, analysis, and simulation software for radio interferometry",
           long_description=read('README.rst'),
-          long_description_content_type="text/markdown",
           license = "GPLv3",
           keywords = "imaging astronomy EHT polarimetry",
           url = "https://github.com/achael/eht-imaging",
