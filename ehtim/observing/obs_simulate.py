@@ -1192,8 +1192,8 @@ def add_noise(obs, add_th_noise=True, opacitycal=True, ampcal=True, phasecal=Tru
         else:
             raise Exception("correlated gains not supported in old add_noise! Use jones=True")
 
-        gain1 = np.abs((1.0 + gain1_const)*(1.0 + gain1_var))
-        gain2 = np.abs((1.0 + gain2_const)*(1.0 + gain2_var))
+        gain1 = np.abs((1.0 + gain1_constant)*(1.0 + gain1_var))
+        gain2 = np.abs((1.0 + gain2_constant)*(1.0 + gain2_var))
 
 #        gain1 = np.abs(np.fromiter(
 #                      ((1.0 + goff1[i] * np.abs(obsh.hashrandn(sites[i, 0], 'gain', seed))) *
