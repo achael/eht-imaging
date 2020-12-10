@@ -1185,7 +1185,7 @@ def add_noise(obs, add_th_noise=True, opacitycal=True, ampcal=True, phasecal=Tru
                                                                      times_stable_amp[i],
                                                                      str(gain_mult_1[i]), seed)
                                     for i in range(len(times))), float)
-            gain1_var = np.fromiter((gain_mult_2[i] * obsh.hashrandn(sites[i, 1], 'gain',
+            gain2_var = np.fromiter((gain_mult_2[i] * obsh.hashrandn(sites[i, 1], 'gain',
                                                                      times_stable_amp[i],
                                                                      str(gain_mult_2[i]), seed)
                                     for i in range(len(times))), float)
