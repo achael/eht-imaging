@@ -1,9 +1,9 @@
 ehtim (eht-imaging)
 ===================
 
-Python modules for simulating and manipulating VLBI data and producing images with regularized maximum likelihood methods. This version is an early release so please submit a pull request or email achael@princeton.edu if you have trouble or need help for your application.
+Python modules for simulating and manipulating VLBI data and producing images with regularized maximum likelihood methods. This version is an early release so please raise an issue, submit a pull request, or email achael@princeton.edu if you have trouble or need help for your application.
 
-The package contains several primary classes for loading, simulating, and manipulating VLBI data. The main classes are the ``Image``, ``Movie``, ``Array``, ``Obsdata``, ``Imager``, and ``Caltable`` classes, which provide tools for loading images and data, producing simulated data from realistic u-v tracks,  calibrating, inspecting, and  plotting data, and producing images from data sets in various polarizations using various data terms and regularizers.
+The package contains several primary classes for loading, simulating, and manipulating VLBI data. The main classes are the ``Image``, ``Movie``, ``Array``, ``Obsdata``, ``Imager``, and ``Caltable`` classes, which provide tools for loading images and data, producing simulated data from realistic u-v tracks,  calibrating, inspecting, and  plotting data, and producing images from data sets in various polarizations using various data terms and regularizing functions.
 
 
 Installation
@@ -15,7 +15,7 @@ The latest stable version (`1.2.1 <https://github.com/achael/eht-imaging/release
 
     pip install ehtim
 
-Incremental updates are developed on the `dev branch <https://github.com/achael/eht-imaging/tree/dev>`_. To use the very latest (unstable) code, checkout dev, change to the main eht-imaging directory, and run:
+Incremental updates are developed on the `dev branch <https://github.com/achael/eht-imaging/tree/dev>`_. To use the very latest (unstable) code, checkout the dev branch, change to the main eht-imaging directory, and run:
 
 .. code-block:: bash
 
@@ -46,7 +46,7 @@ A full tutorial is in progress, but here are some ways to learn to use the code:
 
 Some publications that use ehtim
 --------------------------------
-If you use ehtim in your publication, please cite both  `Chael+ 2016 <http://adsabs.harvard.edu/abs/2016ApJ...829...11C>`_  and  `Chael+ 2018 <http://adsabs.harvard.edu/abs/2018ApJ...857...23C>`_
+If you use ehtim in your publication, please cite `Chael+ 2018 <http://adsabs.harvard.edu/abs/2018ApJ...857...23C>`_
 
 Let us know if you use ehtim in your publication and we'll list it here!
 
@@ -55,8 +55,6 @@ Let us know if you use ehtim in your publication and we'll list it here!
 - Computational  Imaging for VLBI Image Reconstruction, `Bouman et al. 2016 <http://www.cv-foundation.org/openaccess/content_cvpr_2016/html/Bouman_Computational_Imaging_for_CVPR_2016_paper.html>`_ 
 
 - Stochastic Optics: A Scattering Mitigation  Framework for Radio Interferometric Imaging, `Johnson 2016 <https://arxiv.org/abs/1610.05326>`_ 
-
-- Quantifying Intrinsic Variability of  Sgr A* using Closure Phase Measurements of the Event Horizon Telescope, `Roelofs et al. 2017 <https://arxiv.org/abs/1708.01056>`_ 
 
 - Reconstructing Video from Interferometric Measurements of Time-Varying Sources, `Bouman et al. 2017 <https://arxiv.org/abs/1711.01357>`_  
 
@@ -77,6 +75,22 @@ Let us know if you use ehtim in your publication and we'll list it here!
 - The Size, Shape, and Scattering of Sagittarius A* at 86 GHz: First VLBI with ALMA, `Issaoun et al. 2019 <https://arxiv.org/abs/1901.06226>`_
 
 - First M87 Event Horizon Telescope Results IV: Imaging the Central Supermassive Black Hole, `The Event Horizon Telescope Collaboration 2019 <https://arxiv.org/abs/1906.11241>`_
+
+- VLBI Imaging of black holes via second moment regularization, `Issaoun et al. 2019 <https://arxiv.org/pdf/1908.01296.pdf>`_
+
+- Using evolutionary algorithms to model relativistic jets: Application to NGC 1052, `Fromm et al. 2019 <https://arxiv.org/pdf/1904.00106.pdf>`_
+
+- EHT-HOPS Pipeline for Millimeter VLBI Data Reduction, `Blackburn et al. 2019 <https://arxiv.org/pdf/1903.08832>`_
+
+- Multi-wavelength torus-jet model for Sagittarius A*, `Vincent et al. 2019 <https://arxiv.org/pdf/1902.01175>`_
+
+- Discriminating Accretion States via Rotational Symmetry in Simulated Polarimetric Images of M87, `Palumbo et al. 2020 <https://arxiv.org/pdf/2004.01751.pdf>`_
+
+- SYMBA: An end-to-end VLBI synthetic data generation pipeline. Simulating Event Horizon Telescope observations of M87, `Roelofs et al. 2020 <https://arxiv.org/pdf/2004.01161.pdf>`_
+
+- Monitoring the Morphology of M87* in 2009-2017 with the Event Horizon Telescope, `Wielgus et al. 2020 <https://arxiv.org/pdf/2009.11842>`_
+
+- EHT imaging of the archetypal blazar 3C 279 at extreme 20 microarcsecond resolution, `Kim et al. 2020 <https://www.aanda.org/articles/aa/pdf/2020/08/aa37493-20.pdf>`_
 
 Acknowledgements
 ----------------
