@@ -1194,7 +1194,9 @@ def add_noise(obs, add_th_noise=True, opacitycal=True, ampcal=True, phasecal=Tru
 
         gain1 = np.abs((1.0 + gain1_constant)*(1.0 + gain1_var))
         gain2 = np.abs((1.0 + gain2_constant)*(1.0 + gain2_var))
-
+        if neggains:
+            gain1 = np.exp(-np.abs(np.log(gain1)))
+            gain2 = np.exp(-np.abs(np.log(gain2)))
 #        gain1 = np.abs(np.fromiter(
 #                      ((1.0 + goff1[i] * np.abs(obsh.hashrandn(sites[i, 0], 'gain', seed))) *
 #                       (1.0 + gain_mult_1[i] * obsh.hashrandn(sites[i, 0],
