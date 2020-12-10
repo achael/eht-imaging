@@ -1157,7 +1157,7 @@ class Movie(object):
 
         # print("Producing clean visibilities from movie . . . ")
         obs = self.observe_same_nonoise(obs_in, repeat=repeat, sgrscat=sgrscat,
-                                        ttype=ttype, cache=False, fft_pad_factor=fft_pad_factor,
+                                        ttype=ttype, fft_pad_factor=fft_pad_factor,
                                         zero_empty_pol=True, verbose=verbose)
 
         # Jones Matrix Corruption & Calibration

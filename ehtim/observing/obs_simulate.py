@@ -400,7 +400,8 @@ def make_jones(obs, opacitycal=True, ampcal=True, phasecal=True, dcal=True,
                                 or a dict giving one gain offset per site
            dterm_offset (float): the base std. dev. of random additive error at all sites,
                                 or a dict giving one std. dev. per site
-           caltable_path (string): The path and prefix of a saved caltable
+
+           caltable_path (string): If not None, path and prefix for saving the applied caltable
            seed : a seed for the random number generators, uses system time if false
            sigmat (float): temporal std for a Gaussian Process used to generate gain noise.
                            If sigmat=None then an iid gain noise is applied.
@@ -792,8 +793,8 @@ def add_jones_and_noise(obs, add_th_noise=True,
                                 or a dict giving one gain offset per site
            dterm_offset (float): the base std. dev. of random additive error at all sites,
                                 or a dict giving one std. dev. per site
-           caltable_path (string): The path and prefix of a saved caltable
 
+           caltable_path (string): If not None, path and prefix for saving the applied caltable
            seed : a seed for the random number generators, uses system time if false
            sigmat (float): temporal std for a Gaussian Process used to generate gain noise.
                            if sigmat=None then an iid gain noise is applied.
@@ -1033,8 +1034,9 @@ def apply_jones_inverse(obs, opacitycal=True, dcal=True, frcal=True, verbose=Tru
 
 def add_noise(obs, add_th_noise=True, opacitycal=True, ampcal=True, phasecal=True,
               stabilize_scan_amp=False, stabilize_scan_phase=False,
-              taup=ehc.GAINPDEF, gainp=ehc.GAINPDEF, gain_offset=ehc.GAINPDEF,
-              seed=False, verbose=True):
+              neggains=False,
+              taup=ehc.GAINPDEF, gain_offset=ehc.GAINPDEF, gainp=ehc.GAINPDEF, 
+              caltable_path=None, seed=False, sigmat=None, verbose=True):
     """Add thermal noise and gain & phase calibration errors to a dataset.
        Old routine replaced by add_jones_and_noise.
 
@@ -1046,16 +1048,24 @@ def add_noise(obs, add_th_noise=True, opacitycal=True, ampcal=True, phasecal=Tru
            phasecal (bool): if False, time-dependent random phases are added to complex station gains
            stabilize_scan_phase (bool): if True, random phase errors are constant over scans
            stabilize_scan_amp (bool): if True, random amplitude errors are constant over scans
+           neggains (bool): if True, force the applied gains to be <1
            taup (float): the fractional std. dev. of the random error on the opacities
-           gainp (float): the fractional std. dev. of the random error on the gains
            gain_offset (float): the base gain offset at all sites,
                                 or a dict giving one gain offset per site
-           seed : a seed for the random number generators, uses system time if false
+           gainp (float): the fractional std. dev. of the random error on the gains
+
+           caltable_path (string): If not None, path and prefix for saving the applied caltable
+                                   NOT supported currently for add_noise.
+           seed (int): seeds the random component of the noise terms. DO NOT set to 0!
+           sigmat (float): temporal std for a Gaussian Process used to generate gain noise.
+                           NOT supported currently for add_noise.
            verbose (bool): print updates and warnings
        Returns:
            (np.array): an observation data array
     """
 
+    if caltable_path: 
+        print("caltable saving not implemented for old add_noise function!")
     if verbose:
         print("Adding gain + phase errors to data and applying a priori calibration . . . ")
 
@@ -1161,18 +1171,43 @@ def add_noise(obs, add_th_noise=True, opacitycal=True, ampcal=True, phasecal=Tru
             gain_mult_1 = np.fromiter((gainp for i in range(len(times))), float)
             gain_mult_2 = np.fromiter((gainp for i in range(len(times))), float)
 
-        gain1 = np.abs(np.fromiter(
-                      ((1.0 + goff1[i] * np.abs(obsh.hashrandn(sites[i, 0], 'gain', seed))) *
-                       (1.0 + gain_mult_1[i] * obsh.hashrandn(sites[i, 0],
-                                                              'gain', times_stable_amp[i], seed))
-                       for i in range(len(times))
-                       ), float))
-        gain2 = np.abs(np.fromiter(
-                      ((1.0 + goff2[i] * np.abs(obsh.hashrandn(sites[i, 1], 'gain', seed))) *
-                       (1.0 + gain_mult_2[i] * obsh.hashrandn(sites[i, 1],
-                                                              'gain', times_stable_amp[i], seed))
-                       for i in range(len(times))
-                       ), float))
+        gain1_constant = np.fromiter((goff1[i] * obsh.hashrandn(sites[i, 0], 'gain', str(goff1[i]), seed))
+                                     for i in range(len(times))), float)
+        gain2_constant = np.fromiter((goff2[i] * obsh.hashrandn(sites[i, 1], 'gain', str(goff2[i]), seed))
+                                     for i in range(len(times))), float)
+
+        if neggains:
+            gain1_constant = -np.abs(gain1_constant)
+            gain2_constant = -np.abs(gain2_constant)
+
+        if sigmat is None:
+            gain1_var = np.fromiter((gain_mult_1[i] * obsh.hashrandn(sites[i, 0], 'gain',
+                                                                           times_stable_amp[i],
+                                                                           str(gain_mult_1[i]), seed))
+                                    for i in range(len(times))), float)
+            gain1_var = np.fromiter((gain_mult_2[i] * obsh.hashrandn(sites[i, 1], 'gain',
+                                                                           times_stable_amp[i],
+                                                                           str(gain_mult_2[i]), seed))
+                                    for i in range(len(times))), float)
+        else:
+            raise Exception("correlated gains not supported in old add_noise! Use jones=True")
+
+        gain1 = np.abs((1.0 + gain1_const)*(1.0 + gain1_var))
+        gain2 = np.abs((1.0 + gain2_const)*(1.0 + gain2_var))
+
+#        gain1 = np.abs(np.fromiter(
+#                      ((1.0 + goff1[i] * np.abs(obsh.hashrandn(sites[i, 0], 'gain', seed))) *
+#                       (1.0 + gain_mult_1[i] * obsh.hashrandn(sites[i, 0],
+#                                                              'gain', times_stable_amp[i], seed))
+#                       for i in range(len(times))
+#                       ), float))
+#        gain2 = np.abs(np.fromiter(
+#                      ((1.0 + goff2[i] * np.abs(obsh.hashrandn(sites[i, 1], 'gain', seed))) *
+#                       (1.0 + gain_mult_2[i] * obsh.hashrandn(sites[i, 1],
+#                                                              'gain', times_stable_amp[i], seed))
+#                       for i in range(len(times))
+#                       ), float))
+
         gain_true = np.sqrt(gain1 * gain2)
     else:
         gain_true = 1

@@ -2625,7 +2625,6 @@ class Image(object):
                                tau=tau, taup=taup,
                                gain_offset=gain_offset, gainp=gainp,
                                dterm_offset=dterm_offset,
-
                                caltable_path=caltable_path, seed=seed,sigmat=sigmat,
                                verbose=verbose)
 
