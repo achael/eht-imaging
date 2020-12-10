@@ -7,15 +7,16 @@ def read(fname):
 if __name__ == "__main__":
     setup(name="ehtim",
 
-          version = "1.2",
+          version = "1.2.2",
 
           author = "Andrew Chael",
           author_email = "achael@princeton.edu",
           description = "Imaging, analysis, and simulation software for radio interferometry",
+          long_description=read('README.rst'),
           license = "GPLv3",
           keywords = "imaging astronomy EHT polarimetry",
           url = "https://github.com/achael/eht-imaging",
-          download_url = "https://github.com/achael/eht-imaging/archive/v1.2.1.tar.gz",
+          download_url = "https://github.com/achael/eht-imaging/archive/v1.2.2.tar.gz",
           packages = ["ehtim",
                       "scripts",
                       "ehtim.calibrating",
@@ -33,7 +34,7 @@ if __name__ == "__main__":
                    "scripts/imaging.py",
                    "scripts/imgsum.py",
                    "scripts/verify_gradients.py"],
-          long_description=read('README.rst'),
+
           install_requires=["numpy",
                             "scipy",
                             "astropy",
