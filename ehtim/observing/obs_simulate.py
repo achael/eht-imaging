@@ -390,14 +390,17 @@ def make_jones(obs, opacitycal=True, ampcal=True, phasecal=True, dcal=True,
            phasecal (bool): if False, time-dependent random phases are added to complex station gains
            dcal (bool): if False, time-dependent gaussian errors are added to D-terms.
            frcal (bool): if False, feed rotation angle terms are added to Jones matrices.
+           rlgaincal (bool): if False, time-dependent gains are not equal for R and L pol
            stabilize_scan_phase (bool): if True, random phase errors are constant over scans
            stabilize_scan_amp (bool): if True, random amplitude errors are constant over scans
+           neggains (bool): if True, force the applied gains to be <1
            taup (float): the fractional std. dev. of the random error on the opacities
            gainp (float): the fractional std. dev. of the random error on the gains
            gain_offset (float): the base gain offset at all sites,
                                 or a dict giving one gain offset per site
            dterm_offset (float): the base std. dev. of random additive error at all sites,
                                 or a dict giving one std. dev. per site
+           caltable_path (string): The path and prefix of a saved caltable
            seed : a seed for the random number generators, uses system time if false
            sigmat (float): temporal std for a Gaussian Process used to generate gain noise.
                            If sigmat=None then an iid gain noise is applied.
@@ -765,8 +768,8 @@ def add_jones_and_noise(obs, add_th_noise=True,
                         neggains=False,
                         taup=ehc.GAINPDEF, gainp=ehc.GAINPDEF,
                         gain_offset=ehc.GAINPDEF, dterm_offset=ehc.DTERMPDEF,
-                        caltable_path=None, seed=False,
-                        verbose=True, sigmat=None):
+                        caltable_path=None, seed=False, sigmat=None,
+                        verbose=True):
     """Corrupt visibilities in obs with jones matrices and add thermal noise
 
        Args:
@@ -777,17 +780,25 @@ def add_jones_and_noise(obs, add_th_noise=True,
            phasecal (bool): if False, time-dependent random phases are added to complex station gains
            dcal (bool): if False, time-dependent gaussian errors are added to D-terms.
            frcal (bool): if False, feed rotation angle terms are added to Jones matrices.
+           rlgaincal (bool): if False, time-dependent gains are not equal for R and L pol
+
            stabilize_scan_phase (bool): if True, random phase errors are constant over scans
            stabilize_scan_amp (bool): if True, random amplitude errors are constant over scans
+           neggains (bool): if True, force the applied gains to be <1
+
            taup (float): the fractional std. dev. of the random error on the opacities
            gainp (float): the fractional std. dev. of the random error on the gains
            gain_offset (float): the base gain offset at all sites,
                                 or a dict giving one gain offset per site
            dterm_offset (float): the base std. dev. of random additive error at all sites,
                                 or a dict giving one std. dev. per site
+           caltable_path (string): The path and prefix of a saved caltable
+
            seed : a seed for the random number generators, uses system time if false
            sigmat (float): temporal std for a Gaussian Process used to generate gain noise.
-                        If sigmat=None then an iid gain noise is applied.
+                           if sigmat=None then an iid gain noise is applied.
+           
+           verbose (bool): print updates and warnings
        Returns:
            (np.array): an observation  data array
     """
@@ -902,6 +913,7 @@ def apply_jones_inverse(obs, opacitycal=True, dcal=True, frcal=True, verbose=Tru
            opacitycal (bool): if False, estimated opacity terms are applied in the inverse gains
            dcal (bool): if False, estimated inverse d-terms applied to the inverse Jones matrices
            frcal (bool): if False, inverse feed rotation angle terms are applied to Jones matrices.
+           verbose (bool): print updates and warnings
 
        Returns:
            (np.array): an observation data array
@@ -1039,7 +1051,7 @@ def add_noise(obs, add_th_noise=True, opacitycal=True, ampcal=True, phasecal=Tru
            gain_offset (float): the base gain offset at all sites,
                                 or a dict giving one gain offset per site
            seed : a seed for the random number generators, uses system time if false
-
+           verbose (bool): print updates and warnings
        Returns:
            (np.array): an observation data array
     """

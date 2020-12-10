@@ -978,17 +978,22 @@ class Movie(object):
 
         return movie_blur
 
-    def observe_same_nonoise(self, obs, sgrscat=False, ttype="nfft",
-                             fft_pad_factor=2, repeat=False):
+    def observe_same_nonoise(self, obs, repeat=False, sgrscat=False, 
+                             ttype="nfft", fft_pad_factor=2, 
+                             zero_empty_pol=True, verbose=True):
         """Observe the movie on the same baselines as an existing observation
            without adding noise.
 
            Args:
                obs (Obsdata): existing observation with baselines where the FT will be sampled
+               repeat (bool): if True, repeat the movie to fill up the observation interval
                sgrscat (bool): if True, the visibilites are blurred by the Sgr A* scattering kernel
                ttype (str): if "fast", use FFT to produce visibilities. Else "direct" for DTFT
                fft_pad_factor (float): zero pad the image to fft_pad_factor * image size in FFT
-               repeat (bool): if True, repeat the movie to fill up the observation interval
+
+               zero_empty_pol (bool): if True, returns zero vec if the polarization doesn't exist.
+                                      Otherwise return None
+               verbose (bool): Boolean value controls output prints.
 
            Returns:
                (Obsdata): an observation object
@@ -1032,7 +1037,7 @@ class Movie(object):
 
         # Observe nearest frame
         obsdata_out = []
-        verbose = True
+
         for i in range(len(obslist)):
             obsdata = obslist[i]
 
@@ -1058,8 +1063,8 @@ class Movie(object):
 
             data = simobs.sample_vis(im, uv, sgrscat=sgrscat, polrep_obs=obs.polrep,
                                      ttype=ttype, fft_pad_factor=fft_pad_factor,
-                                     zero_empty_pol=True, verbose=verbose)
-            verbose = False
+                                     zero_empty_pol=zero_empty_pol, verbose=verbose)
+            verbose = False # only print for one frame
 
             # Put visibilities into the obsdata
             if obs.polrep == 'stokes':
@@ -1093,26 +1098,32 @@ class Movie(object):
 
         return obs_no_noise
 
-    def observe_same(self, obs_in, ttype='direct', fft_pad_factor=2,  repeat=False,
+    def observe_same(self, obs_in, repeat=False,
+                     ttype='nfft', fft_pad_factor=2,
                      sgrscat=False, add_th_noise=True,
+                     jones=False, inv_jones=False,
                      opacitycal=True, ampcal=True, phasecal=True,
                      frcal=True, dcal=True, rlgaincal=True,
-                     stabilize_scan_phase=False, stabilize_scan_amp=False, neggains=False,
-                     jones=False, inv_jones=False,
-                     tau=ehc.TAUDEF, taup=ehc.GAINPDEF,
-                     gainp=ehc.GAINPDEF, gain_offset=ehc.GAINPDEF,
+                     stabilize_scan_phase=False, stabilize_scan_amp=False,
+                     neggains=False,
+                     taup=ehc.GAINPDEF,
+                     gain_offset=ehc.GAINPDEF, gainp=ehc.GAINPDEF, 
                      dterm_offset=ehc.DTERMPDEF,
-                     caltable_path=None, seed=False, sigmat=None):
+                     caltable_path=None, seed=False, sigmat=None, verbose=True):
         """Observe the image on the same baselines as an existing observation object and add noise.
 
            Args:
                obs_in (Obsdata): existing observation with baselines where the FT will be sampled
+               repeat (bool): if True, repeat the movie to fill up the observation interval
                ttype (str):  "fast" or "nfft" or "direct"
                fft_pad_factor (float): zero pad the image to fft_pad_factor * image size in FFT
-               repeat (bool): if True, repeat the movie to fill up the observation interval
 
                sgrscat (bool): if True, the visibilites will be blurred by the Sgr A*  kernel
                add_th_noise (bool): if True, baseline-dependent thermal noise is added
+
+               jones (bool): if True, uses Jones matrix to apply mis-calibration effects
+               inv_jones (bool): if True, applies estimated inverse Jones matrix
+                                 (not including random terms) to a priori calibrate data
                opacitycal (bool): if False, time-dependent gaussian errors are added to opacities
                ampcal (bool): if False, time-dependent gaussian errors are added to station gains
                phasecal (bool): if False, time-dependent station-based random phases are added
@@ -1123,21 +1134,19 @@ class Movie(object):
                stabilize_scan_amp (bool): if True, random amplitude errors are constant over scans
                neggains (bool): if True, force the applied gains to be <1
 
-               jones (bool): if True, uses Jones matrix to apply mis-calibration effects
-               inv_jones (bool): if True, applies estimated inverse Jones matrix
-                                 (not including random terms) to a priori calibrate data
-
-               tau (float): the base opacity at all sites,
-                            or a dict giving one opacity per site
                taup (float): the fractional std. dev. of the random error on the opacities
-               gainp (float): the fractional std. dev. of the random error on the gains
                gain_offset (float): the base gain offset at all sites,
                                     or a dict giving one offset per site
+               gainp (float): the fractional std. dev. of the random error on the gains
                dterm_offset (float): the base dterm offset at all sites,
                                      or a dict giving one dterm offset per site
-               seed : a seed for the random number generators, uses system time if false
+
+               caltable_path (string): If not None, path and prefix for saving the applied caltable
+               seed (int): seeds the random component of the noise terms. DO NOT set to 0!
                sigmat (float): temporal std for a Gaussian Process used to generate gain noise.
-                                If sigmat=None then an iid gain noise is applied.
+                               if sigmat=None then an iid gain noise is applied.
+               verbose (bool): print updates and warnings
+
             Returns:
                (Obsdata): an observation object
 
@@ -1147,23 +1156,25 @@ class Movie(object):
             np.random.seed(seed=seed)
 
         # print("Producing clean visibilities from movie . . . ")
-        obs = self.observe_same_nonoise(obs_in, sgrscat=sgrscat,
-                                        ttype=ttype, fft_pad_factor=fft_pad_factor, repeat=repeat)
+        obs = self.observe_same_nonoise(obs_in, repeat=repeat, sgrscat=sgrscat,
+                                        ttype=ttype, cache=False, fft_pad_factor=fft_pad_factor,
+                                        zero_empty_pol=True, verbose=verbose)
 
         # Jones Matrix Corruption & Calibration
         if jones:
             print("Applying Jones Matrices to data . . . ")
             obsdata = simobs.add_jones_and_noise(obs, add_th_noise=add_th_noise,
                                                  opacitycal=opacitycal, ampcal=ampcal,
-                                                 phasecal=phasecal, dcal=dcal,
-                                                 frcal=frcal, rlgaincal=rlgaincal,
+                                                 phasecal=phasecal, frcal=frcal, dcal=dcal,
+                                                 rlgaincal=rlgaincal,
                                                  stabilize_scan_phase=stabilize_scan_phase,
                                                  stabilize_scan_amp=stabilize_scan_amp,
                                                  neggains=neggains,
-                                                 gainp=gainp, taup=taup, gain_offset=gain_offset,
+                                                 taup=taup,
+                                                 gain_offset=gain_offset, gainp=gainp,
                                                  dterm_offset=dterm_offset,
                                                  caltable_path=caltable_path,
-                                                 seed=seed, sigmat=sigmat)
+                                                 seed=seed, sigmat=sigmat, verbose=verbose)
 
             obs = ehtim.obsdata.Obsdata(obs.ra, obs.dec, obs.rf, obs.bw, obsdata, obs.tarr,
                                         source=obs.source, mjd=obs.mjd, polrep=obs_in.polrep,
@@ -1172,8 +1183,9 @@ class Movie(object):
                                         timetype=obs.timetype, scantable=obs.scans)
 
             if inv_jones:
-                obsdata = simobs.apply_jones_inverse(
-                    obs, opacitycal=opacitycal, dcal=dcal, frcal=frcal)
+                obsdata = simobs.apply_jones_inverse(obs,
+                                                     opacitycal=opacitycal, dcal=dcal, frcal=frcal,
+                                                     verbose=verbose)
 
                 obs = ehtim.obsdata.Obsdata(obs.ra, obs.dec, obs.rf, obs.bw, obsdata, obs.tarr,
                                             source=obs.source, mjd=obs.mjd, polrep=obs_in.polrep,
@@ -1184,14 +1196,18 @@ class Movie(object):
         # No Jones Matrices, Add noise the old way
         # TODO There is an asymmetry here - in the old way, we don't offer the ability to
         # *not* unscale estimated noise.
-        elif add_th_noise:
+        else:
             if caltable_path:
                 print('WARNING: the caltable is only saved if you apply noise with a Jones Matrix')
 
             obsdata = simobs.add_noise(obs, add_th_noise=add_th_noise,
-                                       ampcal=ampcal, phasecal=phasecal, opacitycal=opacitycal,
-                                       gainp=gainp, taup=taup, gain_offset=gain_offset,
-                                       seed=seed)
+                                       opacitycal=opacitycal, ampcal=ampcal, phasecal=phasecal, 
+                                       stabilize_scan_phase=stabilize_scan_phase,
+                                       stabilize_scan_amp=stabilize_scan_amp,
+                                       neggains=neggains,
+                                       taup=taup, gain_offset=gain_offset, gainp=gainp,
+                                       caltable_path=caltable_path, seed=seed, sigmat=sigmat,
+                                       verbose=verbose)
 
             obs = ehtim.obsdata.Obsdata(obs.ra, obs.dec, obs.rf, obs.bw, obsdata, obs.tarr,
                                         source=obs.source, mjd=obs.mjd, polrep=obs_in.polrep,
@@ -1204,17 +1220,17 @@ class Movie(object):
     def observe(self, array, tint, tadv, tstart, tstop, bw, repeat=False,
                 mjd=None, timetype='UTC', polrep_obs=None,
                 elevmin=ehc.ELEV_LOW, elevmax=ehc.ELEV_HIGH,
-                ttype='nfft', fft_pad_factor=2,
-                fix_theta_GMST=False, sgrscat=False, add_th_noise=True,
+                ttype='nfft', fft_pad_factor=2, fix_theta_GMST=False,
+                sgrscat=False, add_th_noise=True,
+                jones=False, inv_jones=False,
                 opacitycal=True, ampcal=True, phasecal=True,
                 frcal=True, dcal=True, rlgaincal=True,
                 stabilize_scan_phase=False, stabilize_scan_amp=False,
                 neggains=False,
-                jones=False, inv_jones=False,
                 tau=ehc.TAUDEF, taup=ehc.GAINPDEF,
-                gainp=ehc.GAINPDEF, gain_offset=ehc.GAINPDEF,
+                gain_offset=ehc.GAINPDEF, gainp=ehc.GAINPDEF, 
                 dterm_offset=ehc.DTERMPDEF,
-                seed=False):
+                caltable_path=None, seed=False, sigmat=None, verbose=True):
         """Generate baselines from an array object and observe the movie.
 
            Args:
@@ -1234,10 +1250,16 @@ class Movie(object):
 
                ttype (str): "fast", "nfft" or "dtft"
                fft_pad_factor (float): zero pad the image to fft_pad_factor * image size in the FFT
-
                fix_theta_GMST (bool): if True, stops earth rotation to sample fixed u,v
+
                sgrscat (bool): if True, the visibilites will be blurred by the Sgr A*  kernel
                add_th_noise (bool): if True, baseline-dependent thermal noise is added
+
+               jones (bool): if True, uses Jones matrix to apply mis-calibration effects
+                             otherwise uses old formalism without D-terms
+               inv_jones (bool): if True, applies estimated inverse Jones matrix
+                                 (not including random terms) to calibrate data
+
                opacitycal (bool): if False, time-dependent gaussian errors are added to opacities
                ampcal (bool): if False, time-dependent gaussian errors are added to station gains
                phasecal (bool): if False, time-dependent station-based random phases are added
@@ -1248,11 +1270,6 @@ class Movie(object):
                stabilize_scan_amp (bool): if True, random amplitude errors are constant over scans
                neggains (bool): if True, force the applied gains to be <1
 
-               jones (bool): if True, uses Jones matrix to apply mis-calibration effects
-                             otherwise uses old formalism without D-terms
-               inv_jones (bool): if True, applies estimated inverse Jones matrix
-                                 (not including random terms) to calibrate data
-
                tau (float): the base opacity at all sites, or a dict giving one opacity per site
                taup (float): the fractional std. dev. of the random error on the opacities
                gain_offset (float): the base gain offset at all sites
@@ -1261,7 +1278,11 @@ class Movie(object):
                dterm_offset (float): the base dterm offset at all sites
                                      or a dict giving one dterm offset per site
 
-               seed (int): seeds the random component of noise added. DO NOT set to 0!
+               caltable_path (string): If not None, path and prefix for saving the applied caltable
+               seed (int): seeds the random component of the noise terms. DO NOT set to 0!
+               sigmat (float): temporal std for a Gaussian Process used to generate gain noise.
+                               if sigmat=None then an iid gain noise is applied.
+               verbose (bool): print updates and warnings
 
            Returns:
                (Obsdata): an observation object
@@ -1282,32 +1303,38 @@ class Movie(object):
                             fix_theta_GMST=fix_theta_GMST)
 
         # Observe on the same baselines as the empty observation and add noise
-        obs = self.observe_same(obs, ttype=ttype, fft_pad_factor=fft_pad_factor,
-                                repeat=repeat, sgrscat=sgrscat,
+        obs = self.observe_same(obs, repeat=repeat, 
+                                ttype=ttype, fft_pad_factor=fft_pad_factor,
+                                sgrscat=sgrscat,
                                 add_th_noise=add_th_noise,
+                                jones=jones, inv_jones=inv_jones,
                                 opacitycal=opacitycal, ampcal=ampcal,
                                 phasecal=phasecal, dcal=dcal,
                                 frcal=frcal, rlgaincal=rlgaincal,
                                 stabilize_scan_phase=stabilize_scan_phase,
                                 stabilize_scan_amp=stabilize_scan_amp,
                                 neggains=neggains,
-                                gainp=gainp, gain_offset=gain_offset,
-                                tau=tau, taup=taup, dterm_offset=dterm_offset,
-                                jones=jones, inv_jones=inv_jones, seed=seed)
+                                taup=taup,
+                                gain_offset=gain_offset, gainp=gainp, 
+                                dterm_offset=dterm_offset,
+                                caltable_path=caltable_path, seed=seed, sigmat=sigmat,
+                                verbose=verbose)
 
         return obs
 
     def observe_vex(self, vex, source, synchronize_start=True, t_int=0.0,
                     polrep_obs=None, ttype='nfft', fft_pad_factor=2,
-                    fix_theta_GMST=False, sgrscat=False, add_th_noise=True,
+                    fix_theta_GMST=False, 
+                    sgrscat=False, add_th_noise=True,
+                    jones=False, inv_jones=False,
                     opacitycal=True, ampcal=True, phasecal=True,
                     frcal=True, dcal=True, rlgaincal=True,
                     stabilize_scan_phase=False, stabilize_scan_amp=False,
                     neggains=False,
-                    jones=False, inv_jones=False,
                     tau=ehc.TAUDEF, taup=ehc.GAINPDEF,
-                    gainp=ehc.GAINPDEF, gain_offset=ehc.GAINPDEF,
-                    dterm_offset=ehc.DTERMPDEF, seed=False):
+                    gain_offset=ehc.GAINPDEF, gainp=ehc.GAINPDEF, 
+                    dterm_offset=ehc.DTERMPDEF,
+                    caltable_path=None, seed=False, sigmat=None, verbose=True):
         """Generate baselines from a vex file and observe the movie.
 
            Args:
@@ -1320,10 +1347,15 @@ class Movie(object):
                polrep_obs (str): 'stokes' or 'circ' sets the data polarimetric representation
                ttype (str): "fast" or "nfft" or "dtft"
                fft_pad_factor (float): zero pad the image to fft_pad_factor * image size in FFT
-
                fix_theta_GMST (bool): if True, stops earth rotation to sample fixed u,v
+
                sgrscat (bool): if True, the visibilites will be blurred by the Sgr A*  kernel
                add_th_noise (bool): if True, baseline-dependent thermal noise is added
+
+               jones (bool): if True, uses Jones matrix to apply mis-calibration effects
+                             otherwise uses old formalism without D-terms
+               inv_jones (bool): if True, applies estimated inverse Jones matrix
+                                 (not including random terms) to calibrate data
                opacitycal (bool): if False, time-dependent gaussian errors are added to opacities
                ampcal (bool): if False, time-dependent gaussian errors are added to station gains
                phasecal (bool): if False, time-dependent station-based random phases are added
@@ -1334,12 +1366,6 @@ class Movie(object):
                stabilize_scan_amp (bool): if True, random amplitude errors are constant over scans
                neggains (bool): if True, force the applied gains to be <1
 
-               jones (bool): if True, uses Jones matrix to apply mis-calibration effects
-                             otherwise uses old formalism without D-terms
-               inv_jones (bool): if True, applies estimated inverse Jones matrix
-                                 (not including random terms) to calibrate data
-
-
                tau (float): the base opacity at all sites,
                             or a dict giving one opacity per site
                taup (float): the fractional std. dev. of the random error on the opacities
@@ -1348,7 +1374,12 @@ class Movie(object):
                gainp (float): the fractional std. dev. of the random error on the gains
                dterm_offset (float): the base dterm offset at all sites,
                                      or a dict giving one dterm offset per site
-               seed (int): seeds the random component of noise added. DO NOT set to 0!
+
+               caltable_path (string): If not None, path and prefix for saving the applied caltable
+               seed (int): seeds the random component of the noise terms. DO NOT set to 0!
+               sigmat (float): temporal std for a Gaussian Process used to generate gain noise.
+                               if sigmat=None then an iid gain noise is applied.
+               verbose (bool): print updates and warnings
 
            Returns:
                (Obsdata): an observation object
@@ -1413,18 +1444,20 @@ class Movie(object):
 
         obs = ehtim.obsdata.merge_obs(obs_List)
 
-        obsout = movie.observe_same(obs, ttype=ttype, fft_pad_factor=fft_pad_factor,
-                                    repeat=False,
+        obsout = movie.observe_same(obs, repeat=False,
+                                    ttype=ttype, fft_pad_factor=fft_pad_factor,
                                     sgrscat=sgrscat, add_th_noise=add_th_noise,
+                                    jones=jones, inv_jones=inv_jones,
                                     opacitycal=opacitycal, ampcal=ampcal, phasecal=phasecal,
                                     frcal=frcal, dcal=dcal, rlgaincal=rlgaincal,
                                     stabilize_scan_phase=stabilize_scan_phase,
                                     stabilize_scan_amp=stabilize_scan_amp,
                                     neggains=neggains,
-                                    jones=jones, inv_jones=inv_jones,
-                                    tau=tau, taup=taup,
-                                    gainp=gainp, gain_offset=gain_offset,
-                                    dterm_offset=dterm_offset, seed=seed)
+                                    taup=taup,
+                                    gain_offset=gain_offset, gainp=gainp,
+                                    dterm_offset=dterm_offset,
+                                    caltable_path=caltable_path, seed=seed,sigmat=sigmat,
+                                    verbose=verbose)
 
         return obsout
 

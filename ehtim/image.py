@@ -2201,16 +2201,23 @@ class Image(object):
         im_new = im_new.add_gauss(addedflux, (gauss_sz, gauss_sz, 0, 0, 0))
         return im_new
 
-    def sample_uv(self, uv, sgrscat=False, polrep_obs='stokes', ttype='nfft',
-                  cache=False, fft_pad_factor=2):
-        """Sample the image on the selected uv points without adding noise.
+    def sample_uv(self, uv, polrep_obs='stokes',
+                  sgrscat=False,  ttype='nfft',
+                  cache=False, fft_pad_factor=2,
+                  zero_empty_pol=True, verbose=True):
+        """Sample the image on the selected uv points without creating an Obsdata object.
 
            Args:
                uv (ndarray): an array of uv points
-               sgrscat (bool): if True, the visibilites will be blurred by the Sgr A*  kernel
                polrep_obs (str): 'stokes' or 'circ' sets the data polarimetric representation
+               sgrscat (bool): if True, the visibilites will be blurred by the Sgr A*  kernel
+
                ttype (str):  "fast" or "nfft" or "direct"
+               cache (bool): Use cached fft for 'fast' mode -- deprecated, use nfft instead!
                fft_pad_factor (float): zero pad the image to fft_pad_factor * image size in FFT
+               zero_empty_pol (bool): if True, returns zero vec if the polarization doesn't exist.
+                                      Otherwise return None
+               verbose (bool): Boolean value controls output prints.
 
            Returns:
                (list): a list of [I,Q,U,V] visibilities
@@ -2219,18 +2226,25 @@ class Image(object):
         if polrep_obs not in ['stokes', 'circ']:
             raise Exception("polrep_obs must be either 'stokes' or 'circ'")
 
-        data = simobs.sample_vis(self, uv, sgrscat=sgrscat, polrep_obs=polrep_obs,
-                                 ttype=ttype, cache=cache, fft_pad_factor=fft_pad_factor)
+        data = simobs.sample_vis(self, uv, polrep_obs=polrep_obs, sgrscat=sgrscat, 
+                                 ttype=ttype, cache=cache, fft_pad_factor=fft_pad_factor,
+                                 zero_empty_pol=zero_empty_pol, verbose=verbose)
         return data
 
-    def observe_same_nonoise(self, obs, sgrscat=False, ttype="nfft", cache=False, fft_pad_factor=2):
+    def observe_same_nonoise(self, obs, sgrscat=False, ttype="nfft",
+                             cache=False, fft_pad_factor=2,
+                             zero_empty_pol=True, verbose=True):
         """Observe the image on the same baselines as an existing observation  without noise.
 
            Args:
                obs (Obsdata): the existing observation
                sgrscat (bool): if True, the visibilites will be blurred by the Sgr A*  kernel
                ttype (str):  "fast" or "nfft" or "direct"
+               cache (bool): Use cached fft for 'fast' mode -- deprecated, use nfft instead!
                fft_pad_factor (float): zero pad the image to fft_pad_factor * image size in FFT
+               zero_empty_pol (bool): if True, returns zero vec if the polarization doesn't exist.
+                                      Otherwise return None
+               verbose (bool): Boolean value controls output prints.
 
            Returns:
                (Obsdata): an observation object with no noise
@@ -2254,7 +2268,8 @@ class Image(object):
         # Extract uv datasample
         uv = obsh.recarr_to_ndarr(obsdata[['u', 'v']], 'f8')
         data = simobs.sample_vis(self, uv, sgrscat=sgrscat, polrep_obs=obs.polrep,
-                                 ttype=ttype, cache=cache, fft_pad_factor=fft_pad_factor)
+                                 ttype=ttype, cache=cache, fft_pad_factor=fft_pad_factor,
+                                 zero_empty_pol=zero_empty_pol, verbose=verbose)
 
         # put visibilities into the obsdata
         if obs.polrep == 'stokes':
@@ -2280,16 +2295,18 @@ class Image(object):
 
         return obs_no_noise
 
-    def observe_same(self, obs_in, ttype='nfft', fft_pad_factor=2,
+    def observe_same(self, obs_in,
+                     ttype='nfft', fft_pad_factor=2,
                      sgrscat=False, add_th_noise=True,
-                     opacitycal=True, ampcal=True, phasecal=True,
-                     dcal=True, frcal=True, rlgaincal=True,
-                     stabilize_scan_phase=False, stabilize_scan_amp=False, neggains=False,
                      jones=False, inv_jones=False,
-                     tau=ehc.TAUDEF, taup=ehc.GAINPDEF,
+                     opacitycal=True, ampcal=True, phasecal=True,
+                     frcal=True, dcal=True,  rlgaincal=True,
+                     stabilize_scan_phase=False, stabilize_scan_amp=False, 
+                     neggains=False,
+                     taup=ehc.GAINPDEF,
                      gain_offset=ehc.GAINPDEF, gainp=ehc.GAINPDEF,
                      dterm_offset=ehc.DTERMPDEF,
-                     caltable_path=None, seed=False):
+                     caltable_path=None, seed=False, sigmat=None, verbose=True):
         """Observe the image on the same baselines as an existing observation object and add noise.
 
            Args:
@@ -2299,6 +2316,11 @@ class Image(object):
 
                sgrscat (bool): if True, the visibilites will be blurred by the Sgr A*  kernel
                add_th_noise (bool): if True, baseline-dependent thermal noise is added
+
+               jones (bool): if True, uses Jones matrix to apply mis-calibration effects
+               inv_jones (bool): if True, applies estimated inverse Jones matrix
+                                 (not including random terms) to a priori calibrate data
+
                opacitycal (bool): if False, time-dependent gaussian errors are added to opacities
                ampcal (bool): if False, time-dependent gaussian errors are added to station gains
                phasecal (bool): if False, time-dependent station-based random phases are added
@@ -2309,22 +2331,18 @@ class Image(object):
                stabilize_scan_amp (bool): if True, random amplitude errors are constant over scans
                neggains (bool): if True, force the applied gains to be <1
 
-               jones (bool): if True, uses Jones matrix to apply mis-calibration effects
-               inv_jones (bool): if True, applies estimated inverse Jones matrix
-                                 (not including random terms) to a priori calibrate data
-
-               tau (float): the base opacity at all sites,
-                            or a dict giving one opacity per site
                taup (float): the fractional std. dev. of the random error on the opacities
-               gainp (float): the fractional std. dev. of the random error on the gains
                gain_offset (float): the base gain offset at all sites,
                                     or a dict giving one offset per site
+               gainp (float): the fractional std. dev. of the random error on the gains
                dterm_offset (float): the base dterm offset at all sites,
                                      or a dict giving one dterm offset per site
 
-               caltable_path (string): The path and prefix of a saved caltable
+               caltable_path (string): If not None, path and prefix for saving the applied caltable
                seed (int): seeds the random component of the noise terms. DO NOT set to 0!
-
+               sigmat (float): temporal std for a Gaussian Process used to generate gain noise.
+                               if sigmat=None then an iid gain noise is applied.
+               verbose (bool): print updates and warnings
            Returns:
                (Obsdata): an observation object
         """
@@ -2332,21 +2350,24 @@ class Image(object):
         if seed:
             np.random.seed(seed=seed)
 
-        obs = self.observe_same_nonoise(obs_in, sgrscat=sgrscat,
-                                        ttype=ttype, fft_pad_factor=fft_pad_factor)
+        obs = self.observe_same_nonoise(obs_in, sgrscat=sgrscat,ttype=ttype, 
+                                        cache=False, fft_pad_factor=fft_pad_factor,
+                                        zero_empty_pol=True, verbose=verbose)
 
         # Jones Matrix Corruption & Calibration
         if jones:
             obsdata = simobs.add_jones_and_noise(obs, add_th_noise=add_th_noise,
                                                  opacitycal=opacitycal, ampcal=ampcal,
-                                                 phasecal=phasecal, dcal=dcal, frcal=frcal,
+                                                 phasecal=phasecal, frcal=frcal, dcal=dcal,
                                                  rlgaincal=rlgaincal,
                                                  stabilize_scan_phase=stabilize_scan_phase,
                                                  stabilize_scan_amp=stabilize_scan_amp,
                                                  neggains=neggains,
-                                                 gainp=gainp, taup=taup, gain_offset=gain_offset,
+                                                 taup=taup,
+                                                 gain_offset=gain_offset, gainp=gainp,
                                                  dterm_offset=dterm_offset,
-                                                 caltable_path=caltable_path, seed=seed)
+                                                 caltable_path=caltable_path, seed=seed,
+                                                 sigmat=sigmat, verbose=verbose)
 
             obs = ehtim.obsdata.Obsdata(obs.ra, obs.dec, obs.rf, obs.bw, obsdata, obs.tarr,
                                         source=obs.source, mjd=obs.mjd, polrep=obs_in.polrep,
@@ -2356,7 +2377,8 @@ class Image(object):
 
             if inv_jones:
                 obsdata = simobs.apply_jones_inverse(obs,
-                                                     opacitycal=opacitycal, dcal=dcal, frcal=frcal)
+                                                     opacitycal=opacitycal, dcal=dcal, frcal=frcal,
+                                                     verbose=verbose)
 
                 obs = ehtim.obsdata.Obsdata(obs.ra, obs.dec, obs.rf, obs.bw, obsdata, obs.tarr,
                                             source=obs.source, mjd=obs.mjd, polrep=obs_in.polrep,
@@ -2373,11 +2395,13 @@ class Image(object):
                 print('WARNING: the caltable is only saved if you apply noise with a Jones Matrix')
 
             obsdata = simobs.add_noise(obs, add_th_noise=add_th_noise,
-                                       ampcal=ampcal, phasecal=phasecal, opacitycal=opacitycal,
+                                       opacitycal=opacitycal, ampcal=ampcal, phasecal=phasecal, 
                                        stabilize_scan_phase=stabilize_scan_phase,
                                        stabilize_scan_amp=stabilize_scan_amp,
-                                       gainp=gainp, taup=taup, gain_offset=gain_offset,
-                                       seed=seed)
+                                       neggains=neggains,
+                                       taup=taup, gain_offset=gain_offset, gainp=gainp,
+                                       caltable_path=caltable_path, seed=seed, sigmat=sigmat,
+                                       verbose=verbose)
 
             obs = ehtim.obsdata.Obsdata(obs.ra, obs.dec, obs.rf, obs.bw, obsdata, obs.tarr,
                                         source=obs.source, mjd=obs.mjd, polrep=obs_in.polrep,
@@ -2390,16 +2414,17 @@ class Image(object):
     def observe(self, array, tint, tadv, tstart, tstop, bw,
                 mjd=None, timetype='UTC', polrep_obs=None,
                 elevmin=ehc.ELEV_LOW, elevmax=ehc.ELEV_HIGH,
-                ttype='nfft', fft_pad_factor=2,
-                fix_theta_GMST=False, sgrscat=False, add_th_noise=True,
+                ttype='nfft', fft_pad_factor=2, fix_theta_GMST=False, 
+                sgrscat=False, add_th_noise=True,
+                jones=False, inv_jones=False,
                 opacitycal=True, ampcal=True, phasecal=True,
-                dcal=True, frcal=True, rlgaincal=True,
+                frcal=True, dcal=True, rlgaincal=True,
                 stabilize_scan_phase=False, stabilize_scan_amp=False,
                 neggains=False,
-                jones=False, inv_jones=False,
                 tau=ehc.TAUDEF, taup=ehc.GAINPDEF,
-                gainp=ehc.GAINPDEF, gain_offset=ehc.GAINPDEF,
-                dterm_offset=ehc.DTERMPDEF, seed=False):
+                gain_offset=ehc.GAINPDEF, gainp=ehc.GAINPDEF, 
+                dterm_offset=ehc.DTERMPDEF, 
+                caltable_path=None, seed=False, sigmat=None, verbose=True):
         """Generate baselines from an array object and observe the image.
 
            Args:
@@ -2418,10 +2443,15 @@ class Image(object):
 
                ttype (str): "fast", "nfft" or "dtft"
                fft_pad_factor (float): zero pad the image to fft_pad_factor * image size in the FFT
-
                fix_theta_GMST (bool): if True, stops earth rotation to sample fixed u,v
+
                sgrscat (bool): if True, the visibilites will be blurred by the Sgr A*  kernel
                add_th_noise (bool): if True, baseline-dependent thermal noise is added
+
+               jones (bool): if True, uses Jones matrix to apply mis-calibration effects
+                             otherwise uses old formalism without D-terms
+               inv_jones (bool): if True, applies estimated inverse Jones matrix
+                                 (not including random terms) to calibrate data
                opacitycal (bool): if False, time-dependent gaussian errors are added to opacities
                ampcal (bool): if False, time-dependent gaussian errors are added to station gains
                phasecal (bool): if False, time-dependent station-based random phases are added
@@ -2432,11 +2462,6 @@ class Image(object):
                stabilize_scan_amp (bool): if True, random amplitude errors are constant over scans
                neggains (bool): if True, force the applied gains to be <1
 
-               jones (bool): if True, uses Jones matrix to apply mis-calibration effects
-                             otherwise uses old formalism without D-terms
-               inv_jones (bool): if True, applies estimated inverse Jones matrix
-                                 (not including random terms) to calibrate data
-
                tau (float): the base opacity at all sites,
                             or a dict giving one opacity per site
                taup (float): the fractional std. dev. of the random error on the opacities
@@ -2446,7 +2471,11 @@ class Image(object):
                dterm_offset (float): the base dterm offset at all sites,
                                      or a dict giving one dterm offset per site
 
-               seed (int): seeds the random component of noise added. DO NOT set to 0!
+               caltable_path (string): If not None, path and prefix for saving the applied caltable
+               seed (int): seeds the random component of the noise terms. DO NOT set to 0!
+               sigmat (float): temporal std for a Gaussian Process used to generate gain noise.
+                               if sigmat=None then an iid gain noise is applied.
+               verbose (bool): print updates and warnings
 
            Returns:
                (Obsdata): an observation object
@@ -2467,16 +2496,18 @@ class Image(object):
         # Observe on the same baselines as the empty observation and add noise
         obs = self.observe_same(obs, ttype=ttype, fft_pad_factor=fft_pad_factor,
                                 sgrscat=sgrscat, add_th_noise=add_th_noise,
+                                jones=jones, inv_jones=inv_jones,
                                 opacitycal=opacitycal, ampcal=ampcal,
                                 phasecal=phasecal, dcal=dcal,
                                 frcal=frcal, rlgaincal=rlgaincal,
                                 stabilize_scan_phase=stabilize_scan_phase,
                                 stabilize_scan_amp=stabilize_scan_amp,
                                 neggains=neggains,
-                                gainp=gainp, gain_offset=gain_offset,
-                                tau=tau, taup=taup,
+                                taup=taup,
+                                gain_offset=gain_offset, gainp=gainp, 
                                 dterm_offset=dterm_offset,
-                                jones=jones, inv_jones=inv_jones, seed=seed)
+                                caltable_path=caltable_path, seed=seed, sigmat=sigmat,
+                                verbose=verbose)
 
         obs.mjd = mjd
 
@@ -2484,15 +2515,17 @@ class Image(object):
 
     def observe_vex(self, vex, source, t_int=0.0, tight_tadv=False,
                     polrep_obs=None, ttype='nfft', fft_pad_factor=2,
-                    fix_theta_GMST=False, sgrscat=False, add_th_noise=True,
-                    opacitycal=True, ampcal=True, phasecal=True, frcal=True,
-                    dcal=True, rlgaincal=True,
+                    fix_theta_GMST=False, 
+                    sgrscat=False, add_th_noise=True,
+                    jones=False, inv_jones=False,
+                    opacitycal=True, ampcal=True, phasecal=True,
+                    frcal=True, dcal=True, rlgaincal=True,
                     stabilize_scan_phase=False, stabilize_scan_amp=False,
                     neggains=False,
-                    jones=False, inv_jones=False,
                     tau=ehc.TAUDEF, taup=ehc.GAINPDEF,
-                    gainp=ehc.GAINPDEF, gain_offset=ehc.GAINPDEF,
-                    dterm_offset=ehc.DTERMPDEF, seed=False):
+                    gain_offset=ehc.GAINPDEF, gainp=ehc.GAINPDEF, 
+                    dterm_offset=ehc.DTERMPDEF,
+                    caltable_path=None, seed=False, sigmat=None, verbose=True):
         """Generate baselines from a vex file and observes the image.
 
            Args:
@@ -2506,10 +2539,14 @@ class Image(object):
                polrep_obs (str): 'stokes' or 'circ' sets the data polarimetric representation
                ttype (str): "fast" or "nfft" or "dtft"
                fft_pad_factor (float): zero pad the image to fft_pad_factor * image size in FFT
-
                fix_theta_GMST (bool): if True, stops earth rotation to sample fixed u,v
+
                sgrscat (bool): if True, the visibilites will be blurred by the Sgr A*  kernel
                add_th_noise (bool): if True, baseline-dependent thermal noise is added
+               jones (bool): if True, uses Jones matrix to apply mis-calibration effects
+                             otherwise uses old formalism without D-terms
+               inv_jones (bool): if True, applies estimated inverse Jones matrix
+                                 (not including random terms) to calibrate data
                opacitycal (bool): if False, time-dependent gaussian errors are added to opacities
                ampcal (bool): if False, time-dependent gaussian errors are added to station gains
                phasecal (bool): if False, time-dependent station-based random phases are added
@@ -2520,11 +2557,6 @@ class Image(object):
                stabilize_scan_amp (bool): if True, random amplitude errors are constant over scans
                neggains (bool): if True, force the applied gains to be <1
 
-               jones (bool): if True, uses Jones matrix to apply mis-calibration effects
-                             otherwise uses old formalism without D-terms
-               inv_jones (bool): if True, applies estimated inverse Jones matrix
-                                 (not including random terms) to calibrate data
-
                tau (float): the base opacity at all sites,
                             or a dict giving one opacity per site
                taup (float): the fractional std. dev. of the random error on the opacities
@@ -2533,7 +2565,12 @@ class Image(object):
                gainp (float): the fractional std. dev. of the random error on the gains
                dterm_offset (float): the base dterm offset at all sites,
                                      or a dict giving one dterm offset per site
-               seed (int): seeds the random component of noise added. DO NOT set to 0!
+
+               caltable_path (string): If not None, path and prefix for saving the applied caltable
+               seed (int): seeds the random component of the noise terms. DO NOT set to 0!
+               sigmat (float): temporal std for a Gaussian Process used to generate gain noise.
+                               if sigmat=None then an iid gain noise is applied.
+               verbose (bool): print updates and warnings
 
            Returns:
                (Obsdata): an observation object
@@ -2572,21 +2609,25 @@ class Image(object):
             t_stop = t_start + vex.sched[i_scan]['scan'][0]['scan_sec']/3600.0 - ehc.EP
 
             obs = self.observe(subarray, t_int, t_adv, t_start, t_stop, vex.bw_hz,
-                               mjd=vex.sched[i_scan]['mjd_floor'],
-                               elevmin=.01, elevmax=89.99,
+                               mjd=vex.sched[i_scan]['mjd_floor'], timetype='UTC',
                                polrep_obs=polrep_obs,
+                               elevmin=.01, elevmax=89.99,
                                ttype=ttype, fft_pad_factor=fft_pad_factor,
-                               fix_theta_GMST=fix_theta_GMST, sgrscat=sgrscat,
+                               fix_theta_GMST=fix_theta_GMST, 
+                               sgrscat=sgrscat,
                                add_th_noise=add_th_noise,
+                               jones=jones, inv_jones=inv_jones, 
                                opacitycal=opacitycal, ampcal=ampcal, phasecal=phasecal,
-                               dcal=dcal, frcal=frcal, rlgaincal=rlgaincal,
+                               frcal=frcal, dcal=dcal, rlgaincal=rlgaincal,
                                stabilize_scan_phase=stabilize_scan_phase,
                                stabilize_scan_amp=stabilize_scan_amp,
                                neggains=neggains,
-                               taup=taup,
-                               gainp=gainp, gain_offset=gain_offset,
+                               tau=tau, taup=taup,
+                               gain_offset=gain_offset, gainp=gainp,
                                dterm_offset=dterm_offset,
-                               jones=jones, inv_jones=inv_jones, seed=seed)
+
+                               caltable_path=caltable_path, seed=seed,sigmat=sigmat,
+                               verbose=verbose)
 
             obs_List.append(obs)
 
