@@ -170,22 +170,27 @@ def compute_uv_coordinates(array, site1, site2, time, mjd, ra, dec, rf, timetype
     return (time, u, v)
 
 
-def make_bispectrum(l1, l2, l3, vtype, polrep='stokes'):
+def make_bispectrum(l1, l2, l3, vistype, polrep='stokes'):
     """Make a list of bispectra and errors
        l1,l2,l3 are full datatables of visibility entries
        vtype is visibility types
     """
+
+    if vistype == 'pvis':
+        vtype = 'rlvis'
+    else:
+        vtype = vistype
 
     # Choose the appropriate polarization and compute the bs and err
     if polrep == 'stokes':
         if vtype in ["vis", "qvis", "uvis", "vvis"]:
             if vtype == 'vis':
                 sigmatype = 'sigma'
-            if vtype == 'qvis':
+            elif vtype == 'qvis':
                 sigmatype = 'qsigma'
-            if vtype == 'uvis':
+            elif vtype == 'uvis':
                 sigmatype = 'usigma'
-            if vtype == 'vvis':
+            elif vtype == 'vvis':
                 sigmatype = 'vsigma'
 
             p1 = l1[vtype]
@@ -223,7 +228,7 @@ def make_bispectrum(l1, l2, l3, vtype, polrep='stokes'):
             var2 = l2['qsigma']**2 + l2['usigma']**2
             var3 = l3['qsigma']**2 + l3['usigma']**2
 
-        elif vtype in ["pvis", "rlvis"]:
+        elif vtype == "rlvis":
             p1 = l1['qvis'] + 1j*l1['uvis']
             p2 = l2['qvis'] + 1j*l2['uvis']
             p3 = l3['qvis'] + 1j*l3['uvis']
@@ -233,17 +238,17 @@ def make_bispectrum(l1, l2, l3, vtype, polrep='stokes'):
             var3 = l3['qsigma']**2 + l3['usigma']**2
 
     elif polrep == 'circ':
-        if vtype in ["rrvis", "llvis", "rlvis", "lrvis", 'pvis']:
-            if vtype == 'pvis':
-                vtype = 'rlvis'
+        if vtype in ["rrvis", "llvis", "rlvis", "lrvis"]:
+
+
 
             if vtype == 'rrvis':
                 sigmatype = 'rrsigma'
-            if vtype == 'llvis':
+            elif vtype == 'llvis':
                 sigmatype = 'llsigma'
-            if vtype == 'rlvis':
+            elif vtype == 'rlvis':
                 sigmatype = 'rlsigma'
-            if vtype == 'lrvis':
+            elif vtype == 'lrvis':
                 sigmatype = 'lrsigma'
 
             p1 = l1[vtype]

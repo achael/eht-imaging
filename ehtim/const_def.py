@@ -143,11 +143,11 @@ FIELDS = ['time', 'time_utc', 'time_gmst',
           'pvis', 'pamp', 'pphase', 'psnr',
           'evis', 'eamp', 'ephase', 'esnr',
           'bvis', 'bamp', 'bphase', 'bsnr',
-          'm', 'mamp', 'mphase', 'msnr'
+          'm', 'mamp', 'mphase', 'msnr',
           'rrvis', 'rramp', 'rrphase', 'rrsnr', 'rrsigma', 'rrsigma_phase',
-          'llvis', 'llamp', 'llphase', 'llsnr', 'llsigma', 'llsigma_phase'
-          'rlvis', 'rlamp', 'rlphase', 'rlsnr', 'rlsigma', 'rlsigma_phase'
-          'lrvis', 'lramp', 'lrphase', 'lrsnr', 'lrsigma', 'lrsigma_phase'
+          'llvis', 'llamp', 'llphase', 'llsnr', 'llsigma', 'llsigma_phase',
+          'rlvis', 'rlamp', 'rlphase', 'rlsnr', 'rlsigma', 'rlsigma_phase',
+          'lrvis', 'lramp', 'lrphase', 'lrsnr', 'lrsigma', 'lrsigma_phase',
           'rrllvis', 'rrllamp', 'rrllphase', 'rrllsnr', 'rrllsigma', 'rrllsigma_phase']
 
 FIELDS_AMPS = ["amp", "qamp", "uamp", "vamp",
@@ -155,7 +155,7 @@ FIELDS_AMPS = ["amp", "qamp", "uamp", "vamp",
 FIELDS_SIGS = ["sigma", "qsigma", "usigma", "vsigma",
                "psigma", "msigma", "rrsigma", "llsigma", "rlsigma", "lrsigma", "rrllsigma"]
 FIELDS_PHASE = ["phase", "qphase", "uphase", "vphase", "pphase", "mphase",
-                "rrphase", "llphase", "lrphase", "rlphase", "rrllphase"]
+                "rrphase", "llphase", "rlphase", "lrphase", "rrllphase"]
 FIELDS_SIGPHASE = ["sigma_phase", "qsigma_phase", "usigma_phase", "vsigma_phase",
                    "psigma_phase", "msigma_phase", "rrsigma_phase", "llsigma_phase",
                    "rlsigma_phase", "lrsigma_phase", "rrllsigma_phase"]

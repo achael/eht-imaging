@@ -102,9 +102,7 @@ def pol_imager_func(Obsdata, InitIm, Prior,
 
            ttype (str): The Fourier transform type; options are 'fast' and 'direct'
            fft_pad_factor (float): The FFT will pre-pad the image by this factor x the original size
-           fft_interp (int): Interpolation order for sampling the FFT
-           grid_conv_func (str): The convolving function for gridding; options are 'gaussian', 'pill', and 'spheroidal'
-           grid_prad (float): The pixel radius for the convolving function in gridding for FFTs
+           p_rad (float): The pixel radius for the convolving function in gridding for FFTs
 
            clipfloor (float): The Stokes I Jy/pixel level above which prior image pixels are varied
            grads (bool): If True, analytic gradients are used

@@ -856,7 +856,7 @@ def save_obs_oifits(obs, fname, flux=1.0):
 
     # create dictionary
     union = {}
-    union = ehtim.io.writeData.arrayUnion(antennaNames, union)
+    union = ehtim.io.writeoifits.arrayUnion(antennaNames, union)
 
     # extract the integration time
     intTime = data['tint'][0]
@@ -871,8 +871,8 @@ def save_obs_oifits(obs, fname, flux=1.0):
     v = data['v']
 
     # convert antenna name strings to number identifiers
-    ant1 = ehtim.io.writeData.convertStrings(data['t1'], union)
-    ant2 = ehtim.io.writeData.convertStrings(data['t2'], union)
+    ant1 = ehtim.io.writeoifits.convertStrings(data['t1'], union)
+    ant2 = ehtim.io.writeoifits.convertStrings(data['t2'], union)
 
     # convert times to datetime objects
     # TODO: these do not correspond to the acutal times
@@ -896,13 +896,13 @@ def save_obs_oifits(obs, fname, flux=1.0):
                               for x in timeClosure])
 
     # convert antenna name strings to number identifiers
-    biarr_ant1 = ehtim.io.writeData.convertStrings(biarr['t1'], union)
-    biarr_ant2 = ehtim.io.writeData.convertStrings(biarr['t2'], union)
-    biarr_ant3 = ehtim.io.writeData.convertStrings(biarr['t3'], union)
+    biarr_ant1 = ehtim.io.writeoifits.convertStrings(biarr['t1'], union)
+    biarr_ant2 = ehtim.io.writeoifits.convertStrings(biarr['t2'], union)
+    biarr_ant3 = ehtim.io.writeoifits.convertStrings(biarr['t3'], union)
     antOrder = np.transpose(np.array([biarr_ant1, biarr_ant2, biarr_ant3]))
 
     # todo: check that putting the negatives on the phase and t3phi is correct
-    ehtim.io.writeData.writeOIFITS(fname, obs.ra, obs.dec, obs.rf, obs.bw, intTime,
+    ehtim.io.writeoifits.writeOIFITS(fname, obs.ra, obs.dec, obs.rf, obs.bw, intTime,
                                    amp, viserror, phase, viserror, u, v, ant1, ant2, dttime,
                                    t3amp, t3amperr, t3phi, t3phierr, uClosure, vClosure, antOrder,
                                    dttimeClosure, antennaNames, antennaDiam,

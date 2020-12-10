@@ -772,6 +772,9 @@ def load_array_txt(filename, ephemdir='ephemeris'):
     """
 
     tdata = np.loadtxt(filename, dtype=bytes, comments='#').astype(str)
+    if tdata[0][0].lower() == 'site':
+        tdata = tdata[1:]
+
     path = os.path.dirname(filename)
 
     tdataout = []
@@ -1290,7 +1293,7 @@ def load_obs_uvfits(filename, polrep='stokes', flipbl=False, allow_singlepol=Tru
             endvis = scan['END VIS'] - 1
             scantable.append([scan_start - 0.5 * scan_dur,
                               scan_start + 0.5 * scan_dur])
-        scantable = np.array(scantable * 24)
+        scantable = np.array(scantable) * 24
 
     except BaseException:
         print("No NX table in uvfits!")

@@ -199,6 +199,24 @@ def pack_mftuple(mftuple, mf_solve = (1,1,0)):
 
         return vec
 
+def embed(im, mask, clipfloor=0., randomfloor=False):
+    """Embeds a 1d image array into the size of boolean embed mask
+    """
+
+    out = np.zeros(len(mask))
+
+    # Here's a much faster version than before
+    out[mask.nonzero()] = im
+
+    if clipfloor != 0.0:
+        if randomfloor:  # prevent total variation gradient singularities
+            out[(mask-1).nonzero()] = clipfloor * \
+                np.abs(np.random.normal(size=len((mask-1).nonzero())))
+        else:
+            out[(mask-1).nonzero()] = clipfloor
+
+    return out
+
 def embed_mf(imtuple, mask, clipfloor=0., randomfloor=False):
     """Embeds a multifrequency image tuple into the size of boolean embed mask
     """
