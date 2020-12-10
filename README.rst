@@ -72,11 +72,11 @@ Let us know if you use ehtim in your publication and we'll list it here!
 
 - Testing General Relativity with the Black Hole Shadow Size and Asymmetry of Sagittarius A*: Limitations from Interstellar Scattering, `Zhu et al. 2018 <https://arxiv.org/abs/1811.02079>`_
 
-- The Size, Shape, and Scattering of Sagittarius A* at 86 GHz: First VLBI with ALMA, `Issaoun et al. 2019 <https://arxiv.org/abs/1901.06226>`_
+- The Size, Shape, and Scattering of Sagittarius A* at 86 GHz: First VLBI with ALMA, `Issaoun et al. 2019a <https://arxiv.org/abs/1901.06226>`_
 
 - First M87 Event Horizon Telescope Results IV: Imaging the Central Supermassive Black Hole, `The Event Horizon Telescope Collaboration 2019 <https://arxiv.org/abs/1906.11241>`_
 
-- VLBI Imaging of black holes via second moment regularization, `Issaoun et al. 2019 <https://arxiv.org/pdf/1908.01296.pdf>`_
+- VLBI Imaging of black holes via second moment regularization, `Issaoun et al. 2019b <https://arxiv.org/pdf/1908.01296.pdf>`_
 
 - Using evolutionary algorithms to model relativistic jets: Application to NGC 1052, `Fromm et al. 2019 <https://arxiv.org/pdf/1904.00106.pdf>`_
 
