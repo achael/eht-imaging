@@ -532,6 +532,36 @@ class Obsdata(object):
 
         return splitlist
 
+
+    def getClosestScan(self, time, splitObs=None):
+        """Split observation by scan and grab scan closest to timestamp
+
+           Args:
+                time (float): Time (GMST) you want to find the scan closest to
+                splitObs (bool): a list of Obsdata objects, output from split_obs, to save time
+
+            Returns:
+                (Obsdata): Obsdata object composed of scan closest to time
+        """
+
+        ## check if splitObs has been passed in alread ##
+        if splitObs is None:
+            splitObs = self.split_obs()
+
+        ## check for the scan with the closest start time to time arg ##
+        ## TODO: allow user to choose start time, end time, or mid-time
+        closest_index = 0
+        delta_t = 1e22
+        for s, s_obs in enumerate(splitObs):
+            dt = abs(s_obs.tstart - time)
+            if dt < delta_t:
+                delta_t = dt 
+                closest_index = s 
+
+        print(f"Using scan with time {splitObs[closest_index].tstart}.")
+        return splitObs[closest_index]
+
+
     def bllist(self, conj=False):
         """Group the data in a list of same baseline datatables.
 
@@ -4667,24 +4697,24 @@ def load_maps(arrfile, obsspec, ifile, qfile=0, ufile=0, vfile=0,
                                        src=src, mjd=mjd, ampcal=ampcal, phasecal=phasecal)
 
 def load_obs(
-				fname, 					
-				polrep='stokes', 		
-            	flipbl=False, 				
-            	remove_nan=False, 
-            	force_singlepol=None, 
-            	channel=all, 
-            	IF=all, 
-            	allow_singlepol=True,
-            	flux=1.0,
-            	obsspec=None, 
-            	ifile=None, 
-            	qfile=None, 
-            	ufile=None, 
-            	vfile=None,
-              	src=ehc.SOURCE_DEFAULT, 
-              	mjd=ehc.MJD_DEFAULT, 
-              	ampcal=False, 
-              	phasecal=False
+                fname,                  
+                polrep='stokes',        
+                flipbl=False,               
+                remove_nan=False, 
+                force_singlepol=None, 
+                channel=all, 
+                IF=all, 
+                allow_singlepol=True,
+                flux=1.0,
+                obsspec=None, 
+                ifile=None, 
+                qfile=None, 
+                ufile=None, 
+                vfile=None,
+                src=ehc.SOURCE_DEFAULT, 
+                mjd=ehc.MJD_DEFAULT, 
+                ampcal=False, 
+                phasecal=False
     ):
     """Smart obs read-in, detects file type and loads appropriately.
 
@@ -4719,24 +4749,24 @@ def load_obs(
 
     ## check extension ##
     if fname_extension.lower() == 'uvfits':
-    	return load_uvfits(fname, flipbl=flipbl, remove_nan=remove_nan, force_singlepol=force_singlepol, channel=channel, IF=IF, polrep=polrep, allow_singlepol=allow_singlepol)
+        return load_uvfits(fname, flipbl=flipbl, remove_nan=remove_nan, force_singlepol=force_singlepol, channel=channel, IF=IF, polrep=polrep, allow_singlepol=allow_singlepol)
 
     elif fname_extension.lower() in ['txt', 'text']:
-    	return load_txt(fname, polrep=polrep)
+        return load_txt(fname, polrep=polrep)
 
     elif fname_extension.lower() == 'oifits':
-    	return load_oifits(fname, flux=flux)
+        return load_oifits(fname, flux=flux)
 
 
     else:
-    	if obsspec is not None and ifile is None:
-    		print("You have provided a value for <obsspec> but no value for <ifile>")
-    		return 
-    	elif obsspec is None and ifile is not None:
-    		print("You have provided a value for <ifile> but no value for <obsspec>")
-    		return 
+        if obsspec is not None and ifile is None:
+            print("You have provided a value for <obsspec> but no value for <ifile>")
+            return 
+        elif obsspec is None and ifile is not None:
+            print("You have provided a value for <ifile> but no value for <obsspec>")
+            return 
 
-    	elif obsspec is not None and ifile is not None:
-    		return load_maps(fname, obsspec, ifile, qfile=qfile, ufile=ufile, vfile=vfile,
+        elif obsspec is not None and ifile is not None:
+            return load_maps(fname, obsspec, ifile, qfile=qfile, ufile=ufile, vfile=vfile,
               src=src, mjd=mjd, ampcal=ampcal, phasecal=phasecal)
 
