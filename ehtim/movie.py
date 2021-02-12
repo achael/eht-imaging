@@ -1162,7 +1162,6 @@ class Movie(object):
 
         # Jones Matrix Corruption & Calibration
         if jones:
-            print("Applying Jones Matrices to data . . . ")
             obsdata = simobs.add_jones_and_noise(obs, add_th_noise=add_th_noise,
                                                  opacitycal=opacitycal, ampcal=ampcal,
                                                  phasecal=phasecal, frcal=frcal, dcal=dcal,

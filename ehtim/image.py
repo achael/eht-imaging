@@ -1503,8 +1503,10 @@ class Image(object):
 
             imarr = imvec.reshape(self.ydim, self.xdim)
 
-            sx = ndi.sobel(imarr, axis=0, mode='constant')
-            sy = ndi.sobel(imarr, axis=1, mode='constant')
+            #sx = ndi.sobel(imarr, axis=0, mode='constant')
+            #sy = ndi.sobel(imarr, axis=1, mode='constant')
+            sx = ndi.sobel(imarr, axis=0, mode='nearest')
+            sy = ndi.sobel(imarr, axis=1, mode='nearest')
 
             # TODO: are these in the right order??
             if gradtype == 'x':

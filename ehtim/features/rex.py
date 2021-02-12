@@ -797,7 +797,7 @@ def FindProfileSingle(imname, postprocdir,
                       rmin_search=RPRIOR_MIN, rmax_search=RPRIOR_MAX,
                       nrays_search=NRAYS_SEARCH, nrs_search=NRS_SEARCH,
                       thresh_search=THRESH, fov_search=FOVP_SEARCH, n_search=NSEARCH,
-                      flux_norm=NORMFLUX):
+                      flux_norm=NORMFLUX,center=False):
     """find the best ring profile for an image and save results
     """
 
@@ -817,7 +817,10 @@ def FindProfileSingle(imname, postprocdir,
             im_raw = im_raw.blur_circ(blur*ehc.RADPERUAS, blur*ehc.RADPERUAS)
 
         # center image and regrid to uniform pixel size and fox
-        im = di.center_core(im_raw)
+        if center:
+            im = di.center_core(im_raw) # TODO -- why isn't this working? 
+        else:
+            im = im_raw
 
         im_search = im.regrid_image(imsize, npix)
         im = im.regrid_image(imsize, npix)

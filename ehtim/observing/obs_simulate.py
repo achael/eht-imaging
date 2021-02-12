@@ -538,8 +538,6 @@ def make_jones(obs, opacitycal=True, ampcal=True, phasecal=True, dcal=True,
                     for time in times_stable_amp
                 ), float)))
 
-                gainR = np.abs(gainR)
-                gainL = np.abs(gainL)
                 if neggains:
                     gainR = np.exp(-np.abs(np.log(gainR)))
                     gainL = np.exp(-np.abs(np.log(gainL)))
@@ -553,14 +551,21 @@ def make_jones(obs, opacitycal=True, ampcal=True, phasecal=True, dcal=True,
                     (1 + gain_mult * obsh.hashmultivariaterandn(
                         len(scan_start_times), cov, site, 'gain', str(time), str(gain_mult), seed))
                 ))
-                gainR_interpolateor = interp1d(scan_start_times, gainR, kind='zero')
-                gainR = gainR_interpolateor(times_stable_amp)
+
 
                 gainL = np.sqrt(np.abs(
                     (1 + gainL_constant) *
                     (1 + gain_mult * obsh.hashmultivariaterandn(
                         len(scan_start_times), cov, site, 'gain', str(time), str(gain_mult), seed))
                 ))
+
+                if neggains:
+                    gainR = np.exp(-np.abs(np.log(gainR)))
+                    gainL = np.exp(-np.abs(np.log(gainL)))
+
+                gainR_interpolateor = interp1d(scan_start_times, gainR, kind='zero')
+                gainR = gainR_interpolateor(times_stable_amp)
+
                 gainL_interpolateor = interp1d(scan_start_times, gainL, kind='zero')
                 gainL = gainL_interpolateor(times_stable_amp)
 
