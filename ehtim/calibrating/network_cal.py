@@ -328,9 +328,9 @@ def network_cal_scan(scan, zbl, sites, clustered_sites, polrep='stokes', pol='I'
 
         # choose to only scale ampliltudes or phases
         if method == "phase":
-            g = g / np.abs(g)  # TODO: use exp(i*np.arg())?
-        if method == "amp":
-            g = np.abs(np.real(g))
+            g = g / np.abs(g)
+        elif method == "amp":
+            g = np.abs(g)
 
         # append the default values to g for missing points
         # and to v for the zero baseline points
@@ -351,17 +351,19 @@ def network_cal_scan(scan, zbl, sites, clustered_sites, polrep='stokes', pol='I'
         else:
             verr = vis - g1 * g2.conj() * v_scan
 
-        nan_mask = np.array([not np.isnan(viter) for viter in verr]) * \
-            np.array([not np.isnan(viter) for viter in sigma_inv])
-        verr = verr[nan_mask * vis_mask]
-
-        chisq = np.sum((verr.real * sigma_inv[nan_mask * vis_mask])**2) + \
-            np.sum((verr.imag * sigma_inv[nan_mask * vis_mask])**2)
+        chi   = np.abs(verr) * sigma_inv
+        chisq = np.sum((chi * chi)[np.isfinite(chi) * vis_mask])
 
         # prior on the gains
         g_fracerr = gain_tol
-        chisq_g = np.sum((np.log(np.abs(g))**2 / g_fracerr**2))
-        chisq_v = np.sum((np.abs(v) / zbl_scan)**4)
+        if method == "phase":
+            chisq_g = 0 # because |g| == 1 so log(|g|) = 0
+        elif method == "amp":
+            chisq_g = np.sum(np.log(g)**2) / g_fracerr**2
+        else:
+            chisq_g = np.sum(np.log(np.abs(g))**2) / g_fracerr**2
+
+        chisq_v = np.sum(np.abs(v)**4) / zbl_scan**4
         return chisq + chisq_g + chisq_v
 
     if np.max(g1_keys) > -1 or np.max(g2_keys) > -1:
