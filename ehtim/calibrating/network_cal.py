@@ -330,7 +330,7 @@ def network_cal_scan(scan, zbl, sites, clustered_sites, polrep='stokes', pol='I'
         if method == "phase":
             g = g / np.abs(g)
         elif method == "amp":
-            g = np.abs(g)
+            g = np.abs(np.real(g))
 
         # append the default values to g for missing points
         # and to v for the zero baseline points
