@@ -359,11 +359,15 @@ def network_cal_scan(scan, zbl, sites, clustered_sites, polrep='stokes', pol='I'
         if method == "phase":
             chisq_g = 0 # because |g| == 1 so log(|g|) = 0
         elif method == "amp":
-            chisq_g = np.sum(np.log(g)**2) / g_fracerr**2
+            logg    = np.log(g)
+            chisq_g = np.sum(logg * logg) / (g_fracerr * g_fracerr)
         else:
-            chisq_g = np.sum(np.log(np.abs(g))**2) / g_fracerr**2
+            logabsg = np.log(np.abs(g))
+            chisq_g = np.sum(logabsg * logabsg) / (g_fracerr * g_fracerr)
 
-        chisq_v = np.sum(np.abs(v)**4) / zbl_scan**4
+        absv    = np.abs(v)
+        vv      = absv * absv
+        chisq_v = np.sum(vv * vv) / zbl_scan**4
         return chisq + chisq_g + chisq_v
 
     if np.max(g1_keys) > -1 or np.max(g2_keys) > -1:
