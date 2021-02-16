@@ -314,27 +314,35 @@ def load_im_fits(filename, aipscc=False, pulse=ehc.PULSE_DEFAULT,
         deltay = aipscctab.data["DELTAY"]
 
         # check to make sure all the source types are point sources and gaussian components
-        checkmtype = np.abs(np.unique(aipscctab.data["TYPE OBJ"])) < 2.0
-        if False in checkmtype.tolist():
-            errmsg = "The primary AIPS CC table in the input FITS file has non point-source"
-            errmsg += " or Gaussian Source CC components, which are not currently supported."
-            raise ValueError(errmsg)
+        try: 
+            checkmtype = np.abs(np.unique(aipscctab.data["TYPE OBJ"])) < 2.0
+            if False in checkmtype.tolist():
+                errmsg = "The primary AIPS CC table in the input FITS file has non point-source"
+                errmsg += " or Gaussian Source CC components, which are not currently supported."
+                raise ValueError(errmsg)
+            point_src = aipscctab.data["TYPE OBJ"] == 0
+            gaussian_src = aipscctab.data["TYPE OBJ"] == 1
+        except(KeyError):
+            print("Cannot load AIPS CC Table OBJ data -- assuming all CC components are point sources!")
+            point_src = np.ones(aipscctab.data.shape).astype(bool)
+            gaussian_src = np.zeros(aipscctab.data.shape).astype(bool)
         print("%d CC components are loaded." % (len(flux)))
 
         # compile the point source aipscc info
-        point_src = aipscctab.data["TYPE OBJ"] == 0
         flux_ps = flux[point_src]
         deltax_ps = deltax[point_src]
         deltay_ps = deltay[point_src]
 
-        # compile the gaussian aipscc info
-        gaussian_src = aipscctab.data["TYPE OBJ"] == 1
-        flux_gs = flux[gaussian_src]
-        deltax_gs = deltax[gaussian_src]
-        deltay_gs = deltay[gaussian_src]
-        maj_gs = aipscctab.data["MAJOR AX"][gaussian_src]
-        min_gs = aipscctab.data["MINOR AX"][gaussian_src]
-        pa_gs = aipscctab.data["POSANGLE"][gaussian_src]
+        # compile the gaussian aipscc info, if any
+        if np.any(gaussian_src):
+            flux_gs = flux[gaussian_src]
+            deltax_gs = deltax[gaussian_src]
+            deltay_gs = deltay[gaussian_src]
+            maj_gs = aipscctab.data["MAJOR AX"][gaussian_src]
+            min_gs = aipscctab.data["MINOR AX"][gaussian_src]
+            pa_gs = aipscctab.data["POSANGLE"][gaussian_src]
+        else:
+            flux_gs = []
 
         # the map_coordinates delta x / delta y of each delta CC component are
         # relative to the reference pixel which is defined by CRPIX1 and CRPIX2.
@@ -372,16 +380,20 @@ def load_im_fits(filename, aipscc=False, pulse=ehc.PULSE_DEFAULT,
         if header['BUNIT'].lower() == 'JY/BEAM'.lower():
 
             print("converting Jy/Beam --> Jy/pixel")
+            bmaj = bmin = 1.0 # default values
+
             if 'BMAJ' in list(header.keys()):
                 bmaj = header['BMAJ']
                 bmin = header['BMIN']
+
             elif 'HISTORY' in list(header.keys()):  # Alternate option, to read AIPS fits images
                 print("No beam info in header; reading from AIPS HISTORY instead...")
                 for line in header['HISTORY']:
-                    if 'BMAJ' in line:
+                    if 'BMAJ' in line and len(line.split())>6:
                         bmaj = float(line.split()[3])
                         bmin = float(line.split()[5])
-            else:
+
+            if bmaj==1.0 and bmin==1.0:
                 print("No beam info found! Assuming nominal values for conversion.")
                 bmaj = bmin = 1.0
 
@@ -389,7 +401,7 @@ def load_im_fits(filename, aipscc=False, pulse=ehc.PULSE_DEFAULT,
             normalizer = (header['CDELT2'])**2 / beamarea
 
     if aipscc:
-        print("the computed normalizer will not be applied since loading the AIPS CC table")
+        print("the computed normalizer will not be applied since we are loading the AIPS CC table")
     else:
         image *= normalizer
 
