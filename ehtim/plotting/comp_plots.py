@@ -40,7 +40,7 @@ COLORLIST = ehc.SCOLORS
 
 
 def plotall_compare(obslist, imlist, field1, field2,
-                    conj=False, debias=True, sgrscat=False,
+                    conj=False, debias=False, sgrscat=False,
                     ang_unit='deg', timetype='UTC', ttype='nfft',
                     axis=False, rangex=False, rangey=False, snrcut=0.,
                     clist=COLORLIST, legendlabels=None, markersize=ehc.MARKERSIZE,
@@ -106,7 +106,7 @@ def plotall_compare(obslist, imlist, field1, field2,
 
 
 def plot_bl_compare(obslist, imlist, site1, site2, field,
-                    debias=True, sgrscat=False,
+                    debias=False, sgrscat=False,
                     ang_unit='deg', timetype='UTC', ttype='nfft',
                     axis=False, rangex=False, rangey=False, snrcut=0.,
                     clist=COLORLIST, legendlabels=None, markersize=ehc.MARKERSIZE,
@@ -261,7 +261,7 @@ def plot_cphase_compare(obslist, imlist, site1, site2, site3,
 
 def plot_camp_compare(obslist, imlist, site1, site2, site3, site4,
                       vtype='vis', ctype='camp', camps=[], force_recompute=False,
-                      debias=True, sgrscat=False, timetype='UTC', ttype='nfft',
+                      debias=False, sgrscat=False, timetype='UTC', ttype='nfft',
                       axis=False, rangex=False, rangey=False, snrcut=0.,
                       clist=COLORLIST, legendlabels=None, markersize=ehc.MARKERSIZE,
                       export_pdf="", grid=False, ebar=True,

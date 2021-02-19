@@ -3843,7 +3843,7 @@ class Obsdata(object):
         return outdata
 
     def plotall(self, field1, field2,
-                conj=False, debias=True, tag_bl=False, ang_unit='deg', timetype=False,
+                conj=False, debias=False, tag_bl=False, ang_unit='deg', timetype=False,
                 axis=False, rangex=False, rangey=False, snrcut=0.,
                 color=ehc.SCOLORS[0], marker='o', markersize=ehc.MARKERSIZE, label=None,
                 grid=True, ebar=True, axislabels=True, legend=False,
@@ -4071,7 +4071,7 @@ class Obsdata(object):
         return x
 
     def plot_bl(self, site1, site2, field,
-                debias=True, ang_unit='deg', timetype=False,
+                debias=False, ang_unit='deg', timetype=False,
                 axis=False, rangex=False, rangey=False, snrcut=0.,
                 color=ehc.SCOLORS[0], marker='o', markersize=ehc.MARKERSIZE, label=None,
                 grid=True, ebar=True, axislabels=True, legend=False,
