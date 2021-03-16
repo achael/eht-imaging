@@ -316,10 +316,15 @@ class Imager(object):
                     dname_key = dname + ('_%i' % i)
                 outstr += "chi2_%s : %0.2f " % (dname_key, chi2_term_dict[dname_key])
 
-        print("time: %f s" % (tstop - tstart))
-        print("J: %f" % res.fun)
-        print(outstr)
-        print(res.message.decode())
+        try:
+            print("time: %f s" % (tstop - tstart))
+            print("J: %f" % res.fun)
+            print(outstr)
+            if isinstance(res.message,str): print(res.message)
+            else: print(res.message.decode())
+        except: # TODO -- issues for some users with res.message
+            pass
+
         print("==============================")
 
         # Embed image
