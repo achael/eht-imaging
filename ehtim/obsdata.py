@@ -4614,7 +4614,7 @@ def load_uvfits(fname, flipbl=False, remove_nan=False, force_singlepol=None,
     """Load observation data from a uvfits file.
 
        Args:
-           fname (str): path to input text file
+           fname (str or HDUList): path to input text file or HDUList object
            flipbl (bool): flip baseline phases if True.
            remove_nan (bool): True to remove nans from missing polarizations
            polrep (str): load data as either 'stokes' or 'circ'
