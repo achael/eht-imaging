@@ -52,9 +52,14 @@ warnings.filterwarnings("ignore", message="invalid value encountered in true_div
 
 
 def load_vex(fname):
-    """Read in .vex files. and function to observe them
+    """Read in .vex files.
        Assumes there is only 1 MODE in vex file
        Hotaka Shiokawa - 2017
+
+       Args:
+            fname (str): path to input .vex file
+       Returns: 
+            vex (Vex): Vex file object
     """
     print("Loading vexfile: ", fname)
     return ehtim.vex.Vex(fname)
@@ -780,8 +785,16 @@ def load_movie_dat(basename, nframes, startframe=0, framedur_sec=1, psize=-1,
 ###################################################################################################
 def load_array_txt(filename, ephemdir='ephemeris'):
     """Read an array from a text file and return an Array object
-       Sites with x=y=z=0 are spacecraft - 2TLE ephemeris loaded from ephemdir
+       Sites with x=y=z=0 are spacecraft - TLE ephemeris loaded from ephemdir
+
+       Args:
+           filename (str): path to input text file
+           ephemdir (str): directory with TLE files for spacecraft
+
+       Returns:
+           arr (Array): Array object loaded from file
     """
+
 
     tdata = np.loadtxt(filename, dtype=bytes, comments='#').astype(str)
     if tdata[0][0].lower() == 'site':
@@ -965,121 +978,22 @@ def load_obs_txt(filename, polrep='stokes'):
     out = out.switch_polrep(polrep_out=polrep)
     return out
 
-
-def load_obs_maps(arrfile, obsspec, ifile, qfile=0, ufile=0, vfile=0,
-                  src=ehc.SOURCE_DEFAULT, mjd=ehc.MJD_DEFAULT, ampcal=False, phasecal=False):
-    """Read an observation from a maps text file and return an Obsdata object
-    """
-    # Read telescope parameters from the array file
-    tdata = np.loadtxt(arrfile, dtype=bytes).astype(str)
-    tdata = [np.array((x[0], float(x[1]), float(x[2]), float(x[3]),
-                       float(x[-1]), float(x[-1]), 0., 0., 0., 0., 0.),
-                      dtype=ehc.DTARR) for x in tdata]
-    tdata = np.array(tdata)
-
-    # Read parameters from the obs_spec
-    f = open(obsspec)
-    stop = False
-    while not stop:
-        line = f.readline().split()
-        if line == [] or line[0] == '\\':
-            continue
-        elif line[0] == 'FOV_center_RA':
-            x = line[2].split(':')
-            ra = float(x[0]) + float(x[1]) / 60.0 + float(x[2]) / 3600.0
-        elif line[0] == 'FOV_center_Dec':
-            x = line[2].split(':')
-            dec = np.sign(float(x[0])) * (abs(float(x[0])) +
-                                          float(x[1]) / 60.0 + float(x[2]) / 3600.0)
-        elif line[0] == 'Corr_int_time':
-            tint = float(line[2])
-        elif line[0] == 'Corr_chan_bw':  # TODO what if multiple channels?
-            bw = float(line[2]) * 1e6  # in MHz
-        elif line[0] == 'Channel':  # TODO what if multiple scans with different params?
-            rf = float(line[2].split(':')[0]) * 1e6
-        elif line[0] == 'Scan_start':
-            x = line[2].split(':')  # TODO properly compute MJD!
-        elif line[0] == 'Endscan':
-            stop = True
-    f.close()
-
-    # Load the data, convert to list format, return object
-    datatable = []
-    f = open(ifile)
-
-    for line in f:
-        line = line.split()
-        if not (line[0] in ['UV', 'Scan', '\n']):
-            time = line[0].split(':')
-            time = float(time[2]) + float(time[3]) / 60.0 + float(time[4]) / 3600.0
-            u = float(line[1]) * 1000
-            v = float(line[2]) * 1000
-            bl = line[4].split('-')
-            t1 = tdata[int(bl[0]) - 1]['site']
-            t2 = tdata[int(bl[1]) - 1]['site']
-            tau1 = 0.
-            tau2 = 0.
-            vis = float(line[7][:-1]) * np.exp(1j * float(line[8][:-1]) * ehc.DEGREE)
-            sigma = float(line[10])
-            datatable.append(np.array((time, tint, t1, t2, tau1, tau2,
-                                       u, v, vis, 0.0, 0.0, 0.0,
-                                       sigma, 0.0, 0.0, 0.0), dtype=ehc.DTPOL_STOKES))
-
-    datatable = np.array(datatable)
-
-    # TODO qfile ufile and vfile must have exactly the same format as ifile!
-    # add some consistency check
-    if not qfile == 0:
-        f = open(qfile)
-        i = 0
-        for line in f:
-            line = line.split()
-            if not (line[0] in ['UV', 'Scan', '\n']):
-                datatable[i]['qvis'] = float(line[7][:-1]) * \
-                    np.exp(1j * float(line[8][:-1]) * ehc.DEGREE)
-                datatable[i]['qsigma'] = float(line[10])
-                i += 1
-
-    if not ufile == 0:
-        f = open(ufile)
-        i = 0
-        for line in f:
-            line = line.split()
-            if not (line[0] in ['UV', 'Scan', '\n']):
-                datatable[i]['uvis'] = float(line[7][:-1]) * \
-                    np.exp(1j * float(line[8][:-1]) * ehc.DEGREE)
-                datatable[i]['usigma'] = float(line[10])
-                i += 1
-
-    if not vfile == 0:
-        f = open(vfile)
-        i = 0
-        for line in f:
-            line = line.split()
-            if not (line[0] in ['UV', 'Scan', '\n']):
-                datatable[i]['vvis'] = float(line[7][:-1]) * \
-                    np.exp(1j * float(line[8][:-1]) * ehc.DEGREE)
-                datatable[i]['vsigma'] = float(line[10])
-                i += 1
-
-    # Return the data object
-    return ehtim.obsdata.Obsdata(ra, dec, rf, bw, datatable, tdata,
-                                 source=src, mjd=mjd, polrep='stokes')
-
-
 # TODO can we save new telescope array terms and flags to uvfits and load them?
-def load_obs_uvfits(filename, polrep='stokes', flipbl=False, allow_singlepol=True,
-                    force_singlepol=None, channel=all, IF=all, remove_nan=False):
+def load_obs_uvfits(filename, polrep='stokes', flipbl=False,
+                    allow_singlepol=True, force_singlepol=None,
+                    channel=all, IF=all, remove_nan=False):
     """Load observation data from a uvfits file.
+
        Args:
-           fname (str or HDUList): path to input text file or HDUList object
+           filename (str or HDUList): path to either an input text file or an HDUList object
            polrep (str): load data as either 'stokes' or 'circ'
            flipbl (bool): flip baseline phases if True.
            allow_singlepol (bool): If True and polrep='stokes',
                                    treat single-polarization data as Stokes I
            force_singlepol (str): 'R' or 'L' to load only 1 polarization and treat as Stokes I
            channel (list): list of channels to average in the import. channel=all averages all
-           IF (list): list of IFs to  average in  the import. IF=all averages all IFS
+           IF (list): list of IFs to  average in  the import. IF=all averages all
+           remove_nan (bool): whether or not to remove entries with nan data
        Returns:
            obs (Obsdata): Obsdata object loaded from file
     """
@@ -1609,9 +1523,129 @@ def load_obs_oifits(filename, flux=1.0):
     return ehtim.obsdata.Obsdata(ra, dec, rf, bw, datatable, tarr,
                                  polrep='stokes', source=src, mjd=time[0])
 
+def load_obs_maps(arrfile, obsspec, ifile, qfile=0, ufile=0, vfile=0,
+                  src=ehc.SOURCE_DEFAULT, mjd=ehc.MJD_DEFAULT, ampcal=False, phasecal=False):
+    """Read an observation from a maps text file and return an Obsdata object.
+
+       Args:
+           arrfile (str): path to input array file
+           obsspec (str): path to input obs spec file
+           ifile (str): path to input Stokes I data file
+           qfile (str): path to input Stokes Q data file
+           ufile (str): path to input Stokes U data file
+           vfile (str): path to input Stokes V data file
+           src (str): source name
+           mjd (int): integer observation  MJD
+           ampcal (bool): True if amplitude calibrated
+           phasecal (bool): True if phase calibrated
+
+       Returns:
+           obs (Obsdata): Obsdata object loaded from file
+    """
+    # Read telescope parameters from the array file
+    tdata = np.loadtxt(arrfile, dtype=bytes).astype(str)
+    tdata = [np.array((x[0], float(x[1]), float(x[2]), float(x[3]),
+                       float(x[-1]), float(x[-1]), 0., 0., 0., 0., 0.),
+                      dtype=ehc.DTARR) for x in tdata]
+    tdata = np.array(tdata)
+
+    # Read parameters from the obs_spec
+    f = open(obsspec)
+    stop = False
+    while not stop:
+        line = f.readline().split()
+        if line == [] or line[0] == '\\':
+            continue
+        elif line[0] == 'FOV_center_RA':
+            x = line[2].split(':')
+            ra = float(x[0]) + float(x[1]) / 60.0 + float(x[2]) / 3600.0
+        elif line[0] == 'FOV_center_Dec':
+            x = line[2].split(':')
+            dec = np.sign(float(x[0])) * (abs(float(x[0])) +
+                                          float(x[1]) / 60.0 + float(x[2]) / 3600.0)
+        elif line[0] == 'Corr_int_time':
+            tint = float(line[2])
+        elif line[0] == 'Corr_chan_bw':  # TODO what if multiple channels?
+            bw = float(line[2]) * 1e6  # in MHz
+        elif line[0] == 'Channel':  # TODO what if multiple scans with different params?
+            rf = float(line[2].split(':')[0]) * 1e6
+        elif line[0] == 'Scan_start':
+            x = line[2].split(':')  # TODO properly compute MJD!
+        elif line[0] == 'Endscan':
+            stop = True
+    f.close()
+
+    # Load the data, convert to list format, return object
+    datatable = []
+    f = open(ifile)
+
+    for line in f:
+        line = line.split()
+        if not (line[0] in ['UV', 'Scan', '\n']):
+            time = line[0].split(':')
+            time = float(time[2]) + float(time[3]) / 60.0 + float(time[4]) / 3600.0
+            u = float(line[1]) * 1000
+            v = float(line[2]) * 1000
+            bl = line[4].split('-')
+            t1 = tdata[int(bl[0]) - 1]['site']
+            t2 = tdata[int(bl[1]) - 1]['site']
+            tau1 = 0.
+            tau2 = 0.
+            vis = float(line[7][:-1]) * np.exp(1j * float(line[8][:-1]) * ehc.DEGREE)
+            sigma = float(line[10])
+            datatable.append(np.array((time, tint, t1, t2, tau1, tau2,
+                                       u, v, vis, 0.0, 0.0, 0.0,
+                                       sigma, 0.0, 0.0, 0.0), dtype=ehc.DTPOL_STOKES))
+
+    datatable = np.array(datatable)
+
+    # TODO qfile ufile and vfile must have exactly the same format as ifile!
+    # add some consistency check
+    if not qfile == 0:
+        f = open(qfile)
+        i = 0
+        for line in f:
+            line = line.split()
+            if not (line[0] in ['UV', 'Scan', '\n']):
+                datatable[i]['qvis'] = float(line[7][:-1]) * \
+                    np.exp(1j * float(line[8][:-1]) * ehc.DEGREE)
+                datatable[i]['qsigma'] = float(line[10])
+                i += 1
+
+    if not ufile == 0:
+        f = open(ufile)
+        i = 0
+        for line in f:
+            line = line.split()
+            if not (line[0] in ['UV', 'Scan', '\n']):
+                datatable[i]['uvis'] = float(line[7][:-1]) * \
+                    np.exp(1j * float(line[8][:-1]) * ehc.DEGREE)
+                datatable[i]['usigma'] = float(line[10])
+                i += 1
+
+    if not vfile == 0:
+        f = open(vfile)
+        i = 0
+        for line in f:
+            line = line.split()
+            if not (line[0] in ['UV', 'Scan', '\n']):
+                datatable[i]['vvis'] = float(line[7][:-1]) * \
+                    np.exp(1j * float(line[8][:-1]) * ehc.DEGREE)
+                datatable[i]['vsigma'] = float(line[10])
+                i += 1
+
+    # Return the data object
+    return ehtim.obsdata.Obsdata(ra, dec, rf, bw, datatable, tdata,
+                                 source=src, mjd=mjd, polrep='stokes')
 
 def load_dtype_txt(obs, filename, dtype='cphase'):
-    """Load the dtype data in a text file and put it in the obs
+
+    """Load the dtype data in a text file and put it in the already-created obs object
+       Args:
+            obs (Obsdata): obsdata object
+            filename (str): path to output text file
+            dtype (str): desired data type
+       Returns:
     """
 
     print("Loading text observation: ", filename)
