@@ -44,6 +44,7 @@ def save_im_txt(im, fname, mjd=False, time=False):
     """Save image data to text file.
 
        Args:
+            im (Image): image object
             fname (str): path to output text file
             mjd (int): MJD of saved image
             time (float): UTC time of saved image
@@ -110,12 +111,11 @@ def save_im_txt(im, fname, mjd=False, time=False):
     return
 
 # TODO save image in circular basis?
-
-
 def save_im_fits(im, fname, mjd=False, time=False):
     """Save image data to a fits file.
 
        Args:
+            im (Image): image object
             fname (str): path to output fits file
             mjd (int): MJD of saved image
             time (float): UTC time of saved image
@@ -188,6 +188,7 @@ def save_mov_hdf5(mov, fname, mjd=False):
     """Save movie data to an hdf5 file.
 
        Args:
+            mov (Movie): movie object
             fname (str): basename of output fits file
             mjd (int): MJD of saved movie
 
@@ -197,25 +198,10 @@ def save_mov_hdf5(mov, fname, mjd=False):
     # TODO: Currently only supports one polarization!
     with h5py.File(fname, 'w') as file:
 
-        #        if sys.version_info > (3,0):
-        #            dt  =  h5py.special_dtype(vlen=str)
-        #        else:
-        #            dt = dtype=h5py.special_dtype(vlen=unicode))
-
-        # dt = dtype=h5py.special_dtype(vlen=bytes))
         head = file.create_dataset('header', (0,), dtype="S10")
 
         if mjd is False:
             mjd = mov.mjd
-
-#        head.attrs['mjd'] = str(mjd)
-#        head.attrs['psize'] = str(mov.psize)
-#        head.attrs['source'] = str(mov.source)
-#        head.attrs['ra'] = str(mov.ra)
-#        head.attrs['dec'] = str(mov.dec)
-#        head.attrs['rf'] = str(mov.rf)
-#        head.attrs['polrep'] = str(mov.polrep)
-#        head.attrs['pol_prim'] = str(mov.pol_prim)
 
         head.attrs['mjd'] = np.string_(str(mjd))
         head.attrs['psize'] = np.string_(str(mov.psize))
@@ -248,6 +234,7 @@ def save_mov_fits(mov, fname, mjd=False):
     """Save movie data to series of fits files.
 
        Args:
+            mov (Movie): movie object
             fname (str): basename of output fits file
             mjd (int): MJD of saved movie
 
@@ -271,6 +258,7 @@ def save_mov_txt(mov, fname, mjd=False):
     """Save movie data to series of text files.
 
        Args:
+            mov (Movie): movie object
             fname (str): basename of output text file
             mjd (int): MJD of saved movie
 
@@ -296,6 +284,12 @@ def save_mov_txt(mov, fname, mjd=False):
 
 def save_array_txt(arr, fname):
     """Save the array data in a text file.
+
+       Args:
+            arr (Array): array object
+            fname (str): name of output text file
+
+       Returns:
     """
 
     if type(arr) == np.ndarray:
@@ -329,6 +323,12 @@ def save_array_txt(arr, fname):
 ##################################################################################################
 def save_obs_txt(obs, fname):
     """Save the observation data in a text file.
+
+       Args:
+            obs (Obsdata): obsdata object
+            fname (str): name of output text file
+
+       Returns:
     """
 
     # output times must be in utc
@@ -403,7 +403,15 @@ def save_obs_txt(obs, fname):
 
 def save_obs_uvfits(obs, fname=None, force_singlepol=None, polrep_out='circ'):
     """Save observation data to uvfits.
-       To save Stokes I as a single polarization (e.g., only RR) set force_singlepol='R' or 'L'
+
+       Args:
+            obs (Obsdata): obsdata object
+            fname (str): path to output fits file, or None to return HDUList only
+            force_singlepol (str): if 'R' or 'L', will interpret stokes I field as 'RR' or 'LL'
+            polrep_out (str): 'circ' or 'stokes': how data should be stored in the uvfits file
+       Returns:
+            hdulist (astropy.io.fits.HDUList)
+            
     """
 
     # output times must be in utc
@@ -815,18 +823,22 @@ def save_obs_uvfits(obs, fname=None, force_singlepol=None, polrep_out='circ'):
             print("No NX table in saved uvfits")
 
     # Write final HDUList to file
-    if fname is None:
-        return hdulist_new.copy()
-    else:
+    if fname is not None:
         hdulist_new.writeto(fname, overwrite=True)
-        return None
+
+    return hdulist_new.copy()
+
 
 
 def save_obs_oifits(obs, fname, flux=1.0):
-    """ Save visibility data to oifits
-        Polarization data is NOT saved
-        Antenna diameter and exact times are currently incorrectt
-        Please contact Katie Bouman (klbouman@mit.edu) for any questions on this function
+    """Save visibility data to oifits file.
+       Polarization data is NOT saved
+       NOTE: as of 2021, this function is very out-of-date and should be updated
+       Args:
+            obs (Obsdata): obsdata object
+            fname (str): path to output uvfits file.
+            flux (float): Flux density normalization
+       Returns:
     """
 
     # TODO: Add polarization to oifits??
@@ -919,7 +931,12 @@ def save_obs_oifits(obs, fname, flux=1.0):
 
 
 def save_dtype_txt(obs, fname, dtype='cphase'):
-    """Save the dtype data in a text file.
+    """Save the data product of type 'dtype' in a text file.
+       Args:
+            obs (Obsdata): obsdata object
+            fname (str): path to output text file
+            dtype (str): desired data type
+       Returns:
     """
 
     head = ("SRC: %s \n" % obs.source +

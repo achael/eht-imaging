@@ -4480,10 +4480,10 @@ class Obsdata(object):
 
         return
 
-    def save_uvfits(self, fname=None, force_singlepol=False, polrep_out='circ'):
+    def save_uvfits(self, fname, force_singlepol=False, polrep_out='circ'):
         """Save visibility data to uvfits file.
            Args:
-                fname (str): path to output text file. If not specified, return HDUList.
+                fname (str): path to output uvfits file.
                 force_singlepol (str): if 'R' or 'L', will interpret stokes I field as 'RR' or 'LL'
                 polrep_out (str): 'circ' or 'stokes': how data should be stored in the uvfits file
         """
@@ -4492,13 +4492,28 @@ class Obsdata(object):
             raise Exception(
                 "force_singlepol is incompatible with polrep!='stokes'")
 
-        output = ehtim.io.save.save_obs_uvfits(
-            self, fname, force_singlepol=force_singlepol, polrep_out=polrep_out)
+        output = ehtim.io.save.save_obs_uvfits(self, fname,
+                                               force_singlepol=force_singlepol, polrep_out=polrep_out)
 
-        if fname is None:
-            return output
-        else:
-            return
+        return
+
+    def make_hdulist(self, force_singlepol=False, polrep_out='circ'):
+        """Returns an hdulist in the same format as in a saved .uvfits file.
+           Args:
+                force_singlepol (str): if 'R' or 'L', will interpret stokes I field as 'RR' or 'LL'
+                polrep_out (str): 'circ' or 'stokes': how data should be stored in the uvfits file
+           Returns:
+                hdulist (astropy.io.fits.HDUList)
+        """
+
+        if (force_singlepol is not False) and (self.polrep != 'stokes'):
+            raise Exception(
+                "force_singlepol is incompatible with polrep!='stokes'")
+
+        hdulist = ehtim.io.save.save_obs_uvfits(self, None,
+                                                force_singlepol=force_singlepol, polrep_out=polrep_out)
+        return hdulist
+
 
     def save_oifits(self, fname, flux=1.0):
         """ Save visibility data to oifits. Polarization data is NOT saved.
