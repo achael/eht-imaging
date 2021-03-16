@@ -572,8 +572,14 @@ Note: an odd image dimension is required!</p>
 </dd></dl>
 
 <dl class="method">
+<dt id="ehtim.scattering.stochastic_optics.ScatteringModel.Scatter2">
+<code class="descname">Scatter2</code><span class="sig-paren">(</span><em>args</em>, <em>kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/scattering/stochastic_optics.html#ScatteringModel.Scatter2"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.scattering.stochastic_optics.ScatteringModel.Scatter2" title="Permalink to this definition">¶</a></dt>
+<dd><p>Call self.Scatter with expanded args and kwargs.</p>
+</dd></dl>
+
+<dl class="method">
 <dt id="ehtim.scattering.stochastic_optics.ScatteringModel.Scatter_Movie">
-<code class="descname">Scatter_Movie</code><span class="sig-paren">(</span><em>Unscattered_Movie</em>, <em>Epsilon_Screen=array([]</em>, <em>dtype=float64)</em>, <em>obs_frequency_Hz=0.0</em>, <em>Vx_km_per_s=50.0</em>, <em>Vy_km_per_s=0.0</em>, <em>framedur_sec=None</em>, <em>N_frames=None</em>, <em>sqrtQ=None</em>, <em>Linearized_Approximation=False</em>, <em>Force_Positivity=False</em>, <em>Return_Image_List=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/scattering/stochastic_optics.html#ScatteringModel.Scatter_Movie"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.scattering.stochastic_optics.ScatteringModel.Scatter_Movie" title="Permalink to this definition">¶</a></dt>
+<code class="descname">Scatter_Movie</code><span class="sig-paren">(</span><em>Unscattered_Movie</em>, <em>Epsilon_Screen=array([]</em>, <em>dtype=float64)</em>, <em>obs_frequency_Hz=0.0</em>, <em>Vx_km_per_s=50.0</em>, <em>Vy_km_per_s=0.0</em>, <em>framedur_sec=None</em>, <em>N_frames=None</em>, <em>sqrtQ=None</em>, <em>Linearized_Approximation=False</em>, <em>Force_Positivity=False</em>, <em>Return_Image_List=False</em>, <em>processes=0</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/scattering/stochastic_optics.html#ScatteringModel.Scatter_Movie"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.scattering.stochastic_optics.ScatteringModel.Scatter_Movie" title="Permalink to this definition">¶</a></dt>
 <dd><p>Scatter a movie using the specified epsilon screen. The movie can either be a movie object, an image list, or a static image
 If scattering a list of images or static image, the frame duration in seconds (framedur_sec) must be specified
 If scattering a static image, the total number of frames must be specified (N_frames)
@@ -596,6 +602,7 @@ Note: an odd image dimension is required!</p>
 <li><strong>Linearized_Approximation</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.9)"><em>bool</em></a>) – If True, uses a linearized approximation for the scattering (Eq. 10 of Johnson &amp; Narayan 2016). If False, uses Eq. 9 of that paper.</li>
 <li><strong>Force_Positivity</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.9)"><em>bool</em></a>) – If True, eliminates negative flux from the scattered image from the linearized approximation.</li>
 <li><strong>Return_Image_List</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.9)"><em>bool</em></a>) – If True, returns a list of the scattered frames. If False, returns a movie object.</li>
+<li><strong>processes</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.9)"><em>int</em></a>) – Number of cores to use in multiprocessing. Default value (0) means no multiprocessing. Uses all available cores if processes &lt; 0.</li>
 </ul>
 </td>
 </tr>
