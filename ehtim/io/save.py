@@ -401,7 +401,7 @@ def save_obs_txt(obs, fname):
     return
 
 
-def save_obs_uvfits(obs, fname, force_singlepol=None, polrep_out='circ'):
+def save_obs_uvfits(obs, fname=None, force_singlepol=None, polrep_out='circ'):
     """Save observation data to uvfits.
        To save Stokes I as a single polarization (e.g., only RR) set force_singlepol='R' or 'L'
     """
@@ -430,7 +430,7 @@ def save_obs_uvfits(obs, fname, force_singlepol=None, polrep_out='circ'):
     header['OBSDEC'] = obs.dec
     header['OBJECT'] = obs.source
     header['MJD'] = float(obs.mjd)
-    header['DATE-OBS'] = Time(obs.mjd + MJD_0, format='jd', scale='utc', out_subfmt='date').iso
+    header['DATE-OBS'] = Time(obs.mjd + MJD_0, format='jd', scale='utc').iso[0:10]
     header['BSCALE'] = 1.0
     header['BZERO'] = 0.0
     header['BUNIT'] = 'JY'
@@ -472,13 +472,13 @@ def save_obs_uvfits(obs, fname, force_singlepol=None, polrep_out='circ'):
     header['CRPIX7'] = 1.e0
     header['CROTA7'] = 0.e0
     header['PTYPE1'] = 'UU---SIN'
-    header['PSCAL1'] = 1.0/obs.rf
+    header['PSCAL1'] = 1.0
     header['PZERO1'] = 0.e0
     header['PTYPE2'] = 'VV---SIN'
-    header['PSCAL2'] = 1.0/obs.rf
+    header['PSCAL2'] = 1.0
     header['PZERO2'] = 0.e0
     header['PTYPE3'] = 'WW---SIN'
-    header['PSCAL3'] = 1.0/obs.rf
+    header['PSCAL3'] = 1.0
     header['PZERO3'] = 0.e0
     header['PTYPE4'] = 'BASELINE'
     header['PSCAL4'] = 1.e0
@@ -528,8 +528,8 @@ def save_obs_uvfits(obs, fname, force_singlepol=None, polrep_out='circ'):
     tau2 = obsdata['tau2']
 
     # uv are in lightseconds
-    u = obsdata['u']
-    v = obsdata['v']
+    u = obsdata['u']/obs.rf
+    v = obsdata['v']/obs.rf
 
     # rr, ll, lr, rl, weights
 
@@ -815,9 +815,11 @@ def save_obs_uvfits(obs, fname, force_singlepol=None, polrep_out='circ'):
             print("No NX table in saved uvfits")
 
     # Write final HDUList to file
-    hdulist_new.writeto(fname, overwrite=True)
-
-    return
+    if fname is None:
+        return hdulist_new.copy()
+    else:
+        hdulist_new.writeto(fname, overwrite=True)
+        return None
 
 
 def save_obs_oifits(obs, fname, flux=1.0):

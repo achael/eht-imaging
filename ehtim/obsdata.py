@@ -4480,22 +4480,25 @@ class Obsdata(object):
 
         return
 
-    def save_uvfits(self, fname, force_singlepol=False, polrep_out='circ'):
+    def save_uvfits(self, fname=None, force_singlepol=False, polrep_out='circ'):
         """Save visibility data to uvfits file.
-
            Args:
-                fname (str): path to output text file
+                fname (str): path to output text file. If not specified, return HDUList.
                 force_singlepol (str): if 'R' or 'L', will interpret stokes I field as 'RR' or 'LL'
                 polrep_out (str): 'circ' or 'stokes': how data should be stored in the uvfits file
         """
 
         if (force_singlepol is not False) and (self.polrep != 'stokes'):
-            raise Exception("force_singlepol is incompatible with polrep!='stokes'")
+            raise Exception(
+                "force_singlepol is incompatible with polrep!='stokes'")
 
-        ehtim.io.save.save_obs_uvfits(self, fname,
-                                      force_singlepol=force_singlepol, polrep_out=polrep_out)
+        output = ehtim.io.save.save_obs_uvfits(
+            self, fname, force_singlepol=force_singlepol, polrep_out=polrep_out)
 
-        return
+        if fname is None:
+            return output
+        else:
+            return
 
     def save_oifits(self, fname, flux=1.0):
         """ Save visibility data to oifits. Polarization data is NOT saved.
@@ -4611,7 +4614,7 @@ def load_uvfits(fname, flipbl=False, remove_nan=False, force_singlepol=None,
     """Load observation data from a uvfits file.
 
        Args:
-           fname (str): path to input text file
+           fname (str or HDUList): path to input text file or HDUList object
            flipbl (bool): flip baseline phases if True.
            remove_nan (bool): True to remove nans from missing polarizations
            polrep (str): load data as either 'stokes' or 'circ'

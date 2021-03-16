@@ -1072,7 +1072,7 @@ def load_obs_uvfits(filename, polrep='stokes', flipbl=False, allow_singlepol=Tru
                     force_singlepol=None, channel=all, IF=all, remove_nan=False):
     """Load observation data from a uvfits file.
        Args:
-           fname (str): path to input text file
+           fname (str or HDUList): path to input text file or HDUList object
            polrep (str): load data as either 'stokes' or 'circ'
            flipbl (bool): flip baseline phases if True.
            allow_singlepol (bool): If True and polrep='stokes',
@@ -1087,11 +1087,15 @@ def load_obs_uvfits(filename, polrep='stokes', flipbl=False, allow_singlepol=Tru
     if not(polrep in ['stokes', 'circ']):
         raise Exception("polrep should be 'stokes' or 'circ' in load_uvfits")
     if not(force_singlepol is None or force_singlepol is False) and polrep != 'stokes':
-        raise Exception("force_singlepol is incompatible with polrep!='stokes' in load_uvfits")
+        raise Exception(
+            "force_singlepol is incompatible with polrep!='stokes' in load_uvfits")
 
     # Load the uvfits file
-    print("Loading uvfits: ", filename)
-    hdulist = fits.open(filename)
+    if isinstance(filename, fits.HDUList):
+        hdulist = filename.copy()
+    else:
+        print("Loading uvfits: ", filename)
+        hdulist = fits.open(filename)
     header = hdulist[0].header
     data = hdulist[0].data
 
@@ -1291,7 +1295,27 @@ def load_obs_uvfits(filename, polrep='stokes', flipbl=False, allow_singlepol=Tru
         print("Warning: removing flagged data present!")
 
     # Obs Times
-    jds = data['DATE'][mask].astype('d') + data['_DATE'][mask].astype('d')
+    paridx = data.parnames.index("DATE")+1
+    if "PSCAL%d"%(paridx) in header.keys():
+        jd1scal = header["PSCAL%d"%(paridx)]
+    else:
+        jd1scal = 1.0
+    if "PZERO%d"%(paridx) in header.keys():
+        jd1zero = header["PZERO%d"%(paridx)]
+    else:
+        jd1zero = 0.0
+    if "PSCAL%d"%(paridx) in header.keys():
+        jd2scal = header["PSCAL%d"%(paridx+1)]
+    else:
+        jd2scal = 1.0
+    if "PZERO%d"%(paridx+1) in header.keys():
+        jd2zero = header["PZERO%d"%(paridx+1)]
+    else:
+        jd2zero = 0.0
+    
+    jds = jd1scal * data['DATE'][mask].astype('d') + jd1zero
+    jds += jd2scal * data['_DATE'][mask].astype('d') + jd2zero
+
     mjd = int(np.min(jds) - 2400000.5)
     times = (jds - 2400000.5 - mjd) * 24.0
 
