@@ -401,7 +401,7 @@ def save_obs_txt(obs, fname):
     return
 
 
-def save_obs_uvfits(obs, fname, force_singlepol=None, polrep_out='circ'):
+def save_obs_uvfits(obs, fname=None, force_singlepol=None, polrep_out='circ'):
     """Save observation data to uvfits.
        To save Stokes I as a single polarization (e.g., only RR) set force_singlepol='R' or 'L'
     """
@@ -815,9 +815,11 @@ def save_obs_uvfits(obs, fname, force_singlepol=None, polrep_out='circ'):
             print("No NX table in saved uvfits")
 
     # Write final HDUList to file
-    hdulist_new.writeto(fname, overwrite=True)
-
-    return
+    if fname is None:
+        return hdulist_new.copy()
+    else:
+        hdulist_new.writeto(fname, overwrite=True)
+        return None
 
 
 def save_obs_oifits(obs, fname, flux=1.0):
