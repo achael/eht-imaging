@@ -430,7 +430,7 @@ def save_obs_uvfits(obs, fname=None, force_singlepol=None, polrep_out='circ'):
     header['OBSDEC'] = obs.dec
     header['OBJECT'] = obs.source
     header['MJD'] = float(obs.mjd)
-    header['DATE-OBS'] = Time(obs.mjd + MJD_0, format='jd', scale='utc', out_subfmt='date').iso
+    header['DATE-OBS'] = Time(obs.mjd + MJD_0, format='jd', scale='utc').iso[0:10]
     header['BSCALE'] = 1.0
     header['BZERO'] = 0.0
     header['BUNIT'] = 'JY'
