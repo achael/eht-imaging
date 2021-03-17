@@ -680,8 +680,12 @@ def save_obs_uvfits(obs, fname=None, force_singlepol=None, polrep_out='circ'):
     head['ARRAYZ'] = 0.e0
 
     # TODO change the reference date
-    rdate_tt_new = Time(obs.mjd + MJD_0, format='jd', scale='utc', out_subfmt='date')
-    rdate_out = rdate_tt_new.iso
+    #rdate_tt_new = Time(obs.mjd + MJD_0, format='jd', scale='utc', out_subfmt='date')
+    #rdate_out = rdate_tt_new.iso
+    
+    rdate_tt_new = Time(obs.mjd + MJD_0, format='jd', scale='utc')
+    rdate_out = rdate_tt_new.iso[0:10]
+
     rdate_tt_new.out_subfmt = 'float'  # TODO -- needed to fix subformat issue in astropy 4.0
     rdate_jd_out = rdate_tt_new.jd
     rdate_gstiao_out = rdate_tt_new.sidereal_time('apparent', 'greenwich').degree
