@@ -3539,17 +3539,8 @@ class Image(object):
             a = (-np.sin(np.angle(qvec + 1j * uvec) /
                          2).reshape(self.ydim, self.xdim)[::thin, ::thin])
             a = a[mask2]
-            b = (
-                np.cos(
-                    np.angle(
-                        qvec +
-                        1j *
-                        uvec) /
-                    2).reshape(
-                    self.ydim,
-                    self.xdim)[
-                    ::thin,
-                    ::thin])
+            b = (np.cos(np.angle(qvec + 1j * uvec) /
+                        2).reshape(self.ydim, self.xdim)[::thin, ::thin])
             b = b[mask2]
 
             m = (np.abs(qvec + 1j * uvec) / imvec).reshape(self.ydim, self.xdim)
