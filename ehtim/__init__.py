@@ -16,6 +16,7 @@ from builtins import object
 import ehtim.observing
 from ehtim.const_def import *
 from ehtim.imaging.imager_utils import imager_func
+from ehtim.modeling.modeling_utils import modeler_func
 import ehtim.imaging
 from ehtim.features import rex
 import ehtim.features
@@ -40,6 +41,7 @@ import ehtim.obsdata
 import ehtim.array
 import ehtim.movie
 import ehtim.image
+import ehtim.model
 
 
 import warnings
