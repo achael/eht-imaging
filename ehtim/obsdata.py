@@ -959,6 +959,7 @@ class Obsdata(object):
 
         # TODO -- should import this at top, but the circular dependencies create a mess...
         import ehtim.imaging.imager_utils as iu
+        import ehtim.modeling.modeling_utils as mu
 
         # Movie -- weighted sum of all frame chi^2 values
         if hasattr(im_or_mov, 'get_image'):
@@ -990,6 +991,11 @@ class Obsdata(object):
                 num_list.append(len(data))
 
             chisq = np.sum(np.array(num_list) * np.array(chisq_list)) / np.sum(num_list)
+
+        # Model -- single chi^2
+        elif hasattr(im_or_mov,'N_models'):            
+            (data, sigma, uv, jonesdict) = mu.chisqdata(self, dtype, pol, **kwargs)
+            chisq = mu.chisq(im_or_mov, uv, data, sigma, dtype, jonesdict)
 
         # Image -- single chi^2
         else:
