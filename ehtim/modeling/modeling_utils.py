@@ -362,10 +362,10 @@ def selfcal(Obsdata, model,
             try: caldict[site] = np.append(caldict[site], row[site])
             except KeyError: caldict[site] = dat
 
-    caltable = ehtim.caltable.Caltable(obs.ra, obs.dec, obs.rf, obs.bw, caldict, obs.tarr,
+    ct = caltable.Caltable(obs.ra, obs.dec, obs.rf, obs.bw, caldict, obs.tarr,
                                        source=obs.source, mjd=obs.mjd, timetype=obs.timetype)
 
-    return caltable
+    return ct
 
 def make_param_map(model_init, model_prior, minimizer_func, fit_model, fit_pol=False, fit_cpol=False):
     # Define the mapping between solved parameters and the model
@@ -1622,9 +1622,9 @@ def modeler_func(Obsdata, model_init, model_prior,
         for site in caldict.keys():
             caldict[site] = np.array(caldict[site], dtype=DTCAL)
 
-        caltable = ehtim.caltable.Caltable(Obsdata.ra, Obsdata.dec, Obsdata.rf, Obsdata.bw, caldict, Obsdata.tarr,
+        ct = caltable.Caltable(Obsdata.ra, Obsdata.dec, Obsdata.rf, Obsdata.bw, caldict, Obsdata.tarr,
                                            source=Obsdata.source, mjd=Obsdata.mjd, timetype=Obsdata.timetype)
-        ret['caltable'] = caltable 
+        ret['caltable'] = ct 
 
     # If relevant, return useful quantities associated with the leakage
     if station_leakages is not None:
