@@ -411,6 +411,14 @@ def compute_likelihood_constants(d1, d2, d3, sigma1, sigma2, sigma3):
         ln_norm3 = -np.sum(np.log((2.0*np.pi)**0.5 * sigma3))
     except: pass
 
+    # Use the correct von Mises normalization if using closure phase
+    if d1 in ['cphase','cphase_diag']:
+        ln_norm1 = -np.sum(np.log(2.0*np.pi*sps.ive(0, 1.0/sigma1**2)))
+    if d2 in ['cphase','cphase_diag']:
+        ln_norm2 = -np.sum(np.log(2.0*np.pi*sps.ive(0, 1.0/sigma2**2)))
+    if d3 in ['cphase','cphase_diag']:
+        ln_norm2 = -np.sum(np.log(2.0*np.pi*sps.ive(0, 1.0/sigma3**2)))
+
     if d1 in ['vis','bs','m','pvis','rrll','llrr','lrll','rlll','lrrr','rlrr','polclosure']:
         alpha_d1 *= 2
         ln_norm1 *= 2
