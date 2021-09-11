@@ -411,13 +411,14 @@ def compute_likelihood_constants(d1, d2, d3, sigma1, sigma2, sigma3):
         ln_norm3 = -np.sum(np.log((2.0*np.pi)**0.5 * sigma3))
     except: pass
 
+    # If using closure phase, the sigma is given in degrees, not radians!
     # Use the correct von Mises normalization if using closure phase
     if d1 in ['cphase','cphase_diag']:
-        ln_norm1 = -np.sum(np.log(2.0*np.pi*sps.ive(0, 1.0/sigma1**2)))
+        ln_norm1 = -np.sum(np.log(2.0*np.pi*sps.ive(0, 1.0/(sigma1 * DEGREE)**2)))
     if d2 in ['cphase','cphase_diag']:
-        ln_norm2 = -np.sum(np.log(2.0*np.pi*sps.ive(0, 1.0/sigma2**2)))
+        ln_norm2 = -np.sum(np.log(2.0*np.pi*sps.ive(0, 1.0/(sigma2 * DEGREE)**2)))
     if d3 in ['cphase','cphase_diag']:
-        ln_norm2 = -np.sum(np.log(2.0*np.pi*sps.ive(0, 1.0/sigma3**2)))
+        ln_norm3 = -np.sum(np.log(2.0*np.pi*sps.ive(0, 1.0/(sigma3 * DEGREE)**2)))
 
     if d1 in ['vis','bs','m','pvis','rrll','llrr','lrll','rlll','lrrr','rlrr','polclosure']:
         alpha_d1 *= 2
@@ -873,6 +874,7 @@ def modeler_func(Obsdata, model_init, model_prior,
                    fit_model=True, fit_pol=False, fit_cpol=False, 
                    fit_gains=False,marginalize_gains=False,gain_init=None,gain_prior=None,
                    fit_leakage=False, leakage_init=None, leakage_prior=None,
+                   fit_noise_model=False,
                    minimizer_func='scipy.optimize.minimize',
                    minimizer_kwargs=None,
                    bounds=None, use_bounds=False,
