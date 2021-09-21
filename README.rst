@@ -111,3 +111,11 @@ Let us know if you use ehtim in your publication and we'll list it here!
 
 - Event Horizon Telescope observations of the jet launching and collimation in Centaurus A, `Janssen et al. 2021 <https://www.nature.com/articles/s41550-021-01417-w.pdf>`_
 
+----------------
+The oifits_new code used for reading/writing .oifits files is a slightly modified version of Paul Boley's package at `<http://astro.ins.urfu.ru/pages/~pboley/oifits>`_. The oifits read/write functionality is still being developed and may not work with all versions of python or astropy.
+
+The documentation is styled after `dfm's projects <https://github.com/dfm>`_ 
+
+License
+-------
+ehtim is licensed under GPLv3. See LICENSE.txt for more details.
