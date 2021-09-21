@@ -111,6 +111,7 @@ Let us know if you use ehtim in your publication and we'll list it here!
 
 - Event Horizon Telescope observations of the jet launching and collimation in Centaurus A, `Janssen et al. 2021 <https://www.nature.com/articles/s41550-021-01417-w.pdf>`_
 
+Documentation
 ----------------
 
 The documentation is styled after `dfm's projects <https://github.com/dfm>`_ 
