@@ -85,10 +85,20 @@ Let us know if you use ehtim in your publication and we'll list it here!
 
 - Discriminating Accretion States via Rotational Symmetry in Simulated Polarimetric Images of M87, `Palumbo et al. 2020 <https://arxiv.org/pdf/2004.01751.pdf>`_
 
-- SYMBA: An end-to-end VLBI synthetic data generation pipeline. Simulating Event Horizon Telescope observations of M87, `Roelofs et al. 2020 <https://arxiv.org/pdf/2004.01161.pdf>`_
+- SYMBA: An end-to-end VLBI synthetic data generation pipeline, `Roelofs et al. 2020 <https://arxiv.org/pdf/2004.01161.pdf>`_
 
 - Monitoring the Morphology of M87* in 2009-2017 with the Event Horizon Telescope, `Wielgus et al. 2020 <https://arxiv.org/pdf/2009.11842>`_
 
 - EHT imaging of the archetypal blazar 3C 279 at extreme 20 microarcsecond resolution, `Kim et al. 2020 <https://www.aanda.org/articles/aa/pdf/2020/08/aa37493-20.pdf>`_
 
 - Verification of Radiative Transfer Schemes for the EHT, `Gold et al. 2020 <https://iopscience.iop.org/article/10.3847/1538-4357/ab96c6/pdf>`_
+
+- Closure Traces: Novel Calibration-insensitive Quantities for Radio Astronomy, `Broderick and Pesce. 2020 <https://iopscience.iop.org/article/10.3847/1538-4357/abbd9d/pdf>`_
+
+- Evaluation of New Submillimeter VLBI Sites for the Event Horizon Telescope, `Raymond et al. 2021 <https://iopscience.iop.org/article/10.3847/1538-3881/abc3c3/pdf>`_
+
+- Imaging VGOS Observations and Investigating Source Structure Effects, `Xu et al. 2021 <https://agupubs.onlinelibrary.wiley.com/doi/10.1029/2020JB021238>`_
+
+- A D-term Modeling Code (DMC) for Simultaneous Calibration and Full-Stokes Imaging of VLBI Data, `Pesce et al. 2021 <https://iopscience.iop.org/article/10.3847/1538-3881/abe3f8/pdf>`_
+
+
