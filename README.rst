@@ -48,3 +48,6 @@ Some publications that use ehtim
 If you use ehtim in your publication, please cite `Chael+ 2018 <http://adsabs.harvard.edu/abs/2018ApJ...857...23C>`_
 
 Let us know if you use ehtim in your publication and we'll list it here!
+
+- High-Resolution Linear Polarimetric Imaging for the Event Horizon Telescope, `Chael et al. 2016 <https://arxiv.org/abs/1605.06156>`_ 
+
