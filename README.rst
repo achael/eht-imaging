@@ -67,7 +67,7 @@ Let us know if you use ehtim in your publication and we'll list it here!
 
 - The Scattering and Intrinsic Structure of Sagittarius A* at Radio Wavelengths, `Johnson et al. 2018 <https://arxiv.org/abs/18008.08966>`_
 
-- Testing General Relativity with the Black Hole Shadow Size and Asymmetry of Sagittarius A*: Limitations from Interstellar Scattering, `Zhu et al. 2018 <https://arxiv.org/abs/1811.02079>`_
+- Testing GR with the Black Hole Shadow Size and Asymmetry of Sagittarius A*: Limitations from Interstellar Scattering, `Zhu et al. 2018 <https://arxiv.org/abs/1811.02079>`_
 
 - The Size, Shape, and Scattering of Sagittarius A* at 86 GHz: First VLBI with ALMA, `Issaoun et al. 2019a <https://arxiv.org/abs/1901.06226>`_
 
@@ -80,3 +80,5 @@ Let us know if you use ehtim in your publication and we'll list it here!
 - EHT-HOPS Pipeline for Millimeter VLBI Data Reduction, `Blackburn et al. 2019 <https://arxiv.org/pdf/1903.08832>`_
 
 - Multi-wavelength torus-jet model for Sagittarius A*, `Vincent et al. 2019 <https://arxiv.org/pdf/1902.01175>`_
+
+- How to tell an accreting boson star from a black hole, `Olivares et al. 2020 <https://arxiv.org/abs/1809.08682>`_
