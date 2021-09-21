@@ -71,7 +71,7 @@ Let us know if you use ehtim in your publication and we'll list it here!
 
 - The Size, Shape, and Scattering of Sagittarius A* at 86 GHz: First VLBI with ALMA, `Issaoun et al. 2019a <https://arxiv.org/abs/1901.06226>`_
 
-- First M87 Event Horizon Telescope Results IV: Imaging the Central Supermassive Black Hole, `The Event Horizon Telescope Collaboration 2019 <https://arxiv.org/abs/1906.11241>`_
+- First M87 Event Horizon Telescope Results IV: Imaging the Central Supermassive Black Hole, `EHTC+ 2019 <https://arxiv.org/abs/1906.11241>`_
 
 - VLBI Imaging of black holes via second moment regularization, `Issaoun et al. 2019b <https://arxiv.org/pdf/1908.01296.pdf>`_
 
@@ -82,3 +82,13 @@ Let us know if you use ehtim in your publication and we'll list it here!
 - Multi-wavelength torus-jet model for Sagittarius A*, `Vincent et al. 2019 <https://arxiv.org/pdf/1902.01175>`_
 
 - How to tell an accreting boson star from a black hole, `Olivares et al. 2020 <https://arxiv.org/abs/1809.08682>`_
+
+- Discriminating Accretion States via Rotational Symmetry in Simulated Polarimetric Images of M87, `Palumbo et al. 2020 <https://arxiv.org/pdf/2004.01751.pdf>`_
+
+- SYMBA: An end-to-end VLBI synthetic data generation pipeline. Simulating Event Horizon Telescope observations of M87, `Roelofs et al. 2020 <https://arxiv.org/pdf/2004.01161.pdf>`_
+
+- Monitoring the Morphology of M87* in 2009-2017 with the Event Horizon Telescope, `Wielgus et al. 2020 <https://arxiv.org/pdf/2009.11842>`_
+
+- EHT imaging of the archetypal blazar 3C 279 at extreme 20 microarcsecond resolution, `Kim et al. 2020 <https://www.aanda.org/articles/aa/pdf/2020/08/aa37493-20.pdf>`_
+
+- Verification of Radiative Transfer Schemes for the EHT, `Gold et al. 2020 <https://iopscience.iop.org/article/10.3847/1538-4357/ab96c6/pdf>`_
