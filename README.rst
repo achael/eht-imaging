@@ -108,3 +108,6 @@ Let us know if you use ehtim in your publication and we'll list it here!
 - Persistent Non-Gaussian Structure in the Image of Sagittarius A* at 86 GHz, `Issaoun et al. 2021 <https://iopscience.iop.org/article/10.3847/1538-4357/ac00b0/pdf>`_
 
 - First M87 Event Horizon Telescope Results. VII. Polarization of the Ring, `EHTC et al. 2021 <https://iopscience.iop.org/article/10.3847/2041-8213/abe71d/pdf>`_
+
+- Event Horizon Telescope observations of the jet launching and collimation in Centaurus A, `Janssen et al. 2021 <https://www.nature.com/articles/s41550-021-01417-w.pdf>`_
+
