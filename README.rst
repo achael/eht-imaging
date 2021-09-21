@@ -92,24 +92,6 @@ Let us know if you use ehtim in your publication and we'll list it here!
 
 - EHT imaging of the archetypal blazar 3C 279 at extreme 20 microarcsecond resolution, `Kim et al. 2020 <https://www.aanda.org/articles/aa/pdf/2020/08/aa37493-20.pdf>`_
 
-- Verification of Radiative Transfer Schemes for the EHT, `Gold et al. 2020 <https://iopscience.iop.org/article/10.3847/1538-4357/ab96c6/pdf>`_
-
-- Closure Traces: Novel Calibration-insensitive Quantities for Radio Astronomy, `Broderick and Pesce. 2020 <https://iopscience.iop.org/article/10.3847/1538-4357/abbd9d/pdf>`_
-
-- Evaluation of New Submillimeter VLBI Sites for the Event Horizon Telescope, `Raymond et al. 2021 <https://iopscience.iop.org/article/10.3847/1538-3881/abc3c3/pdf>`_
-
-- Imaging VGOS Observations and Investigating Source Structure Effects, `Xu et al. 2021 <https://agupubs.onlinelibrary.wiley.com/doi/10.1029/2020JB021238>`_
-
-- A D-term Modeling Code (DMC) for Simultaneous Calibration and Full-Stokes Imaging of VLBI Data, `Pesce et al. 2021 <https://iopscience.iop.org/article/10.3847/1538-3881/abe3f8/pdf>`_
-
-- Using space-VLBI to probe gravity around Sgr A*, `Fromm et al. 2021 <https://www.aanda.org/articles/aa/pdf/2021/05/aa37335-19.pdf>`_
-
-- Persistent Non-Gaussian Structure in the Image of Sagittarius A* at 86 GHz `Issaoun et al. 2021 <https://iopscience.iop.org/article/10.3847/1538-4357/ac00b0/pdf>`_
-
-- First M87 Event Horizon Telescope Results. VII. Polarization of the Ring, `EHTC et al. 2021 <https://iopscience.iop.org/article/10.3847/2041-8213/abe71d/pdf>`_
-
-- Event Horizon Telescope observations of the jet launching and collimation in Centaurus A, `Janssen et al. 2021 <https://www.nature.com/articles/s41550-021-01417-w.pdf>`_
-
 ----------------
 The oifits_new code used for reading/writing .oifits files is a slightly modified version of Paul Boley's package at `<http://astro.ins.urfu.ru/pages/~pboley/oifits>`_. The oifits read/write functionality is still being developed and may not work with all versions of python or astropy.
 
