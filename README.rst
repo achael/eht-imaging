@@ -102,11 +102,3 @@ Let us know if you use ehtim in your publication and we'll list it here!
 - A D-term Modeling Code (DMC) for Simultaneous Calibration and Full-Stokes Imaging of VLBI Data, `Pesce et al. 2021 <https://iopscience.iop.org/article/10.3847/1538-3881/abe3f8/pdf>`_
 
 - Polarization Images of Accretion Flows around Supermassive BLack Holes: Imprints of Toroidal Field Structure, `Tsunetoe et al. 2021 <https://watermark.silverchair.com/psab054.pdf?token=AQECAHi208BE49Ooan9kkhW_Ercy7Dm3ZL_9Cf3qfKAc485ysgAAAsUwggLBBgkqhkiG9w0BBwagggKyMIICrgIBADCCAqcGCSqGSIb3DQEHATAeBglghkgBZQMEAS4wEQQMdrsOAaUsDGsDHa2cAgEQgIICeMLAC3MR9Ld7lYRP4iEip8FSTz3TTR4K_yaxhw9kPthLhZLq4Zxs8_b7EyY8BywyYn6jUVlNM1czBskta4icw9YOQf2WX-2SkBGlQo7EdpZmHStribHPOF3ZtF4YA1dWNfzrXMFSR-ZZZW9iAfUFhKhgsyc0AY1O0rJLIAvlYPBE8SEAFUpV4Ck2nV-j-u_lyqe3CZcNO_tNB4fdE1x1HwhVWb_rxyC6n13hJhCJI7U3UJ5Q2u6dNH2BS4SUzet3JZ9RvIr9GkkSRRfdp0EDwNw6aG9TpAf8B-Fu7oW_NI7w_Jvh8kZBGzhnHisZ8acBRoMwbdHMv3cHqEUY5SKcYXVYART-z0QY_MJgxCoa4KDPG6rHl52Vf-eXJaYCmL4Y7xVas_hyPeUNk9TbhPqz4c8kOceb_BTo5oC5AFnwIIKw8kWmvwL7ofkcYmsrTlo0zWtgJ1I6lU7S1wxgD2JzRDg4gtVFdIcapB8q6ZhWWcBEvmwZ9Ad39UbH-hi4VZC8-IvzbvHNqfaifGsw1yvI86uNSu-iMY5ce0vAcZijbkVpAsbkvKGD6wP_T6OczWzayk13gegLvV2wZImleSWNFKO6cOpQSTKy2TbChWuYITc_tW3wUK-QOhjsdoB4V7SvXk_9d-bvjvBflRqDEUN5P8Yj4hpDpJYty4nxGJ4K6IWkyDRt_EZ2k9SOuwgXRZXxWA4tfJvKzvab8sRFqh98EcFNqDyAs_RZt1IVDch9GVl8X1VEbdD7MSzmw04kB-5U0l8HfmgBZyXs_i2hHUKesh1oUShTLUGcx86HApZXjtA4tSJct5CD8fvk_Vim2i5xx1_xGnBt3k7Z>`_
-
-- Using space-VLBI to probe gravity around Sgr A*, `Fromm et al. 2021 <https://www.aanda.org/articles/aa/pdf/2021/05/aa37335-19.pdf>`_
-
-- Persistent Non-Gaussian Structure in the Image of Sagittarius A* at 86 GHz `Issaoun et al. 2021 <https://iopscience.iop.org/article/10.3847/1538-4357/ac00b0/pdf>`_
-
-- First M87 Event Horizon Telescope Results. VII. Polarization of the Ring, `EHTC et al. 2021 <https://iopscience.iop.org/article/10.3847/2041-8213/abe71d/pdf>`_
-
-- Event Horizon Telescope observations of the jet launching and collimation in Centaurus A, `Janssen et al. 2021 <https://www.nature.com/articles/s41550-021-01417-w.pdf>`_
