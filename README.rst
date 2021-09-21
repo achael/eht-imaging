@@ -71,7 +71,7 @@ Let us know if you use ehtim in your publication and we'll list it here!
 
 - The Size, Shape, and Scattering of Sagittarius A* at 86 GHz: First VLBI with ALMA, `Issaoun et al. 2019a <https://arxiv.org/abs/1901.06226>`_
 
-- First M87 Event Horizon Telescope Results IV: Imaging the Central Supermassive Black Hole, `EHTC+ 2019 <https://arxiv.org/abs/1906.11241>`_
+- First M87 Event Horizon Telescope Results IV: Imaging the Central Supermassive Black Hole, `EHTC et al. 2019 <https://arxiv.org/abs/1906.11241>`_
 
 - VLBI Imaging of black holes via second moment regularization, `Issaoun et al. 2019b <https://arxiv.org/pdf/1908.01296.pdf>`_
 
@@ -105,4 +105,6 @@ Let us know if you use ehtim in your publication and we'll list it here!
 
 - Using space-VLBI to probe gravity around Sgr A*, `Fromm et al. 2021 <https://www.aanda.org/articles/aa/pdf/2021/05/aa37335-19.pdf>`_
 
-- Persistent Non-Gaussian Structure in the Image of Sagittarius A* at 86 GHz `Issaoun et al. 2021 <https://iopscience.iop.org/article/10.3847/1538-4357/ac00b0/pdf>`_
+- Persistent Non-Gaussian Structure in the Image of Sagittarius A* at 86 GHz, `Issaoun et al. 2021 <https://iopscience.iop.org/article/10.3847/1538-4357/ac00b0/pdf>`_
+
+- First M87 Event Horizon Telescope Results. VII. Polarization of the Ring, `EHTC et al. 2021 <https://iopscience.iop.org/article/10.3847/2041-8213/abe71d/pdf>`_
