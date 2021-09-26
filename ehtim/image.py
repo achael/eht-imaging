@@ -2879,7 +2879,6 @@ class Image(object):
         meanval = np.mean(im.imvec)
 
         im_norm = im.imvec / (maxval + .01 * meanval)
-        im_norm = im_norm
         im_norm = im_norm.astype('float')  # is it a problem if it's double??
         im_norm[np.isnan(im.imvec)] = 0  # mask nans to 0
         im.imvec = im_norm

@@ -134,8 +134,6 @@ def imgsum(im_or_mov, obs, obs_uncal, outname, outdir='.', title='imgsum', comme
         # user comments
         if len(commentstr) > 1:
             titlestr = titlestr+'\n'+str(commentstr)
-        else:
-            titlestr = titlestr
 
         plt.suptitle(titlestr, y=.9, va='center', fontsize=int(1.2*fontsize))
 
@@ -871,8 +869,6 @@ def imgsum_pol(im, obs, obs_uncal, outname,
         # user comments
         if len(commentstr) > 1:
             titlestr = titlestr+'\n'+str(commentstr)
-        else:
-            titlestr = titlestr
 
         plt.suptitle(titlestr, y=.9, va='center', fontsize=int(1.2*fontsize))
 
