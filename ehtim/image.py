@@ -2308,6 +2308,7 @@ class Image(object):
                      taup=ehc.GAINPDEF,
                      gain_offset=ehc.GAINPDEF, gainp=ehc.GAINPDEF,
                      dterm_offset=ehc.DTERMPDEF,
+                     rlratio_std=0., rlphase_std=0.,
                      caltable_path=None, seed=False, sigmat=None, verbose=True):
         """Observe the image on the same baselines as an existing observation object and add noise.
 
@@ -2334,11 +2335,19 @@ class Image(object):
                neggains (bool): if True, force the applied gains to be <1
 
                taup (float): the fractional std. dev. of the random error on the opacities
-               gain_offset (float): the base gain offset at all sites,
-                                    or a dict giving one offset per site
                gainp (float): the fractional std. dev. of the random error on the gains
-               dterm_offset (float): the base dterm offset at all sites,
-                                     or a dict giving one dterm offset per site
+                              or a dict giving one std. dev. per site      
+
+               gain_offset (float): the base gain offset at all sites,
+                                    or a dict giving one gain offset per site
+               dterm_offset (float): the base std. dev. of random additive error at all sites,
+                                    or a dict giving one std. dev. per site
+
+               rlratio_std (float): the fractional std. dev. of the R/L gain offset
+                                    or a dict giving one std. dev. per site                                          
+               rlphase_std (float): std. dev. of R/L phase offset, 
+                                    or a dict giving one std. dev. per site
+                                    a negative value samples from uniform                                          
 
                caltable_path (string): If not None, path and prefix for saving the applied caltable
                seed (int): seeds the random component of the noise terms. DO NOT set to 0!
@@ -2368,6 +2377,7 @@ class Image(object):
                                                  taup=taup,
                                                  gain_offset=gain_offset, gainp=gainp,
                                                  dterm_offset=dterm_offset,
+                                                 rlratio_std=rlratio_std, rlphase_std=rlphase_std,
                                                  caltable_path=caltable_path, seed=seed,
                                                  sigmat=sigmat, verbose=verbose)
 
@@ -2426,6 +2436,7 @@ class Image(object):
                 tau=ehc.TAUDEF, taup=ehc.GAINPDEF,
                 gain_offset=ehc.GAINPDEF, gainp=ehc.GAINPDEF, 
                 dterm_offset=ehc.DTERMPDEF, 
+                rlratio_std=0.,rlphase_std=0.,
                 caltable_path=None, seed=False, sigmat=None, verbose=True):
         """Generate baselines from an array object and observe the image.
 
@@ -2467,11 +2478,20 @@ class Image(object):
                tau (float): the base opacity at all sites,
                             or a dict giving one opacity per site
                taup (float): the fractional std. dev. of the random error on the opacities
+               gainp (float): the fractional std. dev. of the random error on the gains
+                              or a dict giving one std. dev. per site      
+
                gain_offset (float): the base gain offset at all sites,
                                     or a dict giving one gain offset per site
-               gainp (float): the fractional std. dev. of the random error on the gains
-               dterm_offset (float): the base dterm offset at all sites,
-                                     or a dict giving one dterm offset per site
+               dterm_offset (float): the base std. dev. of random additive error at all sites,
+                                    or a dict giving one std. dev. per site
+
+               rlratio_std (float): the fractional std. dev. of the R/L gain offset
+                                    or a dict giving one std. dev. per site                                          
+               rlphase_std (float): std. dev. of R/L phase offset, 
+                                    or a dict giving one std. dev. per site
+                                    a negative value samples from uniform                                          
+
 
                caltable_path (string): If not None, path and prefix for saving the applied caltable
                seed (int): seeds the random component of the noise terms. DO NOT set to 0!
@@ -2508,6 +2528,7 @@ class Image(object):
                                 taup=taup,
                                 gain_offset=gain_offset, gainp=gainp, 
                                 dterm_offset=dterm_offset,
+                                rlratio_std=rlratio_std,rlphase_std=rlphase_std,
                                 caltable_path=caltable_path, seed=seed, sigmat=sigmat,
                                 verbose=verbose)
 
@@ -2527,6 +2548,7 @@ class Image(object):
                     tau=ehc.TAUDEF, taup=ehc.GAINPDEF,
                     gain_offset=ehc.GAINPDEF, gainp=ehc.GAINPDEF, 
                     dterm_offset=ehc.DTERMPDEF,
+                    rlratio_std=0.,rlphase_std=0.,
                     caltable_path=None, seed=False, sigmat=None, verbose=True):
         """Generate baselines from a vex file and observes the image.
 
@@ -2562,11 +2584,20 @@ class Image(object):
                tau (float): the base opacity at all sites,
                             or a dict giving one opacity per site
                taup (float): the fractional std. dev. of the random error on the opacities
+               gainp (float): the fractional std. dev. of the random error on the gains
+                              or a dict giving one std. dev. per site      
+
                gain_offset (float): the base gain offset at all sites,
                                     or a dict giving one gain offset per site
-               gainp (float): the fractional std. dev. of the random error on the gains
-               dterm_offset (float): the base dterm offset at all sites,
-                                     or a dict giving one dterm offset per site
+               dterm_offset (float): the base std. dev. of random additive error at all sites,
+                                    or a dict giving one std. dev. per site
+
+               rlratio_std (float): the fractional std. dev. of the R/L gain offset
+                                    or a dict giving one std. dev. per site                                          
+               rlphase_std (float): std. dev. of R/L phase offset, 
+                                    or a dict giving one std. dev. per site
+                                    a negative value samples from uniform                                          
+
 
                caltable_path (string): If not None, path and prefix for saving the applied caltable
                seed (int): seeds the random component of the noise terms. DO NOT set to 0!
@@ -2627,6 +2658,7 @@ class Image(object):
                                tau=tau, taup=taup,
                                gain_offset=gain_offset, gainp=gainp,
                                dterm_offset=dterm_offset,
+                               rlratio_std=rlratio_std,rlphase_std=rlphase_std,
                                caltable_path=caltable_path, seed=seed,sigmat=sigmat,
                                verbose=verbose)
 
