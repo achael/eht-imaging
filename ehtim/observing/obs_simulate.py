@@ -637,15 +637,17 @@ def make_jones(obs, opacitycal=True, ampcal=True, phasecal=True, dcal=True,
         if not phasecal:
             phaseL = np.fromiter((2 * np.pi * obsh.hashrand(site, 'phase', time, seed)
                                  for time in times_stable_phase), float)
-                                 
+            
+
             if rlgaincal:
-                phase_RLdiff = 0.                 
+                phaseRLdiff = 0.                 
             else:
                 # Gaussian distributed phase difference
                 if phasediff_mult >=0: 
-                    phase_RLdiff = np.fromiter((phasediff_mult * obsh.hashrandn(site, 'phasediff', str(time),
-                                                                                str(phasediff_mult), seed)                
-                                               for time in times_stable_phase), float))
+
+                    phaseRLdiff = np.fromiter((phasediff_mult * obsh.hashrandn(site, 'phasediff', str(time),
+                                                                                str(phasediff_mult), seed)               
+                                               for time in times_stable_phase), float)
                                                    
                 # flat distribution phase difference
                 else:                        
