@@ -1126,7 +1126,7 @@ def add_noise(obs, add_th_noise=True, opacitycal=True, ampcal=True, phasecal=Tru
               stabilize_scan_amp=False, stabilize_scan_phase=False,
               neggains=False,
               taup=ehc.GAINPDEF, gain_offset=ehc.GAINPDEF, gainp=ehc.GAINPDEF, 
-              caltable_path=None, seed=False, sigmat=None, verbose=True):
+              caltable_path=None, seed=False, sigmat=None, rlsigmat=None, verbose=True):
     """Add thermal noise and gain & phase calibration errors to a dataset.
        Old routine replaced by add_jones_and_noise.
 
@@ -1145,10 +1145,12 @@ def add_noise(obs, add_th_noise=True, opacitycal=True, ampcal=True, phasecal=Tru
            gainp (float): the fractional std. dev. of the random error on the gains
 
            caltable_path (string): If not None, path and prefix for saving the applied caltable
-                                   NOT supported currently for add_noise.
+                                   NOT SUPPORTED for add_noise.
            seed (int): seeds the random component of the noise terms. DO NOT set to 0!
-           sigmat (float): temporal std for a Gaussian Process used to generate gain noise.
-                           NOT supported currently for add_noise.
+           sigmat (float): temporal std for a Gaussian Process used to generate gains.
+                           NOT SUPPORTED for add_noise
+           rlsigmat (float): temporal std deviation for a Gaussian Process used to generate R/L gain ratios.
+                           NOT SUPPORTED for add_noise
            verbose (bool): print updates and warnings
        Returns:
            (np.array): an observation data array
