@@ -381,7 +381,8 @@ def make_jones(obs, opacitycal=True, ampcal=True, phasecal=True, dcal=True,
                taup=ehc.GAINPDEF, gainp=ehc.GAINPDEF,
                gain_offset=ehc.GAINPDEF, dterm_offset=ehc.DTERMPDEF,
                rlratio_std=0., rlphase_std=0.,
-               caltable_path=None, seed=False, sigmat=None):
+               caltable_path=None, seed=False, 
+               sigmat=None,rlsigmat=None):
     """Computes Jones Matrices for a list of times (non repeating), with gain and dterm errors.
 
        Args:
@@ -413,9 +414,10 @@ def make_jones(obs, opacitycal=True, ampcal=True, phasecal=True, dcal=True,
                                                                     
            caltable_path (string): If not None, path and prefix for saving the applied caltable
            seed : a seed for the random number generators, uses system time if false
-           sigmat (float): temporal std for a Gaussian Process used to generate gain noise.
+           sigmat (float): temporal std for a Gaussian Process used to generate gains.
                            If sigmat=None then an iid gain noise is applied.
-
+           rlsigmat (float): temporal std deviation for a Gaussian Process used to generate R/L gain ratios.
+                           If rlsigmat=None then an iid gain noise is applied.
        Returns:
            (dict): a nested dictionary of matrices indexed by the site, then by the time
     """
@@ -548,7 +550,7 @@ def make_jones(obs, opacitycal=True, ampcal=True, phasecal=True, dcal=True,
 #                gainR_constant = -np.abs(gainR_constant)
                 gainL_constant = -np.abs(gainL_constant)
 
-            # Total gain (iid sampling)
+            # Left circular gain gain (iid sampling)
             if sigmat is None:
 #                gainR = np.sqrt(np.abs(np.fromiter((
 #                    (1.0 + gainR_constant) *
@@ -556,32 +558,19 @@ def make_jones(obs, opacitycal=True, ampcal=True, phasecal=True, dcal=True,
 #                    for time in times_stable_amp
 #                ), float)))
 
-                # Left circular gain
                 gainL = np.sqrt(np.abs(np.fromiter((
                   (1.0 + gainL_constant) *
                   (1.0 + gain_mult * obsh.hashrandn(site, 'gain', str(time), str(gain_mult), seed))
                   for time in times_stable_amp
                 ), float)))
 
-
-                # R/L gain offset
-                if rlgaincal:
-                    gain_RLratio = 1.
-                else:
-                    gain_RLratio = np.abs(np.fromiter((
-                      (1.0 + gainratio_mult * obsh.hashrandn(site, 'gainratio', str(time), 
-                                                             str(gainratio_mult), seed))                
-                      for time in times_stable_amp), float))                
-
-                # Right circular gain                
-                gainR = gain_RLratio * gainL
                 
                 # TODO -- will this mess up gain offset priors? 
-                if neggains:
-                    gainR = np.exp(-np.abs(np.log(gainR)))
-                    gainL = np.exp(-np.abs(np.log(gainL)))
+#                if neggains:
+#                    gainR = np.exp(-np.abs(np.log(gainR)))
+#                    gainL = np.exp(-np.abs(np.log(gainL)))
 
-            # Total gain (correlated sampling)
+            # Left circular gain (correlated sampling)
             else:
                 scan_start_times = scans[:, 0]
                 cov = obsh.rbf_kernel_covariance(scan_start_times, sigmat)
@@ -598,30 +587,41 @@ def make_jones(obs, opacitycal=True, ampcal=True, phasecal=True, dcal=True,
                                                     'gain', str(time), str(gain_mult), seed)
                 gainL = np.sqrt(np.abs((1.0 + gainL_constant) * (1.0 + gain_mult * randLx)))
 
-                # R/L gain offset
-                if rlgaincal:
-                    gain_RLratio = 1.
-                else:
-                    randRLx = obsh.hashmultivariaterandn(len(scan_start_times), cov, site,
-                                                         'gainratio', str(time), str(gainratio_mult), 
-                                                         seed) 
-                    gain_RLratio = np.abs(1.0 + gainratio_mult * randRLx)            
 
-    
-                # Right circular gain
-                gainR = gain_RLratio * gainL
-
-                # TODO -- will this mess up gain offset priors?                                
-                if neggains:
-                    gainR = np.exp(-np.abs(np.log(gainR)))
-                    gainL = np.exp(-np.abs(np.log(gainL)))
-
-                gainR_interpolateor = interp1d(scan_start_times, gainR, kind='zero')
-                gainR = gainR_interpolateor(times_stable_amp)
+#                gainR_interpolateor = interp1d(scan_start_times, gainR, kind='zero')
+#                gainR = gainR_interpolateor(times_stable_amp)
 
                 gainL_interpolateor = interp1d(scan_start_times, gainL, kind='zero')
                 gainL = gainL_interpolateor(times_stable_amp)
 
+            # R/L gain offset (if present)
+            if rlgaincal:
+                gain_RLratio = 1.
+            else:
+                if rlsigmat is None: #iid sampling
+                
+                    gain_RLratio = np.abs(np.fromiter((
+                      (1.0 + gainratio_mult * obsh.hashrandn(site, 'gainratio', str(time), 
+                                                             str(gainratio_mult), seed))                
+                      for time in times_stable_amp), float))                
+                else: #correlated sampling
+                    scan_start_times = scans[:, 0]
+                    cov = obsh.rbf_kernel_covariance(scan_start_times, rlsigmat)
+                    randRLx = obsh.hashmultivariaterandn(len(scan_start_times), cov, site,
+                                                         'gainratio', str(time), str(gainratio_mult), 
+                                                         seed) 
+                    gain_RLratio = np.abs(1.0 + gainratio_mult * randRLx)    
+                    gainRLratio_interpolateor = interp1d(scan_start_times, gain_RLratio, kind='zero')
+                    gain_RLratio = gainRLratio_interpolateor(times_stable_amp)   
+                                                                            
+            # Right circular gain                
+            gainR = gain_RLratio * gainL
+                
+            # TODO -- will this mess up gain offset priors? 
+            if neggains:
+                gainR = np.exp(-np.abs(np.log(gainR)))
+                gainL = np.exp(-np.abs(np.log(gainL)))
+                    
         # Opacity attenuation of amplitude gain
         if not opacitycal:
             taus = np.abs(np.fromiter((
@@ -847,7 +847,7 @@ def add_jones_and_noise(obs, add_th_noise=True,
                         taup=ehc.GAINPDEF, gainp=ehc.GAINPDEF,
                         gain_offset=ehc.GAINPDEF, dterm_offset=ehc.DTERMPDEF,
                         rlratio_std=0., rlphase_std=0.,
-                        caltable_path=None, seed=False, sigmat=None,
+                        caltable_path=None, seed=False, sigmat=None, rlsigmat=None,
                         verbose=True):
     """Corrupt visibilities in obs with jones matrices and add thermal noise
 
@@ -882,8 +882,10 @@ def add_jones_and_noise(obs, add_th_noise=True,
 
            caltable_path (string): If not None, path and prefix for saving the applied caltable
            seed : a seed for the random number generators, uses system time if false
-           sigmat (float): temporal std for a Gaussian Process used to generate gain noise.
-                           if sigmat=None then an iid gain noise is applied.
+           sigmat (float): temporal std for a Gaussian Process used to generate gains.
+                           If sigmat=None then an iid gain noise is applied.
+           rlsigmat (float): temporal std deviation for a Gaussian Process used to generate R/L gain ratios.
+                           If rlsigmat=None then an iid gain noise is applied.
            
            verbose (bool): print updates and warnings
        Returns:
@@ -902,7 +904,7 @@ def add_jones_and_noise(obs, add_th_noise=True,
                          gainp=gainp, taup=taup,
                          gain_offset=gain_offset, dterm_offset=dterm_offset,
                          rlratio_std=rlratio_std, rlphase_std=rlphase_std,
-                         caltable_path=caltable_path, seed=seed, sigmat=sigmat)
+                         caltable_path=caltable_path, seed=seed, sigmat=sigmat,rlsigmat=rlsigmat)
 
     # Change pol rep:
     obs_circ = obs.switch_polrep('circ')

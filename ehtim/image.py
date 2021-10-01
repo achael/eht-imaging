@@ -2309,7 +2309,8 @@ class Image(object):
                      gain_offset=ehc.GAINPDEF, gainp=ehc.GAINPDEF,
                      dterm_offset=ehc.DTERMPDEF,
                      rlratio_std=0., rlphase_std=0.,
-                     caltable_path=None, seed=False, sigmat=None, verbose=True):
+                     caltable_path=None, seed=False, sigmat=None, rlsigmat=None,
+                     verbose=True):
         """Observe the image on the same baselines as an existing observation object and add noise.
 
            Args:
@@ -2351,8 +2352,11 @@ class Image(object):
 
                caltable_path (string): If not None, path and prefix for saving the applied caltable
                seed (int): seeds the random component of the noise terms. DO NOT set to 0!
-               sigmat (float): temporal std for a Gaussian Process used to generate gain noise.
-                               if sigmat=None then an iid gain noise is applied.
+               sigmat (float): temporal std for a Gaussian Process used to generate gains.
+                               If sigmat=None then an iid gain noise is applied.
+               rlsigmat (float): temporal std deviation for a Gaussian Process used to generate R/L gain ratios.
+                               If rlsigmat=None then an iid gain noise is applied.
+                               
                verbose (bool): print updates and warnings
            Returns:
                (Obsdata): an observation object
@@ -2379,7 +2383,7 @@ class Image(object):
                                                  dterm_offset=dterm_offset,
                                                  rlratio_std=rlratio_std, rlphase_std=rlphase_std,
                                                  caltable_path=caltable_path, seed=seed,
-                                                 sigmat=sigmat, verbose=verbose)
+                                                 sigmat=sigmat, rlsigmat=rlsigmat,verbose=verbose)
 
             obs = ehtim.obsdata.Obsdata(obs.ra, obs.dec, obs.rf, obs.bw, obsdata, obs.tarr,
                                         source=obs.source, mjd=obs.mjd, polrep=obs_in.polrep,
@@ -2412,7 +2416,8 @@ class Image(object):
                                        stabilize_scan_amp=stabilize_scan_amp,
                                        neggains=neggains,
                                        taup=taup, gain_offset=gain_offset, gainp=gainp,
-                                       caltable_path=caltable_path, seed=seed, sigmat=sigmat,
+                                       caltable_path=caltable_path, seed=seed, 
+                                       sigmat=sigmat,rlsigmat=rlsigmat,
                                        verbose=verbose)
 
             obs = ehtim.obsdata.Obsdata(obs.ra, obs.dec, obs.rf, obs.bw, obsdata, obs.tarr,
@@ -2495,8 +2500,10 @@ class Image(object):
 
                caltable_path (string): If not None, path and prefix for saving the applied caltable
                seed (int): seeds the random component of the noise terms. DO NOT set to 0!
-               sigmat (float): temporal std for a Gaussian Process used to generate gain noise.
-                               if sigmat=None then an iid gain noise is applied.
+               sigmat (float): temporal std for a Gaussian Process used to generate gains.
+                               If sigmat=None then an iid gain noise is applied.
+               rlsigmat (float): temporal std deviation for a Gaussian Process used to generate R/L gain ratios.
+                               If rlsigmat=None then an iid gain noise is applied.
                verbose (bool): print updates and warnings
 
            Returns:
@@ -2529,7 +2536,8 @@ class Image(object):
                                 gain_offset=gain_offset, gainp=gainp, 
                                 dterm_offset=dterm_offset,
                                 rlratio_std=rlratio_std,rlphase_std=rlphase_std,
-                                caltable_path=caltable_path, seed=seed, sigmat=sigmat,
+                                caltable_path=caltable_path, seed=seed,
+                                sigmat=sigmat,rlsigmat=rlsigmat,
                                 verbose=verbose)
 
         obs.mjd = mjd
@@ -2549,7 +2557,8 @@ class Image(object):
                     gain_offset=ehc.GAINPDEF, gainp=ehc.GAINPDEF, 
                     dterm_offset=ehc.DTERMPDEF,
                     rlratio_std=0.,rlphase_std=0.,
-                    caltable_path=None, seed=False, sigmat=None, verbose=True):
+                    caltable_path=None, seed=False, sigmat=None, rlsigmat=None,
+                    verbose=True):
         """Generate baselines from a vex file and observes the image.
 
            Args:
@@ -2601,8 +2610,12 @@ class Image(object):
 
                caltable_path (string): If not None, path and prefix for saving the applied caltable
                seed (int): seeds the random component of the noise terms. DO NOT set to 0!
-               sigmat (float): temporal std for a Gaussian Process used to generate gain noise.
-                               if sigmat=None then an iid gain noise is applied.
+
+               sigmat (float): temporal std for a Gaussian Process used to generate gains.
+                               If sigmat=None then an iid gain noise is applied.
+               rlsigmat (float): temporal std deviation for a Gaussian Process used to generate R/L gain ratios.
+                               If rlsigmat=None then an iid gain noise is applied.
+                           
                verbose (bool): print updates and warnings
 
            Returns:
@@ -2659,7 +2672,8 @@ class Image(object):
                                gain_offset=gain_offset, gainp=gainp,
                                dterm_offset=dterm_offset,
                                rlratio_std=rlratio_std,rlphase_std=rlphase_std,
-                               caltable_path=caltable_path, seed=seed,sigmat=sigmat,
+                               caltable_path=caltable_path, seed=seed,
+                               sigmat=sigmat,rlsigmat=rlsigmat,
                                verbose=verbose)
 
             obs_List.append(obs)
