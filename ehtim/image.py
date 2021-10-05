@@ -2560,7 +2560,7 @@ class Image(object):
                                 rlratio_std=rlratio_std,rlphase_std=rlphase_std,
                                 sigmat=sigmat,phasesigmat=phasesigmat, 
                                 rlgsigmat=rlgsigmat,rlpsigmat=rlpsigmat,
-                                caltable_path=caltable_path, seed=see, verbose=verbose)
+                                caltable_path=caltable_path, seed=seed, verbose=verbose)
 
         obs.mjd = mjd
 
