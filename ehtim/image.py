@@ -2307,10 +2307,11 @@ class Image(object):
                      neggains=False,
                      taup=ehc.GAINPDEF,
                      gain_offset=ehc.GAINPDEF, gainp=ehc.GAINPDEF,
+                     phase_std=-1,
                      dterm_offset=ehc.DTERMPDEF,
                      rlratio_std=0., rlphase_std=0.,
-                     caltable_path=None, seed=False, sigmat=None, rlsigmat=None,
-                     verbose=True):
+                     sigmat=None, phasesigmat=None, rlgsigmat=None,rlpsigmat=None,
+                     caltable_path=None, seed=False, verbose=True):
         """Observe the image on the same baselines as an existing observation object and add noise.
 
            Args:
@@ -2341,6 +2342,9 @@ class Image(object):
 
                gain_offset (float): the base gain offset at all sites,
                                     or a dict giving one gain offset per site
+               phase_std (float): std. dev. of LCP phase, 
+                                  or a dict giving one std. dev. per site
+                                  a negative value samples from uniform                                          
                dterm_offset (float): the base std. dev. of random additive error at all sites,
                                     or a dict giving one std. dev. per site
 
@@ -2349,14 +2353,18 @@ class Image(object):
                rlphase_std (float): std. dev. of R/L phase offset, 
                                     or a dict giving one std. dev. per site
                                     a negative value samples from uniform                                          
-
-               caltable_path (string): If not None, path and prefix for saving the applied caltable
-               seed (int): seeds the random component of the noise terms. DO NOT set to 0!
+                                                                                
                sigmat (float): temporal std for a Gaussian Process used to generate gains.
                                If sigmat=None then an iid gain noise is applied.
-               rlsigmat (float): temporal std deviation for a Gaussian Process used to generate R/L gain ratios.
-                               If rlsigmat=None then an iid gain noise is applied.
+               phasesigmat (float): temporal std for a Gaussian Process used to generate phases.
+                                    If phasesigmat=None then an iid gain noise is applied.                           
+               rlgsigmat (float): temporal std deviation for a Gaussian Process used to generate R/L gain ratios.
+                               If rlgsigmat=None then an iid gain noise is applied.
+               rlpsigmat (float): temporal std deviation for a Gaussian Process used to generate R/L phase diff.
+                               If rlpsigmat=None then an iid gain noise is applied.
                                
+               caltable_path (string): If not None, path and prefix for saving the applied caltable
+               seed (int): seeds the random component of the noise terms. DO NOT set to 0!                               
                verbose (bool): print updates and warnings
            Returns:
                (Obsdata): an observation object
@@ -2380,10 +2388,12 @@ class Image(object):
                                                  neggains=neggains,
                                                  taup=taup,
                                                  gain_offset=gain_offset, gainp=gainp,
+                                                 phase_std=phase_std,
                                                  dterm_offset=dterm_offset,
                                                  rlratio_std=rlratio_std, rlphase_std=rlphase_std,
-                                                 caltable_path=caltable_path, seed=seed,
-                                                 sigmat=sigmat, rlsigmat=rlsigmat,verbose=verbose)
+                                                 sigmat=sigmat, phasesigmat=phasesigmat, 
+                                                 rlgsigmat=rlgsigmat,rlpsigmat=rlpsigmat,
+                                                 caltable_path=caltable_path, seed=seed,verbose=verbose)
 
             obs = ehtim.obsdata.Obsdata(obs.ra, obs.dec, obs.rf, obs.bw, obsdata, obs.tarr,
                                         source=obs.source, mjd=obs.mjd, polrep=obs_in.polrep,
@@ -2410,14 +2420,16 @@ class Image(object):
             if caltable_path:
                 print('WARNING: the caltable is only saved if you apply noise with a Jones Matrix')
 
+            # TODO -- clean up arguments
             obsdata = simobs.add_noise(obs, add_th_noise=add_th_noise,
                                        opacitycal=opacitycal, ampcal=ampcal, phasecal=phasecal, 
                                        stabilize_scan_phase=stabilize_scan_phase,
                                        stabilize_scan_amp=stabilize_scan_amp,
                                        neggains=neggains,
-                                       taup=taup, gain_offset=gain_offset, gainp=gainp,
-                                       caltable_path=caltable_path, seed=seed, 
-                                       sigmat=sigmat,rlsigmat=rlsigmat,
+                                       taup=taup,
+                                       gain_offset=gain_offset, gainp=gainp,
+                                       sigmat=sigmat,
+                                       caltable_path=caltable_path, seed=seed,
                                        verbose=verbose)
 
             obs = ehtim.obsdata.Obsdata(obs.ra, obs.dec, obs.rf, obs.bw, obsdata, obs.tarr,
@@ -2440,9 +2452,11 @@ class Image(object):
                 neggains=False,
                 tau=ehc.TAUDEF, taup=ehc.GAINPDEF,
                 gain_offset=ehc.GAINPDEF, gainp=ehc.GAINPDEF, 
+                phase_std=-1,
                 dterm_offset=ehc.DTERMPDEF, 
                 rlratio_std=0.,rlphase_std=0.,
-                caltable_path=None, seed=False, sigmat=None, verbose=True):
+                sigmat=None, phasesigmat=None, rlgsigmat=None,rlpsigmat=None,
+                caltable_path=None, seed=False, verbose=True):
         """Generate baselines from an array object and observe the image.
 
            Args:
@@ -2480,14 +2494,15 @@ class Image(object):
                stabilize_scan_amp (bool): if True, random amplitude errors are constant over scans
                neggains (bool): if True, force the applied gains to be <1
 
-               tau (float): the base opacity at all sites,
-                            or a dict giving one opacity per site
                taup (float): the fractional std. dev. of the random error on the opacities
                gainp (float): the fractional std. dev. of the random error on the gains
                               or a dict giving one std. dev. per site      
 
                gain_offset (float): the base gain offset at all sites,
                                     or a dict giving one gain offset per site
+               phase_std (float): std. dev. of LCP phase, 
+                                  or a dict giving one std. dev. per site
+                                  a negative value samples from uniform                                          
                dterm_offset (float): the base std. dev. of random additive error at all sites,
                                     or a dict giving one std. dev. per site
 
@@ -2496,14 +2511,20 @@ class Image(object):
                rlphase_std (float): std. dev. of R/L phase offset, 
                                     or a dict giving one std. dev. per site
                                     a negative value samples from uniform                                          
-
+                                                                                
+               sigmat (float): temporal std for a Gaussian Process used to generate gains.
+                               If sigmat=None then an iid gain noise is applied.
+               phasesigmat (float): temporal std for a Gaussian Process used to generate phases.
+                                    If phasesigmat=None then an iid gain noise is applied.                           
+               rlgsigmat (float): temporal std deviation for a Gaussian Process used to generate R/L gain ratios.
+                               If rlgsigmat=None then an iid gain noise is applied.
+               rlpsigmat (float): temporal std deviation for a Gaussian Process used to generate R/L phase diff.
+                               If rlpsigmat=None then an iid gain noise is applied.
+                           
 
                caltable_path (string): If not None, path and prefix for saving the applied caltable
                seed (int): seeds the random component of the noise terms. DO NOT set to 0!
-               sigmat (float): temporal std for a Gaussian Process used to generate gains.
-                               If sigmat=None then an iid gain noise is applied.
-               rlsigmat (float): temporal std deviation for a Gaussian Process used to generate R/L gain ratios.
-                               If rlsigmat=None then an iid gain noise is applied.
+
                verbose (bool): print updates and warnings
 
            Returns:
@@ -2534,11 +2555,12 @@ class Image(object):
                                 neggains=neggains,
                                 taup=taup,
                                 gain_offset=gain_offset, gainp=gainp, 
+                                phase_std=phase_std,
                                 dterm_offset=dterm_offset,
                                 rlratio_std=rlratio_std,rlphase_std=rlphase_std,
-                                caltable_path=caltable_path, seed=seed,
-                                sigmat=sigmat,rlsigmat=rlsigmat,
-                                verbose=verbose)
+                                sigmat=sigmat,phasesigmat=phasesigmat, 
+                                rlgsigmat=rlgsigmat,rlpsigmat=rlpsigmat,
+                                caltable_path=caltable_path, seed=see, verbose=verbose)
 
         obs.mjd = mjd
 
@@ -2555,10 +2577,11 @@ class Image(object):
                     neggains=False,
                     tau=ehc.TAUDEF, taup=ehc.GAINPDEF,
                     gain_offset=ehc.GAINPDEF, gainp=ehc.GAINPDEF, 
+                    phase_std=-1,
                     dterm_offset=ehc.DTERMPDEF,
                     rlratio_std=0.,rlphase_std=0.,
-                    caltable_path=None, seed=False, sigmat=None, rlsigmat=None,
-                    verbose=True):
+                    sigmat=None, phasesigmat=None, rlgsigmat=None,rlpsigmat=None,
+                    caltable_path=None, seed=False, verbose=True):
         """Generate baselines from a vex file and observes the image.
 
            Args:
@@ -2598,6 +2621,9 @@ class Image(object):
 
                gain_offset (float): the base gain offset at all sites,
                                     or a dict giving one gain offset per site
+               phase_std (float): std. dev. of LCP phase, 
+                                  or a dict giving one std. dev. per site
+                                  a negative value samples from uniform                                          
                dterm_offset (float): the base std. dev. of random additive error at all sites,
                                     or a dict giving one std. dev. per site
 
@@ -2606,16 +2632,18 @@ class Image(object):
                rlphase_std (float): std. dev. of R/L phase offset, 
                                     or a dict giving one std. dev. per site
                                     a negative value samples from uniform                                          
-
-
-               caltable_path (string): If not None, path and prefix for saving the applied caltable
-               seed (int): seeds the random component of the noise terms. DO NOT set to 0!
-
+                                                                                
                sigmat (float): temporal std for a Gaussian Process used to generate gains.
                                If sigmat=None then an iid gain noise is applied.
-               rlsigmat (float): temporal std deviation for a Gaussian Process used to generate R/L gain ratios.
-                               If rlsigmat=None then an iid gain noise is applied.
-                           
+               phasesigmat (float): temporal std for a Gaussian Process used to generate phases.
+                                    If phasesigmat=None then an iid gain noise is applied.                           
+               rlgsigmat (float): temporal std deviation for a Gaussian Process used to generate R/L gain ratios.
+                               If rlgsigmat=None then an iid gain noise is applied.
+               rlpsigmat (float): temporal std deviation for a Gaussian Process used to generate R/L phase diff.
+                               If rlpsigmat=None then an iid gain noise is applied.
+
+               caltable_path (string): If not None, path and prefix for saving the applied caltable
+               seed (int): seeds the random component of the noise terms. DO NOT set to 0!                          
                verbose (bool): print updates and warnings
 
            Returns:
@@ -2670,11 +2698,12 @@ class Image(object):
                                neggains=neggains,
                                tau=tau, taup=taup,
                                gain_offset=gain_offset, gainp=gainp,
+                               phase_std=phase_std,
                                dterm_offset=dterm_offset,
                                rlratio_std=rlratio_std,rlphase_std=rlphase_std,
-                               caltable_path=caltable_path, seed=seed,
-                               sigmat=sigmat,rlsigmat=rlsigmat,
-                               verbose=verbose)
+                               sigmat=sigmat,phasesigmat=phasesigmat,
+                               rlgsigmat=rlgsigmat,rlpsigmat=rlpsigmat,
+                               caltable_path=caltable_path, seed=seed, verbose=verbose)
 
             obs_List.append(obs)
 
