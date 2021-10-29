@@ -1,6 +1,6 @@
 .. module:: model
 
-.. _image:
+.. _model:
 
 Image
 =====

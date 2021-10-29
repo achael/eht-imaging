@@ -5,6 +5,6 @@
 Statistics
 ==========
 
-.. automodule:: ehtim.stats.statistics
+.. automodule:: ehtim.statistics.stats
     :members:
 
