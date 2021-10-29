@@ -2956,7 +2956,6 @@ class Image(object):
         meanval = np.mean(im.imvec)
 
         im_norm = im.imvec / (maxval + .01 * meanval)
-        im_norm = im_norm
         im_norm = im_norm.astype('float')  # is it a problem if it's double??
         im_norm[np.isnan(im.imvec)] = 0  # mask nans to 0
         im.imvec = im_norm
@@ -3616,17 +3615,8 @@ class Image(object):
             a = (-np.sin(np.angle(qvec + 1j * uvec) /
                          2).reshape(self.ydim, self.xdim)[::thin, ::thin])
             a = a[mask2]
-            b = (
-                np.cos(
-                    np.angle(
-                        qvec +
-                        1j *
-                        uvec) /
-                    2).reshape(
-                    self.ydim,
-                    self.xdim)[
-                    ::thin,
-                    ::thin])
+            b = (np.cos(np.angle(qvec + 1j * uvec) /
+                        2).reshape(self.ydim, self.xdim)[::thin, ::thin])
             b = b[mask2]
 
             m = (np.abs(qvec + 1j * uvec) / imvec).reshape(self.ydim, self.xdim)

@@ -48,7 +48,6 @@ class Parloop(object):
         """Run the loop on the list of arguments with multiple processes
         """
 
-        processes = processes
         n = len(arglist)
 
         if not type(arglist[0]) is list:
