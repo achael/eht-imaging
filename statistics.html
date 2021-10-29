@@ -79,6 +79,140 @@
              
   <span class="target" id="module-statistics"></span><div class="section" id="statistics">
 <span id="id1"></span><h1>Statistics<a class="headerlink" href="#statistics" title="Permalink to this headline">¶</a></h1>
+<span class="target" id="module-ehtim.statistics.stats"></span><dl class="py function">
+<dt id="ehtim.statistics.stats.bootstrap">
+<code class="sig-prename descclassname">ehtim.statistics.stats.</code><code class="sig-name descname">bootstrap</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">data</span></em>, <em class="sig-param"><span class="n">statistic</span></em>, <em class="sig-param"><span class="n">num_samples</span><span class="o">=</span><span class="default_value">1000</span></em>, <em class="sig-param"><span class="n">alpha</span><span class="o">=</span><span class="default_value">'1sig'</span></em>, <em class="sig-param"><span class="n">wrapping_variable</span><span class="o">=</span><span class="default_value">False</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/statistics/stats.html#bootstrap"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.statistics.stats.bootstrap" title="Permalink to this definition">¶</a></dt>
+<dd><p>bootstrap estimate of 100.0*(1-alpha) confidence interval for a given statistic
+:param data: vector of data to estimate bootstrap statistic on
+:param statistic: function representing the statistic to be evaluated
+:param num_samples: number of bootstrap (re)samples
+:param alpha: parameter of the confidence interval, ‘1s’ gets an analog of 1 sigma confidence for a normal variable
+:param wrapping_variable: True for circular variables, attempts to avoid problem related to estimating variability of wrapping variable</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>bootstrap-estimated value of the statistic
+bootstrap_CI: bootstrap-estimated confidence interval</p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p>bootstrap_value</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="ehtim.statistics.stats.circular_mean">
+<code class="sig-prename descclassname">ehtim.statistics.stats.</code><code class="sig-name descname">circular_mean</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">theta</span></em>, <em class="sig-param"><span class="n">unit</span><span class="o">=</span><span class="default_value">'deg'</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/statistics/stats.html#circular_mean"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.statistics.stats.circular_mean" title="Permalink to this definition">¶</a></dt>
+<dd><p>circular mean for averaging angular quantities
+:param theta: list/vector of angles to average
+:param unit: degrees (‘deg’) or radians (any other string)</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>circular mean</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="ehtim.statistics.stats.circular_std">
+<code class="sig-prename descclassname">ehtim.statistics.stats.</code><code class="sig-name descname">circular_std</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">theta</span></em>, <em class="sig-param"><span class="n">unit</span><span class="o">=</span><span class="default_value">'deg'</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/statistics/stats.html#circular_std"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.statistics.stats.circular_std" title="Permalink to this definition">¶</a></dt>
+<dd><p>standard deviation of a circular distribution
+:param theta: list/vector of angles
+:param unit: degrees (‘deg’) or radians (any other string)</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>circular standard deviation</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="ehtim.statistics.stats.circular_std_of_mean">
+<code class="sig-prename descclassname">ehtim.statistics.stats.</code><code class="sig-name descname">circular_std_of_mean</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">theta</span></em>, <em class="sig-param"><span class="n">unit</span><span class="o">=</span><span class="default_value">'deg'</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/statistics/stats.html#circular_std_of_mean"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.statistics.stats.circular_std_of_mean" title="Permalink to this definition">¶</a></dt>
+<dd><p>standard deviation of mean for a circular distribution
+:param theta: list/vector of angles
+:param unit: degrees (‘deg’) or radians (any other string)</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>circular standard deviation of mean</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="ehtim.statistics.stats.compare_TV">
+<code class="sig-prename descclassname">ehtim.statistics.stats.</code><code class="sig-name descname">compare_TV</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">obs</span></em>, <em class="sig-param"><span class="n">obsref</span></em>, <em class="sig-param"><span class="n">snr_cut</span><span class="o">=</span><span class="default_value">2.0</span></em>, <em class="sig-param"><span class="n">output</span><span class="o">=</span><span class="default_value">''</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/statistics/stats.html#compare_TV"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.statistics.stats.compare_TV" title="Permalink to this definition">¶</a></dt>
+<dd><p>Computes mean total variation reports
+:param obs: ObsData object
+:param obref: ObsData object to use as a reference
+:param snr_cut: threshold for data  snr
+:param output: if empty, returns median relative TV across all (baselines, triangles, quadrangles)
+:type output: str
+:param if ‘Full’, returns full dictionaries comparing all:
+:type if ‘Full’, returns full dictionaries comparing all: baselines, triangles, quadrangles</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>dictionary of baseline relative differences in mean TV / median of baseline relative differences in mean TV
+cprel / cpmed: dictionary of triangle relative differences in mean TV / median of triangle relative differences in mean TV
+lcarel / lcamed: dictionary of quadrangle relative differences in mean TV / median of quadrangle relative differences in mean TV</p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p>amprel / ampmed</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="ehtim.statistics.stats.dicts_TV_report">
+<code class="sig-prename descclassname">ehtim.statistics.stats.</code><code class="sig-name descname">dicts_TV_report</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">obs</span></em>, <em class="sig-param"><span class="n">snr_cut</span><span class="o">=</span><span class="default_value">2.0</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/statistics/stats.html#dicts_TV_report"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.statistics.stats.dicts_TV_report" title="Permalink to this definition">¶</a></dt>
+<dd><p>Computes mean total variation reports
+:param obs: ObsData object
+:param snr_cut: threshold for data  snr</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>dictionary of baseline mean TV
+cptv: dictionary of triangle mean TV
+lcatv: dictionary of quadrangle mean TV</p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p>amptv</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="ehtim.statistics.stats.mean_incoh_amp">
+<code class="sig-prename descclassname">ehtim.statistics.stats.</code><code class="sig-name descname">mean_incoh_amp</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">amp</span></em>, <em class="sig-param"><span class="n">sigma</span></em>, <em class="sig-param"><span class="n">debias</span><span class="o">=</span><span class="default_value">True</span></em>, <em class="sig-param"><span class="n">err_type</span><span class="o">=</span><span class="default_value">'predicted'</span></em>, <em class="sig-param"><span class="n">num_samples</span><span class="o">=</span><span class="default_value">1000</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/statistics/stats.html#mean_incoh_amp"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.statistics.stats.mean_incoh_amp" title="Permalink to this definition">¶</a></dt>
+<dd><p>amplitude from ensemble of Rice-distributed measurements with debiasing
+:param amp: vector of (biased) amplitudes
+:param sigma: vector of errors
+:param debias: whether debiasing is applied</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>estimator of unbiased amplitude</p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p>amp0</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="ehtim.statistics.stats.mean_incoh_amp_from_vis">
+<code class="sig-prename descclassname">ehtim.statistics.stats.</code><code class="sig-name descname">mean_incoh_amp_from_vis</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">vis</span></em>, <em class="sig-param"><span class="n">sigma</span></em>, <em class="sig-param"><span class="n">debias</span><span class="o">=</span><span class="default_value">True</span></em>, <em class="sig-param"><span class="n">err_type</span><span class="o">=</span><span class="default_value">'predicted'</span></em>, <em class="sig-param"><span class="n">num_samples</span><span class="o">=</span><span class="default_value">1000</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/statistics/stats.html#mean_incoh_amp_from_vis"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.statistics.stats.mean_incoh_amp_from_vis" title="Permalink to this definition">¶</a></dt>
+<dd><p>Amplitude from ensemble of visibility measurements with debiasing
+:param amp: vector of (biased) amplitudes
+:param sigma: vector of errors
+:param debias: whether debiasing is applied</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>estimator of unbiased amplitude</p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p>amp0</p>
+</dd>
+</dl>
+</dd></dl>
+
 </div>
 
 
