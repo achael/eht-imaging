@@ -1,76 +1,33 @@
-
-
 <!DOCTYPE html>
-<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
-<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<html class="writer-html5" lang="en" >
 <head>
-  <meta charset="utf-8">
-  
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  
-  <title>ehtim.scattering.stochastic_optics &mdash; ehtim 1.2.0 documentation</title>
-  
-
-  
-  
-  
-  
-
-  
-
-  
-  
-    
-
-  
-
-  
-  
-    <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
-  
-
-  
-
-  
-        <link rel="index" title="Index"
-              href="../../../genindex.html"/>
-        <link rel="search" title="Search" href="../../../search.html"/>
-    <link rel="top" title="ehtim 1.2.0 documentation" href="../../../index.html"/>
-        <link rel="up" title="Module code" href="../../index.html"/> 
-
-  
-  <script src="../../../_static/js/modernizr.min.js"></script>
-
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ehtim.scattering.stochastic_optics &mdash; ehtim 1.2.3 documentation</title><link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+    <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  <script id="documentation_options" data-url_root="../../../" src="../../../_static/documentation_options.js"></script>
+        <script src="../../../_static/jquery.js"></script>
+        <script src="../../../_static/underscore.js"></script>
+        <script src="../../../_static/doctools.js"></script>
+        <script src="../../../_static/language_data.js"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
 </head>
 
-<body class="wy-body-for-nav" role="document">
-
-   
+<body class="wy-body-for-nav"> 
   <div class="wy-grid-for-nav">
-
-    
     <nav data-toggle="wy-nav-shift" class="wy-nav-side">
       <div class="wy-side-scroll">
-        <div class="wy-side-nav-search">
-          
-
-          
+        <div class="wy-side-nav-search" >
             <a href="../../../index.html" class="icon icon-home"> ehtim
-          
-
-          
           </a>
-
-          
-            
-            
               <div class="version">
                 1.2
               </div>
-            
-          
-
-          
 <div role="search">
   <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
     <input type="text" name="q" placeholder="Search docs" />
@@ -78,92 +35,46 @@
     <input type="hidden" name="area" value="default" />
   </form>
 </div>
-
-          
-        </div>
-
-        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
-          
-            
-            
-              
-            
-            
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
               <p class="caption"><span class="caption-text">Contents:</span></p>
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="../../../image.html">Image</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../array.html">Array</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../obsdata.html">Obsdata</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../movie.html">Movie</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../../vex.html">Vex</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../model.html">Image</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../imager.html">Imager</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../calibration.html">Calibration</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../plotting.html">Plotting</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../scattering.html">Scattering</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../statistics.html">Statistics</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../vex.html">Vex</a></li>
 </ul>
 
-            
-          
         </div>
       </div>
     </nav>
 
-    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
-
-      
-      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
-        
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
           <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
           <a href="../../../index.html">ehtim</a>
-        
       </nav>
 
-
-      
       <div class="wy-nav-content">
         <div class="rst-content">
-          
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-<div role="navigation" aria-label="breadcrumbs navigation">
-
+          <div role="navigation" aria-label="Page navigation">
   <ul class="wy-breadcrumbs">
-    
-      <li><a href="../../../index.html">Docs</a> &raquo;</li>
-        
+      <li><a href="../../../index.html" class="icon icon-home"></a> &raquo;</li>
           <li><a href="../../index.html">Module code</a> &raquo;</li>
-        
       <li>ehtim.scattering.stochastic_optics</li>
-    
-    
       <li class="wy-breadcrumbs-aside">
-        
-            
-        
       </li>
-    
   </ul>
-
-  
   <hr/>
 </div>
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
-            
+             
   <h1>Source code for ehtim.scattering.stochastic_optics</h1><div class="highlight"><pre>
 <span></span><span class="c1"># Michael Johnson, 2/15/2017</span>
 <span class="c1"># See http://adsabs.harvard.edu/abs/2016ApJ...833...74J for details about this module</span>
@@ -696,7 +607,7 @@
 
         <span class="k">return</span> <span class="n">AI_Image</span></div>
 
-<div class="viewcode-block" id="ScatteringModel.Scatter_Movie"><a class="viewcode-back" href="../../../scattering.html#ehtim.scattering.stochastic_optics.ScatteringModel.Scatter_Movie">[docs]</a>    <span class="k">def</span> <span class="nf">Scatter_Movie</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">Unscattered_Movie</span><span class="p">,</span> <span class="n">Epsilon_Screen</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([]),</span> <span class="n">obs_frequency_Hz</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">Vx_km_per_s</span><span class="o">=</span><span class="mf">50.0</span><span class="p">,</span> <span class="n">Vy_km_per_s</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">framedur_sec</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">N_frames</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">sqrtQ</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">Linearized_Approximation</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">Force_Positivity</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">Return_Image_List</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">processes</span><span class="o">=</span><span class="mi">0</span><span class="p">):</span>
+<div class="viewcode-block" id="ScatteringModel.Scatter_Movie"><a class="viewcode-back" href="../../../scattering.html#ehtim.scattering.stochastic_optics.ScatteringModel.Scatter_Movie">[docs]</a>    <span class="k">def</span> <span class="nf">Scatter_Movie</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">Unscattered_Movie</span><span class="p">,</span> <span class="n">Epsilon_Screen</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([]),</span> <span class="n">obs_frequency_Hz</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">Vx_km_per_s</span><span class="o">=</span><span class="mf">50.0</span><span class="p">,</span> <span class="n">Vy_km_per_s</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">framedur_sec</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">N_frames</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">ea_ker</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">sqrtQ</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">Linearized_Approximation</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">Force_Positivity</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">Return_Image_List</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">processes</span><span class="o">=</span><span class="mi">0</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Scatter a movie using the specified epsilon screen. The movie can either be a movie object, an image list, or a static image</span>
 <span class="sd">           If scattering a list of images or static image, the frame duration in seconds (framedur_sec) must be specified</span>
 <span class="sd">           If scattering a static image, the total number of frames must be specified (N_frames)</span>
@@ -712,6 +623,7 @@
 <span class="sd">                Vy_km_per_s (float): Velocity of the scattering screen in the y direction (toward North) in km/s.</span>
 <span class="sd">                framedur_sec (float): Duration of each frame, in seconds. Only needed if Unscattered_Movie is not a movie object.</span>
 <span class="sd">                N_frames (int): Total number of frames. Only needed if Unscattered_Movie is a static image object.</span>
+<span class="sd">                ea_ker (2D ndarray): The used can optionally pass a precomputed array of the ensemble-average blurring kernel.</span>
 <span class="sd">                sqrtQ (2D ndarray): The used can optionally pass a precomputed array of the square root of the power spectrum.</span>
 <span class="sd">                Linearized_Approximation (bool): If True, uses a linearized approximation for the scattering (Eq. 10 of Johnson &amp; Narayan 2016). If False, uses Eq. 9 of that paper.</span>
 <span class="sd">                Force_Positivity (bool): If True, eliminates negative flux from the scattered image from the linearized approximation.</span>
@@ -816,7 +728,7 @@
             <span class="n">pool</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
             <span class="n">pool</span><span class="o">.</span><span class="n">join</span><span class="p">()</span>
         <span class="k">else</span><span class="p">:</span>
-            <span class="n">scattered_im_List</span> <span class="o">=</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">Scatter</span><span class="p">(</span><span class="n">get_frame</span><span class="p">(</span><span class="n">j</span><span class="p">),</span> <span class="n">Epsilon_Screen</span><span class="p">,</span> <span class="n">obs_frequency_Hz</span> <span class="o">=</span> <span class="n">obs_frequency_Hz</span><span class="p">,</span> <span class="n">Vx_km_per_s</span> <span class="o">=</span> <span class="n">Vx_km_per_s</span><span class="p">,</span> <span class="n">Vy_km_per_s</span> <span class="o">=</span> <span class="n">Vy_km_per_s</span><span class="p">,</span> <span class="n">t_hr</span><span class="o">=</span><span class="n">tlist_hr</span><span class="p">[</span><span class="n">j</span><span class="p">],</span> <span class="n">sqrtQ</span><span class="o">=</span><span class="n">sqrtQ</span><span class="p">,</span> <span class="n">Linearized_Approximation</span><span class="o">=</span><span class="n">Linearized_Approximation</span><span class="p">,</span> <span class="n">Force_Positivity</span><span class="o">=</span><span class="n">Force_Positivity</span><span class="p">)</span> <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">N_frams</span><span class="p">)]</span>
+            <span class="n">scattered_im_List</span> <span class="o">=</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">Scatter</span><span class="p">(</span><span class="n">get_frame</span><span class="p">(</span><span class="n">j</span><span class="p">),</span> <span class="n">Epsilon_Screen</span><span class="p">,</span> <span class="n">obs_frequency_Hz</span> <span class="o">=</span> <span class="n">obs_frequency_Hz</span><span class="p">,</span> <span class="n">Vx_km_per_s</span> <span class="o">=</span> <span class="n">Vx_km_per_s</span><span class="p">,</span> <span class="n">Vy_km_per_s</span> <span class="o">=</span> <span class="n">Vy_km_per_s</span><span class="p">,</span> <span class="n">t_hr</span><span class="o">=</span><span class="n">tlist_hr</span><span class="p">[</span><span class="n">j</span><span class="p">],</span> <span class="n">ea_ker</span><span class="o">=</span><span class="n">ea_ker</span><span class="p">,</span> <span class="n">sqrtQ</span><span class="o">=</span><span class="n">sqrtQ</span><span class="p">,</span> <span class="n">Linearized_Approximation</span><span class="o">=</span><span class="n">Linearized_Approximation</span><span class="p">,</span> <span class="n">Force_Positivity</span><span class="o">=</span><span class="n">Force_Positivity</span><span class="p">)</span> <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">N_frams</span><span class="p">)]</span>
         
         <span class="k">if</span> <span class="n">Return_Image_List</span> <span class="o">==</span> <span class="kc">True</span><span class="p">:</span>
             <span class="k">return</span> <span class="n">scattered_im_List</span>
@@ -984,66 +896,30 @@
 </pre></div>
 
            </div>
-           <div class="articleComments">
-            
-           </div>
           </div>
           <footer>
-  
 
   <hr/>
 
   <div role="contentinfo">
-    <p>
-        &copy; Copyright 2017, Andrew Chael.
-
-    </p>
+    <p>&#169; Copyright 2021, Andrew Chael.</p>
   </div>
-  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
 
 </footer>
-
         </div>
       </div>
-
     </section>
-
   </div>
-  
-
-
-  
-
-    <script type="text/javascript">
-        var DOCUMENTATION_OPTIONS = {
-            URL_ROOT:'../../../',
-            VERSION:'1.2.0',
-            COLLAPSE_INDEX:false,
-            FILE_SUFFIX:'.html',
-            HAS_SOURCE:  true,
-            SOURCELINK_SUFFIX: '.txt'
-        };
-    </script>
-      <script type="text/javascript" src="../../../_static/jquery.js"></script>
-      <script type="text/javascript" src="../../../_static/underscore.js"></script>
-      <script type="text/javascript" src="../../../_static/doctools.js"></script>
-      <script type="text/javascript" src="../../../_static/language_data.js"></script>
-
-  
-
-  
-  
-    <script type="text/javascript" src="../../../_static/js/theme.js"></script>
-  
-
-  
-  
-  <script type="text/javascript">
+  <script>
       jQuery(function () {
-          SphinxRtdTheme.StickyNav.enable();
+          SphinxRtdTheme.Navigation.enable(true);
       });
-  </script>
-   
+  </script> 
 
 </body>
 </html>

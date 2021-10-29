@@ -54,12 +54,13 @@ Documentation
    array
    obsdata
    movie
-   vex
+   model
    imager
    calibration
    plotting
    scattering
    statistics
+   vex
 
 
 Acknowledgements
