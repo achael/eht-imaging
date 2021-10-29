@@ -1918,7 +1918,9 @@ class Model(object):
                            jones=False, inv_jones=False,
                            tau=TAUDEF, taup=GAINPDEF,
                            gain_offset=GAINPDEF, gainp=GAINPDEF,
-                           dterm_offset=DTERMPDEF, caltable_path=None, seed=False, **kwargs):
+                           dterm_offset=DTERMPDEF,                            
+                           rlratio_std=0.,rlphase_std=0.,
+                           caltable_path=None, seed=False, **kwargs):
 
         """Observe the image on the same baselines as an existing observation object and add noise.
 
@@ -1946,10 +1948,18 @@ class Model(object):
                             or a dict giving one opacity per site
                taup (float): the fractional std. dev. of the random error on the opacities
                gainp (float): the fractional std. dev. of the random error on the gains
-               gain_offset (float): the base gain offset at all sites, 
-                                    or a dict giving one offset per site
-               dterm_offset (float): the base dterm offset at all sites, 
-                                     or a dict giving one dterm offset per site
+                              or a dict giving one std. dev. per site      
+
+               gain_offset (float): the base gain offset at all sites,
+                                    or a dict giving one gain offset per site
+               dterm_offset (float): the base std. dev. of random additive error at all sites,
+                                    or a dict giving one std. dev. per site
+
+               rlratio_std (float): the fractional std. dev. of the R/L gain offset
+                                    or a dict giving one std. dev. per site                                          
+               rlphase_std (float): std. dev. of R/L phase offset, 
+                                    or a dict giving one std. dev. per site
+                                    a negative value samples from uniform                                          
 
                caltable_path (string): The path and prefix of a saved caltable
 
@@ -1975,6 +1985,7 @@ class Model(object):
                                                  neggains=neggains,
                                                  gainp=gainp, taup=taup, gain_offset=gain_offset,
                                                  dterm_offset=dterm_offset,
+                                                 rlratio_std=rlratio_std,rlphase_std=rlphase_std,
                                                  caltable_path=caltable_path, seed=seed)
 
             obs =  ehtim.obsdata.Obsdata(obs.ra, obs.dec, obs.rf, obs.bw, obsdata, obs.tarr,
@@ -2028,7 +2039,8 @@ class Model(object):
                       jones=False, inv_jones=False,
                       tau=TAUDEF, taup=GAINPDEF,
                       gainp=GAINPDEF, gain_offset=GAINPDEF,
-                      dterm_offset=DTERMPDEF, seed=False, **kwargs):
+                      dterm_offset=DTERMPDEF, rlratio_std=0.,rlphase_std=0.,
+                      seed=False, **kwargs):
 
         """Generate baselines from an array object and observe the image.
 
@@ -2066,12 +2078,19 @@ class Model(object):
                tau (float): the base opacity at all sites, 
                             or a dict giving one opacity per site
                taup (float): the fractional std. dev. of the random error on the opacities
-               gain_offset (float): the base gain offset at all sites, 
-                                    or a dict giving one gain offset per site
                gainp (float): the fractional std. dev. of the random error on the gains
+                              or a dict giving one std. dev. per site      
 
-               dterm_offset (float): the base dterm offset at all sites, 
-                                     or a dict giving one dterm offset per site
+               gain_offset (float): the base gain offset at all sites,
+                                    or a dict giving one gain offset per site
+               dterm_offset (float): the base std. dev. of random additive error at all sites,
+                                    or a dict giving one std. dev. per site
+
+               rlratio_std (float): the fractional std. dev. of the R/L gain offset
+                                    or a dict giving one std. dev. per site                                          
+               rlphase_std (float): std. dev. of R/L phase offset, 
+                                    or a dict giving one std. dev. per site
+                                    a negative value samples from uniform                                          
 
                seed (int): seeds the random component of noise added. DO NOT set to 0!
 
@@ -2101,6 +2120,7 @@ class Model(object):
                                      gainp=gainp,gain_offset=gain_offset,
                                      tau=tau, taup=taup,
                                      dterm_offset=dterm_offset,
+                                     rlratio_std=rlratio_std,rlphase_std=rlphase_std,
                                      jones=jones, inv_jones=inv_jones, seed=seed, **kwargs)
 
         obs.mjd = mjd
