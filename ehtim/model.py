@@ -375,7 +375,7 @@ def sample_1model_xy(x, y, model_type, params, psize=1.*RADPERUAS, pol='I'):
         if pol == 'I':
             beta_factor = (1.0 + np.sum([2.*np.real(params['beta_list'][m-1] * np.exp(1j * m * phi)) for m in range(1,len(params['beta_list'])+1)],axis=0))
         elif pol == 'V' and len(params['beta_list_cpol']) > 0:
-            beta_factor = params['beta_list_cpol'][0] + np.sum([2.*np.real(params['beta_list_cpol'][m] * np.exp(1j * m * phi)) for m in range(1,len(params['beta_list_cpol']))],axis=0)
+            beta_factor = np.real(params['beta_list_cpol'][0]) + np.sum([2.*np.real(params['beta_list_cpol'][m] * np.exp(1j * m * phi)) for m in range(1,len(params['beta_list_cpol']))],axis=0)
         elif pol == 'P' and len(params['beta_list_pol']) > 0:
             num_coeff = len(params['beta_list_pol'])
             beta_factor = np.sum([params['beta_list_pol'][m + (num_coeff-1)//2] * np.exp(1j * m * phi) for m in range(-(num_coeff-1)//2,(num_coeff+1)//2)],axis=0)
@@ -393,7 +393,7 @@ def sample_1model_xy(x, y, model_type, params, psize=1.*RADPERUAS, pol='I'):
         if pol == 'I':
             beta_factor = (sps.ive(0, z) + np.sum([2.*np.real(sps.ive(m, z) * params['beta_list'][m-1] * np.exp(1j * m * phi)) for m in range(1,len(params['beta_list'])+1)],axis=0))
         elif pol == 'V' and len(params['beta_list_cpol']) > 0:
-            beta_factor = (sps.ive(0, z) * params['beta_list_cpol'][0] + np.sum([2.*np.real(sps.ive(m, z) * params['beta_list_cpol'][m] * np.exp(1j * m * phi)) for m in range(1,len(params['beta_list_cpol']))],axis=0))
+            beta_factor = (sps.ive(0, z) * np.real(params['beta_list_cpol'][0]) + np.sum([2.*np.real(sps.ive(m, z) * params['beta_list_cpol'][m] * np.exp(1j * m * phi)) for m in range(1,len(params['beta_list_cpol']))],axis=0))
         elif pol == 'P' and len(params['beta_list_pol']) > 0:
             num_coeff = len(params['beta_list_pol'])
             beta_factor = np.sum([params['beta_list_pol'][m + (num_coeff-1)//2] * sps.ive(m, z) * np.exp(1j * m * phi) for m in range(-(num_coeff-1)//2,(num_coeff+1)//2)],axis=0)
@@ -513,7 +513,7 @@ def sample_1model_uv(u, v, model_type, params, pol='I', jonesdict=None):
                + np.sum([params['beta_list'][m-1]          * sps.jv( m, z) * np.exp( 1j * m * (phi - np.pi/2.)) for m in range(1,len(params['beta_list'])+1)],axis=0)
                + np.sum([np.conj(params['beta_list'][m-1]) * sps.jv(-m, z) * np.exp(-1j * m * (phi - np.pi/2.)) for m in range(1,len(params['beta_list'])+1)],axis=0))
         elif pol == 'V' and len(params['beta_list_cpol']) > 0:
-            beta_factor = (params['beta_list_cpol'][0] * sps.jv(0, z) 
+            beta_factor = (np.real(params['beta_list_cpol'][0]) * sps.jv(0, z) 
                + np.sum([params['beta_list_cpol'][m]          * sps.jv( m, z) * np.exp( 1j * m * (phi - np.pi/2.)) for m in range(1,len(params['beta_list_cpol']))],axis=0)
                + np.sum([np.conj(params['beta_list_cpol'][m]) * sps.jv(-m, z) * np.exp(-1j * m * (phi - np.pi/2.)) for m in range(1,len(params['beta_list_cpol']))],axis=0))
         elif pol == 'P' and len(params['beta_list_pol']) > 0:
@@ -534,7 +534,7 @@ def sample_1model_uv(u, v, model_type, params, pol='I', jonesdict=None):
                + np.sum([params['beta_list'][m-1]          * sps.jv( m, z) * np.exp( 1j * m * (phi - np.pi/2.)) for m in range(1,len(params['beta_list'])+1)],axis=0)
                + np.sum([np.conj(params['beta_list'][m-1]) * sps.jv(-m, z) * np.exp(-1j * m * (phi - np.pi/2.)) for m in range(1,len(params['beta_list'])+1)],axis=0))
         elif pol == 'V' and len(params['beta_list_cpol']) > 0:
-            beta_factor = (params['beta_list_cpol'][0] * sps.jv(0, z) 
+            beta_factor = (np.real(params['beta_list_cpol'][0]) * sps.jv(0, z) 
                + np.sum([params['beta_list_cpol'][m]          * sps.jv( m, z) * np.exp( 1j * m * (phi - np.pi/2.)) for m in range(1,len(params['beta_list_cpol']))],axis=0)
                + np.sum([np.conj(params['beta_list_cpol'][m]) * sps.jv(-m, z) * np.exp(-1j * m * (phi - np.pi/2.)) for m in range(1,len(params['beta_list_cpol']))],axis=0))
         elif pol == 'P' and len(params['beta_list_pol']) > 0:
@@ -691,7 +691,7 @@ def sample_1model_graduv_uv(u, v, model_type, params, pol='I', jonesdict=None):
                     + np.sum([np.conj(params['beta_list'][m-1]) * 0.5 * (sps.jv(-m-1, z) - sps.jv(-m+1, z)) * np.pi * params['d'] * v/uvdist * np.exp(-1j * m * (phi - np.pi/2.)) for m in range(1,len(params['beta_list'])+1)],axis=0))
 
         elif pol == 'V' and len(params['beta_list_cpol']) > 0:
-            beta_factor_u = (-np.pi * params['d'] * u/uvdist * sps.jv(1, z) * params['beta_list_cpol'][0]
+            beta_factor_u = (-np.pi * params['d'] * u/uvdist * sps.jv(1, z) * np.real(params['beta_list_cpol'][0])
                     + np.sum([params['beta_list_cpol'][m]          * sps.jv( m, z) * ( 1j * m * dphidu) * np.exp( 1j * m * (phi - np.pi/2.)) for m in range(1,len(params['beta_list_cpol']))],axis=0)
                     + np.sum([np.conj(params['beta_list_cpol'][m]) * sps.jv(-m, z) * (-1j * m * dphidu) * np.exp(-1j * m * (phi - np.pi/2.)) for m in range(1,len(params['beta_list_cpol']))],axis=0)
                     + np.sum([params['beta_list_cpol'][m]          * 0.5 * (sps.jv( m-1, z) - sps.jv( m+1, z)) * np.pi * params['d'] * u/uvdist * np.exp( 1j * m * (phi - np.pi/2.)) for m in range(1,len(params['beta_list_cpol']))],axis=0)
@@ -743,7 +743,7 @@ def sample_1model_graduv_uv(u, v, model_type, params, pol='I', jonesdict=None):
                     + np.sum([np.conj(params['beta_list'][m-1]) * 0.5 * (sps.jv(-m-1, z) - sps.jv(-m+1, z)) * np.pi * params['d'] * v/uvdist * np.exp(-1j * m * (phi - np.pi/2.)) for m in range(1,len(params['beta_list'])+1)],axis=0))
 
         elif pol == 'V' and len(params['beta_list_cpol']) > 0:
-            beta_factor_u = (-np.pi * params['d'] * u/uvdist * sps.jv(1, z) * params['beta_list_cpol'][0]
+            beta_factor_u = (-np.pi * params['d'] * u/uvdist * sps.jv(1, z) * np.real(params['beta_list_cpol'][0])
                     + np.sum([params['beta_list_cpol'][m]          * sps.jv( m, z) * ( 1j * m * dphidu) * np.exp( 1j * m * (phi - np.pi/2.)) for m in range(1,len(params['beta_list_cpol']))],axis=0)
                     + np.sum([np.conj(params['beta_list_cpol'][m]) * sps.jv(-m, z) * (-1j * m * dphidu) * np.exp(-1j * m * (phi - np.pi/2.)) for m in range(1,len(params['beta_list_cpol']))],axis=0)
                     + np.sum([params['beta_list_cpol'][m]          * 0.5 * (sps.jv( m-1, z) - sps.jv( m+1, z)) * np.pi * params['d'] * u/uvdist * np.exp( 1j * m * (phi - np.pi/2.)) for m in range(1,len(params['beta_list_cpol']))],axis=0)
@@ -1033,7 +1033,7 @@ def sample_1model_grad_uv(u, v, model_type, params, pol='I', fit_pol=False, fit_
             num_coeff = len(params['beta_list_pol'])
             beta_factor = np.sum([params['beta_list_pol'][m + (num_coeff-1)//2] * 0.5 * (sps.jv( m-1, z)  - sps.jv(  m+1, z)) * np.pi * uvdist * np.exp( 1j * m * (phi - np.pi/2.)) for m in range(-(num_coeff-1)//2,(num_coeff+1)//2)],axis=0)
         elif pol == 'V' and len(params['beta_list_cpol']) > 0:
-            beta_factor = (-np.pi * uvdist * sps.jv(1, z) * params['beta_list_cpol'][0] 
+            beta_factor = (-np.pi * uvdist * sps.jv(1, z) * np.real(params['beta_list_cpol'][0]) 
                + np.sum([params['beta_list_cpol'][m]          * 0.5 * (sps.jv( m-1, z)  - sps.jv(  m+1, z)) * np.pi * uvdist * np.exp( 1j * m * (phi - np.pi/2.)) for m in range(1,len(params['beta_list_cpol']))],axis=0)
                + np.sum([np.conj(params['beta_list_cpol'][m]) * 0.5 * (sps.jv( -m-1, z) - sps.jv( -m+1, z)) * np.pi * uvdist * np.exp(-1j * m * (phi - np.pi/2.)) for m in range(1,len(params['beta_list_cpol']))],axis=0))
         else:
