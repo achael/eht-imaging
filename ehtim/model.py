@@ -117,6 +117,13 @@ def model_params(model_type, model_params=None, fit_pol=False, fit_cpol=False):
             params.append('beta' + str(j+1) + complex_labels[0])
             params.append('beta' + str(j+1) + complex_labels[1])
         add_pol()
+    elif model_type == 'thick_mring_Gfloor':
+        params = ['F0','d','alpha','ff','FWHM','x0','y0']            
+        for j in range(len(model_params['beta_list'])):
+            params.append('beta' + str(j+1) + complex_labels[0])
+            params.append('beta' + str(j+1) + complex_labels[1])
+        add_pol()
+
     elif model_type == 'stretched_thick_mring':
         params = ['F0','d','alpha', 'x0','y0']
         for j in range(len(model_params['beta_list'])):
@@ -207,6 +214,14 @@ def default_prior(model_type,model_params=None,fit_pol=False,fit_cpol=False):
         prior['d'] = {'prior_type':'positive','transform':'log'}
         prior['alpha'] = {'prior_type':'positive','transform':'log'}
         prior['ff'] = {'prior_type':'flat','min':0,'max':1}
+        for j in range(len(model_params['beta_list'])):
+            prior['beta' + str(j+1) + complex_labels[0]] = complex_priors[0]
+            prior['beta' + str(j+1) + complex_labels[1]] = complex_priors[1]
+    elif model_type == 'thick_mring_Gfloor':
+        prior['d'] = {'prior_type':'positive','transform':'log'}
+        prior['alpha'] = {'prior_type':'positive','transform':'log'}
+        prior['ff'] = {'prior_type':'flat','min':0,'max':1}
+        prior['FWHM'] = {'prior_type':'positive','transform':'log'}
         for j in range(len(model_params['beta_list'])):
             prior['beta' + str(j+1) + complex_labels[0]] = complex_priors[0]
             prior['beta' + str(j+1) + complex_labels[1]] = complex_priors[1]
@@ -392,6 +407,9 @@ def sample_1model_xy(x, y, model_type, params, psize=1.*RADPERUAS, pol='I'):
     elif model_type == 'thick_mring_floor':
         val  = (1.0 - params['ff']) * sample_1model_xy(x, y, 'thick_mring', params, psize=psize, pol=pol)
         val += params['ff'] * sample_1model_xy(x, y, 'blurred_disk', params, psize=psize, pol=pol)
+    elif model_type == 'thick_mring_Gfloor':
+        val  = (1.0 - params['ff']) * sample_1model_xy(x, y, 'thick_mring', params, psize=psize, pol=pol)
+        val += params['ff'] * sample_1model_xy(x, y, 'circ_gauss', params, psize=psize, pol=pol)
     elif model_type[:9] == 'stretched':
         params_stretch = params.copy()
         params_stretch['F0'] /= params['stretch']
@@ -531,6 +549,9 @@ def sample_1model_uv(u, v, model_type, params, pol='I', jonesdict=None):
     elif model_type == 'thick_mring_floor':
         val  = (1.0 - params['ff']) * sample_1model_uv(u, v, 'thick_mring', params, pol=pol, jonesdict=jonesdict)
         val += params['ff'] * sample_1model_uv(u, v, 'blurred_disk', params, pol=pol, jonesdict=jonesdict)
+    elif model_type == 'thick_mring_Gfloor':
+        val  = (1.0 - params['ff']) * sample_1model_uv(u, v, 'thick_mring', params, pol=pol, jonesdict=jonesdict)
+        val += params['ff'] * sample_1model_uv(u, v, 'circ_gauss', params, pol=pol, jonesdict=jonesdict)
     elif model_type[:9] == 'stretched':
         params_stretch = params.copy()        
         params_stretch['x0'] = 0.0
@@ -755,6 +776,9 @@ def sample_1model_graduv_uv(u, v, model_type, params, pol='I', jonesdict=None):
     elif model_type == 'thick_mring_floor':
         val  = (1.0 - params['ff']) * sample_1model_graduv_uv(u, v, 'thick_mring', params, pol=pol, jonesdict=jonesdict)
         val += params['ff'] * sample_1model_graduv_uv(u, v, 'blurred_disk', params, pol=pol, jonesdict=jonesdict)
+    elif model_type == 'thick_mring_Gfloor':
+        val  = (1.0 - params['ff']) * sample_1model_graduv_uv(u, v, 'thick_mring', params, pol=pol, jonesdict=jonesdict)
+        val += params['ff'] * sample_1model_graduv_uv(u, v, 'circ_gauss', params, pol=pol, jonesdict=jonesdict)
     elif model_type[:9] == 'stretched':
         # Take care of the degenerate origin point by a small offset
         u += (u==0.)*(v==0.)*1e-10
@@ -1084,6 +1108,36 @@ def sample_1model_grad_uv(u, v, model_type, params, pol='I', fit_pol=False, fit_
         # Now the derivatives for x0 and y0
         grad.append(grad_mring[3] + grad_disk[3])
         grad.append(grad_mring[4] + grad_disk[4])
+
+        # Add remaining gradients for the mring
+        for j in range(5,len(grad_mring)):
+            grad.append(grad_mring[j])
+
+        val = np.array(grad)
+    elif model_type == 'thick_mring_Gfloor': # F0, d, [alpha], ff, FWHM, x0, y0, beta1_re/abs, beta1_im/arg, beta2_re/abs, beta2_im/arg, ...
+        # We need to stich together the two gradients for the mring and the gaussian; we also need to add the gradient for the floor fraction ff
+        grad_mring = (1.0 - params['ff']) * sample_1model_grad_uv(u, v, 'thick_mring', params, pol=pol, fit_pol=fit_pol, fit_cpol=fit_cpol)
+        grad_gauss  = params['ff'] * sample_1model_grad_uv(u, v, 'circ_gauss', params, pol=pol, fit_pol=fit_pol, fit_cpol=fit_cpol)
+
+        # mring: F0, d, alpha, x0, y0, beta1_re/abs, beta1_im/arg, beta2_re/abs, beta2_im/arg, ...
+        # gauss: F0, [d, alpha] FWHM, x0, y0
+
+        grad = []
+        grad.append(grad_mring[0] + grad_gauss[0]) # Here are derivatives for F0 
+
+        # Here are derivatives for d, and alpha 
+        grad.append(grad_mring[1])
+        grad.append(grad_mring[2])
+
+        # Here is the derivative for ff
+        grad.append( params['F0'] * (grad_gauss[0]/params['ff'] - grad_mring[0]/(1.0 - params['ff'])) )
+
+        # Now the derivatives for FWHM
+        grad.append(grad_gauss[1])
+
+        # Now the derivatives for x0 and y0
+        grad.append(grad_mring[3] + grad_gauss[2])
+        grad.append(grad_mring[4] + grad_gauss[3])
 
         # Add remaining gradients for the mring
         for j in range(5,len(grad_mring)):
@@ -1602,6 +1656,37 @@ class Model(object):
             beta_list = [0.0]
         out.models.append('thick_mring_floor')
         out.params.append({'F0':F0,'d':d,'beta_list':np.array(beta_list, dtype=np.complex_),'beta_list_pol':np.array(beta_list_pol, dtype=np.complex_),'beta_list_cpol':np.array(beta_list_cpol, dtype=np.complex_),'alpha':alpha,'x0':x0,'y0':y0,'ff':ff})
+        return out
+
+    def add_thick_mring_Gfloor(self, F0 = 1.0, d = 50.*RADPERUAS, alpha = 10.*RADPERUAS, ff=0.0, FWHM = 50.*RADPERUAS, x0 = 0.0, y0 = 0.0, beta_list = None, beta_list_pol = None, beta_list_cpol = None):
+        """Add a ring model with azimuthal brightness variations determined by a Fourier mode expansion, thickness determined by circular Gaussian convolution, and a floor
+           The floor is a circular Gaussian, with size FWHM
+           For details, see Eq. 18-20 of https://arxiv.org/abs/1907.04329
+           The Gaussian convolution calculation is a trivial generalization of Appendix G of https://iopscience.iop.org/article/10.3847/2041-8213/ab0e85/pdf
+
+           Args:
+               F0 (float): The total flux of the model
+               d (float): The ring diameter (radians)
+               alpha (float): The ring thickness (FWHM of Gaussian convolution) (radians)
+               FWHM (float): The Gaussian FWHM
+               x0 (float): The x-coordinate (radians)
+               y0 (float): The y-coordinate (radians)
+               ff (float): The fraction of the total flux in the floor
+               beta_list (list): List of complex Fourier coefficients, [beta_1, beta_2, ...]. 
+                                 Negative indices are determined by the condition beta_{-m} = beta_m*.
+                                 Indices are all scaled by F0 = beta_0, so they are dimensionless. 
+           Returns:
+                (Model): Updated Model
+        """
+        if beta_list is None: beta_list = []
+        if beta_list_pol is None: beta_list_pol = []
+        if beta_list_cpol is None: beta_list_cpol = []
+
+        out = self.copy()
+        if beta_list is None:
+            beta_list = [0.0]
+        out.models.append('thick_mring_Gfloor')
+        out.params.append({'F0':F0,'d':d,'beta_list':np.array(beta_list, dtype=np.complex_),'beta_list_pol':np.array(beta_list_pol, dtype=np.complex_),'beta_list_cpol':np.array(beta_list_cpol, dtype=np.complex_),'alpha':alpha,'x0':x0,'y0':y0,'ff':ff,'FWHM':FWHM})
         return out
 
     def add_stretched_thick_mring(self, F0 = 1.0, d = 50.*RADPERUAS, alpha = 10.*RADPERUAS, x0 = 0.0, y0 = 0.0, beta_list = None, beta_list_pol = None, beta_list_cpol = None, stretch = 1.0, stretch_PA = 0.0):
