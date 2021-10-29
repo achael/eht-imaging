@@ -1395,7 +1395,7 @@ class Image(object):
             return imarr_blur
 
         # Convolve the primary image
-        imarr = (self.imvec).reshape(self.ydim, self.xdim)
+        imarr = (self.imvec).reshape(self.ydim, self.xdim).astype('float64')
         imarr_blur = blur(imarr, gauss)
 
         # Make new image object
@@ -1409,7 +1409,7 @@ class Image(object):
                 continue
             polvec = self._imdict[pol]
             if len(polvec):
-                polarr = polvec.reshape(self.ydim, self.xdim)
+                polarr = polvec.reshape(self.ydim, self.xdim).astype('float64')
                 if frac_pol:
                     polarr = blur(polarr, gausspol)
                 outim.add_pol_image(polarr, pol)
@@ -1418,7 +1418,7 @@ class Image(object):
         mflist_out = []
         for mfvec in self._mflist:
             if len(mfvec):
-                mfarr = mfvec.reshape(self.ydim, self.xdim)
+                mfarr = mfvec.reshape(self.ydim, self.xdim).astype('float64')
                 mfarr = blur(mfarr, gauss)
                 mfvec_out = mfarr.flatten()
             else:
@@ -1503,8 +1503,10 @@ class Image(object):
 
             imarr = imvec.reshape(self.ydim, self.xdim)
 
-            sx = ndi.sobel(imarr, axis=0, mode='constant')
-            sy = ndi.sobel(imarr, axis=1, mode='constant')
+            #sx = ndi.sobel(imarr, axis=0, mode='constant')
+            #sy = ndi.sobel(imarr, axis=1, mode='constant')
+            sx = ndi.sobel(imarr, axis=0, mode='nearest')
+            sy = ndi.sobel(imarr, axis=1, mode='nearest')
 
             # TODO: are these in the right order??
             if gradtype == 'x':

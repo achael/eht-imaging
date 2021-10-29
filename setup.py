@@ -7,7 +7,7 @@ def read(fname):
 if __name__ == "__main__":
     setup(name="ehtim",
 
-          version = "1.2.2",
+          version = "1.2.3",
 
           author = "Andrew Chael",
           author_email = "achael@princeton.edu",
@@ -22,6 +22,7 @@ if __name__ == "__main__":
                       "ehtim.calibrating",
                       "ehtim.imaging",
                       "ehtim.io",
+                      "ehtim.modeling",
                       "ehtim.observing",
                       "ehtim.plotting",
                       "ehtim.features",

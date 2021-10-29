@@ -155,7 +155,7 @@ def forwardUpdates_apxImgs(mu, Lambda_orig, obs_List, A_orig, Q_orig, init_image
         
         for k in range(0,numLinIters):
 	    # F is the derivative of the Forward model with respect to the unknown parameters
-            meas, idealmeas, F, measCov, valid = getMeasurementTerms(obs_List[t], z_List_lin[t], measurement=measurement, mask=mask, normalize=normalize)
+            meas, idealmeas, F, measCov, valid = getMeasurementTerms(obs_List[t], z_List_lin[t], measurement=measurement, tot_flux=lightcurve[t], mask=mask, normalize=normalize)
             if valid:
                 z_List_t_t[t].imvec[mask], P_List_t_t[t] = prodGaussiansLem2(F, measCov, meas, z_star_List_t_tm1[t].imvec[mask], P_star_List_t_tm1[t])
                 
@@ -239,7 +239,7 @@ def backwardUpdates(mu, Lambda_orig, obs_List, A_orig, Q_orig, measurement={'vis
 
         # update
 
-        meas, idealmeas, F, measCov, valid = getMeasurementTerms(obs_List[t], apxImgs[t], measurement=measurement, mask=mask, normalize=normalize)
+        meas, idealmeas, F, measCov, valid = getMeasurementTerms(obs_List[t], apxImgs[t], measurement=measurement, tot_flux=lightcurve[t], mask=mask, normalize=normalize)
 
         if valid:
             z_t_t[t].imvec[mask], P_t_t[t] = prodGaussiansLem2(F, measCov, meas, z_star_t_tp1[t].imvec[mask], P_star_t_tp1[t])
@@ -284,6 +284,9 @@ def computeSuffStatistics(mu, Lambda, obs_List, Upsilon, theta, init_x, init_y, 
         
     if mu[0].xdim!=mu[0].ydim:
         error('Error: This has only been checked thus far on square images!')
+
+    if lightcurve == None  and 'flux' in measurement.keys(): #KATIE ADDED FEB 1 2021
+        error('Error: if you are using a flux constraint you must specify a lightcurve')
     
     if list(measurement.keys())==1 and measurement.keys()[0]=='vis':
         numLinIters = 1
@@ -611,7 +614,7 @@ def prodGaussiansLem2(A, Sigma, y, mu, Q):
     return (mean, covariance)
 
 
-def getMeasurementTerms(obs, im, measurement={'vis': 1}, mask=[], normalize=False):
+def getMeasurementTerms(obs, im, measurement={'vis': 1}, tot_flux=None, mask=[], normalize=False):
     if not np.sum(mask)==len(mask):
         raise ValueError('The code doenst currently work with a mask!')
 
@@ -632,7 +635,13 @@ def getMeasurementTerms(obs, im, measurement={'vis': 1}, mask=[], normalize=Fals
 
         # check to see if you have data in the current obs
         try:
-            data, sigma, A = chisqdata(obs, im, mask, dtype=dname, ttype='direct')
+            if dname=='flux':
+                if tot_flux == None:
+                    error('Error: if you are using a flux constraint you must specify a total flux (via the lightcurve)')
+                data = np.array([tot_flux])
+                sigma = np.array([1])
+            else:
+                data, sigma, A = chisqdata(obs, im, mask, dtype=dname, ttype='direct')
             count = count + 1
         except:
             continue
@@ -653,6 +662,9 @@ def getMeasurementTerms(obs, im, measurement={'vis': 1}, mask=[], normalize=Fals
         elif dname == 'logcamp':
             F = grad_logcamp(im.imvec, A)
             ideal = logcamp(im.imvec,A)
+        elif dname == 'flux':
+            F = grad_flux(im.imvec)
+            ideal = flux(im.imvec)
 
         #turn complex matrices to real
         if not np.allclose(data.imag,0):
@@ -692,6 +704,12 @@ def grad_bs(imvec, Amatrices):
     pt3 = np.dot(Amatrices[0],imvec) * np.dot(Amatrices[1],imvec)
     out = pt1[:,None] * Amatrices[0] + pt2[:,None] * Amatrices[1] + pt3[:,None] * Amatrices[2]
     return out
+
+def flux(imvec):
+    return np.sum(imvec)
+
+def grad_flux(imvec):
+    return np.ones((1, len(imvec)))
 
 def cphase(imvec, Amatrices):
     """the closure phase"""

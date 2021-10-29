@@ -396,7 +396,8 @@ class Movie(object):
         """
 
         frames2D = self.frames.reshape((self.nframes, self.ydim, self.xdim))
-        arglist = [frames2D, self.times, self.psize, self.ra,  self.dec]
+        arglist = [frames2D.copy(), self.times.copy(), self.psize, self.ra,  self.dec]
+        #arglist = [frames2D, self.times, self.psize, self.ra,  self.dec]
         argdict = {'rf': self.rf, 'polrep': self.polrep,  'pol_prim': self.pol_prim,
                    'pulse': self.pulse, 'source': self.source,
                    'mjd': self.mjd, 'interp': self.interp, 'bounds_error': self.bounds_error}
@@ -1162,7 +1163,6 @@ class Movie(object):
 
         # Jones Matrix Corruption & Calibration
         if jones:
-            print("Applying Jones Matrices to data . . . ")
             obsdata = simobs.add_jones_and_noise(obs, add_th_noise=add_th_noise,
                                                  opacitycal=opacitycal, ampcal=ampcal,
                                                  phasecal=phasecal, frcal=frcal, dcal=dcal,

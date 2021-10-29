@@ -150,6 +150,8 @@ def imgsum(im_or_mov, obs, obs_uncal, outname, outdir='.', title='imgsum', comme
             # TODO --- ok to always extrapolate?
             if force_extrapolate:
                 im_or_mov.reset_interp(bounds_error=False)
+        elif hasattr(im_or_mov, 'make_image'):      
+            im_display = im_or_mov.make_image(obs.res() * 10., 512)
         else:
             im_display = im_or_mov.copy()
 
@@ -237,7 +239,7 @@ def imgsum(im_or_mov, obs, obs_uncal, outname, outdir='.', title='imgsum', comme
                 ha='left', va='center', transform=ax.transAxes)
         ax.text(.23, .5, "%0.0f GHz" % (im_or_mov.rf/1.e9), fontsize=fs,
                 ha='left', va='center', transform=ax.transAxes)
-        ax.text(.23, .3, "%0.1f $\mu$as" % (im_or_mov.fovx()/ehc.RADPERUAS), fontsize=fs,
+        ax.text(.23, .3, "%0.1f $\mu$as" % (im_display.fovx()/ehc.RADPERUAS), fontsize=fs,
                 ha='left', va='center', transform=ax.transAxes)
         ax.text(.23, .1, "%0.2f Jy" % flux, fontsize=fs,
                 ha='left', va='center', transform=ax.transAxes)

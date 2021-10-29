@@ -18,6 +18,9 @@ import ehtim.obsdata as obsdata
 from ehtim.observing.obs_helpers import *
 from ehtim.const_def import * #Note: C is m/s rather than cm/s.
 
+from multiprocessing import cpu_count
+from multiprocessing import Pool
+
 import math
 import cmath
 
@@ -404,6 +407,10 @@ class ScatteringModel(object):
 
         return phi_Image
 
+    def Scatter2(self, args, kwargs):
+        """Call self.Scatter with expanded args and kwargs."""
+        return self.Scatter(*args, **kwargs)
+
     def Scatter(self, Unscattered_Image, Epsilon_Screen=np.array([]), obs_frequency_Hz=0.0, Vx_km_per_s=50.0, Vy_km_per_s=0.0, t_hr=0.0, ea_ker=None, sqrtQ=None, Linearized_Approximation=False, DisplayImage=False, Force_Positivity=False, use_approximate_form=True):
         """Scatter an image using the specified epsilon screen.
            All lengths should be specified in centimeters
@@ -522,7 +529,7 @@ class ScatteringModel(object):
 
         return AI_Image
 
-    def Scatter_Movie(self, Unscattered_Movie, Epsilon_Screen=np.array([]), obs_frequency_Hz=0.0, Vx_km_per_s=50.0, Vy_km_per_s=0.0, framedur_sec=None, N_frames = None, sqrtQ=None, Linearized_Approximation=False, Force_Positivity=False,Return_Image_List=False):
+    def Scatter_Movie(self, Unscattered_Movie, Epsilon_Screen=np.array([]), obs_frequency_Hz=0.0, Vx_km_per_s=50.0, Vy_km_per_s=0.0, framedur_sec=None, N_frames = None, ea_ker=None, sqrtQ=None, Linearized_Approximation=False, Force_Positivity=False, Return_Image_List=False, processes=0):
         """Scatter a movie using the specified epsilon screen. The movie can either be a movie object, an image list, or a static image
            If scattering a list of images or static image, the frame duration in seconds (framedur_sec) must be specified
            If scattering a static image, the total number of frames must be specified (N_frames)
@@ -538,10 +545,12 @@ class ScatteringModel(object):
                 Vy_km_per_s (float): Velocity of the scattering screen in the y direction (toward North) in km/s.
                 framedur_sec (float): Duration of each frame, in seconds. Only needed if Unscattered_Movie is not a movie object.
                 N_frames (int): Total number of frames. Only needed if Unscattered_Movie is a static image object.
+                ea_ker (2D ndarray): The used can optionally pass a precomputed array of the ensemble-average blurring kernel.
                 sqrtQ (2D ndarray): The used can optionally pass a precomputed array of the square root of the power spectrum.
                 Linearized_Approximation (bool): If True, uses a linearized approximation for the scattering (Eq. 10 of Johnson & Narayan 2016). If False, uses Eq. 9 of that paper.
                 Force_Positivity (bool): If True, eliminates negative flux from the scattered image from the linearized approximation.
                 Return_Image_List (bool): If True, returns a list of the scattered frames. If False, returns a movie object.
+                processes (int): Number of cores to use in multiprocessing. Default value (0) means no multiprocessing. Uses all available cores if processes < 0.
 
            Returns:
                Scattered_Movie: Either a movie object or a list of images, depending on the flag Return_Image_List.
@@ -623,9 +632,26 @@ class ScatteringModel(object):
         if Epsilon_Screen.shape[0] == 0:
             Epsilon_Screen = MakeEpsilonScreen(N, N)
 
-        scattered_im_List = [ self.Scatter(get_frame(j), Epsilon_Screen, obs_frequency_Hz = obs_frequency_Hz, Vx_km_per_s = Vx_km_per_s, Vy_km_per_s = Vy_km_per_s, 
-                              t_hr=tlist_hr[j], sqrtQ=sqrtQ, Linearized_Approximation=Linearized_Approximation, Force_Positivity=Force_Positivity) for j in range(N_frames)]
+        # possibly parallelize
+        if processes < 0:
+            processes = cpu_count()
+        processes = min(processes, N_frames)
 
+        # generate scattered images
+        if processes > 0:
+            pool = Pool(processes=processes)
+            args = [
+                (
+                    [get_frame(j), Epsilon_Screen],
+                    dict(obs_frequency_Hz = obs_frequency_Hz, Vx_km_per_s = Vx_km_per_s, Vy_km_per_s = Vy_km_per_s, t_hr=tlist_hr[j], sqrtQ=sqrtQ, Linearized_Approximation=Linearized_Approximation, Force_Positivity=Force_Positivity)
+                ) for j in range(N_frames)
+            ]
+            scattered_im_List = pool.starmap(self.Scatter2, args)
+            pool.close()
+            pool.join()
+        else:
+            scattered_im_List = [self.Scatter(get_frame(j), Epsilon_Screen, obs_frequency_Hz = obs_frequency_Hz, Vx_km_per_s = Vx_km_per_s, Vy_km_per_s = Vy_km_per_s, t_hr=tlist_hr[j], ea_ker=ea_ker, sqrtQ=sqrtQ, Linearized_Approximation=Linearized_Approximation, Force_Positivity=Force_Positivity) for j in range(N_frams)]
+        
         if Return_Image_List == True:
             return scattered_im_List
 
