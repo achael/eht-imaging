@@ -61,8 +61,11 @@ def model_params(model_type, model_params=None, fit_pol=False, fit_cpol=False):
                 params.append('cpol_frac')
             else:
                 for j in range(len(model_params['beta_list_cpol'])):
-                    params.append('betacpol' + str(j) + complex_labels[0])
-                    params.append('betacpol' + str(j) + complex_labels[1])
+                    if j==0:
+                        params.append('betacpol0')
+                    else:
+                        params.append('betacpol' + str(j) + complex_labels[0])
+                        params.append('betacpol' + str(j) + complex_labels[1])
 
     if model_type == 'point':
         params = ['F0','x0','y0']
@@ -259,8 +262,11 @@ def default_prior(model_type,model_params=None,fit_pol=False,fit_cpol=False):
             prior['cpol_frac'] = {'prior_type':'flat','min':-1.0,'max':1.0}
         else:
             for j in range(len(model_params['beta_list_cpol'])):
-                prior['betacpol' + str(j) + complex_labels[0]] = complex_priors2[0]
-                prior['betacpol' + str(j) + complex_labels[1]] = complex_priors2[1]
+                if j > 0:
+                    prior['betacpol' + str(j) + complex_labels[0]] = complex_priors2[0]
+                    prior['betacpol' + str(j) + complex_labels[1]] = complex_priors2[1]
+                else:
+                    prior['betacpol0'] = {'prior_type':'flat','min':-1.0,'max':1.0}
 
     return prior
 

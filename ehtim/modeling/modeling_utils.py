@@ -596,7 +596,9 @@ def set_params(params, trial_model, param_map, minimizer_func, model_prior):
                 raise Exception('Unsure how to interpret ' + param_map[j][1])
 
             curval = trial_model.params[param_map[j][0]][param_type][idx]
-            if param_map[j][1][-2:] == 're':
+            if '_' not in param_map[j][1]: # This is for beta0 of cpol
+                trial_model.params[param_map[j][0]][param_type][idx] = tparams[j] * param_map[j][2]
+            elif param_map[j][1][-2:] == 're':
                 trial_model.params[param_map[j][0]][param_type][idx] = tparams[j] * param_map[j][2]      + np.imag(curval)*1j
             elif param_map[j][1][-2:] == 'im':
                 trial_model.params[param_map[j][0]][param_type][idx] = tparams[j] * param_map[j][2] * 1j + np.real(curval)
@@ -1131,7 +1133,9 @@ def modeler_func(Obsdata, model_init, model_prior,
                 raise Exception('Unsure how to interpret ' + param_map[j][1])
 
             curval = model_init.params[param_map[j][0]][param_type][idx]
-            if   param_map[j][1][-2:] == 're':
+            if '_' not in param_map[j][1]:
+                param_init.append(transform_param(np.real( model_init.params[pm[0]][param_type][idx]/pm[2]), model_prior[pm[0]][pm[1]],inverse=False))
+            elif   param_map[j][1][-2:] == 're':
                 param_init.append(transform_param(np.real( model_init.params[pm[0]][param_type][idx]/pm[2]), model_prior[pm[0]][pm[1]],inverse=False))
             elif param_map[j][1][-2:] == 'im':
                 param_init.append(transform_param(np.imag( model_init.params[pm[0]][param_type][idx]/pm[2]), model_prior[pm[0]][pm[1]],inverse=False))
