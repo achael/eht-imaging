@@ -137,7 +137,7 @@ for iter in range(0, nIters+1):
     expVal_t, expVal_t_t, expVal_tm1_t, loglikelihood, apxImgs = sw.computeSuffStatistics(
         meanImg, imCov, obs_List, noiseCov_img, newTheta, init_x, init_y, 
         flowbasis_x, flowbasis_y, initTheta, method=warp_method, measurement=measurement, 
-        interiorPriors=interiorPriors, numLinIters=numLinIters, apxImgs=apxImgs)
+        interiorPriors=interiorPriors, numLinIters=numLinIters, compute_expVal_tm1_t=apxImgs)
 
     # save the negative log likelihood (nll), the value of the warp parameters (thetas) 
     # and the evaluation of the optimization function (feval)
