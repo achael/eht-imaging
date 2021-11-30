@@ -82,6 +82,12 @@ def model_params(model_type, model_params=None, fit_pol=False, fit_cpol=False):
     elif model_type == 'blurred_disk':
         params = ['F0','d','alpha','x0','y0']
         add_pol()
+    elif model_type == 'crescent':
+        params = ['F0','d', 'fr', 'fo', 'phi','x0','y0']
+        add_pol()
+    elif model_type == 'blurred_crescent':
+        params = ['F0','d','alpha','fr', 'fo', 'phi','x0','y0']
+        add_pol()
     elif model_type == 'ring':
         params = ['F0','d','x0','y0']
         add_pol()
@@ -181,6 +187,17 @@ def default_prior(model_type,model_params=None,fit_pol=False,fit_cpol=False):
     elif model_type == 'blurred_disk':
         prior['d'] = {'prior_type':'positive','transform':'log'}
         prior['alpha'] = {'prior_type':'positive','transform':'log'}
+    elif model_type == 'crescent': 
+        prior['d'] = {'prior_type':'positive','transform':'log'}
+        prior['fr'] = {'prior_type':'flat','min':0,'max':1}
+        prior['fo'] = {'prior_type':'flat','min':0,'max':1}
+        prior['phi'] = {'prior_type':'flat','min':0,'max':2.*np.pi}
+    elif model_type == 'blurred_crescent':
+        prior['d'] = {'prior_type':'positive','transform':'log'}
+        prior['alpha'] = {'prior_type':'positive','transform':'log'}
+        prior['fr'] = {'prior_type':'flat','min':0,'max':1}
+        prior['fo'] = {'prior_type':'flat','min':0,'max':1}
+        prior['phi'] = {'prior_type':'flat','min':0,'max':2.*np.pi}
     elif model_type == 'ring':
         prior['d'] = {'prior_type':'positive','transform':'log'}
     elif model_type == 'stretched_ring':
@@ -366,6 +383,24 @@ def sample_1model_xy(x, y, model_type, params, psize=1.*RADPERUAS, pol='I'):
             if len(r_list) < len(np.ravel(r))/2 and len(r) > 100: 
                 f = interpolate.interp1d(r_list, f(r_list), kind='cubic')
         val = params['F0'] * psize**2 * f(r)
+    elif model_type == 'crescent':
+        phi = params['phi']
+        fr = params['fr']
+        fo = params['fo']
+        r = params['d'] / 2.
+        params0 = {'F0': 1.0/(1.0-fr**2)*params['F0'],   'd':params['d'],    'x0': params['x0'], 'y0': params['y0']}
+        params1 = {'F0': fr**2/(1.0-fr**2)*params['F0'], 'd':params['d']*fr, 'x0': params['x0'] + r*(1-fr)*fo*np.cos(phi), 'y0': params['y0'] + r*(1-fr)*fo*np.sin(phi)}
+        val =  sample_1model_xy(x, y, 'disk', params0, psize=psize, pol=pol) 
+        val -= sample_1model_xy(x, y, 'disk', params1, psize=psize, pol=pol)
+    elif model_type == 'blurred_crescent':
+        phi = params['phi']
+        fr = params['fr']
+        fo = params['fo']
+        r = params['d'] / 2.
+        params0 = {'F0': 1.0/(1.0-fr**2)*params['F0'],   'd':params['d'], 'alpha':params['alpha'], 'x0': params['x0'], 'y0': params['y0']}
+        params1 = {'F0': fr**2/(1.0-fr**2)*params['F0'], 'd':params['d']*fr, 'alpha':params['alpha'], 'x0': params['x0'] + r*(1-fr)*fo*np.cos(phi), 'y0': params['y0'] + r*(1-fr)*fo*np.sin(phi)}
+        val =  sample_1model_xy(x, y, 'blurred_disk', params0, psize=psize, pol=pol) 
+        val -= sample_1model_xy(x, y, 'blurred_disk', params1, psize=psize, pol=pol)
     elif model_type == 'ring':
         val = (params['F0']*psize**2/(np.pi*params['d']*psize*LINE_THICKNESS)
                 * (params['d']/2.0 - psize*LINE_THICKNESS/2 < np.sqrt((x - params['x0'])**2 + (y - params['y0'])**2))
@@ -499,6 +534,24 @@ def sample_1model_uv(u, v, model_type, params, pol='I', jonesdict=None):
         val = (params['F0'] * 2.0/z * sps.jv(1, z) 
                * np.exp(1j * 2.0 * np.pi * (u * params['x0'] + v * params['y0']))
                * np.exp(-(np.pi * params['alpha'] * (u**2 + v**2)**0.5)**2/(4. * np.log(2.)))) 
+    elif model_type == 'crescent':
+        phi = params['phi']
+        fr = params['fr']
+        fo = params['fo']
+        r = params['d'] / 2.
+        params0 = {'F0': 1.0/(1.0-fr**2)*params['F0'],   'd':params['d'],    'x0': params['x0'], 'y0': params['y0']}
+        params1 = {'F0': fr**2/(1.0-fr**2)*params['F0'], 'd':params['d']*fr, 'x0': params['x0'] + r*(1-fr)*fo*np.cos(phi), 'y0': params['y0'] + r*(1-fr)*fo*np.sin(phi)}
+        val =  sample_1model_uv(u, v, 'disk', params0, pol=pol, jonesdict=jonesdict) 
+        val -= sample_1model_uv(u, v, 'disk', params1, pol=pol, jonesdict=jonesdict)
+    elif model_type == 'blurred_crescent':
+        phi = params['phi']
+        fr = params['fr']
+        fo = params['fo']
+        r = params['d'] / 2.
+        params0 = {'F0': 1.0/(1.0-fr**2)*params['F0'],   'd':params['d'], 'alpha':params['alpha'], 'x0': params['x0'], 'y0': params['y0']}
+        params1 = {'F0': fr**2/(1.0-fr**2)*params['F0'], 'd':params['d']*fr, 'alpha':params['alpha'], 'x0': params['x0'] + r*(1-fr)*fo*np.cos(phi), 'y0': params['y0'] + r*(1-fr)*fo*np.sin(phi)}
+        val =  sample_1model_uv(u, v, 'blurred_disk', params0, pol=pol, jonesdict=jonesdict) 
+        val -= sample_1model_uv(u, v, 'blurred_disk', params1, pol=pol, jonesdict=jonesdict) 
     elif model_type == 'ring':
         z = np.pi * params['d'] * (u**2 + v**2)**0.5
         val = (params['F0'] * sps.jv(0, z) 
@@ -653,6 +706,24 @@ def sample_1model_graduv_uv(u, v, model_type, params, pol='I', jonesdict=None):
                             + params['F0'] * 2./z * np.pi * params['d'] * u/uvdist * bessel_deriv * blur * np.exp(1j * 2.0 * np.pi * (u * params['x0'] + v * params['y0'])),
                          (1j * 2.0 * np.pi * params['y0'] - v/uvdist**2 - params['alpha']**2 * np.pi**2 * v/(2. * np.log(2.))) * vis 
                             + params['F0'] * 2./z * np.pi * params['d'] * v/uvdist * bessel_deriv * blur * np.exp(1j * 2.0 * np.pi * (u * params['x0'] + v * params['y0'])) ])
+    elif model_type == 'crescent':
+        phi = params['phi']
+        fr = params['fr']
+        fo = params['fo']
+        r = params['d'] / 2.
+        params0 = {'F0': 1.0/(1.0-fr**2)*params['F0'],   'd':params['d'],    'x0': params['x0'], 'y0': params['y0']}
+        params1 = {'F0': fr**2/(1.0-fr**2)*params['F0'], 'd':params['d']*fr, 'x0': params['x0'] + r*(1-fr)*fo*np.cos(phi), 'y0': params['y0'] + r*(1-fr)*fo*np.sin(phi)}
+        val =  sample_1model_graduv_uv(u, v, 'disk', params0, pol=pol, jonesdict=jonesdict) 
+        val -= sample_1model_graduv_uv(u, v, 'disk', params1, pol=pol, jonesdict=jonesdict)
+    elif model_type == 'blurred_crescent':
+        phi = params['phi']
+        fr = params['fr']
+        fo = params['fo']
+        r = params['d'] / 2.
+        params0 = {'F0': 1.0/(1.0-fr**2)*params['F0'],   'd':params['d'], 'alpha':params['alpha'], 'x0': params['x0'], 'y0': params['y0']}
+        params1 = {'F0': fr**2/(1.0-fr**2)*params['F0'], 'd':params['d']*fr, 'alpha':params['alpha'], 'x0': params['x0'] + r*(1-fr)*fo*np.cos(phi), 'y0': params['y0'] + r*(1-fr)*fo*np.sin(phi)}
+        val =  sample_1model_graduv_uv(u, v, 'blurred_disk', params0, pol=pol, jonesdict=jonesdict) 
+        val -= sample_1model_graduv_uv(u, v, 'blurred_disk', params1, pol=pol, jonesdict=jonesdict) 
     elif model_type == 'ring':
         # Take care of the degenerate origin point by a small offset
         u += (u==0.)*(v==0.)*1e-10
@@ -999,7 +1070,79 @@ def sample_1model_grad_uv(u, v, model_type, params, pol='I', fit_pol=False, fit_
                          -params['F0'] * 2.0/z * sps.jv(2, z) * np.pi * (u**2 + v**2)**0.5 * blur * np.exp(1j * 2.0 * np.pi * (u * params['x0'] + v * params['y0'])),
                          -np.pi**2 * (u**2 + v**2) * params['alpha']/(2.*np.log(2.)) * vis,
                           1j * 2.0 * np.pi * u * vis,
-                          1j * 2.0 * np.pi * v * vis])    
+                          1j * 2.0 * np.pi * v * vis])  
+    elif model_type == 'crescent': #['F0','d', 'fr', 'fo', 'phi','x0','y0']
+        phi = params['phi'] 
+        fr = params['fr']
+        fo = params['fo']
+        r = params['d'] / 2.
+        params0 = {'F0': 1.0/(1.0-fr**2)*params['F0'],   'd':params['d'],    'x0': params['x0'], 'y0': params['y0']}
+        params1 = {'F0': fr**2/(1.0-fr**2)*params['F0'], 'd':params['d']*fr, 'x0': params['x0'] + r*(1-fr)*fo*np.cos(phi), 'y0': params['y0'] + r*(1-fr)*fo*np.sin(phi)}
+
+        grad0 = sample_1model_grad_uv(u, v, 'disk', params0, pol=pol, fit_pol=fit_pol, fit_cpol=fit_cpol, fit_leakage=fit_leakage, jonesdict=jonesdict)
+        grad1 = sample_1model_grad_uv(u, v, 'disk', params1, pol=pol, fit_pol=fit_pol, fit_cpol=fit_cpol, fit_leakage=fit_leakage, jonesdict=jonesdict)
+
+        # Add the derivatives one by one
+        grad = []
+
+        # F0
+        grad.append( 1.0/(1.0-fr**2)*grad0[0] - fr**2/(1.0-fr**2)*grad1[0] )
+
+        # d
+        grad.append( grad0[1] - fr*grad1[1] - 0.5 * (1.0 - fr) * fo * (np.cos(phi) * grad1[2] + np.sin(phi) * grad1[3])  )
+
+        # fr
+        grad.append( 2.0*params['F0']*fr/(1.0 - fr**2)**2 * (grad0[0] - grad1[0]) - params['d']*grad1[1] + r * fo * (np.cos(phi) * grad1[2] + np.sin(phi) * grad1[3]) ) 
+
+        # fo
+        grad.append( -r * (1-fr) * (np.cos(phi) * grad1[2] + np.sin(phi) * grad1[3]) ) 
+
+        # phi
+        grad.append( -r*(1-fr)*fo* (-np.sin(phi) * grad1[2] + np.cos(phi) * grad1[3]) ) 
+
+        # x0, y0
+        grad.append( grad0[2] - grad1[2] ) 
+        grad.append( grad0[3] - grad1[3] ) 
+
+        val = np.array(grad)
+    elif model_type == 'blurred_crescent': #['F0','d','alpha','fr', 'fo', 'phi','x0','y0']
+        phi = params['phi']
+        fr = params['fr']
+        fo = params['fo']
+        r = params['d'] / 2.
+        params0 = {'F0': 1.0/(1.0-fr**2)*params['F0'],   'd':params['d'], 'alpha':params['alpha'], 'x0': params['x0'], 'y0': params['y0']}
+        params1 = {'F0': fr**2/(1.0-fr**2)*params['F0'], 'd':params['d']*fr, 'alpha':params['alpha'], 'x0': params['x0'] + r*(1-fr)*fo*np.cos(phi), 'y0': params['y0'] + r*(1-fr)*fo*np.sin(phi)}
+
+        grad0 = sample_1model_grad_uv(u, v, 'blurred_disk', params0, pol=pol, fit_pol=fit_pol, fit_cpol=fit_cpol, fit_leakage=fit_leakage, jonesdict=jonesdict)
+        grad1 = sample_1model_grad_uv(u, v, 'blurred_disk', params1, pol=pol, fit_pol=fit_pol, fit_cpol=fit_cpol, fit_leakage=fit_leakage, jonesdict=jonesdict)
+
+        # Add the derivatives one by one
+        grad = []
+
+        # F0
+        grad.append( 1.0/(1.0-fr**2)*grad0[0] - fr**2/(1.0-fr**2)*grad1[0] )
+
+        # d
+        grad.append( grad0[1] - fr*grad1[1] - 0.5 * (1.0 - fr) * fo * (np.cos(phi) * grad1[3] + np.sin(phi) * grad1[4])  )
+
+        # alpha
+        grad.append( grad0[2] - grad1[2] ) 
+
+        # fr
+        grad.append( 2.0*params['F0']*fr/(1.0 - fr**2)**2 * (grad0[0] - grad1[0]) - params['d']*grad1[1] + r * fo * (np.cos(phi) * grad1[3] + np.sin(phi) * grad1[4]) ) 
+
+        # fo
+        grad.append( -r * (1-fr) * (np.cos(phi) * grad1[3] + np.sin(phi) * grad1[4]) ) 
+
+        # phi
+        grad.append( -r*(1-fr)*fo* (-np.sin(phi) * grad1[3] + np.cos(phi) * grad1[4]) ) 
+
+        # x0, y0
+        grad.append( grad0[3] - grad1[3] ) 
+        grad.append( grad0[4] - grad1[4] ) 
+
+        val = np.array(grad)
+
     elif model_type == 'ring': # F0, d, x0, y0
         z = np.pi * params['d'] * (u**2 + v**2)**0.5
         val = np.array([ sps.jv(0, z) * np.exp(1j * 2.0 * np.pi * (u * params['x0'] + v * params['y0'])), 
@@ -1253,6 +1396,9 @@ def blur_circ_1model(model_type, params, fwhm):
     elif model_type == 'disk':
         model_type_blur = 'blurred_' + model_type
         params_blur['alpha'] = fwhm
+    elif model_type == 'crescent':
+        model_type_blur = 'blurred_' + model_type
+        params_blur['alpha'] = fwhm
     elif model_type == 'ring' or model_type == 'mring':
         model_type_blur = 'thick_' + model_type
         params_blur['alpha'] = fwhm
@@ -1474,6 +1620,48 @@ class Model(object):
         out = self.copy()
         out.models.append('blurred_disk')
         out.params.append({'F0':F0,'d':d,'alpha':alpha,'x0':x0,'y0':y0,'pol_frac':pol_frac,'pol_evpa':pol_evpa,'cpol_frac':cpol_frac})
+        return out
+
+    def add_crescent(self, F0 = 1.0, d = 50.*RADPERUAS, fr = 0.0, fo = 0.0, phi = 0.0, x0 = 0.0, y0 = 0.0, pol_frac = 0.0, pol_evpa = 0.0, cpol_frac = 0.0):
+        """Add a crescent model.
+
+           Args:
+               F0 (float): The total flux of the disk (Jy)
+               d (float): The diameter (radians)
+               fr (float): Fractional radius of the inner subtracted disk with respect to the radius of the outer disk
+               fo (float): Fractional offset of the inner disk from the center of the outer disk
+               phi (float): angle of offset of the inner disk
+               x0 (float): The x-coordinate (radians)
+               y0 (float): The y-coordinate (radians)
+
+           Returns:
+                (Model): Updated Model
+        """
+        out = self.copy()
+        out.models.append('crescent')
+        out.params.append({'F0':F0,'d':d,'fr':fr, 'fo':fo, 'phi':phi, 'x0':x0, 'y0':y0, 'pol_frac':pol_frac, 'pol_evpa':pol_evpa, 'cpol_frac':cpol_frac})
+        return out
+
+    def add_blurred_crescent(self, F0 = 1.0, d = 50.*RADPERUAS, alpha = 10.*RADPERUAS, fr = 0.0, fo = 0.0, phi = 0.0, x0 = 0.0, y0 = 0.0, pol_frac = 0.0, pol_evpa = 0.0, cpol_frac = 0.0):
+
+        """Add a circular disk model that is blurred with a circular Gaussian kernel.
+
+           Args:
+               F0 (float): The total flux of the disk (Jy)
+               d (float): The diameter (radians)
+               alpha (float) :The blurring (FWHM of Gaussian convolution) (radians)
+               fr (float): Fractional radius of the inner subtracted disk with respect to the radius of the outer disk
+               fo (float): Fractional offset of the inner disk from the center of the outer disk
+               phi (float): angle of offset of the inner disk
+               x0 (float): The x-coordinate (radians)
+               y0 (float): The y-coordinate (radians)
+
+           Returns:
+                (Model): Updated Model
+        """
+        out = self.copy()
+        out.models.append('blurred_crescent')
+        out.params.append({'F0':F0,'d':d,'alpha':alpha, 'fr':fr, 'fo':fo, 'phi':phi, 'x0':x0, 'y0':y0, 'pol_frac':pol_frac, 'pol_evpa':pol_evpa, 'cpol_frac':cpol_frac})
         return out
 
     def add_ring(self, F0 = 1.0, d = 50.*RADPERUAS, x0 = 0.0, y0 = 0.0, pol_frac = 0.0, pol_evpa = 0.0, cpol_frac = 0.0):
