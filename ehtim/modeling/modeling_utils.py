@@ -73,7 +73,7 @@ globdict = {} # global dictionary with all parameters related to the model fitti
 PARAM_DETAILS = {'F0':[1.,'Jy'], 'FWHM':[RADPERUAS,'uas'], 'FWHM_maj':[RADPERUAS,'uas'], 'FWHM_min':[RADPERUAS,'uas'], 
                  'd':[RADPERUAS,'uas'], 'PA':[np.pi/180.,'deg'], 'alpha':[RADPERUAS,'uas'], 'ff':[1.,''], 
                  'x0':[RADPERUAS,'uas'], 'y0':[RADPERUAS,'uas'], 'stretch':[1.,''], 'stretch_PA':[np.pi/180.,'deg'], 
-                 'arg':[np.pi/180.,'deg'], 'evpa':[np.pi/180.,'deg']}
+                 'arg':[np.pi/180.,'deg'], 'evpa':[np.pi/180.,'deg'], 'phi':[np.pi/180.,'deg']}
 
 GAIN_PRIOR_DEFAULT = {'prior_type':'lognormal','sigma':0.1,'mu':0.0,'shift':-1.0} 
 LEAKAGE_PRIOR_DEFAULT = {'prior_type':'flat','min':-0.5,'max':0.5} 
@@ -596,7 +596,9 @@ def set_params(params, trial_model, param_map, minimizer_func, model_prior):
                 raise Exception('Unsure how to interpret ' + param_map[j][1])
 
             curval = trial_model.params[param_map[j][0]][param_type][idx]
-            if param_map[j][1][-2:] == 're':
+            if '_' not in param_map[j][1]: # This is for beta0 of cpol
+                trial_model.params[param_map[j][0]][param_type][idx] = tparams[j] * param_map[j][2]
+            elif param_map[j][1][-2:] == 're':
                 trial_model.params[param_map[j][0]][param_type][idx] = tparams[j] * param_map[j][2]      + np.imag(curval)*1j
             elif param_map[j][1][-2:] == 'im':
                 trial_model.params[param_map[j][0]][param_type][idx] = tparams[j] * param_map[j][2] * 1j + np.real(curval)
@@ -650,7 +652,7 @@ def laplace_approximation(trial_model, dtype, data, uv, sigma, gains_t1, gains_t
 
         # Add the terms from the likelihood
         gain = gain_factor(dtype,None,gains_t1,gains_t2,True)
-        amp_model = np.abs(trial_model.sample_uv(uv[:,0],uv[:,1]))
+        amp_model = np.abs(trial_model.sample_uv(uv[:,0],uv[:,1])) # TODO: Add polarization!
         amp_bar = gain*data
         sigma_bar = gain*sigma
         (g1, g2) = gain_factor_separate(dtype,None,gains_t1,gains_t2,True)
@@ -687,21 +689,21 @@ def laplace_list():
     l3 = laplace_approximation(globdict['trial_model'], globdict['d3'], globdict['data3'], globdict['uv3'], globdict['sigma3'], globdict['gains_t1'], globdict['gains_t2'])
     return (l1, l2, l3)
 
-def chisq_wgain(trial_model, dtype, data, uv, sigma, jonesdict, gains, gains_t1, gains_t2, fit_or_marginalize_gains):
+def chisq_wgain(trial_model, dtype, data, uv, sigma, pol, jonesdict, gains, gains_t1, gains_t2, fit_or_marginalize_gains):
     global globdict
     gain = gain_factor(dtype,gains,gains_t1,gains_t2,fit_or_marginalize_gains)
-    log_likelihood = chisq(trial_model, uv, gain*data, gain*sigma, dtype, jonesdict)
+    log_likelihood = chisq(trial_model, uv, gain*data, gain*sigma, dtype, pol, jonesdict)
     return log_likelihood
 
-def chisqgrad_wgain(trial_model, dtype, data, uv, sigma, jonesdict, gains, gains_t1, gains_t2, fit_or_marginalize_gains, param_mask, fit_pol=False, fit_cpol=False, fit_leakage=False):
+def chisqgrad_wgain(trial_model, dtype, data, uv, sigma, jonesdict, gains, gains_t1, gains_t2, fit_or_marginalize_gains, param_mask, pol='I', fit_pol=False, fit_cpol=False, fit_leakage=False):
     gain = gain_factor(dtype,gains,gains_t1,gains_t2,fit_or_marginalize_gains)
-    return chisqgrad(trial_model, uv, gain*data, gain*sigma, jonesdict, dtype, param_mask, fit_or_marginalize_gains, gains, gains_t1, gains_t2, fit_pol, fit_cpol, fit_leakage)
+    return chisqgrad(trial_model, uv, gain*data, gain*sigma, jonesdict, dtype, param_mask, pol, fit_or_marginalize_gains, gains, gains_t1, gains_t2, fit_pol, fit_cpol, fit_leakage)
 
 def chisq_list(gains):
     global globdict
-    chi2_1 = chisq_wgain(globdict['trial_model'], globdict['d1'], globdict['data1'], globdict['uv1'], globdict['sigma1'], globdict['jonesdict1'], gains, globdict['gains_t1'], globdict['gains_t2'], globdict['fit_gains'] + globdict['marginalize_gains'])
-    chi2_2 = chisq_wgain(globdict['trial_model'], globdict['d2'], globdict['data2'], globdict['uv2'], globdict['sigma2'], globdict['jonesdict2'], gains, globdict['gains_t1'], globdict['gains_t2'], globdict['fit_gains'] + globdict['marginalize_gains'])
-    chi2_3 = chisq_wgain(globdict['trial_model'], globdict['d3'], globdict['data3'], globdict['uv3'], globdict['sigma3'], globdict['jonesdict3'], gains, globdict['gains_t1'], globdict['gains_t2'], globdict['fit_gains'] + globdict['marginalize_gains'])
+    chi2_1 = chisq_wgain(globdict['trial_model'], globdict['d1'], globdict['data1'], globdict['uv1'], globdict['sigma1'], globdict['pol1'], globdict['jonesdict1'], gains, globdict['gains_t1'], globdict['gains_t2'], globdict['fit_gains'] + globdict['marginalize_gains'])
+    chi2_2 = chisq_wgain(globdict['trial_model'], globdict['d2'], globdict['data2'], globdict['uv2'], globdict['sigma2'], globdict['pol2'], globdict['jonesdict2'], gains, globdict['gains_t1'], globdict['gains_t2'], globdict['fit_gains'] + globdict['marginalize_gains'])
+    chi2_3 = chisq_wgain(globdict['trial_model'], globdict['d3'], globdict['data3'], globdict['uv3'], globdict['sigma3'], globdict['pol3'], globdict['jonesdict3'], gains, globdict['gains_t1'], globdict['gains_t2'], globdict['fit_gains'] + globdict['marginalize_gains'])
     return (chi2_1, chi2_2, chi2_3)
 
 def update_leakage(leakage):
@@ -780,9 +782,9 @@ def objgrad(params):
     leakage = params[(globdict['n_params'] + globdict['n_gains']):]
     update_leakage(leakage)
 
-    datterm  = ( globdict['alpha_d1'] * chisqgrad_wgain(globdict['trial_model'], globdict['d1'], globdict['data1'], globdict['uv1'], globdict['sigma1'], globdict['jonesdict1'], gains, globdict['gains_t1'], globdict['gains_t2'], globdict['fit_gains'] + globdict['marginalize_gains'], globdict['param_mask'], globdict['fit_pol'], globdict['fit_cpol'], globdict['fit_leakage']) 
-               + globdict['alpha_d2'] * chisqgrad_wgain(globdict['trial_model'], globdict['d2'], globdict['data2'], globdict['uv2'], globdict['sigma2'], globdict['jonesdict2'], gains, globdict['gains_t1'], globdict['gains_t2'], globdict['fit_gains'] + globdict['marginalize_gains'], globdict['param_mask'], globdict['fit_pol'], globdict['fit_cpol'], globdict['fit_leakage']) 
-               + globdict['alpha_d3'] * chisqgrad_wgain(globdict['trial_model'], globdict['d3'], globdict['data3'], globdict['uv3'], globdict['sigma3'], globdict['jonesdict3'], gains, globdict['gains_t1'], globdict['gains_t2'], globdict['fit_gains'] + globdict['marginalize_gains'], globdict['param_mask'], globdict['fit_pol'], globdict['fit_cpol'], globdict['fit_leakage']))
+    datterm  = ( globdict['alpha_d1'] * chisqgrad_wgain(globdict['trial_model'], globdict['d1'], globdict['data1'], globdict['uv1'], globdict['sigma1'], globdict['jonesdict1'], gains, globdict['gains_t1'], globdict['gains_t2'], globdict['fit_gains'] + globdict['marginalize_gains'], globdict['param_mask'], globdict['pol1'], globdict['fit_pol'], globdict['fit_cpol'], globdict['fit_leakage']) 
+               + globdict['alpha_d2'] * chisqgrad_wgain(globdict['trial_model'], globdict['d2'], globdict['data2'], globdict['uv2'], globdict['sigma2'], globdict['jonesdict2'], gains, globdict['gains_t1'], globdict['gains_t2'], globdict['fit_gains'] + globdict['marginalize_gains'], globdict['param_mask'], globdict['pol2'], globdict['fit_pol'], globdict['fit_cpol'], globdict['fit_leakage']) 
+               + globdict['alpha_d3'] * chisqgrad_wgain(globdict['trial_model'], globdict['d3'], globdict['data3'], globdict['uv3'], globdict['sigma3'], globdict['jonesdict3'], gains, globdict['gains_t1'], globdict['gains_t2'], globdict['fit_gains'] + globdict['marginalize_gains'], globdict['param_mask'], globdict['pol3'], globdict['fit_pol'], globdict['fit_cpol'], globdict['fit_leakage']))
 
     if globdict['minimizer_func'] not in ['dynesty_static','dynesty_dynamic','pymc3']:
         priterm  = np.concatenate([prior_grad(params[:globdict['n_params']], globdict['param_map'], 
@@ -869,6 +871,7 @@ def objgrad(params):
 ##################################################################################################
 def modeler_func(Obsdata, model_init, model_prior,
                    d1='vis', d2=False, d3=False,
+                   pol1='I', pol2='I', pol3='I',
                    normchisq = False, alpha_d1=0, alpha_d2=0, alpha_d3=0,                   
                    flux=1.0, alpha_flux=0,
                    fit_model=True, fit_pol=False, fit_cpol=False, 
@@ -962,9 +965,9 @@ def modeler_func(Obsdata, model_init, model_prior,
 
     # Get data and info for the data terms
     if type(Obsdata) is obsdata.Obsdata:
-        (data1, sigma1, uv1, jonesdict1) = chisqdata(Obsdata, d1)
-        (data2, sigma2, uv2, jonesdict2) = chisqdata(Obsdata, d2)
-        (data3, sigma3, uv3, jonesdict3) = chisqdata(Obsdata, d3)
+        (data1, sigma1, uv1, jonesdict1) = chisqdata(Obsdata, d1, pol=pol1)
+        (data2, sigma2, uv2, jonesdict2) = chisqdata(Obsdata, d2, pol=pol2)
+        (data3, sigma3, uv3, jonesdict3) = chisqdata(Obsdata, d3, pol=pol3)
     elif type(Obsdata) is list:
         # Combine a list of observations into one. 
         # Allow these to be from multiple sources for polarimetric zero-baseline purposes.
@@ -978,13 +981,13 @@ def modeler_func(Obsdata, model_init, model_prior,
                 j[key] = np.concatenate([j1[key],j2[key]])
             return (d, s, u, j)        
             
-        (data1, sigma1, uv1, jonesdict1) = chisqdata(Obsdata[0], d1)
-        (data2, sigma2, uv2, jonesdict2) = chisqdata(Obsdata[0], d2)
-        (data3, sigma3, uv3, jonesdict3) = chisqdata(Obsdata[0], d3)
+        (data1, sigma1, uv1, jonesdict1) = chisqdata(Obsdata[0], d1, pol=pol1)
+        (data2, sigma2, uv2, jonesdict2) = chisqdata(Obsdata[0], d2, pol=pol2)
+        (data3, sigma3, uv3, jonesdict3) = chisqdata(Obsdata[0], d3, pol=pol3)
         for j in range(1,len(Obsdata)):
-            (data1b, sigma1b, uv1b, jonesdict1b) = chisqdata(Obsdata[j], d1)
-            (data2b, sigma2b, uv2b, jonesdict2b) = chisqdata(Obsdata[j], d2)
-            (data3b, sigma3b, uv3b, jonesdict3b) = chisqdata(Obsdata[j], d3)
+            (data1b, sigma1b, uv1b, jonesdict1b) = chisqdata(Obsdata[j], d1, pol=pol1)
+            (data2b, sigma2b, uv2b, jonesdict2b) = chisqdata(Obsdata[j], d2, pol=pol2)
+            (data3b, sigma3b, uv3b, jonesdict3b) = chisqdata(Obsdata[j], d3, pol=pol3)
 
             if data1b is not False: 
                 (data1, sigma1, uv1, jonesdict1) = combine_data(data1,sigma1,uv1,jonesdict1,data1b,sigma1b,uv1b,jonesdict1b)
@@ -1131,7 +1134,9 @@ def modeler_func(Obsdata, model_init, model_prior,
                 raise Exception('Unsure how to interpret ' + param_map[j][1])
 
             curval = model_init.params[param_map[j][0]][param_type][idx]
-            if   param_map[j][1][-2:] == 're':
+            if '_' not in param_map[j][1]:
+                param_init.append(transform_param(np.real( model_init.params[pm[0]][param_type][idx]/pm[2]), model_prior[pm[0]][pm[1]],inverse=False))
+            elif   param_map[j][1][-2:] == 're':
                 param_init.append(transform_param(np.real( model_init.params[pm[0]][param_type][idx]/pm[2]), model_prior[pm[0]][pm[1]],inverse=False))
             elif param_map[j][1][-2:] == 'im':
                 param_init.append(transform_param(np.imag( model_init.params[pm[0]][param_type][idx]/pm[2]), model_prior[pm[0]][pm[1]],inverse=False))
@@ -1166,6 +1171,7 @@ def modeler_func(Obsdata, model_init, model_prior,
     # Gather global variables into a dictionary 
     globdict = {'trial_model':trial_model, 
                 'd1':d1, 'd2':d2, 'd3':d3, 
+                'pol1':pol1, 'pol2':pol2, 'pol3':pol3,
                 'data1':data1, 'sigma1':sigma1, 'uv1':uv1, 'jonesdict1':jonesdict1,
                 'data2':data2, 'sigma2':sigma2, 'uv2':uv2, 'jonesdict2':jonesdict2,
                 'data3':data3, 'sigma3':sigma3, 'uv3':uv3, 'jonesdict3':jonesdict3,
@@ -1651,7 +1657,7 @@ def modeler_func(Obsdata, model_init, model_prior,
 # Wrapper Functions
 ##################################################################################################
 
-def chisq(model, uv, data, sigma, dtype, jonesdict=None):
+def chisq(model, uv, data, sigma, dtype, pol='I', jonesdict=None):
     """return the chi^2 for the appropriate dtype
     """
 
@@ -1660,23 +1666,23 @@ def chisq(model, uv, data, sigma, dtype, jonesdict=None):
         return chisq
 
     if dtype == 'vis':
-        chisq = chisq_vis(model, uv, data, sigma, jonesdict=jonesdict)
+        chisq = chisq_vis(model, uv, data, sigma, pol=pol, jonesdict=jonesdict)
     elif dtype == 'amp':
-        chisq = chisq_amp(model, uv, data, sigma, jonesdict=jonesdict)
+        chisq = chisq_amp(model, uv, data, sigma, pol=pol, jonesdict=jonesdict)
     elif dtype == 'logamp':
-        chisq = chisq_logamp(model, uv, data, sigma, jonesdict=jonesdict)
+        chisq = chisq_logamp(model, uv, data, sigma, pol=pol, jonesdict=jonesdict)
     elif dtype == 'bs':
-        chisq = chisq_bs(model, uv, data, sigma, jonesdict=jonesdict)
+        chisq = chisq_bs(model, uv, data, sigma, pol=pol, jonesdict=jonesdict)
     elif dtype == 'cphase':
-        chisq = chisq_cphase(model, uv, data, sigma, jonesdict=jonesdict)
+        chisq = chisq_cphase(model, uv, data, sigma, pol=pol, jonesdict=jonesdict)
     elif dtype == 'cphase_diag':
-        chisq = chisq_cphase_diag(model, uv, data, sigma, jonesdict=jonesdict)
+        chisq = chisq_cphase_diag(model, uv, data, sigma, pol=pol, jonesdict=jonesdict)
     elif dtype == 'camp':
-        chisq = chisq_camp(model, uv, data, sigma, jonesdict=jonesdict)
+        chisq = chisq_camp(model, uv, data, sigma, pol=pol, jonesdict=jonesdict)
     elif dtype == 'logcamp':
-        chisq = chisq_logcamp(model, uv, data, sigma, jonesdict=jonesdict)
+        chisq = chisq_logcamp(model, uv, data, sigma, pol=pol, jonesdict=jonesdict)
     elif dtype == 'logcamp_diag':
-        chisq = chisq_logcamp_diag(model, uv, data, sigma, jonesdict=jonesdict)
+        chisq = chisq_logcamp_diag(model, uv, data, sigma, pol=pol, jonesdict=jonesdict)
     elif dtype == 'pvis':
         chisq = chisq_pvis(model, uv, data, sigma, jonesdict=jonesdict)
     elif dtype == 'm':
@@ -1688,7 +1694,7 @@ def chisq(model, uv, data, sigma, dtype, jonesdict=None):
 
     return chisq
 
-def chisqgrad(model, uv, data, sigma, jonesdict, dtype, param_mask, fit_gains=False, gains=None, gains_t1=None, gains_t2=None, fit_pol=False, fit_cpol=False, fit_leakage=False):
+def chisqgrad(model, uv, data, sigma, jonesdict, dtype, param_mask, pol='I', fit_gains=False, gains=None, gains_t1=None, gains_t2=None, fit_pol=False, fit_cpol=False, fit_leakage=False):
     """return the chi^2 gradient for the appropriate dtype
     """
     global globdict
@@ -1713,30 +1719,30 @@ def chisqgrad(model, uv, data, sigma, jonesdict, dtype, param_mask, fit_gains=Fa
         return np.concatenate([chisqgrad[param_mask_full],gaingrad,chisqgrad[leakage_mask_full]])
 
     if dtype == 'vis':
-        chisqgrad = chisqgrad_vis(model, uv, data, sigma, fit_pol=fit_pol, fit_cpol=fit_cpol, fit_leakage=fit_leakage, jonesdict=jonesdict)
+        chisqgrad = chisqgrad_vis(model, uv, data, sigma, pol=pol, fit_pol=fit_pol, fit_cpol=fit_cpol, fit_leakage=fit_leakage, jonesdict=jonesdict)
     elif dtype == 'amp':
-        chisqgrad = chisqgrad_amp(model, uv, data, sigma, fit_pol=fit_pol, fit_cpol=fit_cpol, fit_leakage=fit_leakage, jonesdict=jonesdict)
+        chisqgrad = chisqgrad_amp(model, uv, data, sigma, pol=pol, fit_pol=fit_pol, fit_cpol=fit_cpol, fit_leakage=fit_leakage, jonesdict=jonesdict)
 
         if fit_gains:
-            i1 = model.sample_uv(uv[:,0],uv[:,1], jonesdict=jonesdict)
+            i1 = model.sample_uv(uv[:,0],uv[:,1], pol=pol, jonesdict=jonesdict)
             amp_samples = np.abs(i1)
             amp = data
             pp = ((amp - amp_samples) * amp_samples) / (sigma**2)
             gaingrad = 2.0/(1.0 + np.array(gains)) * np.array([np.sum(pp[(np.array(gains_t1) == j) + (np.array(gains_t2) == j)]) for j in range(len(gains))])/len(data)
     elif dtype == 'logamp':
-        chisqgrad = chisqgrad_logamp(model, uv, data, sigma, fit_pol=fit_pol, fit_cpol=fit_cpol, fit_leakage=fit_leakage, jonesdict=jonesdict)
+        chisqgrad = chisqgrad_logamp(model, uv, data, sigma, pol=pol, fit_pol=fit_pol, fit_cpol=fit_cpol, fit_leakage=fit_leakage, jonesdict=jonesdict)
     elif dtype == 'bs':
-        chisqgrad = chisqgrad_bs(model, uv, data, sigma, fit_pol=fit_pol, fit_cpol=fit_cpol, fit_leakage=fit_leakage, jonesdict=jonesdict)
+        chisqgrad = chisqgrad_bs(model, uv, data, sigma, pol=pol, fit_pol=fit_pol, fit_cpol=fit_cpol, fit_leakage=fit_leakage, jonesdict=jonesdict)
     elif dtype == 'cphase':
-        chisqgrad = chisqgrad_cphase(model, uv, data, sigma, fit_pol=fit_pol, fit_cpol=fit_cpol, fit_leakage=fit_leakage, jonesdict=jonesdict)
+        chisqgrad = chisqgrad_cphase(model, uv, data, sigma, pol=pol, fit_pol=fit_pol, fit_cpol=fit_cpol, fit_leakage=fit_leakage, jonesdict=jonesdict)
     elif dtype == 'cphase_diag':
-        chisqgrad = chisqgrad_cphase_diag(model, uv, data, sigma, fit_pol=fit_pol, fit_cpol=fit_cpol, fit_leakage=fit_leakage, jonesdict=jonesdict)
+        chisqgrad = chisqgrad_cphase_diag(model, uv, data, sigma, pol=pol, fit_pol=fit_pol, fit_cpol=fit_cpol, fit_leakage=fit_leakage, jonesdict=jonesdict)
     elif dtype == 'camp':
-        chisqgrad = chisqgrad_camp(model, uv, data, sigma, fit_pol=fit_pol, fit_cpol=fit_cpol, fit_leakage=fit_leakage, jonesdict=jonesdict)
+        chisqgrad = chisqgrad_camp(model, uv, data, sigma, pol=pol, fit_pol=fit_pol, fit_cpol=fit_cpol, fit_leakage=fit_leakage, jonesdict=jonesdict)
     elif dtype == 'logcamp':
-        chisqgrad = chisqgrad_logcamp(model, uv, data, sigma, fit_pol=fit_pol, fit_cpol=fit_cpol, fit_leakage=fit_leakage, jonesdict=jonesdict)
+        chisqgrad = chisqgrad_logcamp(model, uv, data, sigma, pol=pol, fit_pol=fit_pol, fit_cpol=fit_cpol, fit_leakage=fit_leakage, jonesdict=jonesdict)
     elif dtype == 'logcamp_diag':
-        chisqgrad = chisqgrad_logcamp_diag(model, uv, data, sigma, fit_pol=fit_pol, fit_cpol=fit_cpol, fit_leakage=fit_leakage, jonesdict=jonesdict)
+        chisqgrad = chisqgrad_logcamp_diag(model, uv, data, sigma, pol=pol, fit_pol=fit_pol, fit_cpol=fit_cpol, fit_leakage=fit_leakage, jonesdict=jonesdict)
     elif dtype == 'pvis':
         chisqgrad = chisqgrad_pvis(model, uv, data, sigma, fit_pol=fit_pol, fit_cpol=fit_cpol, fit_leakage=fit_leakage, jonesdict=jonesdict)
     elif dtype == 'm':
@@ -1787,55 +1793,55 @@ def chisqdata(Obsdata, dtype, pol='I', **kwargs):
 # Chi-squared and Gradient Functions
 ##################################################################################################
 
-def chisq_vis(model, uv, vis, sigma, jonesdict=None):
+def chisq_vis(model, uv, vis, sigma, pol='I', jonesdict=None):
     """Visibility chi-squared"""
 
-    samples = model.sample_uv(uv[:,0],uv[:,1], jonesdict=jonesdict)
+    samples = model.sample_uv(uv[:,0],uv[:,1], pol=pol, jonesdict=jonesdict)
     return np.sum(np.abs((samples-vis)/sigma)**2)/(2*len(vis))
 
-def chisqgrad_vis(model, uv, vis, sigma, fit_pol=False, fit_cpol=False, fit_leakage=False, jonesdict=None):
+def chisqgrad_vis(model, uv, vis, sigma, pol='I', fit_pol=False, fit_cpol=False, fit_leakage=False, jonesdict=None):
     """The gradient of the visibility chi-squared"""
 
-    samples = model.sample_uv(uv[:,0],uv[:,1], jonesdict=jonesdict)
+    samples = model.sample_uv(uv[:,0],uv[:,1], pol=pol, jonesdict=jonesdict)
     wdiff   = (vis - samples)/(sigma**2)
     grad    = model.sample_grad_uv(uv[:,0],uv[:,1],fit_pol=fit_pol,fit_cpol=fit_cpol,fit_leakage=fit_leakage,jonesdict=jonesdict)
 
     out = -np.real(np.dot(grad.conj(), wdiff))/len(vis)
     return out
 
-def chisq_amp(model, uv, amp, sigma, jonesdict=None):
+def chisq_amp(model, uv, amp, sigma, pol='I', jonesdict=None):
     """Visibility Amplitudes (normalized) chi-squared"""
 
-    amp_samples = np.abs(model.sample_uv(uv[:,0],uv[:,1], jonesdict=jonesdict))
+    amp_samples = np.abs(model.sample_uv(uv[:,0],uv[:,1], pol=pol, jonesdict=jonesdict))
     return np.sum(np.abs((amp - amp_samples)/sigma)**2)/len(amp)
 
-def chisqgrad_amp(model, uv, amp, sigma, fit_pol=False, fit_cpol=False, fit_leakage=False, jonesdict=None):
+def chisqgrad_amp(model, uv, amp, sigma, pol='I', fit_pol=False, fit_cpol=False, fit_leakage=False, jonesdict=None):
     """The gradient of the amplitude chi-squared"""
 
     i1 = model.sample_uv(uv[:,0],uv[:,1], jonesdict=jonesdict)
     amp_samples = np.abs(i1)
 
     pp = ((amp - amp_samples) * amp_samples) / (sigma**2) / i1
-    grad = model.sample_grad_uv(uv[:,0],uv[:,1],fit_pol=fit_pol,fit_cpol=fit_cpol,fit_leakage=fit_leakage,jonesdict=jonesdict)
+    grad = model.sample_grad_uv(uv[:,0],uv[:,1],pol=pol,fit_pol=fit_pol,fit_cpol=fit_cpol,fit_leakage=fit_leakage,jonesdict=jonesdict)
     out = (-2.0/len(amp)) * np.real(np.dot(grad, pp))
     return out
 
-def chisq_bs(model, uv, bis, sigma, jonesdict=None):
+def chisq_bs(model, uv, bis, sigma, pol='I', jonesdict=None):
     """Bispectrum chi-squared"""
 
-    bisamples = model.sample_uv(uv[0][:,0],uv[0][:,1]) * model.sample_uv(uv[1][:,0],uv[1][:,1]) * model.sample_uv(uv[2][:,0],uv[2][:,1])
+    bisamples = model.sample_uv(uv[0][:,0],uv[0][:,1],pol=pol,jonesdict=jonesdict) * model.sample_uv(uv[1][:,0],uv[1][:,1],pol=pol,jonesdict=jonesdict) * model.sample_uv(uv[2][:,0],uv[2][:,1],pol=pol,jonesdict=jonesdict)
     chisq= np.sum(np.abs(((bis - bisamples)/sigma))**2)/(2.*len(bis))
     return chisq
 
-def chisqgrad_bs(model, uv, bis, sigma, fit_pol=False, fit_cpol=False, fit_leakage=False, jonesdict=None):
+def chisqgrad_bs(model, uv, bis, sigma, pol='I', fit_pol=False, fit_cpol=False, fit_leakage=False, jonesdict=None):
     """The gradient of the bispectrum chi-squared"""
 
-    V1 = model.sample_uv(uv[0][:,0],uv[0][:,1])
-    V2 = model.sample_uv(uv[1][:,0],uv[1][:,1])
-    V3 = model.sample_uv(uv[2][:,0],uv[2][:,1])
-    V1_grad = model.sample_grad_uv(uv[0][:,0],uv[0][:,1],fit_pol=fit_pol,fit_cpol=fit_cpol)
-    V2_grad = model.sample_grad_uv(uv[1][:,0],uv[1][:,1],fit_pol=fit_pol,fit_cpol=fit_cpol)
-    V3_grad = model.sample_grad_uv(uv[2][:,0],uv[2][:,1],fit_pol=fit_pol,fit_cpol=fit_cpol)
+    V1 = model.sample_uv(uv[0][:,0],uv[0][:,1],pol=pol,jonesdict=jonesdict)
+    V2 = model.sample_uv(uv[1][:,0],uv[1][:,1],pol=pol,jonesdict=jonesdict)
+    V3 = model.sample_uv(uv[2][:,0],uv[2][:,1],pol=pol,jonesdict=jonesdict)
+    V1_grad = model.sample_grad_uv(uv[0][:,0],uv[0][:,1],pol=pol,fit_pol=fit_pol,fit_cpol=fit_cpol,jonesdict=jonesdict)
+    V2_grad = model.sample_grad_uv(uv[1][:,0],uv[1][:,1],pol=pol,fit_pol=fit_pol,fit_cpol=fit_cpol,jonesdict=jonesdict)
+    V3_grad = model.sample_grad_uv(uv[2][:,0],uv[2][:,1],pol=pol,fit_pol=fit_pol,fit_cpol=fit_cpol,jonesdict=jonesdict)
     bisamples = V1 * V2 * V3 
     wdiff = ((bis - bisamples).conj())/(sigma**2)
     pt1 = wdiff * V2 * V3
@@ -1844,30 +1850,30 @@ def chisqgrad_bs(model, uv, bis, sigma, fit_pol=False, fit_cpol=False, fit_leaka
     out = -np.real(np.dot(pt1, V1_grad.T) + np.dot(pt2, V2_grad.T) + np.dot(pt3, V3_grad.T))/len(bis)
     return out
 
-def chisq_cphase(model, uv, clphase, sigma, jonesdict=None):
+def chisq_cphase(model, uv, clphase, sigma, pol='I', jonesdict=None):
     """Closure Phases (normalized) chi-squared"""
     clphase = clphase * DEGREE
     sigma = sigma * DEGREE
 
-    V1 = model.sample_uv(uv[0][:,0],uv[0][:,1])
-    V2 = model.sample_uv(uv[1][:,0],uv[1][:,1])
-    V3 = model.sample_uv(uv[2][:,0],uv[2][:,1])
+    V1 = model.sample_uv(uv[0][:,0],uv[0][:,1],pol=pol,jonesdict=jonesdict)
+    V2 = model.sample_uv(uv[1][:,0],uv[1][:,1],pol=pol,jonesdict=jonesdict)
+    V3 = model.sample_uv(uv[2][:,0],uv[2][:,1],pol=pol,jonesdict=jonesdict)
 
     clphase_samples = np.angle(V1 * V2 * V3)
     chisq= (2.0/len(clphase)) * np.sum((1.0 - np.cos(clphase-clphase_samples))/(sigma**2))
     return chisq
 
-def chisqgrad_cphase(model, uv, clphase, sigma, fit_pol=False, fit_cpol=False, fit_leakage=False, jonesdict=None):
+def chisqgrad_cphase(model, uv, clphase, sigma, pol='I', fit_pol=False, fit_cpol=False, fit_leakage=False, jonesdict=None):
     """The gradient of the closure phase chi-squared"""
     clphase = clphase * DEGREE
     sigma = sigma * DEGREE
 
-    V1 = model.sample_uv(uv[0][:,0],uv[0][:,1])
-    V2 = model.sample_uv(uv[1][:,0],uv[1][:,1])
-    V3 = model.sample_uv(uv[2][:,0],uv[2][:,1])
-    V1_grad = model.sample_grad_uv(uv[0][:,0],uv[0][:,1],fit_pol=fit_pol,fit_cpol=fit_cpol)
-    V2_grad = model.sample_grad_uv(uv[1][:,0],uv[1][:,1],fit_pol=fit_pol,fit_cpol=fit_cpol)
-    V3_grad = model.sample_grad_uv(uv[2][:,0],uv[2][:,1],fit_pol=fit_pol,fit_cpol=fit_cpol)
+    V1 = model.sample_uv(uv[0][:,0],uv[0][:,1],pol=pol,jonesdict=jonesdict)
+    V2 = model.sample_uv(uv[1][:,0],uv[1][:,1],pol=pol,jonesdict=jonesdict)
+    V3 = model.sample_uv(uv[2][:,0],uv[2][:,1],pol=pol,jonesdict=jonesdict)
+    V1_grad = model.sample_grad_uv(uv[0][:,0],uv[0][:,1],pol=pol,fit_pol=fit_pol,fit_cpol=fit_cpol,jonesdict=jonesdict)
+    V2_grad = model.sample_grad_uv(uv[1][:,0],uv[1][:,1],pol=pol,fit_pol=fit_pol,fit_cpol=fit_cpol,jonesdict=jonesdict)
+    V3_grad = model.sample_grad_uv(uv[2][:,0],uv[2][:,1],pol=pol,fit_pol=fit_pol,fit_cpol=fit_cpol,jonesdict=jonesdict)
 
     clphase_samples = np.angle(V1 * V2 * V3)
 
@@ -1878,7 +1884,7 @@ def chisqgrad_cphase(model, uv, clphase, sigma, fit_pol=False, fit_cpol=False, f
     out  = -(2.0/len(clphase)) * np.imag(np.dot(pt1, V1_grad.T) + np.dot(pt2, V2_grad.T) + np.dot(pt3, V3_grad.T))
     return out
 
-def chisq_cphase_diag(model, uv, clphase_diag, sigma, jonesdict=None):
+def chisq_cphase_diag(model, uv, clphase_diag, sigma, pol='I', jonesdict=None):
     """Diagonalized closure phases (normalized) chi-squared"""
     clphase_diag = np.concatenate(clphase_diag) * DEGREE
     sigma = np.concatenate(sigma) * DEGREE
@@ -1888,9 +1894,9 @@ def chisq_cphase_diag(model, uv, clphase_diag, sigma, jonesdict=None):
 
     clphase_diag_samples = []
     for iA, uv3 in enumerate(uv_diag):
-        i1 = model.sample_uv(uv3[0][:,0],uv3[0][:,1])    
-        i2 = model.sample_uv(uv3[1][:,0],uv3[1][:,1])    
-        i3 = model.sample_uv(uv3[2][:,0],uv3[2][:,1])  
+        i1 = model.sample_uv(uv3[0][:,0],uv3[0][:,1],pol=pol,jonesdict=jonesdict)    
+        i2 = model.sample_uv(uv3[1][:,0],uv3[1][:,1],pol=pol,jonesdict=jonesdict)    
+        i3 = model.sample_uv(uv3[2][:,0],uv3[2][:,1],pol=pol,jonesdict=jonesdict)  
 
         clphase_samples = np.angle(i1 * i2 * i3)
         clphase_diag_samples.append(np.dot(tform_mats[iA],clphase_samples))
@@ -1899,7 +1905,7 @@ def chisq_cphase_diag(model, uv, clphase_diag, sigma, jonesdict=None):
     chisq = (2.0/len(clphase_diag)) * np.sum((1.0 - np.cos(clphase_diag-clphase_diag_samples))/(sigma**2))
     return chisq
 
-def chisqgrad_cphase_diag(model, uv, clphase_diag, sigma, fit_pol=False, fit_cpol=False, fit_leakage=False, jonesdict=None):
+def chisqgrad_cphase_diag(model, uv, clphase_diag, sigma, pol='I', fit_pol=False, fit_cpol=False, fit_leakage=False, jonesdict=None):
     """The gradient of the diagonalized closure phase chi-squared"""
     clphase_diag = clphase_diag * DEGREE
     sigma = sigma * DEGREE
@@ -1907,16 +1913,16 @@ def chisqgrad_cphase_diag(model, uv, clphase_diag, sigma, fit_pol=False, fit_cpo
     uv_diag = uv[0]
     tform_mats = uv[1]
 
-    deriv = np.zeros(len(model.sample_grad_uv(0,0,fit_pol=fit_pol,fit_cpol=fit_cpol)))
+    deriv = np.zeros(len(model.sample_grad_uv(0,0,pol=pol,fit_pol=fit_pol,fit_cpol=fit_cpol,jonesdict=jonesdict)))
     for iA, uv3 in enumerate(uv_diag):
 
-        i1 = model.sample_uv(uv3[0][:,0],uv3[0][:,1])    
-        i2 = model.sample_uv(uv3[1][:,0],uv3[1][:,1])    
-        i3 = model.sample_uv(uv3[2][:,0],uv3[2][:,1])   
+        i1 = model.sample_uv(uv3[0][:,0],uv3[0][:,1],pol=pol,jonesdict=jonesdict)    
+        i2 = model.sample_uv(uv3[1][:,0],uv3[1][:,1],pol=pol,jonesdict=jonesdict)    
+        i3 = model.sample_uv(uv3[2][:,0],uv3[2][:,1],pol=pol,jonesdict=jonesdict)   
 
-        i1_grad = model.sample_grad_uv(uv3[0][:,0],uv3[0][:,1],fit_pol=fit_pol,fit_cpol=fit_cpol)
-        i2_grad = model.sample_grad_uv(uv3[1][:,0],uv3[1][:,1],fit_pol=fit_pol,fit_cpol=fit_cpol)
-        i3_grad = model.sample_grad_uv(uv3[2][:,0],uv3[2][:,1],fit_pol=fit_pol,fit_cpol=fit_cpol)
+        i1_grad = model.sample_grad_uv(uv3[0][:,0],uv3[0][:,1],pol=pol,fit_pol=fit_pol,fit_cpol=fit_cpol,jonesdict=jonesdict)
+        i2_grad = model.sample_grad_uv(uv3[1][:,0],uv3[1][:,1],pol=pol,fit_pol=fit_pol,fit_cpol=fit_cpol,jonesdict=jonesdict)
+        i3_grad = model.sample_grad_uv(uv3[2][:,0],uv3[2][:,1],pol=pol,fit_pol=fit_pol,fit_cpol=fit_cpol,jonesdict=jonesdict)
  
         clphase_samples = np.angle(i1 * i2 * i3)
         clphase_diag_samples = np.dot(tform_mats[iA],clphase_samples)
@@ -1933,29 +1939,29 @@ def chisqgrad_cphase_diag(model, uv, clphase_diag, sigma, fit_pol=False, fit_cpo
 
     return deriv
 
-def chisq_camp(model, uv, clamp, sigma, jonesdict=None):
+def chisq_camp(model, uv, clamp, sigma, pol='I', jonesdict=None):
     """Closure Amplitudes (normalized) chi-squared"""
 
-    V1 = model.sample_uv(uv[0][:,0],uv[0][:,1])
-    V2 = model.sample_uv(uv[1][:,0],uv[1][:,1])
-    V3 = model.sample_uv(uv[2][:,0],uv[2][:,1])
-    V4 = model.sample_uv(uv[3][:,0],uv[3][:,1])
+    V1 = model.sample_uv(uv[0][:,0],uv[0][:,1],pol=pol,jonesdict=jonesdict)
+    V2 = model.sample_uv(uv[1][:,0],uv[1][:,1],pol=pol,jonesdict=jonesdict)
+    V3 = model.sample_uv(uv[2][:,0],uv[2][:,1],pol=pol,jonesdict=jonesdict)
+    V4 = model.sample_uv(uv[3][:,0],uv[3][:,1],pol=pol,jonesdict=jonesdict)
 
     clamp_samples = np.abs(V1 * V2 / (V3 * V4))
     chisq = np.sum(np.abs((clamp - clamp_samples)/sigma)**2)/len(clamp)
     return chisq
 
-def chisqgrad_camp(model, uv, clamp, sigma, fit_pol=False, fit_cpol=False, fit_leakage=False, jonesdict=None):
+def chisqgrad_camp(model, uv, clamp, sigma, pol='I', fit_pol=False, fit_cpol=False, fit_leakage=False, jonesdict=None):
     """The gradient of the closure amplitude chi-squared"""
 
-    V1 = model.sample_uv(uv[0][:,0],uv[0][:,1])
-    V2 = model.sample_uv(uv[1][:,0],uv[1][:,1])
-    V3 = model.sample_uv(uv[2][:,0],uv[2][:,1])
-    V4 = model.sample_uv(uv[3][:,0],uv[3][:,1])
-    V1_grad = model.sample_grad_uv(uv[0][:,0],uv[0][:,1],fit_pol=fit_pol,fit_cpol=fit_cpol)
-    V2_grad = model.sample_grad_uv(uv[1][:,0],uv[1][:,1],fit_pol=fit_pol,fit_cpol=fit_cpol)
-    V3_grad = model.sample_grad_uv(uv[2][:,0],uv[2][:,1],fit_pol=fit_pol,fit_cpol=fit_cpol)
-    V4_grad = model.sample_grad_uv(uv[3][:,0],uv[3][:,1],fit_pol=fit_pol,fit_cpol=fit_cpol)
+    V1 = model.sample_uv(uv[0][:,0],uv[0][:,1],pol=pol,jonesdict=jonesdict)
+    V2 = model.sample_uv(uv[1][:,0],uv[1][:,1],pol=pol,jonesdict=jonesdict)
+    V3 = model.sample_uv(uv[2][:,0],uv[2][:,1],pol=pol,jonesdict=jonesdict)
+    V4 = model.sample_uv(uv[3][:,0],uv[3][:,1],pol=pol,jonesdict=jonesdict)
+    V1_grad = model.sample_grad_uv(uv[0][:,0],uv[0][:,1],pol=pol,fit_pol=fit_pol,fit_cpol=fit_cpol,jonesdict=jonesdict)
+    V2_grad = model.sample_grad_uv(uv[1][:,0],uv[1][:,1],pol=pol,fit_pol=fit_pol,fit_cpol=fit_cpol,jonesdict=jonesdict)
+    V3_grad = model.sample_grad_uv(uv[2][:,0],uv[2][:,1],pol=pol,fit_pol=fit_pol,fit_cpol=fit_cpol,jonesdict=jonesdict)
+    V4_grad = model.sample_grad_uv(uv[3][:,0],uv[3][:,1],pol=pol,fit_pol=fit_pol,fit_cpol=fit_cpol,jonesdict=jonesdict)
 
     clamp_samples = np.abs((V1 * V2)/(V3 * V4))
 
@@ -1967,29 +1973,29 @@ def chisqgrad_camp(model, uv, clamp, sigma, fit_pol=False, fit_cpol=False, fit_l
     out = (-2.0/len(clamp)) * np.real(np.dot(pt1, V1_grad.T) + np.dot(pt2, V2_grad.T) + np.dot(pt3, V3_grad.T) + np.dot(pt4, V4_grad.T))
     return out
 
-def chisq_logcamp(model, uv, log_clamp, sigma, jonesdict=None):
+def chisq_logcamp(model, uv, log_clamp, sigma, pol='I', jonesdict=None):
     """Log Closure Amplitudes (normalized) chi-squared"""
 
-    a1 = np.abs(model.sample_uv(uv[0][:,0],uv[0][:,1]))
-    a2 = np.abs(model.sample_uv(uv[1][:,0],uv[1][:,1]))
-    a3 = np.abs(model.sample_uv(uv[2][:,0],uv[2][:,1]))
-    a4 = np.abs(model.sample_uv(uv[3][:,0],uv[3][:,1]))
+    a1 = np.abs(model.sample_uv(uv[0][:,0],uv[0][:,1],pol=pol,jonesdict=jonesdict))
+    a2 = np.abs(model.sample_uv(uv[1][:,0],uv[1][:,1],pol=pol,jonesdict=jonesdict))
+    a3 = np.abs(model.sample_uv(uv[2][:,0],uv[2][:,1],pol=pol,jonesdict=jonesdict))
+    a4 = np.abs(model.sample_uv(uv[3][:,0],uv[3][:,1],pol=pol,jonesdict=jonesdict))
 
     samples = np.log(a1) + np.log(a2) - np.log(a3) - np.log(a4)
     chisq = np.sum(np.abs((log_clamp - samples)/sigma)**2) / (len(log_clamp))
     return  chisq
 
-def chisqgrad_logcamp(model, uv, log_clamp, sigma, fit_pol=False, fit_cpol=False, fit_leakage=False, jonesdict=None):
+def chisqgrad_logcamp(model, uv, log_clamp, sigma, pol='I', fit_pol=False, fit_cpol=False, fit_leakage=False, jonesdict=None):
     """The gradient of the Log closure amplitude chi-squared"""
 
-    V1 = model.sample_uv(uv[0][:,0],uv[0][:,1])
-    V2 = model.sample_uv(uv[1][:,0],uv[1][:,1])
-    V3 = model.sample_uv(uv[2][:,0],uv[2][:,1])
-    V4 = model.sample_uv(uv[3][:,0],uv[3][:,1])
-    V1_grad = model.sample_grad_uv(uv[0][:,0],uv[0][:,1],fit_pol=fit_pol,fit_cpol=fit_cpol)
-    V2_grad = model.sample_grad_uv(uv[1][:,0],uv[1][:,1],fit_pol=fit_pol,fit_cpol=fit_cpol)
-    V3_grad = model.sample_grad_uv(uv[2][:,0],uv[2][:,1],fit_pol=fit_pol,fit_cpol=fit_cpol)
-    V4_grad = model.sample_grad_uv(uv[3][:,0],uv[3][:,1],fit_pol=fit_pol,fit_cpol=fit_cpol)
+    V1 = model.sample_uv(uv[0][:,0],uv[0][:,1],pol=pol,jonesdict=jonesdict)
+    V2 = model.sample_uv(uv[1][:,0],uv[1][:,1],pol=pol,jonesdict=jonesdict)
+    V3 = model.sample_uv(uv[2][:,0],uv[2][:,1],pol=pol,jonesdict=jonesdict)
+    V4 = model.sample_uv(uv[3][:,0],uv[3][:,1],pol=pol,jonesdict=jonesdict)
+    V1_grad = model.sample_grad_uv(uv[0][:,0],uv[0][:,1],pol=pol,fit_pol=fit_pol,fit_cpol=fit_cpol,jonesdict=jonesdict)
+    V2_grad = model.sample_grad_uv(uv[1][:,0],uv[1][:,1],pol=pol,fit_pol=fit_pol,fit_cpol=fit_cpol,jonesdict=jonesdict)
+    V3_grad = model.sample_grad_uv(uv[2][:,0],uv[2][:,1],pol=pol,fit_pol=fit_pol,fit_cpol=fit_cpol,jonesdict=jonesdict)
+    V4_grad = model.sample_grad_uv(uv[3][:,0],uv[3][:,1],pol=pol,fit_pol=fit_pol,fit_cpol=fit_cpol,jonesdict=jonesdict)
 
     log_clamp_samples = np.log(np.abs(V1)) + np.log(np.abs(V2)) - np.log(np.abs(V3)) - np.log(np.abs(V4))
 
@@ -2001,7 +2007,7 @@ def chisqgrad_logcamp(model, uv, log_clamp, sigma, fit_pol=False, fit_cpol=False
     out = (-2.0/len(log_clamp)) * np.real(np.dot(pt1, V1_grad.T) + np.dot(pt2, V2_grad.T) + np.dot(pt3, V3_grad.T) + np.dot(pt4, V4_grad.T))
     return out
 
-def chisq_logcamp_diag(model, uv, log_clamp_diag, sigma, jonesdict=None):
+def chisq_logcamp_diag(model, uv, log_clamp_diag, sigma, pol='I', jonesdict=None):
     """Diagonalized log closure amplitudes (normalized) chi-squared"""
 
     log_clamp_diag = np.concatenate(log_clamp_diag)
@@ -2013,10 +2019,10 @@ def chisq_logcamp_diag(model, uv, log_clamp_diag, sigma, jonesdict=None):
     log_clamp_diag_samples = []
     for iA, uv4 in enumerate(uv_diag):
 
-        a1 = np.abs(model.sample_uv(uv4[0][:,0],uv4[0][:,1]))          
-        a2 = np.abs(model.sample_uv(uv4[1][:,0],uv4[1][:,1])) 
-        a3 = np.abs(model.sample_uv(uv4[2][:,0],uv4[2][:,1])) 
-        a4 = np.abs(model.sample_uv(uv4[3][:,0],uv4[3][:,1])) 
+        a1 = np.abs(model.sample_uv(uv4[0][:,0],uv4[0][:,1],pol=pol,jonesdict=jonesdict))          
+        a2 = np.abs(model.sample_uv(uv4[1][:,0],uv4[1][:,1],pol=pol,jonesdict=jonesdict)) 
+        a3 = np.abs(model.sample_uv(uv4[2][:,0],uv4[2][:,1],pol=pol,jonesdict=jonesdict)) 
+        a4 = np.abs(model.sample_uv(uv4[3][:,0],uv4[3][:,1],pol=pol,jonesdict=jonesdict)) 
 
         log_clamp_samples = np.log(a1) + np.log(a2) - np.log(a3) - np.log(a4)
         log_clamp_diag_samples.append(np.dot(tform_mats[iA],log_clamp_samples))
@@ -2026,24 +2032,24 @@ def chisq_logcamp_diag(model, uv, log_clamp_diag, sigma, jonesdict=None):
     chisq = np.sum(np.abs((log_clamp_diag - log_clamp_diag_samples)/sigma)**2) / (len(log_clamp_diag))
     return  chisq
 
-def chisqgrad_logcamp_diag(model, uv, log_clamp_diag, sigma, fit_pol=False, fit_cpol=False, fit_leakage=False, jonesdict=None):
+def chisqgrad_logcamp_diag(model, uv, log_clamp_diag, sigma, pol='I', fit_pol=False, fit_cpol=False, fit_leakage=False, jonesdict=None):
     """The gradient of the diagonalized log closure amplitude chi-squared"""
 
     uv_diag = uv[0]
     tform_mats = uv[1]
 
-    deriv = np.zeros(len(model.sample_grad_uv(0,0,fit_pol=fit_pol,fit_cpol=fit_cpol)))
+    deriv = np.zeros(len(model.sample_grad_uv(0,0,pol=pol,fit_pol=fit_pol,fit_cpol=fit_cpol,jonesdict=jonesdict)))
     for iA, uv4 in enumerate(uv_diag):
 
-        i1 = model.sample_uv(uv4[0][:,0],uv4[0][:,1])
-        i2 = model.sample_uv(uv4[1][:,0],uv4[1][:,1])
-        i3 = model.sample_uv(uv4[2][:,0],uv4[2][:,1])
-        i4 = model.sample_uv(uv4[3][:,0],uv4[3][:,1])
+        i1 = model.sample_uv(uv4[0][:,0],uv4[0][:,1],pol=pol,jonesdict=jonesdict)
+        i2 = model.sample_uv(uv4[1][:,0],uv4[1][:,1],pol=pol,jonesdict=jonesdict)
+        i3 = model.sample_uv(uv4[2][:,0],uv4[2][:,1],pol=pol,jonesdict=jonesdict)
+        i4 = model.sample_uv(uv4[3][:,0],uv4[3][:,1],pol=pol,jonesdict=jonesdict)
 
-        i1_grad = model.sample_grad_uv(uv4[0][:,0],uv4[0][:,1],fit_pol=fit_pol,fit_cpol=fit_cpol)
-        i2_grad = model.sample_grad_uv(uv4[1][:,0],uv4[1][:,1],fit_pol=fit_pol,fit_cpol=fit_cpol)
-        i3_grad = model.sample_grad_uv(uv4[2][:,0],uv4[2][:,1],fit_pol=fit_pol,fit_cpol=fit_cpol)
-        i4_grad = model.sample_grad_uv(uv4[3][:,0],uv4[3][:,1],fit_pol=fit_pol,fit_cpol=fit_cpol)
+        i1_grad = model.sample_grad_uv(uv4[0][:,0],uv4[0][:,1],pol=pol,fit_pol=fit_pol,fit_cpol=fit_cpol,jonesdict=jonesdict)
+        i2_grad = model.sample_grad_uv(uv4[1][:,0],uv4[1][:,1],pol=pol,fit_pol=fit_pol,fit_cpol=fit_cpol,jonesdict=jonesdict)
+        i3_grad = model.sample_grad_uv(uv4[2][:,0],uv4[2][:,1],pol=pol,fit_pol=fit_pol,fit_cpol=fit_cpol,jonesdict=jonesdict)
+        i4_grad = model.sample_grad_uv(uv4[3][:,0],uv4[3][:,1],pol=pol,fit_pol=fit_pol,fit_cpol=fit_cpol,jonesdict=jonesdict)
 
         log_clamp_samples = np.log(np.abs(i1)) + np.log(np.abs(i2)) - np.log(np.abs(i3)) - np.log(np.abs(i4))
         log_clamp_diag_samples = np.dot(tform_mats[iA],log_clamp_samples)
@@ -2061,27 +2067,27 @@ def chisqgrad_logcamp_diag(model, uv, log_clamp_diag, sigma, fit_pol=False, fit_
 
     return deriv
 
-def chisq_logamp(model, uv, amp, sigma, jonesdict=None):
+def chisq_logamp(model, uv, amp, sigma, pol='I', jonesdict=None):
     """Log Visibility Amplitudes (normalized) chi-squared"""
 
     # to lowest order the variance on the logarithm of a quantity x is
     # sigma^2_log(x) = sigma^2/x^2
     logsigma = sigma / amp
 
-    amp_samples = np.abs(model.sample_uv(uv[:,0],uv[:,1]))
+    amp_samples = np.abs(model.sample_uv(uv[:,0],uv[:,1],pol=pol,jonesdict=jonesdict))
     return np.sum(np.abs((np.log(amp) - np.log(amp_samples))/logsigma)**2)/len(amp)
 
-def chisqgrad_logamp(model, uv, amp, sigma, fit_pol=False, fit_cpol=False, fit_leakage=False, jonesdict=None):
+def chisqgrad_logamp(model, uv, amp, sigma, pol='I', fit_pol=False, fit_cpol=False, fit_leakage=False, jonesdict=None):
     """The gradient of the Log amplitude chi-squared"""
 
     # to lowest order the variance on the logarithm of a quantity x is
     # sigma^2_log(x) = sigma^2/x^2
     logsigma = sigma / amp
 
-    i1 = model.sample_uv(uv[:,0],uv[:,1])
+    i1 = model.sample_uv(uv[:,0],uv[:,1],pol=pol,jonesdict=jonesdict)
     amp_samples = np.abs(i1)
 
-    V_grad = model.sample_grad_uv(uv[:,0],uv[:,1],fit_pol=fit_pol,fit_cpol=fit_cpol)
+    V_grad = model.sample_grad_uv(uv[:,0],uv[:,1],pol=pol,fit_pol=fit_pol,fit_cpol=fit_cpol,jonesdict=jonesdict)
 
     pp = ((np.log(amp) - np.log(amp_samples))) / (logsigma**2) / i1
     out = (-2.0/len(amp)) * np.real(np.dot(pp, V_grad.T))
