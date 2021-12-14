@@ -45,7 +45,7 @@ DATATERMS = ['vis', 'bs', 'amp', 'cphase', 'cphase_diag', 'camp', 'logcamp', 'lo
 REGULARIZERS = ['gs', 'tv', 'tv2', 'l1', 'l1w', 'lA', 'patch',
                 'flux', 'cm', 'simple', 'compact', 'compact2', 'rgauss', 'hw']
 REGULARIZERS_SPECIND = ['l2_alpha', 'tv_alpha']
-REGULARIZERS_CURV = []
+REGULARIZERS_CURV = ['l2_beta', 'tv_beta']
 
 DATATERMS_POL = ['pvis', 'm', 'pbs']
 REGULARIZERS_POL = ['msimple', 'hw', 'ptv']
@@ -639,7 +639,7 @@ class Imager(object):
         minbl = np.max(uvdists[uvdists > 0])
 
         if uvmax < maxbl:
-            print("Warning! Pixel size is than smallest spatial wavelength!")
+            print("Warning! Pixel size is larger than smallest spatial wavelength!")
         if uvmin > minbl:
             print("Warning! Field of View is smaller than largest nonzero spatial wavelength!")
 
@@ -854,13 +854,13 @@ class Imager(object):
                 raise Exception("Polarimetric imaging only works with mcv transform!")
 
             # Only apply log transformation to Stokes I if simultaneous imaging
-            if ('log' in self.transform_next) and self.pol_next != 'P':  
+            if ('log' in self.transform_next) and self.pol_next != 'P':
                 self._xtuple[0] = np.log(self._xtuple[0])
 
             # Pack into single vector
-            if self.pol_next == 'P': 
-                pol_which_solve = (0,1,1) # solve only for polarization, fix I 
-            else: 
+            if self.pol_next == 'P':
+                pol_which_solve = (0,1,1) # solve only for polarization, fix I
+            else:
                 pol_which_solve = (1,1,1) # solve simultaneously for full lin pol field
 
             self._xinit = polutils.pack_poltuple(self._xtuple, pol_which_solve)
@@ -934,6 +934,8 @@ class Imager(object):
                 print("Initializing imager data products . . .")
             if self.nruns > 0:
                 print("Recomputing imager data products . . .")
+#            if hasattr(self, "_data_tuples"):
+#                del self._data_tuples
             self._data_tuples = {}
 
             # Loop over all data term types
@@ -960,10 +962,10 @@ class Imager(object):
                     elif dname in DATATERMS:
                         if self.pol_next == 'IP' or self.pol_next == 'IQU':
                             pol_next = 'I'
-                        elif self.pol_next == 'P': 
+                        elif self.pol_next == 'P':
                             raise Exception("cannot use dterm %s with pol=P - did you mean to use pol=IP?")
                         else:
-                            pol_next = self.pol_next 
+                            pol_next = self.pol_next
                         tup = imutils.chisqdata(obs, self.prior_next, self._embed_mask, dname,
                                                 pol=pol_next, maxset=self.maxset_next,
                                                 debias=self.debias_next,
@@ -1078,7 +1080,6 @@ class Imager(object):
 
                 # Polarimetric data products
                 if dname in DATATERMS_POL:
-                #if self.pol_next == 'P':
                     chi2grad = polutils.polchisqgrad(imcur, A, data, sigma, dname,
                                                      ttype=self._ttype, mask=self._embed_mask,
                                                      pol_prim=POL_PRIM_SOLVE,
@@ -1124,7 +1125,7 @@ class Imager(object):
         for regname in sorted(self.reg_term_next.keys()):
             # Polarimetric regularizer
             #if self.pol_next == 'P':
-            if regname in REGULARIZERS_POL: 
+            if regname in REGULARIZERS_POL:
                 reg = polutils.polregularizer(imcur, self._embed_mask, self.flux_next,
                                               self.prior_next.xdim, self.prior_next.ydim,
                                               self.prior_next.psize, regname,
@@ -1160,7 +1161,7 @@ class Imager(object):
             elif regname in REGULARIZERS:
                 if self.pol_next == 'IP' or self.pol_next == 'IQU':
                     imcur0 = imcur[0]
-                else: 
+                else:
                     imcur0 = imcur
 
                 reg = imutils.regularizer(imcur0, self._nprior, self._embed_mask,
@@ -1185,7 +1186,7 @@ class Imager(object):
 
             # Polarimetric regularizer
             #if self.pol_next == 'P':
-            if regname in REGULARIZERS_POL: 
+            if regname in REGULARIZERS_POL:
                 reg = polutils.polregularizergrad(imcur, self._embed_mask, self.flux_next,
                                                   self.prior_next.xdim, self.prior_next.ydim,
                                                   self.prior_next.psize, regname,
@@ -1227,10 +1228,10 @@ class Imager(object):
                     reg = np.array((np.zeros(self._nimage), np.zeros(self._nimage), reg))
 
             # Normal regularizer
-            elif regname in REGULARIZERS: 
+            elif regname in REGULARIZERS:
                 if self.pol_next == 'IP' or self.pol_next == 'IQU': # TODO AC AA MAKE MORE ELEGANT
                     imcur0 = imcur[0]
-                else: 
+                else:
                     imcur0 = imcur
                 reg = imutils.regularizergrad(imcur0, self._nprior, self._embed_mask, self.flux_next,
                                               self.prior_next.xdim, self.prior_next.ydim,
@@ -1253,9 +1254,9 @@ class Imager(object):
 
         # Unpack polarimetric/multifrequency vector into an array
         if self.pol_next == 'P' or self.pol_next == 'IP' or self.pol_next == 'IQU':
-            if self.pol_next == 'P': 
-                pol_which_solve = (0,1,1) # solve only for polarization, fix I 
-            else: 
+            if self.pol_next == 'P':
+                pol_which_solve = (0,1,1) # solve only for polarization, fix I
+            else:
                 pol_which_solve = (1,1,1) # solve simultaneously for full lin pol field
             imcur = polutils.unpack_poltuple(imvec, self._xtuple, self._nimage, pol_which_solve)
         elif self.mf_next:
@@ -1311,9 +1312,9 @@ class Imager(object):
 
         # Unpack polarimetric/multifrequency vector into an array
         if self.pol_next == 'P' or self.pol_next == 'IP' or self.pol_next == 'IQU':
-            if self.pol_next == 'P': 
-                pol_which_solve = (0,1,1) # solve only for polarization, fix I 
-            else: 
+            if self.pol_next == 'P':
+                pol_which_solve = (0,1,1) # solve only for polarization, fix I
+            else:
                 pol_which_solve = (1,1,1) # solve simultaneously for full lin pol field
             imcur = polutils.unpack_poltuple(imvec, self._xtuple, self._nimage, pol_which_solve)
         elif self.mf_next:
