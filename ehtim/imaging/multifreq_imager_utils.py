@@ -260,6 +260,6 @@ def mf_all_chisqgrads(chi2grad, imvec_cur, imvec_ref, log_freqratio):
 
         dchisq_dI0 = chi2grad * imvec_cur / imvec_ref
         dchisq_dalpha = chi2grad * imvec_cur * log_freqratio
-        dchisq_dbeta = dchisq_dalpha * log_freqratio
+        dchisq_dbeta = chi2grad * imvec_cur * log_freqratio * log_freqratio
 
         return np.array((dchisq_dI0, dchisq_dalpha, dchisq_dbeta))

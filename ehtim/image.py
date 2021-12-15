@@ -1061,7 +1061,7 @@ class Image(object):
         ij = np.array([[[i * self.psize + (self.psize * self.xdim) / 2.0 - self.psize / 2.0,
                          j * self.psize + (self.psize * self.ydim) / 2.0 - self.psize / 2.0]
                         for i in np.arange(0, -self.xdim, -1)]
-                       for j in np.arange(0, -self.ydim, -1)]).reshape((self.xdim * self.ydim, 2))
+                        for j in np.arange(0, -self.ydim, -1)]).reshape((self.xdim * self.ydim, 2))
 
         def im_new_val(imvec, x_idx, y_idx):
             x = x_idx * psize_new + (psize_new * xdim_new) / 2.0 - psize_new / 2.0
@@ -1077,7 +1077,7 @@ class Image(object):
 
         def im_new(imvec):
             imarr_new = np.array([[im_new_val(imvec, x_idx, y_idx)
-                                   for x_idx in np.arange(0, -xdim_new, -1)]
+                                  for x_idx in np.arange(0, -xdim_new, -1)]
                                   for y_idx in np.arange(0, -ydim_new, -1)])
             return imarr_new
 
@@ -1107,6 +1107,7 @@ class Image(object):
         # Interpolate spectral index and copy over
         mflist_out = []
         for mfvec in self._mflist:
+            print("WARNING: resample_squre not debugged for spectral index resampling!")
             if len(mfvec):
                 mfarr = im_new(mfvec)
                 mfvec_out = mfarr.flatten()
@@ -1140,7 +1141,7 @@ class Image(object):
         xtarget = np.linspace(-targetfov / 2, targetfov / 2, npix)
         ytarget = np.linspace(-targetfov / 2, targetfov / 2, npix)
 
-        def interp_imvec(imvec):
+        def interp_imvec(imvec, specind=False):
             if np.any(np.imag(imvec) != 0):
                 return interp_imvec(np.real(imvec)) + 1j * interp_imvec(np.imag(imvec))
 
@@ -1149,7 +1150,9 @@ class Image(object):
             tmpimg = interpfunc(ytarget, xtarget)
             tmpimg[np.abs(xtarget) > fov_x / 2., :] = 0.0
             tmpimg[:, np.abs(ytarget) > fov_y / 2.] = 0.0
-            tmpimg = tmpimg * (psize_new)**2 / self.psize**2
+
+            if not specind: # adjust pixel size if not a spectral index map
+                tmpimg = tmpimg * (psize_new)**2 / self.psize**2
             return tmpimg
 
         # Make new image
@@ -1173,7 +1176,7 @@ class Image(object):
         mflist_out = []
         for mfvec in self._mflist:
             if len(mfvec):
-                mfarr = interp_imvec(mfvec)
+                mfarr = interp_imvec(mfvec, specind=True)
                 mfvec_out = mfarr.flatten()
             else:
                 mfvec_out = np.array([])
