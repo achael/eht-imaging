@@ -61,6 +61,7 @@ DAT_DEFAULT = {'vis': 100}
 POL_PRIM_SOLVE = "amp_phase"  # this means we solve for polarization in the m, chi basis
 POL_WHICH_SOLVE = (0, 1, 1)   # this means that pol imaging solves for m & chi (not I), for now
 MF_WHICH_SOLVE = (1, 1, 0)    # this means that mf imaging solves for I0 and alpha (not beta), for now
+                              # DEFAULT ONLY: object now uses self.mf_which_solve
 
 REGPARAMS_DEFAULT = {'major':50*ehc.RADPERUAS,
                      'minor':50*ehc.RADPERUAS,
@@ -189,7 +190,10 @@ class Imager(object):
         # Imager history
         self._change_imgr_params = True
         self.nruns = 0
+
+        # multifrequency
         self.mf_next = False
+        self.mf_which_solve = MF_WHICH_SOLVE
 
         # Set embedding matrices and prepare imager
         self.check_params()
@@ -235,6 +239,7 @@ class Imager(object):
         """
 
         self.mf_next = mf
+        self.mf_which_solve = kwargs.get('mf_which_solve', self.mf_which_solve)
 
         if pol is None:
             pol_prim = self.pol_next
@@ -298,7 +303,7 @@ class Imager(object):
                 out[0] = np.exp(out[0])
 
         elif self.mf_next:
-            out = mfutils.unpack_mftuple(out, self._xtuple, self._nimage, MF_WHICH_SOLVE)
+            out = mfutils.unpack_mftuple(out, self._xtuple, self._nimage, self.mf_which_solve)
             if 'log' in self.transform_next:
                 out[0] = np.exp(out[0])
 
@@ -907,7 +912,7 @@ class Imager(object):
                 self._xtuple = self.inittuple
 
             # Pack into single vector
-            self._xinit = mfutils.pack_mftuple(self._xtuple, MF_WHICH_SOLVE)
+            self._xinit = mfutils.pack_mftuple(self._xtuple, self.mf_which_solve)
 
         # Set prior & initial image vectors for single stokes or RR/LL imaging
         else:
@@ -1260,7 +1265,7 @@ class Imager(object):
                 pol_which_solve = (1,1,1) # solve simultaneously for full lin pol field
             imcur = polutils.unpack_poltuple(imvec, self._xtuple, self._nimage, pol_which_solve)
         elif self.mf_next:
-            imcur = mfutils.unpack_mftuple(imvec, self._xtuple, self._nimage, MF_WHICH_SOLVE)
+            imcur = mfutils.unpack_mftuple(imvec, self._xtuple, self._nimage, self.mf_which_solve)
         else:
             imcur = imvec
 
@@ -1318,7 +1323,7 @@ class Imager(object):
                 pol_which_solve = (1,1,1) # solve simultaneously for full lin pol field
             imcur = polutils.unpack_poltuple(imvec, self._xtuple, self._nimage, pol_which_solve)
         elif self.mf_next:
-            imcur = mfutils.unpack_mftuple(imvec, self._xtuple, self._nimage, MF_WHICH_SOLVE)
+            imcur = mfutils.unpack_mftuple(imvec, self._xtuple, self._nimage, self.mf_which_solve)
         else:
             imcur = imvec
 
@@ -1390,7 +1395,7 @@ class Imager(object):
 
         # repack gradient for multifrequency imaging
         elif self.mf_next:
-            grad = mfutils.pack_mftuple(grad, MF_WHICH_SOLVE)
+            grad = mfutils.pack_mftuple(grad, self.mf_which_solve)
 
         return grad
 
@@ -1407,7 +1412,7 @@ class Imager(object):
                         imvec, self._xtuple, self._nimage, pol_which_solve)
                 elif self.mf_next:
                     imcur = mfutils.unpack_mftuple(
-                        imvec, self._xtuple, self._nimage, MF_WHICH_SOLVE)
+                        imvec, self._xtuple, self._nimage, self.mf_which_solve)
                 else:
                     imcur = imvec
 
