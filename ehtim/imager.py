@@ -193,7 +193,7 @@ class Imager(object):
 
         # multifrequency
         self.mf_next = False
-        self.mf_which_solve = MF_WHICH_SOLVE
+        self.mf_which_solve = kwargs.get('mf_which_solve',MF_WHICH_SOLVE)
 
         # Set embedding matrices and prepare imager
         self.check_params()
