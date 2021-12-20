@@ -691,8 +691,10 @@ def load_caltable(obs, datadir, sqrt_gains=False):
         except IOError:
             try:
                 filename = datadir + site + '.txt'
+                data = np.loadtxt(filename, dtype=bytes).astype(str)
             except IOError:
-                continue
+                pass
+                #continue
 
 
         datatable = []
