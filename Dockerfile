@@ -1,7 +1,7 @@
 FROM continuumio/miniconda2
 
 # install gcc and common build dependencies
-RUN apt-get update \
+RUN apt-get --allow-releaseinfo-change update -y \
  && apt-get install -y \
       build-essential \
       pylint
