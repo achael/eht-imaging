@@ -109,6 +109,7 @@ class Imager(object):
         self.dat_term_next = data_term  # e.g. [('amp', 1000), ('cphase',100)]
 
         # Observations, frequencies
+        self.reffreq = init_im.rf
         if isinstance(obs_in, list):
             self._obslist_next = obs_in
             self.obslist_next = obs_in
@@ -210,7 +211,7 @@ class Imager(object):
             raise Exception("obslist_next must be a list!")
         self._obslist_next = obslist
         self.freq_list = [obs.rf for obs in self.obslist_next]
-        self.reffreq = self.freq_list[0]
+        #self.reffreq = self.freq_list[0] #Changed so that reffreq is determined by initial image/prior rf
         self._logfreqratio_list = [np.log(nu/self.reffreq) for nu in self.freq_list]
 
     @property
@@ -433,6 +434,9 @@ class Imager(object):
             (self.prior_next.xdim != self.init_next.xdim) or
                 (self.prior_next.ydim != self.prior_next.ydim)):
             raise Exception("Initial image does not match dimensions of the prior image!")
+
+        if ((self.prior_next.rf != self.init_next.rf)):
+            raise Exception("Initial image does not have same frequency as prior image!")
 
         if (self.prior_next.polrep != self.init_next.polrep):
             raise Exception(
@@ -872,6 +876,10 @@ class Imager(object):
 
         # Set prior & initial image vectors for multifrequency imaging
         elif self.mf_next:
+
+            self.reffreq = self.init_next.rf # set reference frequency to same as prior
+            # reset logfreqratios in case reference frequency changed
+            self._logfreqratio_list = [np.log(nu/self.reffreq) for nu in self.freq_list]
 
             if self.norm_init:
                 nprior_I = (self.flux_next * self.prior_next.imvec /
