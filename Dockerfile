@@ -1,4 +1,4 @@
-FROM continuumio/miniconda2
+FROM continuumio/miniconda3
 
 # install gcc and common build dependencies
 RUN apt-get update \
@@ -14,4 +14,4 @@ COPY . .
 # https://stackoverflow.com/questions/37604289/tkinter-tclerror-no-display-name-and-no-display-environment-variable
 RUN conda install -y -c conda-forge pynfft \
  && pip install -r requirements.txt \
- && echo "backend: Agg" >> /opt/conda/lib/python2.7/site-packages/matplotlib/mpl-data/matplotlibrc
+ && echo "backend: Agg" >> /opt/conda/lib/python3.9/site-packages/matplotlib/mpl-data/matplotlibrc
