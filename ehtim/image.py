@@ -3426,7 +3426,7 @@ class Image(object):
 
                 # mask out low total intensity values
                 mask = self.imvec < (scut * np.max(self.imvec))
-                imvec[mask] = 0
+                imvec[mask] = np.nan
 
                 unit = r'$\alpha$'
                 factor = 1
@@ -3437,7 +3437,7 @@ class Image(object):
 
                 # mask out low total intensity values
                 mask = self.imvec < (scut * np.max(self.imvec))
-                imvec[mask] = 0
+                imvec[mask] = np.nan
 
                 unit = r'$\beta$'
                 factor = 1
@@ -3527,12 +3527,14 @@ class Image(object):
 
             if not cfun:
                 cfun = cfun_p
+            cmap = plt.get_cmap(cfun)
+            cmap.set_bad(color='whitesmoke')
 
             if cbar_lims:
-                im = plt.imshow(imarr, alpha=alpha, cmap=plt.get_cmap(cfun), interpolation=interp,
+                im = plt.imshow(imarr, alpha=alpha, cmap=cmap, interpolation=interp,
                                 vmin=cbar_lims[0], vmax=cbar_lims[1])
             else:
-                im = plt.imshow(imarr, alpha=alpha, cmap=plt.get_cmap(cfun), interpolation=interp)
+                im = plt.imshow(imarr, alpha=alpha, cmap=cmap, interpolation=interp)
 
             if not(beamparams is None or beamparams is False):
                 beamparams = [beamparams[0], beamparams[1], beamparams[2],
@@ -3636,13 +3638,13 @@ class Image(object):
 
             m = (np.abs(qvec + 1j * uvec) / imvec).reshape(self.ydim, self.xdim)
             p = (np.abs(qvec + 1j * uvec)).reshape(self.ydim, self.xdim)
-            m[np.logical_not(mask)] = 0
-            p[np.logical_not(mask)] = 0
-            qarr[np.logical_not(mask)] = 0
-            uarr[np.logical_not(mask)] = 0
+            m[np.logical_not(mask)] = np.nan
+            p[np.logical_not(mask)] = np.nan
+            qarr[np.logical_not(mask)] = np.nan
+            uarr[np.logical_not(mask)] = np.nan
 
             voi = (vvec / imvec).reshape(self.ydim, self.xdim)
-            voi[np.logical_not(mask)] = 0
+            voi[np.logical_not(mask)] = np.nan
 
             # Little pol plots
             if plot_stokes:
@@ -3669,9 +3671,11 @@ class Image(object):
                     if cbar_lims:
                         plt.clim(-maxval, maxval)
 
+                cmap = plt.get_cmap('bwr')
+                cmap.set_bad('whitesmoke')
                 # V Plot
                 ax = plt.subplot2grid((2, 5), (0, 1))
-                plt.imshow(varr, cmap=plt.get_cmap('bwr'), interpolation=interp,
+                plt.imshow(varr, cmap=cmap, interpolation=interp,
                            vmin=-maxval, vmax=maxval)
                 ax.set_xticks([])
                 ax.set_yticks([])
@@ -3680,7 +3684,7 @@ class Image(object):
 
                 # Q Plot
                 ax = plt.subplot2grid((2, 5), (1, 0))
-                plt.imshow(qarr, cmap=plt.get_cmap('bwr'), interpolation=interp,
+                plt.imshow(qarr, cmap=cmap, interpolation=interp,
                            vmin=-maxval, vmax=maxval)
                 plt.contour(imarr, colors='k', linewidths=.25)
                 ax.set_xticks([])
@@ -3690,7 +3694,7 @@ class Image(object):
 
                 # U Plot
                 ax = plt.subplot2grid((2, 5), (1, 1))
-                plt.imshow(uarr, cmap=plt.get_cmap('bwr'), interpolation=interp,
+                plt.imshow(uarr, cmap=cmap, interpolation=interp,
                            vmin=-maxval, vmax=maxval)
                 plt.contour(imarr, colors='k', linewidths=.25)
                 ax.set_xticks([])
@@ -3700,7 +3704,10 @@ class Image(object):
 
                 # V/I plot
                 ax = plt.subplot2grid((2, 5), (0, 2))
-                im = plt.imshow(voi, cmap=plt.get_cmap('seismic'), interpolation=interp,
+                cmap = plt.get_cmap('seismic')
+                cmap.set_bad('whitesmoke')
+
+                im = plt.imshow(voi, cmap=cmap, interpolation=interp,
                                 vmin=-1, vmax=1)
                 if has_title:
                     plt.title('V/I')
@@ -3742,13 +3749,15 @@ class Image(object):
 
             if not cfun:
                 cfun = 'afmhot'
+            cmap = plt.get_cmap(cfun)
+            cmap.set_bad(color='whitesmoke')
 
             # Big Stokes I plot
             if cbar_lims:
-                im = plt.imshow(imarr2, cmap=plt.get_cmap(cfun), interpolation=interp,
+                im = plt.imshow(imarr2, cmap=cmap, interpolation=interp,
                                 vmin=cbar_lims[0], vmax=cbar_lims[1])
             else:
-                im = plt.imshow(imarr2, cmap=plt.get_cmap(cfun), interpolation=interp)
+                im = plt.imshow(imarr2, cmap, interpolation=interp)
 
             if vec_cfun is None:
                 plt.quiver(x, y, a, b,
