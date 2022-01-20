@@ -1,6 +1,6 @@
 import os
 from setuptools import setup
-
+#read
 def read(fname):
     return open(os.path.join(os.path.dirname(__file__), fname)).read()
 
@@ -43,6 +43,7 @@ if __name__ == "__main__":
                             "ephem",
                             "h5py",
                             "pandas",
+                            "requests"
                           # "pynfft",   # optional (but highly recommended)
                           # "networkx", # optional, only needed if using image_agreements()
                           # "requests", # optional; only needed if using dynamical imaging
