@@ -16,7 +16,7 @@ if __name__ == "__main__":
           license = "GPLv3",
           keywords = "imaging astronomy EHT polarimetry",
           url = "https://github.com/achael/eht-imaging",
-          download_url = "https://github.com/achael/eht-imaging/archive/v1.2.2.tar.gz",
+          download_url = "https://github.com/achael/eht-imaging/archive/v1.2.3.tar.gz",
           packages = ["ehtim",
                       "scripts",
                       "ehtim.calibrating",
@@ -28,6 +28,7 @@ if __name__ == "__main__":
                       "ehtim.features",
                       "ehtim.scattering",
                       "ehtim.statistics"],
+                      
           scripts=["scripts/calibrate.py",
                    "scripts/cleanup.py",
                    "scripts/cli_blur_comp.py",
@@ -43,19 +44,20 @@ if __name__ == "__main__":
                             "ephem",
                             "h5py",
                             "pandas",
-                            "requests"
+                            "requests",
+                            "future"
+                          # optional (but recommended) libraries required for some features
                           # "pynfft",   # optional (but highly recommended)
                           # "networkx", # optional, only needed if using image_agreements()
                           # "requests", # optional; only needed if using dynamical imaging
-                          # "scikit-image", #optional; only needed for hough transforms  
-                            "future"],
+                          # "scikit-image", #optional; only needed for certain image analysis functions  
+                          ],
           classifiers=[
             'Development Status :: 3 - Alpha',     
             'Intended Audience :: Developers',    
             'Topic :: Software Development :: Build Tools',
             'License :: OSI Approved :: GNU General Public License v3 (GPLv3)',
             'Programming Language :: Python :: 3.8',
-            'Programming Language :: Python :: 2.7',
           ],
 
          )
