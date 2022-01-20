@@ -277,7 +277,7 @@ def smoothingUpdates(z_t_t, P_t_t, z_t_tm1, P_t_tm1, A_orig, mask=[]):
     
 
     
-def computeSuffStatistics(mu, Lambda, obs_List, Upsilon, theta, init_x, init_y, flowbasis_x, flowbasis_y, initTheta, init_images=None, method='phase', measurement={'vis':1}, lightcurve=None, interiorPriors=False, numLinIters=1, compute_expVal_tm1_t=True, mask=[], apxImgs=False, normalize=False):
+def computeSuffStatistics(mu, Lambda, obs_List, Upsilon, theta, init_x, init_y, flowbasis_x, flowbasis_y, initTheta, init_images=None, method='phase', measurement={'vis':1}, lightcurve=None, interiorPriors=False, numLinIters=1, compute_expVal_tm1_t=True, mask=[], normalize=False):
     """
     :param mu: (list - len(mu)=num_time_steps or 1): every element is an image object which contains the mean image
         at given timestep. If list length is one mean image is duplicated for all time steps
