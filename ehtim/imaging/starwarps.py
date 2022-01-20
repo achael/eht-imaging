@@ -155,7 +155,10 @@ def forwardUpdates_apxImgs(mu, Lambda_orig, obs_List, A_orig, Q_orig, init_image
         
         for k in range(0,numLinIters):
 	    # F is the derivative of the Forward model with respect to the unknown parameters
-            meas, idealmeas, F, measCov, valid = getMeasurementTerms(obs_List[t], z_List_lin[t], measurement=measurement, tot_flux=lightcurve[t], mask=mask, normalize=normalize)
+            if lightcurve:
+                meas, idealmeas, F, measCov, valid = getMeasurementTerms(obs_List[t], z_List_lin[t], measurement=measurement, tot_flux=lightcurve[t], mask=mask, normalize=normalize)
+            else:
+                meas, idealmeas, F, measCov, valid = getMeasurementTerms(obs_List[t], z_List_lin[t], measurement=measurement, tot_flux=None, mask=mask, normalize=normalize)
             if valid:
                 z_List_t_t[t].imvec[mask], P_List_t_t[t] = prodGaussiansLem2(F, measCov, meas, z_star_List_t_tm1[t].imvec[mask], P_star_List_t_tm1[t])
                 
@@ -238,8 +241,10 @@ def backwardUpdates(mu, Lambda_orig, obs_List, A_orig, Q_orig, measurement={'vis
 #tmp.display(cbar_unit = ('m-Jy', '$\mu$-arcseconds$^2$'), export_pdf='/Users/klbouman/Downloads/backwards_stdev_' + str(t) + '.png' , has_title = False, label_type = 'none', has_cbar = False) #cbar_lims = (0,0.0025),
 
         # update
-
-        meas, idealmeas, F, measCov, valid = getMeasurementTerms(obs_List[t], apxImgs[t], measurement=measurement, tot_flux=lightcurve[t], mask=mask, normalize=normalize)
+        if lightcurve:
+            meas, idealmeas, F, measCov, valid = getMeasurementTerms(obs_List[t], apxImgs[t], measurement=measurement, tot_flux=lightcurve[t], mask=mask, normalize=normalize)
+        else:
+            meas, idealmeas, F, measCov, valid = getMeasurementTerms(obs_List[t], apxImgs[t], measurement=measurement, tot_flux=None, mask=mask, normalize=normalize)   
 
         if valid:
             z_t_t[t].imvec[mask], P_t_t[t] = prodGaussiansLem2(F, measCov, meas, z_star_t_tp1[t].imvec[mask], P_star_t_tp1[t])
@@ -272,7 +277,7 @@ def smoothingUpdates(z_t_t, P_t_t, z_t_tm1, P_t_tm1, A_orig, mask=[]):
     
 
     
-def computeSuffStatistics(mu, Lambda, obs_List, Upsilon, theta, init_x, init_y, flowbasis_x, flowbasis_y, initTheta, init_images=None, method='phase', measurement={'vis':1}, lightcurve=None, interiorPriors=False, numLinIters=1, compute_expVal_tm1_t=True, mask=[], normalize=False):
+def computeSuffStatistics(mu, Lambda, obs_List, Upsilon, theta, init_x, init_y, flowbasis_x, flowbasis_y, initTheta, init_images=None, method='phase', measurement={'vis':1}, lightcurve=None, interiorPriors=False, numLinIters=1, compute_expVal_tm1_t=True, mask=[], apxImgs=False, normalize=False):
     """
     :param mu: (list - len(mu)=num_time_steps or 1): every element is an image object which contains the mean image
         at given timestep. If list length is one mean image is duplicated for all time steps
