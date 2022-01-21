@@ -2819,7 +2819,7 @@ class Obsdata(object):
                vtype (str): The visibilty type ('vis','qvis','uvis','vvis','pvis')
                             from which to assemble closure phases
                count (str): If 'min', return minimal set of phases,
-                            If 'min-cut0bl' return minimal set after flaggin zero-baselines
+                            If 'min-cut0bl' return minimal set after flagging zero-baselines
                ang_unit (str): If 'deg', return closure phases in degrees, else return in radians
                timetype (str): 'UTC' or 'GMST'
                uv_min (float): flag baselines shorter than this before forming closure quantities
@@ -2990,7 +2990,7 @@ class Obsdata(object):
             timetype = self.timetype
 
         if method=='from_maxset' and (vtype in ['lrvis','pvis','rlvis']):
-            print ("Warning! method='from_maxset' default in bispectra_tri() is inconsistent with vtype=%s" % vtype)
+            print ("Warning! method='from_maxset' default in bispectra_tri() inconsistent with vtype=%s" % vtype)
             print ("Switching to method='from_vis'")
             method = 'from_vis'
 

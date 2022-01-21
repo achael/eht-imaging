@@ -2,7 +2,7 @@ astropy
 ephem
 future
 h5py
-html
+html; python_version < '3.1'
 ipython
 matplotlib
 networkx
