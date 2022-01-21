@@ -1235,10 +1235,10 @@ def sample_1model_grad_uv(u, v, model_type, params, pol='I', fit_pol=False, fit_
             [grad.append(np.zeros_like(grad[0])) for _ in range(2*len(params['beta_list']))]
 
         if pol=='P' and fit_pol:
-            # Add derivatives of the beta terms 
+            # Add derivatives of the beta_pol terms 
             num_coeff = len(params['beta_list_pol'])
             for m in range(-(num_coeff-1)//2,(num_coeff+1)//2):
-                beta_grad_re = params['F0'] * alpha_factor * sps.jv( m, z) * np.exp( 1j * m * (phi - np.pi/2.)) 
+                beta_grad_re = params['F0'] * alpha_factor * sps.jv( m, z) * np.exp( 1j * m * (phi - np.pi/2.)) * np.exp(1j * 2.0 * np.pi * (u * params['x0'] + v * params['y0'])) 
                 beta_grad_im = 1j * beta_grad_re
                 if COMPLEX_BASIS == 're-im':
                     grad.append(beta_grad_re)
@@ -1252,6 +1252,35 @@ def sample_1model_grad_uv(u, v, model_type, params, pol='I', fit_pol=False, fit_
                     raise Exception('COMPLEX_BASIS ' + COMPLEX_BASIS + ' not recognized!')
         elif pol!='P' and fit_pol:
             [grad.append(np.zeros_like(grad[0])) for _ in range(2*len(params['beta_list_pol']))]
+
+        if pol=='V' and fit_cpol:
+            # Add derivatives of the beta_cpol terms 
+            num_coeff = len(params['beta_list_cpol']) - 1
+            
+            # First do the beta0 mode (real)
+            beta_grad_re = params['F0'] * alpha_factor * sps.jv( 0, z)  
+            grad.append(beta_grad_re)
+
+            # Now do the remaining modes (complex)
+            for m in range(1,num_coeff+1):
+                beta_grad_re =      params['F0'] * alpha_factor * (
+                   sps.jv( m, z) * np.exp( 1j * m * (phi - np.pi/2.)) + sps.jv(-m, z) * np.exp(-1j * m * (phi - np.pi/2.)) 
+                   * np.exp(1j * 2.0 * np.pi * (u * params['x0'] + v * params['y0']))) 
+                beta_grad_im = 1j * params['F0'] * alpha_factor * (
+                   sps.jv( m, z) * np.exp( 1j * m * (phi - np.pi/2.)) - sps.jv(-m, z) * np.exp(-1j * m * (phi - np.pi/2.)) 
+                   * np.exp(1j * 2.0 * np.pi * (u * params['x0'] + v * params['y0']))) 
+                if COMPLEX_BASIS == 're-im':
+                    grad.append(beta_grad_re)
+                    grad.append(beta_grad_im)
+                elif COMPLEX_BASIS == 'abs-arg':
+                    beta_abs = np.abs(params['beta_list_cpol'][m])
+                    beta_arg = np.angle(params['beta_list_cpol'][m])
+                    grad.append(beta_grad_re * np.cos(beta_arg) + beta_grad_im * np.sin(beta_arg))
+                    grad.append(-beta_abs * np.sin(beta_arg) * beta_grad_re + beta_abs * np.cos(beta_arg) * beta_grad_im)
+                else:
+                    raise Exception('COMPLEX_BASIS ' + COMPLEX_BASIS + ' not recognized!')
+        elif pol!='V' and fit_cpol:
+            [grad.append(np.zeros_like(grad[0])) for _ in range(2*len(params['beta_list_cpol'])-1)]
 
         val = np.array(grad)
     elif model_type == 'thick_mring_floor': # F0, d, [alpha], ff, x0, y0, beta1_re/abs, beta1_im/arg, beta2_re/abs, beta2_im/arg, ...
