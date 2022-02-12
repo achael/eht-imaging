@@ -505,7 +505,7 @@ class Obsdata(object):
                     data, lambda x: np.searchsorted(self.scans[:, 0], x['time'])):
                 datalist.append(np.array([obs for obs in group]))
 
-        return np.array(datalist)
+        return np.array(datalist, dtype=object)
 
     def split_obs(self, t_gather=0., scan_gather=False):
         """Split single observation into multiple observation files, one per scan..
@@ -553,7 +553,7 @@ class Obsdata(object):
         for key, group in it.groupby(data[idx], lambda x: set((x['t1'], x['t2']))):
             datalist.append(np.array([obs for obs in group]))
 
-        return np.array(datalist)
+        return np.array(datalist, dtype=object)
 
     def unpack_bl(self, site1, site2, fields, ang_unit='deg', debias=False, timetype=False):
         """Unpack the data over time on the selected baseline site1-site2.
@@ -596,7 +596,7 @@ class Obsdata(object):
 
                     allout.append(out)
 
-        return np.array(allout)
+        return np.array(allout)  # this might need dtype=object to avoid a deprecation warning in np
 
     def unpack(self, fields, mode='all', ang_unit='deg', debias=False, conj=False, timetype=False):
         """Unpack the data for the whole observation .
