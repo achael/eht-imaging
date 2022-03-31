@@ -1,4 +1,4 @@
-FROM continuumio/miniconda2
+FROM continuumio/miniconda3
 
 # install gcc and common build dependencies
 RUN apt-get update \
@@ -6,12 +6,13 @@ RUN apt-get update \
       build-essential \
       pylint
 
-WORKDIR /eht-imaging
-
-COPY . .
+COPY environment.yml environment.yml
 
 # install dependencies and fix tkinter error
 # https://stackoverflow.com/questions/37604289/tkinter-tclerror-no-display-name-and-no-display-environment-variable
-RUN conda install -y -c conda-forge pynfft \
- && pip install -r requirements.txt \
- && echo "backend: Agg" >> /opt/conda/lib/python2.7/site-packages/matplotlib/mpl-data/matplotlibrc
+RUN conda env create --name eht-imaging --file environment.yml
+RUN echo 'conda activate eht-imaging' >> ~/.bashrc
+#RUN echo "backend: Agg" >> /opt/conda/lib/python3.9/site-packages/matplotlib/mpl-data/matplotlibrc
+
+WORKDIR /eht-imaging
+COPY . .
