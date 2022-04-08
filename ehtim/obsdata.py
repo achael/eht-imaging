@@ -505,7 +505,7 @@ class Obsdata(object):
                     data, lambda x: np.searchsorted(self.scans[:, 0], x['time'])):
                 datalist.append(np.array([obs for obs in group]))
 
-        return np.array(datalist)
+        return np.array(datalist, dtype=object)
 
     def split_obs(self, t_gather=0., scan_gather=False):
         """Split single observation into multiple observation files, one per scan..
@@ -553,7 +553,7 @@ class Obsdata(object):
         for key, group in it.groupby(data[idx], lambda x: set((x['t1'], x['t2']))):
             datalist.append(np.array([obs for obs in group]))
 
-        return np.array(datalist)
+        return np.array(datalist, dtype=object)
 
     def unpack_bl(self, site1, site2, fields, ang_unit='deg', debias=False, timetype=False):
         """Unpack the data over time on the selected baseline site1-site2.
@@ -596,7 +596,7 @@ class Obsdata(object):
 
                     allout.append(out)
 
-        return np.array(allout)
+        return np.array(allout)  # this might need dtype=object to avoid a deprecation warning in np
 
     def unpack(self, fields, mode='all', ang_unit='deg', debias=False, conj=False, timetype=False):
         """Unpack the data for the whole observation .
@@ -2819,7 +2819,7 @@ class Obsdata(object):
                vtype (str): The visibilty type ('vis','qvis','uvis','vvis','pvis')
                             from which to assemble closure phases
                count (str): If 'min', return minimal set of phases,
-                            If 'min-cut0bl' return minimal set after flaggin zero-baselines
+                            If 'min-cut0bl' return minimal set after flagging zero-baselines
                ang_unit (str): If 'deg', return closure phases in degrees, else return in radians
                timetype (str): 'UTC' or 'GMST'
                uv_min (float): flag baselines shorter than this before forming closure quantities
@@ -2990,7 +2990,7 @@ class Obsdata(object):
             timetype = self.timetype
 
         if method=='from_maxset' and (vtype in ['lrvis','pvis','rlvis']):
-            print ("Warning! method='from_maxset' default in bispectra_tri() is inconsistent with vtype=%s" % vtype)
+            print ("Warning! method='from_maxset' default in bispectra_tri() inconsistent with vtype=%s" % vtype)
             print ("Switching to method='from_vis'")
             method = 'from_vis'
 
