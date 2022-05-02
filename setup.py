@@ -47,7 +47,7 @@ if __name__ == "__main__":
                             "requests",
                             "future"
                           # optional (but recommended) libraries required for some features
-                          # "pynfft",   # optional (but highly recommended)
+                          # ,"pynfft",   # optional (but highly recommended)
                           # "networkx", # optional, only needed if using image_agreements()
                           # "requests", # optional; only needed if using dynamical imaging
                           # "scikit-image", #optional; only needed for certain image analysis functions  

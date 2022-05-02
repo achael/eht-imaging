@@ -506,6 +506,7 @@ class Obsdata(object):
                 datalist.append(np.array([obs for obs in group]))
 
         return np.array(datalist, dtype=object)
+#        return np.array(datalist)
 
     def split_obs(self, t_gather=0., scan_gather=False):
         """Split single observation into multiple observation files, one per scan..
@@ -553,8 +554,9 @@ class Obsdata(object):
         for key, group in it.groupby(data[idx], lambda x: set((x['t1'], x['t2']))):
             datalist.append(np.array([obs for obs in group]))
 
-        return np.array(datalist, dtype=object)
-
+#        return np.array(datalist, dtype=object)
+        return np.array(datalist)
+        
     def unpack_bl(self, site1, site2, fields, ang_unit='deg', debias=False, timetype=False):
         """Unpack the data over time on the selected baseline site1-site2.
 
