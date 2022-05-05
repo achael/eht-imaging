@@ -11,8 +11,8 @@ from   ehtim.calibrating import self_cal as sc
 #from  ehtim.plotting import self_cal as sc
 
 # Load the image and the array
-im = eh.image.load_txt('./models/avery_sgra_eofn.txt')
-eht = eh.array.load_txt('./arrays/EHT2017.txt')
+im = eh.image.load_txt('../models/avery_sgra_eofn.txt')
+eht = eh.array.load_txt('../arrays/EHT2017.txt')
 
 # Observe the image
 tint_sec = 5
@@ -40,10 +40,10 @@ gaussprior = emptyprior.add_gauss(zbl, (prior_fwhm, prior_fwhm, 0, 0, 0))
 # Image total flux with bispectrum
 flux = zbl
 imgr  = eh.imager.Imager(obs, gaussprior, gaussprior, flux,
-                          data_term={'bs':100}, show_updates=False,
+                          data_term={'bs':100}, 
                           reg_term={'simple':1,'flux':100,'cm':50},
                           maxit=200, ttype='nfft')
-imgr.make_image_I(grads=True)
+imgr.make_image_I(grads=True,show_updates=False)
 
 # Blur the image with a circular beam and image again to help convergance
 out = imgr.out_last()
@@ -51,7 +51,7 @@ imgr.init_next = out.blur_circ(res)
 imgr.prior_next = imgr.init_next
 imgr.dat_term_next = {'amp':50, 'cphase':100}
 imgr.reg_term_next = {'tv2':100, 'flux':1,'cm':1}
-imgr.make_image_I()
+imgr.make_image_I(show_updates=False)
 
 out=imgr.out_last().threshold(0.01)
 
@@ -61,7 +61,7 @@ imgr.prior_next = imgr.init_next
 imgr.transform_next = 'mcv'
 imgr.dat_term_next = {'pvis':1}
 imgr.reg_term_next = {'hw':1}
-imgr.make_image_P()
+imgr.make_image_P(show_updates=False)
 
 # blur and image again with the polarimetric ratio
 out=imgr.out_last()
@@ -70,7 +70,7 @@ imgr.prior_next = imgr.init_next
 imgr.transform_next = 'mcv'
 imgr.dat_term_next = {'pvis':5}
 imgr.reg_term_next = {'hw':1,'ptv':1.e2}
-imgr.make_image_P()
+imgr.make_image_P(show_updates=False)
 
 out = imgr.out_last()
 out.display(plotp=True)

@@ -11,8 +11,8 @@ from   ehtim.calibrating import self_cal as sc
 #from  ehtim.plotting import self_cal as sc
 
 # Load the image and the array
-im = eh.image.load_txt('./models/avery_sgra_eofn.txt')
-eht = eh.array.load_txt('./arrays/EHT2017.txt')
+im = eh.image.load_txt('../models/avery_sgra_eofn.txt')
+eht = eh.array.load_txt('../arrays/EHT2017.txt')
 
 # Add a spectral index to the image
 alpha = 2.5
@@ -61,16 +61,16 @@ gaussprior = emptyprior.add_gauss(zbl, (prior_fwhm, prior_fwhm, 0, 0, 0))
 ## Image both frequencies independently with complex visibilities
 flux230 = zbl
 imgr230  = eh.imager.Imager(obs230, gaussprior, gaussprior, flux230,
-                            data_term={'vis':100}, show_updates=False,
+                            data_term={'vis':100},
                             reg_term={'tv2':1.e4,'l1':5},
                             maxit=200, ttype='nfft')
-imgr230.make_image_I(show_updates=True)
+imgr230.make_image_I(show_updates=False)
 out230 = imgr230.out_last()
 
 
 flux345 = im345.total_flux()
 imgr345  = eh.imager.Imager(obs345, gaussprior, gaussprior, flux345,
-                            data_term={'vis':100}, show_updates=False,
+                            data_term={'vis':100},
                             reg_term={'tv2':1},
                             maxit=200, ttype='nfft')
 imgr345.make_image_I(show_updates=False)
@@ -78,7 +78,7 @@ out345 = imgr345.out_last()
 
 ## Image both frequencies together without multifrequency imaging (no spectral index)
 imgr  = eh.imager.Imager(obslist_nospec, gaussprior, gaussprior, zbl,
-                            data_term={'vis':100}, show_updates=False,
+                            data_term={'vis':100}, 
                             reg_term={'tv2':1.e4,'l1':5},
                             maxit=200, ttype='nfft')
 imgr.make_image_I(show_updates=False)
@@ -88,7 +88,7 @@ out_nospec = imgr.out_last()
 plt.close('all')
 gaussprior = gaussprior.add_const_mf(3)
 imgr  = eh.imager.Imager(obslist, gaussprior, gaussprior, zbl,
-                            data_term={'vis':100}, show_updates=False,
+                            data_term={'vis':100},
                             reg_term={'tv2':1.e4,'l1':5},
                             maxit=100, ttype='nfft')
 imgr.make_image_I(mf=True,show_updates=False)

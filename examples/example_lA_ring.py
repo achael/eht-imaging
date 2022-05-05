@@ -3,8 +3,8 @@ import ehtim as eh
 import matplotlib.pyplot as plt
 
 # Load the image and the array
-im = eh.image.load_txt('models/avery_sgra_eofn.txt')
-eht = eh.array.load_txt('arrays/EHT2017.txt')
+im = eh.image.load_txt('../models/avery_sgra_eofn.txt')
+eht = eh.array.load_txt('../arrays/EHT2017.txt')
 
 im.imvec *= 0.0
 im = im.add_crescent(1.0, 25.*eh.RADPERUAS,20.*eh.RADPERUAS, 0, 0)

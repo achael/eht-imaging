@@ -57,7 +57,7 @@ gausspriorc = gaussprior.switch_polrep('circ')
 
 # Average the closure quantities and add them to the obsdata object
 avg_time = 600
-obs.add_bispec(avg_time=avg_time)
+#obs.add_bispec(avg_time=avg_time)
 obs.add_amp(avg_time=avg_time)
 obs.add_cphase(avg_time=avg_time)
 obs.add_camp(avg_time=avg_time)
@@ -66,10 +66,10 @@ obs.add_logcamp(avg_time=avg_time)
 # Image directly with these averaged data
 flux = zbl
 imgr  = eh.imager.Imager(obs, gaussprior, gaussprior, flux,
-                          data_term={'bs':100}, show_updates=False,
+                          data_term={'amp':50, 'cphase':100},
                           reg_term={'simple':1,'flux':100,'cm':50},
                           maxit=500, ttype='nfft')
-imgr.make_image()
+imgr.make_image(show_updates=False)
 
 # Blur the image with a circular beam and image again to help convergance
 out = imgr.out_last()
@@ -77,7 +77,7 @@ imgr.init_next = out.blur_circ(res)
 imgr.prior_next = imgr.init_next
 imgr.dat_term_next = {'amp':50, 'cphase':100}
 imgr.reg_term_next = {'tv':1, 'flux':100,'cm':50}
-imgr.make_image()
+imgr.make_image(show_updates=False)
 
 # one final round of blurring and re-imaging with smaller data weights
 out = imgr.out_last()
@@ -86,7 +86,7 @@ imgr.prior_next = imgr.init_next
 imgr.dat_term_next = {'amp':10, 'cphase':20}
 imgr.reg_term_next = {'tv':1, 'flux':100,'cm':50}
 imgr.maxi_next  = 1000
-imgr.make_image()
+imgr.make_image(show_updates=False)
 
 #Image polarization w/ independent Stokes parameters -- in progress
 #out = imgr.out_last()

@@ -416,9 +416,16 @@ class Imager(object):
 
         xmax = self.prior_next.xdim//2
         ymax = self.prior_next.ydim//2
+        
+        if self.prior_next.xdim % 2: xmin=-xmax-1
+        else: xmin=-xmax
+        
+        if self.prior_next.ydim % 2: ymin=-ymax-1
+        else: ymin=-ymax
+        
         coord = np.array([[[x, y]
-                           for x in np.arange(xmax, -ymax, -1)]
-                          for y in np.arange(ymax, -ymax, -1)])
+                           for x in np.arange(xmax, xmin, -1)]
+                           for y in np.arange(ymax, ymin, -1)])
 
         coord = coord.reshape(self.prior_next.ydim * self.prior_next.xdim, 2)
         coord = coord * self.prior_next.psize

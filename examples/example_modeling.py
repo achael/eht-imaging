@@ -11,7 +11,7 @@ import numpy as np
 import ehtim as eh
 
 # Load a sample array
-eht = eh.array.load_txt('../arrays/EHT2019.txt')
+eht = eh.array.load_txt('../arrays/EHT2025.txt')
 
 ### Make a simple model ###
 

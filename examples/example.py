@@ -15,8 +15,8 @@ plt.close('all')
 ttype = 'direct'
 
 # Load the image and the array
-im = eh.image.load_txt('./models/avery_sgra_eofn.txt')
-eht = eh.array.load_txt('./arrays/EHT2017.txt')
+im = eh.image.load_txt('../models/avery_sgra_eofn.txt')
+eht = eh.array.load_txt('../arrays/EHT2017.txt')
 
 # Look at the image
 im.display()
