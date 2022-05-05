@@ -154,7 +154,7 @@
 <span class="sd">           polrep (str): polarization representation, either &#39;stokes&#39; or &#39;circ&#39;</span>
 <span class="sd">           pol_prim (str): The default image: I,Q,U or V for Stokes, or RR,LL,LR,RL for Circular</span>
 <span class="sd">           _imdict (dict): The dictionary with the polarimetric images</span>
-<span class="sd">           _mflist (list): List of spectral index images (and higher order terms)f</span>
+<span class="sd">           _mflist (list): List of spectral index images (and higher order terms)</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">image</span><span class="p">,</span> <span class="n">psize</span><span class="p">,</span> <span class="n">ra</span><span class="p">,</span> <span class="n">dec</span><span class="p">,</span> <span class="n">pa</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span>
@@ -1139,7 +1139,7 @@
         <span class="n">ij</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([[[</span><span class="n">i</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">psize</span> <span class="o">+</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">psize</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">xdim</span><span class="p">)</span> <span class="o">/</span> <span class="mf">2.0</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">psize</span> <span class="o">/</span> <span class="mf">2.0</span><span class="p">,</span>
                          <span class="n">j</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">psize</span> <span class="o">+</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">psize</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">ydim</span><span class="p">)</span> <span class="o">/</span> <span class="mf">2.0</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">psize</span> <span class="o">/</span> <span class="mf">2.0</span><span class="p">]</span>
                         <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="o">-</span><span class="bp">self</span><span class="o">.</span><span class="n">xdim</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">)]</span>
-                       <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="o">-</span><span class="bp">self</span><span class="o">.</span><span class="n">ydim</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">)])</span><span class="o">.</span><span class="n">reshape</span><span class="p">((</span><span class="bp">self</span><span class="o">.</span><span class="n">xdim</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">ydim</span><span class="p">,</span> <span class="mi">2</span><span class="p">))</span>
+                        <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="o">-</span><span class="bp">self</span><span class="o">.</span><span class="n">ydim</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">)])</span><span class="o">.</span><span class="n">reshape</span><span class="p">((</span><span class="bp">self</span><span class="o">.</span><span class="n">xdim</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">ydim</span><span class="p">,</span> <span class="mi">2</span><span class="p">))</span>
 
         <span class="k">def</span> <span class="nf">im_new_val</span><span class="p">(</span><span class="n">imvec</span><span class="p">,</span> <span class="n">x_idx</span><span class="p">,</span> <span class="n">y_idx</span><span class="p">):</span>
             <span class="n">x</span> <span class="o">=</span> <span class="n">x_idx</span> <span class="o">*</span> <span class="n">psize_new</span> <span class="o">+</span> <span class="p">(</span><span class="n">psize_new</span> <span class="o">*</span> <span class="n">xdim_new</span><span class="p">)</span> <span class="o">/</span> <span class="mf">2.0</span> <span class="o">-</span> <span class="n">psize_new</span> <span class="o">/</span> <span class="mf">2.0</span>
@@ -1155,7 +1155,7 @@
 
         <span class="k">def</span> <span class="nf">im_new</span><span class="p">(</span><span class="n">imvec</span><span class="p">):</span>
             <span class="n">imarr_new</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([[</span><span class="n">im_new_val</span><span class="p">(</span><span class="n">imvec</span><span class="p">,</span> <span class="n">x_idx</span><span class="p">,</span> <span class="n">y_idx</span><span class="p">)</span>
-                                   <span class="k">for</span> <span class="n">x_idx</span> <span class="ow">in</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="o">-</span><span class="n">xdim_new</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">)]</span>
+                                  <span class="k">for</span> <span class="n">x_idx</span> <span class="ow">in</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="o">-</span><span class="n">xdim_new</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">)]</span>
                                   <span class="k">for</span> <span class="n">y_idx</span> <span class="ow">in</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="o">-</span><span class="n">ydim_new</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">)])</span>
             <span class="k">return</span> <span class="n">imarr_new</span>
 
@@ -1185,6 +1185,7 @@
         <span class="c1"># Interpolate spectral index and copy over</span>
         <span class="n">mflist_out</span> <span class="o">=</span> <span class="p">[]</span>
         <span class="k">for</span> <span class="n">mfvec</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_mflist</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;WARNING: resample_squre not debugged for spectral index resampling!&quot;</span><span class="p">)</span>
             <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">mfvec</span><span class="p">):</span>
                 <span class="n">mfarr</span> <span class="o">=</span> <span class="n">im_new</span><span class="p">(</span><span class="n">mfvec</span><span class="p">)</span>
                 <span class="n">mfvec_out</span> <span class="o">=</span> <span class="n">mfarr</span><span class="o">.</span><span class="n">flatten</span><span class="p">()</span>
@@ -1218,7 +1219,7 @@
         <span class="n">xtarget</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="o">-</span><span class="n">targetfov</span> <span class="o">/</span> <span class="mi">2</span><span class="p">,</span> <span class="n">targetfov</span> <span class="o">/</span> <span class="mi">2</span><span class="p">,</span> <span class="n">npix</span><span class="p">)</span>
         <span class="n">ytarget</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="o">-</span><span class="n">targetfov</span> <span class="o">/</span> <span class="mi">2</span><span class="p">,</span> <span class="n">targetfov</span> <span class="o">/</span> <span class="mi">2</span><span class="p">,</span> <span class="n">npix</span><span class="p">)</span>
 
-        <span class="k">def</span> <span class="nf">interp_imvec</span><span class="p">(</span><span class="n">imvec</span><span class="p">):</span>
+        <span class="k">def</span> <span class="nf">interp_imvec</span><span class="p">(</span><span class="n">imvec</span><span class="p">,</span> <span class="n">specind</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
             <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">any</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">imag</span><span class="p">(</span><span class="n">imvec</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">):</span>
                 <span class="k">return</span> <span class="n">interp_imvec</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">real</span><span class="p">(</span><span class="n">imvec</span><span class="p">))</span> <span class="o">+</span> <span class="mi">1</span><span class="n">j</span> <span class="o">*</span> <span class="n">interp_imvec</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">imag</span><span class="p">(</span><span class="n">imvec</span><span class="p">))</span>
 
@@ -1227,7 +1228,9 @@
             <span class="n">tmpimg</span> <span class="o">=</span> <span class="n">interpfunc</span><span class="p">(</span><span class="n">ytarget</span><span class="p">,</span> <span class="n">xtarget</span><span class="p">)</span>
             <span class="n">tmpimg</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">xtarget</span><span class="p">)</span> <span class="o">&gt;</span> <span class="n">fov_x</span> <span class="o">/</span> <span class="mf">2.</span><span class="p">,</span> <span class="p">:]</span> <span class="o">=</span> <span class="mf">0.0</span>
             <span class="n">tmpimg</span><span class="p">[:,</span> <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">ytarget</span><span class="p">)</span> <span class="o">&gt;</span> <span class="n">fov_y</span> <span class="o">/</span> <span class="mf">2.</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.0</span>
-            <span class="n">tmpimg</span> <span class="o">=</span> <span class="n">tmpimg</span> <span class="o">*</span> <span class="p">(</span><span class="n">psize_new</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">psize</span><span class="o">**</span><span class="mi">2</span>
+
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">specind</span><span class="p">:</span> <span class="c1"># adjust pixel size if not a spectral index map</span>
+                <span class="n">tmpimg</span> <span class="o">=</span> <span class="n">tmpimg</span> <span class="o">*</span> <span class="p">(</span><span class="n">psize_new</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">psize</span><span class="o">**</span><span class="mi">2</span>
             <span class="k">return</span> <span class="n">tmpimg</span>
 
         <span class="c1"># Make new image</span>
@@ -1251,7 +1254,7 @@
         <span class="n">mflist_out</span> <span class="o">=</span> <span class="p">[]</span>
         <span class="k">for</span> <span class="n">mfvec</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_mflist</span><span class="p">:</span>
             <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">mfvec</span><span class="p">):</span>
-                <span class="n">mfarr</span> <span class="o">=</span> <span class="n">interp_imvec</span><span class="p">(</span><span class="n">mfvec</span><span class="p">)</span>
+                <span class="n">mfarr</span> <span class="o">=</span> <span class="n">interp_imvec</span><span class="p">(</span><span class="n">mfvec</span><span class="p">,</span> <span class="n">specind</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
                 <span class="n">mfvec_out</span> <span class="o">=</span> <span class="n">mfarr</span><span class="o">.</span><span class="n">flatten</span><span class="p">()</span>
             <span class="k">else</span><span class="p">:</span>
                 <span class="n">mfvec_out</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([])</span>
@@ -2306,7 +2309,7 @@
         <span class="k">if</span> <span class="n">polrep_obs</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;stokes&#39;</span><span class="p">,</span> <span class="s1">&#39;circ&#39;</span><span class="p">]:</span>
             <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;polrep_obs must be either &#39;stokes&#39; or &#39;circ&#39;&quot;</span><span class="p">)</span>
 
-        <span class="n">data</span> <span class="o">=</span> <span class="n">simobs</span><span class="o">.</span><span class="n">sample_vis</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">uv</span><span class="p">,</span> <span class="n">polrep_obs</span><span class="o">=</span><span class="n">polrep_obs</span><span class="p">,</span> <span class="n">sgrscat</span><span class="o">=</span><span class="n">sgrscat</span><span class="p">,</span> 
+        <span class="n">data</span> <span class="o">=</span> <span class="n">simobs</span><span class="o">.</span><span class="n">sample_vis</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">uv</span><span class="p">,</span> <span class="n">polrep_obs</span><span class="o">=</span><span class="n">polrep_obs</span><span class="p">,</span> <span class="n">sgrscat</span><span class="o">=</span><span class="n">sgrscat</span><span class="p">,</span>
                                  <span class="n">ttype</span><span class="o">=</span><span class="n">ttype</span><span class="p">,</span> <span class="n">cache</span><span class="o">=</span><span class="n">cache</span><span class="p">,</span> <span class="n">fft_pad_factor</span><span class="o">=</span><span class="n">fft_pad_factor</span><span class="p">,</span>
                                  <span class="n">zero_empty_pol</span><span class="o">=</span><span class="n">zero_empty_pol</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="n">verbose</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">data</span></div>
@@ -2381,12 +2384,15 @@
                      <span class="n">jones</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">inv_jones</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
                      <span class="n">opacitycal</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">ampcal</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">phasecal</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
                      <span class="n">frcal</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">dcal</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>  <span class="n">rlgaincal</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
-                     <span class="n">stabilize_scan_phase</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">stabilize_scan_amp</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> 
+                     <span class="n">stabilize_scan_phase</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">stabilize_scan_amp</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
                      <span class="n">neggains</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
                      <span class="n">taup</span><span class="o">=</span><span class="n">ehc</span><span class="o">.</span><span class="n">GAINPDEF</span><span class="p">,</span>
                      <span class="n">gain_offset</span><span class="o">=</span><span class="n">ehc</span><span class="o">.</span><span class="n">GAINPDEF</span><span class="p">,</span> <span class="n">gainp</span><span class="o">=</span><span class="n">ehc</span><span class="o">.</span><span class="n">GAINPDEF</span><span class="p">,</span>
+                     <span class="n">phase_std</span><span class="o">=-</span><span class="mi">1</span><span class="p">,</span>
                      <span class="n">dterm_offset</span><span class="o">=</span><span class="n">ehc</span><span class="o">.</span><span class="n">DTERMPDEF</span><span class="p">,</span>
-                     <span class="n">caltable_path</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">seed</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">sigmat</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+                     <span class="n">rlratio_std</span><span class="o">=</span><span class="mf">0.</span><span class="p">,</span> <span class="n">rlphase_std</span><span class="o">=</span><span class="mf">0.</span><span class="p">,</span>
+                     <span class="n">sigmat</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">phasesigmat</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">rlgsigmat</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span><span class="n">rlpsigmat</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                     <span class="n">caltable_path</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">seed</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Observe the image on the same baselines as an existing observation object and add noise.</span>
 
 <span class="sd">           Args:</span>
@@ -2412,16 +2418,34 @@
 <span class="sd">               neggains (bool): if True, force the applied gains to be &lt;1</span>
 
 <span class="sd">               taup (float): the fractional std. dev. of the random error on the opacities</span>
-<span class="sd">               gain_offset (float): the base gain offset at all sites,</span>
-<span class="sd">                                    or a dict giving one offset per site</span>
 <span class="sd">               gainp (float): the fractional std. dev. of the random error on the gains</span>
-<span class="sd">               dterm_offset (float): the base dterm offset at all sites,</span>
-<span class="sd">                                     or a dict giving one dterm offset per site</span>
+<span class="sd">                              or a dict giving one std. dev. per site</span>
+
+<span class="sd">               gain_offset (float): the base gain offset at all sites,</span>
+<span class="sd">                                    or a dict giving one gain offset per site</span>
+<span class="sd">               phase_std (float): std. dev. of LCP phase,</span>
+<span class="sd">                                  or a dict giving one std. dev. per site</span>
+<span class="sd">                                  a negative value samples from uniform</span>
+<span class="sd">               dterm_offset (float): the base std. dev. of random additive error at all sites,</span>
+<span class="sd">                                    or a dict giving one std. dev. per site</span>
+
+<span class="sd">               rlratio_std (float): the fractional std. dev. of the R/L gain offset</span>
+<span class="sd">                                    or a dict giving one std. dev. per site</span>
+<span class="sd">               rlphase_std (float): std. dev. of R/L phase offset,</span>
+<span class="sd">                                    or a dict giving one std. dev. per site</span>
+<span class="sd">                                    a negative value samples from uniform</span>
+
+<span class="sd">               sigmat (float): temporal std for a Gaussian Process used to generate gains.</span>
+<span class="sd">                               If sigmat=None then an iid gain noise is applied.</span>
+<span class="sd">               phasesigmat (float): temporal std for a Gaussian Process used to generate phases.</span>
+<span class="sd">                                    If phasesigmat=None then an iid gain noise is applied.</span>
+<span class="sd">               rlgsigmat (float): temporal std deviation for a Gaussian Process used to generate R/L gain ratios.</span>
+<span class="sd">                               If rlgsigmat=None then an iid gain noise is applied.</span>
+<span class="sd">               rlpsigmat (float): temporal std deviation for a Gaussian Process used to generate R/L phase diff.</span>
+<span class="sd">                               If rlpsigmat=None then an iid gain noise is applied.</span>
 
 <span class="sd">               caltable_path (string): If not None, path and prefix for saving the applied caltable</span>
 <span class="sd">               seed (int): seeds the random component of the noise terms. DO NOT set to 0!</span>
-<span class="sd">               sigmat (float): temporal std for a Gaussian Process used to generate gain noise.</span>
-<span class="sd">                               if sigmat=None then an iid gain noise is applied.</span>
 <span class="sd">               verbose (bool): print updates and warnings</span>
 <span class="sd">           Returns:</span>
 <span class="sd">               (Obsdata): an observation object</span>
@@ -2430,7 +2454,7 @@
         <span class="k">if</span> <span class="n">seed</span><span class="p">:</span>
             <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">seed</span><span class="p">(</span><span class="n">seed</span><span class="o">=</span><span class="n">seed</span><span class="p">)</span>
 
-        <span class="n">obs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">observe_same_nonoise</span><span class="p">(</span><span class="n">obs_in</span><span class="p">,</span> <span class="n">sgrscat</span><span class="o">=</span><span class="n">sgrscat</span><span class="p">,</span><span class="n">ttype</span><span class="o">=</span><span class="n">ttype</span><span class="p">,</span> 
+        <span class="n">obs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">observe_same_nonoise</span><span class="p">(</span><span class="n">obs_in</span><span class="p">,</span> <span class="n">sgrscat</span><span class="o">=</span><span class="n">sgrscat</span><span class="p">,</span><span class="n">ttype</span><span class="o">=</span><span class="n">ttype</span><span class="p">,</span>
                                         <span class="n">cache</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">fft_pad_factor</span><span class="o">=</span><span class="n">fft_pad_factor</span><span class="p">,</span>
                                         <span class="n">zero_empty_pol</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="n">verbose</span><span class="p">)</span>
 
@@ -2445,9 +2469,12 @@
                                                  <span class="n">neggains</span><span class="o">=</span><span class="n">neggains</span><span class="p">,</span>
                                                  <span class="n">taup</span><span class="o">=</span><span class="n">taup</span><span class="p">,</span>
                                                  <span class="n">gain_offset</span><span class="o">=</span><span class="n">gain_offset</span><span class="p">,</span> <span class="n">gainp</span><span class="o">=</span><span class="n">gainp</span><span class="p">,</span>
+                                                 <span class="n">phase_std</span><span class="o">=</span><span class="n">phase_std</span><span class="p">,</span>
                                                  <span class="n">dterm_offset</span><span class="o">=</span><span class="n">dterm_offset</span><span class="p">,</span>
-                                                 <span class="n">caltable_path</span><span class="o">=</span><span class="n">caltable_path</span><span class="p">,</span> <span class="n">seed</span><span class="o">=</span><span class="n">seed</span><span class="p">,</span>
-                                                 <span class="n">sigmat</span><span class="o">=</span><span class="n">sigmat</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="n">verbose</span><span class="p">)</span>
+                                                 <span class="n">rlratio_std</span><span class="o">=</span><span class="n">rlratio_std</span><span class="p">,</span> <span class="n">rlphase_std</span><span class="o">=</span><span class="n">rlphase_std</span><span class="p">,</span>
+                                                 <span class="n">sigmat</span><span class="o">=</span><span class="n">sigmat</span><span class="p">,</span> <span class="n">phasesigmat</span><span class="o">=</span><span class="n">phasesigmat</span><span class="p">,</span>
+                                                 <span class="n">rlgsigmat</span><span class="o">=</span><span class="n">rlgsigmat</span><span class="p">,</span><span class="n">rlpsigmat</span><span class="o">=</span><span class="n">rlpsigmat</span><span class="p">,</span>
+                                                 <span class="n">caltable_path</span><span class="o">=</span><span class="n">caltable_path</span><span class="p">,</span> <span class="n">seed</span><span class="o">=</span><span class="n">seed</span><span class="p">,</span><span class="n">verbose</span><span class="o">=</span><span class="n">verbose</span><span class="p">)</span>
 
             <span class="n">obs</span> <span class="o">=</span> <span class="n">ehtim</span><span class="o">.</span><span class="n">obsdata</span><span class="o">.</span><span class="n">Obsdata</span><span class="p">(</span><span class="n">obs</span><span class="o">.</span><span class="n">ra</span><span class="p">,</span> <span class="n">obs</span><span class="o">.</span><span class="n">dec</span><span class="p">,</span> <span class="n">obs</span><span class="o">.</span><span class="n">rf</span><span class="p">,</span> <span class="n">obs</span><span class="o">.</span><span class="n">bw</span><span class="p">,</span> <span class="n">obsdata</span><span class="p">,</span> <span class="n">obs</span><span class="o">.</span><span class="n">tarr</span><span class="p">,</span>
                                         <span class="n">source</span><span class="o">=</span><span class="n">obs</span><span class="o">.</span><span class="n">source</span><span class="p">,</span> <span class="n">mjd</span><span class="o">=</span><span class="n">obs</span><span class="o">.</span><span class="n">mjd</span><span class="p">,</span> <span class="n">polrep</span><span class="o">=</span><span class="n">obs_in</span><span class="o">.</span><span class="n">polrep</span><span class="p">,</span>
@@ -2474,13 +2501,16 @@
             <span class="k">if</span> <span class="n">caltable_path</span><span class="p">:</span>
                 <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;WARNING: the caltable is only saved if you apply noise with a Jones Matrix&#39;</span><span class="p">)</span>
 
+            <span class="c1"># TODO -- clean up arguments</span>
             <span class="n">obsdata</span> <span class="o">=</span> <span class="n">simobs</span><span class="o">.</span><span class="n">add_noise</span><span class="p">(</span><span class="n">obs</span><span class="p">,</span> <span class="n">add_th_noise</span><span class="o">=</span><span class="n">add_th_noise</span><span class="p">,</span>
-                                       <span class="n">opacitycal</span><span class="o">=</span><span class="n">opacitycal</span><span class="p">,</span> <span class="n">ampcal</span><span class="o">=</span><span class="n">ampcal</span><span class="p">,</span> <span class="n">phasecal</span><span class="o">=</span><span class="n">phasecal</span><span class="p">,</span> 
+                                       <span class="n">opacitycal</span><span class="o">=</span><span class="n">opacitycal</span><span class="p">,</span> <span class="n">ampcal</span><span class="o">=</span><span class="n">ampcal</span><span class="p">,</span> <span class="n">phasecal</span><span class="o">=</span><span class="n">phasecal</span><span class="p">,</span>
                                        <span class="n">stabilize_scan_phase</span><span class="o">=</span><span class="n">stabilize_scan_phase</span><span class="p">,</span>
                                        <span class="n">stabilize_scan_amp</span><span class="o">=</span><span class="n">stabilize_scan_amp</span><span class="p">,</span>
                                        <span class="n">neggains</span><span class="o">=</span><span class="n">neggains</span><span class="p">,</span>
-                                       <span class="n">taup</span><span class="o">=</span><span class="n">taup</span><span class="p">,</span> <span class="n">gain_offset</span><span class="o">=</span><span class="n">gain_offset</span><span class="p">,</span> <span class="n">gainp</span><span class="o">=</span><span class="n">gainp</span><span class="p">,</span>
-                                       <span class="n">caltable_path</span><span class="o">=</span><span class="n">caltable_path</span><span class="p">,</span> <span class="n">seed</span><span class="o">=</span><span class="n">seed</span><span class="p">,</span> <span class="n">sigmat</span><span class="o">=</span><span class="n">sigmat</span><span class="p">,</span>
+                                       <span class="n">taup</span><span class="o">=</span><span class="n">taup</span><span class="p">,</span>
+                                       <span class="n">gain_offset</span><span class="o">=</span><span class="n">gain_offset</span><span class="p">,</span> <span class="n">gainp</span><span class="o">=</span><span class="n">gainp</span><span class="p">,</span>
+                                       <span class="n">sigmat</span><span class="o">=</span><span class="n">sigmat</span><span class="p">,</span>
+                                       <span class="n">caltable_path</span><span class="o">=</span><span class="n">caltable_path</span><span class="p">,</span> <span class="n">seed</span><span class="o">=</span><span class="n">seed</span><span class="p">,</span>
                                        <span class="n">verbose</span><span class="o">=</span><span class="n">verbose</span><span class="p">)</span>
 
             <span class="n">obs</span> <span class="o">=</span> <span class="n">ehtim</span><span class="o">.</span><span class="n">obsdata</span><span class="o">.</span><span class="n">Obsdata</span><span class="p">(</span><span class="n">obs</span><span class="o">.</span><span class="n">ra</span><span class="p">,</span> <span class="n">obs</span><span class="o">.</span><span class="n">dec</span><span class="p">,</span> <span class="n">obs</span><span class="o">.</span><span class="n">rf</span><span class="p">,</span> <span class="n">obs</span><span class="o">.</span><span class="n">bw</span><span class="p">,</span> <span class="n">obsdata</span><span class="p">,</span> <span class="n">obs</span><span class="o">.</span><span class="n">tarr</span><span class="p">,</span>
@@ -2494,7 +2524,7 @@
 <div class="viewcode-block" id="Image.observe"><a class="viewcode-back" href="../../image.html#ehtim.image.Image.observe">[docs]</a>    <span class="k">def</span> <span class="nf">observe</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">array</span><span class="p">,</span> <span class="n">tint</span><span class="p">,</span> <span class="n">tadv</span><span class="p">,</span> <span class="n">tstart</span><span class="p">,</span> <span class="n">tstop</span><span class="p">,</span> <span class="n">bw</span><span class="p">,</span>
                 <span class="n">mjd</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">timetype</span><span class="o">=</span><span class="s1">&#39;UTC&#39;</span><span class="p">,</span> <span class="n">polrep_obs</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
                 <span class="n">elevmin</span><span class="o">=</span><span class="n">ehc</span><span class="o">.</span><span class="n">ELEV_LOW</span><span class="p">,</span> <span class="n">elevmax</span><span class="o">=</span><span class="n">ehc</span><span class="o">.</span><span class="n">ELEV_HIGH</span><span class="p">,</span>
-                <span class="n">ttype</span><span class="o">=</span><span class="s1">&#39;nfft&#39;</span><span class="p">,</span> <span class="n">fft_pad_factor</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">fix_theta_GMST</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> 
+                <span class="n">ttype</span><span class="o">=</span><span class="s1">&#39;nfft&#39;</span><span class="p">,</span> <span class="n">fft_pad_factor</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">fix_theta_GMST</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
                 <span class="n">sgrscat</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">add_th_noise</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
                 <span class="n">jones</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">inv_jones</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
                 <span class="n">opacitycal</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">ampcal</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">phasecal</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
@@ -2502,9 +2532,12 @@
                 <span class="n">stabilize_scan_phase</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">stabilize_scan_amp</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
                 <span class="n">neggains</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
                 <span class="n">tau</span><span class="o">=</span><span class="n">ehc</span><span class="o">.</span><span class="n">TAUDEF</span><span class="p">,</span> <span class="n">taup</span><span class="o">=</span><span class="n">ehc</span><span class="o">.</span><span class="n">GAINPDEF</span><span class="p">,</span>
-                <span class="n">gain_offset</span><span class="o">=</span><span class="n">ehc</span><span class="o">.</span><span class="n">GAINPDEF</span><span class="p">,</span> <span class="n">gainp</span><span class="o">=</span><span class="n">ehc</span><span class="o">.</span><span class="n">GAINPDEF</span><span class="p">,</span> 
-                <span class="n">dterm_offset</span><span class="o">=</span><span class="n">ehc</span><span class="o">.</span><span class="n">DTERMPDEF</span><span class="p">,</span> 
-                <span class="n">caltable_path</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">seed</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">sigmat</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+                <span class="n">gain_offset</span><span class="o">=</span><span class="n">ehc</span><span class="o">.</span><span class="n">GAINPDEF</span><span class="p">,</span> <span class="n">gainp</span><span class="o">=</span><span class="n">ehc</span><span class="o">.</span><span class="n">GAINPDEF</span><span class="p">,</span>
+                <span class="n">phase_std</span><span class="o">=-</span><span class="mi">1</span><span class="p">,</span>
+                <span class="n">dterm_offset</span><span class="o">=</span><span class="n">ehc</span><span class="o">.</span><span class="n">DTERMPDEF</span><span class="p">,</span>
+                <span class="n">rlratio_std</span><span class="o">=</span><span class="mf">0.</span><span class="p">,</span><span class="n">rlphase_std</span><span class="o">=</span><span class="mf">0.</span><span class="p">,</span>
+                <span class="n">sigmat</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">phasesigmat</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">rlgsigmat</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span><span class="n">rlpsigmat</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                <span class="n">caltable_path</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">seed</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Generate baselines from an array object and observe the image.</span>
 
 <span class="sd">           Args:</span>
@@ -2542,19 +2575,37 @@
 <span class="sd">               stabilize_scan_amp (bool): if True, random amplitude errors are constant over scans</span>
 <span class="sd">               neggains (bool): if True, force the applied gains to be &lt;1</span>
 
-<span class="sd">               tau (float): the base opacity at all sites,</span>
-<span class="sd">                            or a dict giving one opacity per site</span>
 <span class="sd">               taup (float): the fractional std. dev. of the random error on the opacities</span>
+<span class="sd">               gainp (float): the fractional std. dev. of the random error on the gains</span>
+<span class="sd">                              or a dict giving one std. dev. per site</span>
+
 <span class="sd">               gain_offset (float): the base gain offset at all sites,</span>
 <span class="sd">                                    or a dict giving one gain offset per site</span>
-<span class="sd">               gainp (float): the fractional std. dev. of the random error on the gains</span>
-<span class="sd">               dterm_offset (float): the base dterm offset at all sites,</span>
-<span class="sd">                                     or a dict giving one dterm offset per site</span>
+<span class="sd">               phase_std (float): std. dev. of LCP phase,</span>
+<span class="sd">                                  or a dict giving one std. dev. per site</span>
+<span class="sd">                                  a negative value samples from uniform</span>
+<span class="sd">               dterm_offset (float): the base std. dev. of random additive error at all sites,</span>
+<span class="sd">                                    or a dict giving one std. dev. per site</span>
+
+<span class="sd">               rlratio_std (float): the fractional std. dev. of the R/L gain offset</span>
+<span class="sd">                                    or a dict giving one std. dev. per site</span>
+<span class="sd">               rlphase_std (float): std. dev. of R/L phase offset,</span>
+<span class="sd">                                    or a dict giving one std. dev. per site</span>
+<span class="sd">                                    a negative value samples from uniform</span>
+
+<span class="sd">               sigmat (float): temporal std for a Gaussian Process used to generate gains.</span>
+<span class="sd">                               If sigmat=None then an iid gain noise is applied.</span>
+<span class="sd">               phasesigmat (float): temporal std for a Gaussian Process used to generate phases.</span>
+<span class="sd">                                    If phasesigmat=None then an iid gain noise is applied.</span>
+<span class="sd">               rlgsigmat (float): temporal std deviation for a Gaussian Process used to generate R/L gain ratios.</span>
+<span class="sd">                               If rlgsigmat=None then an iid gain noise is applied.</span>
+<span class="sd">               rlpsigmat (float): temporal std deviation for a Gaussian Process used to generate R/L phase diff.</span>
+<span class="sd">                               If rlpsigmat=None then an iid gain noise is applied.</span>
+
 
 <span class="sd">               caltable_path (string): If not None, path and prefix for saving the applied caltable</span>
 <span class="sd">               seed (int): seeds the random component of the noise terms. DO NOT set to 0!</span>
-<span class="sd">               sigmat (float): temporal std for a Gaussian Process used to generate gain noise.</span>
-<span class="sd">                               if sigmat=None then an iid gain noise is applied.</span>
+
 <span class="sd">               verbose (bool): print updates and warnings</span>
 
 <span class="sd">           Returns:</span>
@@ -2584,10 +2635,13 @@
                                 <span class="n">stabilize_scan_amp</span><span class="o">=</span><span class="n">stabilize_scan_amp</span><span class="p">,</span>
                                 <span class="n">neggains</span><span class="o">=</span><span class="n">neggains</span><span class="p">,</span>
                                 <span class="n">taup</span><span class="o">=</span><span class="n">taup</span><span class="p">,</span>
-                                <span class="n">gain_offset</span><span class="o">=</span><span class="n">gain_offset</span><span class="p">,</span> <span class="n">gainp</span><span class="o">=</span><span class="n">gainp</span><span class="p">,</span> 
+                                <span class="n">gain_offset</span><span class="o">=</span><span class="n">gain_offset</span><span class="p">,</span> <span class="n">gainp</span><span class="o">=</span><span class="n">gainp</span><span class="p">,</span>
+                                <span class="n">phase_std</span><span class="o">=</span><span class="n">phase_std</span><span class="p">,</span>
                                 <span class="n">dterm_offset</span><span class="o">=</span><span class="n">dterm_offset</span><span class="p">,</span>
-                                <span class="n">caltable_path</span><span class="o">=</span><span class="n">caltable_path</span><span class="p">,</span> <span class="n">seed</span><span class="o">=</span><span class="n">seed</span><span class="p">,</span> <span class="n">sigmat</span><span class="o">=</span><span class="n">sigmat</span><span class="p">,</span>
-                                <span class="n">verbose</span><span class="o">=</span><span class="n">verbose</span><span class="p">)</span>
+                                <span class="n">rlratio_std</span><span class="o">=</span><span class="n">rlratio_std</span><span class="p">,</span><span class="n">rlphase_std</span><span class="o">=</span><span class="n">rlphase_std</span><span class="p">,</span>
+                                <span class="n">sigmat</span><span class="o">=</span><span class="n">sigmat</span><span class="p">,</span><span class="n">phasesigmat</span><span class="o">=</span><span class="n">phasesigmat</span><span class="p">,</span>
+                                <span class="n">rlgsigmat</span><span class="o">=</span><span class="n">rlgsigmat</span><span class="p">,</span><span class="n">rlpsigmat</span><span class="o">=</span><span class="n">rlpsigmat</span><span class="p">,</span>
+                                <span class="n">caltable_path</span><span class="o">=</span><span class="n">caltable_path</span><span class="p">,</span> <span class="n">seed</span><span class="o">=</span><span class="n">seed</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="n">verbose</span><span class="p">)</span>
 
         <span class="n">obs</span><span class="o">.</span><span class="n">mjd</span> <span class="o">=</span> <span class="n">mjd</span>
 
@@ -2595,7 +2649,7 @@
 
 <div class="viewcode-block" id="Image.observe_vex"><a class="viewcode-back" href="../../image.html#ehtim.image.Image.observe_vex">[docs]</a>    <span class="k">def</span> <span class="nf">observe_vex</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">vex</span><span class="p">,</span> <span class="n">source</span><span class="p">,</span> <span class="n">t_int</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">tight_tadv</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
                     <span class="n">polrep_obs</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">ttype</span><span class="o">=</span><span class="s1">&#39;nfft&#39;</span><span class="p">,</span> <span class="n">fft_pad_factor</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span>
-                    <span class="n">fix_theta_GMST</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> 
+                    <span class="n">fix_theta_GMST</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
                     <span class="n">sgrscat</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">add_th_noise</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
                     <span class="n">jones</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">inv_jones</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
                     <span class="n">opacitycal</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">ampcal</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">phasecal</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
@@ -2603,9 +2657,12 @@
                     <span class="n">stabilize_scan_phase</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">stabilize_scan_amp</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
                     <span class="n">neggains</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
                     <span class="n">tau</span><span class="o">=</span><span class="n">ehc</span><span class="o">.</span><span class="n">TAUDEF</span><span class="p">,</span> <span class="n">taup</span><span class="o">=</span><span class="n">ehc</span><span class="o">.</span><span class="n">GAINPDEF</span><span class="p">,</span>
-                    <span class="n">gain_offset</span><span class="o">=</span><span class="n">ehc</span><span class="o">.</span><span class="n">GAINPDEF</span><span class="p">,</span> <span class="n">gainp</span><span class="o">=</span><span class="n">ehc</span><span class="o">.</span><span class="n">GAINPDEF</span><span class="p">,</span> 
+                    <span class="n">gain_offset</span><span class="o">=</span><span class="n">ehc</span><span class="o">.</span><span class="n">GAINPDEF</span><span class="p">,</span> <span class="n">gainp</span><span class="o">=</span><span class="n">ehc</span><span class="o">.</span><span class="n">GAINPDEF</span><span class="p">,</span>
+                    <span class="n">phase_std</span><span class="o">=-</span><span class="mi">1</span><span class="p">,</span>
                     <span class="n">dterm_offset</span><span class="o">=</span><span class="n">ehc</span><span class="o">.</span><span class="n">DTERMPDEF</span><span class="p">,</span>
-                    <span class="n">caltable_path</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">seed</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">sigmat</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+                    <span class="n">rlratio_std</span><span class="o">=</span><span class="mf">0.</span><span class="p">,</span><span class="n">rlphase_std</span><span class="o">=</span><span class="mf">0.</span><span class="p">,</span>
+                    <span class="n">sigmat</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">phasesigmat</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">rlgsigmat</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span><span class="n">rlpsigmat</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                    <span class="n">caltable_path</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">seed</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Generate baselines from a vex file and observes the image.</span>
 
 <span class="sd">           Args:</span>
@@ -2640,16 +2697,34 @@
 <span class="sd">               tau (float): the base opacity at all sites,</span>
 <span class="sd">                            or a dict giving one opacity per site</span>
 <span class="sd">               taup (float): the fractional std. dev. of the random error on the opacities</span>
+<span class="sd">               gainp (float): the fractional std. dev. of the random error on the gains</span>
+<span class="sd">                              or a dict giving one std. dev. per site</span>
+
 <span class="sd">               gain_offset (float): the base gain offset at all sites,</span>
 <span class="sd">                                    or a dict giving one gain offset per site</span>
-<span class="sd">               gainp (float): the fractional std. dev. of the random error on the gains</span>
-<span class="sd">               dterm_offset (float): the base dterm offset at all sites,</span>
-<span class="sd">                                     or a dict giving one dterm offset per site</span>
+<span class="sd">               phase_std (float): std. dev. of LCP phase,</span>
+<span class="sd">                                  or a dict giving one std. dev. per site</span>
+<span class="sd">                                  a negative value samples from uniform</span>
+<span class="sd">               dterm_offset (float): the base std. dev. of random additive error at all sites,</span>
+<span class="sd">                                    or a dict giving one std. dev. per site</span>
+
+<span class="sd">               rlratio_std (float): the fractional std. dev. of the R/L gain offset</span>
+<span class="sd">                                    or a dict giving one std. dev. per site</span>
+<span class="sd">               rlphase_std (float): std. dev. of R/L phase offset,</span>
+<span class="sd">                                    or a dict giving one std. dev. per site</span>
+<span class="sd">                                    a negative value samples from uniform</span>
+
+<span class="sd">               sigmat (float): temporal std for a Gaussian Process used to generate gains.</span>
+<span class="sd">                               If sigmat=None then an iid gain noise is applied.</span>
+<span class="sd">               phasesigmat (float): temporal std for a Gaussian Process used to generate phases.</span>
+<span class="sd">                                    If phasesigmat=None then an iid gain noise is applied.</span>
+<span class="sd">               rlgsigmat (float): temporal std deviation for a Gaussian Process used to generate R/L gain ratios.</span>
+<span class="sd">                               If rlgsigmat=None then an iid gain noise is applied.</span>
+<span class="sd">               rlpsigmat (float): temporal std deviation for a Gaussian Process used to generate R/L phase diff.</span>
+<span class="sd">                               If rlpsigmat=None then an iid gain noise is applied.</span>
 
 <span class="sd">               caltable_path (string): If not None, path and prefix for saving the applied caltable</span>
 <span class="sd">               seed (int): seeds the random component of the noise terms. DO NOT set to 0!</span>
-<span class="sd">               sigmat (float): temporal std for a Gaussian Process used to generate gain noise.</span>
-<span class="sd">                               if sigmat=None then an iid gain noise is applied.</span>
 <span class="sd">               verbose (bool): print updates and warnings</span>
 
 <span class="sd">           Returns:</span>
@@ -2693,10 +2768,10 @@
                                <span class="n">polrep_obs</span><span class="o">=</span><span class="n">polrep_obs</span><span class="p">,</span>
                                <span class="n">elevmin</span><span class="o">=.</span><span class="mi">01</span><span class="p">,</span> <span class="n">elevmax</span><span class="o">=</span><span class="mf">89.99</span><span class="p">,</span>
                                <span class="n">ttype</span><span class="o">=</span><span class="n">ttype</span><span class="p">,</span> <span class="n">fft_pad_factor</span><span class="o">=</span><span class="n">fft_pad_factor</span><span class="p">,</span>
-                               <span class="n">fix_theta_GMST</span><span class="o">=</span><span class="n">fix_theta_GMST</span><span class="p">,</span> 
+                               <span class="n">fix_theta_GMST</span><span class="o">=</span><span class="n">fix_theta_GMST</span><span class="p">,</span>
                                <span class="n">sgrscat</span><span class="o">=</span><span class="n">sgrscat</span><span class="p">,</span>
                                <span class="n">add_th_noise</span><span class="o">=</span><span class="n">add_th_noise</span><span class="p">,</span>
-                               <span class="n">jones</span><span class="o">=</span><span class="n">jones</span><span class="p">,</span> <span class="n">inv_jones</span><span class="o">=</span><span class="n">inv_jones</span><span class="p">,</span> 
+                               <span class="n">jones</span><span class="o">=</span><span class="n">jones</span><span class="p">,</span> <span class="n">inv_jones</span><span class="o">=</span><span class="n">inv_jones</span><span class="p">,</span>
                                <span class="n">opacitycal</span><span class="o">=</span><span class="n">opacitycal</span><span class="p">,</span> <span class="n">ampcal</span><span class="o">=</span><span class="n">ampcal</span><span class="p">,</span> <span class="n">phasecal</span><span class="o">=</span><span class="n">phasecal</span><span class="p">,</span>
                                <span class="n">frcal</span><span class="o">=</span><span class="n">frcal</span><span class="p">,</span> <span class="n">dcal</span><span class="o">=</span><span class="n">dcal</span><span class="p">,</span> <span class="n">rlgaincal</span><span class="o">=</span><span class="n">rlgaincal</span><span class="p">,</span>
                                <span class="n">stabilize_scan_phase</span><span class="o">=</span><span class="n">stabilize_scan_phase</span><span class="p">,</span>
@@ -2704,9 +2779,12 @@
                                <span class="n">neggains</span><span class="o">=</span><span class="n">neggains</span><span class="p">,</span>
                                <span class="n">tau</span><span class="o">=</span><span class="n">tau</span><span class="p">,</span> <span class="n">taup</span><span class="o">=</span><span class="n">taup</span><span class="p">,</span>
                                <span class="n">gain_offset</span><span class="o">=</span><span class="n">gain_offset</span><span class="p">,</span> <span class="n">gainp</span><span class="o">=</span><span class="n">gainp</span><span class="p">,</span>
+                               <span class="n">phase_std</span><span class="o">=</span><span class="n">phase_std</span><span class="p">,</span>
                                <span class="n">dterm_offset</span><span class="o">=</span><span class="n">dterm_offset</span><span class="p">,</span>
-                               <span class="n">caltable_path</span><span class="o">=</span><span class="n">caltable_path</span><span class="p">,</span> <span class="n">seed</span><span class="o">=</span><span class="n">seed</span><span class="p">,</span><span class="n">sigmat</span><span class="o">=</span><span class="n">sigmat</span><span class="p">,</span>
-                               <span class="n">verbose</span><span class="o">=</span><span class="n">verbose</span><span class="p">)</span>
+                               <span class="n">rlratio_std</span><span class="o">=</span><span class="n">rlratio_std</span><span class="p">,</span><span class="n">rlphase_std</span><span class="o">=</span><span class="n">rlphase_std</span><span class="p">,</span>
+                               <span class="n">sigmat</span><span class="o">=</span><span class="n">sigmat</span><span class="p">,</span><span class="n">phasesigmat</span><span class="o">=</span><span class="n">phasesigmat</span><span class="p">,</span>
+                               <span class="n">rlgsigmat</span><span class="o">=</span><span class="n">rlgsigmat</span><span class="p">,</span><span class="n">rlpsigmat</span><span class="o">=</span><span class="n">rlpsigmat</span><span class="p">,</span>
+                               <span class="n">caltable_path</span><span class="o">=</span><span class="n">caltable_path</span><span class="p">,</span> <span class="n">seed</span><span class="o">=</span><span class="n">seed</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="n">verbose</span><span class="p">)</span>
 
             <span class="n">obs_List</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">obs</span><span class="p">)</span>
 
@@ -3277,7 +3355,8 @@
 
 <span class="sd">           Args:</span>
 <span class="sd">               pol (str): which polarization image to plot. Default is self.pol_prim</span>
-<span class="sd">                          pol=&#39;spec&#39; will plot spectral index!</span>
+<span class="sd">                          pol=&#39;spec&#39; will plot spectral index</span>
+<span class="sd">                          pol=&#39;curv&#39; will plot spectral curvature</span>
 <span class="sd">               cfun (str): matplotlib.pyplot color function.</span>
 <span class="sd">                           False changes with &#39;pol&#39;,  but is &#39;afmhot&#39; for most</span>
 <span class="sd">               interp (str): image interpolation &#39;gauss&#39; or &#39;lin&#39;</span>
@@ -3425,9 +3504,20 @@
 
                 <span class="c1"># mask out low total intensity values</span>
                 <span class="n">mask</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">imvec</span> <span class="o">&lt;</span> <span class="p">(</span><span class="n">scut</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">imvec</span><span class="p">))</span>
-                <span class="n">imvec</span><span class="p">[</span><span class="n">mask</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span>
+                <span class="n">imvec</span><span class="p">[</span><span class="n">mask</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span>
 
                 <span class="n">unit</span> <span class="o">=</span> <span class="sa">r</span><span class="s1">&#39;$\alpha$&#39;</span>
+                <span class="n">factor</span> <span class="o">=</span> <span class="mi">1</span>
+                <span class="n">cbar_lims_p</span> <span class="o">=</span> <span class="p">[</span><span class="o">-</span><span class="mi">5</span><span class="p">,</span> <span class="mi">5</span><span class="p">]</span>
+                <span class="n">cfun_p</span> <span class="o">=</span> <span class="s1">&#39;seismic&#39;</span>
+            <span class="k">elif</span> <span class="n">pol</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="o">==</span> <span class="s1">&#39;curv&#39;</span><span class="p">:</span>
+                <span class="n">imvec</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">curvvec</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+
+                <span class="c1"># mask out low total intensity values</span>
+                <span class="n">mask</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">imvec</span> <span class="o">&lt;</span> <span class="p">(</span><span class="n">scut</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">imvec</span><span class="p">))</span>
+                <span class="n">imvec</span><span class="p">[</span><span class="n">mask</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span>
+
+                <span class="n">unit</span> <span class="o">=</span> <span class="sa">r</span><span class="s1">&#39;$\beta$&#39;</span>
                 <span class="n">factor</span> <span class="o">=</span> <span class="mi">1</span>
                 <span class="n">cbar_lims_p</span> <span class="o">=</span> <span class="p">[</span><span class="o">-</span><span class="mi">5</span><span class="p">,</span> <span class="mi">5</span><span class="p">]</span>
                 <span class="n">cfun_p</span> <span class="o">=</span> <span class="s1">&#39;seismic&#39;</span>
@@ -3515,12 +3605,14 @@
 
             <span class="k">if</span> <span class="ow">not</span> <span class="n">cfun</span><span class="p">:</span>
                 <span class="n">cfun</span> <span class="o">=</span> <span class="n">cfun_p</span>
+            <span class="n">cmap</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">get_cmap</span><span class="p">(</span><span class="n">cfun</span><span class="p">)</span>
+            <span class="n">cmap</span><span class="o">.</span><span class="n">set_bad</span><span class="p">(</span><span class="n">color</span><span class="o">=</span><span class="s1">&#39;whitesmoke&#39;</span><span class="p">)</span>
 
             <span class="k">if</span> <span class="n">cbar_lims</span><span class="p">:</span>
-                <span class="n">im</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">imshow</span><span class="p">(</span><span class="n">imarr</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="n">alpha</span><span class="p">,</span> <span class="n">cmap</span><span class="o">=</span><span class="n">plt</span><span class="o">.</span><span class="n">get_cmap</span><span class="p">(</span><span class="n">cfun</span><span class="p">),</span> <span class="n">interpolation</span><span class="o">=</span><span class="n">interp</span><span class="p">,</span>
+                <span class="n">im</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">imshow</span><span class="p">(</span><span class="n">imarr</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="n">alpha</span><span class="p">,</span> <span class="n">cmap</span><span class="o">=</span><span class="n">cmap</span><span class="p">,</span> <span class="n">interpolation</span><span class="o">=</span><span class="n">interp</span><span class="p">,</span>
                                 <span class="n">vmin</span><span class="o">=</span><span class="n">cbar_lims</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">vmax</span><span class="o">=</span><span class="n">cbar_lims</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
             <span class="k">else</span><span class="p">:</span>
-                <span class="n">im</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">imshow</span><span class="p">(</span><span class="n">imarr</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="n">alpha</span><span class="p">,</span> <span class="n">cmap</span><span class="o">=</span><span class="n">plt</span><span class="o">.</span><span class="n">get_cmap</span><span class="p">(</span><span class="n">cfun</span><span class="p">),</span> <span class="n">interpolation</span><span class="o">=</span><span class="n">interp</span><span class="p">)</span>
+                <span class="n">im</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">imshow</span><span class="p">(</span><span class="n">imarr</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="n">alpha</span><span class="p">,</span> <span class="n">cmap</span><span class="o">=</span><span class="n">cmap</span><span class="p">,</span> <span class="n">interpolation</span><span class="o">=</span><span class="n">interp</span><span class="p">)</span>
 
             <span class="k">if</span> <span class="ow">not</span><span class="p">(</span><span class="n">beamparams</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">beamparams</span> <span class="ow">is</span> <span class="kc">False</span><span class="p">):</span>
                 <span class="n">beamparams</span> <span class="o">=</span> <span class="p">[</span><span class="n">beamparams</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">beamparams</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">beamparams</span><span class="p">[</span><span class="mi">2</span><span class="p">],</span>
@@ -3624,13 +3716,13 @@
 
             <span class="n">m</span> <span class="o">=</span> <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">qvec</span> <span class="o">+</span> <span class="mi">1</span><span class="n">j</span> <span class="o">*</span> <span class="n">uvec</span><span class="p">)</span> <span class="o">/</span> <span class="n">imvec</span><span class="p">)</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ydim</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">xdim</span><span class="p">)</span>
             <span class="n">p</span> <span class="o">=</span> <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">qvec</span> <span class="o">+</span> <span class="mi">1</span><span class="n">j</span> <span class="o">*</span> <span class="n">uvec</span><span class="p">))</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ydim</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">xdim</span><span class="p">)</span>
-            <span class="n">m</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">logical_not</span><span class="p">(</span><span class="n">mask</span><span class="p">)]</span> <span class="o">=</span> <span class="mi">0</span>
-            <span class="n">p</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">logical_not</span><span class="p">(</span><span class="n">mask</span><span class="p">)]</span> <span class="o">=</span> <span class="mi">0</span>
-            <span class="n">qarr</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">logical_not</span><span class="p">(</span><span class="n">mask</span><span class="p">)]</span> <span class="o">=</span> <span class="mi">0</span>
-            <span class="n">uarr</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">logical_not</span><span class="p">(</span><span class="n">mask</span><span class="p">)]</span> <span class="o">=</span> <span class="mi">0</span>
+            <span class="n">m</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">logical_not</span><span class="p">(</span><span class="n">mask</span><span class="p">)]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span>
+            <span class="n">p</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">logical_not</span><span class="p">(</span><span class="n">mask</span><span class="p">)]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span>
+            <span class="n">qarr</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">logical_not</span><span class="p">(</span><span class="n">mask</span><span class="p">)]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span>
+            <span class="n">uarr</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">logical_not</span><span class="p">(</span><span class="n">mask</span><span class="p">)]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span>
 
             <span class="n">voi</span> <span class="o">=</span> <span class="p">(</span><span class="n">vvec</span> <span class="o">/</span> <span class="n">imvec</span><span class="p">)</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ydim</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">xdim</span><span class="p">)</span>
-            <span class="n">voi</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">logical_not</span><span class="p">(</span><span class="n">mask</span><span class="p">)]</span> <span class="o">=</span> <span class="mi">0</span>
+            <span class="n">voi</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">logical_not</span><span class="p">(</span><span class="n">mask</span><span class="p">)]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span>
 
             <span class="c1"># Little pol plots</span>
             <span class="k">if</span> <span class="n">plot_stokes</span><span class="p">:</span>
@@ -3657,9 +3749,11 @@
                     <span class="k">if</span> <span class="n">cbar_lims</span><span class="p">:</span>
                         <span class="n">plt</span><span class="o">.</span><span class="n">clim</span><span class="p">(</span><span class="o">-</span><span class="n">maxval</span><span class="p">,</span> <span class="n">maxval</span><span class="p">)</span>
 
+                <span class="n">cmap</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">get_cmap</span><span class="p">(</span><span class="s1">&#39;bwr&#39;</span><span class="p">)</span>
+                <span class="n">cmap</span><span class="o">.</span><span class="n">set_bad</span><span class="p">(</span><span class="s1">&#39;whitesmoke&#39;</span><span class="p">)</span>
                 <span class="c1"># V Plot</span>
                 <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplot2grid</span><span class="p">((</span><span class="mi">2</span><span class="p">,</span> <span class="mi">5</span><span class="p">),</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">))</span>
-                <span class="n">plt</span><span class="o">.</span><span class="n">imshow</span><span class="p">(</span><span class="n">varr</span><span class="p">,</span> <span class="n">cmap</span><span class="o">=</span><span class="n">plt</span><span class="o">.</span><span class="n">get_cmap</span><span class="p">(</span><span class="s1">&#39;bwr&#39;</span><span class="p">),</span> <span class="n">interpolation</span><span class="o">=</span><span class="n">interp</span><span class="p">,</span>
+                <span class="n">plt</span><span class="o">.</span><span class="n">imshow</span><span class="p">(</span><span class="n">varr</span><span class="p">,</span> <span class="n">cmap</span><span class="o">=</span><span class="n">cmap</span><span class="p">,</span> <span class="n">interpolation</span><span class="o">=</span><span class="n">interp</span><span class="p">,</span>
                            <span class="n">vmin</span><span class="o">=-</span><span class="n">maxval</span><span class="p">,</span> <span class="n">vmax</span><span class="o">=</span><span class="n">maxval</span><span class="p">)</span>
                 <span class="n">ax</span><span class="o">.</span><span class="n">set_xticks</span><span class="p">([])</span>
                 <span class="n">ax</span><span class="o">.</span><span class="n">set_yticks</span><span class="p">([])</span>
@@ -3668,7 +3762,7 @@
 
                 <span class="c1"># Q Plot</span>
                 <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplot2grid</span><span class="p">((</span><span class="mi">2</span><span class="p">,</span> <span class="mi">5</span><span class="p">),</span> <span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">))</span>
-                <span class="n">plt</span><span class="o">.</span><span class="n">imshow</span><span class="p">(</span><span class="n">qarr</span><span class="p">,</span> <span class="n">cmap</span><span class="o">=</span><span class="n">plt</span><span class="o">.</span><span class="n">get_cmap</span><span class="p">(</span><span class="s1">&#39;bwr&#39;</span><span class="p">),</span> <span class="n">interpolation</span><span class="o">=</span><span class="n">interp</span><span class="p">,</span>
+                <span class="n">plt</span><span class="o">.</span><span class="n">imshow</span><span class="p">(</span><span class="n">qarr</span><span class="p">,</span> <span class="n">cmap</span><span class="o">=</span><span class="n">cmap</span><span class="p">,</span> <span class="n">interpolation</span><span class="o">=</span><span class="n">interp</span><span class="p">,</span>
                            <span class="n">vmin</span><span class="o">=-</span><span class="n">maxval</span><span class="p">,</span> <span class="n">vmax</span><span class="o">=</span><span class="n">maxval</span><span class="p">)</span>
                 <span class="n">plt</span><span class="o">.</span><span class="n">contour</span><span class="p">(</span><span class="n">imarr</span><span class="p">,</span> <span class="n">colors</span><span class="o">=</span><span class="s1">&#39;k&#39;</span><span class="p">,</span> <span class="n">linewidths</span><span class="o">=.</span><span class="mi">25</span><span class="p">)</span>
                 <span class="n">ax</span><span class="o">.</span><span class="n">set_xticks</span><span class="p">([])</span>
@@ -3678,7 +3772,7 @@
 
                 <span class="c1"># U Plot</span>
                 <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplot2grid</span><span class="p">((</span><span class="mi">2</span><span class="p">,</span> <span class="mi">5</span><span class="p">),</span> <span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">))</span>
-                <span class="n">plt</span><span class="o">.</span><span class="n">imshow</span><span class="p">(</span><span class="n">uarr</span><span class="p">,</span> <span class="n">cmap</span><span class="o">=</span><span class="n">plt</span><span class="o">.</span><span class="n">get_cmap</span><span class="p">(</span><span class="s1">&#39;bwr&#39;</span><span class="p">),</span> <span class="n">interpolation</span><span class="o">=</span><span class="n">interp</span><span class="p">,</span>
+                <span class="n">plt</span><span class="o">.</span><span class="n">imshow</span><span class="p">(</span><span class="n">uarr</span><span class="p">,</span> <span class="n">cmap</span><span class="o">=</span><span class="n">cmap</span><span class="p">,</span> <span class="n">interpolation</span><span class="o">=</span><span class="n">interp</span><span class="p">,</span>
                            <span class="n">vmin</span><span class="o">=-</span><span class="n">maxval</span><span class="p">,</span> <span class="n">vmax</span><span class="o">=</span><span class="n">maxval</span><span class="p">)</span>
                 <span class="n">plt</span><span class="o">.</span><span class="n">contour</span><span class="p">(</span><span class="n">imarr</span><span class="p">,</span> <span class="n">colors</span><span class="o">=</span><span class="s1">&#39;k&#39;</span><span class="p">,</span> <span class="n">linewidths</span><span class="o">=.</span><span class="mi">25</span><span class="p">)</span>
                 <span class="n">ax</span><span class="o">.</span><span class="n">set_xticks</span><span class="p">([])</span>
@@ -3688,7 +3782,10 @@
 
                 <span class="c1"># V/I plot</span>
                 <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplot2grid</span><span class="p">((</span><span class="mi">2</span><span class="p">,</span> <span class="mi">5</span><span class="p">),</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">2</span><span class="p">))</span>
-                <span class="n">im</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">imshow</span><span class="p">(</span><span class="n">voi</span><span class="p">,</span> <span class="n">cmap</span><span class="o">=</span><span class="n">plt</span><span class="o">.</span><span class="n">get_cmap</span><span class="p">(</span><span class="s1">&#39;seismic&#39;</span><span class="p">),</span> <span class="n">interpolation</span><span class="o">=</span><span class="n">interp</span><span class="p">,</span>
+                <span class="n">cmap</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">get_cmap</span><span class="p">(</span><span class="s1">&#39;seismic&#39;</span><span class="p">)</span>
+                <span class="n">cmap</span><span class="o">.</span><span class="n">set_bad</span><span class="p">(</span><span class="s1">&#39;whitesmoke&#39;</span><span class="p">)</span>
+
+                <span class="n">im</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">imshow</span><span class="p">(</span><span class="n">voi</span><span class="p">,</span> <span class="n">cmap</span><span class="o">=</span><span class="n">cmap</span><span class="p">,</span> <span class="n">interpolation</span><span class="o">=</span><span class="n">interp</span><span class="p">,</span>
                                 <span class="n">vmin</span><span class="o">=-</span><span class="mi">1</span><span class="p">,</span> <span class="n">vmax</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
                 <span class="k">if</span> <span class="n">has_title</span><span class="p">:</span>
                     <span class="n">plt</span><span class="o">.</span><span class="n">title</span><span class="p">(</span><span class="s1">&#39;V/I&#39;</span><span class="p">)</span>
@@ -3730,13 +3827,15 @@
 
             <span class="k">if</span> <span class="ow">not</span> <span class="n">cfun</span><span class="p">:</span>
                 <span class="n">cfun</span> <span class="o">=</span> <span class="s1">&#39;afmhot&#39;</span>
+            <span class="n">cmap</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">get_cmap</span><span class="p">(</span><span class="n">cfun</span><span class="p">)</span>
+            <span class="n">cmap</span><span class="o">.</span><span class="n">set_bad</span><span class="p">(</span><span class="n">color</span><span class="o">=</span><span class="s1">&#39;whitesmoke&#39;</span><span class="p">)</span>
 
             <span class="c1"># Big Stokes I plot</span>
             <span class="k">if</span> <span class="n">cbar_lims</span><span class="p">:</span>
-                <span class="n">im</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">imshow</span><span class="p">(</span><span class="n">imarr2</span><span class="p">,</span> <span class="n">cmap</span><span class="o">=</span><span class="n">plt</span><span class="o">.</span><span class="n">get_cmap</span><span class="p">(</span><span class="n">cfun</span><span class="p">),</span> <span class="n">interpolation</span><span class="o">=</span><span class="n">interp</span><span class="p">,</span>
+                <span class="n">im</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">imshow</span><span class="p">(</span><span class="n">imarr2</span><span class="p">,</span> <span class="n">cmap</span><span class="o">=</span><span class="n">cmap</span><span class="p">,</span> <span class="n">interpolation</span><span class="o">=</span><span class="n">interp</span><span class="p">,</span>
                                 <span class="n">vmin</span><span class="o">=</span><span class="n">cbar_lims</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">vmax</span><span class="o">=</span><span class="n">cbar_lims</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
             <span class="k">else</span><span class="p">:</span>
-                <span class="n">im</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">imshow</span><span class="p">(</span><span class="n">imarr2</span><span class="p">,</span> <span class="n">cmap</span><span class="o">=</span><span class="n">plt</span><span class="o">.</span><span class="n">get_cmap</span><span class="p">(</span><span class="n">cfun</span><span class="p">),</span> <span class="n">interpolation</span><span class="o">=</span><span class="n">interp</span><span class="p">)</span>
+                <span class="n">im</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">imshow</span><span class="p">(</span><span class="n">imarr2</span><span class="p">,</span> <span class="n">cmap</span><span class="p">,</span> <span class="n">interpolation</span><span class="o">=</span><span class="n">interp</span><span class="p">)</span>
 
             <span class="k">if</span> <span class="n">vec_cfun</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
                 <span class="n">plt</span><span class="o">.</span><span class="n">quiver</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">,</span>

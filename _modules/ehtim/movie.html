@@ -1188,6 +1188,7 @@
                      <span class="n">taup</span><span class="o">=</span><span class="n">ehc</span><span class="o">.</span><span class="n">GAINPDEF</span><span class="p">,</span>
                      <span class="n">gain_offset</span><span class="o">=</span><span class="n">ehc</span><span class="o">.</span><span class="n">GAINPDEF</span><span class="p">,</span> <span class="n">gainp</span><span class="o">=</span><span class="n">ehc</span><span class="o">.</span><span class="n">GAINPDEF</span><span class="p">,</span> 
                      <span class="n">dterm_offset</span><span class="o">=</span><span class="n">ehc</span><span class="o">.</span><span class="n">DTERMPDEF</span><span class="p">,</span>
+                     <span class="n">rlratio_std</span><span class="o">=</span><span class="mf">0.</span><span class="p">,</span><span class="n">rlphase_std</span><span class="o">=</span><span class="mf">0.</span><span class="p">,</span>
                      <span class="n">caltable_path</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">seed</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">sigmat</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Observe the image on the same baselines as an existing observation object and add noise.</span>
 
@@ -1214,12 +1215,20 @@
 <span class="sd">               neggains (bool): if True, force the applied gains to be &lt;1</span>
 
 <span class="sd">               taup (float): the fractional std. dev. of the random error on the opacities</span>
-<span class="sd">               gain_offset (float): the base gain offset at all sites,</span>
-<span class="sd">                                    or a dict giving one offset per site</span>
 <span class="sd">               gainp (float): the fractional std. dev. of the random error on the gains</span>
-<span class="sd">               dterm_offset (float): the base dterm offset at all sites,</span>
-<span class="sd">                                     or a dict giving one dterm offset per site</span>
+<span class="sd">                              or a dict giving one std. dev. per site      </span>
 
+<span class="sd">               gain_offset (float): the base gain offset at all sites,</span>
+<span class="sd">                                    or a dict giving one gain offset per site</span>
+<span class="sd">               dterm_offset (float): the base std. dev. of random additive error at all sites,</span>
+<span class="sd">                                    or a dict giving one std. dev. per site</span>
+
+<span class="sd">               rlratio_std (float): the fractional std. dev. of the R/L gain offset</span>
+<span class="sd">                                    or a dict giving one std. dev. per site                                          </span>
+<span class="sd">               rlphase_std (float): std. dev. of R/L phase offset, </span>
+<span class="sd">                                    or a dict giving one std. dev. per site</span>
+<span class="sd">                                    a negative value samples from uniform                                          </span>
+<span class="sd">                                    </span>
 <span class="sd">               caltable_path (string): If not None, path and prefix for saving the applied caltable</span>
 <span class="sd">               seed (int): seeds the random component of the noise terms. DO NOT set to 0!</span>
 <span class="sd">               sigmat (float): temporal std for a Gaussian Process used to generate gain noise.</span>
@@ -1251,6 +1260,7 @@
                                                  <span class="n">taup</span><span class="o">=</span><span class="n">taup</span><span class="p">,</span>
                                                  <span class="n">gain_offset</span><span class="o">=</span><span class="n">gain_offset</span><span class="p">,</span> <span class="n">gainp</span><span class="o">=</span><span class="n">gainp</span><span class="p">,</span>
                                                  <span class="n">dterm_offset</span><span class="o">=</span><span class="n">dterm_offset</span><span class="p">,</span>
+                                                 <span class="n">rlratio_std</span><span class="o">=</span><span class="n">rlratio_std</span><span class="p">,</span> <span class="n">rlphase_std</span><span class="o">=</span><span class="n">rlphase_std</span><span class="p">,</span>
                                                  <span class="n">caltable_path</span><span class="o">=</span><span class="n">caltable_path</span><span class="p">,</span>
                                                  <span class="n">seed</span><span class="o">=</span><span class="n">seed</span><span class="p">,</span> <span class="n">sigmat</span><span class="o">=</span><span class="n">sigmat</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="n">verbose</span><span class="p">)</span>
 
@@ -1308,6 +1318,7 @@
                 <span class="n">tau</span><span class="o">=</span><span class="n">ehc</span><span class="o">.</span><span class="n">TAUDEF</span><span class="p">,</span> <span class="n">taup</span><span class="o">=</span><span class="n">ehc</span><span class="o">.</span><span class="n">GAINPDEF</span><span class="p">,</span>
                 <span class="n">gain_offset</span><span class="o">=</span><span class="n">ehc</span><span class="o">.</span><span class="n">GAINPDEF</span><span class="p">,</span> <span class="n">gainp</span><span class="o">=</span><span class="n">ehc</span><span class="o">.</span><span class="n">GAINPDEF</span><span class="p">,</span> 
                 <span class="n">dterm_offset</span><span class="o">=</span><span class="n">ehc</span><span class="o">.</span><span class="n">DTERMPDEF</span><span class="p">,</span>
+                <span class="n">rlratio_std</span><span class="o">=</span><span class="mf">0.</span><span class="p">,</span><span class="n">rlphase_std</span><span class="o">=</span><span class="mf">0.</span><span class="p">,</span>
                 <span class="n">caltable_path</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">seed</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">sigmat</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Generate baselines from an array object and observe the movie.</span>
 
@@ -1350,11 +1361,20 @@
 
 <span class="sd">               tau (float): the base opacity at all sites, or a dict giving one opacity per site</span>
 <span class="sd">               taup (float): the fractional std. dev. of the random error on the opacities</span>
-<span class="sd">               gain_offset (float): the base gain offset at all sites</span>
-<span class="sd">                                    or a dict giving one gain offset per site</span>
 <span class="sd">               gainp (float): the fractional std. dev. of the random error on the gains</span>
-<span class="sd">               dterm_offset (float): the base dterm offset at all sites</span>
-<span class="sd">                                     or a dict giving one dterm offset per site</span>
+<span class="sd">                              or a dict giving one std. dev. per site      </span>
+
+<span class="sd">               gain_offset (float): the base gain offset at all sites,</span>
+<span class="sd">                                    or a dict giving one gain offset per site</span>
+<span class="sd">               dterm_offset (float): the base std. dev. of random additive error at all sites,</span>
+<span class="sd">                                    or a dict giving one std. dev. per site</span>
+
+<span class="sd">               rlratio_std (float): the fractional std. dev. of the R/L gain offset</span>
+<span class="sd">                                    or a dict giving one std. dev. per site                                          </span>
+<span class="sd">               rlphase_std (float): std. dev. of R/L phase offset, </span>
+<span class="sd">                                    or a dict giving one std. dev. per site</span>
+<span class="sd">                                    a negative value samples from uniform                                          </span>
+
 
 <span class="sd">               caltable_path (string): If not None, path and prefix for saving the applied caltable</span>
 <span class="sd">               seed (int): seeds the random component of the noise terms. DO NOT set to 0!</span>
@@ -1395,6 +1415,7 @@
                                 <span class="n">taup</span><span class="o">=</span><span class="n">taup</span><span class="p">,</span>
                                 <span class="n">gain_offset</span><span class="o">=</span><span class="n">gain_offset</span><span class="p">,</span> <span class="n">gainp</span><span class="o">=</span><span class="n">gainp</span><span class="p">,</span> 
                                 <span class="n">dterm_offset</span><span class="o">=</span><span class="n">dterm_offset</span><span class="p">,</span>
+                                <span class="n">rlratio_std</span><span class="o">=</span><span class="n">rlratio_std</span><span class="p">,</span><span class="n">rlphase_std</span><span class="o">=</span><span class="n">rlphase_std</span><span class="p">,</span>
                                 <span class="n">caltable_path</span><span class="o">=</span><span class="n">caltable_path</span><span class="p">,</span> <span class="n">seed</span><span class="o">=</span><span class="n">seed</span><span class="p">,</span> <span class="n">sigmat</span><span class="o">=</span><span class="n">sigmat</span><span class="p">,</span>
                                 <span class="n">verbose</span><span class="o">=</span><span class="n">verbose</span><span class="p">)</span>
 

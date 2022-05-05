@@ -123,7 +123,7 @@
 <span class="n">REGULARIZERS</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;gs&#39;</span><span class="p">,</span> <span class="s1">&#39;tv&#39;</span><span class="p">,</span> <span class="s1">&#39;tv2&#39;</span><span class="p">,</span> <span class="s1">&#39;l1&#39;</span><span class="p">,</span> <span class="s1">&#39;l1w&#39;</span><span class="p">,</span> <span class="s1">&#39;lA&#39;</span><span class="p">,</span> <span class="s1">&#39;patch&#39;</span><span class="p">,</span>
                 <span class="s1">&#39;flux&#39;</span><span class="p">,</span> <span class="s1">&#39;cm&#39;</span><span class="p">,</span> <span class="s1">&#39;simple&#39;</span><span class="p">,</span> <span class="s1">&#39;compact&#39;</span><span class="p">,</span> <span class="s1">&#39;compact2&#39;</span><span class="p">,</span> <span class="s1">&#39;rgauss&#39;</span><span class="p">,</span> <span class="s1">&#39;hw&#39;</span><span class="p">]</span>
 <span class="n">REGULARIZERS_SPECIND</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;l2_alpha&#39;</span><span class="p">,</span> <span class="s1">&#39;tv_alpha&#39;</span><span class="p">]</span>
-<span class="n">REGULARIZERS_CURV</span> <span class="o">=</span> <span class="p">[]</span>
+<span class="n">REGULARIZERS_CURV</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;l2_beta&#39;</span><span class="p">,</span> <span class="s1">&#39;tv_beta&#39;</span><span class="p">]</span>
 
 <span class="n">DATATERMS_POL</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;pvis&#39;</span><span class="p">,</span> <span class="s1">&#39;m&#39;</span><span class="p">,</span> <span class="s1">&#39;pbs&#39;</span><span class="p">]</span>
 <span class="n">REGULARIZERS_POL</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;msimple&#39;</span><span class="p">,</span> <span class="s1">&#39;hw&#39;</span><span class="p">,</span> <span class="s1">&#39;ptv&#39;</span><span class="p">]</span>
@@ -139,6 +139,7 @@
 <span class="n">POL_PRIM_SOLVE</span> <span class="o">=</span> <span class="s2">&quot;amp_phase&quot;</span>  <span class="c1"># this means we solve for polarization in the m, chi basis</span>
 <span class="n">POL_WHICH_SOLVE</span> <span class="o">=</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>   <span class="c1"># this means that pol imaging solves for m &amp; chi (not I), for now</span>
 <span class="n">MF_WHICH_SOLVE</span> <span class="o">=</span> <span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>    <span class="c1"># this means that mf imaging solves for I0 and alpha (not beta), for now</span>
+                              <span class="c1"># DEFAULT ONLY: object now uses self.mf_which_solve</span>
 
 <span class="n">REGPARAMS_DEFAULT</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;major&#39;</span><span class="p">:</span><span class="mi">50</span><span class="o">*</span><span class="n">ehc</span><span class="o">.</span><span class="n">RADPERUAS</span><span class="p">,</span>
                      <span class="s1">&#39;minor&#39;</span><span class="p">:</span><span class="mi">50</span><span class="o">*</span><span class="n">ehc</span><span class="o">.</span><span class="n">RADPERUAS</span><span class="p">,</span>
@@ -186,6 +187,7 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">dat_term_next</span> <span class="o">=</span> <span class="n">data_term</span>  <span class="c1"># e.g. [(&#39;amp&#39;, 1000), (&#39;cphase&#39;,100)]</span>
 
         <span class="c1"># Observations, frequencies</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">reffreq</span> <span class="o">=</span> <span class="n">init_im</span><span class="o">.</span><span class="n">rf</span>
         <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">obs_in</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">_obslist_next</span> <span class="o">=</span> <span class="n">obs_in</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">obslist_next</span> <span class="o">=</span> <span class="n">obs_in</span>
@@ -267,7 +269,10 @@
         <span class="c1"># Imager history</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_change_imgr_params</span> <span class="o">=</span> <span class="kc">True</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">nruns</span> <span class="o">=</span> <span class="mi">0</span>
+
+        <span class="c1"># multifrequency</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">mf_next</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mf_which_solve</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;mf_which_solve&#39;</span><span class="p">,</span><span class="n">MF_WHICH_SOLVE</span><span class="p">)</span>
 
         <span class="c1"># Set embedding matrices and prepare imager</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">check_params</span><span class="p">()</span>
@@ -284,7 +289,7 @@
             <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;obslist_next must be a list!&quot;</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_obslist_next</span> <span class="o">=</span> <span class="n">obslist</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">freq_list</span> <span class="o">=</span> <span class="p">[</span><span class="n">obs</span><span class="o">.</span><span class="n">rf</span> <span class="k">for</span> <span class="n">obs</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">obslist_next</span><span class="p">]</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">reffreq</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">freq_list</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="c1">#self.reffreq = self.freq_list[0] #Changed so that reffreq is determined by initial image/prior rf</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_logfreqratio_list</span> <span class="o">=</span> <span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">nu</span><span class="o">/</span><span class="bp">self</span><span class="o">.</span><span class="n">reffreq</span><span class="p">)</span> <span class="k">for</span> <span class="n">nu</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">freq_list</span><span class="p">]</span>
 
     <span class="nd">@property</span>
@@ -313,6 +318,7 @@
 <span class="sd">        &quot;&quot;&quot;</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">mf_next</span> <span class="o">=</span> <span class="n">mf</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mf_which_solve</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;mf_which_solve&#39;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">mf_which_solve</span><span class="p">)</span>
 
         <span class="k">if</span> <span class="n">pol</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
             <span class="n">pol_prim</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">pol_next</span>
@@ -376,7 +382,7 @@
                 <span class="n">out</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="n">out</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
 
         <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">mf_next</span><span class="p">:</span>
-            <span class="n">out</span> <span class="o">=</span> <span class="n">mfutils</span><span class="o">.</span><span class="n">unpack_mftuple</span><span class="p">(</span><span class="n">out</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_xtuple</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_nimage</span><span class="p">,</span> <span class="n">MF_WHICH_SOLVE</span><span class="p">)</span>
+            <span class="n">out</span> <span class="o">=</span> <span class="n">mfutils</span><span class="o">.</span><span class="n">unpack_mftuple</span><span class="p">(</span><span class="n">out</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_xtuple</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_nimage</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">mf_which_solve</span><span class="p">)</span>
             <span class="k">if</span> <span class="s1">&#39;log&#39;</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">transform_next</span><span class="p">:</span>
                 <span class="n">out</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="n">out</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
 
@@ -506,6 +512,9 @@
             <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">prior_next</span><span class="o">.</span><span class="n">xdim</span> <span class="o">!=</span> <span class="bp">self</span><span class="o">.</span><span class="n">init_next</span><span class="o">.</span><span class="n">xdim</span><span class="p">)</span> <span class="ow">or</span>
                 <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">prior_next</span><span class="o">.</span><span class="n">ydim</span> <span class="o">!=</span> <span class="bp">self</span><span class="o">.</span><span class="n">prior_next</span><span class="o">.</span><span class="n">ydim</span><span class="p">)):</span>
             <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;Initial image does not match dimensions of the prior image!&quot;</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="p">((</span><span class="bp">self</span><span class="o">.</span><span class="n">prior_next</span><span class="o">.</span><span class="n">rf</span> <span class="o">!=</span> <span class="bp">self</span><span class="o">.</span><span class="n">init_next</span><span class="o">.</span><span class="n">rf</span><span class="p">)):</span>
+            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;Initial image does not have same frequency as prior image!&quot;</span><span class="p">)</span>
 
         <span class="k">if</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">prior_next</span><span class="o">.</span><span class="n">polrep</span> <span class="o">!=</span> <span class="bp">self</span><span class="o">.</span><span class="n">init_next</span><span class="o">.</span><span class="n">polrep</span><span class="p">):</span>
             <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span>
@@ -717,7 +726,7 @@
         <span class="n">minbl</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">uvdists</span><span class="p">[</span><span class="n">uvdists</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">])</span>
 
         <span class="k">if</span> <span class="n">uvmax</span> <span class="o">&lt;</span> <span class="n">maxbl</span><span class="p">:</span>
-            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Warning! Pixel size is than smallest spatial wavelength!&quot;</span><span class="p">)</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Warning! Pixel size is larger than smallest spatial wavelength!&quot;</span><span class="p">)</span>
         <span class="k">if</span> <span class="n">uvmin</span> <span class="o">&gt;</span> <span class="n">minbl</span><span class="p">:</span>
             <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Warning! Field of View is smaller than largest nonzero spatial wavelength!&quot;</span><span class="p">)</span>
 
@@ -932,19 +941,23 @@
                 <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;Polarimetric imaging only works with mcv transform!&quot;</span><span class="p">)</span>
 
             <span class="c1"># Only apply log transformation to Stokes I if simultaneous imaging</span>
-            <span class="k">if</span> <span class="p">(</span><span class="s1">&#39;log&#39;</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">transform_next</span><span class="p">)</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">pol_next</span> <span class="o">!=</span> <span class="s1">&#39;P&#39;</span><span class="p">:</span>  
+            <span class="k">if</span> <span class="p">(</span><span class="s1">&#39;log&#39;</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">transform_next</span><span class="p">)</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">pol_next</span> <span class="o">!=</span> <span class="s1">&#39;P&#39;</span><span class="p">:</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">_xtuple</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_xtuple</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
 
             <span class="c1"># Pack into single vector</span>
-            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">pol_next</span> <span class="o">==</span> <span class="s1">&#39;P&#39;</span><span class="p">:</span> 
-                <span class="n">pol_which_solve</span> <span class="o">=</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">)</span> <span class="c1"># solve only for polarization, fix I </span>
-            <span class="k">else</span><span class="p">:</span> 
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">pol_next</span> <span class="o">==</span> <span class="s1">&#39;P&#39;</span><span class="p">:</span>
+                <span class="n">pol_which_solve</span> <span class="o">=</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">)</span> <span class="c1"># solve only for polarization, fix I</span>
+            <span class="k">else</span><span class="p">:</span>
                 <span class="n">pol_which_solve</span> <span class="o">=</span> <span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">)</span> <span class="c1"># solve simultaneously for full lin pol field</span>
 
             <span class="bp">self</span><span class="o">.</span><span class="n">_xinit</span> <span class="o">=</span> <span class="n">polutils</span><span class="o">.</span><span class="n">pack_poltuple</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_xtuple</span><span class="p">,</span> <span class="n">pol_which_solve</span><span class="p">)</span>
 
         <span class="c1"># Set prior &amp; initial image vectors for multifrequency imaging</span>
         <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">mf_next</span><span class="p">:</span>
+
+            <span class="bp">self</span><span class="o">.</span><span class="n">reffreq</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">init_next</span><span class="o">.</span><span class="n">rf</span> <span class="c1"># set reference frequency to same as prior</span>
+            <span class="c1"># reset logfreqratios in case reference frequency changed</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_logfreqratio_list</span> <span class="o">=</span> <span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">nu</span><span class="o">/</span><span class="bp">self</span><span class="o">.</span><span class="n">reffreq</span><span class="p">)</span> <span class="k">for</span> <span class="n">nu</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">freq_list</span><span class="p">]</span>
 
             <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">norm_init</span><span class="p">:</span>
                 <span class="n">nprior_I</span> <span class="o">=</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">flux_next</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">prior_next</span><span class="o">.</span><span class="n">imvec</span> <span class="o">/</span>
@@ -985,7 +998,7 @@
                 <span class="bp">self</span><span class="o">.</span><span class="n">_xtuple</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">inittuple</span>
 
             <span class="c1"># Pack into single vector</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">_xinit</span> <span class="o">=</span> <span class="n">mfutils</span><span class="o">.</span><span class="n">pack_mftuple</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_xtuple</span><span class="p">,</span> <span class="n">MF_WHICH_SOLVE</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_xinit</span> <span class="o">=</span> <span class="n">mfutils</span><span class="o">.</span><span class="n">pack_mftuple</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_xtuple</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">mf_which_solve</span><span class="p">)</span>
 
         <span class="c1"># Set prior &amp; initial image vectors for single stokes or RR/LL imaging</span>
         <span class="k">else</span><span class="p">:</span>
@@ -1012,6 +1025,8 @@
                 <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Initializing imager data products . . .&quot;</span><span class="p">)</span>
             <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">nruns</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
                 <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Recomputing imager data products . . .&quot;</span><span class="p">)</span>
+<span class="c1">#            if hasattr(self, &quot;_data_tuples&quot;):</span>
+<span class="c1">#                del self._data_tuples</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">_data_tuples</span> <span class="o">=</span> <span class="p">{}</span>
 
             <span class="c1"># Loop over all data term types</span>
@@ -1038,10 +1053,10 @@
                     <span class="k">elif</span> <span class="n">dname</span> <span class="ow">in</span> <span class="n">DATATERMS</span><span class="p">:</span>
                         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">pol_next</span> <span class="o">==</span> <span class="s1">&#39;IP&#39;</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">pol_next</span> <span class="o">==</span> <span class="s1">&#39;IQU&#39;</span><span class="p">:</span>
                             <span class="n">pol_next</span> <span class="o">=</span> <span class="s1">&#39;I&#39;</span>
-                        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">pol_next</span> <span class="o">==</span> <span class="s1">&#39;P&#39;</span><span class="p">:</span> 
+                        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">pol_next</span> <span class="o">==</span> <span class="s1">&#39;P&#39;</span><span class="p">:</span>
                             <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;cannot use dterm </span><span class="si">%s</span><span class="s2"> with pol=P - did you mean to use pol=IP?&quot;</span><span class="p">)</span>
                         <span class="k">else</span><span class="p">:</span>
-                            <span class="n">pol_next</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">pol_next</span> 
+                            <span class="n">pol_next</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">pol_next</span>
                         <span class="n">tup</span> <span class="o">=</span> <span class="n">imutils</span><span class="o">.</span><span class="n">chisqdata</span><span class="p">(</span><span class="n">obs</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">prior_next</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_embed_mask</span><span class="p">,</span> <span class="n">dname</span><span class="p">,</span>
                                                 <span class="n">pol</span><span class="o">=</span><span class="n">pol_next</span><span class="p">,</span> <span class="n">maxset</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">maxset_next</span><span class="p">,</span>
                                                 <span class="n">debias</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">debias_next</span><span class="p">,</span>
@@ -1156,7 +1171,6 @@
 
                 <span class="c1"># Polarimetric data products</span>
                 <span class="k">if</span> <span class="n">dname</span> <span class="ow">in</span> <span class="n">DATATERMS_POL</span><span class="p">:</span>
-                <span class="c1">#if self.pol_next == &#39;P&#39;:</span>
                     <span class="n">chi2grad</span> <span class="o">=</span> <span class="n">polutils</span><span class="o">.</span><span class="n">polchisqgrad</span><span class="p">(</span><span class="n">imcur</span><span class="p">,</span> <span class="n">A</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">sigma</span><span class="p">,</span> <span class="n">dname</span><span class="p">,</span>
                                                      <span class="n">ttype</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_ttype</span><span class="p">,</span> <span class="n">mask</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_embed_mask</span><span class="p">,</span>
                                                      <span class="n">pol_prim</span><span class="o">=</span><span class="n">POL_PRIM_SOLVE</span><span class="p">,</span>
@@ -1202,7 +1216,7 @@
         <span class="k">for</span> <span class="n">regname</span> <span class="ow">in</span> <span class="nb">sorted</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">reg_term_next</span><span class="o">.</span><span class="n">keys</span><span class="p">()):</span>
             <span class="c1"># Polarimetric regularizer</span>
             <span class="c1">#if self.pol_next == &#39;P&#39;:</span>
-            <span class="k">if</span> <span class="n">regname</span> <span class="ow">in</span> <span class="n">REGULARIZERS_POL</span><span class="p">:</span> 
+            <span class="k">if</span> <span class="n">regname</span> <span class="ow">in</span> <span class="n">REGULARIZERS_POL</span><span class="p">:</span>
                 <span class="n">reg</span> <span class="o">=</span> <span class="n">polutils</span><span class="o">.</span><span class="n">polregularizer</span><span class="p">(</span><span class="n">imcur</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_embed_mask</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">flux_next</span><span class="p">,</span>
                                               <span class="bp">self</span><span class="o">.</span><span class="n">prior_next</span><span class="o">.</span><span class="n">xdim</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">prior_next</span><span class="o">.</span><span class="n">ydim</span><span class="p">,</span>
                                               <span class="bp">self</span><span class="o">.</span><span class="n">prior_next</span><span class="o">.</span><span class="n">psize</span><span class="p">,</span> <span class="n">regname</span><span class="p">,</span>
@@ -1238,7 +1252,7 @@
             <span class="k">elif</span> <span class="n">regname</span> <span class="ow">in</span> <span class="n">REGULARIZERS</span><span class="p">:</span>
                 <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">pol_next</span> <span class="o">==</span> <span class="s1">&#39;IP&#39;</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">pol_next</span> <span class="o">==</span> <span class="s1">&#39;IQU&#39;</span><span class="p">:</span>
                     <span class="n">imcur0</span> <span class="o">=</span> <span class="n">imcur</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
-                <span class="k">else</span><span class="p">:</span> 
+                <span class="k">else</span><span class="p">:</span>
                     <span class="n">imcur0</span> <span class="o">=</span> <span class="n">imcur</span>
 
                 <span class="n">reg</span> <span class="o">=</span> <span class="n">imutils</span><span class="o">.</span><span class="n">regularizer</span><span class="p">(</span><span class="n">imcur0</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_nprior</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_embed_mask</span><span class="p">,</span>
@@ -1263,7 +1277,7 @@
 
             <span class="c1"># Polarimetric regularizer</span>
             <span class="c1">#if self.pol_next == &#39;P&#39;:</span>
-            <span class="k">if</span> <span class="n">regname</span> <span class="ow">in</span> <span class="n">REGULARIZERS_POL</span><span class="p">:</span> 
+            <span class="k">if</span> <span class="n">regname</span> <span class="ow">in</span> <span class="n">REGULARIZERS_POL</span><span class="p">:</span>
                 <span class="n">reg</span> <span class="o">=</span> <span class="n">polutils</span><span class="o">.</span><span class="n">polregularizergrad</span><span class="p">(</span><span class="n">imcur</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_embed_mask</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">flux_next</span><span class="p">,</span>
                                                   <span class="bp">self</span><span class="o">.</span><span class="n">prior_next</span><span class="o">.</span><span class="n">xdim</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">prior_next</span><span class="o">.</span><span class="n">ydim</span><span class="p">,</span>
                                                   <span class="bp">self</span><span class="o">.</span><span class="n">prior_next</span><span class="o">.</span><span class="n">psize</span><span class="p">,</span> <span class="n">regname</span><span class="p">,</span>
@@ -1305,10 +1319,10 @@
                     <span class="n">reg</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">((</span><span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_nimage</span><span class="p">),</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_nimage</span><span class="p">),</span> <span class="n">reg</span><span class="p">))</span>
 
             <span class="c1"># Normal regularizer</span>
-            <span class="k">elif</span> <span class="n">regname</span> <span class="ow">in</span> <span class="n">REGULARIZERS</span><span class="p">:</span> 
+            <span class="k">elif</span> <span class="n">regname</span> <span class="ow">in</span> <span class="n">REGULARIZERS</span><span class="p">:</span>
                 <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">pol_next</span> <span class="o">==</span> <span class="s1">&#39;IP&#39;</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">pol_next</span> <span class="o">==</span> <span class="s1">&#39;IQU&#39;</span><span class="p">:</span> <span class="c1"># TODO AC AA MAKE MORE ELEGANT</span>
                     <span class="n">imcur0</span> <span class="o">=</span> <span class="n">imcur</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
-                <span class="k">else</span><span class="p">:</span> 
+                <span class="k">else</span><span class="p">:</span>
                     <span class="n">imcur0</span> <span class="o">=</span> <span class="n">imcur</span>
                 <span class="n">reg</span> <span class="o">=</span> <span class="n">imutils</span><span class="o">.</span><span class="n">regularizergrad</span><span class="p">(</span><span class="n">imcur0</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_nprior</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_embed_mask</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">flux_next</span><span class="p">,</span>
                                               <span class="bp">self</span><span class="o">.</span><span class="n">prior_next</span><span class="o">.</span><span class="n">xdim</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">prior_next</span><span class="o">.</span><span class="n">ydim</span><span class="p">,</span>
@@ -1331,13 +1345,13 @@
 
         <span class="c1"># Unpack polarimetric/multifrequency vector into an array</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">pol_next</span> <span class="o">==</span> <span class="s1">&#39;P&#39;</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">pol_next</span> <span class="o">==</span> <span class="s1">&#39;IP&#39;</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">pol_next</span> <span class="o">==</span> <span class="s1">&#39;IQU&#39;</span><span class="p">:</span>
-            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">pol_next</span> <span class="o">==</span> <span class="s1">&#39;P&#39;</span><span class="p">:</span> 
-                <span class="n">pol_which_solve</span> <span class="o">=</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">)</span> <span class="c1"># solve only for polarization, fix I </span>
-            <span class="k">else</span><span class="p">:</span> 
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">pol_next</span> <span class="o">==</span> <span class="s1">&#39;P&#39;</span><span class="p">:</span>
+                <span class="n">pol_which_solve</span> <span class="o">=</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">)</span> <span class="c1"># solve only for polarization, fix I</span>
+            <span class="k">else</span><span class="p">:</span>
                 <span class="n">pol_which_solve</span> <span class="o">=</span> <span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">)</span> <span class="c1"># solve simultaneously for full lin pol field</span>
             <span class="n">imcur</span> <span class="o">=</span> <span class="n">polutils</span><span class="o">.</span><span class="n">unpack_poltuple</span><span class="p">(</span><span class="n">imvec</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_xtuple</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_nimage</span><span class="p">,</span> <span class="n">pol_which_solve</span><span class="p">)</span>
         <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">mf_next</span><span class="p">:</span>
-            <span class="n">imcur</span> <span class="o">=</span> <span class="n">mfutils</span><span class="o">.</span><span class="n">unpack_mftuple</span><span class="p">(</span><span class="n">imvec</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_xtuple</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_nimage</span><span class="p">,</span> <span class="n">MF_WHICH_SOLVE</span><span class="p">)</span>
+            <span class="n">imcur</span> <span class="o">=</span> <span class="n">mfutils</span><span class="o">.</span><span class="n">unpack_mftuple</span><span class="p">(</span><span class="n">imvec</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_xtuple</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_nimage</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">mf_which_solve</span><span class="p">)</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="n">imcur</span> <span class="o">=</span> <span class="n">imvec</span>
 
@@ -1389,13 +1403,13 @@
 
         <span class="c1"># Unpack polarimetric/multifrequency vector into an array</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">pol_next</span> <span class="o">==</span> <span class="s1">&#39;P&#39;</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">pol_next</span> <span class="o">==</span> <span class="s1">&#39;IP&#39;</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">pol_next</span> <span class="o">==</span> <span class="s1">&#39;IQU&#39;</span><span class="p">:</span>
-            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">pol_next</span> <span class="o">==</span> <span class="s1">&#39;P&#39;</span><span class="p">:</span> 
-                <span class="n">pol_which_solve</span> <span class="o">=</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">)</span> <span class="c1"># solve only for polarization, fix I </span>
-            <span class="k">else</span><span class="p">:</span> 
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">pol_next</span> <span class="o">==</span> <span class="s1">&#39;P&#39;</span><span class="p">:</span>
+                <span class="n">pol_which_solve</span> <span class="o">=</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">)</span> <span class="c1"># solve only for polarization, fix I</span>
+            <span class="k">else</span><span class="p">:</span>
                 <span class="n">pol_which_solve</span> <span class="o">=</span> <span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">)</span> <span class="c1"># solve simultaneously for full lin pol field</span>
             <span class="n">imcur</span> <span class="o">=</span> <span class="n">polutils</span><span class="o">.</span><span class="n">unpack_poltuple</span><span class="p">(</span><span class="n">imvec</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_xtuple</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_nimage</span><span class="p">,</span> <span class="n">pol_which_solve</span><span class="p">)</span>
         <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">mf_next</span><span class="p">:</span>
-            <span class="n">imcur</span> <span class="o">=</span> <span class="n">mfutils</span><span class="o">.</span><span class="n">unpack_mftuple</span><span class="p">(</span><span class="n">imvec</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_xtuple</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_nimage</span><span class="p">,</span> <span class="n">MF_WHICH_SOLVE</span><span class="p">)</span>
+            <span class="n">imcur</span> <span class="o">=</span> <span class="n">mfutils</span><span class="o">.</span><span class="n">unpack_mftuple</span><span class="p">(</span><span class="n">imvec</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_xtuple</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_nimage</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">mf_which_solve</span><span class="p">)</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="n">imcur</span> <span class="o">=</span> <span class="n">imvec</span>
 
@@ -1467,7 +1481,7 @@
 
         <span class="c1"># repack gradient for multifrequency imaging</span>
         <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">mf_next</span><span class="p">:</span>
-            <span class="n">grad</span> <span class="o">=</span> <span class="n">mfutils</span><span class="o">.</span><span class="n">pack_mftuple</span><span class="p">(</span><span class="n">grad</span><span class="p">,</span> <span class="n">MF_WHICH_SOLVE</span><span class="p">)</span>
+            <span class="n">grad</span> <span class="o">=</span> <span class="n">mfutils</span><span class="o">.</span><span class="n">pack_mftuple</span><span class="p">(</span><span class="n">grad</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">mf_which_solve</span><span class="p">)</span>
 
         <span class="k">return</span> <span class="n">grad</span></div>
 
@@ -1484,7 +1498,7 @@
                         <span class="n">imvec</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_xtuple</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_nimage</span><span class="p">,</span> <span class="n">pol_which_solve</span><span class="p">)</span>
                 <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">mf_next</span><span class="p">:</span>
                     <span class="n">imcur</span> <span class="o">=</span> <span class="n">mfutils</span><span class="o">.</span><span class="n">unpack_mftuple</span><span class="p">(</span>
-                        <span class="n">imvec</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_xtuple</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_nimage</span><span class="p">,</span> <span class="n">MF_WHICH_SOLVE</span><span class="p">)</span>
+                        <span class="n">imvec</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_xtuple</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_nimage</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">mf_which_solve</span><span class="p">)</span>
                 <span class="k">else</span><span class="p">:</span>
                     <span class="n">imcur</span> <span class="o">=</span> <span class="n">imvec</span>
 
