@@ -10,7 +10,7 @@ The package contains several primary classes for loading, simulating, and manipu
 Installation
 ------------
 
-The latest stable version (`1.2.3 <https://github.com/achael/eht-imaging/releases/tag/v1.2.3>`_) is available on `PyPi <https://pypi.org/project/ehtim/>`_. Simply install pip and run
+The latest stable version (`1.2.4 <https://github.com/achael/eht-imaging/releases/tag/v1.2.4>`_) is available on `PyPi <https://pypi.org/project/ehtim/>`_. Simply install pip and run
 
 .. code-block:: bash
 
@@ -45,9 +45,13 @@ A full tutorial is in progress, but here are some ways to learn to use the code:
 
 - `Slides <https://www.dropbox.com/s/7533ucj8bt54yh7/Bouman_Chael.pdf?dl=0>`_ from the EHT2016 data generation and imaging workshop contain a tutorial on generating data with the VLBI imaging `website <http://vlbiimaging.csail.mit.edu>`_, loading into the library, and producing an image.
 
-Selected publications that use ehtim
+Citation
 --------------------------------
 If you use ehtim in your publication, please cite `Chael+ 2018 <http://adsabs.harvard.edu/abs/2018ApJ...857...23C>`_
+The latest version is also available as a static doi on `Zenodo <https://zenodo.org/badge/latestdoi/42943499Zenodo
+>`_
+Selected publications that use ehtim
+--------------------------------
 
 Let us know if you use ehtim in your publication and we'll list it here!
 
