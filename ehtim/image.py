@@ -3290,7 +3290,7 @@ class Image(object):
                plotp (bool): True to plot linear polarimetic image
                plot_stokes (bool): True to plot stokes subplots along with plotp
                nvec (int): number of polarimetric vectors to plot
-               vec_cfun (str): color function for vectors colored by |m|
+               vec_cfun (str): color function for vectors colored by lin pol frac
 
                scut (float): minimum stokes I value for displaying spectral index
                pcut (float): minimum stokes I value for displaying polarimetric vectors
