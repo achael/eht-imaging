@@ -1,5 +1,7 @@
 ehtim (eht-imaging)
 ===================
+.. image:: https://zenodo.org/badge/42943499.svg
+   :target: https://zenodo.org/badge/latestdoi/42943499
 
 Python modules for simulating and manipulating VLBI data and producing images with regularized maximum likelihood methods. This version is an early release so please raise an issue, submit a pull request, or email achael@princeton.edu if you have trouble or need help for your application.
 
