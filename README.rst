@@ -48,8 +48,8 @@ A full tutorial is in progress, but here are some ways to learn to use the code:
 Citation
 --------------------------------
 If you use ehtim in your publication, please cite `Chael+ 2018 <http://adsabs.harvard.edu/abs/2018ApJ...857...23C>`_
-The latest version is also available as a static doi on `Zenodo <https://zenodo.org/badge/latestdoi/42943499Zenodo
->`_
+The latest version is also available as a static doi on `Zenodo <https://zenodo.org/badge/latestdoi/42943499Zenodo>`_
+
 Selected publications that use ehtim
 --------------------------------
 
