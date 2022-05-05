@@ -33,6 +33,7 @@ from multiprocessing import cpu_count, Pool
 import ehtim.obsdata
 import ehtim.parloop as parloop
 from . import cal_helpers as calh
+from ehtim.observing.obs_simulate import add_jones_and_noise
 import ehtim.observing.obs_helpers as obsh
 import ehtim.const_def as ehc
 
@@ -49,7 +50,8 @@ MAXIT = 10000  # maximum number of iterations in self-cal minimizer
 def self_cal(obs, im, sites=[], method="both", pol='I', minimizer_method='BFGS',
              pad_amp=0., gain_tol=.2, solution_interval=0.0, scan_solutions=False,
              ttype='direct', fft_pad_factor=2, caltable=False,
-             debias=True, copy_closure_tables=True,
+             debias=True, apply_dterms=False,
+             copy_closure_tables=True,
              processes=-1, show_solution=False, msgtype='bar'):
     """Self-calibrate a dataset to an image.
 
@@ -78,6 +80,7 @@ def self_cal(obs, im, sites=[], method="both", pol='I', minimizer_method='BFGS',
            fft_pad_factor (float): zero pad the image to fft_pad_factor * image size in FFT
 
            debias (bool): If True, debias the amplitudes
+           apply_dterms (bool): if True, apply dterms (in obs.tarr) to clean data before calibrating
            show_solution (bool): if True, display the solution as it is calculated
            msgtype (str): type of progress message to be printed, default is 'bar'
 
@@ -107,6 +110,15 @@ def self_cal(obs, im, sites=[], method="both", pol='I', minimizer_method='BFGS',
     print("Computing the Model Visibilities with " + ttype + " Fourier Transform...")
     obs_clean = im.observe_same_nonoise(obs, ttype=ttype, fft_pad_factor=fft_pad_factor)
 
+    # apply dterms
+    # TODO check!
+    if apply_dterms:
+        print("Applying dterms in obs.tarr to clean visibilities before selfcal!")    
+        obsdata_dterms = add_jones_and_noise(obs_clean, 
+                         add_th_noise=False, ampcal=True, phasecal=True, opacitycal=True,
+                         dcal=False, frcal=True, dterm_offset=0.0)
+        obs_clean.data = obsdata_dterms
+                
     # Partition the list of observed visibilities into scans
     scans = obs.tlist(t_gather=solution_interval, scan_gather=scan_solutions)
     scans_cal = copy.copy(scans)

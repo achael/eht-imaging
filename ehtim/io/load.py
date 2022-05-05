@@ -171,12 +171,16 @@ def load_im_hdf5(filename):
     DX = hfp['header']['camera']['dx'][()]          # in GM/c^2
     nx = hfp['header']['camera']['nx'][()]          # width in pixels
     time = hfp['header']['t'][()] * tunit / 3600.       # time in hours
-    unpoldat = np.copy(hfp['unpol'])                # NX,NY
-    poldat = np.copy(hfp['pol'])[:, :, :4]            # NX,NY,{I,Q,U,V}
+    if 'pol' in hfp:
+        poldat = np.copy(hfp['pol'])[:, :, :4]            # NX,NY,{I,Q,U,V}
+    else: # unpolarized data only
+        unpoldat = np.copy(hfp['unpol'])                # NX,NY
+        poldat = np.zeros(list(unpoldat.shape)+[4])
+        poldat[:,:,0] = unpoldat
     hfp.close()
 
     # Correct image orientation
-    unpoldat = np.flip(unpoldat.transpose((1, 0)), axis=0)
+    # unpoldat = np.flip(unpoldat.transpose((1, 0)), axis=0)
     poldat = np.flip(poldat.transpose((1, 0, 2)), axis=0)
 
     # Make a guess at the source based on distance and optionally fall back on mass

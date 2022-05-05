@@ -76,7 +76,7 @@ class Image(object):
            polrep (str): polarization representation, either 'stokes' or 'circ'
            pol_prim (str): The default image: I,Q,U or V for Stokes, or RR,LL,LR,RL for Circular
            _imdict (dict): The dictionary with the polarimetric images
-           _mflist (list): List of spectral index images (and higher order terms)f
+           _mflist (list): List of spectral index images (and higher order terms)
     """
 
     def __init__(self, image, psize, ra, dec, pa=0.0,
@@ -1061,7 +1061,7 @@ class Image(object):
         ij = np.array([[[i * self.psize + (self.psize * self.xdim) / 2.0 - self.psize / 2.0,
                          j * self.psize + (self.psize * self.ydim) / 2.0 - self.psize / 2.0]
                         for i in np.arange(0, -self.xdim, -1)]
-                       for j in np.arange(0, -self.ydim, -1)]).reshape((self.xdim * self.ydim, 2))
+                        for j in np.arange(0, -self.ydim, -1)]).reshape((self.xdim * self.ydim, 2))
 
         def im_new_val(imvec, x_idx, y_idx):
             x = x_idx * psize_new + (psize_new * xdim_new) / 2.0 - psize_new / 2.0
@@ -1077,7 +1077,7 @@ class Image(object):
 
         def im_new(imvec):
             imarr_new = np.array([[im_new_val(imvec, x_idx, y_idx)
-                                   for x_idx in np.arange(0, -xdim_new, -1)]
+                                  for x_idx in np.arange(0, -xdim_new, -1)]
                                   for y_idx in np.arange(0, -ydim_new, -1)])
             return imarr_new
 
@@ -1107,6 +1107,7 @@ class Image(object):
         # Interpolate spectral index and copy over
         mflist_out = []
         for mfvec in self._mflist:
+            print("WARNING: resample_squre not debugged for spectral index resampling!")
             if len(mfvec):
                 mfarr = im_new(mfvec)
                 mfvec_out = mfarr.flatten()
@@ -1140,7 +1141,7 @@ class Image(object):
         xtarget = np.linspace(-targetfov / 2, targetfov / 2, npix)
         ytarget = np.linspace(-targetfov / 2, targetfov / 2, npix)
 
-        def interp_imvec(imvec):
+        def interp_imvec(imvec, specind=False):
             if np.any(np.imag(imvec) != 0):
                 return interp_imvec(np.real(imvec)) + 1j * interp_imvec(np.imag(imvec))
 
@@ -1149,7 +1150,9 @@ class Image(object):
             tmpimg = interpfunc(ytarget, xtarget)
             tmpimg[np.abs(xtarget) > fov_x / 2., :] = 0.0
             tmpimg[:, np.abs(ytarget) > fov_y / 2.] = 0.0
-            tmpimg = tmpimg * (psize_new)**2 / self.psize**2
+
+            if not specind: # adjust pixel size if not a spectral index map
+                tmpimg = tmpimg * (psize_new)**2 / self.psize**2
             return tmpimg
 
         # Make new image
@@ -1173,7 +1176,7 @@ class Image(object):
         mflist_out = []
         for mfvec in self._mflist:
             if len(mfvec):
-                mfarr = interp_imvec(mfvec)
+                mfarr = interp_imvec(mfvec, specind=True)
                 mfvec_out = mfarr.flatten()
             else:
                 mfvec_out = np.array([])
@@ -2228,7 +2231,7 @@ class Image(object):
         if polrep_obs not in ['stokes', 'circ']:
             raise Exception("polrep_obs must be either 'stokes' or 'circ'")
 
-        data = simobs.sample_vis(self, uv, polrep_obs=polrep_obs, sgrscat=sgrscat, 
+        data = simobs.sample_vis(self, uv, polrep_obs=polrep_obs, sgrscat=sgrscat,
                                  ttype=ttype, cache=cache, fft_pad_factor=fft_pad_factor,
                                  zero_empty_pol=zero_empty_pol, verbose=verbose)
         return data
@@ -2303,12 +2306,15 @@ class Image(object):
                      jones=False, inv_jones=False,
                      opacitycal=True, ampcal=True, phasecal=True,
                      frcal=True, dcal=True,  rlgaincal=True,
-                     stabilize_scan_phase=False, stabilize_scan_amp=False, 
+                     stabilize_scan_phase=False, stabilize_scan_amp=False,
                      neggains=False,
                      taup=ehc.GAINPDEF,
                      gain_offset=ehc.GAINPDEF, gainp=ehc.GAINPDEF,
+                     phase_std=-1,
                      dterm_offset=ehc.DTERMPDEF,
-                     caltable_path=None, seed=False, sigmat=None, verbose=True):
+                     rlratio_std=0., rlphase_std=0.,
+                     sigmat=None, phasesigmat=None, rlgsigmat=None,rlpsigmat=None,
+                     caltable_path=None, seed=False, verbose=True):
         """Observe the image on the same baselines as an existing observation object and add noise.
 
            Args:
@@ -2334,16 +2340,34 @@ class Image(object):
                neggains (bool): if True, force the applied gains to be <1
 
                taup (float): the fractional std. dev. of the random error on the opacities
-               gain_offset (float): the base gain offset at all sites,
-                                    or a dict giving one offset per site
                gainp (float): the fractional std. dev. of the random error on the gains
-               dterm_offset (float): the base dterm offset at all sites,
-                                     or a dict giving one dterm offset per site
+                              or a dict giving one std. dev. per site
+
+               gain_offset (float): the base gain offset at all sites,
+                                    or a dict giving one gain offset per site
+               phase_std (float): std. dev. of LCP phase,
+                                  or a dict giving one std. dev. per site
+                                  a negative value samples from uniform
+               dterm_offset (float): the base std. dev. of random additive error at all sites,
+                                    or a dict giving one std. dev. per site
+
+               rlratio_std (float): the fractional std. dev. of the R/L gain offset
+                                    or a dict giving one std. dev. per site
+               rlphase_std (float): std. dev. of R/L phase offset,
+                                    or a dict giving one std. dev. per site
+                                    a negative value samples from uniform
+
+               sigmat (float): temporal std for a Gaussian Process used to generate gains.
+                               If sigmat=None then an iid gain noise is applied.
+               phasesigmat (float): temporal std for a Gaussian Process used to generate phases.
+                                    If phasesigmat=None then an iid gain noise is applied.
+               rlgsigmat (float): temporal std deviation for a Gaussian Process used to generate R/L gain ratios.
+                               If rlgsigmat=None then an iid gain noise is applied.
+               rlpsigmat (float): temporal std deviation for a Gaussian Process used to generate R/L phase diff.
+                               If rlpsigmat=None then an iid gain noise is applied.
 
                caltable_path (string): If not None, path and prefix for saving the applied caltable
                seed (int): seeds the random component of the noise terms. DO NOT set to 0!
-               sigmat (float): temporal std for a Gaussian Process used to generate gain noise.
-                               if sigmat=None then an iid gain noise is applied.
                verbose (bool): print updates and warnings
            Returns:
                (Obsdata): an observation object
@@ -2352,7 +2376,7 @@ class Image(object):
         if seed:
             np.random.seed(seed=seed)
 
-        obs = self.observe_same_nonoise(obs_in, sgrscat=sgrscat,ttype=ttype, 
+        obs = self.observe_same_nonoise(obs_in, sgrscat=sgrscat,ttype=ttype,
                                         cache=False, fft_pad_factor=fft_pad_factor,
                                         zero_empty_pol=True, verbose=verbose)
 
@@ -2367,9 +2391,12 @@ class Image(object):
                                                  neggains=neggains,
                                                  taup=taup,
                                                  gain_offset=gain_offset, gainp=gainp,
+                                                 phase_std=phase_std,
                                                  dterm_offset=dterm_offset,
-                                                 caltable_path=caltable_path, seed=seed,
-                                                 sigmat=sigmat, verbose=verbose)
+                                                 rlratio_std=rlratio_std, rlphase_std=rlphase_std,
+                                                 sigmat=sigmat, phasesigmat=phasesigmat,
+                                                 rlgsigmat=rlgsigmat,rlpsigmat=rlpsigmat,
+                                                 caltable_path=caltable_path, seed=seed,verbose=verbose)
 
             obs = ehtim.obsdata.Obsdata(obs.ra, obs.dec, obs.rf, obs.bw, obsdata, obs.tarr,
                                         source=obs.source, mjd=obs.mjd, polrep=obs_in.polrep,
@@ -2396,13 +2423,16 @@ class Image(object):
             if caltable_path:
                 print('WARNING: the caltable is only saved if you apply noise with a Jones Matrix')
 
+            # TODO -- clean up arguments
             obsdata = simobs.add_noise(obs, add_th_noise=add_th_noise,
-                                       opacitycal=opacitycal, ampcal=ampcal, phasecal=phasecal, 
+                                       opacitycal=opacitycal, ampcal=ampcal, phasecal=phasecal,
                                        stabilize_scan_phase=stabilize_scan_phase,
                                        stabilize_scan_amp=stabilize_scan_amp,
                                        neggains=neggains,
-                                       taup=taup, gain_offset=gain_offset, gainp=gainp,
-                                       caltable_path=caltable_path, seed=seed, sigmat=sigmat,
+                                       taup=taup,
+                                       gain_offset=gain_offset, gainp=gainp,
+                                       sigmat=sigmat,
+                                       caltable_path=caltable_path, seed=seed,
                                        verbose=verbose)
 
             obs = ehtim.obsdata.Obsdata(obs.ra, obs.dec, obs.rf, obs.bw, obsdata, obs.tarr,
@@ -2416,7 +2446,7 @@ class Image(object):
     def observe(self, array, tint, tadv, tstart, tstop, bw,
                 mjd=None, timetype='UTC', polrep_obs=None,
                 elevmin=ehc.ELEV_LOW, elevmax=ehc.ELEV_HIGH,
-                ttype='nfft', fft_pad_factor=2, fix_theta_GMST=False, 
+                ttype='nfft', fft_pad_factor=2, fix_theta_GMST=False,
                 sgrscat=False, add_th_noise=True,
                 jones=False, inv_jones=False,
                 opacitycal=True, ampcal=True, phasecal=True,
@@ -2424,9 +2454,12 @@ class Image(object):
                 stabilize_scan_phase=False, stabilize_scan_amp=False,
                 neggains=False,
                 tau=ehc.TAUDEF, taup=ehc.GAINPDEF,
-                gain_offset=ehc.GAINPDEF, gainp=ehc.GAINPDEF, 
-                dterm_offset=ehc.DTERMPDEF, 
-                caltable_path=None, seed=False, sigmat=None, verbose=True):
+                gain_offset=ehc.GAINPDEF, gainp=ehc.GAINPDEF,
+                phase_std=-1,
+                dterm_offset=ehc.DTERMPDEF,
+                rlratio_std=0.,rlphase_std=0.,
+                sigmat=None, phasesigmat=None, rlgsigmat=None,rlpsigmat=None,
+                caltable_path=None, seed=False, verbose=True):
         """Generate baselines from an array object and observe the image.
 
            Args:
@@ -2464,19 +2497,37 @@ class Image(object):
                stabilize_scan_amp (bool): if True, random amplitude errors are constant over scans
                neggains (bool): if True, force the applied gains to be <1
 
-               tau (float): the base opacity at all sites,
-                            or a dict giving one opacity per site
                taup (float): the fractional std. dev. of the random error on the opacities
+               gainp (float): the fractional std. dev. of the random error on the gains
+                              or a dict giving one std. dev. per site
+
                gain_offset (float): the base gain offset at all sites,
                                     or a dict giving one gain offset per site
-               gainp (float): the fractional std. dev. of the random error on the gains
-               dterm_offset (float): the base dterm offset at all sites,
-                                     or a dict giving one dterm offset per site
+               phase_std (float): std. dev. of LCP phase,
+                                  or a dict giving one std. dev. per site
+                                  a negative value samples from uniform
+               dterm_offset (float): the base std. dev. of random additive error at all sites,
+                                    or a dict giving one std. dev. per site
+
+               rlratio_std (float): the fractional std. dev. of the R/L gain offset
+                                    or a dict giving one std. dev. per site
+               rlphase_std (float): std. dev. of R/L phase offset,
+                                    or a dict giving one std. dev. per site
+                                    a negative value samples from uniform
+
+               sigmat (float): temporal std for a Gaussian Process used to generate gains.
+                               If sigmat=None then an iid gain noise is applied.
+               phasesigmat (float): temporal std for a Gaussian Process used to generate phases.
+                                    If phasesigmat=None then an iid gain noise is applied.
+               rlgsigmat (float): temporal std deviation for a Gaussian Process used to generate R/L gain ratios.
+                               If rlgsigmat=None then an iid gain noise is applied.
+               rlpsigmat (float): temporal std deviation for a Gaussian Process used to generate R/L phase diff.
+                               If rlpsigmat=None then an iid gain noise is applied.
+
 
                caltable_path (string): If not None, path and prefix for saving the applied caltable
                seed (int): seeds the random component of the noise terms. DO NOT set to 0!
-               sigmat (float): temporal std for a Gaussian Process used to generate gain noise.
-                               if sigmat=None then an iid gain noise is applied.
+
                verbose (bool): print updates and warnings
 
            Returns:
@@ -2506,10 +2557,13 @@ class Image(object):
                                 stabilize_scan_amp=stabilize_scan_amp,
                                 neggains=neggains,
                                 taup=taup,
-                                gain_offset=gain_offset, gainp=gainp, 
+                                gain_offset=gain_offset, gainp=gainp,
+                                phase_std=phase_std,
                                 dterm_offset=dterm_offset,
-                                caltable_path=caltable_path, seed=seed, sigmat=sigmat,
-                                verbose=verbose)
+                                rlratio_std=rlratio_std,rlphase_std=rlphase_std,
+                                sigmat=sigmat,phasesigmat=phasesigmat,
+                                rlgsigmat=rlgsigmat,rlpsigmat=rlpsigmat,
+                                caltable_path=caltable_path, seed=seed, verbose=verbose)
 
         obs.mjd = mjd
 
@@ -2517,7 +2571,7 @@ class Image(object):
 
     def observe_vex(self, vex, source, t_int=0.0, tight_tadv=False,
                     polrep_obs=None, ttype='nfft', fft_pad_factor=2,
-                    fix_theta_GMST=False, 
+                    fix_theta_GMST=False,
                     sgrscat=False, add_th_noise=True,
                     jones=False, inv_jones=False,
                     opacitycal=True, ampcal=True, phasecal=True,
@@ -2525,9 +2579,12 @@ class Image(object):
                     stabilize_scan_phase=False, stabilize_scan_amp=False,
                     neggains=False,
                     tau=ehc.TAUDEF, taup=ehc.GAINPDEF,
-                    gain_offset=ehc.GAINPDEF, gainp=ehc.GAINPDEF, 
+                    gain_offset=ehc.GAINPDEF, gainp=ehc.GAINPDEF,
+                    phase_std=-1,
                     dterm_offset=ehc.DTERMPDEF,
-                    caltable_path=None, seed=False, sigmat=None, verbose=True):
+                    rlratio_std=0.,rlphase_std=0.,
+                    sigmat=None, phasesigmat=None, rlgsigmat=None,rlpsigmat=None,
+                    caltable_path=None, seed=False, verbose=True):
         """Generate baselines from a vex file and observes the image.
 
            Args:
@@ -2562,16 +2619,34 @@ class Image(object):
                tau (float): the base opacity at all sites,
                             or a dict giving one opacity per site
                taup (float): the fractional std. dev. of the random error on the opacities
+               gainp (float): the fractional std. dev. of the random error on the gains
+                              or a dict giving one std. dev. per site
+
                gain_offset (float): the base gain offset at all sites,
                                     or a dict giving one gain offset per site
-               gainp (float): the fractional std. dev. of the random error on the gains
-               dterm_offset (float): the base dterm offset at all sites,
-                                     or a dict giving one dterm offset per site
+               phase_std (float): std. dev. of LCP phase,
+                                  or a dict giving one std. dev. per site
+                                  a negative value samples from uniform
+               dterm_offset (float): the base std. dev. of random additive error at all sites,
+                                    or a dict giving one std. dev. per site
+
+               rlratio_std (float): the fractional std. dev. of the R/L gain offset
+                                    or a dict giving one std. dev. per site
+               rlphase_std (float): std. dev. of R/L phase offset,
+                                    or a dict giving one std. dev. per site
+                                    a negative value samples from uniform
+
+               sigmat (float): temporal std for a Gaussian Process used to generate gains.
+                               If sigmat=None then an iid gain noise is applied.
+               phasesigmat (float): temporal std for a Gaussian Process used to generate phases.
+                                    If phasesigmat=None then an iid gain noise is applied.
+               rlgsigmat (float): temporal std deviation for a Gaussian Process used to generate R/L gain ratios.
+                               If rlgsigmat=None then an iid gain noise is applied.
+               rlpsigmat (float): temporal std deviation for a Gaussian Process used to generate R/L phase diff.
+                               If rlpsigmat=None then an iid gain noise is applied.
 
                caltable_path (string): If not None, path and prefix for saving the applied caltable
                seed (int): seeds the random component of the noise terms. DO NOT set to 0!
-               sigmat (float): temporal std for a Gaussian Process used to generate gain noise.
-                               if sigmat=None then an iid gain noise is applied.
                verbose (bool): print updates and warnings
 
            Returns:
@@ -2615,10 +2690,10 @@ class Image(object):
                                polrep_obs=polrep_obs,
                                elevmin=.01, elevmax=89.99,
                                ttype=ttype, fft_pad_factor=fft_pad_factor,
-                               fix_theta_GMST=fix_theta_GMST, 
+                               fix_theta_GMST=fix_theta_GMST,
                                sgrscat=sgrscat,
                                add_th_noise=add_th_noise,
-                               jones=jones, inv_jones=inv_jones, 
+                               jones=jones, inv_jones=inv_jones,
                                opacitycal=opacitycal, ampcal=ampcal, phasecal=phasecal,
                                frcal=frcal, dcal=dcal, rlgaincal=rlgaincal,
                                stabilize_scan_phase=stabilize_scan_phase,
@@ -2626,9 +2701,12 @@ class Image(object):
                                neggains=neggains,
                                tau=tau, taup=taup,
                                gain_offset=gain_offset, gainp=gainp,
+                               phase_std=phase_std,
                                dterm_offset=dterm_offset,
-                               caltable_path=caltable_path, seed=seed,sigmat=sigmat,
-                               verbose=verbose)
+                               rlratio_std=rlratio_std,rlphase_std=rlphase_std,
+                               sigmat=sigmat,phasesigmat=phasesigmat,
+                               rlgsigmat=rlgsigmat,rlpsigmat=rlpsigmat,
+                               caltable_path=caltable_path, seed=seed, verbose=verbose)
 
             obs_List.append(obs)
 
@@ -3199,7 +3277,8 @@ class Image(object):
 
            Args:
                pol (str): which polarization image to plot. Default is self.pol_prim
-                          pol='spec' will plot spectral index!
+                          pol='spec' will plot spectral index
+                          pol='curv' will plot spectral curvature
                cfun (str): matplotlib.pyplot color function.
                            False changes with 'pol',  but is 'afmhot' for most
                interp (str): image interpolation 'gauss' or 'lin'
@@ -3211,7 +3290,7 @@ class Image(object):
                plotp (bool): True to plot linear polarimetic image
                plot_stokes (bool): True to plot stokes subplots along with plotp
                nvec (int): number of polarimetric vectors to plot
-               vec_cfun (str): color function for vectors colored by |m|
+               vec_cfun (str): color function for vectors colored by lin pol frac
 
                scut (float): minimum stokes I value for displaying spectral index
                pcut (float): minimum stokes I value for displaying polarimetric vectors
@@ -3347,9 +3426,20 @@ class Image(object):
 
                 # mask out low total intensity values
                 mask = self.imvec < (scut * np.max(self.imvec))
-                imvec[mask] = 0
+                imvec[mask] = np.nan
 
                 unit = r'$\alpha$'
+                factor = 1
+                cbar_lims_p = [-5, 5]
+                cfun_p = 'seismic'
+            elif pol.lower() == 'curv':
+                imvec = self.curvvec.copy()
+
+                # mask out low total intensity values
+                mask = self.imvec < (scut * np.max(self.imvec))
+                imvec[mask] = np.nan
+
+                unit = r'$\beta$'
                 factor = 1
                 cbar_lims_p = [-5, 5]
                 cfun_p = 'seismic'
@@ -3437,12 +3527,14 @@ class Image(object):
 
             if not cfun:
                 cfun = cfun_p
+            cmap = plt.get_cmap(cfun)
+            cmap.set_bad(color='whitesmoke')
 
             if cbar_lims:
-                im = plt.imshow(imarr, alpha=alpha, cmap=plt.get_cmap(cfun), interpolation=interp,
+                im = plt.imshow(imarr, alpha=alpha, cmap=cmap, interpolation=interp,
                                 vmin=cbar_lims[0], vmax=cbar_lims[1])
             else:
-                im = plt.imshow(imarr, alpha=alpha, cmap=plt.get_cmap(cfun), interpolation=interp)
+                im = plt.imshow(imarr, alpha=alpha, cmap=cmap, interpolation=interp)
 
             if not(beamparams is None or beamparams is False):
                 beamparams = [beamparams[0], beamparams[1], beamparams[2],
@@ -3546,13 +3638,13 @@ class Image(object):
 
             m = (np.abs(qvec + 1j * uvec) / imvec).reshape(self.ydim, self.xdim)
             p = (np.abs(qvec + 1j * uvec)).reshape(self.ydim, self.xdim)
-            m[np.logical_not(mask)] = 0
-            p[np.logical_not(mask)] = 0
-            qarr[np.logical_not(mask)] = 0
-            uarr[np.logical_not(mask)] = 0
+            m[np.logical_not(mask)] = np.nan
+            p[np.logical_not(mask)] = np.nan
+            qarr[np.logical_not(mask)] = np.nan
+            uarr[np.logical_not(mask)] = np.nan
 
             voi = (vvec / imvec).reshape(self.ydim, self.xdim)
-            voi[np.logical_not(mask)] = 0
+            voi[np.logical_not(mask)] = np.nan
 
             # Little pol plots
             if plot_stokes:
@@ -3579,9 +3671,11 @@ class Image(object):
                     if cbar_lims:
                         plt.clim(-maxval, maxval)
 
+                cmap = plt.get_cmap('bwr')
+                cmap.set_bad('whitesmoke')
                 # V Plot
                 ax = plt.subplot2grid((2, 5), (0, 1))
-                plt.imshow(varr, cmap=plt.get_cmap('bwr'), interpolation=interp,
+                plt.imshow(varr, cmap=cmap, interpolation=interp,
                            vmin=-maxval, vmax=maxval)
                 ax.set_xticks([])
                 ax.set_yticks([])
@@ -3590,7 +3684,7 @@ class Image(object):
 
                 # Q Plot
                 ax = plt.subplot2grid((2, 5), (1, 0))
-                plt.imshow(qarr, cmap=plt.get_cmap('bwr'), interpolation=interp,
+                plt.imshow(qarr, cmap=cmap, interpolation=interp,
                            vmin=-maxval, vmax=maxval)
                 plt.contour(imarr, colors='k', linewidths=.25)
                 ax.set_xticks([])
@@ -3600,7 +3694,7 @@ class Image(object):
 
                 # U Plot
                 ax = plt.subplot2grid((2, 5), (1, 1))
-                plt.imshow(uarr, cmap=plt.get_cmap('bwr'), interpolation=interp,
+                plt.imshow(uarr, cmap=cmap, interpolation=interp,
                            vmin=-maxval, vmax=maxval)
                 plt.contour(imarr, colors='k', linewidths=.25)
                 ax.set_xticks([])
@@ -3610,7 +3704,10 @@ class Image(object):
 
                 # V/I plot
                 ax = plt.subplot2grid((2, 5), (0, 2))
-                im = plt.imshow(voi, cmap=plt.get_cmap('seismic'), interpolation=interp,
+                cmap = plt.get_cmap('seismic')
+                cmap.set_bad('whitesmoke')
+
+                im = plt.imshow(voi, cmap=cmap, interpolation=interp,
                                 vmin=-1, vmax=1)
                 if has_title:
                     plt.title('V/I')
@@ -3652,13 +3749,15 @@ class Image(object):
 
             if not cfun:
                 cfun = 'afmhot'
+            cmap = plt.get_cmap(cfun)
+            cmap.set_bad(color='whitesmoke')
 
             # Big Stokes I plot
             if cbar_lims:
-                im = plt.imshow(imarr2, cmap=plt.get_cmap(cfun), interpolation=interp,
+                im = plt.imshow(imarr2, cmap=cmap, interpolation=interp,
                                 vmin=cbar_lims[0], vmax=cbar_lims[1])
             else:
-                im = plt.imshow(imarr2, cmap=plt.get_cmap(cfun), interpolation=interp)
+                im = plt.imshow(imarr2, cmap, interpolation=interp)
 
             if vec_cfun is None:
                 plt.quiver(x, y, a, b,

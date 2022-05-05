@@ -45,7 +45,7 @@ DATATERMS = ['vis', 'bs', 'amp', 'cphase', 'cphase_diag', 'camp', 'logcamp', 'lo
 REGULARIZERS = ['gs', 'tv', 'tv2', 'l1', 'l1w', 'lA', 'patch',
                 'flux', 'cm', 'simple', 'compact', 'compact2', 'rgauss', 'hw']
 REGULARIZERS_SPECIND = ['l2_alpha', 'tv_alpha']
-REGULARIZERS_CURV = []
+REGULARIZERS_CURV = ['l2_beta', 'tv_beta']
 
 DATATERMS_POL = ['pvis', 'm', 'pbs']
 REGULARIZERS_POL = ['msimple', 'hw', 'ptv']
@@ -61,6 +61,7 @@ DAT_DEFAULT = {'vis': 100}
 POL_PRIM_SOLVE = "amp_phase"  # this means we solve for polarization in the m, chi basis
 POL_WHICH_SOLVE = (0, 1, 1)   # this means that pol imaging solves for m & chi (not I), for now
 MF_WHICH_SOLVE = (1, 1, 0)    # this means that mf imaging solves for I0 and alpha (not beta), for now
+                              # DEFAULT ONLY: object now uses self.mf_which_solve
 
 REGPARAMS_DEFAULT = {'major':50*ehc.RADPERUAS,
                      'minor':50*ehc.RADPERUAS,
@@ -108,6 +109,7 @@ class Imager(object):
         self.dat_term_next = data_term  # e.g. [('amp', 1000), ('cphase',100)]
 
         # Observations, frequencies
+        self.reffreq = init_im.rf
         if isinstance(obs_in, list):
             self._obslist_next = obs_in
             self.obslist_next = obs_in
@@ -189,7 +191,10 @@ class Imager(object):
         # Imager history
         self._change_imgr_params = True
         self.nruns = 0
+
+        # multifrequency
         self.mf_next = False
+        self.mf_which_solve = kwargs.get('mf_which_solve',MF_WHICH_SOLVE)
 
         # Set embedding matrices and prepare imager
         self.check_params()
@@ -206,7 +211,7 @@ class Imager(object):
             raise Exception("obslist_next must be a list!")
         self._obslist_next = obslist
         self.freq_list = [obs.rf for obs in self.obslist_next]
-        self.reffreq = self.freq_list[0]
+        #self.reffreq = self.freq_list[0] #Changed so that reffreq is determined by initial image/prior rf
         self._logfreqratio_list = [np.log(nu/self.reffreq) for nu in self.freq_list]
 
     @property
@@ -235,6 +240,7 @@ class Imager(object):
         """
 
         self.mf_next = mf
+        self.mf_which_solve = kwargs.get('mf_which_solve', self.mf_which_solve)
 
         if pol is None:
             pol_prim = self.pol_next
@@ -298,7 +304,7 @@ class Imager(object):
                 out[0] = np.exp(out[0])
 
         elif self.mf_next:
-            out = mfutils.unpack_mftuple(out, self._xtuple, self._nimage, MF_WHICH_SOLVE)
+            out = mfutils.unpack_mftuple(out, self._xtuple, self._nimage, self.mf_which_solve)
             if 'log' in self.transform_next:
                 out[0] = np.exp(out[0])
 
@@ -410,9 +416,16 @@ class Imager(object):
 
         xmax = self.prior_next.xdim//2
         ymax = self.prior_next.ydim//2
+        
+        if self.prior_next.xdim % 2: xmin=-xmax-1
+        else: xmin=-xmax
+        
+        if self.prior_next.ydim % 2: ymin=-ymax-1
+        else: ymin=-ymax
+        
         coord = np.array([[[x, y]
-                           for x in np.arange(xmax, -ymax, -1)]
-                          for y in np.arange(ymax, -ymax, -1)])
+                           for x in np.arange(xmax, xmin, -1)]
+                           for y in np.arange(ymax, ymin, -1)])
 
         coord = coord.reshape(self.prior_next.ydim * self.prior_next.xdim, 2)
         coord = coord * self.prior_next.psize
@@ -428,6 +441,9 @@ class Imager(object):
             (self.prior_next.xdim != self.init_next.xdim) or
                 (self.prior_next.ydim != self.prior_next.ydim)):
             raise Exception("Initial image does not match dimensions of the prior image!")
+
+        if ((self.prior_next.rf != self.init_next.rf)):
+            raise Exception("Initial image does not have same frequency as prior image!")
 
         if (self.prior_next.polrep != self.init_next.polrep):
             raise Exception(
@@ -639,7 +655,7 @@ class Imager(object):
         minbl = np.max(uvdists[uvdists > 0])
 
         if uvmax < maxbl:
-            print("Warning! Pixel size is than smallest spatial wavelength!")
+            print("Warning! Pixel size is larger than smallest spatial wavelength!")
         if uvmin > minbl:
             print("Warning! Field of View is smaller than largest nonzero spatial wavelength!")
 
@@ -854,19 +870,23 @@ class Imager(object):
                 raise Exception("Polarimetric imaging only works with mcv transform!")
 
             # Only apply log transformation to Stokes I if simultaneous imaging
-            if ('log' in self.transform_next) and self.pol_next != 'P':  
+            if ('log' in self.transform_next) and self.pol_next != 'P':
                 self._xtuple[0] = np.log(self._xtuple[0])
 
             # Pack into single vector
-            if self.pol_next == 'P': 
-                pol_which_solve = (0,1,1) # solve only for polarization, fix I 
-            else: 
+            if self.pol_next == 'P':
+                pol_which_solve = (0,1,1) # solve only for polarization, fix I
+            else:
                 pol_which_solve = (1,1,1) # solve simultaneously for full lin pol field
 
             self._xinit = polutils.pack_poltuple(self._xtuple, pol_which_solve)
 
         # Set prior & initial image vectors for multifrequency imaging
         elif self.mf_next:
+
+            self.reffreq = self.init_next.rf # set reference frequency to same as prior
+            # reset logfreqratios in case reference frequency changed
+            self._logfreqratio_list = [np.log(nu/self.reffreq) for nu in self.freq_list]
 
             if self.norm_init:
                 nprior_I = (self.flux_next * self.prior_next.imvec /
@@ -907,7 +927,7 @@ class Imager(object):
                 self._xtuple = self.inittuple
 
             # Pack into single vector
-            self._xinit = mfutils.pack_mftuple(self._xtuple, MF_WHICH_SOLVE)
+            self._xinit = mfutils.pack_mftuple(self._xtuple, self.mf_which_solve)
 
         # Set prior & initial image vectors for single stokes or RR/LL imaging
         else:
@@ -934,6 +954,8 @@ class Imager(object):
                 print("Initializing imager data products . . .")
             if self.nruns > 0:
                 print("Recomputing imager data products . . .")
+#            if hasattr(self, "_data_tuples"):
+#                del self._data_tuples
             self._data_tuples = {}
 
             # Loop over all data term types
@@ -960,10 +982,10 @@ class Imager(object):
                     elif dname in DATATERMS:
                         if self.pol_next == 'IP' or self.pol_next == 'IQU':
                             pol_next = 'I'
-                        elif self.pol_next == 'P': 
+                        elif self.pol_next == 'P':
                             raise Exception("cannot use dterm %s with pol=P - did you mean to use pol=IP?")
                         else:
-                            pol_next = self.pol_next 
+                            pol_next = self.pol_next
                         tup = imutils.chisqdata(obs, self.prior_next, self._embed_mask, dname,
                                                 pol=pol_next, maxset=self.maxset_next,
                                                 debias=self.debias_next,
@@ -1078,7 +1100,6 @@ class Imager(object):
 
                 # Polarimetric data products
                 if dname in DATATERMS_POL:
-                #if self.pol_next == 'P':
                     chi2grad = polutils.polchisqgrad(imcur, A, data, sigma, dname,
                                                      ttype=self._ttype, mask=self._embed_mask,
                                                      pol_prim=POL_PRIM_SOLVE,
@@ -1124,7 +1145,7 @@ class Imager(object):
         for regname in sorted(self.reg_term_next.keys()):
             # Polarimetric regularizer
             #if self.pol_next == 'P':
-            if regname in REGULARIZERS_POL: 
+            if regname in REGULARIZERS_POL:
                 reg = polutils.polregularizer(imcur, self._embed_mask, self.flux_next,
                                               self.prior_next.xdim, self.prior_next.ydim,
                                               self.prior_next.psize, regname,
@@ -1160,7 +1181,7 @@ class Imager(object):
             elif regname in REGULARIZERS:
                 if self.pol_next == 'IP' or self.pol_next == 'IQU':
                     imcur0 = imcur[0]
-                else: 
+                else:
                     imcur0 = imcur
 
                 reg = imutils.regularizer(imcur0, self._nprior, self._embed_mask,
@@ -1185,7 +1206,7 @@ class Imager(object):
 
             # Polarimetric regularizer
             #if self.pol_next == 'P':
-            if regname in REGULARIZERS_POL: 
+            if regname in REGULARIZERS_POL:
                 reg = polutils.polregularizergrad(imcur, self._embed_mask, self.flux_next,
                                                   self.prior_next.xdim, self.prior_next.ydim,
                                                   self.prior_next.psize, regname,
@@ -1227,10 +1248,10 @@ class Imager(object):
                     reg = np.array((np.zeros(self._nimage), np.zeros(self._nimage), reg))
 
             # Normal regularizer
-            elif regname in REGULARIZERS: 
+            elif regname in REGULARIZERS:
                 if self.pol_next == 'IP' or self.pol_next == 'IQU': # TODO AC AA MAKE MORE ELEGANT
                     imcur0 = imcur[0]
-                else: 
+                else:
                     imcur0 = imcur
                 reg = imutils.regularizergrad(imcur0, self._nprior, self._embed_mask, self.flux_next,
                                               self.prior_next.xdim, self.prior_next.ydim,
@@ -1253,13 +1274,13 @@ class Imager(object):
 
         # Unpack polarimetric/multifrequency vector into an array
         if self.pol_next == 'P' or self.pol_next == 'IP' or self.pol_next == 'IQU':
-            if self.pol_next == 'P': 
-                pol_which_solve = (0,1,1) # solve only for polarization, fix I 
-            else: 
+            if self.pol_next == 'P':
+                pol_which_solve = (0,1,1) # solve only for polarization, fix I
+            else:
                 pol_which_solve = (1,1,1) # solve simultaneously for full lin pol field
             imcur = polutils.unpack_poltuple(imvec, self._xtuple, self._nimage, pol_which_solve)
         elif self.mf_next:
-            imcur = mfutils.unpack_mftuple(imvec, self._xtuple, self._nimage, MF_WHICH_SOLVE)
+            imcur = mfutils.unpack_mftuple(imvec, self._xtuple, self._nimage, self.mf_which_solve)
         else:
             imcur = imvec
 
@@ -1311,13 +1332,13 @@ class Imager(object):
 
         # Unpack polarimetric/multifrequency vector into an array
         if self.pol_next == 'P' or self.pol_next == 'IP' or self.pol_next == 'IQU':
-            if self.pol_next == 'P': 
-                pol_which_solve = (0,1,1) # solve only for polarization, fix I 
-            else: 
+            if self.pol_next == 'P':
+                pol_which_solve = (0,1,1) # solve only for polarization, fix I
+            else:
                 pol_which_solve = (1,1,1) # solve simultaneously for full lin pol field
             imcur = polutils.unpack_poltuple(imvec, self._xtuple, self._nimage, pol_which_solve)
         elif self.mf_next:
-            imcur = mfutils.unpack_mftuple(imvec, self._xtuple, self._nimage, MF_WHICH_SOLVE)
+            imcur = mfutils.unpack_mftuple(imvec, self._xtuple, self._nimage, self.mf_which_solve)
         else:
             imcur = imvec
 
@@ -1389,7 +1410,7 @@ class Imager(object):
 
         # repack gradient for multifrequency imaging
         elif self.mf_next:
-            grad = mfutils.pack_mftuple(grad, MF_WHICH_SOLVE)
+            grad = mfutils.pack_mftuple(grad, self.mf_which_solve)
 
         return grad
 
@@ -1406,7 +1427,7 @@ class Imager(object):
                         imvec, self._xtuple, self._nimage, pol_which_solve)
                 elif self.mf_next:
                     imcur = mfutils.unpack_mftuple(
-                        imvec, self._xtuple, self._nimage, MF_WHICH_SOLVE)
+                        imvec, self._xtuple, self._nimage, self.mf_which_solve)
                 else:
                     imcur = imvec
 

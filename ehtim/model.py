@@ -61,8 +61,11 @@ def model_params(model_type, model_params=None, fit_pol=False, fit_cpol=False):
                 params.append('cpol_frac')
             else:
                 for j in range(len(model_params['beta_list_cpol'])):
-                    params.append('betacpol' + str(j) + complex_labels[0])
-                    params.append('betacpol' + str(j) + complex_labels[1])
+                    if j==0:
+                        params.append('betacpol0')
+                    else:
+                        params.append('betacpol' + str(j) + complex_labels[0])
+                        params.append('betacpol' + str(j) + complex_labels[1])
 
     if model_type == 'point':
         params = ['F0','x0','y0']
@@ -78,6 +81,12 @@ def model_params(model_type, model_params=None, fit_pol=False, fit_cpol=False):
         add_pol()
     elif model_type == 'blurred_disk':
         params = ['F0','d','alpha','x0','y0']
+        add_pol()
+    elif model_type == 'crescent':
+        params = ['F0','d', 'fr', 'fo', 'ff', 'phi','x0','y0']
+        add_pol()
+    elif model_type == 'blurred_crescent':
+        params = ['F0','d','alpha','fr', 'fo', 'ff', 'phi','x0','y0']
         add_pol()
     elif model_type == 'ring':
         params = ['F0','d','x0','y0']
@@ -178,6 +187,19 @@ def default_prior(model_type,model_params=None,fit_pol=False,fit_cpol=False):
     elif model_type == 'blurred_disk':
         prior['d'] = {'prior_type':'positive','transform':'log'}
         prior['alpha'] = {'prior_type':'positive','transform':'log'}
+    elif model_type == 'crescent': 
+        prior['d'] = {'prior_type':'positive','transform':'log'}
+        prior['fr'] = {'prior_type':'flat','min':0,'max':1}
+        prior['fo'] = {'prior_type':'flat','min':0,'max':1}
+        prior['ff'] = {'prior_type':'flat','min':0,'max':1}
+        prior['phi'] = {'prior_type':'flat','min':0,'max':2.*np.pi}
+    elif model_type == 'blurred_crescent':
+        prior['d'] = {'prior_type':'positive','transform':'log'}
+        prior['alpha'] = {'prior_type':'positive','transform':'log'}
+        prior['fr'] = {'prior_type':'flat','min':0,'max':1}
+        prior['fo'] = {'prior_type':'flat','min':0,'max':1}
+        prior['ff'] = {'prior_type':'flat','min':0,'max':1}
+        prior['phi'] = {'prior_type':'flat','min':0,'max':2.*np.pi}
     elif model_type == 'ring':
         prior['d'] = {'prior_type':'positive','transform':'log'}
     elif model_type == 'stretched_ring':
@@ -259,8 +281,11 @@ def default_prior(model_type,model_params=None,fit_pol=False,fit_cpol=False):
             prior['cpol_frac'] = {'prior_type':'flat','min':-1.0,'max':1.0}
         else:
             for j in range(len(model_params['beta_list_cpol'])):
-                prior['betacpol' + str(j) + complex_labels[0]] = complex_priors2[0]
-                prior['betacpol' + str(j) + complex_labels[1]] = complex_priors2[1]
+                if j > 0:
+                    prior['betacpol' + str(j) + complex_labels[0]] = complex_priors2[0]
+                    prior['betacpol' + str(j) + complex_labels[1]] = complex_priors2[1]
+                else:
+                    prior['betacpol0'] = {'prior_type':'flat','min':-1.0,'max':1.0}
 
     return prior
 
@@ -360,6 +385,26 @@ def sample_1model_xy(x, y, model_type, params, psize=1.*RADPERUAS, pol='I'):
             if len(r_list) < len(np.ravel(r))/2 and len(r) > 100: 
                 f = interpolate.interp1d(r_list, f(r_list), kind='cubic')
         val = params['F0'] * psize**2 * f(r)
+    elif model_type == 'crescent':
+        phi = params['phi']
+        fr = params['fr']
+        fo = params['fo']
+        ff = params['ff']
+        r = params['d'] / 2.
+        params0 = {'F0': 1.0/(1.0-(1-ff)*fr**2)*params['F0'],   'd':params['d'],    'x0': params['x0'], 'y0': params['y0']}
+        params1 = {'F0': (1-ff)*fr**2/(1.0-(1-ff)*fr**2)*params['F0'], 'd':params['d']*fr, 'x0': params['x0'] + r*(1-fr)*fo*np.sin(phi), 'y0': params['y0'] + r*(1-fr)*fo*np.cos(phi)}
+        val =  sample_1model_xy(x, y, 'disk', params0, psize=psize, pol=pol) 
+        val -= sample_1model_xy(x, y, 'disk', params1, psize=psize, pol=pol)
+    elif model_type == 'blurred_crescent':
+        phi = params['phi']
+        fr = params['fr']
+        fo = params['fo']
+        ff = params['ff']
+        r = params['d'] / 2.
+        params0 = {'F0': 1.0/(1.0-(1-ff)*fr**2)*params['F0'],   'd':params['d'], 'alpha':params['alpha'], 'x0': params['x0'], 'y0': params['y0']}
+        params1 = {'F0': (1-ff)*fr**2/(1.0-(1-ff)*fr**2)*params['F0'], 'd':params['d']*fr, 'alpha':params['alpha'], 'x0': params['x0'] + r*(1-fr)*fo*np.sin(phi), 'y0': params['y0'] + r*(1-fr)*fo*np.cos(phi)}
+        val =  sample_1model_xy(x, y, 'blurred_disk', params0, psize=psize, pol=pol) 
+        val -= sample_1model_xy(x, y, 'blurred_disk', params1, psize=psize, pol=pol)
     elif model_type == 'ring':
         val = (params['F0']*psize**2/(np.pi*params['d']*psize*LINE_THICKNESS)
                 * (params['d']/2.0 - psize*LINE_THICKNESS/2 < np.sqrt((x - params['x0'])**2 + (y - params['y0'])**2))
@@ -375,7 +420,7 @@ def sample_1model_xy(x, y, model_type, params, psize=1.*RADPERUAS, pol='I'):
         if pol == 'I':
             beta_factor = (1.0 + np.sum([2.*np.real(params['beta_list'][m-1] * np.exp(1j * m * phi)) for m in range(1,len(params['beta_list'])+1)],axis=0))
         elif pol == 'V' and len(params['beta_list_cpol']) > 0:
-            beta_factor = params['beta_list_cpol'][0] + np.sum([2.*np.real(params['beta_list_cpol'][m] * np.exp(1j * m * phi)) for m in range(1,len(params['beta_list_cpol']))],axis=0)
+            beta_factor = np.real(params['beta_list_cpol'][0]) + np.sum([2.*np.real(params['beta_list_cpol'][m] * np.exp(1j * m * phi)) for m in range(1,len(params['beta_list_cpol']))],axis=0)
         elif pol == 'P' and len(params['beta_list_pol']) > 0:
             num_coeff = len(params['beta_list_pol'])
             beta_factor = np.sum([params['beta_list_pol'][m + (num_coeff-1)//2] * np.exp(1j * m * phi) for m in range(-(num_coeff-1)//2,(num_coeff+1)//2)],axis=0)
@@ -393,7 +438,7 @@ def sample_1model_xy(x, y, model_type, params, psize=1.*RADPERUAS, pol='I'):
         if pol == 'I':
             beta_factor = (sps.ive(0, z) + np.sum([2.*np.real(sps.ive(m, z) * params['beta_list'][m-1] * np.exp(1j * m * phi)) for m in range(1,len(params['beta_list'])+1)],axis=0))
         elif pol == 'V' and len(params['beta_list_cpol']) > 0:
-            beta_factor = (sps.ive(0, z) * params['beta_list_cpol'][0] + np.sum([2.*np.real(sps.ive(m, z) * params['beta_list_cpol'][m] * np.exp(1j * m * phi)) for m in range(1,len(params['beta_list_cpol']))],axis=0))
+            beta_factor = (sps.ive(0, z) * np.real(params['beta_list_cpol'][0]) + np.sum([2.*np.real(sps.ive(m, z) * params['beta_list_cpol'][m] * np.exp(1j * m * phi)) for m in range(1,len(params['beta_list_cpol']))],axis=0))
         elif pol == 'P' and len(params['beta_list_pol']) > 0:
             num_coeff = len(params['beta_list_pol'])
             beta_factor = np.sum([params['beta_list_pol'][m + (num_coeff-1)//2] * sps.ive(m, z) * np.exp(1j * m * phi) for m in range(-(num_coeff-1)//2,(num_coeff+1)//2)],axis=0)
@@ -493,6 +538,26 @@ def sample_1model_uv(u, v, model_type, params, pol='I', jonesdict=None):
         val = (params['F0'] * 2.0/z * sps.jv(1, z) 
                * np.exp(1j * 2.0 * np.pi * (u * params['x0'] + v * params['y0']))
                * np.exp(-(np.pi * params['alpha'] * (u**2 + v**2)**0.5)**2/(4. * np.log(2.)))) 
+    elif model_type == 'crescent':
+        phi = params['phi']
+        fr = params['fr']
+        fo = params['fo']
+        ff = params['ff']
+        r = params['d'] / 2.
+        params0 = {'F0': 1.0/(1.0-(1-ff)*fr**2)*params['F0'],   'd':params['d'],    'x0': params['x0'], 'y0': params['y0']}
+        params1 = {'F0': (1-ff)*fr**2/(1.0-(1-ff)*fr**2)*params['F0'], 'd':params['d']*fr, 'x0': params['x0'] + r*(1-fr)*fo*np.sin(phi), 'y0': params['y0'] + r*(1-fr)*fo*np.cos(phi)}
+        val =  sample_1model_uv(u, v, 'disk', params0, pol=pol, jonesdict=jonesdict) 
+        val -= sample_1model_uv(u, v, 'disk', params1, pol=pol, jonesdict=jonesdict)
+    elif model_type == 'blurred_crescent':
+        phi = params['phi']
+        fr = params['fr']
+        fo = params['fo']
+        ff = params['ff']
+        r = params['d'] / 2.
+        params0 = {'F0': 1.0/(1.0-(1-ff)*fr**2)*params['F0'],   'd':params['d'], 'alpha':params['alpha'], 'x0': params['x0'], 'y0': params['y0']}
+        params1 = {'F0': (1-ff)*fr**2/(1.0-(1-ff)*fr**2)*params['F0'], 'd':params['d']*fr, 'alpha':params['alpha'], 'x0': params['x0'] + r*(1-fr)*fo*np.sin(phi), 'y0': params['y0'] + r*(1-fr)*fo*np.cos(phi)}
+        val =  sample_1model_uv(u, v, 'blurred_disk', params0, pol=pol, jonesdict=jonesdict) 
+        val -= sample_1model_uv(u, v, 'blurred_disk', params1, pol=pol, jonesdict=jonesdict) 
     elif model_type == 'ring':
         z = np.pi * params['d'] * (u**2 + v**2)**0.5
         val = (params['F0'] * sps.jv(0, z) 
@@ -513,7 +578,7 @@ def sample_1model_uv(u, v, model_type, params, pol='I', jonesdict=None):
                + np.sum([params['beta_list'][m-1]          * sps.jv( m, z) * np.exp( 1j * m * (phi - np.pi/2.)) for m in range(1,len(params['beta_list'])+1)],axis=0)
                + np.sum([np.conj(params['beta_list'][m-1]) * sps.jv(-m, z) * np.exp(-1j * m * (phi - np.pi/2.)) for m in range(1,len(params['beta_list'])+1)],axis=0))
         elif pol == 'V' and len(params['beta_list_cpol']) > 0:
-            beta_factor = (params['beta_list_cpol'][0] * sps.jv(0, z) 
+            beta_factor = (np.real(params['beta_list_cpol'][0]) * sps.jv(0, z) 
                + np.sum([params['beta_list_cpol'][m]          * sps.jv( m, z) * np.exp( 1j * m * (phi - np.pi/2.)) for m in range(1,len(params['beta_list_cpol']))],axis=0)
                + np.sum([np.conj(params['beta_list_cpol'][m]) * sps.jv(-m, z) * np.exp(-1j * m * (phi - np.pi/2.)) for m in range(1,len(params['beta_list_cpol']))],axis=0))
         elif pol == 'P' and len(params['beta_list_pol']) > 0:
@@ -534,7 +599,7 @@ def sample_1model_uv(u, v, model_type, params, pol='I', jonesdict=None):
                + np.sum([params['beta_list'][m-1]          * sps.jv( m, z) * np.exp( 1j * m * (phi - np.pi/2.)) for m in range(1,len(params['beta_list'])+1)],axis=0)
                + np.sum([np.conj(params['beta_list'][m-1]) * sps.jv(-m, z) * np.exp(-1j * m * (phi - np.pi/2.)) for m in range(1,len(params['beta_list'])+1)],axis=0))
         elif pol == 'V' and len(params['beta_list_cpol']) > 0:
-            beta_factor = (params['beta_list_cpol'][0] * sps.jv(0, z) 
+            beta_factor = (np.real(params['beta_list_cpol'][0]) * sps.jv(0, z) 
                + np.sum([params['beta_list_cpol'][m]          * sps.jv( m, z) * np.exp( 1j * m * (phi - np.pi/2.)) for m in range(1,len(params['beta_list_cpol']))],axis=0)
                + np.sum([np.conj(params['beta_list_cpol'][m]) * sps.jv(-m, z) * np.exp(-1j * m * (phi - np.pi/2.)) for m in range(1,len(params['beta_list_cpol']))],axis=0))
         elif pol == 'P' and len(params['beta_list_pol']) > 0:
@@ -647,6 +712,26 @@ def sample_1model_graduv_uv(u, v, model_type, params, pol='I', jonesdict=None):
                             + params['F0'] * 2./z * np.pi * params['d'] * u/uvdist * bessel_deriv * blur * np.exp(1j * 2.0 * np.pi * (u * params['x0'] + v * params['y0'])),
                          (1j * 2.0 * np.pi * params['y0'] - v/uvdist**2 - params['alpha']**2 * np.pi**2 * v/(2. * np.log(2.))) * vis 
                             + params['F0'] * 2./z * np.pi * params['d'] * v/uvdist * bessel_deriv * blur * np.exp(1j * 2.0 * np.pi * (u * params['x0'] + v * params['y0'])) ])
+    elif model_type == 'crescent':
+        phi = params['phi']
+        fr = params['fr']
+        fo = params['fo']
+        ff = params['ff']
+        r = params['d'] / 2.
+        params0 = {'F0': 1.0/(1.0-(1-ff)*fr**2)*params['F0'],   'd':params['d'],    'x0': params['x0'], 'y0': params['y0']}
+        params1 = {'F0': (1-ff)*fr**2/(1.0-(1-ff)*fr**2)*params['F0'], 'd':params['d']*fr, 'x0': params['x0'] + r*(1-fr)*fo*np.sin(phi), 'y0': params['y0'] + r*(1-fr)*fo*np.cos(phi)}
+        val =  sample_1model_graduv_uv(u, v, 'disk', params0, pol=pol, jonesdict=jonesdict) 
+        val -= sample_1model_graduv_uv(u, v, 'disk', params1, pol=pol, jonesdict=jonesdict)
+    elif model_type == 'blurred_crescent':
+        phi = params['phi']
+        fr = params['fr']
+        fo = params['fo']
+        ff = params['ff']
+        r = params['d'] / 2.
+        params0 = {'F0': 1.0/(1.0-(1-ff)*fr**2)*params['F0'],   'd':params['d'], 'alpha':params['alpha'], 'x0': params['x0'], 'y0': params['y0']}
+        params1 = {'F0': (1-ff)*fr**2/(1.0-(1-ff)*fr**2)*params['F0'], 'd':params['d']*fr, 'alpha':params['alpha'], 'x0': params['x0'] + r*(1-fr)*fo*np.sin(phi), 'y0': params['y0'] + r*(1-fr)*fo*np.cos(phi)}
+        val =  sample_1model_graduv_uv(u, v, 'blurred_disk', params0, pol=pol, jonesdict=jonesdict) 
+        val -= sample_1model_graduv_uv(u, v, 'blurred_disk', params1, pol=pol, jonesdict=jonesdict) 
     elif model_type == 'ring':
         # Take care of the degenerate origin point by a small offset
         u += (u==0.)*(v==0.)*1e-10
@@ -691,7 +776,7 @@ def sample_1model_graduv_uv(u, v, model_type, params, pol='I', jonesdict=None):
                     + np.sum([np.conj(params['beta_list'][m-1]) * 0.5 * (sps.jv(-m-1, z) - sps.jv(-m+1, z)) * np.pi * params['d'] * v/uvdist * np.exp(-1j * m * (phi - np.pi/2.)) for m in range(1,len(params['beta_list'])+1)],axis=0))
 
         elif pol == 'V' and len(params['beta_list_cpol']) > 0:
-            beta_factor_u = (-np.pi * params['d'] * u/uvdist * sps.jv(1, z) * params['beta_list_cpol'][0]
+            beta_factor_u = (-np.pi * params['d'] * u/uvdist * sps.jv(1, z) * np.real(params['beta_list_cpol'][0])
                     + np.sum([params['beta_list_cpol'][m]          * sps.jv( m, z) * ( 1j * m * dphidu) * np.exp( 1j * m * (phi - np.pi/2.)) for m in range(1,len(params['beta_list_cpol']))],axis=0)
                     + np.sum([np.conj(params['beta_list_cpol'][m]) * sps.jv(-m, z) * (-1j * m * dphidu) * np.exp(-1j * m * (phi - np.pi/2.)) for m in range(1,len(params['beta_list_cpol']))],axis=0)
                     + np.sum([params['beta_list_cpol'][m]          * 0.5 * (sps.jv( m-1, z) - sps.jv( m+1, z)) * np.pi * params['d'] * u/uvdist * np.exp( 1j * m * (phi - np.pi/2.)) for m in range(1,len(params['beta_list_cpol']))],axis=0)
@@ -743,7 +828,7 @@ def sample_1model_graduv_uv(u, v, model_type, params, pol='I', jonesdict=None):
                     + np.sum([np.conj(params['beta_list'][m-1]) * 0.5 * (sps.jv(-m-1, z) - sps.jv(-m+1, z)) * np.pi * params['d'] * v/uvdist * np.exp(-1j * m * (phi - np.pi/2.)) for m in range(1,len(params['beta_list'])+1)],axis=0))
 
         elif pol == 'V' and len(params['beta_list_cpol']) > 0:
-            beta_factor_u = (-np.pi * params['d'] * u/uvdist * sps.jv(1, z) * params['beta_list_cpol'][0]
+            beta_factor_u = (-np.pi * params['d'] * u/uvdist * sps.jv(1, z) * np.real(params['beta_list_cpol'][0])
                     + np.sum([params['beta_list_cpol'][m]          * sps.jv( m, z) * ( 1j * m * dphidu) * np.exp( 1j * m * (phi - np.pi/2.)) for m in range(1,len(params['beta_list_cpol']))],axis=0)
                     + np.sum([np.conj(params['beta_list_cpol'][m]) * sps.jv(-m, z) * (-1j * m * dphidu) * np.exp(-1j * m * (phi - np.pi/2.)) for m in range(1,len(params['beta_list_cpol']))],axis=0)
                     + np.sum([params['beta_list_cpol'][m]          * 0.5 * (sps.jv( m-1, z) - sps.jv( m+1, z)) * np.pi * params['d'] * u/uvdist * np.exp( 1j * m * (phi - np.pi/2.)) for m in range(1,len(params['beta_list_cpol']))],axis=0)
@@ -993,7 +1078,87 @@ def sample_1model_grad_uv(u, v, model_type, params, pol='I', fit_pol=False, fit_
                          -params['F0'] * 2.0/z * sps.jv(2, z) * np.pi * (u**2 + v**2)**0.5 * blur * np.exp(1j * 2.0 * np.pi * (u * params['x0'] + v * params['y0'])),
                          -np.pi**2 * (u**2 + v**2) * params['alpha']/(2.*np.log(2.)) * vis,
                           1j * 2.0 * np.pi * u * vis,
-                          1j * 2.0 * np.pi * v * vis])    
+                          1j * 2.0 * np.pi * v * vis])  
+    elif model_type == 'crescent': #['F0','d', 'fr', 'fo', 'phi','x0','y0']
+        phi = params['phi'] 
+        fr = params['fr']
+        fo = params['fo']
+        ff = params['ff']
+        r = params['d'] / 2.
+        params0 = {'F0': 1.0/(1.0-(1-ff)*fr**2)*params['F0'],   'd':params['d'],    'x0': params['x0'], 'y0': params['y0']}
+        params1 = {'F0': (1-ff)*fr**2/(1.0-(1-ff)*fr**2)*params['F0'], 'd':params['d']*fr, 'x0': params['x0'] + r*(1-fr)*fo*np.sin(phi), 'y0': params['y0'] + r*(1-fr)*fo*np.cos(phi)}
+
+        grad0 = sample_1model_grad_uv(u, v, 'disk', params0, pol=pol, fit_pol=fit_pol, fit_cpol=fit_cpol, fit_leakage=fit_leakage, jonesdict=jonesdict)
+        grad1 = sample_1model_grad_uv(u, v, 'disk', params1, pol=pol, fit_pol=fit_pol, fit_cpol=fit_cpol, fit_leakage=fit_leakage, jonesdict=jonesdict)
+
+        # Add the derivatives one by one
+        grad = []
+
+        # F0
+        grad.append( 1.0/(1.0-(1-ff)*fr**2)*grad0[0] - (1-ff)*fr**2/(1.0-(1-ff)*fr**2)*grad1[0] )
+
+        # d
+        grad.append( grad0[1] - fr*grad1[1] - 0.5 * (1.0 - fr) * fo * (np.sin(phi) * grad1[2] + np.cos(phi) * grad1[3])  )
+
+        # fr
+        grad.append( 2.0*params['F0']*(1-ff)*fr/(1.0 - (1-ff)*fr**2)**2 * (grad0[0] - grad1[0]) - params['d']*grad1[1] + r * fo * (np.sin(phi) * grad1[2] + np.cos(phi) * grad1[3]) ) 
+
+        # fo
+        grad.append( -r * (1-fr) * (np.sin(phi) * grad1[2] + np.cos(phi) * grad1[3]) ) 
+
+        # ff
+        grad.append( -params['F0']*fr**2/(1.0 - (1-ff)*fr**2)**2 * (grad0[0] - grad1[0]) ) 
+
+        # phi
+        grad.append( -r*(1-fr)*fo* (np.cos(phi) * grad1[2] - np.sin(phi) * grad1[3]) ) 
+
+        # x0, y0
+        grad.append( grad0[2] - grad1[2] ) 
+        grad.append( grad0[3] - grad1[3] ) 
+
+        val = np.array(grad)
+    elif model_type == 'blurred_crescent': #['F0','d','alpha','fr', 'fo', 'phi','x0','y0']
+        phi = params['phi']
+        fr = params['fr']
+        fo = params['fo']
+        ff = params['ff']
+        r = params['d'] / 2.
+        params0 = {'F0': 1.0/(1.0-(1-ff)*fr**2)*params['F0'],   'd':params['d'], 'alpha':params['alpha'], 'x0': params['x0'], 'y0': params['y0']}
+        params1 = {'F0': (1-ff)*fr**2/(1.0-(1-ff)*fr**2)*params['F0'], 'd':params['d']*fr, 'alpha':params['alpha'], 'x0': params['x0'] + r*(1-fr)*fo*np.sin(phi), 'y0': params['y0'] + r*(1-fr)*fo*np.cos(phi)}
+
+        grad0 = sample_1model_grad_uv(u, v, 'blurred_disk', params0, pol=pol, fit_pol=fit_pol, fit_cpol=fit_cpol, fit_leakage=fit_leakage, jonesdict=jonesdict)
+        grad1 = sample_1model_grad_uv(u, v, 'blurred_disk', params1, pol=pol, fit_pol=fit_pol, fit_cpol=fit_cpol, fit_leakage=fit_leakage, jonesdict=jonesdict)
+
+        # Add the derivatives one by one
+        grad = []
+
+        # F0
+        grad.append( 1.0/(1.0-(1-ff)*fr**2)*grad0[0] - (1-ff)*fr**2/(1.0-(1-ff)*fr**2)*grad1[0] )
+
+        # d
+        grad.append( grad0[1] - fr*grad1[1] - 0.5 * (1.0 - fr) * fo * (np.sin(phi) * grad1[3] + np.cos(phi) * grad1[4])  )
+
+        # alpha
+        grad.append( grad0[2] - grad1[2] ) 
+
+        # fr
+        grad.append( 2.0*params['F0']*(1-ff)*fr/(1.0 - (1-ff)*fr**2)**2 * (grad0[0] - grad1[0]) - params['d']*grad1[1] + r * fo * (np.sin(phi) * grad1[3] + np.cos(phi) * grad1[4]) ) 
+
+        # fo
+        grad.append( -r * (1-fr) * (np.sin(phi) * grad1[3] + np.cos(phi) * grad1[4]) ) 
+
+        # ff
+        grad.append( -params['F0']*fr**2/(1.0 - (1-ff)*fr**2)**2 * (grad0[0] - grad1[0]) ) 
+
+        # phi
+        grad.append( -r*(1-fr)*fo* (np.cos(phi) * grad1[3] - np.sin(phi) * grad1[4]) ) 
+
+        # x0, y0
+        grad.append( grad0[3] - grad1[3] ) 
+        grad.append( grad0[4] - grad1[4] ) 
+
+        val = np.array(grad)
+
     elif model_type == 'ring': # F0, d, x0, y0
         z = np.pi * params['d'] * (u**2 + v**2)**0.5
         val = np.array([ sps.jv(0, z) * np.exp(1j * 2.0 * np.pi * (u * params['x0'] + v * params['y0'])), 
@@ -1033,7 +1198,7 @@ def sample_1model_grad_uv(u, v, model_type, params, pol='I', fit_pol=False, fit_
             num_coeff = len(params['beta_list_pol'])
             beta_factor = np.sum([params['beta_list_pol'][m + (num_coeff-1)//2] * 0.5 * (sps.jv( m-1, z)  - sps.jv(  m+1, z)) * np.pi * uvdist * np.exp( 1j * m * (phi - np.pi/2.)) for m in range(-(num_coeff-1)//2,(num_coeff+1)//2)],axis=0)
         elif pol == 'V' and len(params['beta_list_cpol']) > 0:
-            beta_factor = (-np.pi * uvdist * sps.jv(1, z) * params['beta_list_cpol'][0] 
+            beta_factor = (-np.pi * uvdist * sps.jv(1, z) * np.real(params['beta_list_cpol'][0]) 
                + np.sum([params['beta_list_cpol'][m]          * 0.5 * (sps.jv( m-1, z)  - sps.jv(  m+1, z)) * np.pi * uvdist * np.exp( 1j * m * (phi - np.pi/2.)) for m in range(1,len(params['beta_list_cpol']))],axis=0)
                + np.sum([np.conj(params['beta_list_cpol'][m]) * 0.5 * (sps.jv( -m-1, z) - sps.jv( -m+1, z)) * np.pi * uvdist * np.exp(-1j * m * (phi - np.pi/2.)) for m in range(1,len(params['beta_list_cpol']))],axis=0))
         else:
@@ -1245,6 +1410,9 @@ def blur_circ_1model(model_type, params, fwhm):
     elif 'thick' in model_type or 'blurred' in model_type:
         params_blur['alpha'] = (params_blur['alpha']**2 + fwhm**2)**0.5
     elif model_type == 'disk':
+        model_type_blur = 'blurred_' + model_type
+        params_blur['alpha'] = fwhm
+    elif model_type == 'crescent':
         model_type_blur = 'blurred_' + model_type
         params_blur['alpha'] = fwhm
     elif model_type == 'ring' or model_type == 'mring':
@@ -1468,6 +1636,50 @@ class Model(object):
         out = self.copy()
         out.models.append('blurred_disk')
         out.params.append({'F0':F0,'d':d,'alpha':alpha,'x0':x0,'y0':y0,'pol_frac':pol_frac,'pol_evpa':pol_evpa,'cpol_frac':cpol_frac})
+        return out
+
+    def add_crescent(self, F0 = 1.0, d = 50.*RADPERUAS, fr = 0.0, fo = 0.0, ff = 0.0, phi = 0.0, x0 = 0.0, y0 = 0.0, pol_frac = 0.0, pol_evpa = 0.0, cpol_frac = 0.0):
+        """Add a crescent model.
+
+           Args:
+               F0 (float): The total flux of the disk (Jy)
+               d (float): The diameter (radians)
+               fr (float): Fractional radius of the inner subtracted disk with respect to the radius of the outer disk
+               fo (float): Fractional offset of the inner disk from the center of the outer disk
+               ff (float): Fractional brightness of the inner disk
+               phi (float): angle of offset of the inner disk
+               x0 (float): The x-coordinate (radians)
+               y0 (float): The y-coordinate (radians)
+
+           Returns:
+                (Model): Updated Model
+        """
+        out = self.copy()
+        out.models.append('crescent')
+        out.params.append({'F0':F0,'d':d,'fr':fr, 'fo':fo, 'ff':ff, 'phi':phi, 'x0':x0, 'y0':y0, 'pol_frac':pol_frac, 'pol_evpa':pol_evpa, 'cpol_frac':cpol_frac})
+        return out
+
+    def add_blurred_crescent(self, F0 = 1.0, d = 50.*RADPERUAS, alpha = 10.*RADPERUAS, fr = 0.0, fo = 0.0, ff = 0.0, phi = 0.0, x0 = 0.0, y0 = 0.0, pol_frac = 0.0, pol_evpa = 0.0, cpol_frac = 0.0):
+
+        """Add a circular disk model that is blurred with a circular Gaussian kernel.
+
+           Args:
+               F0 (float): The total flux of the disk (Jy)
+               d (float): The diameter (radians)
+               alpha (float) :The blurring (FWHM of Gaussian convolution) (radians)
+               fr (float): Fractional radius of the inner subtracted disk with respect to the radius of the outer disk
+               fo (float): Fractional offset of the inner disk from the center of the outer disk
+               ff (float): Fractional brightness of the inner disk
+               phi (float): angle of offset of the inner disk
+               x0 (float): The x-coordinate (radians)
+               y0 (float): The y-coordinate (radians)
+
+           Returns:
+                (Model): Updated Model
+        """
+        out = self.copy()
+        out.models.append('blurred_crescent')
+        out.params.append({'F0':F0,'d':d,'alpha':alpha, 'fr':fr, 'fo':fo, 'ff':ff, 'phi':phi, 'x0':x0, 'y0':y0, 'pol_frac':pol_frac, 'pol_evpa':pol_evpa, 'cpol_frac':cpol_frac})
         return out
 
     def add_ring(self, F0 = 1.0, d = 50.*RADPERUAS, x0 = 0.0, y0 = 0.0, pol_frac = 0.0, pol_evpa = 0.0, cpol_frac = 0.0):
@@ -1918,7 +2130,9 @@ class Model(object):
                            jones=False, inv_jones=False,
                            tau=TAUDEF, taup=GAINPDEF,
                            gain_offset=GAINPDEF, gainp=GAINPDEF,
-                           dterm_offset=DTERMPDEF, caltable_path=None, seed=False, **kwargs):
+                           dterm_offset=DTERMPDEF,                            
+                           rlratio_std=0.,rlphase_std=0.,
+                           caltable_path=None, seed=False, **kwargs):
 
         """Observe the image on the same baselines as an existing observation object and add noise.
 
@@ -1946,10 +2160,18 @@ class Model(object):
                             or a dict giving one opacity per site
                taup (float): the fractional std. dev. of the random error on the opacities
                gainp (float): the fractional std. dev. of the random error on the gains
-               gain_offset (float): the base gain offset at all sites, 
-                                    or a dict giving one offset per site
-               dterm_offset (float): the base dterm offset at all sites, 
-                                     or a dict giving one dterm offset per site
+                              or a dict giving one std. dev. per site      
+
+               gain_offset (float): the base gain offset at all sites,
+                                    or a dict giving one gain offset per site
+               dterm_offset (float): the base std. dev. of random additive error at all sites,
+                                    or a dict giving one std. dev. per site
+
+               rlratio_std (float): the fractional std. dev. of the R/L gain offset
+                                    or a dict giving one std. dev. per site                                          
+               rlphase_std (float): std. dev. of R/L phase offset, 
+                                    or a dict giving one std. dev. per site
+                                    a negative value samples from uniform                                          
 
                caltable_path (string): The path and prefix of a saved caltable
 
@@ -1975,6 +2197,7 @@ class Model(object):
                                                  neggains=neggains,
                                                  gainp=gainp, taup=taup, gain_offset=gain_offset,
                                                  dterm_offset=dterm_offset,
+                                                 rlratio_std=rlratio_std,rlphase_std=rlphase_std,
                                                  caltable_path=caltable_path, seed=seed)
 
             obs =  ehtim.obsdata.Obsdata(obs.ra, obs.dec, obs.rf, obs.bw, obsdata, obs.tarr,
@@ -2028,7 +2251,8 @@ class Model(object):
                       jones=False, inv_jones=False,
                       tau=TAUDEF, taup=GAINPDEF,
                       gainp=GAINPDEF, gain_offset=GAINPDEF,
-                      dterm_offset=DTERMPDEF, seed=False, **kwargs):
+                      dterm_offset=DTERMPDEF, rlratio_std=0.,rlphase_std=0.,
+                      seed=False, **kwargs):
 
         """Generate baselines from an array object and observe the image.
 
@@ -2066,12 +2290,19 @@ class Model(object):
                tau (float): the base opacity at all sites, 
                             or a dict giving one opacity per site
                taup (float): the fractional std. dev. of the random error on the opacities
-               gain_offset (float): the base gain offset at all sites, 
-                                    or a dict giving one gain offset per site
                gainp (float): the fractional std. dev. of the random error on the gains
+                              or a dict giving one std. dev. per site      
 
-               dterm_offset (float): the base dterm offset at all sites, 
-                                     or a dict giving one dterm offset per site
+               gain_offset (float): the base gain offset at all sites,
+                                    or a dict giving one gain offset per site
+               dterm_offset (float): the base std. dev. of random additive error at all sites,
+                                    or a dict giving one std. dev. per site
+
+               rlratio_std (float): the fractional std. dev. of the R/L gain offset
+                                    or a dict giving one std. dev. per site                                          
+               rlphase_std (float): std. dev. of R/L phase offset, 
+                                    or a dict giving one std. dev. per site
+                                    a negative value samples from uniform                                          
 
                seed (int): seeds the random component of noise added. DO NOT set to 0!
 
@@ -2101,6 +2332,7 @@ class Model(object):
                                      gainp=gainp,gain_offset=gain_offset,
                                      tau=tau, taup=taup,
                                      dterm_offset=dterm_offset,
+                                     rlratio_std=rlratio_std,rlphase_std=rlphase_std,
                                      jones=jones, inv_jones=inv_jones, seed=seed, **kwargs)
 
         obs.mjd = mjd
