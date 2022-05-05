@@ -31,7 +31,7 @@ Installing with pip will update most of the required libraries automatically (`n
 
 Alternatively, first install NFFT manually following the instructions on the `readme <https://github.com/NFFT/nfft>`_, making sure to use the ``--enable-openmp`` flag in compilation. Then install `pynfft <https://github.com/ghisvail/pyNFFT/>`_, with pip, following the readme instructions to link the installation to where you installed NFFT. Finally, reinstall ehtim.
 
-**Certain eht-imaging functions require other external packages that are not automatically installed.** In addition to pynfft, these include  `networkx <https://networkx.github.io/>`_ (for image comparison functions), `requests <http://docs.python-requests.org/en/master/>`_ (for dynamical imaging), and `scikit-image <https://scikit-image.org/>`_ (for Hough transforms). However, the vast majority of the code will work without these dependencies.
+**Certain eht-imaging functions require other external packages that are not automatically installed.** In addition to pynfft, these include  `networkx <https://networkx.github.io/>`_ (for image comparison functions), `requests <http://docs.python-requests.org/en/master/>`_ (for dynamical imaging), and `scikit-image <https://scikit-image.org/>`_ (for a few image analysis functions). However, the vast majority of the code will work without these dependencies.
 
 Documentation
 -------------
@@ -43,7 +43,7 @@ A full tutorial is in progress, but here are some ways to learn to use the code:
 
 - `Slides <https://www.dropbox.com/s/7533ucj8bt54yh7/Bouman_Chael.pdf?dl=0>`_ from the EHT2016 data generation and imaging workshop contain a tutorial on generating data with the VLBI imaging `website <http://vlbiimaging.csail.mit.edu>`_, loading into the library, and producing an image.
 
-Some publications that use ehtim
+Selected publications that use ehtim
 --------------------------------
 If you use ehtim in your publication, please cite `Chael+ 2018 <http://adsabs.harvard.edu/abs/2018ApJ...857...23C>`_
 
@@ -110,6 +110,10 @@ Let us know if you use ehtim in your publication and we'll list it here!
 - First M87 Event Horizon Telescope Results. VII. Polarization of the Ring, `EHTC et al. 2021 <https://iopscience.iop.org/article/10.3847/2041-8213/abe71d/pdf>`_
 
 - Event Horizon Telescope observations of the jet launching and collimation in Centaurus A, `Janssen et al. 2021 <https://www.nature.com/articles/s41550-021-01417-w.pdf>`_
+
+- RadioAstron discovers a mini-cocoon around the restarted parsec-scale jet in 3C 84 `Savolainen et al. 2021 <https://arxiv.org/pdf/2111.04481.pdf>`_
+
+- Unravelling the Innermost Jet Structure of OJ 287 with the First GMVA+ALMA Observations, `Zhao et al. 2022 <https://arxiv.org/pdf/2205.00554.pdf>`_
 
 Documentation
 ----------------
