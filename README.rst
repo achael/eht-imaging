@@ -125,7 +125,8 @@ Let us know if you use ehtim in your publication and we'll list it here!
 Documentation
 ----------------
 
-The oifits_new.py file used for reading/writing .oifits files is a slightly modified version of Paul Boley's package `oifits <http://astro.ins.urfu.ru/pages/~pboley/oifits/>`_ The oifits read/write functionality in ehtim is still being developed and may not work with all versions of python or astropy.
+The oifits_new.py file used for reading/writing .oifits files is a slightly modified version of Paul Boley's package `oifits <http://astro.ins.urfu.ru/pages/~pboley/oifits/>`_.  
+The oifits read/write functionality in ehtim is still being developed and may not work with all versions of python or astropy.
 
 The documentation is styled after `dfm's projects <https://github.com/dfm>`_ 
 
