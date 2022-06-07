@@ -1102,7 +1102,7 @@ class Obsdata(object):
         (timesout, uout, vout) = obsh.compute_uv_coordinates(arr, site1, site2, times,
                                                              self.mjd, self.ra, self.dec, self.rf,
                                                              timetype=self.timetype,
-                                                             elevmin=0, elevmax=90)
+                                                             elevmin=0, elevmax=90, no_elevcut_space=False)
 
         if len(timesout) != len(times):
             raise Exception(

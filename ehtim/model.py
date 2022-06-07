@@ -2244,6 +2244,7 @@ class Model(object):
     def observe(self, array, tint, tadv, tstart, tstop, bw,
                       mjd=None, timetype='UTC', polrep_obs=None,
                       elevmin=ELEV_LOW, elevmax=ELEV_HIGH,
+                      no_elevcut_space=False,                      
                       fix_theta_GMST=False, add_th_noise=True,
                       opacitycal=True, ampcal=True, phasecal=True, 
                       dcal=True, frcal=True, rlgaincal=True,
@@ -2268,7 +2269,8 @@ class Model(object):
                timetype (str): how to interpret tstart and tstop; either 'GMST' or 'UTC'
                elevmin (float): station minimum elevation in degrees
                elevmax (float): station maximum elevation in degrees
-
+               no_elevcut_space (bool): if True, do not apply elevation cut to orbiters
+           
                polrep_obs (str): 'stokes' or 'circ' sets the data polarimetric representation
 
                fix_theta_GMST (bool): if True, stops earth rotation to sample fixed u,v 
@@ -2320,7 +2322,8 @@ class Model(object):
 
         obs = array.obsdata(self.ra, self.dec, self.rf, bw, tint, tadv, tstart, tstop, mjd=mjd, 
                             polrep=polrep_obs, tau=tau, timetype=timetype, 
-                            elevmin=elevmin, elevmax=elevmax, fix_theta_GMST=fix_theta_GMST)
+                            elevmin=elevmin, elevmax=elevmax, 
+                            no_elevcut_space=no_elevcut_space, fix_theta_GMST=fix_theta_GMST)
 
         # Observe on the same baselines as the empty observation and add noise
         obs = self.observe_same(obs, add_th_noise=add_th_noise, 

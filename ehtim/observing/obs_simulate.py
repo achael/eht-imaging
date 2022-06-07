@@ -45,6 +45,7 @@ def make_uvpoints(array, ra, dec, rf, bw, tint, tadv, tstart, tstop,
                   polrep='stokes',
                   mjd=ehc.MJD_DEFAULT, tau=ehc.TAUDEF,
                   elevmin=ehc.ELEV_LOW, elevmax=ehc.ELEV_HIGH,
+                  no_elevcut_space=False,
                   timetype='UTC', fix_theta_GMST=False):
     """Generate u,v points and baseline sigmas for a given array.
 
@@ -60,10 +61,11 @@ def make_uvpoints(array, ra, dec, rf, bw, tint, tadv, tstart, tstop,
            tstop (float): the end time of the observation in hours
            polrep (str): 'stokes' or 'circ' sets the data polarimetric representtion
            mjd (int): the mjd of the observation, if different from the image mjd
-           timetype (str): how to interpret tstart and tstop; either 'GMST' or 'UTC'
+           tau (float): the base opacity at all sites, or a dict giving one opacity per site
            elevmin (float): station minimum elevation in degrees
            elevmax (float): station maximum elevation in degrees
-           tau (float): the base opacity at all sites, or a dict giving one opacity per site
+           no_elevcut_space (bool): if True, do not apply elevation cut to orbiters
+           timetype (str): how to interpret tstart and tstop; either 'GMST' or 'UTC'
            fix_theta_GMST (bool): if True, stops earth rotation to sample fixed u,v points
        Returns:
            (Obsdata): an observation object with all visibilities zeroed
@@ -143,6 +145,7 @@ def make_uvpoints(array, ra, dec, rf, bw, tint, tadv, tstart, tstop,
                 uvdat = obsh.compute_uv_coordinates(array, site1, site2, times, mjd,
                                                     ra, dec, rf, timetype=timetype,
                                                     elevmin=elevmin, elevmax=elevmax,
+                                                    no_elevcut_space=no_elevcut_space,
                                                     fix_theta_GMST=fix_theta_GMST)
 
                 (timesout, uout, vout) = uvdat
