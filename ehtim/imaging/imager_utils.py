@@ -572,6 +572,11 @@ def regularizer(imvec, nprior, mask, flux, xdim, ydim, psize, stype, **kwargs):
             imvec = embed(imvec, mask, randomfloor=True)
         s = -stv(imvec, xdim, ydim, psize, flux, norm_reg=norm_reg,
                  beam_size=beam_size, epsilon=epsilon)
+    elif stype == "tvlog": # TODO ANDREW
+        if np.any(np.invert(mask)):
+            imvec = embed(imvec, mask, clipfloor=epsilon, randomfloor=True)
+        s = -stv(np.log(imvec), xdim, ydim, psize, flux, norm_reg=norm_reg,
+                 beam_size=beam_size, epsilon=epsilon)
     elif stype == "tv2":
         if np.any(np.invert(mask)):
             imvec = embed(imvec, mask, randomfloor=True)
@@ -630,6 +635,13 @@ def regularizergrad(imvec, nprior, mask, flux, xdim, ydim, psize, stype, **kwarg
         s = -stvgrad(imvec, xdim, ydim, psize, flux, norm_reg=norm_reg,
                      beam_size=beam_size, epsilon=epsilon)
         s = s[mask]
+    elif stype == "tvlog":
+        if np.any(np.invert(mask)):
+            imvec = embed(imvec, mask, clipfloor=epsilon, randomfloor=True)
+        s = -stvgrad(np.log(imvec), xdim, ydim, psize, flux, norm_reg=norm_reg,
+                     beam_size=beam_size, epsilon=epsilon)
+        s = s / imvec
+        s = s[mask]        
     elif stype == "tv2":
         if np.any(np.invert(mask)):
             imvec = embed(imvec, mask, randomfloor=True)
@@ -4313,7 +4325,6 @@ def chisqdata_logcamp_diag_nfft(Obsdata, Prior, pol='I', **kwargs):
 def plot_i(im, Prior, nit, chi2_dict, **kwargs):
     """Plot the total intensity image at each iteration
     """
-
     cmap = kwargs.get('cmap', 'afmhot')
     interpolation = kwargs.get('interpolation', 'gaussian')
     pol = kwargs.get('pol', '')
@@ -4361,11 +4372,11 @@ def embed(im, mask, clipfloor=0., randomfloor=False):
     # Here's a much faster version than before
     out[mask.nonzero()] = im
 
-    if clipfloor != 0.0:
-        if randomfloor:  # prevent total variation gradient singularities
-            out[(mask-1).nonzero()] = clipfloor * \
-                np.abs(np.random.normal(size=len((mask-1).nonzero())))
-        else:
-            out[(mask-1).nonzero()] = clipfloor
+    #if clipfloor != 0.0:
+    if randomfloor:  # prevent total variation gradient singularities
+        out[(mask-1).nonzero()] = clipfloor * \
+            np.abs(np.random.normal(size=len((mask-1).nonzero()[0])))
+    else:
+        out[(mask-1).nonzero()] = clipfloor
 
     return out

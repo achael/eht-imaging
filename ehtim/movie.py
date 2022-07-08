@@ -1230,6 +1230,7 @@ class Movie(object):
     def observe(self, array, tint, tadv, tstart, tstop, bw, repeat=False,
                 mjd=None, timetype='UTC', polrep_obs=None,
                 elevmin=ehc.ELEV_LOW, elevmax=ehc.ELEV_HIGH,
+                no_elevcut_space=False,
                 ttype='nfft', fft_pad_factor=2, fix_theta_GMST=False,
                 sgrscat=False, add_th_noise=True,
                 jones=False, inv_jones=False,
@@ -1258,7 +1259,8 @@ class Movie(object):
                polrep_obs (str): 'stokes' or 'circ' sets the data polarimetric representation
                elevmin (float): station minimum elevation in degrees
                elevmax (float): station maximum elevation in degrees
-
+               no_elevcut_space (bool): if True, do not apply elevation cut to orbiters
+           
                ttype (str): "fast", "nfft" or "dtft"
                fft_pad_factor (float): zero pad the image to fft_pad_factor * image size in the FFT
                fix_theta_GMST (bool): if True, stops earth rotation to sample fixed u,v
@@ -1320,6 +1322,7 @@ class Movie(object):
                             mjd=mjd, polrep=polrep_obs,
                             tau=tau, timetype=timetype,
                             elevmin=elevmin, elevmax=elevmax,
+                            no_elevcut_space=no_elevcut_space,
                             fix_theta_GMST=fix_theta_GMST)
 
         # Observe on the same baselines as the empty observation and add noise

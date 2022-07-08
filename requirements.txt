@@ -8,8 +8,12 @@ matplotlib
 networkx
 numpy
 pandas
-pyfits
-pynfft
 requests
 scipy
 scikit-image
+
+# pyfits is now included in astropy.
+#pyfits
+
+# pynfft requires external dependency; install with Conda.
+#pynfft

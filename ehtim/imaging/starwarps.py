@@ -1,5 +1,5 @@
 # See example_starwarps.py for an example of how to use these methods
-# Contact Katie Bouman (klbouman@mit.edu) for any questions 
+# Contact Katie Bouman (klbouman@caltech.edu) for any questions
 #
 # The methods/techniques used in this, referred to as StarWars, are described in 
 # "Reconstructing Video from Interferometric Measurements of Time-Varying Sources" 
@@ -59,10 +59,45 @@ def solve_singleImage(mu, Lambda_orig, obs, measurement={'vis':1}, numLinIters=5
 ##################################################################################################
 
 def forwardUpdates_apxImgs(mu, Lambda_orig, obs_List, A_orig, Q_orig, init_images, measurement={'vis':1}, lightcurve=None, numLinIters=5, interiorPriors=False, mask=[], normalize=False):
+    '''
+    Gaussian image prior:
+    :param mu: (list - len(mu)=num_time_steps or 1): every element is an image object which contains the mean image 
+        at given timestep. If list length is one mean image is duplicated for all time steps
+    :param Lambda_orig: (list - len(Lambda_orig)=num_time_steps or 1): original unmasked covariance matrix.
+        Every element is a 2D numpy array which contains the covariance at a given timestep. 
+        If list length is one, the cov image is duplicated for all time steps.
+        
+    Observations: 
+    :param obs_List: list of observations, for each time step
     
+    Dynamical Evolution Model
+    :param A_orig: original unmasked A matrix - time-invariant mean of warp field for dynamical evolution
+    :param Q_orig: original unmasked Q matrix - time-invariant covariance matrix of dynamical evolution model,
+        describing the amount of allowed intensity deviation
+    
+    Other Parameters:
+    :param init_images: option to provide initialization for the forward updates.
+        If none provided, then use the initialization from StarWarps paper
+    :param measurement: data products used
+    :param lightcurve: light curve time seres, needed if imposing a flux constraint
+    :param numLinIters: number of linearized iterations. We have non-linear measurement function f_{t}(x_{t}), 
+        and we linearize the solution around \tilde{x_{t}} by taking the first order Taylor series expansion of f.
+        To improve the solution of the forward and backward terms, each step in the forward pass can be 
+        iteratively re-solved and \tilde{x}_{t} can be updated at each iteration. 
+        The values of \tilde{x}_{t} are fixed for the backward pass. 
+        Note that if f is linear, only a single iteration will be enough to converge to the optimal solution. 
+        Thus, if the only measurement is visibility, numLinIters = 1 should be set.
+    :param interiorPriors: flag for whether to use interior priors
+    :param mask: to select parts of the image to utilize. default is True for all pixels. 
+        This is because getMeasurementTerms doesn't work with a mask yet.
+    :param normalize: flag for whether to normalize sigma in getMeasurementTerms
+    '''
+    
+    # linear case: measurement function is linear and problem is convex
     if list(measurement.keys())==1 and measurement.keys()[0]=='vis':
         numLinIters = 1
     
+    # apply mask
     if len(mask):
         A = A_orig[mask[:,None] & mask[None,:]].reshape([np.sum(mask), -1])
         Q = Q_orig[mask[:,None] & mask[None,:]].reshape([np.sum(mask), -1])
@@ -84,14 +119,17 @@ def forwardUpdates_apxImgs(mu, Lambda_orig, obs_List, A_orig, Q_orig, init_image
     # intitilize the prediction and update mean and covariances
     z_List_t_t = [] # Mean of the hidden (state) image at t given data up to time t
     P_List_t_t = [] # Covariance of the hidden (state) image at t given data up to time t
-    # update list
+    
+    # initialize z and P lists with to be all zeros
     for t in range(0,len(obs_List)):
         z_List_t_t.append(zero_im.copy())
         P_List_t_t.append(np.zeros(Lambda[0].shape))
+        
     # prediction 1 list: prediction at time t given all information up to t-1
     z_List_t_tm1 = copy.deepcopy(z_List_t_t)
     P_List_t_tm1 = copy.deepcopy(P_List_t_t)
-    # prediction 2 list: prediction at time t given all information up to t-1 (possibly intermediate state variable)
+    
+    # prediction 2 list: deep copy of prediction 1 list (possibly intermediate state variable)
     z_star_List_t_tm1 = copy.deepcopy(z_List_t_t)
     P_star_List_t_tm1 = copy.deepcopy(P_List_t_t)
     # initialize linearization z's
@@ -100,30 +138,35 @@ def forwardUpdates_apxImgs(mu, Lambda_orig, obs_List, A_orig, Q_orig, init_image
     loglikelihood_prior = 0.0
     loglikelihood_data = 0.0
     
-    
+    # for each forward timestep... 
     for t in range(0,len(obs_List)):
         sys.stdout.write('\rForward timestep %i of %i total timesteps...' % (t,len(obs_List)))
         sys.stdout.flush()
-        #print('forward timestep: ' + str(t))
-    	# Duplicate mean and covariance if needed
+        
+        print('forward timestep: ' + str(t))
+        
+        # Duplicate mean and covariance if needed
         if len(mu) == 1:
             mu_t = mu[0]
             Lambda_t = Lambda[0]
+        # get current image's mean and covariance
         else:
             mu_t = mu[t]
             Lambda_t = Lambda[t]
-        if lightcurve is not None:
+        
+        # use lightcurve data if provided
+        if lightcurve:
             tot = np.sum(mu_t.imvec)
             mu_t.imvec = lightcurve[t]/tot * mu_t.imvec
             Lambda_t = (lightcurve[t]/tot)**2 * Lambda_t
 
-        
-        
+            
         # predict
-	# Initialization of hidden state mean and covariance
+        # Initialization of hidden state mean and covariance for t = 0
         if t==0:
             z_star_List_t_tm1[t].imvec = copy.deepcopy(mu_t.imvec)
             P_star_List_t_tm1[t] = copy.deepcopy(Lambda_t)
+        # StarWarps initialization of hidden state mean and covariance
         else:
             z_List_t_tm1[t].imvec[mask] = np.dot( A, z_List_t_t[t-1].imvec[mask] ) 
             if PROPERROR:
@@ -132,6 +175,7 @@ def forwardUpdates_apxImgs(mu, Lambda_orig, obs_List, A_orig, Q_orig, init_image
                 print('no prop error')
                 P_List_t_tm1[t] = Q 
             
+            # main predict step, using Lemma 1 from StarWarps supplementary doc (also see eq 29-30), using interior priors
             if interiorPriors:
                 z_star_List_t_tm1[t].imvec[mask], P_star_List_t_tm1[t] = prodGaussiansLem1( mu_t.imvec[mask], Lambda_t, z_List_t_tm1[t].imvec[mask], P_List_t_tm1[t] )
             else:
@@ -139,12 +183,8 @@ def forwardUpdates_apxImgs(mu, Lambda_orig, obs_List, A_orig, Q_orig, init_image
                 P_star_List_t_tm1[t] = copy.deepcopy(P_List_t_tm1[t])
         
         
-        #z_star_List_t_tm1[t].display(cbar_unit = ('m-Jy', '$\mu$-arcseconds$^2$'), export_pdf='/Users/klbouman/Downloads/forward_mean_' + str(t) + '.png' , has_title = False, label_type = 'none', has_cbar=False) #cbar_lims = (0,0.4),
-        #tmp = z_star_List_t_tm1[t].copy()
-        #tmp.imvec = np.diag(P_star_List_t_tm1[t])
-        #tmp.display(cbar_unit = ('m-Jy', '$\mu$-arcseconds$^2$'), export_pdf='/Users/klbouman/Downloads/forward_stdev_' + str(t) + '.png' , has_title = False, label_type = 'none', has_cbar = False) # cbar_lims = (0,0.0025),
-        
-	# update according to user provided  initialization or take z_star_List_t_tm1 as an initialization
+        # update
+        # either go with user-provided initialization (if given) or take z_star_List_t_tm1 as an initialization
         if init_images is None:
             init_images_t = z_star_List_t_tm1[t].copy()
         elif len(init_images) == 1:
@@ -153,12 +193,15 @@ def forwardUpdates_apxImgs(mu, Lambda_orig, obs_List, A_orig, Q_orig, init_image
             init_images_t = init_images[t]
         z_List_lin[t] = init_images_t.copy()
         
+        # Do the linearized iterations
         for k in range(0,numLinIters):
-	    # F is the derivative of the Forward model with respect to the unknown parameters
+            # F is the derivative of the Forward model with respect to the unknown parameters
             if lightcurve:
                 meas, idealmeas, F, measCov, valid = getMeasurementTerms(obs_List[t], z_List_lin[t], measurement=measurement, tot_flux=lightcurve[t], mask=mask, normalize=normalize)
             else:
                 meas, idealmeas, F, measCov, valid = getMeasurementTerms(obs_List[t], z_List_lin[t], measurement=measurement, tot_flux=None, mask=mask, normalize=normalize)
+            
+            # main update step, using Lemma 2 from StarWarps supplementary doc (also see eq 30-31)
             if valid:
                 z_List_t_t[t].imvec[mask], P_List_t_t[t] = prodGaussiansLem2(F, measCov, meas, z_star_List_t_tm1[t].imvec[mask], P_star_List_t_tm1[t])
                 
@@ -168,11 +211,16 @@ def forwardUpdates_apxImgs(mu, Lambda_orig, obs_List, A_orig, Q_orig, init_image
                 z_List_t_t[t] = z_star_List_t_tm1[t].copy()
                 P_List_t_t[t] = copy.deepcopy(P_star_List_t_tm1[t])
         
+        # update the prior log likelihood, using interior priors
         if t>0 and interiorPriors:
             loglikelihood_prior = loglikelihood_prior + evaluateGaussianDist_log( z_List_t_tm1[t].imvec[mask], mu_t.imvec[mask], Lambda_t + P_List_t_tm1[t] )
+            
+        # update the data log likelihood
         if valid:
             loglikelihood_data = loglikelihood_data + evaluateGaussianDist_log( np.dot(F , z_star_List_t_tm1[t].imvec[mask]), meas, measCov + np.dot( F, np.dot(P_star_List_t_tm1[t], F.T)) )
-                
+            
+            
+    # compute the log likelihood (equation 27 in StarWarps paper)    
     loglikelihood = loglikelihood_prior + loglikelihood_data
     return ((loglikelihood_data, loglikelihood_prior, loglikelihood), z_List_t_tm1, P_List_t_tm1, z_List_t_t, P_List_t_t, z_List_lin)
 
@@ -180,7 +228,31 @@ def forwardUpdates_apxImgs(mu, Lambda_orig, obs_List, A_orig, Q_orig, init_image
 ###################################### EXTENDED MESSAGE PASSING ########################################
 
 def backwardUpdates(mu, Lambda_orig, obs_List, A_orig, Q_orig, measurement={'vis':1}, lightcurve=None, apxImgs=False, mask=[], normalize=False):
+    '''
+    Gaussian image prior:
+    :param mu: (list - len(mu)=num_time_steps or 1): every element is an image object which contains the mean image 
+        at given timestep. If list length is one mean image is duplicated for all time steps
+    :param Lambda_orig: (list - len(Lambda_orig)=num_time_steps or 1): original unmasked covariance matrix.
+        Every element is a 2D numpy array which contains the covariance at a given timestep. 
+        If list length is one, the cov image is duplicated for all time steps.
         
+    Observations: 
+    :param obs_List: list of observations, for each time step
+    
+    Dynamical Evolution Model
+    :param A_orig: original unmasked A matrix - time-invariant mean of warp field for dynamical evolution
+    :param Q_orig: original unmasked Q matrix - time-invariant covariance matrix of dynamical evolution model,
+        describing the amount of allowed intensity deviation
+        
+    Other Parameters
+    :param measurement: data products used
+    :param lightcurve: light curve time seres, needed if imposing a flux constraint
+    :param apxImgs: ???
+    :param mask: to select parts of the image to utilize. default is True for all pixels.
+        This is because getMeasurementTerms doesn't work with a mask yet.
+    :param normalize: flag for whether to normalize sigma in getMeasurementTerms
+    '''
+    
     if len(mask):
         A = A_orig[mask[:,None] & mask[None,:]].reshape([np.sum(mask), -1])
         Q = Q_orig[mask[:,None] & mask[None,:]].reshape([np.sum(mask), -1])
@@ -235,11 +307,6 @@ def backwardUpdates(mu, Lambda_orig, obs_List, A_orig, Q_orig, measurement={'vis
                 print('no prop error')
                 z_star_t_tp1[t].imvec[mask], P_star_t_tp1[t] = prodGaussiansLem2( A, Q, z_t_t[t+1].imvec[mask], mu_t.imvec[mask], Lambda_t)
 
-#z_star_t_tp1[t].display(cbar_unit = ('m-Jy', '$\mu$-arcseconds$^2$'), export_pdf='/Users/klbouman/Downloads/backwards_mean_' + str(t) + '.png' , has_title = False, label_type = 'none', has_cbar=False) #cbar_lims = (0,0.4),
-#tmp = z_star_t_tp1[t].copy()
-#tmp.imvec = np.diag(P_star_t_tp1[t])
-#tmp.display(cbar_unit = ('m-Jy', '$\mu$-arcseconds$^2$'), export_pdf='/Users/klbouman/Downloads/backwards_stdev_' + str(t) + '.png' , has_title = False, label_type = 'none', has_cbar = False) #cbar_lims = (0,0.0025),
-
         # update
         if lightcurve:
             meas, idealmeas, F, measCov, valid = getMeasurementTerms(obs_List[t], apxImgs[t], measurement=measurement, tot_flux=lightcurve[t], mask=mask, normalize=normalize)
@@ -257,7 +324,9 @@ def backwardUpdates(mu, Lambda_orig, obs_List, A_orig, Q_orig, measurement={'vis
 
     
 def smoothingUpdates(z_t_t, P_t_t, z_t_tm1, P_t_tm1, A_orig, mask=[]):
-
+    '''
+    Smoothing
+    '''
     z = copy.deepcopy(z_t_t)
     P = copy.deepcopy(P_t_t)
     backwardsA = copy.deepcopy(P_t_t)
@@ -278,32 +347,72 @@ def smoothingUpdates(z_t_t, P_t_t, z_t_tm1, P_t_tm1, A_orig, mask=[]):
 
     
 def computeSuffStatistics(mu, Lambda, obs_List, Upsilon, theta, init_x, init_y, flowbasis_x, flowbasis_y, initTheta, init_images=None, method='phase', measurement={'vis':1}, lightcurve=None, interiorPriors=False, numLinIters=1, compute_expVal_tm1_t=True, mask=[], normalize=False):
-    """
-    :param mu: (list - len(mu)=num_time_steps or 1): every element is an image object which contains the mean image
+    '''
+    Gaussian image prior:
+    :param mu: (list - len(mu)=num_time_steps or 1): every element is an image object which contains the mean image 
         at given timestep. If list length is one mean image is duplicated for all time steps
-    :param Lambda: (list - len(mu)=num_time_steps or 1): every element is a 2D numpy array which contains the
-        covariance at a given timestep. If list length is one, the cov image is duplicated for all time steps.
-    """
+    :param Lambda_orig: (list - len(Lambda_orig)=num_time_steps or 1): original unmasked covariance matrix.
+        Every element is a 2D numpy array which contains the covariance at a given timestep. 
+        If list length is one, the cov image is duplicated for all time steps.
+        
+    Observations: 
+    :param obs_List: list of observations, for each time step
+    
+    Dynamical Evolution Model
+    :param A_orig: original unmasked A matrix - time-invariant mean of warp field for dynamical evolution
+    :param Q_orig: original unmasked Q matrix - time-invariant covariance matrix of dynamical evolution model,
+        describing the amount of allowed intensity deviation
+    
+    Other Parameters:
+    :param init_images: option to provide initialization for the forward updates.
+        If none provided, then use the initialization from StarWarps paper
+    :param measurement: data products used
+    :param lightcurve: light curve time seres, needed if imposing a flux constraint
+    :param numLinIters: number of linearized iterations. We have non-linear measurement function f_{t}(x_{t}), 
+        and we linearize the solution around \tilde{x_{t}} by taking the first order Taylor series expansion of f.
+        To improve the solution of the forward and backward terms, each step in the forward pass can be 
+        iteratively re-solved and \tilde{x}_{t} can be updated at each iteration. 
+        The values of \tilde{x}_{t} are fixed for the backward pass. 
+        Note that if f is linear, only a single iteration will be enough to converge to the optimal solution. 
+        Thus, if the only measurement is visibility, numLinIters = 1 should be set.
+    :param interiorPriors: Flag for whether to use interior priors.
+    :param compute_expVal_tm1_t: flag for whether to compute the second sufficient statistic, E[x_{t-1}x_{t}^{T}].
+    :param mask: to select parts of the image to utilize. default is True for all pixels. 
+        This is because getMeasurementTerms doesn't work with a mask yet.
+    :param normalize: flag for whether to normalize sigma in getMeasurementTerms
+    '''
+    
+    # if mask not provided, create default mask
     if not len(mask):
         mask = np.ones(mu[0].imvec.shape)>0
-        
-    if mu[0].xdim!=mu[0].ydim:
+    
+    # check if first mean image is square
+    if mu[0].xdim != mu[0].ydim:
         error('Error: This has only been checked thus far on square images!')
 
+    # lightcurve and flux constraint go together
     if lightcurve == None  and 'flux' in measurement.keys(): #KATIE ADDED FEB 1 2021
         error('Error: if you are using a flux constraint you must specify a lightcurve')
     
+    # if the visibility is the only measurement, 
     if list(measurement.keys())==1 and measurement.keys()[0]=='vis':
         numLinIters = 1
     
+    # calculate matrix to represent warp field, from first mean image
     warpMtx = calcWarpMtx(mu[0], theta, init_x, init_y, flowbasis_x, flowbasis_y, initTheta, method=method) 
     
+    # Parameterize dynamical evolution model with Guassian
+    # the time-invariant mean warp field
     A = warpMtx
+    # time-invariant covariance matrix describing amount of allowed intensity variation in the warp field
     Q = Upsilon
-         
+    
+    # Do forward passes
     loglikelihood, z_t_tm1, P_t_tm1, z_t_t, P_t_t, apxImgs = forwardUpdates_apxImgs(mu, Lambda, obs_List, A, Q, init_images=init_images, measurement=measurement, lightcurve=lightcurve, interiorPriors=interiorPriors, numLinIters=numLinIters, mask=mask, normalize=normalize)
-
+ 
+    # Extended message passing with backward passes, using interior priors
     if interiorPriors:
+        # Do backward passes
         z_backward_t_t, P_backward_t_t = backwardUpdates(mu, Lambda, obs_List, A, Q, measurement=measurement, lightcurve=lightcurve, apxImgs=apxImgs, mask=mask, normalize=normalize)
         
         z = copy.deepcopy(z_backward_t_t)
@@ -315,6 +424,7 @@ def computeSuffStatistics(mu, Lambda, obs_List, Upsilon, theta, init_x, init_y, 
             else:
                 z[t].imvec[mask], P[t] = prodGaussiansLem1(z_t_tm1[t].imvec[mask], P_t_tm1[t], z_backward_t_t[t].imvec[mask], P_backward_t_t[t])
         
+    # Use smoothing updates instead
     else:
         z, P, backwardsA = smoothingUpdates(z_t_t, P_t_t, z_t_tm1, P_t_tm1, A, mask=mask)
 
@@ -334,6 +444,7 @@ def computeSuffStatistics(mu, Lambda, obs_List, Upsilon, theta, init_x, init_y, 
             z_tm1_hvec = np.array([z[t-1].imvec[mask]])
             expVal_tm1_t[t] = np.dot(z_tm1_hvec.T, z_t_hvec) + np.dot(backwardsA[t-1], P[t])
 
+    # expected value of x_t x_t-1^T, using interior priors
     if interiorPriors and compute_expVal_tm1_t:
         expVal_tm1_t = JointDist(z, z_t_t, P_t_t, z_backward_t_t, P_backward_t_t, A, Q)
     
@@ -343,29 +454,40 @@ def computeSuffStatistics(mu, Lambda, obs_List, Upsilon, theta, init_x, init_y, 
 
 
 def JointDist(z, z_List_t_t_forward, P_List_t_t_forward, z_List_t_t_backward, P_List_t_t_backward, A, Q):
+    '''
+    Calculate the joint distribution p(x_{t},x_{t-1} | y_{1:N})
+    See section 2.2 in StarWarps supplementary doc, starting from eq 60
+    '''
     
     expVal_tm1_t = []
     expVal_tm1_t.append(0.0)
     
-    
+    # section 2.2
     for t in range(1, len(z_List_t_t_forward) ):
         
         Sigma = Q + P_List_t_t_backward[t]
         Sigma_inv = np.linalg.inv(Sigma)
         
-        
+        # eq 76
         M = np.dot(P_List_t_t_backward[t], np.dot(Sigma_inv, A) )
+        
+        # eq 77, 78
         (m, C) = prodGaussiansLem2(A, Sigma, z_List_t_t_backward[t].imvec, z_List_t_t_forward[t-1].imvec,  P_List_t_t_forward[t-1]) 
         
+        # eq 79
         D_tmp1 = np.dot(M, np.dot(C, M.T))
-        D_tmp2 = np.dot(Q, np.dot( Sigma_inv, P_List_t_t_backward[t] ) )
+        D_tmp2 = np.dot(Q, np.dot( Sigma_inv, P_List_t_t_backward[t] ) )        
         D = np.dot(C, np.dot(M.T, np.linalg.inv(D_tmp1 + D_tmp2) ) )
         
+        # eq 81
         F = C - np.dot(D, np.dot(M, C))
         
+        # E[x_{t}]
         z_t_hvec = np.array([z[t].imvec])
+        # E[x_{t-1}]
         z_tm1_hvec = np.array([z[t-1].imvec])
         
+        # eq 88
         expVal_tm1_t.append( np.dot(F, np.linalg.inv(D.T))  + np.dot(z_tm1_hvec.T, z_t_hvec) ) 
         
     return expVal_tm1_t

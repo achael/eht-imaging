@@ -505,6 +505,7 @@ class Obsdata(object):
                     data, lambda x: np.searchsorted(self.scans[:, 0], x['time'])):
                 datalist.append(np.array([obs for obs in group]))
 
+#        return np.array(datalist, dtype=object)
         return np.array(datalist)
 
     def split_obs(self, t_gather=0., scan_gather=False):
@@ -553,6 +554,7 @@ class Obsdata(object):
         for key, group in it.groupby(data[idx], lambda x: set((x['t1'], x['t2']))):
             datalist.append(np.array([obs for obs in group]))
 
+#        return np.array(datalist, dtype=object)
         return np.array(datalist)
 
     def unpack_bl(self, site1, site2, fields, ang_unit='deg', debias=False, timetype=False):
@@ -596,6 +598,7 @@ class Obsdata(object):
 
                     allout.append(out)
 
+#        return np.array(allout, dtype=object)
         return np.array(allout)
 
     def unpack(self, fields, mode='all', ang_unit='deg', debias=False, conj=False, timetype=False):
@@ -1099,7 +1102,7 @@ class Obsdata(object):
         (timesout, uout, vout) = obsh.compute_uv_coordinates(arr, site1, site2, times,
                                                              self.mjd, self.ra, self.dec, self.rf,
                                                              timetype=self.timetype,
-                                                             elevmin=0, elevmax=90)
+                                                             elevmin=0, elevmax=90, no_elevcut_space=False)
 
         if len(timesout) != len(times):
             raise Exception(
