@@ -1479,7 +1479,6 @@ class Image(object):
 
             imarr = self.imvec.reshape((Ny, Nx))
             imarr_filt = np.real(np.fft.ifft2(np.fft.fft2(imarr) * bfilt))
-            print("NEWNEWNEW")
             return imarr_filt
             
             
