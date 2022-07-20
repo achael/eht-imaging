@@ -1442,7 +1442,8 @@ class Image(object):
                (Image): output image
         """
 
-
+        sigma = fwhm_i / (2. * np.sqrt(2. * np.log(2.)))
+        sigmap = sigma / self.psize
         fwhmp = fwhm_i / self.psize
         fwhmp_pol = fwhm_pol / self.psize
         
@@ -1460,7 +1461,7 @@ class Image(object):
             if np.any(np.imag(imarr) != 0):
                 return blur(np.real(imarr), sigma) + 1j * blur(np.imag(imarr), sigma)
                 
-            imarr_blur = scipy.signal.sosfilt(sos, imarr)
+            imarr_blur = scipy.signal.sosfilt(bfilt, imarr)
             return imarr_blur
             
         if filttype=='gauss':
