@@ -69,10 +69,7 @@ from builtins import object
 
 import numpy as np
 from numpy import double, bool, ma
-try:
-    import pyfits
-except:
-    from astropy.io import fits as pyfits
+from astropy.io import fits as pyfits
 import datetime
 import copy
 
