@@ -1654,7 +1654,7 @@ class Obsdata(object):
         # TODO -- different beam weightings
         im = np.array([[np.mean(weights * np.cos(-2 * np.pi * (i * u + j * v)))
                         for i in xlist]
-                       for j in xlist])
+                        for j in xlist])
 
         im = im[0:npix, 0:npix]
         im = im / np.sum(im)  # Normalize to a total beam power of 1
@@ -1689,7 +1689,7 @@ class Obsdata(object):
 
         dim = np.array([[np.mean(weights * np.cos(-2 * np.pi * (i * u + j * v)))
                          for i in xlist]
-                        for j in xlist])
+                         for j in xlist])
         normfac = 1. / np.sum(dim)
 
         for label in ['vis1', 'vis2', 'vis3', 'vis4']:
@@ -1702,7 +1702,7 @@ class Obsdata(object):
             im = np.array([[np.mean(weights * (np.real(vis) * np.cos(-2 * np.pi * (i * u + j * v)) -
                                                np.imag(vis) * np.sin(-2 * np.pi * (i * u + j * v))))
                             for i in xlist]
-                           for j in xlist])
+                            for j in xlist])
 
             # Final normalization
             im = im * normfac

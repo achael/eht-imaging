@@ -1383,7 +1383,7 @@ class Image(object):
             gauss = np.array([[np.exp(-(j * cth + i * sth)**2 / (2 * (blurfrac * sigma_maj)**2) -
                                        (i * cth - j * sth)**2 / (2 * (blurfrac * sigma_min)**2))
                                for i in xlist]
-                              for j in ylist])
+                               for j in ylist])
             gauss = gauss[0:self.ydim, 0:self.xdim]
             gauss = gauss / np.sum(gauss)  # normalize to 1
             return gauss
@@ -1455,14 +1455,33 @@ class Image(object):
             imarr_blur = filt.gaussian_filter(imarr, (sigma, sigma))
             return imarr_blur
             
-        def blur_butter(imarr, cutoff):
-            freq = 1/cutoff
-            bfilt  = scipy.signal.butter(2,freq,btype='low',output='sos')
-            if np.any(np.imag(imarr) != 0):
-                return blur(np.real(imarr), sigma) + 1j * blur(np.imag(imarr), sigma)
+        def blur_butter(imarr, size):
+
+            #bfilt  = scipy.signal.butter(2,freq,btype='low',output='sos')
+            #if np.any(np.imag(imarr) != 0):
+            #    return blur(np.real(imarr), sigma) + 1j * blur(np.imag(imarr), sigma)
                 
-            imarr_blur = scipy.signal.sosfilt(bfilt, imarr)
-            return imarr_blur
+            #imarr_blur = scipy.signal.sosfilt(bfilt, imarr, axis=0)
+            #imarr_blur = scipy.signal.sosfilt(bfilt, imarr_blur, axis=1)            
+
+            if size==0:
+                return imarr
+            
+            cutoff = 1/size    
+            Nx = self.xdim
+            Ny = self.ydim
+
+            s, t = np.meshgrid(np.fft.fftfreq(Nx, d=1.0 ), np.fft.fftfreq(Ny, d=1.0 ))
+            #s, t = np.meshgrid(np.fft.fftfreq(Nx, d=1.0 / Nx), np.fft.fftfreq(Ny, d=1.0 / Ny))
+            r = np.sqrt(s**2 + t**2)
+            
+            bfilt = 1./np.sqrt(1 + (r/cutoff)**4)
+
+            imarr = self.imvec.reshape((Ny, Nx))
+            imarr_filt = np.real(np.fft.ifft2(np.fft.fft2(imarr) * bfilt))
+            print("NEWNEWNEW")
+            return imarr_filt
+            
             
         if filttype=='gauss':
             blur = blur_gauss
@@ -1491,7 +1510,7 @@ class Image(object):
             mflist_out.append(mfvec_out)
         outim._mflist = mflist_out
 
-        # Blur all polarizations and copy over
+        # Blur all polarizations and copy overi
         for pol in list(self._imdict.keys()):
             if pol == self.pol_prim:
                 continue
