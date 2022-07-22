@@ -154,7 +154,8 @@ def self_cal(obs, im, sites=[], method="both", pol='I', minimizer_method='BFGS',
                                                               obs.polrep, pol,
                                                               method, minimizer_method,
                                                               show_solution, pad_amp, gain_tol,
-                                                              caltable, debias, msgtype
+                                                              debias, caltable, msgtype,
+                                                              use_grad
                                                               ] for i in range(len(scans))]))
 
     else:  # run on a single core
@@ -163,8 +164,10 @@ def self_cal(obs, im, sites=[], method="both", pol='I', minimizer_method='BFGS',
             scans_cal[i] = self_cal_scan(scans[i], im, V_scan=V_scans[i], sites=sites,
                                          polrep=obs.polrep, pol=pol,
                                          method=method, minimizer_method=minimizer_method,
-                                         show_solution=show_solution, debias=debias,
-                                         pad_amp=pad_amp, gain_tol=gain_tol, caltable=caltable)
+                                         show_solution=show_solution, 
+                                         pad_amp=pad_amp, gain_tol=gain_tol, 
+                                         debias=debias, caltable=caltable,
+                                         use_grad=use_grad)
 
     tstop = time.time()
     print("\nself_cal time: %f s" % (tstop - tstart))
@@ -387,7 +390,7 @@ def get_selfcal_scan_cal(args):
 
 
 def get_selfcal_scan_cal2(i, n, scan, im, V_scan, sites, polrep, pol, method, minimizer_method,
-                          show_solution, pad_amp, gain_tol, caltable, debias, msgtype):
+                          show_solution, pad_amp, gain_tol, debias, caltable, msgtype, use_grad):
     if n > 1:
         global counter
         counter.increment()
@@ -396,10 +399,9 @@ def get_selfcal_scan_cal2(i, n, scan, im, V_scan, sites, polrep, pol, method, mi
     return self_cal_scan(scan, im, V_scan=V_scan, sites=sites, polrep=polrep, pol=pol,
                          method=method, minimizer_method=minimizer_method,
                          show_solution=show_solution,
-                         pad_amp=pad_amp, gain_tol=gain_tol, caltable=caltable, debias=debias)
+                         pad_amp=pad_amp, gain_tol=gain_tol, debias=debias, caltable=caltable,
+                         use_grad=use_grad)
                          
-
-
 # error function
 def errfunc_full(gpar, vis, v_scan, sigma_inv, gain_tol, sites, g1_keys, g2_keys, method):
     # all the forward site gains (complex)
@@ -433,8 +435,8 @@ def errfunc_full(gpar, vis, v_scan, sigma_inv, gain_tol, sites, g1_keys, g2_keys
 
     # prior on the gains
     # don't count the last (default missing site) gain dummy value
-    chisq_g = np.sum(np.log(np.abs(g[:-1]))**2 /
-                     ((np.abs(g[:-1]) > 1) * tol0 + (np.abs(g[:-1]) <= 1) * tol1)**2)
+    tolsq = ((np.abs(g[:-1]) > 1) * tol0 + (np.abs(g[:-1]) <= 1) * tol1)**2
+    chisq_g = np.sum(np.log(np.abs(g[:-1]))**2 / tolsq)
     
     # total chi^2
     chisqtot = chisq + chisq_g
@@ -464,6 +466,8 @@ def errfunc_grad_full(gpar, vis, v_scan, sigma_inv, gain_tol, sites, g1_keys, g2
     g2r = np.real(g2)
     g2i = np.imag(g2)
 
+    vconj = vis.conj()
+    v_scan_conj = v_scan.conj()
     v_scan_sq = v_scan*v_scan.conj()
     g1sq = g1*g1.conj()
     g2sq = g2*g2.conj()
@@ -473,11 +477,11 @@ def errfunc_grad_full(gpar, vis, v_scan, sigma_inv, gain_tol, sites, g1_keys, g2
     ###################################
         
     # chi^2 term gradients
-    dchisq_dg1r = (-g2.conj()*vis.conj() - g2*vis + 2*g1r*g2sq*v_scan_sq)
-    dchisq_dg1i = (-1j*g2.conj()*vis.conj() + 1j*g2*vis + 2*g1i*g2sq*v_scan_sq)
+    dchisq_dg1r = (-g2.conj()*vis.conj()*v_scan - g2*vis*v_scan.conj() + 2*g1r*g2sq*v_scan_sq)
+    dchisq_dg1i = (-1j*g2.conj()*vis.conj()*v_scan + 1j*g2*vis*v_scan.conj() + 2*g1i*g2sq*v_scan_sq)
    
-    dchisq_dg2r = (-g1*vis.conj() - g1.conj()*vis + 2*g2r*g1sq*v_scan_sq)
-    dchisq_dg2i = (1j*g1*vis.conj() - 1j*g1.conj()*vis + 2*g2i*g1sq*v_scan_sq)  
+    dchisq_dg2r = (-g1*vis.conj()*v_scan - g1.conj()*vis*v_scan.conj() + 2*g2r*g1sq*v_scan_sq)
+    dchisq_dg2i = (1j*g1*vis.conj()*v_scan - 1j*g1.conj()*vis*v_scan.conj() + 2*g2i*g1sq*v_scan_sq)  
 
 
     dchisq_dg1r *= (sigma_inv)**2
