@@ -265,13 +265,13 @@ def imvec_at_freq(mftuple, log_freqratio):
         imvec = np.exp(logimvec)
         return imvec
 
-def mf_all_chisqgrads(chi2grad, imvec_cur, imvec_ref, log_freqratio):
+def mf_all_grads_chain(funcgrad, imvec_cur, imvec_ref, log_freqratio):
         """Get the gradients of the reference image, spectral index, and curvature
-           w/r/t the gradient of the chi^2 at a given frequency ref_freq*e(log_freqratio)
+           w/r/t the gradient of a function funcgrad to the image given frequency ref_freq*e(log_freqratio)
         """
 
-        dchisq_dI0 = chi2grad * imvec_cur / imvec_ref
-        dchisq_dalpha = chi2grad * imvec_cur * log_freqratio
-        dchisq_dbeta = chi2grad * imvec_cur * log_freqratio * log_freqratio
+        dfunc_dI0    = funcgrad * imvec_cur / imvec_ref
+        dfunc_dalpha = funcgrad * imvec_cur * log_freqratio
+        dfunc_dbeta  = funcgrad * imvec_cur * log_freqratio * log_freqratio
 
-        return np.array((dchisq_dI0, dchisq_dalpha, dchisq_dbeta))
+        return np.array((dfunc_dI0, dfunc_dalpha, dfunc_dbeta))

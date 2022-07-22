@@ -162,7 +162,7 @@ def load_im_hdf5(filename):
 
     # Load information from hdf5 file
 
-    hfp = h5py.File(filename)
+    hfp = h5py.File(filename,'r')
     dsource = hfp['header']['dsource'][()]          # distance to source in cm
     jyscale = hfp['header']['scale'][()]            # convert cgs intensity -> Jy flux density
     rf = hfp['header']['freqcgs'][()]               # in cgs

@@ -1437,7 +1437,8 @@ class Image(object):
            Args:
                fwhm_i (float): circular beam size for Stokes I  blurring in  radian
                fwhm_pol (float): circular beam size for Stokes Q,U,V  blurring in  radian
-
+               filttype (str): "gauss" or "butter" 
+               
            Returns:
                (Image): output image
         """
@@ -1524,6 +1525,50 @@ class Image(object):
 
         return outim
 
+    def blur_mf(self, freqs, fwhm, fit_order=1, filttype='gauss'):
+        """Blur image correctly across multiple frequencies
+           WARNING: does not currently do polarization correctly!
+
+           Args:
+               freqs (float): Frequencies to include in the blurring & spectral index fit
+               fwhm (float): circular beam size 
+               fit_order (int): how many orders to fit spectrum: 1 or 2
+               filttype (str): "gauss" or "butter" 
+               
+           Returns:
+               (Image): output image          
+           
+        """
+        if fit_order not in [1,2]: 
+            raise Exception("fit_order must be 1 or 2 in blur_mf!")
+           
+        reffreq = self.rf
+
+        # remove any zeros in the images               
+        imlist = [self.get_image_mf(rf).blur_circ(kernel, filttype=filttype) for rf in freqs]
+        for image in imlist:
+            image.imvec[image.imvec<=0] = np.min(image.imvec[image.imvec!=0])
+            
+        xfit = np.log(np.array(freqs)/reffreq)
+        yfit = np.log(np.array([im.imvec for im in imlist]))
+        
+        if fit_order == 2:
+            coeffs = np.polyfit(xfit,yfit,2)
+            beta = coeffs[0]
+            alpha = coeffs[1]    
+        elif fit_order == 1:
+            coeffs = np.polyfit(xfit,yfit,1)
+            alpha = coeffs[0]    
+            beta = 0*alpha
+        else:
+            alpha = 0*yfit
+            beta = 0*yfit
+            
+        outim = self.blur_circ(kernel, filttype=filttype)
+        outim.specvec = alpha
+        outim.curvvec = beta
+        return outim
+        
     def grad(self, gradtype='abs'):
         """Return the gradient image
 
@@ -4172,3 +4217,82 @@ def load_fits(fname, aipscc=False, pulse=ehc.PULSE_DEFAULT,
 
     return ehtim.io.load.load_im_fits(fname, aipscc=aipscc, pulse=pulse,
                                       polrep=polrep, pol_prim=pol_prim, zero_pol=zero_pol)
+                                      
+def avg_imlist(imlist):
+    """Average a list of images.
+
+       Args:
+           imlist (list): list of image objects
+
+       Returns:
+           (Image): average image object
+    """
+    
+    imavg = imlist[0]
+
+    if np.any(np.array([im.polrep for im in imlist]) != imavg.polrep):
+        raise Exception("im.polrep in all images are not the same in avg_imlist!")
+    if np.any(np.array([im.source for im in imlist]) != imavg.source):
+        raise Exception("im.source in all images are not the same in avg_imlist!")
+    if np.any(np.array([im.rf for im in imlist]) != imavg.rf):
+        raise Exception("im.rf in all images are not the same in avg_imlist!")
+           
+    keys = imavg._imdict.keys()
+                
+    for im in imlist[1:]:
+        for key in keys:
+            imavg._imdict[key] += im._imdict[key]
+
+    for key in keys:
+        imavg._imdict[key] /= float(len(imlist))
+
+    
+    return imavg
+    
+def get_specim(imlist, reffreq, fit_order=1):
+    """Fit the spectral index for a list of images and return a multifrequency image.
+       WARNING: does not correctly handle polarization!!
+       
+       Args:
+           imlist (list): List of image objects at different frequencies
+           reffreq (float): Reference frequency of ouptut image in Hz
+           fit_order (int): How many terms to fit in spectrum (1 or 2).
+
+
+       Returns:
+           (Image): multifrequency image object
+    """
+    
+    if fit_order not in [1,2]:
+        raise Exception("get_specim only works with fit_order=1 or fit_order=2 currently!")
+        
+    freqs = [im.rf for im in imlist]
+
+    # remove any zeros in the images
+    for im in imlist:
+        im.imvec[im.imvec<=0] = np.min(im.imvec[im.imvec!=0])
+    
+    # fit
+    xfit = np.log(np.array(freqs)/reffreq)
+    yfit = np.log(np.array([im.imvec for im in imlist]))
+
+    if fit_order == 2:
+        coeffs = np.polyfit(xfit,yfit,2)
+        beta = coeffs[0]
+        alpha = coeffs[1] 
+        imvec = np.exp(coeffs[2])   
+    elif fit_order == 1:
+        coeffs = np.polyfit(xfit,yfit,1)
+        alpha = coeffs[0]    
+        beta = 0*alpha
+        imvec = np.exp(coeffs[1])
+    else:
+        raise Exception()
+        
+    outim = imlist[0].copy() #TODO no polarization
+    outim.imvec = imvec
+    outim.rf = reffreq
+    outim.specvec = alpha
+    outim.curvvec = beta
+    
+    return outim
