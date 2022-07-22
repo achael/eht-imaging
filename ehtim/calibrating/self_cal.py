@@ -304,7 +304,7 @@ def self_cal_scan(scan, im, V_scan=[], sites=[], polrep='stokes', pol='I', metho
 
     def errfunc_grad(gpar):
         return errfunc_grad_full(gpar, vis, V_scan, sigma_inv, gain_tol, sites, g1_keys, g2_keys, method)
-        
+
     # use gradient descent to find the gains
     # minimizer params
     if minimizer_method=='L-BFGS-B':
@@ -466,11 +466,9 @@ def errfunc_grad_full(gpar, vis, v_scan, sigma_inv, gain_tol, sites, g1_keys, g2
     g2r = np.real(g2)
     g2i = np.imag(g2)
 
-    vconj = vis.conj()
-    v_scan_conj = v_scan.conj()
     v_scan_sq = v_scan*v_scan.conj()
-    g1sq = g1*g1.conj()
-    g2sq = g2*g2.conj()
+    g1sq = g1*(g1.conj())
+    g2sq = g2*(g2.conj())
 
     ###################################
     # data term chi^2 derivitive    
@@ -484,15 +482,15 @@ def errfunc_grad_full(gpar, vis, v_scan, sigma_inv, gain_tol, sites, g1_keys, g2
     dchisq_dg2i = (1j*g1*vis.conj()*v_scan - 1j*g1.conj()*vis*v_scan.conj() + 2*g2i*g1sq*v_scan_sq)  
 
 
-    dchisq_dg1r *= (sigma_inv)**2
-    dchisq_dg1i *= (sigma_inv)**2
-    dchisq_dg2r *= (sigma_inv)**2
-    dchisq_dg2i *= (sigma_inv)**2    
+    dchisq_dg1r *= ((sigma_inv)**2)
+    dchisq_dg1i *= ((sigma_inv)**2)
+    dchisq_dg2r *= ((sigma_inv)**2)
+    dchisq_dg2i *= ((sigma_inv)**2)    
 
     # same masking function as in errfunc
     # preserve length of dchisq arrays
     verr = vis - g1 * g2.conj() * v_scan
-    nan_mask = [np.isnan(v) for v in verr]
+    nan_mask = np.isnan(verr)
     
     dchisq_dg1r[nan_mask] = 0
     dchisq_dg1i[nan_mask] = 0
@@ -504,15 +502,12 @@ def errfunc_grad_full(gpar, vis, v_scan, sigma_inv, gain_tol, sites, g1_keys, g2
     dchisq_dgi = np.zeros(len(gpar)//2)    
     
     # TODO faster than a for loop?     
-    for i in range(len(g)-1):
+    for i in range(len(gpar)//2):
         g1idx = np.argwhere(np.array(g1_keys)==i)
         g2idx = np.argwhere(np.array(g2_keys)==i)
         
-        dchisq_dgr[i] += np.sum(dchisq_dg1r[g1idx])
-        dchisq_dgr[i] += np.sum(dchisq_dg2r[g2idx])
-                
-        dchisq_dgi[i] += np.sum(dchisq_dg1i[g1idx])
-        dchisq_dgi[i] += np.sum(dchisq_dg2i[g2idx])
+        dchisq_dgr[i] = np.sum(dchisq_dg1r[g1idx]) + np.sum(dchisq_dg2r[g2idx])                
+        dchisq_dgi[i] = np.sum(dchisq_dg1i[g1idx]) + np.sum(dchisq_dg2i[g2idx])
                 
     ###################################                        
     # prior term chi^2 derivitive 
