@@ -56,7 +56,7 @@ def regularizer_mf(imvec, nprior, mask, flux, xdim, ydim, psize, stype, **kwargs
     beam_size = kwargs.get('beam_size', psize)
 
     if stype == "l2_alpha" or stype=="l2_beta":
-        s = -l2_alpha(imvec, nprior)
+        s = -l2_alpha(imvec, nprior, norm_reg=norm_reg)
     elif stype == "tv_alpha" or stype=="tv_beta":
         if np.any(np.invert(mask)):
             imvec = embed(imvec, mask, randomfloor=False)
@@ -86,19 +86,27 @@ def regularizergrad_mf(imvec, nprior, mask, flux, xdim, ydim, psize, stype, **kw
     return s
 
 
-def l2_alpha(imvec, priorvec):
+def l2_alpha(imvec, priorvec, norm_reg=NORM_REGULARIZER):
     """L2 norm on spectral index w/r/t prior
     """
-
-    norm = float(len(imvec))
+    
+    if norm_reg:
+        norm = float(len(imvec))
+    else:
+        norm = 1
+        
     out = -(np.sum((imvec - priorvec)**2))
     return out/norm
 
-def l2_alpha_grad(imvec, priorvec):
+def l2_alpha_grad(imvec, priorvec, norm_reg=NORM_REGULARIZER):
     """L2 norm on spectral index w/r/t prior
     """
 
-    norm = float(len(imvec))
+    if norm_reg:
+        norm = float(len(imvec))
+    else:
+        norm = 1
+        
     out = -2*(np.sum(imvec - priorvec))*np.ones(len(imvec))
     return out/norm
 
@@ -107,8 +115,10 @@ def tv_alpha(imvec, nx, ny, psize, norm_reg=NORM_REGULARIZER, beam_size=None):
     """Total variation regularizer
     """
     if beam_size is None: beam_size = psize
-    if norm_reg: norm = psize / beam_size
-    else: norm = 1
+    if norm_reg: 
+        norm = len(imvec)*psize / beam_size
+    else: 
+        norm = 1
 
     im = imvec.reshape(ny, nx)
     impad = np.pad(im, 1, mode='constant', constant_values=0)
@@ -122,8 +132,10 @@ def tv_alpha_grad(imvec, nx, ny, psize, norm_reg=NORM_REGULARIZER, beam_size=Non
     """Total variation gradient
     """
     if beam_size is None: beam_size = psize
-    if norm_reg: norm = psize / beam_size
-    else: norm = 1
+    if norm_reg: 
+        norm = len(imvec)*psize / beam_size
+    else: 
+        norm = 1
 
     im = imvec.reshape(ny,nx)
     impad = np.pad(im, 1, mode='constant', constant_values=0)
