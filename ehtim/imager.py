@@ -280,6 +280,7 @@ class Imager(object):
         def callback_func(xcur):
             self.plotcur(xcur, **kwargs)
 
+        print("Imaging . . .")
         tstart = time.time()
         if grads:
             res = opt.minimize(self.objfunc, self._xinit, method='L-BFGS-B', jac=self.objgrad,
@@ -1220,8 +1221,8 @@ class Imager(object):
                 raise Exception("regularizer term %s not recognized!" % regname)
 
             # multifrequency regularizer terms are already in the dictionary
-            # if we regularize all images with self.reg_all_req_mf            
-            if not(self.mf_next and self.reg_all_req_mf and (regname in REGULARIZERS)): 
+            # if we regularize all images with self.reg_all_freq_mf            
+            if not(self.mf_next and self.reg_all_freq_mf and (regname in REGULARIZERS)): 
                 reg_dict[regname] = reg
 
         return reg_dict
@@ -1323,8 +1324,8 @@ class Imager(object):
                 raise Exception("regularizer term %s not recognized!" % regname)
 
             # multifrequency regularizer gradient terms are already in the dictionary
-            # if we regularize all images with self.reg_all_req_mf
-            if not(self.mf_next and self.reg_all_req_mf and (regname in REGULARIZERS)): 
+            # if we regularize all images with self.reg_all_freq_mf
+            if not(self.mf_next and self.reg_all_freq_mf and (regname in REGULARIZERS)): 
                 reggrad_dict[regname] = reg
 
         return reggrad_dict

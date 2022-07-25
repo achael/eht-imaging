@@ -2570,8 +2570,6 @@ def sgsgrad(imvec, priorvec, flux, norm_reg=NORM_REGULARIZER):
     return entropygrad/norm
 
 # TODO: epsilon is 0 by default for backwards compatibilitys
-
-
 def stv(imvec, nx, ny, psize, flux, norm_reg=NORM_REGULARIZER, beam_size=None, epsilon=0.):
     """Total variation regularizer
     """
@@ -2586,12 +2584,11 @@ def stv(imvec, nx, ny, psize, flux, norm_reg=NORM_REGULARIZER, beam_size=None, e
     impad = np.pad(im, 1, mode='constant', constant_values=0)
     im_l1 = np.roll(impad, -1, axis=0)[1:ny+1, 1:nx+1]
     im_l2 = np.roll(impad, -1, axis=1)[1:ny+1, 1:nx+1]
-    out = -np.sum(np.sqrt(np.abs(im_l1 - im)**2 + np.abs(im_l2 - im)**2) + epsilon)
+    #out = -np.sum(np.sqrt(np.abs(im_l1 - im)**2 + np.abs(im_l2 - im)**2) + epsilon)
+    out = -np.sum(np.sqrt(np.abs(im_l1 - im)**2 + np.abs(im_l2 - im)**2 + epsilon))
     return out/norm
 
 # TODO: epsilon is 0 by default for backwards compatibility
-
-
 def stvgrad(imvec, nx, ny, psize, flux, norm_reg=NORM_REGULARIZER, beam_size=None, epsilon=0.):
     """Total variation gradient
     """
