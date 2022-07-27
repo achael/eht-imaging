@@ -1381,9 +1381,9 @@ class Image(object):
 
         def gaussim(blurfrac):
             gauss = np.array([[np.exp(-(j * cth + i * sth)**2 / (2 * (blurfrac * sigma_maj)**2) -
-                                       (i * cth - j * sth)**2 / (2. * (blurfrac * sigma_min)**2))
+                                       (i * cth - j * sth)**2 / (2 * (blurfrac * sigma_min)**2))
                                for i in xlist]
-                              for j in ylist])
+                               for j in ylist])
             gauss = gauss[0:self.ydim, 0:self.xdim]
             gauss = gauss / np.sum(gauss)  # normalize to 1
             return gauss
@@ -1431,7 +1431,7 @@ class Image(object):
 
         return outim
 
-    def blur_circ(self, fwhm_i, fwhm_pol=0):
+    def blur_circ(self, fwhm_i, fwhm_pol=0, filttype='gauss'):
         """Apply a circular gaussian filter to the image, with FWHM in radians.
 
            Args:
@@ -1444,17 +1444,54 @@ class Image(object):
 
         sigma = fwhm_i / (2. * np.sqrt(2. * np.log(2.)))
         sigmap = sigma / self.psize
-
+        fwhmp = fwhm_i / self.psize
+        fwhmp_pol = fwhm_pol / self.psize
+        
         # Define a convolution function
-        def blur(imarr, sigma):
+        def blur_gauss(imarr, fwhm):
+            sigma = fwhmp / (2. * np.sqrt(2. * np.log(2.)))
             if np.any(np.imag(imarr) != 0):
                 return blur(np.real(imarr), sigma) + 1j * blur(np.imag(imarr), sigma)
             imarr_blur = filt.gaussian_filter(imarr, (sigma, sigma))
             return imarr_blur
+            
+        def blur_butter(imarr, size):
 
+            #bfilt  = scipy.signal.butter(2,freq,btype='low',output='sos')
+            #if np.any(np.imag(imarr) != 0):
+            #    return blur(np.real(imarr), sigma) + 1j * blur(np.imag(imarr), sigma)
+                
+            #imarr_blur = scipy.signal.sosfilt(bfilt, imarr, axis=0)
+            #imarr_blur = scipy.signal.sosfilt(bfilt, imarr_blur, axis=1)            
+
+            if size==0:
+                return imarr
+            
+            cutoff = 1/size    
+            Nx = self.xdim
+            Ny = self.ydim
+
+            s, t = np.meshgrid(np.fft.fftfreq(Nx, d=1.0 ), np.fft.fftfreq(Ny, d=1.0 ))
+            #s, t = np.meshgrid(np.fft.fftfreq(Nx, d=1.0 / Nx), np.fft.fftfreq(Ny, d=1.0 / Ny))
+            r = np.sqrt(s**2 + t**2)
+            
+            bfilt = 1./np.sqrt(1 + (r/cutoff)**4)
+
+            imarr = self.imvec.reshape((Ny, Nx))
+            imarr_filt = np.real(np.fft.ifft2(np.fft.fft2(imarr) * bfilt))
+            return imarr_filt
+            
+            
+        if filttype=='gauss':
+            blur = blur_gauss
+        elif filttype=='butter':
+            blur = blur_butter
+        else:
+            raise Exception("filttype not recognized in blur_circ!")
+            
         # Blur the primary image
         imarr = self.imvec.reshape(self.ydim, self.xdim)
-        imarr_blur = blur(imarr, sigmap)
+        imarr_blur = blur(imarr, fwhmp)
 
         arglist, argdict = self.image_args()
         arglist[0] = imarr_blur
@@ -1465,14 +1502,14 @@ class Image(object):
         for mfvec in self._mflist:
             if len(mfvec):
                 mfarr = mfvec.reshape(self.ydim, self.xdim)
-                mfarr = blur(mfarr, sigmap)
+                mfarr = blur(mfarr, fwhmp)
                 mfvec_out = mfarr.flatten()
             else:
                 mfvec_out = np.array([])
             mflist_out.append(mfvec_out)
         outim._mflist = mflist_out
 
-        # Blur all polarizations and copy over
+        # Blur all polarizations and copy overi
         for pol in list(self._imdict.keys()):
             if pol == self.pol_prim:
                 continue
@@ -1480,10 +1517,8 @@ class Image(object):
             if len(polvec):
                 polarr = polvec.reshape(self.ydim, self.xdim)
                 if fwhm_pol:
-                    print("Blurring polarization")
-                    sigma = fwhm_pol / (2. * np.sqrt(2. * np.log(2.)))
-                    sigmap = sigma / self.psize
-                    polarr = blur(polarr, sigmap)
+                    #print("Blurring polarization")
+                    polarr = blur(polarr, fwhmp_pol)
                 outim.add_pol_image(polarr, pol)
 
 
@@ -3276,7 +3311,9 @@ class Image(object):
                 export_pdf="", pdf_pad_inches=0.0, show=True, beamparams=None,
                 cbar_orientation="vertical", scinot=False,
                 scale_lw=1, beam_lw=1, cbar_fontsize=12, axis=None,
-                scale_fontsize=12, power=0, beamcolor='w', dpi=500):
+                scale_fontsize=12, 
+                power=0, 
+                beamcolor='w', scalecolor='w',dpi=500):
         """Display the image.
 
            Args:
@@ -3316,9 +3353,10 @@ class Image(object):
                cbar_fontsize (float): Fontsize of the text elements of the colorbar
                axis (matplotlib.axes.Axes): An axis object
                scale_fontsize (float): Fontsize of the scale label
+
                power (float): Passed to colorbar for division of ticks by 1e(power)
                beamcolor (str): color of the beam overlay
-
+               scalecolor (str): color of the scale label overlay            
            Returns:
                (matplotlib.figure.Figure): figure object with image
 
@@ -3836,9 +3874,9 @@ class Image(object):
             start = self.xdim * roughfactor / 3.0  # select the start location
             end = start + fov_scale / fov_uas * self.xdim  # determine the end location
             plt.plot([start, end], [self.ydim - start - 5, self.ydim - start - 5],
-                     color="white", lw=scale_lw)  # plot a line
+                     color=scalecolor, lw=scale_lw)  # plot a line
             plt.text(x=(start + end) / 2.0, y=self.ydim - start + self.ydim / 30,
-                     s=str(fov_scale) + r" $\mu$as", color="white",
+                     s=str(fov_scale) + r" $\mu$as", color=scalecolor,
                      ha="center", va="center", fontsize=scale_fontsize)
             ax = plt.gca()
             if axis is None:
