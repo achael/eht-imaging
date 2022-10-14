@@ -473,7 +473,7 @@ class Movie(object):
         return mov
 
     def add_pol_movie(self, movie, pol):
-        """Add another movie polarization. f
+        """Add another movie polarization. 
 
            Args:
                movie (list): list of 2D frames (possibly complex) in a Jy/pixel array

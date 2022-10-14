@@ -3358,7 +3358,7 @@ class Image(object):
                 scale_lw=1, beam_lw=1, cbar_fontsize=12, axis=None,
                 scale_fontsize=12, 
                 power=0, 
-                beamcolor='w', scalecolor='w',dpi=500):
+                beamcolor='w', beampos='right', scalecolor='w',dpi=500):
         """Display the image.
 
            Args:
@@ -3624,8 +3624,12 @@ class Image(object):
                 im = plt.imshow(imarr, alpha=alpha, cmap=cmap, interpolation=interp)
 
             if not(beamparams is None or beamparams is False):
-                beamparams = [beamparams[0], beamparams[1], beamparams[2],
-                              -.35 * self.fovx(), -.35 * self.fovy()]
+                if beampos=='left':
+                    beamparams = [beamparams[0], beamparams[1], beamparams[2],
+                                  +.4 * self.fovx(), -.4 * self.fovy()]
+                else:
+                    beamparams = [beamparams[0], beamparams[1], beamparams[2],
+                                  -.35 * self.fovx(), -.35 * self.fovy()]                              
                 beamimage = self.copy()
                 beamimage.imvec *= 0
                 beamimage = beamimage.add_gauss(1, beamparams)
@@ -4248,24 +4252,9 @@ def avg_imlist(imlist):
 
     
     return imavg
-    
-def get_specim(imlist, reffreq, fit_order=1):
-    """Fit the spectral index for a list of images and return a multifrequency image.
-       WARNING: does not correctly handle polarization!!
-       
-       Args:
-           imlist (list): List of image objects at different frequencies
-           reffreq (float): Reference frequency of ouptut image in Hz
-           fit_order (int): How many terms to fit in spectrum (1 or 2).
 
-
-       Returns:
-           (Image): multifrequency image object
-    """
-    
-    if fit_order not in [1,2]:
-        raise Exception("get_specim only works with fit_order=1 or fit_order=2 currently!")
-        
+def get_specim(imlist, reffreq, fit_order=2):
+    """get the spectral index/curvature from a list of images"""
     freqs = [im.rf for im in imlist]
 
     # remove any zeros in the images
@@ -4295,4 +4284,36 @@ def get_specim(imlist, reffreq, fit_order=1):
     outim.specvec = alpha
     outim.curvvec = beta
     
+    return outim
+
+
+def blur_mf(im,freqs,kernel,fit_order=2):
+    """blur multifrequncy images with the same beam"""
+    reffreq = im.rf
+
+    # remove any zeros in the images
+
+           
+    imlist = [im.get_image_mf(rf).blur_circ(kernel) for rf in freqs]
+    for image in imlist:
+        image.imvec[image.imvec<=0] = np.min(image.imvec[image.imvec!=0])
+        
+    xfit = np.log(np.array(freqs)/reffreq)
+    yfit = np.log(np.array([im.imvec for im in imlist]))
+    
+    if fit_order == 2:
+        coeffs = np.polyfit(xfit,yfit,2)
+        beta = coeffs[0]
+        alpha = coeffs[1]    
+    elif fit_order == 1:
+        coeffs = np.polyfit(xfit,yfit,1)
+        alpha = coeffs[0]    
+        beta = 0*alpha
+    else:
+        alpha = 0*yfit
+        beta = 0*yfit
+        
+    outim = im.blur_circ(kernel)
+    outim.specvec = alpha
+    outim.curvvec = beta
     return outim
