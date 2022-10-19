@@ -572,6 +572,11 @@ def regularizer(imvec, nprior, mask, flux, xdim, ydim, psize, stype, **kwargs):
             imvec = embed(imvec, mask, randomfloor=True)
         s = -stv(imvec, xdim, ydim, psize, flux, norm_reg=norm_reg,
                  beam_size=beam_size, epsilon=epsilon)
+    elif stype == "tvlog": # TODO ANDREW
+        if np.any(np.invert(mask)):
+            imvec = embed(imvec, mask, clipfloor=epsilon, randomfloor=True)
+        s = -stv(np.log(imvec), xdim, ydim, psize, flux, norm_reg=norm_reg,
+                 beam_size=beam_size, epsilon=epsilon)
     elif stype == "tv2":
         if np.any(np.invert(mask)):
             imvec = embed(imvec, mask, randomfloor=True)
@@ -630,6 +635,13 @@ def regularizergrad(imvec, nprior, mask, flux, xdim, ydim, psize, stype, **kwarg
         s = -stvgrad(imvec, xdim, ydim, psize, flux, norm_reg=norm_reg,
                      beam_size=beam_size, epsilon=epsilon)
         s = s[mask]
+    elif stype == "tvlog":
+        if np.any(np.invert(mask)):
+            imvec = embed(imvec, mask, clipfloor=epsilon, randomfloor=True)
+        s = -stvgrad(np.log(imvec), xdim, ydim, psize, flux, norm_reg=norm_reg,
+                     beam_size=beam_size, epsilon=epsilon)
+        s = s / imvec
+        s = s[mask]        
     elif stype == "tv2":
         if np.any(np.invert(mask)):
             imvec = embed(imvec, mask, randomfloor=True)
@@ -2558,8 +2570,6 @@ def sgsgrad(imvec, priorvec, flux, norm_reg=NORM_REGULARIZER):
     return entropygrad/norm
 
 # TODO: epsilon is 0 by default for backwards compatibilitys
-
-
 def stv(imvec, nx, ny, psize, flux, norm_reg=NORM_REGULARIZER, beam_size=None, epsilon=0.):
     """Total variation regularizer
     """
@@ -2574,12 +2584,11 @@ def stv(imvec, nx, ny, psize, flux, norm_reg=NORM_REGULARIZER, beam_size=None, e
     impad = np.pad(im, 1, mode='constant', constant_values=0)
     im_l1 = np.roll(impad, -1, axis=0)[1:ny+1, 1:nx+1]
     im_l2 = np.roll(impad, -1, axis=1)[1:ny+1, 1:nx+1]
-    out = -np.sum(np.sqrt(np.abs(im_l1 - im)**2 + np.abs(im_l2 - im)**2) + epsilon)
+    #out = -np.sum(np.sqrt(np.abs(im_l1 - im)**2 + np.abs(im_l2 - im)**2) + epsilon)
+    out = -np.sum(np.sqrt(np.abs(im_l1 - im)**2 + np.abs(im_l2 - im)**2 + epsilon))
     return out/norm
 
 # TODO: epsilon is 0 by default for backwards compatibility
-
-
 def stvgrad(imvec, nx, ny, psize, flux, norm_reg=NORM_REGULARIZER, beam_size=None, epsilon=0.):
     """Total variation gradient
     """
@@ -4313,7 +4322,6 @@ def chisqdata_logcamp_diag_nfft(Obsdata, Prior, pol='I', **kwargs):
 def plot_i(im, Prior, nit, chi2_dict, **kwargs):
     """Plot the total intensity image at each iteration
     """
-
     cmap = kwargs.get('cmap', 'afmhot')
     interpolation = kwargs.get('interpolation', 'gaussian')
     pol = kwargs.get('pol', '')
@@ -4361,11 +4369,11 @@ def embed(im, mask, clipfloor=0., randomfloor=False):
     # Here's a much faster version than before
     out[mask.nonzero()] = im
 
-    if clipfloor != 0.0:
-        if randomfloor:  # prevent total variation gradient singularities
-            out[(mask-1).nonzero()] = clipfloor * \
-                np.abs(np.random.normal(size=len((mask-1).nonzero())))
-        else:
-            out[(mask-1).nonzero()] = clipfloor
+    #if clipfloor != 0.0:
+    if randomfloor:  # prevent total variation gradient singularities
+        out[(mask-1).nonzero()] = clipfloor * \
+            np.abs(np.random.normal(size=len((mask-1).nonzero()[0])))
+    else:
+        out[(mask-1).nonzero()] = clipfloor
 
     return out

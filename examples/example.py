@@ -97,6 +97,7 @@ out = eh.imager_func(obs, out, out, flux,
                 maxit=100,ttype=ttype, show_updates=False)
 
 print ("total time: ", time.time() - tt)
+
 ## Self - calibrate and image with vis amplitudes
 #obs_sc = sc.self_cal(obs, out)
 

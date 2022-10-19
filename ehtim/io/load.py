@@ -162,7 +162,7 @@ def load_im_hdf5(filename):
 
     # Load information from hdf5 file
 
-    hfp = h5py.File(filename)
+    hfp = h5py.File(filename,'r')
     dsource = hfp['header']['dsource'][()]          # distance to source in cm
     jyscale = hfp['header']['scale'][()]            # convert cgs intensity -> Jy flux density
     rf = hfp['header']['freqcgs'][()]               # in cgs
@@ -985,7 +985,8 @@ def load_obs_txt(filename, polrep='stokes'):
 # TODO can we save new telescope array terms and flags to uvfits and load them?
 def load_obs_uvfits(filename, polrep='stokes', flipbl=False,
                     allow_singlepol=True, force_singlepol=None,
-                    channel=all, IF=all, remove_nan=False):
+                    channel=all, IF=all, remove_nan=False,
+                    trial_speedups=False):
     """Load observation data from a uvfits file.
 
        Args:
@@ -1260,13 +1261,20 @@ def load_obs_uvfits(filename, polrep='stokes', flipbl=False,
         tints = np.zeros(len(mask))
 
     # Sites - add names
-    t1 = data['BASELINE'][mask].astype(int) // 256
-    t2 = data['BASELINE'][mask].astype(int) - t1 * 256
-    t1 = t1 - 1
-    t2 = t2 - 1
-    t1 = np.array([tarr[np.where(tnums==i)[0][0]]['site'] for i in t1])
-    t2 = np.array([tarr[np.where(tnums==i)[0][0]]['site'] for i in t2])
+    t1c = data['BASELINE'][mask].astype(int) // 256
+    t2c = data['BASELINE'][mask].astype(int) - t1c * 256
+    t1c = t1c - 1
+    t2c = t2c - 1
 
+    # TODO make site identificantion faster
+    if trial_speedups and (not np.any(tnums!=np.arange(len(tnums)))):
+        sites = tarr['site']
+        t1 = sites[t1c]
+        t2 = sites[t2c]
+    else: # original, slow code
+        t1 = np.array([tarr[np.where(tnums==i)[0][0]]['site'] for i in t1c])
+        t2 = np.array([tarr[np.where(tnums==i)[0][0]]['site'] for i in t2c])
+    
     # Opacities (not in standard files)
     try:
         tau1 = data['TAU1'][mask]
@@ -1291,7 +1299,8 @@ def load_obs_uvfits(filename, polrep='stokes', flipbl=False,
 
     # Get and coherently average visibility data in frequency
     # replace masked vis with nans so they don't mess up the average
-    rr_2d = data['DATA'][:, 0, 0, IF, channel, 0, 0] + 1j * data['DATA'][:, 0, 0, IF, channel, 0, 1]
+    rr_2d = data['DATA'][:, 0, 0, IF, channel, 0, 0] + \
+        1j * data['DATA'][:, 0, 0, IF, channel, 0, 1]
     rr_2d = rr_2d.reshape(nvis, nifs, nchannels)
     if num_corr >= 2:
         ll_2d = data['DATA'][:, 0, 0, IF, channel, 1, 0] + \
@@ -1362,28 +1371,52 @@ def load_obs_uvfits(filename, polrep='stokes', flipbl=False,
         v = -v
 
     # determine correct data type:
+    # TODO add linear!
     if polrep_uvfits == 'circ':
         dtpol_out = ehc.DTPOL_CIRC
+        poldict_out = ehc.POLDICT_CIRC
     elif polrep_uvfits == 'stokes':
         dtpol_out = ehc.DTPOL_STOKES
-
-    datatable = []
-    for i in range(len(times)):
-        datatable.append(np.array
-                         ((
-                             times[i], tints[i],
-                             t1[i], t2[i], tau1[i], tau2[i],
-                             u[i], v[i],
-                             rr[i], ll[i], rl[i], lr[i],
-                             rrsig[i], llsig[i], rlsig[i], lrsig[i]
-                         ), dtype=dtpol_out
-                         ))
-
-    datatable = np.array(datatable)
+        poldict_out = ehc.POLDICT_STOKES
+        
+    #TODO new, faster,
+    if trial_speedups:
+        datatable = np.empty((len(times)),dtype=dtpol_out)
+        datatable['time'] = times
+        datatable['tint'] = tints
+        datatable['t1'] = t1
+        datatable['t2'] = t2
+        datatable['tau1'] = tau1
+        datatable['tau2'] = tau2
+        datatable['u'] = u
+        datatable['v'] = v
+        datatable[poldict_out['vis1']] = rr
+        datatable[poldict_out['vis2']] = ll
+        datatable[poldict_out['vis3']] = rl
+        datatable[poldict_out['vis4']] = lr
+        datatable[poldict_out['sigma1']] = rrsig
+        datatable[poldict_out['sigma2']] = llsig
+        datatable[poldict_out['sigma3']] = rlsig
+        datatable[poldict_out['sigma4']] = lrsig    
+    else: # original, slower code
+        datatable = []
+        for i in range(len(times)):
+            datatable.append(np.array
+                             ((
+                                 times[i], tints[i],
+                                 t1[i], t2[i], tau1[i], tau2[i],
+                                 u[i], v[i],
+                                 rr[i], ll[i], rl[i], lr[i],
+                                 rrsig[i], llsig[i], rlsig[i], lrsig[i]
+                             ), dtype=dtpol_out
+                             ))
+        datatable = np.array(datatable)
+   
     obs = ehtim.obsdata.Obsdata(ra, dec, rf, bw, datatable, tarr, polrep=polrep_uvfits,
-                                source=src, mjd=mjd, scantable=scantable)
+                                source=src, mjd=mjd, scantable=scantable,
+                                trial_speedups=trial_speedups)
 
-    # TODO -- this is bad, ack. use masks!
+    # TODO -- this is bad and slow, use masks!
     if remove_nan:
         if polrep_uvfits == 'circ':
             for j in range(len(obs.data)):

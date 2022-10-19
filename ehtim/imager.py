@@ -42,7 +42,7 @@ STOP = 1e-6  # convergence criterion
 EPS = 1e-8
 
 DATATERMS = ['vis', 'bs', 'amp', 'cphase', 'cphase_diag', 'camp', 'logcamp', 'logcamp_diag']
-REGULARIZERS = ['gs', 'tv', 'tv2', 'l1', 'l1w', 'lA', 'patch',
+REGULARIZERS = ['gs', 'tv', 'tvlog','tv2', 'l1', 'l1w', 'lA', 'patch',
                 'flux', 'cm', 'simple', 'compact', 'compact2', 'rgauss', 'hw']
 REGULARIZERS_SPECIND = ['l2_alpha', 'tv_alpha']
 REGULARIZERS_CURV = ['l2_beta', 'tv_beta']
@@ -194,6 +194,7 @@ class Imager(object):
 
         # multifrequency
         self.mf_next = False
+        self.reg_all_freq_mf = kwargs.get('reg_all_freq_mf',False)
         self.mf_which_solve = kwargs.get('mf_which_solve',MF_WHICH_SOLVE)
 
         # Set embedding matrices and prepare imager
@@ -240,6 +241,7 @@ class Imager(object):
         """
 
         self.mf_next = mf
+        self.reg_all_freq_mf = kwargs.get('reg_all_freq_mf', self.reg_all_freq_mf)
         self.mf_which_solve = kwargs.get('mf_which_solve', self.mf_which_solve)
 
         if pol is None:
@@ -278,6 +280,7 @@ class Imager(object):
         def callback_func(xcur):
             self.plotcur(xcur, **kwargs)
 
+        print("Imaging . . .")
         tstart = time.time()
         if grads:
             res = opt.minimize(self.objfunc, self._xinit, method='L-BFGS-B', jac=self.objgrad,
@@ -316,7 +319,7 @@ class Imager(object):
         chi2_term_dict = self.make_chisq_dict(out)
         for dname in sorted(self.dat_term_next.keys()):
             for i, obs in enumerate(self.obslist_next):
-                if i == 0:
+                if len(self.obslist_next)==1:
                     dname_key = dname
                 else:
                     dname_key = dname + ('_%i' % i)
@@ -964,7 +967,7 @@ class Imager(object):
                 # Loop over all observations in the list
                 for i, obs in enumerate(self.obslist_next):
                     # Each entry in the dterm dictionary past the first has an appended number
-                    if i == 0:
+                    if len(self.obslist_next)==1:
                         dname_key = dname
                     else:
                         dname_key = dname + ('_%i' % i)
@@ -1050,7 +1053,7 @@ class Imager(object):
         for dname in sorted(self.dat_term_next.keys()):
             # Loop over all observations in the list
             for i, obs in enumerate(self.obslist_next):
-                if i == 0:
+                if len(self.obslist_next)==1:
                     dname_key = dname
                 else:
                     dname_key = dname + ('_%i' % i)
@@ -1058,7 +1061,6 @@ class Imager(object):
                 (data, sigma, A) = self._data_tuples[dname_key]
 
                 if dname in DATATERMS_POL:
-                #if self.pol_next == 'P':
                     chi2 = polutils.polchisq(imcur, A, data, sigma, dname,
                                              ttype=self._ttype, mask=self._embed_mask,
                                              pol_prim=POL_PRIM_SOLVE)
@@ -1091,7 +1093,7 @@ class Imager(object):
         for dname in sorted(self.dat_term_next.keys()):
             # Loop over all observations in the list
             for i, obs in enumerate(self.obslist_next):
-                if i == 0:
+                if len(self.obslist_next)==1:
                     dname_key = dname
                 else:
                     dname_key = dname + ('_%i' % i)
@@ -1124,11 +1126,10 @@ class Imager(object):
                     # transform the image gradients for all the solved quantities
                     if self.mf_next:
                         logfreqratio = self._logfreqratio_list[i]
-                        chi2grad = mfutils.mf_all_chisqgrads(
-                            chi2grad, imcur_nu, imref, logfreqratio)
+                        chi2grad = mfutils.mf_all_grads_chain(chi2grad, imcur_nu, imref, logfreqratio)
 
                     # If imaging polarization simultaneously, bundle the gradient properly
-                    if self.pol_next == 'IP' or self.pol_next == 'IQU': # TODO AC AA MAKE MORE ELEGANT
+                    if self.pol_next == 'IP' or self.pol_next == 'IQU': 
                         chi2grad = np.array((chi2grad, np.zeros(self._nimage), np.zeros(self._nimage)))
 
                 else:
@@ -1142,9 +1143,10 @@ class Imager(object):
         """Make a dictionary of current regularizer values
         """
         reg_dict = {}
+                           
         for regname in sorted(self.reg_term_next.keys()):
+        
             # Polarimetric regularizer
-            #if self.pol_next == 'P':
             if regname in REGULARIZERS_POL:
                 reg = polutils.polregularizer(imcur, self._embed_mask, self.flux_next,
                                               self.prior_next.xdim, self.prior_next.ydim,
@@ -1152,15 +1154,39 @@ class Imager(object):
                                               norm_reg=self.norm_reg, beam_size=self.beam_size,
                                               pol_prim=POL_PRIM_SOLVE, pol_solve=POL_WHICH_SOLVE)
 
-            # Multifrequency regularizer
+            # Multifrequency regularizers
             elif self.mf_next:
-                if regname in REGULARIZERS:
-                    reg = imutils.regularizer(imcur[0], self.priortuple[0], self._embed_mask,
-                                              self.flux_next, self.prior_next.xdim,
-                                              self.prior_next.ydim, self.prior_next.psize,
-                                              regname,
-                                              norm_reg=self.norm_reg, beam_size=self.beam_size,
-                                              **self.regparams)
+            
+                # Image regularizer(s)
+                if regname in REGULARIZERS:         
+                    # new option to regularize ALL the images in multifrequency imaging
+                    # TODO total fluxes not right? 
+                    if self.reg_all_freq_mf:
+                        for i in range(len(self.obslist_next)):
+                            regname_key = regname + ('_%i' % i)
+                            logfreqratio = self._logfreqratio_list[i]
+                            imcur_nu = mfutils.imvec_at_freq(imcur, logfreqratio)
+                            prior_nu = mfutils.imvec_at_freq(self.priortuple, logfreqratio)
+                            imref =imcur[0]
+                            
+                            reg = imutils.regularizer(imcur_nu, prior_nu, self._embed_mask,
+                                                      self.flux_next, self.prior_next.xdim,
+                                                      self.prior_next.ydim, self.prior_next.psize,
+                                                      regname,
+                                                      norm_reg=self.norm_reg, beam_size=self.beam_size,
+                                                      **self.regparams)
+                            reg_dict[regname_key] = reg                                
+                    
+                    # normally we only regularize reference frequency image
+                    else:
+                        reg = imutils.regularizer(imcur[0], self.priortuple[0], self._embed_mask,
+                                                  self.flux_next, self.prior_next.xdim,
+                                                  self.prior_next.ydim, self.prior_next.psize,
+                                                  regname,
+                                                  norm_reg=self.norm_reg, beam_size=self.beam_size,
+                                                  **self.regparams)
+                    
+                # Spectral index regularizer(s)                                                      
                 elif regname in REGULARIZERS_SPECIND:
                     reg = mfutils.regularizer_mf(imcur[1], self.priortuple[1], self._embed_mask,
                                                  self.flux_next, self.prior_next.xdim,
@@ -1169,6 +1195,7 @@ class Imager(object):
                                                  norm_reg=self.norm_reg, beam_size=self.beam_size,
                                                  **self.regparams)
 
+                # Curvature index regularizer(s)                                                      
                 elif regname in REGULARIZERS_CURV:
                     reg = mfutils.regularizer_mf(imcur[2], self.priortuple[2], self._embed_mask,
                                                  self.flux_next, self.prior_next.xdim,
@@ -1177,7 +1204,7 @@ class Imager(object):
                                                  norm_reg=self.norm_reg, beam_size=self.beam_size,
                                                  **self.regparams)
 
-            # Normal regularizer
+            # Normal, single polarization, single-frequency regularizer
             elif regname in REGULARIZERS:
                 if self.pol_next == 'IP' or self.pol_next == 'IQU':
                     imcur0 = imcur[0]
@@ -1193,19 +1220,23 @@ class Imager(object):
             else:
                 raise Exception("regularizer term %s not recognized!" % regname)
 
-            reg_dict[regname] = reg
+            # multifrequency regularizer terms are already in the dictionary
+            # if we regularize all images with self.reg_all_freq_mf            
+            if not(self.mf_next and self.reg_all_freq_mf and (regname in REGULARIZERS)): 
+                reg_dict[regname] = reg
 
         return reg_dict
 
     def make_reggrad_dict(self, imcur):
         """Make a dictionary of current regularizer gradient values
         """
-
+                
         reggrad_dict = {}
+        
+                    
         for regname in sorted(self.reg_term_next.keys()):
 
             # Polarimetric regularizer
-            #if self.pol_next == 'P':
             if regname in REGULARIZERS_POL:
                 reg = polutils.polregularizergrad(imcur, self._embed_mask, self.flux_next,
                                                   self.prior_next.xdim, self.prior_next.ydim,
@@ -1216,17 +1247,44 @@ class Imager(object):
 
             # Multifrequency regularizer
             elif self.mf_next:
-
+            
+                # Image regularizer(s)
                 if regname in REGULARIZERS:
-                    reg = imutils.regularizergrad(imcur[0], self.priortuple[0],
-                                                  self._embed_mask, self.flux_next,
-                                                  self.prior_next.xdim, self.prior_next.ydim,
-                                                  self.prior_next.psize, regname,
-                                                  norm_reg=self.norm_reg,
-                                                  beam_size=self.beam_size,
-                                                  **self.regparams)
-                    reg = np.array((reg, np.zeros(self._nimage), np.zeros(self._nimage)))
+                    # new option to regularize ALL the images in multifrequency imaging
+                    # TODO total fluxes not right? 
+                    if self.reg_all_freq_mf:
+                        for i in range(len(self.obslist_next)):
+                            regname_key = regname + ('_%i' % i)
+                            logfreqratio = self._logfreqratio_list[i]
+                            imcur_nu = mfutils.imvec_at_freq(imcur, logfreqratio)
+                            prior_nu = mfutils.imvec_at_freq(self.priortuple, logfreqratio)
+                            imref =imcur[0]
+                                                        
+                            reg = imutils.regularizergrad(imcur_nu, prior_nu,
+                                                          self._embed_mask, self.flux_next,
+                                                          self.prior_next.xdim, self.prior_next.ydim,
+                                                          self.prior_next.psize, regname,
+                                                          norm_reg=self.norm_reg,
+                                                          beam_size=self.beam_size,
+                                                          **self.regparams)
+                                                          
 
+                            reg = mfutils.mf_all_grads_chain(reg, imcur_nu, imref, logfreqratio)
+                            reg_dict[regname_key] = reg                                
+                    
+                    # normally we only regularize the reference frequency image
+                    else:
+                        reg = imutils.regularizergrad(imcur[0], self.priortuple[0],
+                                                      self._embed_mask, self.flux_next,
+                                                      self.prior_next.xdim, self.prior_next.ydim,
+                                                      self.prior_next.psize, regname,
+                                                      norm_reg=self.norm_reg,
+                                                      beam_size=self.beam_size,
+                                                      **self.regparams)
+                        reg = np.array((reg, np.zeros(self._nimage), np.zeros(self._nimage)))
+                                              
+
+                # Spectral index regularizer(s)
                 elif regname in REGULARIZERS_SPECIND:
                     reg = mfutils.regularizergrad_mf(imcur[1], self.priortuple[1],
                                                      self._embed_mask, self.flux_next,
@@ -1237,6 +1295,7 @@ class Imager(object):
                                                      **self.regparams)
                     reg = np.array((np.zeros(self._nimage), reg, np.zeros(self._nimage)))
 
+                # Curvature index regularizer(s)
                 elif regname in REGULARIZERS_CURV:
                     reg = mfutils.regularizergrad_mf(imcur[2], self.priortuple[2],
                                                      self._embed_mask, self.flux_next,
@@ -1247,7 +1306,7 @@ class Imager(object):
                                                      **self.regparams)
                     reg = np.array((np.zeros(self._nimage), np.zeros(self._nimage), reg))
 
-            # Normal regularizer
+            # Normal, single polarization, single-frequency regularizer
             elif regname in REGULARIZERS:
                 if self.pol_next == 'IP' or self.pol_next == 'IQU': # TODO AC AA MAKE MORE ELEGANT
                     imcur0 = imcur[0]
@@ -1264,7 +1323,10 @@ class Imager(object):
             else:
                 raise Exception("regularizer term %s not recognized!" % regname)
 
-            reggrad_dict[regname] = reg
+            # multifrequency regularizer gradient terms are already in the dictionary
+            # if we regularize all images with self.reg_all_freq_mf
+            if not(self.mf_next and self.reg_all_freq_mf and (regname in REGULARIZERS)): 
+                reggrad_dict[regname] = reg
 
         return reggrad_dict
 
@@ -1304,7 +1366,7 @@ class Imager(object):
             hyperparameter = self.dat_term_next[dname]
 
             for i, obs in enumerate(self.obslist_next):
-                if i == 0:
+                if len(self.obslist_next)==1:
                     dname_key = dname
                 else:
                     dname_key = dname + ('_%i' % i)
@@ -1321,10 +1383,22 @@ class Imager(object):
         reg_term_dict = self.make_reg_dict(imcur)
         for regname in sorted(self.reg_term_next.keys()):
             hyperparameter = self.reg_term_next[regname]
-            regularizer = reg_term_dict[regname]
-            regterm += hyperparameter * regularizer
+            # multifrequency imaging, regularize every frequency
+            if self.mf_next and self.reg_all_freq_mf and (regname in REGULARIZERS):
+                for i in range(len(self.obslist_next)):
+                    regname_key = regname + ('_%i' % i)
+                    regularizer = reg_term_dict[regname_key]        
+                    regterm += hyperparameter * regularizer
+                    
+            # but normally just one regularizer                    
+            else:        
+                regularizer = reg_term_dict[regname]
+                regterm += hyperparameter * regularizer
 
-        return datterm + regterm
+        # Total cost
+        cost = datterm + regterm
+        
+        return cost
 
     def objgrad(self, imvec):
         """Current objective function gradient.
@@ -1356,7 +1430,6 @@ class Imager(object):
             else:
                 imcur = np.exp(imcur)
 
-
         # Data terms
         datterm = 0.
         chi2_term_dict = self.make_chisqgrad_dict(imcur)
@@ -1366,7 +1439,7 @@ class Imager(object):
             hyperparameter = self.dat_term_next[dname]
 
             for i, obs in enumerate(self.obslist_next):
-                if i == 0:
+                if len(self.obslist_next)==1:
                     dname_key = dname
                 else:
                     dname_key = dname + ('_%i' % i)
@@ -1384,9 +1457,20 @@ class Imager(object):
         reg_term_dict = self.make_reggrad_dict(imcur)
         for regname in sorted(self.reg_term_next.keys()):
             hyperparameter = self.reg_term_next[regname]
-            regularizer_grad = reg_term_dict[regname]
-            regterm += hyperparameter * regularizer_grad
+            
+            # multifrequency imaging, regularize every frequency
+            if self.mf_next and self.reg_all_freq_mf and (regname in REGULARIZERS):
+                for i in range(len(self.obslist_next)):
+                    regname_key = regname + ('_%i' % i)
+                    regularizer = reg_term_dict[regname_key]        
+                    regterm += hyperparameter * regularizer
+                    
+            # but normally just one regularizer
+            else:                    
+                regularizer_grad = reg_term_dict[regname]
+                regterm += hyperparameter * regularizer_grad
 
+        # Total gradient
         grad = datterm + regterm
 
         # Chain rule term for change of variables
@@ -1454,7 +1538,7 @@ class Imager(object):
                 outstr += "\n%4d | " % self._nit
                 for dname in sorted(self.dat_term_next.keys()):
                     for i, obs in enumerate(self.obslist_next):
-                        if i == 0:
+                        if len(self.obslist_next)==1:
                             dname_key = dname
                         else:
                             dname_key = dname + ('_%i' % i)
@@ -1462,7 +1546,7 @@ class Imager(object):
                 outstr += "\n        "
                 for dname in sorted(self.dat_term_next.keys()):
                     for i, obs in enumerate(self.obslist_next):
-                        if i == 0:
+                        if len(self.obslist_next)==1:
                             dname_key = dname
                         else:
                             dname_key = dname + ('_%i' % i)
@@ -1471,8 +1555,15 @@ class Imager(object):
 
                 outstr += "\n        "
                 for regname in sorted(self.reg_term_next.keys()):
-                    rval = reg_term_dict[regname]*self.reg_term_next[regname]
-                    outstr += "%s : %0.1f " % (regname, rval)
+                
+                    if self.mf_next and self.reg_all_freq_mf and (regname in REGULARIZERS):
+                        for i in range(len(self.obslist_next)):
+                            regname_key = regname + ('_%i' % i)
+                            rval = reg_term_dict[regname_key]*self.reg_term_next[regname]
+                            outstr += "%s : %0.1f " % (regname_key, rval)
+                    else:
+                        rval = reg_term_dict[regname]*self.reg_term_next[regname]
+                        outstr += "%s : %0.1f " % (regname, rval)
 
                 # Embed and plot the image
                 if self.pol_next == 'P' or self.pol_next == 'IP' or self.pol_next == 'IQU':

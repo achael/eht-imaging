@@ -41,6 +41,9 @@ import warnings
 warnings.filterwarnings("ignore", message="divide by zero encountered in log")
 
 MAXIT = 10000  # maximum number of iterations in self-cal minimizer
+NHIST = 50   # number of steps to store for hessian approx
+MAXLS = 40   # maximum number of line search steps in BFGS-B
+STOP = 1e-6  # convergence criterion
 
 ###################################################################################################
 # Self-Calibration
@@ -52,7 +55,8 @@ def self_cal(obs, im, sites=[], method="both", pol='I', minimizer_method='BFGS',
              ttype='direct', fft_pad_factor=2, caltable=False,
              debias=True, apply_dterms=False,
              copy_closure_tables=True,
-             processes=-1, show_solution=False, msgtype='bar'):
+             processes=-1, show_solution=False, msgtype='bar',
+             use_grad=False):
     """Self-calibrate a dataset to an image.
 
        Args:
@@ -83,12 +87,14 @@ def self_cal(obs, im, sites=[], method="both", pol='I', minimizer_method='BFGS',
            apply_dterms (bool): if True, apply dterms (in obs.tarr) to clean data before calibrating
            show_solution (bool): if True, display the solution as it is calculated
            msgtype (str): type of progress message to be printed, default is 'bar'
-
+           use_grad (bool): if True, use gradients in minimizer
+           
        Returns:
            (Obsdata): the calibrated observation, if caltable==False
            (Caltable): the derived calibration table, if caltable==True
     """
-
+    if use_grad and (method=='phase' or method=='amp'):
+        raise Exception("errfunc_grad in self_cal only works with method=='both'!")
     if pol not in ['I', 'Q', 'U', 'V', 'RR', 'LL']:
         raise Exception("Can only self-calibrate to I, Q, U, V, RR, or LL images!")
     if pol in ['I', 'Q', 'U', 'V']:
@@ -148,7 +154,8 @@ def self_cal(obs, im, sites=[], method="both", pol='I', minimizer_method='BFGS',
                                                               obs.polrep, pol,
                                                               method, minimizer_method,
                                                               show_solution, pad_amp, gain_tol,
-                                                              caltable, debias, msgtype
+                                                              debias, caltable, msgtype,
+                                                              use_grad
                                                               ] for i in range(len(scans))]))
 
     else:  # run on a single core
@@ -157,8 +164,10 @@ def self_cal(obs, im, sites=[], method="both", pol='I', minimizer_method='BFGS',
             scans_cal[i] = self_cal_scan(scans[i], im, V_scan=V_scans[i], sites=sites,
                                          polrep=obs.polrep, pol=pol,
                                          method=method, minimizer_method=minimizer_method,
-                                         show_solution=show_solution, debias=debias,
-                                         pad_amp=pad_amp, gain_tol=gain_tol, caltable=caltable)
+                                         show_solution=show_solution, 
+                                         pad_amp=pad_amp, gain_tol=gain_tol, 
+                                         debias=debias, caltable=caltable,
+                                         use_grad=use_grad)
 
     tstop = time.time()
     print("\nself_cal time: %f s" % (tstop - tstart))
@@ -201,7 +210,8 @@ def self_cal(obs, im, sites=[], method="both", pol='I', minimizer_method='BFGS',
 
 def self_cal_scan(scan, im, V_scan=[], sites=[], polrep='stokes', pol='I', method="both",
                   minimizer_method='BFGS', show_solution=False,
-                  pad_amp=0., gain_tol=.2, debias=True, caltable=False):
+                  pad_amp=0., gain_tol=.2, debias=True, caltable=False,
+                  use_grad=False):
     """Self-calibrate a scan to an image.
 
        Args:
@@ -224,12 +234,16 @@ def self_cal_scan(scan, im, V_scan=[], sites=[], polrep='stokes', pol='I', metho
            debias (bool): If True, debias the amplitudes
            caltable (bool): if True, returns a Caltable instead of an Obsdata
            show_solution (bool): if True, display the solution as it is calculated
-
+           use_grad (bool): if True, use gradients in minimizer
+           
        Returns:
            (Obsdata): the calibrated observation, if caltable==False
            (Caltable): the derived calibration table, if caltable==True
     """
-
+    
+    if use_grad and (method=='phase' or method=='amp'):
+        raise Exception("errfunc_grad in self_cal only works with method=='both'!")
+        
     if len(sites) == 0:
         print("No stations specified in self cal: defaulting to calibrating all !")
         sites = list(set(scan['t1']).union(set(scan['t2'])))
@@ -286,46 +300,25 @@ def self_cal_scan(scan, im, V_scan=[], sites=[], polrep='stokes', pol='I', metho
 
     # error function
     def errfunc(gpar):
-        # all the forward site gains (complex)
-        g = gpar.astype(np.float64).view(dtype=np.complex128)
+        return errfunc_full(gpar, vis, V_scan, sigma_inv, gain_tol, sites, g1_keys, g2_keys, method)
 
-        if method == "phase":
-            g = g / np.abs(g)
-        if method == "amp":
-            g = np.abs(np.real(g))
-
-        # append the default values to g for missing gains
-        g = np.append(g, 1.)
-        g1 = g[g1_keys]
-        g2 = g[g2_keys]
-
-        # build site specific tolerance parameters
-        tol0 = np.array([gain_tol.get(s, gain_tol['default'])[0] for s in sites])
-        tol1 = np.array([gain_tol.get(s, gain_tol['default'])[1] for s in sites])
-
-        if method == 'amp':
-            verr = np.abs(vis) - g1 * g2.conj() * np.abs(V_scan)
-        else:
-            verr = vis - g1 * g2.conj() * V_scan
-
-        nan_mask = [not np.isnan(v) for v in verr]
-        verr = verr[nan_mask]
-
-        # goodness-of-fit for gains
-        chisq = np.sum((verr.real * sigma_inv[nan_mask])**2) + \
-            np.sum((verr.imag * sigma_inv[nan_mask])**2)
-
-        # prior on the gains
-        # don't count the last (default missing site) gain dummy value
-        chisq_g = np.sum(np.log(np.abs(g[:-1]))**2 /
-                         ((np.abs(g[:-1]) > 1) * tol0 + (np.abs(g[:-1]) <= 1) * tol1)**2)
-
-        return chisq + chisq_g
+    def errfunc_grad(gpar):
+        return errfunc_grad_full(gpar, vis, V_scan, sigma_inv, gain_tol, sites, g1_keys, g2_keys, method)
 
     # use gradient descent to find the gains
-    optdict = {'maxiter': MAXIT}  # minimizer params
-    res = opt.minimize(errfunc, gpar_guess, method=minimizer_method, options=optdict)
-
+    # minimizer params
+    if minimizer_method=='L-BFGS-B':
+        optdict = {'maxiter': MAXIT,
+                   'ftol': STOP, 'gtol': STOP,
+                   'maxcor': NHIST, 'maxls': MAXLS}
+    else:
+        optdict = {'maxiter': MAXIT}  
+        
+    if use_grad:                   
+        res = opt.minimize(errfunc, gpar_guess, method=minimizer_method, options=optdict, jac=errfunc_grad)
+    else:
+        res = opt.minimize(errfunc, gpar_guess, method=minimizer_method, options=optdict)
+        
     # save the solution
     g_fit = res.x.view(np.complex128)
 
@@ -397,7 +390,7 @@ def get_selfcal_scan_cal(args):
 
 
 def get_selfcal_scan_cal2(i, n, scan, im, V_scan, sites, polrep, pol, method, minimizer_method,
-                          show_solution, pad_amp, gain_tol, caltable, debias, msgtype):
+                          show_solution, pad_amp, gain_tol, debias, caltable, msgtype, use_grad):
     if n > 1:
         global counter
         counter.increment()
@@ -406,4 +399,140 @@ def get_selfcal_scan_cal2(i, n, scan, im, V_scan, sites, polrep, pol, method, mi
     return self_cal_scan(scan, im, V_scan=V_scan, sites=sites, polrep=polrep, pol=pol,
                          method=method, minimizer_method=minimizer_method,
                          show_solution=show_solution,
-                         pad_amp=pad_amp, gain_tol=gain_tol, caltable=caltable, debias=debias)
+                         pad_amp=pad_amp, gain_tol=gain_tol, debias=debias, caltable=caltable,
+                         use_grad=use_grad)
+                         
+# error function
+def errfunc_full(gpar, vis, v_scan, sigma_inv, gain_tol, sites, g1_keys, g2_keys, method):
+    # all the forward site gains (complex)
+    g = gpar.astype(np.float64).view(dtype=np.complex128)
+
+    if method == "phase":
+        g = g / np.abs(g)
+    if method == "amp":
+        g = np.abs(np.real(g))
+
+    # append the default values to g for missing gains
+    g = np.append(g, 1.)
+    g1 = g[g1_keys]
+    g2 = g[g2_keys]
+
+    # build site specific tolerance parameters
+    tol0 = np.array([gain_tol.get(s, gain_tol['default'])[0] for s in sites])
+    tol1 = np.array([gain_tol.get(s, gain_tol['default'])[1] for s in sites])
+
+    if method == 'amp':
+        verr = np.abs(vis) - g1 * g2.conj() * np.abs(v_scan)
+    else:
+        verr = vis - g1 * g2.conj() * v_scan
+
+    nan_mask = [not np.isnan(v) for v in verr]
+    verr = verr[nan_mask]
+
+    # goodness-of-fit for gains
+    chisq = np.sum((verr.real * sigma_inv[nan_mask])**2) + \
+            np.sum((verr.imag * sigma_inv[nan_mask])**2)
+
+    # prior on the gains
+    # don't count the last (default missing site) gain dummy value
+    tolsq = ((np.abs(g[:-1]) > 1) * tol0 + (np.abs(g[:-1]) <= 1) * tol1)**2
+    chisq_g = np.sum(np.log(np.abs(g[:-1]))**2 / tolsq)
+    
+    # total chi^2
+    chisqtot = chisq + chisq_g
+    return chisqtot
+                                 
+def errfunc_grad_full(gpar, vis, v_scan, sigma_inv, gain_tol, sites, g1_keys, g2_keys, method):
+    # does not work for method=='phase' or method=='amp'
+    if method=='phase' or method=='amp':
+        raise Exception("errfunc_grad in self_cal only works with method=='both'!")
+        
+    # all the forward site gains (complex)
+    g = gpar.astype(np.float64).view(dtype=np.complex128)
+    gr = np.real(g)
+    gi = np.imag(g)
+    
+    # build site specific tolerance parameters
+    tol0 = np.array([gain_tol.get(s, gain_tol['default'])[0] for s in sites])
+    tol1 = np.array([gain_tol.get(s, gain_tol['default'])[1] for s in sites])
+       
+    # append the default values to g for missing gains
+    g = np.append(g, 1.)    
+    g1 = g[g1_keys]
+    g2 = g[g2_keys]
+    
+    g1r = np.real(g1)
+    g1i = np.imag(g1)
+    g2r = np.real(g2)
+    g2i = np.imag(g2)
+
+    v_scan_sq = v_scan*v_scan.conj()
+    g1sq = g1*(g1.conj())
+    g2sq = g2*(g2.conj())
+
+    ###################################
+    # data term chi^2 derivitive    
+    ###################################
+        
+    # chi^2 term gradients
+    dchisq_dg1r = (-g2.conj()*vis.conj()*v_scan - g2*vis*v_scan.conj() + 2*g1r*g2sq*v_scan_sq)
+    dchisq_dg1i = (-1j*g2.conj()*vis.conj()*v_scan + 1j*g2*vis*v_scan.conj() + 2*g1i*g2sq*v_scan_sq)
+   
+    dchisq_dg2r = (-g1*vis.conj()*v_scan - g1.conj()*vis*v_scan.conj() + 2*g2r*g1sq*v_scan_sq)
+    dchisq_dg2i = (1j*g1*vis.conj()*v_scan - 1j*g1.conj()*vis*v_scan.conj() + 2*g2i*g1sq*v_scan_sq)  
+
+
+    dchisq_dg1r *= ((sigma_inv)**2)
+    dchisq_dg1i *= ((sigma_inv)**2)
+    dchisq_dg2r *= ((sigma_inv)**2)
+    dchisq_dg2i *= ((sigma_inv)**2)    
+
+    # same masking function as in errfunc
+    # preserve length of dchisq arrays
+    verr = vis - g1 * g2.conj() * v_scan
+    nan_mask = np.isnan(verr)
+    
+    dchisq_dg1r[nan_mask] = 0
+    dchisq_dg1i[nan_mask] = 0
+    dchisq_dg2r[nan_mask] = 0
+    dchisq_dg2i[nan_mask] = 0
+    
+    # derivitives of real and imaginary gains                
+    dchisq_dgr = np.zeros(len(gpar)//2) #len(gpar) must be even 
+    dchisq_dgi = np.zeros(len(gpar)//2)    
+    
+    # TODO faster than a for loop?     
+    for i in range(len(gpar)//2):
+        g1idx = np.argwhere(np.array(g1_keys)==i)
+        g2idx = np.argwhere(np.array(g2_keys)==i)
+        
+        dchisq_dgr[i] = np.sum(dchisq_dg1r[g1idx]) + np.sum(dchisq_dg2r[g2idx])                
+        dchisq_dgi[i] = np.sum(dchisq_dg1i[g1idx]) + np.sum(dchisq_dg2i[g2idx])
+                
+    ###################################                        
+    # prior term chi^2 derivitive 
+    ###################################
+        
+    # NOTE this derivitive doesn't account for possible sharp change in tol at g=1
+    gsq = np.abs(g[:-1])**2 # don't count default missing site dummy value
+    tolsq = ((np.abs(g[:-1]) > 1) * tol0 + (np.abs(g[:-1]) <= 1) * tol1)**2
+    
+    dchisqg_dgr = gr*np.log(gsq)/gsq/tolsq
+    dchisqg_dgi = gi*np.log(gsq)/gsq/tolsq
+    
+    # total derivative
+    dchisqtot_dgr = dchisq_dgr + dchisqg_dgr
+    dchisqtot_dgi = dchisq_dgi + dchisqg_dgi
+    
+    # interleave final derivs
+    dchisqtot_dgpar = np.zeros(len(gpar))
+    dchisqtot_dgpar[0::2] = dchisqtot_dgr
+    dchisqtot_dgpar[1::2] = dchisqtot_dgi
+
+    # any imaginary parts??? should all be real
+    dchisqtot_dgpar = np.real(dchisqtot_dgpar)
+    
+    return dchisqtot_dgpar
+                     
+                     
+                         

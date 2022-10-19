@@ -7,8 +7,10 @@ from __future__ import print_function
 
 import numpy as np
 import ehtim as eh
+from ehtim.imaging.imager_utils import chisqdata, chisq, chisqgrad
 
-im = eh.image.load_txt('../models/avery_sgra_eofn.txt')
+#im = eh.image.load_txt('../models/avery_sgra_eofn.txt')
+im = eh.image.load_txt('../models/jason_mad_eofn.txt')
 eht = eh.array.load_txt('../arrays/EHT2017.txt')
 
 tint_sec = 5
@@ -39,25 +41,36 @@ if len(mask) >0 and np.any(np.invert(mask)):
     print("masked size %i"%len(test_imvec))
 
 # Testing the chi^2
-for dtype in ['vis', 'bs', 'amp', 'cphase', 'cphase_diag', 'camp', 'logcamp', 'logcamp_diag']:
+for dtype in ['vis', 'bs', 'amp', 'cphase',  'camp', 'logcamp']:#'cphase_diag', 'logcamp_diag']:
     print('\nTesting chi^2 dtype:',dtype)
-    chisqdata_dft = eh.imager.chisqdata(obs_dft, prior, mask, dtype, ttype='direct')
-    chisqdata_nfft = eh.imager.chisqdata(obs_nfft, prior, mask, dtype, ttype='nfft')
-    chisq_dft = eh.imager.chisq(test_imvec, chisqdata_dft[2], chisqdata_dft[0], chisqdata_dft[1], dtype, ttype='direct', mask=mask)
-    chisq_nfft = eh.imager.chisq(test_imvec, chisqdata_nfft[2], chisqdata_nfft[0], chisqdata_nfft[1], dtype, ttype='nfft', mask=mask)
+    chisqdata_dft = chisqdata(obs_dft, prior, mask, dtype, ttype='direct')
+    chisqdata_nfft = chisqdata(obs_nfft, prior, mask, dtype, ttype='nfft')
+    chisq_dft = chisq(test_imvec, chisqdata_dft[2], chisqdata_dft[0], chisqdata_dft[1], dtype, ttype='direct', mask=mask)
+    chisq_nfft = chisq(test_imvec, chisqdata_nfft[2], chisqdata_nfft[0], chisqdata_nfft[1], dtype, ttype='nfft', mask=mask)
     print("chisq_dft: %f" % chisq_dft)
     print("chisq_nfft: %f" % chisq_nfft)
 
 # Testing the gradient of chi^2
-for dtype in ['vis', 'bs', 'amp', 'cphase', 'cphase_diag', 'camp', 'logcamp', 'logcamp_diag']:
+for dtype in ['vis', 'bs', 'amp', 'cphase',  'camp', 'logcamp']:#'cphase_diag', 'logcamp_diag']:
     print('\nTesting chi^2 gradient dtype:',dtype)
-    chisqdata_dft = eh.imager.chisqdata(obs_dft, prior, mask, dtype, ttype='direct')
-    chisqdata_nfft = eh.imager.chisqdata(obs_nfft, prior, mask, dtype, ttype='nfft')
-    chisq_dft_grad = eh.imager.chisqgrad(test_imvec, chisqdata_dft[2], chisqdata_dft[0], chisqdata_dft[1], dtype, ttype='direct', mask=mask)
-    chisq_nfft_grad = eh.imager.chisqgrad(test_imvec, chisqdata_nfft[2], chisqdata_nfft[0], chisqdata_nfft[1], dtype, ttype='nfft', mask=mask)
+    chisqdata_dft = chisqdata(obs_dft, prior, mask, dtype, ttype='direct')
+    chisqdata_nfft = chisqdata(obs_nfft, prior, mask, dtype, ttype='nfft')
+    chisq_dft_grad = chisqgrad(test_imvec, chisqdata_dft[2], chisqdata_dft[0], chisqdata_dft[1], dtype, ttype='direct', mask=mask)
+    chisq_nfft_grad = chisqgrad(test_imvec, chisqdata_nfft[2], chisqdata_nfft[0], chisqdata_nfft[1], dtype, ttype='nfft', mask=mask)
     compare_floor = 1.0
     print("Median Fractional Difference of DTFT/NFFT for chi^2 gradient of " + dtype, np.median(np.abs((chisq_dft_grad - chisq_nfft_grad)/(np.abs(chisq_dft_grad)+compare_floor))))
 
+    dx = 1.e-12
+    y0 = chisq(test_imvec, chisqdata_dft[2], chisqdata_dft[0], chisqdata_dft[1], dtype, ttype='direct', mask=mask)
+    grad_n = np.zeros(len(test_imvec))
+    for j in range(len(test_imvec)):
+        test_imvec2 = test_imvec.copy()
+        test_imvec2[j] += dx
+        y1 = chisq(test_imvec2, chisqdata_dft[2], chisqdata_dft[0], chisqdata_dft[1], dtype, ttype='direct', mask=mask)
+        grad_n[j] = (y1-y0)/dx
+    print("\nMedian Fractional Gradient Difference for " + dtype + ":",np.median(np.abs((grad_n-chisq_dft_grad)/chisq_dft_grad)))
+    print("Maximal Fractional Gradient Difference for " + dtype + ":",np.max(np.abs((grad_n-chisq_dft_grad)/chisq_dft_grad)),'\n')       
+    
 # Testing the gradients of image regularization functions
 import ehtim.imaging.imager_utils as iu
 prior = test_imvec * 0.0 + 1.0
@@ -74,4 +87,4 @@ for reg in ['simple', 'gs', 'l1', 'tv', 'tv2']:
         y1 = iu.regularizer(test_imvec2, prior, mask, 1.0, im.xdim, im.ydim, im.psize, reg)
         grad[j] = (y1-y0)/dx
     print("Median Fractional Gradient Difference for " + reg + ":",np.median(np.abs((grad-grad_exact)/grad_exact)))
-        
+    print("Maximal Fractional Gradient Difference for " + reg + ":",np.max(np.abs((grad-grad_exact)/grad_exact)))       

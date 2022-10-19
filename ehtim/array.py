@@ -85,6 +85,7 @@ class Array(object):
     def obsdata(self, ra, dec, rf, bw, tint, tadv, tstart, tstop,
                 mjd=ehc.MJD_DEFAULT, timetype='UTC', polrep='stokes',
                 elevmin=ehc.ELEV_LOW, elevmax=ehc.ELEV_HIGH,
+                no_elevcut_space=False,
                 tau=ehc.TAUDEF, fix_theta_GMST=False):
         """Generate u,v points and baseline uncertainties.
 
@@ -95,13 +96,16 @@ class Array(object):
                tadv (float): the uniform cadence between scans in seconds
                tstart (float): the start time of the observation in hours
                tstop (float): the end time of the observation in hours
+
                mjd (int): the mjd of the observation
                timetype (str): how to interpret tstart and tstop; either 'GMST' or 'UTC'
                polrep (str): polarization representation, either 'stokes' or 'circ'
                elevmin (float): station minimum elevation in degrees
                elevmax (float): station maximum elevation in degrees
+               no_elevcut_space (bool): if True, do not apply elevation cut to orbiters
                tau (float): the base opacity at all sites, or a dict giving one opacity per site
-
+               fix_theta_GMST (bool): if True, stops earth rotation to sample fixed u,v points
+               
            Returns:
                Obsdata: an observation object with no data
 
@@ -110,7 +114,8 @@ class Array(object):
         obsarr = simobs.make_uvpoints(self, ra, dec, rf, bw,
                                       tint, tadv, tstart, tstop,
                                       mjd=mjd, polrep=polrep, tau=tau,
-                                      elevmin=elevmin, elevmax=elevmax,
+                                      elevmin=elevmin, elevmax=elevmax, 
+                                      no_elevcut_space=no_elevcut_space,
                                       timetype=timetype, fix_theta_GMST=fix_theta_GMST)
 
         uniquetimes = np.sort(np.unique(obsarr['time']))
