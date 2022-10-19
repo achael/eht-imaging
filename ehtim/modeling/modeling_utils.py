@@ -370,6 +370,7 @@ def selfcal(Obsdata, model,
 def make_param_map(model_init, model_prior, minimizer_func, fit_model, fit_pol=False, fit_cpol=False):
     # Define the mapping between solved parameters and the model
     # Each fitted model parameter can be rescaled to give values closer to order unity
+
     param_map = []  # Define mapping for every fitted parameter: model component #, parameter name, rescale multiplier internal, unit, rescale multiplier external
     param_mask = [] # True or False for whether to fit each model parameter (because the gradient is computed for all model parameters)
     for j in range(model_init.N_models()):
@@ -394,9 +395,9 @@ def make_param_map(model_init, model_prior, minimizer_func, fit_model, fit_pol=F
                 param_mask.append(False)
     return (param_map, param_mask)
 
-def compute_likelihood_constants(d1, d2, d3, sigma1, sigma2, sigma3):
+def compute_likelihood_constants(d1, d2, d3, d4, sigma1, sigma2, sigma3, sigma4):
     # Compute the correct data weights (hyperparameters) and the correct extra constant for the log-likelihood
-    alpha_d1 = alpha_d2 = alpha_d3 = ln_norm1 = ln_norm2 = ln_norm3 = 0.0
+    alpha_d1 = alpha_d2 = alpha_d3 = alpha_d4 = ln_norm1 = ln_norm2 = ln_norm3 = ln_norm4 = 0.0
 
     try: 
         alpha_d1 = 0.5 * len(sigma1)
@@ -410,6 +411,10 @@ def compute_likelihood_constants(d1, d2, d3, sigma1, sigma2, sigma3):
         alpha_d3 = 0.5 * len(sigma3)        
         ln_norm3 = -np.sum(np.log((2.0*np.pi)**0.5 * sigma3))
     except: pass
+    try: 
+        alpha_d4 = 0.5 * len(sigma4)        
+        ln_norm4 = -np.sum(np.log((2.0*np.pi)**0.5 * sigma4))
+    except: pass
 
     # If using closure phase, the sigma is given in degrees, not radians!
     # Use the correct von Mises normalization if using closure phase
@@ -419,6 +424,8 @@ def compute_likelihood_constants(d1, d2, d3, sigma1, sigma2, sigma3):
         ln_norm2 = -np.sum(np.log(2.0*np.pi*sps.ive(0, 1.0/(sigma2 * DEGREE)**2)))
     if d3 in ['cphase','cphase_diag']:
         ln_norm3 = -np.sum(np.log(2.0*np.pi*sps.ive(0, 1.0/(sigma3 * DEGREE)**2)))
+    if d4 in ['cphase','cphase_diag']:
+        ln_norm4 = -np.sum(np.log(2.0*np.pi*sps.ive(0, 1.0/(sigma4 * DEGREE)**2)))
 
     if d1 in ['vis','bs','m','pvis','rrll','llrr','lrll','rlll','lrrr','rlrr','polclosure']:
         alpha_d1 *= 2
@@ -429,9 +436,12 @@ def compute_likelihood_constants(d1, d2, d3, sigma1, sigma2, sigma3):
     if d3 in ['vis','bs','m','pvis','rrll','llrr','lrll','rlll','lrrr','rlrr','polclosure']:
         alpha_d3 *= 2
         ln_norm3 *= 2
-    ln_norm = ln_norm1 + ln_norm2 + ln_norm3
+    if d4 in ['vis','bs','m','pvis','rrll','llrr','lrll','rlll','lrrr','rlrr','polclosure']:
+        alpha_d4 *= 2
+        ln_norm4 *= 2
+    ln_norm = ln_norm1 + ln_norm2 + ln_norm3 + ln_norm4
 
-    return (alpha_d1, alpha_d2, alpha_d3, ln_norm)
+    return (alpha_d1, alpha_d2, alpha_d3, alpha_d4, ln_norm)
 
 def default_gain_prior(sites):
     print('No gain prior specified. Defaulting to ' + str(GAIN_PRIOR_DEFAULT) + ' for all sites.')
@@ -687,7 +697,8 @@ def laplace_list():
     l1 = laplace_approximation(globdict['trial_model'], globdict['d1'], globdict['data1'], globdict['uv1'], globdict['sigma1'], globdict['gains_t1'], globdict['gains_t2'])
     l2 = laplace_approximation(globdict['trial_model'], globdict['d2'], globdict['data2'], globdict['uv2'], globdict['sigma2'], globdict['gains_t1'], globdict['gains_t2'])
     l3 = laplace_approximation(globdict['trial_model'], globdict['d3'], globdict['data3'], globdict['uv3'], globdict['sigma3'], globdict['gains_t1'], globdict['gains_t2'])
-    return (l1, l2, l3)
+    l4 = laplace_approximation(globdict['trial_model'], globdict['d4'], globdict['data4'], globdict['uv4'], globdict['sigma4'], globdict['gains_t1'], globdict['gains_t2'])
+    return (l1, l2, l3, l4)
 
 def chisq_wgain(trial_model, dtype, data, uv, sigma, pol, jonesdict, gains, gains_t1, gains_t2, fit_or_marginalize_gains):
     global globdict
@@ -704,7 +715,9 @@ def chisq_list(gains):
     chi2_1 = chisq_wgain(globdict['trial_model'], globdict['d1'], globdict['data1'], globdict['uv1'], globdict['sigma1'], globdict['pol1'], globdict['jonesdict1'], gains, globdict['gains_t1'], globdict['gains_t2'], globdict['fit_gains'] + globdict['marginalize_gains'])
     chi2_2 = chisq_wgain(globdict['trial_model'], globdict['d2'], globdict['data2'], globdict['uv2'], globdict['sigma2'], globdict['pol2'], globdict['jonesdict2'], gains, globdict['gains_t1'], globdict['gains_t2'], globdict['fit_gains'] + globdict['marginalize_gains'])
     chi2_3 = chisq_wgain(globdict['trial_model'], globdict['d3'], globdict['data3'], globdict['uv3'], globdict['sigma3'], globdict['pol3'], globdict['jonesdict3'], gains, globdict['gains_t1'], globdict['gains_t2'], globdict['fit_gains'] + globdict['marginalize_gains'])
-    return (chi2_1, chi2_2, chi2_3)
+    chi2_4 = chisq_wgain(globdict['trial_model'], globdict['d4'], globdict['data4'], globdict['uv4'], globdict['sigma4'], globdict['pol4'], globdict['jonesdict4'], gains, globdict['gains_t1'], globdict['gains_t2'], globdict['fit_gains'] + globdict['marginalize_gains'])
+
+    return (chi2_1, chi2_2, chi2_3, chi2_4)
 
 def update_leakage(leakage):
     # This function updates the 'jonesdict' entries based on current leakage estimates
@@ -756,14 +769,15 @@ def objfunc(params, force_posterior=False):
         _globdict['gain_init'] = caltable_to_gains(selfcal(globdict['Obsdata'], globdict['trial_model'], gain_init=None, gain_prior=globdict['gain_prior'], msgtype='none'),globdict['gain_list'])
         globdict = _globdict
 
-    (chi2_1, chi2_2, chi2_3) = chisq_list(gains)
+    (chi2_1, chi2_2, chi2_3, chi2_4) = chisq_list(gains)
     datterm  = ( globdict['alpha_d1'] * chi2_1 
                + globdict['alpha_d2'] * chi2_2
-               + globdict['alpha_d3'] * chi2_3)
+               + globdict['alpha_d3'] * chi2_3
+               + globdict['alpha_d4'] * chi2_4)
 
     if globdict['marginalize_gains']:
-        (l1, l2, l3) = laplace_list()
-        datterm += l1 + l2 + l3
+        (l1, l2, l3, l4) = laplace_list()
+        datterm += l1 + l2 + l3 + l4
 
     if (globdict['minimizer_func'] not in ['dynesty_static','dynesty_dynamic','pymc3']) or force_posterior:
         priterm  = prior(params[:globdict['n_params']], globdict['param_map'], globdict['model_prior'], globdict['minimizer_func']) 
@@ -784,7 +798,8 @@ def objgrad(params):
 
     datterm  = ( globdict['alpha_d1'] * chisqgrad_wgain(globdict['trial_model'], globdict['d1'], globdict['data1'], globdict['uv1'], globdict['sigma1'], globdict['jonesdict1'], gains, globdict['gains_t1'], globdict['gains_t2'], globdict['fit_gains'] + globdict['marginalize_gains'], globdict['param_mask'], globdict['pol1'], globdict['fit_pol'], globdict['fit_cpol'], globdict['fit_leakage']) 
                + globdict['alpha_d2'] * chisqgrad_wgain(globdict['trial_model'], globdict['d2'], globdict['data2'], globdict['uv2'], globdict['sigma2'], globdict['jonesdict2'], gains, globdict['gains_t1'], globdict['gains_t2'], globdict['fit_gains'] + globdict['marginalize_gains'], globdict['param_mask'], globdict['pol2'], globdict['fit_pol'], globdict['fit_cpol'], globdict['fit_leakage']) 
-               + globdict['alpha_d3'] * chisqgrad_wgain(globdict['trial_model'], globdict['d3'], globdict['data3'], globdict['uv3'], globdict['sigma3'], globdict['jonesdict3'], gains, globdict['gains_t1'], globdict['gains_t2'], globdict['fit_gains'] + globdict['marginalize_gains'], globdict['param_mask'], globdict['pol3'], globdict['fit_pol'], globdict['fit_cpol'], globdict['fit_leakage']))
+               + globdict['alpha_d3'] * chisqgrad_wgain(globdict['trial_model'], globdict['d3'], globdict['data3'], globdict['uv3'], globdict['sigma3'], globdict['jonesdict3'], gains, globdict['gains_t1'], globdict['gains_t2'], globdict['fit_gains'] + globdict['marginalize_gains'], globdict['param_mask'], globdict['pol3'], globdict['fit_pol'], globdict['fit_cpol'], globdict['fit_leakage'])
+               + globdict['alpha_d4'] * chisqgrad_wgain(globdict['trial_model'], globdict['d4'], globdict['data4'], globdict['uv4'], globdict['sigma4'], globdict['jonesdict4'], gains, globdict['gains_t1'], globdict['gains_t2'], globdict['fit_gains'] + globdict['marginalize_gains'], globdict['param_mask'], globdict['pol4'], globdict['fit_pol'], globdict['fit_cpol'], globdict['fit_leakage']))
 
     if globdict['minimizer_func'] not in ['dynesty_static','dynesty_dynamic','pymc3']:
         priterm  = np.concatenate([prior_grad(params[:globdict['n_params']], globdict['param_map'], 
@@ -870,9 +885,9 @@ def objgrad(params):
 # Modeler
 ##################################################################################################
 def modeler_func(Obsdata, model_init, model_prior,
-                   d1='vis', d2=False, d3=False,
-                   pol1='I', pol2='I', pol3='I',
-                   normchisq = False, alpha_d1=0, alpha_d2=0, alpha_d3=0,                   
+                   d1='vis', d2=False, d3=False, d4=False,
+                   pol1='I', pol2='I', pol3='I', pol4='I',
+                   normchisq = False, alpha_d1=0, alpha_d2=0, alpha_d3=0, alpha_d4=0,                   
                    flux=1.0, alpha_flux=0,
                    fit_model=True, fit_pol=False, fit_cpol=False, 
                    fit_gains=False,marginalize_gains=False,gain_init=None,gain_prior=None,
@@ -894,11 +909,13 @@ def modeler_func(Obsdata, model_init, model_prior,
            d1 (str): The first data term; options are 'vis', 'bs', 'amp', 'cphase', 'cphase_diag' 'camp', 'logcamp', 'logcamp_diag', 'm'
            d2 (str): The second data term; options are 'vis', 'bs', 'amp', 'cphase', 'cphase_diag' 'camp', 'logcamp', 'logcamp_diag', 'm'
            d3 (str): The third data term; options are 'vis', 'bs', 'amp', 'cphase', 'cphase_diag' 'camp', 'logcamp', 'logcamp_diag', 'm'
+           d4 (str): The fourth data term; options are 'vis', 'bs', 'amp', 'cphase', 'cphase_diag' 'camp', 'logcamp', 'logcamp_diag', 'm'
 
            normchisq (bool): If False (default), automatically assign weights alpha_d1-3 to match the true log-likelihood. 
            alpha_d1 (float): The first data term weighting. 
            alpha_d2 (float): The second data term weighting. Default value of zero will automatically assign weights to match the true log-likelihood.
-           alpha_d2 (float): The third data term weighting. Default value of zero will automatically assign weights to match the true log-likelihood.
+           alpha_d3 (float): The third data term weighting. Default value of zero will automatically assign weights to match the true log-likelihood.
+           alpha_d4 (float): The fourth data term weighting. Default value of zero will automatically assign weights to match the true log-likelihood.
 
            flux (float): Total flux of the fitted model
            alpha_flux (float): Hyperparameter controlling how strongly to constrain that the total flux matches the specified flux.
@@ -952,9 +969,9 @@ def modeler_func(Obsdata, model_init, model_prior,
     run_nested_kwargs = kwargs.get('run_nested_kwargs',{})
 
     # Make sure data and regularizer options are ok
-    if not d1 and not d2 and not d3:
+    if not d1 and not d2 and not d3 and not d4:
         raise Exception("Must have at least one data term!")
-    if (not ((d1 in DATATERMS) or d1==False)) or (not ((d2 in DATATERMS) or d2==False)):
+    if (not ((d1 in DATATERMS) or d1==False)) or (not ((d2 in DATATERMS) or d2==False)) or (not ((d3 in DATATERMS) or d3==False)) or (not ((d4 in DATATERMS) or d4==False)):
         raise Exception("Invalid data term: valid data terms are: " + ' '.join(DATATERMS))
 
     # Create the trial model
@@ -968,6 +985,7 @@ def modeler_func(Obsdata, model_init, model_prior,
         (data1, sigma1, uv1, jonesdict1) = chisqdata(Obsdata, d1, pol=pol1)
         (data2, sigma2, uv2, jonesdict2) = chisqdata(Obsdata, d2, pol=pol2)
         (data3, sigma3, uv3, jonesdict3) = chisqdata(Obsdata, d3, pol=pol3)
+        (data4, sigma4, uv4, jonesdict4) = chisqdata(Obsdata, d4, pol=pol4)
     elif type(Obsdata) is list:
         # Combine a list of observations into one. 
         # Allow these to be from multiple sources for polarimetric zero-baseline purposes.
@@ -984,10 +1002,12 @@ def modeler_func(Obsdata, model_init, model_prior,
         (data1, sigma1, uv1, jonesdict1) = chisqdata(Obsdata[0], d1, pol=pol1)
         (data2, sigma2, uv2, jonesdict2) = chisqdata(Obsdata[0], d2, pol=pol2)
         (data3, sigma3, uv3, jonesdict3) = chisqdata(Obsdata[0], d3, pol=pol3)
+        (data4, sigma4, uv4, jonesdict4) = chisqdata(Obsdata[0], d4, pol=pol4)
         for j in range(1,len(Obsdata)):
             (data1b, sigma1b, uv1b, jonesdict1b) = chisqdata(Obsdata[j], d1, pol=pol1)
             (data2b, sigma2b, uv2b, jonesdict2b) = chisqdata(Obsdata[j], d2, pol=pol2)
             (data3b, sigma3b, uv3b, jonesdict3b) = chisqdata(Obsdata[j], d3, pol=pol3)
+            (data4b, sigma4b, uv4b, jonesdict4b) = chisqdata(Obsdata[j], d4, pol=pol4)
 
             if data1b is not False: 
                 (data1, sigma1, uv1, jonesdict1) = combine_data(data1,sigma1,uv1,jonesdict1,data1b,sigma1b,uv1b,jonesdict1b)
@@ -995,6 +1015,8 @@ def modeler_func(Obsdata, model_init, model_prior,
                 (data2, sigma2, uv2, jonesdict2) = combine_data(data2,sigma2,uv2,jonesdict2,data2b,sigma2b,uv2b,jonesdict2b)
             if data3b is not False: 
                 (data3, sigma3, uv3, jonesdict3) = combine_data(data3,sigma3,uv3,jonesdict3,data3b,sigma3b,uv3b,jonesdict3b)
+            if data4b is not False: 
+                (data4, sigma4, uv4, jonesdict4) = combine_data(data4,sigma4,uv4,jonesdict4,data4b,sigma4b,uv4b,jonesdict4b)
 
         alldata = np.concatenate([_.data for _ in Obsdata])
         Obsdata = Obsdata[0]
@@ -1067,7 +1089,7 @@ def modeler_func(Obsdata, model_init, model_prior,
 
     if normchisq == False:
         if not quiet: print('Assigning data weights to give the correct log-likelihood...')
-        (alpha_d1, alpha_d2, alpha_d3, ln_norm) = compute_likelihood_constants(d1, d2, d3, sigma1, sigma2, sigma3)
+        (alpha_d1, alpha_d2, alpha_d3, alpha_d4, ln_norm) = compute_likelihood_constants(d1, d2, d3, d4, sigma1, sigma2, sigma3, sigma4)
     else:
         ln_norm = 0.0
 
@@ -1170,12 +1192,13 @@ def modeler_func(Obsdata, model_init, model_prior,
 
     # Gather global variables into a dictionary 
     globdict = {'trial_model':trial_model, 
-                'd1':d1, 'd2':d2, 'd3':d3, 
-                'pol1':pol1, 'pol2':pol2, 'pol3':pol3,
+                'd1':d1, 'd2':d2, 'd3':d3, 'd4':d4,
+                'pol1':pol1, 'pol2':pol2, 'pol3':pol3, 'pol4':pol4,
                 'data1':data1, 'sigma1':sigma1, 'uv1':uv1, 'jonesdict1':jonesdict1,
                 'data2':data2, 'sigma2':sigma2, 'uv2':uv2, 'jonesdict2':jonesdict2,
                 'data3':data3, 'sigma3':sigma3, 'uv3':uv3, 'jonesdict3':jonesdict3,
-                'alpha_d1':alpha_d1, 'alpha_d2':alpha_d2, 'alpha_d3':alpha_d3, 
+                'data4':data4, 'sigma4':sigma4, 'uv4':uv4, 'jonesdict4':jonesdict4,
+                'alpha_d1':alpha_d1, 'alpha_d2':alpha_d2, 'alpha_d3':alpha_d3, 'alpha_d4':alpha_d4,  
                 'n_params': n_params, 'n_gains':n_gains, 'n_leakage':len(leakage_init),
                 'model_prior':model_prior, 'param_map':param_map, 'param_mask':param_mask, 
                 'gain_prior':gain_prior, 'gain_list':gain_list, 'gain_init':gain_init,
@@ -1200,8 +1223,8 @@ def modeler_func(Obsdata, model_init, model_prior,
             if len(leakage):
                 print('leakage:',leakage)
             update_leakage(leakage)
-            (chi2_1, chi2_2, chi2_3) = chisq_list(gains)
-            print("i: %d chi2_1: %0.2f chi2_2: %0.2f chi2_3: %0.2f prior: %0.2f" % (nit, chi2_1, chi2_2, chi2_3, prior(params_step[:globdict['n_params']], globdict['param_map'], globdict['model_prior'], globdict['minimizer_func'])))
+            (chi2_1, chi2_2, chi2_3, chi2_4) = chisq_list(gains)
+            print("i: %d chi2_1: %0.2f chi2_2: %0.2f chi2_3: %0.2f chi2_4: %0.2f prior: %0.2f" % (nit, chi2_1, chi2_2, chi2_3, chi2_4, prior(params_step[:globdict['n_params']], globdict['param_map'], globdict['model_prior'], globdict['minimizer_func'])))
         nit += 1
 
     # Print initial statistics
@@ -1213,6 +1236,8 @@ def modeler_func(Obsdata, model_init, model_prior,
             print("Total Data 2: ", (len(data2)))
         if d3 in DATATERMS:
             print("Total Data 3: ", (len(data3)))
+        if d4 in DATATERMS:
+            print("Total Data 4: ", (len(data4)))
         print("Total Fitted Real Parameters #: ",(len(param_init)))
         print("Fitted Model Parameters: ",[_[1] for _ in param_map])
         print('Fitting Leakage Terms for:',leakage_fit)
@@ -1593,7 +1618,7 @@ def modeler_func(Obsdata, model_init, model_prior,
                     print('\t' + leakage_fit[j][0] + ', ' + leakage_fit[j][1] + ': %2.2f %2.2f' % (leakage[2*j]*100,leakage[2*j + 1]*100))
                 print('\n')
 
-            print("Final Chi^2_1: %f Chi^2_2: %f  Chi^2_3: %f" % chisq_list(gains))
+            print("Final Chi^2_1: %f Chi^2_2: %f  Chi^2_3: %f  Chi^2_4: %f" % chisq_list(gains))
             print("J: %f" % res.fun)
             print(res.message)
     else:
@@ -1801,7 +1826,6 @@ def chisq_vis(model, uv, vis, sigma, pol='I', jonesdict=None):
 
 def chisqgrad_vis(model, uv, vis, sigma, pol='I', fit_pol=False, fit_cpol=False, fit_leakage=False, jonesdict=None):
     """The gradient of the visibility chi-squared"""
-
     samples = model.sample_uv(uv[:,0],uv[:,1], pol=pol, jonesdict=jonesdict)
     wdiff   = (vis - samples)/(sigma**2)
     grad    = model.sample_grad_uv(uv[:,0],uv[:,1],fit_pol=fit_pol,fit_cpol=fit_cpol,fit_leakage=fit_leakage,jonesdict=jonesdict)
