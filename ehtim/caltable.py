@@ -685,7 +685,7 @@ def load_caltable(obs, datadir, sqrt_gains=False):
     for s in range(0, len(tarr)):
 
         site = tarr[s]['site']
-        filename = datadir + obs.source + '_' + site + '.txt'
+        filename = os.path.join(datadir, obs.source + '_' + site + '.txt')
         try:
             data = np.loadtxt(filename, dtype=bytes).astype(str)
         except IOError:
