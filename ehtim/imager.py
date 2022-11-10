@@ -391,7 +391,7 @@ class Imager(object):
         # Return Image object
         return outim
 
-    def converge(self, niter, blur_frac, pol, grads, **kwargs):
+    def converge(self, niter, blur_frac, pol, grads=True, **kwargs):
 
         for repeat in range(niter-1):
             init = self.out_last().blur_circ(blur_frac * self.obs_next.res())
