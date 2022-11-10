@@ -391,21 +391,46 @@ class Imager(object):
         # Return Image object
         return outim
 
-    def make_image_I(self, grads=True, **kwargs):
+    def converge(self, niter, blur_frac, pol, grads, **kwargs):
+
+        for repeat in range(niter-1):
+            init = self.out_last().blur_circ(blur_frac * self.obs_next.res())
+            self.init_next = init
+            self.make_image(pol=pol, grads=grads, **kwargs)
+
+
+    def make_image_I(self, grads=True, niter=1, blur_frac=1, **kwargs):
         """Make Stokes I image using current imager settings.
         """
-        return self.make_image(pol='I', grads=grads, **kwargs)
+        pol = 'I'
+        self.make_image(pol=pol, grads=grads, **kwargs)
+        self.converge(niter, blur_frac, pol, grads, **kwargs)
 
-    def make_image_P(self, grads=True, **kwargs):
+        return self.out_last()
+
+        #return self.make_image(pol='I', grads=grads, **kwargs)
+
+    def make_image_P(self, grads=True, niter=0, blur_frac=1, **kwargs):
         """Make Stokes P polarimetric image using current imager settings.
         """
+        pol = 'P'
+        self.make_image(pol=pol, grads=grads, **kwargs)
+        self.converge(niter, blur_frac, pol, grads, **kwargs)
 
-        return self.make_image(pol='P', grads=grads, **kwargs)
+        return self.out_last()
 
-    def make_image_IP(self, grads=True, **kwargs):
+        #return self.make_image(pol='P', grads=grads, **kwargs)
+
+    def make_image_IP(self, grads=True, niter=0, blur_frac=1, **kwargs):
         """Make Stokes I and P polarimetric image simultaneously using current imager settings.
         """
-        return self.make_image(pol='IP', grads=grads, **kwargs)
+        pol = 'IP'
+        self.make_image(pol=pol, grads=grads, **kwargs)
+        self.converge(niter, blur_frac, pol, grads, **kwargs)
+
+        return self.out_last()
+
+        #return self.make_image(pol='IP', grads=grads, **kwargs)
 
     def set_embed(self):
         """Set embedding matrix.
