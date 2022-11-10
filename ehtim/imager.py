@@ -410,7 +410,7 @@ class Imager(object):
 
         #return self.make_image(pol='I', grads=grads, **kwargs)
 
-    def make_image_P(self, grads=True, niter=0, blur_frac=1, **kwargs):
+    def make_image_P(self, grads=True, niter=1, blur_frac=1, **kwargs):
         """Make Stokes P polarimetric image using current imager settings.
         """
         pol = 'P'
@@ -421,7 +421,7 @@ class Imager(object):
 
         #return self.make_image(pol='P', grads=grads, **kwargs)
 
-    def make_image_IP(self, grads=True, niter=0, blur_frac=1, **kwargs):
+    def make_image_IP(self, grads=True, niter=1, blur_frac=1, **kwargs):
         """Make Stokes I and P polarimetric image simultaneously using current imager settings.
         """
         pol = 'IP'
