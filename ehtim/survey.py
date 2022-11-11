@@ -198,6 +198,7 @@ class ParameterSet:
             Returns:
 
         """
+
         # specify  data terms
         data_term = {}
         if hasattr(self, 'vis') and self.vis != 0.:
@@ -308,7 +309,13 @@ class ParameterSet:
                 sc_ap_idx += 1
 
         self.im_out = imgr.out_last().copy()
-        self.caltab = caltab
+
+        # if no self-cal, no caltabs will be saved
+        if self.sc_phase == 0 and self.sc_ap == 0:
+            self.save_caltab = False
+
+        else:
+            self.caltab = caltab
 
     def output_results(self):
 
@@ -470,8 +477,10 @@ class ParameterSet:
         # if a *_params.csv file exists, it means this parameter has already been run and can be skipped
         # useful in case survey with multiple parameter sets gets interrupted
         outcsv = os.path.join(self.outpath, '%s_params.csv' % (self.outfile))
-        if os.path.exists(outcsv):
-            pass
+
+        if not self.overwrite:
+            if os.path.exists(outcsv):
+                pass
 
         else:
 
@@ -529,7 +538,7 @@ def run_survey(psets, params_fixed):
 
 def create_params_fixed(infile, outfile_base, outpath, ground_truth_img='None',
                         save_imgsums=False, save_uvfits=True, save_pdf=False, save_stats=True, save_caltab=True,
-                        nproc=1, backend='multiprocessing', ttype='nfft',
+                        nproc=1, backend='multiprocessing', ttype='nfft', overwrite=False,
                         selfcal=True, gaintol=[0.02,0.2], niter_static=3, blurfrac=1,
                         maxit=100, stop=1e-4, fov=128, npixels=64, reverse_taper_uas=5, uv_zblcut=0.1e9,
                         SEFD_error_budget={'AA':0.1,'AX':0.1,'GL':0.1,'LM':0.1,'MG':0.1,'MM':0.1,'PV':0.1,'SW':0.1}):
@@ -551,6 +560,7 @@ def create_params_fixed(infile, outfile_base, outpath, ground_truth_img='None',
             nproc (int): number of parallel processes
             backend (str): either 'multiprocessing' or 'ray'
             ttype (str): “fast” or “nfft” or “direct”
+            overwrite (bool): if True, write over existing files with same names - else, skip parameter set
             selfcal (bool): perform self-calibration steps during imaging
             gaintol (array): tolerance for gains to be under/over unity respectively during self-cal
             niter_static (int): number of iterations for each imaging step
@@ -579,7 +589,7 @@ def create_params_fixed(infile, outfile_base, outpath, ground_truth_img='None',
     return params_fixed
 
 def create_survey_psets(zbl=[0.6], sys_noise=[0.02], avg_time=['scan'], prior_fwhm=[40],
-                     sc_phase=[2], xdw_phase=[10], sc_ap=[2], xdw_ap=[1], amp=[0.2], cphase=[1], logcamp=[1],
+                     sc_phase=[0], xdw_phase=[10], sc_ap=[0], xdw_ap=[1], amp=[0.2], cphase=[1], logcamp=[1],
                      simple=[1], l1=[1], tv=[1], tv2=[1], flux=[1], epsilon_tv=[1e-10]):
     """
     Create a dataframe given all survey parameters. Default values will create an example dataframe but these values should be adjusted for each specific observation
