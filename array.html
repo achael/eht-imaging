@@ -50,6 +50,7 @@
 <li class="toctree-l1"><a class="reference internal" href="plotting.html">Plotting</a></li>
 <li class="toctree-l1"><a class="reference internal" href="scattering.html">Scattering</a></li>
 <li class="toctree-l1"><a class="reference internal" href="statistics.html">Statistics</a></li>
+<li class="toctree-l1"><a class="reference internal" href="survey.html">Survey</a></li>
 <li class="toctree-l1"><a class="reference internal" href="vex.html">Vex</a></li>
 </ul>
 
@@ -100,7 +101,7 @@
 <dd><p>A dictionary of rows in the tarr for each site name</p>
 <dl class="field-list simple">
 <dt class="field-odd">Type</dt>
-<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.10)">dict</a></p>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.11)">dict</a></p>
 </dd>
 </dl>
 </dd></dl>
@@ -112,7 +113,7 @@
 Space antennas have x=y=z=0 in the tarr</p>
 <dl class="field-list simple">
 <dt class="field-odd">Type</dt>
-<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.10)">dict</a></p>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.11)">dict</a></p>
 </dd>
 </dl>
 </dd></dl>
@@ -132,7 +133,7 @@ Space antennas have x=y=z=0 in the tarr</p>
 <dd><p>Make a subarray from the Array object array that only includes the sites listed.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><p><strong>sites</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.10)"><em>list</em></a>) – list of sites in the subarray</p>
+<dd class="field-odd"><p><strong>sites</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.11)"><em>list</em></a>) – list of sites in the subarray</p>
 </dd>
 <dt class="field-even">Returns</dt>
 <dd class="field-even"><p>an Array object with specified sites and metadata</p>
@@ -145,23 +146,25 @@ Space antennas have x=y=z=0 in the tarr</p>
 
 <dl class="py method">
 <dt id="ehtim.array.Array.obsdata">
-<code class="sig-name descname">obsdata</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">ra</span></em>, <em class="sig-param"><span class="n">dec</span></em>, <em class="sig-param"><span class="n">rf</span></em>, <em class="sig-param"><span class="n">bw</span></em>, <em class="sig-param"><span class="n">tint</span></em>, <em class="sig-param"><span class="n">tadv</span></em>, <em class="sig-param"><span class="n">tstart</span></em>, <em class="sig-param"><span class="n">tstop</span></em>, <em class="sig-param"><span class="n">mjd</span><span class="o">=</span><span class="default_value">51544</span></em>, <em class="sig-param"><span class="n">timetype</span><span class="o">=</span><span class="default_value">'UTC'</span></em>, <em class="sig-param"><span class="n">polrep</span><span class="o">=</span><span class="default_value">'stokes'</span></em>, <em class="sig-param"><span class="n">elevmin</span><span class="o">=</span><span class="default_value">10.0</span></em>, <em class="sig-param"><span class="n">elevmax</span><span class="o">=</span><span class="default_value">85.0</span></em>, <em class="sig-param"><span class="n">tau</span><span class="o">=</span><span class="default_value">0.1</span></em>, <em class="sig-param"><span class="n">fix_theta_GMST</span><span class="o">=</span><span class="default_value">False</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/array.html#Array.obsdata"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.array.Array.obsdata" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">obsdata</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">ra</span></em>, <em class="sig-param"><span class="n">dec</span></em>, <em class="sig-param"><span class="n">rf</span></em>, <em class="sig-param"><span class="n">bw</span></em>, <em class="sig-param"><span class="n">tint</span></em>, <em class="sig-param"><span class="n">tadv</span></em>, <em class="sig-param"><span class="n">tstart</span></em>, <em class="sig-param"><span class="n">tstop</span></em>, <em class="sig-param"><span class="n">mjd</span><span class="o">=</span><span class="default_value">51544</span></em>, <em class="sig-param"><span class="n">timetype</span><span class="o">=</span><span class="default_value">'UTC'</span></em>, <em class="sig-param"><span class="n">polrep</span><span class="o">=</span><span class="default_value">'stokes'</span></em>, <em class="sig-param"><span class="n">elevmin</span><span class="o">=</span><span class="default_value">10.0</span></em>, <em class="sig-param"><span class="n">elevmax</span><span class="o">=</span><span class="default_value">85.0</span></em>, <em class="sig-param"><span class="n">no_elevcut_space</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">tau</span><span class="o">=</span><span class="default_value">0.1</span></em>, <em class="sig-param"><span class="n">fix_theta_GMST</span><span class="o">=</span><span class="default_value">False</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/array.html#Array.obsdata"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.array.Array.obsdata" title="Permalink to this definition">¶</a></dt>
 <dd><p>Generate u,v points and baseline uncertainties.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>ra</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.10)"><em>float</em></a>) – the source right ascension in fractional hours</p></li>
-<li><p><strong>dec</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.10)"><em>float</em></a>) – the source declination in fractional degrees</p></li>
-<li><p><strong>tint</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.10)"><em>float</em></a>) – the scan integration time in seconds</p></li>
-<li><p><strong>tadv</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.10)"><em>float</em></a>) – the uniform cadence between scans in seconds</p></li>
-<li><p><strong>tstart</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.10)"><em>float</em></a>) – the start time of the observation in hours</p></li>
-<li><p><strong>tstop</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.10)"><em>float</em></a>) – the end time of the observation in hours</p></li>
-<li><p><strong>mjd</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.10)"><em>int</em></a>) – the mjd of the observation</p></li>
-<li><p><strong>timetype</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.10)"><em>str</em></a>) – how to interpret tstart and tstop; either ‘GMST’ or ‘UTC’</p></li>
-<li><p><strong>polrep</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.10)"><em>str</em></a>) – polarization representation, either ‘stokes’ or ‘circ’</p></li>
-<li><p><strong>elevmin</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.10)"><em>float</em></a>) – station minimum elevation in degrees</p></li>
-<li><p><strong>elevmax</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.10)"><em>float</em></a>) – station maximum elevation in degrees</p></li>
-<li><p><strong>tau</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.10)"><em>float</em></a>) – the base opacity at all sites, or a dict giving one opacity per site</p></li>
+<li><p><strong>ra</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.11)"><em>float</em></a>) – the source right ascension in fractional hours</p></li>
+<li><p><strong>dec</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.11)"><em>float</em></a>) – the source declination in fractional degrees</p></li>
+<li><p><strong>tint</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.11)"><em>float</em></a>) – the scan integration time in seconds</p></li>
+<li><p><strong>tadv</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.11)"><em>float</em></a>) – the uniform cadence between scans in seconds</p></li>
+<li><p><strong>tstart</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.11)"><em>float</em></a>) – the start time of the observation in hours</p></li>
+<li><p><strong>tstop</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.11)"><em>float</em></a>) – the end time of the observation in hours</p></li>
+<li><p><strong>mjd</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.11)"><em>int</em></a>) – the mjd of the observation</p></li>
+<li><p><strong>timetype</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.11)"><em>str</em></a>) – how to interpret tstart and tstop; either ‘GMST’ or ‘UTC’</p></li>
+<li><p><strong>polrep</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.11)"><em>str</em></a>) – polarization representation, either ‘stokes’ or ‘circ’</p></li>
+<li><p><strong>elevmin</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.11)"><em>float</em></a>) – station minimum elevation in degrees</p></li>
+<li><p><strong>elevmax</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.11)"><em>float</em></a>) – station maximum elevation in degrees</p></li>
+<li><p><strong>no_elevcut_space</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.11)"><em>bool</em></a>) – if True, do not apply elevation cut to orbiters</p></li>
+<li><p><strong>tau</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.11)"><em>float</em></a>) – the base opacity at all sites, or a dict giving one opacity per site</p></li>
+<li><p><strong>fix_theta_GMST</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.11)"><em>bool</em></a>) – if True, stops earth rotation to sample fixed u,v points</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns</dt>
@@ -179,7 +182,7 @@ Space antennas have x=y=z=0 in the tarr</p>
 <dd><p>Save the array data in a text file.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><p><strong>fname</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.10)"><em>str</em></a>) – path to output array file</p>
+<dd class="field-odd"><p><strong>fname</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.11)"><em>str</em></a>) – path to output array file</p>
 </dd>
 </dl>
 </dd></dl>
@@ -194,8 +197,8 @@ Sites with x=y=z=0 are spacecraft, TLE ephemerides read from ephemdir.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>fname</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.10)"><em>str</em></a>) – path to input array file</p></li>
-<li><p><strong>ephemdir</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.10)"><em>str</em></a>) – path to directory with 2TLE ephemerides for spacecraft</p></li>
+<li><p><strong>fname</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.11)"><em>str</em></a>) – path to input array file</p></li>
+<li><p><strong>ephemdir</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.11)"><em>str</em></a>) – path to directory with 2TLE ephemerides for spacecraft</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns</dt>

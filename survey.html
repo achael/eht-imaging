@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Survey &mdash; ehtim 1.2.3 documentation</title><link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+        <script src="_static/jquery.js"></script>
+        <script src="_static/underscore.js"></script>
+        <script src="_static/doctools.js"></script>
+        <script src="_static/language_data.js"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Vex" href="vex.html" />
+    <link rel="prev" title="Statistics" href="statistics.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="index.html" class="icon icon-home"> ehtim
+          </a>
+              <div class="version">
+                1.2
+              </div>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="image.html">Image</a></li>
+<li class="toctree-l1"><a class="reference internal" href="array.html">Array</a></li>
+<li class="toctree-l1"><a class="reference internal" href="obsdata.html">Obsdata</a></li>
+<li class="toctree-l1"><a class="reference internal" href="movie.html">Movie</a></li>
+<li class="toctree-l1"><a class="reference internal" href="model.html">Image</a></li>
+<li class="toctree-l1"><a class="reference internal" href="imager.html">Imager</a></li>
+<li class="toctree-l1"><a class="reference internal" href="calibration.html">Calibration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="plotting.html">Plotting</a></li>
+<li class="toctree-l1"><a class="reference internal" href="scattering.html">Scattering</a></li>
+<li class="toctree-l1"><a class="reference internal" href="statistics.html">Statistics</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Survey</a></li>
+<li class="toctree-l1"><a class="reference internal" href="vex.html">Vex</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">ehtim</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home"></a> &raquo;</li>
+      <li>Survey</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/survey.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <span class="target" id="module-survey"></span><div class="section" id="survey">
+<span id="id1"></span><h1>Survey<a class="headerlink" href="#survey" title="Permalink to this headline">¶</a></h1>
+<span class="target" id="module-ehtim.survey"></span><dl class="py function">
+<dt id="ehtim.survey.create_params_fixed">
+<code class="sig-prename descclassname">ehtim.survey.</code><code class="sig-name descname">create_params_fixed</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">infile</span></em>, <em class="sig-param"><span class="n">outfile_base</span></em>, <em class="sig-param"><span class="n">outpath</span></em>, <em class="sig-param"><span class="n">ground_truth_img</span><span class="o">=</span><span class="default_value">'None'</span></em>, <em class="sig-param"><span class="n">save_imgsums</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">save_uvfits</span><span class="o">=</span><span class="default_value">True</span></em>, <em class="sig-param"><span class="n">save_pdf</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">save_stats</span><span class="o">=</span><span class="default_value">True</span></em>, <em class="sig-param"><span class="n">save_caltab</span><span class="o">=</span><span class="default_value">True</span></em>, <em class="sig-param"><span class="n">nproc</span><span class="o">=</span><span class="default_value">1</span></em>, <em class="sig-param"><span class="n">backend</span><span class="o">=</span><span class="default_value">'multiprocessing'</span></em>, <em class="sig-param"><span class="n">ttype</span><span class="o">=</span><span class="default_value">'nfft'</span></em>, <em class="sig-param"><span class="n">selfcal</span><span class="o">=</span><span class="default_value">True</span></em>, <em class="sig-param"><span class="n">gaintol</span><span class="o">=</span><span class="default_value">[0.02, 0.2]</span></em>, <em class="sig-param"><span class="n">niter_static</span><span class="o">=</span><span class="default_value">3</span></em>, <em class="sig-param"><span class="n">blurfrac</span><span class="o">=</span><span class="default_value">1</span></em>, <em class="sig-param"><span class="n">maxit</span><span class="o">=</span><span class="default_value">100</span></em>, <em class="sig-param"><span class="n">stop</span><span class="o">=</span><span class="default_value">0.0001</span></em>, <em class="sig-param"><span class="n">fov</span><span class="o">=</span><span class="default_value">128</span></em>, <em class="sig-param"><span class="n">npixels</span><span class="o">=</span><span class="default_value">64</span></em>, <em class="sig-param"><span class="n">reverse_taper_uas</span><span class="o">=</span><span class="default_value">5</span></em>, <em class="sig-param"><span class="n">uv_zblcut</span><span class="o">=</span><span class="default_value">100000000.0</span></em>, <em class="sig-param"><span class="n">SEFD_error_budget</span><span class="o">=</span><span class="default_value">{'AA': 0.1, 'AX': 0.1, 'GL': 0.1, 'LM': 0.1, 'MG': 0.1, 'MM': 0.1, 'PV': 0.1, 'SW': 0.1}</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/survey.html#create_params_fixed"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.survey.create_params_fixed" title="Permalink to this definition">¶</a></dt>
+<dd><p>Create a dict for all non-varying survery parameters</p>
+<blockquote>
+<div><blockquote>
+<div><p>Args:</p>
+<blockquote>
+<div><p>infile (str): path to input uvfits observation file
+outfile_base (str): name of base filename for all outputs
+outpath (str): path to directory where all outputs should be stored
+ground_truth_img (str): if applicable, path to ground truth fits file
+save_imgsums (bool): save summary pdf for each image
+save_uvfits (bool): save final self-cal observation to uvfits file
+save_pdf (bool): save pdf of each image
+save_stats (bool): save csv file containing statistics for each image
+save_caltab (bool): save a calibration table for each image
+nproc (int): number of parallel processes
+backend (str): either ‘multiprocessing’ or ‘ray’
+ttype (str): “fast” or “nfft” or “direct”
+selfcal (bool): perform self-calibration steps during imaging
+gaintol (array): tolerance for gains to be under/over unity respectively during self-cal
+niter_static (int): number of iterations for each imaging step
+blurfrac (int): factor to blur initial image between iterations
+maxit (int): maximum number of iterations if image does not converge
+stop (float): convergence criterion for imaging
+fov (int): image field of view in uas
+npixels (int): number of image pixels
+reverse_taper_uas (int): fwhm of gassuain in uas to reverse taper observation
+uv_zblcut (float): maximum uv-distance to which is considered short baseline flux
+SEFD_error_budget (dict): SEFD percentage error for each station</p>
+</div></blockquote>
+</div></blockquote>
+<p>Returns:</p>
+<blockquote>
+<div><p>params_fixed (dict): dict containing all non-varying survery parameters</p>
+</div></blockquote>
+</div></blockquote>
+</dd></dl>
+
+<dl class="py function">
+<dt id="ehtim.survey.create_survey_psets">
+<code class="sig-prename descclassname">ehtim.survey.</code><code class="sig-name descname">create_survey_psets</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">zbl</span><span class="o">=</span><span class="default_value">[0.6]</span></em>, <em class="sig-param"><span class="n">sys_noise</span><span class="o">=</span><span class="default_value">[0.02]</span></em>, <em class="sig-param"><span class="n">avg_time</span><span class="o">=</span><span class="default_value">['scan']</span></em>, <em class="sig-param"><span class="n">prior_fwhm</span><span class="o">=</span><span class="default_value">[40]</span></em>, <em class="sig-param"><span class="n">sc_phase</span><span class="o">=</span><span class="default_value">[2]</span></em>, <em class="sig-param"><span class="n">xdw_phase</span><span class="o">=</span><span class="default_value">[10]</span></em>, <em class="sig-param"><span class="n">sc_ap</span><span class="o">=</span><span class="default_value">[2]</span></em>, <em class="sig-param"><span class="n">xdw_ap</span><span class="o">=</span><span class="default_value">[1]</span></em>, <em class="sig-param"><span class="n">amp</span><span class="o">=</span><span class="default_value">[0.2]</span></em>, <em class="sig-param"><span class="n">cphase</span><span class="o">=</span><span class="default_value">[1]</span></em>, <em class="sig-param"><span class="n">logcamp</span><span class="o">=</span><span class="default_value">[1]</span></em>, <em class="sig-param"><span class="n">simple</span><span class="o">=</span><span class="default_value">[1]</span></em>, <em class="sig-param"><span class="n">l1</span><span class="o">=</span><span class="default_value">[1]</span></em>, <em class="sig-param"><span class="n">tv</span><span class="o">=</span><span class="default_value">[1]</span></em>, <em class="sig-param"><span class="n">tv2</span><span class="o">=</span><span class="default_value">[1]</span></em>, <em class="sig-param"><span class="n">flux</span><span class="o">=</span><span class="default_value">[1]</span></em>, <em class="sig-param"><span class="n">epsilon_tv</span><span class="o">=</span><span class="default_value">[1e-10]</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/survey.html#create_survey_psets"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.survey.create_survey_psets" title="Permalink to this definition">¶</a></dt>
+<dd><p>Create a dataframe given all survey parameters. Default values will create an example dataframe but these values
+should be adjusted for each specific observation</p>
+<blockquote>
+<div><blockquote>
+<div><p>Args:</p>
+<blockquote>
+<div><p>zbl (array): compact flux value (Jy)
+sys_noise (array): percent addition of systematic noise
+avg_time (array): in seconds or ‘scan’ for scan averaging
+prior_fwhm (array): fwhm of gaussian prior in uas
+sc_phase (array): number of iterations to perform phase-only self-cal
+xdw_phase (array): multiplicative factor for data weights after one round of phase-only self-cal
+sc_ap (array): number of iterations to perform amp+phase self-cal
+xdw_ap (array): multiplicative factor for data weights after one round of amp+phase self-cal
+amp (array): data weight to be placed on amplitudes
+cphase (array): data weight to be placed on closure phases
+logcamp (array): data weight to be placed on log closure amplitudes
+simple (array): regularizer weight for relative entropy, favoring similarity to prior image
+l1 (array): regularizer weight for l1 norm, favoring image sparsity
+tv (array): regularizer weight for total variation, favoring sharp edges
+tv2 (array): regularizer weight for total squared variation, favoring smooth edges
+flux (array): regularizer weight for total flux density, favoring final images with flux close to zbl
+epsilon_tv (array): epsilon value used in definition of total variation - rarely need to change this</p>
+</div></blockquote>
+</div></blockquote>
+<p>Returns:</p>
+<blockquote>
+<div><p>psets (DataFrame): pandas DataFrame containing all combination of parameter sets along with index values</p>
+</div></blockquote>
+</div></blockquote>
+</dd></dl>
+
+<dl class="py function">
+<dt id="ehtim.survey.run_pset">
+<code class="sig-prename descclassname">ehtim.survey.</code><code class="sig-name descname">run_pset</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">pset</span></em>, <em class="sig-param"><span class="n">system_kwargs</span></em>, <em class="sig-param"><span class="n">params_fixed</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/survey.html#run_pset"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.survey.run_pset" title="Permalink to this definition">¶</a></dt>
+<dd><p>Run imaging for one parameter set</p>
+<blockquote>
+<div><blockquote>
+<div><dl class="simple">
+<dt>Args:</dt><dd><p>pset (dict): A dict containing single parameter set
+params_fixed (dict): A dict containing non-varying parameters</p>
+</dd>
+</dl>
+</div></blockquote>
+<p>Returns:</p>
+</div></blockquote>
+</dd></dl>
+
+<dl class="py function">
+<dt id="ehtim.survey.run_survey">
+<code class="sig-prename descclassname">ehtim.survey.</code><code class="sig-name descname">run_survey</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">psets</span></em>, <em class="sig-param"><span class="n">params_fixed</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/survey.html#run_survey"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.survey.run_survey" title="Permalink to this definition">¶</a></dt>
+<dd><p>Run survey for all parameter sets using paramsurvey</p>
+<blockquote>
+<div><blockquote>
+<div><dl class="simple">
+<dt>Args:</dt><dd><p>psets (DataFrame): A pandas DataFrame containing all parameter sets
+params_fixed (dict): A dict containing non-varying parameters</p>
+</dd>
+</dl>
+</div></blockquote>
+<p>Returns:</p>
+</div></blockquote>
+</dd></dl>
+
+</div>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="statistics.html" class="btn btn-neutral float-left" title="Statistics" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="vex.html" class="btn btn-neutral float-right" title="Vex" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2021, Andrew Chael.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

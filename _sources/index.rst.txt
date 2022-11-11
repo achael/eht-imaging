@@ -60,6 +60,7 @@ Documentation
    plotting
    scattering
    statistics
+   survey
    vex
 
 

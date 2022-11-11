@@ -48,6 +48,7 @@
 <li class="toctree-l1"><a class="reference internal" href="../../plotting.html">Plotting</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../scattering.html">Scattering</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../statistics.html">Statistics</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../survey.html">Survey</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../vex.html">Vex</a></li>
 </ul>
 
@@ -163,6 +164,7 @@
 <div class="viewcode-block" id="Array.obsdata"><a class="viewcode-back" href="../../array.html#ehtim.array.Array.obsdata">[docs]</a>    <span class="k">def</span> <span class="nf">obsdata</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ra</span><span class="p">,</span> <span class="n">dec</span><span class="p">,</span> <span class="n">rf</span><span class="p">,</span> <span class="n">bw</span><span class="p">,</span> <span class="n">tint</span><span class="p">,</span> <span class="n">tadv</span><span class="p">,</span> <span class="n">tstart</span><span class="p">,</span> <span class="n">tstop</span><span class="p">,</span>
                 <span class="n">mjd</span><span class="o">=</span><span class="n">ehc</span><span class="o">.</span><span class="n">MJD_DEFAULT</span><span class="p">,</span> <span class="n">timetype</span><span class="o">=</span><span class="s1">&#39;UTC&#39;</span><span class="p">,</span> <span class="n">polrep</span><span class="o">=</span><span class="s1">&#39;stokes&#39;</span><span class="p">,</span>
                 <span class="n">elevmin</span><span class="o">=</span><span class="n">ehc</span><span class="o">.</span><span class="n">ELEV_LOW</span><span class="p">,</span> <span class="n">elevmax</span><span class="o">=</span><span class="n">ehc</span><span class="o">.</span><span class="n">ELEV_HIGH</span><span class="p">,</span>
+                <span class="n">no_elevcut_space</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
                 <span class="n">tau</span><span class="o">=</span><span class="n">ehc</span><span class="o">.</span><span class="n">TAUDEF</span><span class="p">,</span> <span class="n">fix_theta_GMST</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Generate u,v points and baseline uncertainties.</span>
 
@@ -173,13 +175,16 @@
 <span class="sd">               tadv (float): the uniform cadence between scans in seconds</span>
 <span class="sd">               tstart (float): the start time of the observation in hours</span>
 <span class="sd">               tstop (float): the end time of the observation in hours</span>
+
 <span class="sd">               mjd (int): the mjd of the observation</span>
 <span class="sd">               timetype (str): how to interpret tstart and tstop; either &#39;GMST&#39; or &#39;UTC&#39;</span>
 <span class="sd">               polrep (str): polarization representation, either &#39;stokes&#39; or &#39;circ&#39;</span>
 <span class="sd">               elevmin (float): station minimum elevation in degrees</span>
 <span class="sd">               elevmax (float): station maximum elevation in degrees</span>
+<span class="sd">               no_elevcut_space (bool): if True, do not apply elevation cut to orbiters</span>
 <span class="sd">               tau (float): the base opacity at all sites, or a dict giving one opacity per site</span>
-
+<span class="sd">               fix_theta_GMST (bool): if True, stops earth rotation to sample fixed u,v points</span>
+<span class="sd">               </span>
 <span class="sd">           Returns:</span>
 <span class="sd">               Obsdata: an observation object with no data</span>
 
@@ -188,7 +193,8 @@
         <span class="n">obsarr</span> <span class="o">=</span> <span class="n">simobs</span><span class="o">.</span><span class="n">make_uvpoints</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ra</span><span class="p">,</span> <span class="n">dec</span><span class="p">,</span> <span class="n">rf</span><span class="p">,</span> <span class="n">bw</span><span class="p">,</span>
                                       <span class="n">tint</span><span class="p">,</span> <span class="n">tadv</span><span class="p">,</span> <span class="n">tstart</span><span class="p">,</span> <span class="n">tstop</span><span class="p">,</span>
                                       <span class="n">mjd</span><span class="o">=</span><span class="n">mjd</span><span class="p">,</span> <span class="n">polrep</span><span class="o">=</span><span class="n">polrep</span><span class="p">,</span> <span class="n">tau</span><span class="o">=</span><span class="n">tau</span><span class="p">,</span>
-                                      <span class="n">elevmin</span><span class="o">=</span><span class="n">elevmin</span><span class="p">,</span> <span class="n">elevmax</span><span class="o">=</span><span class="n">elevmax</span><span class="p">,</span>
+                                      <span class="n">elevmin</span><span class="o">=</span><span class="n">elevmin</span><span class="p">,</span> <span class="n">elevmax</span><span class="o">=</span><span class="n">elevmax</span><span class="p">,</span> 
+                                      <span class="n">no_elevcut_space</span><span class="o">=</span><span class="n">no_elevcut_space</span><span class="p">,</span>
                                       <span class="n">timetype</span><span class="o">=</span><span class="n">timetype</span><span class="p">,</span> <span class="n">fix_theta_GMST</span><span class="o">=</span><span class="n">fix_theta_GMST</span><span class="p">)</span>
 
         <span class="n">uniquetimes</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sort</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">unique</span><span class="p">(</span><span class="n">obsarr</span><span class="p">[</span><span class="s1">&#39;time&#39;</span><span class="p">]))</span>

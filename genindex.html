@@ -48,6 +48,7 @@
 <li class="toctree-l1"><a class="reference internal" href="plotting.html">Plotting</a></li>
 <li class="toctree-l1"><a class="reference internal" href="scattering.html">Scattering</a></li>
 <li class="toctree-l1"><a class="reference internal" href="statistics.html">Statistics</a></li>
+<li class="toctree-l1"><a class="reference internal" href="survey.html">Survey</a></li>
 <li class="toctree-l1"><a class="reference internal" href="vex.html">Vex</a></li>
 </ul>
 
@@ -244,6 +245,8 @@
 </li>
       <li><a href="movie.html#ehtim.movie.Movie.avg_frame">avg_frame() (ehtim.movie.Movie method)</a>
 </li>
+      <li><a href="image.html#ehtim.image.avg_imlist">avg_imlist() (in module ehtim.image)</a>
+</li>
       <li><a href="obsdata.html#ehtim.obsdata.Obsdata.avg_incoherent">avg_incoherent() (ehtim.obsdata.Obsdata method)</a>
 </li>
   </ul></td>
@@ -268,12 +271,18 @@
         <li><a href="movie.html#ehtim.movie.Movie.blur_circ">(ehtim.movie.Movie method)</a>
 </li>
       </ul></li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="model.html#ehtim.model.blur_circ_1model">blur_circ_1model() (in module ehtim.model)</a>
 </li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="image.html#ehtim.image.Image.blur_gauss">blur_gauss() (ehtim.image.Image method)</a>
 </li>
+      <li><a href="image.html#ehtim.image.Image.blur_mf">blur_mf() (ehtim.image.Image method)</a>
+
+      <ul>
+        <li><a href="image.html#ehtim.image.blur_mf">(in module ehtim.image)</a>
+</li>
+      </ul></li>
       <li><a href="statistics.html#ehtim.statistics.stats.bootstrap">bootstrap() (in module ehtim.statistics.stats)</a>
 </li>
       <li><a href="movie.html#ehtim.movie.Movie.bounds_error">bounds_error (ehtim.movie.Movie attribute)</a>
@@ -331,10 +340,10 @@
 </li>
       <li><a href="image.html#ehtim.image.Image.circ_polfrac">circ_polfrac() (ehtim.image.Image method)</a>
 </li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="movie.html#ehtim.movie.Movie.circ_polfrac_curve">circ_polfrac_curve() (ehtim.movie.Movie method)</a>
 </li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="statistics.html#ehtim.statistics.stats.circular_mean">circular_mean() (in module ehtim.statistics.stats)</a>
 </li>
       <li><a href="statistics.html#ehtim.statistics.stats.circular_std">circular_std() (in module ehtim.statistics.stats)</a>
@@ -370,6 +379,10 @@
       <li><a href="obsdata.html#ehtim.obsdata.Obsdata.cphase_diag">cphase_diag (ehtim.obsdata.Obsdata attribute)</a>
 </li>
       <li><a href="obsdata.html#ehtim.obsdata.Obsdata.cphase_tri">cphase_tri() (ehtim.obsdata.Obsdata method)</a>
+</li>
+      <li><a href="survey.html#ehtim.survey.create_params_fixed">create_params_fixed() (in module ehtim.survey)</a>
+</li>
+      <li><a href="survey.html#ehtim.survey.create_survey_psets">create_survey_psets() (in module ehtim.survey)</a>
 </li>
   </ul></td>
 </tr></table>
@@ -495,8 +508,6 @@
         <li><a href="plotting.html#module-ehtim.plotting.comp_plots">module</a>
 </li>
       </ul></li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
       <li>
     ehtim.plotting.comparisons
 
@@ -504,6 +515,8 @@
         <li><a href="plotting.html#module-ehtim.plotting.comparisons">module</a>
 </li>
       </ul></li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
       <li>
     ehtim.plotting.summary_plots
 
@@ -523,6 +536,13 @@
 
       <ul>
         <li><a href="statistics.html#module-ehtim.statistics.stats">module</a>
+</li>
+      </ul></li>
+      <li>
+    ehtim.survey
+
+      <ul>
+        <li><a href="survey.html#module-ehtim.survey">module</a>
 </li>
       </ul></li>
       <li>
@@ -647,6 +667,8 @@
       <li><a href="vex.html#ehtim.vex.Vex.get_sector">get_sector() (ehtim.vex.Vex method)</a>
 </li>
       <li><a href="vex.html#ehtim.vex.Vex.get_SEFD">get_SEFD() (ehtim.vex.Vex method)</a>
+</li>
+      <li><a href="image.html#ehtim.image.get_specim">get_specim() (in module ehtim.image)</a>
 </li>
       <li><a href="vex.html#ehtim.vex.Vex.get_variable">get_variable() (ehtim.vex.Vex method)</a>
 </li>
@@ -837,10 +859,10 @@
       </ul></li>
       <li><a href="model.html#ehtim.model.Model">Model (class in ehtim.model)</a>
 </li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="scattering.html#ehtim.scattering.stochastic_optics.ScatteringModel.model">model (ehtim.scattering.stochastic_optics.ScatteringModel attribute)</a>
 </li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="model.html#ehtim.model.model_params">model_params() (in module ehtim.model)</a>
 </li>
       <li>
@@ -879,6 +901,8 @@
 </li>
         <li><a href="statistics.html#module-ehtim.statistics.stats">ehtim.statistics.stats</a>
 </li>
+        <li><a href="survey.html#module-ehtim.survey">ehtim.survey</a>
+</li>
         <li><a href="vex.html#module-ehtim.vex">ehtim.vex</a>
 </li>
         <li><a href="image.html#module-image">image</a>
@@ -896,6 +920,8 @@
         <li><a href="scattering.html#module-scattering">scattering</a>
 </li>
         <li><a href="statistics.html#module-statistics">statistics</a>
+</li>
+        <li><a href="survey.html#module-survey">survey</a>
 </li>
         <li><a href="vex.html#module-vex">vex</a>
 </li>
@@ -1147,16 +1173,18 @@
 </li>
       <li><a href="obsdata.html#ehtim.obsdata.Obsdata.reorder_baselines">reorder_baselines() (ehtim.obsdata.Obsdata method)</a>
 </li>
+      <li><a href="obsdata.html#ehtim.obsdata.Obsdata.reorder_baselines_trial_speedups">reorder_baselines_trial_speedups() (ehtim.obsdata.Obsdata method)</a>
+</li>
       <li><a href="obsdata.html#ehtim.obsdata.Obsdata.reorder_tarr_random">reorder_tarr_random() (ehtim.obsdata.Obsdata method)</a>
 </li>
       <li><a href="obsdata.html#ehtim.obsdata.Obsdata.reorder_tarr_sefd">reorder_tarr_sefd() (ehtim.obsdata.Obsdata method)</a>
 </li>
       <li><a href="obsdata.html#ehtim.obsdata.Obsdata.reorder_tarr_snr">reorder_tarr_snr() (ehtim.obsdata.Obsdata method)</a>
 </li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="obsdata.html#ehtim.obsdata.Obsdata.res">res() (ehtim.obsdata.Obsdata method)</a>
 </li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="image.html#ehtim.image.Image.resample_square">resample_square() (ehtim.image.Image method)</a>
 </li>
       <li><a href="obsdata.html#ehtim.obsdata.Obsdata.rescale_noise">rescale_noise() (ehtim.obsdata.Obsdata method)</a>
@@ -1184,6 +1212,10 @@
       <li><a href="scattering.html#id0">rF() (ehtim.scattering.stochastic_optics.ScatteringModel method)</a>
 </li>
       <li><a href="image.html#ehtim.image.Image.rotate">rotate() (ehtim.image.Image method)</a>
+</li>
+      <li><a href="survey.html#ehtim.survey.run_pset">run_pset() (in module ehtim.survey)</a>
+</li>
+      <li><a href="survey.html#ehtim.survey.run_survey">run_survey() (in module ehtim.survey)</a>
 </li>
   </ul></td>
 </tr></table>
@@ -1250,10 +1282,10 @@
 </li>
       <li><a href="vex.html#ehtim.vex.Vex.sched">sched (ehtim.vex.Vex attribute)</a>
 </li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="calibration.html#ehtim.calibrating.self_cal.self_cal">self_cal() (in module ehtim.calibrating.self_cal)</a>
 </li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="calibration.html#ehtim.calibrating.self_cal.self_cal_scan">self_cal_scan() (in module ehtim.calibrating.self_cal)</a>
 </li>
       <li><a href="imager.html#ehtim.imager.Imager.set_embed">set_embed() (ehtim.imager.Imager method)</a>
@@ -1297,6 +1329,13 @@
       </ul></li>
       <li><a href="imager.html#ehtim.imager.Imager.stop_last">stop_last() (ehtim.imager.Imager method)</a>
 </li>
+      <li>
+    survey
+
+      <ul>
+        <li><a href="survey.html#module-survey">module</a>
+</li>
+      </ul></li>
       <li><a href="image.html#ehtim.image.Image.switch_polrep">switch_polrep() (ehtim.image.Image method)</a>
 
       <ul>

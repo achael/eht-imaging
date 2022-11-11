@@ -1,0 +1,703 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ehtim.survey &mdash; ehtim 1.2.3 documentation</title><link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
+    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  <script id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
+        <script src="../../_static/jquery.js"></script>
+        <script src="../../_static/underscore.js"></script>
+        <script src="../../_static/doctools.js"></script>
+        <script src="../../_static/language_data.js"></script>
+    <script src="../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="../../index.html" class="icon icon-home"> ehtim
+          </a>
+              <div class="version">
+                1.2
+              </div>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../image.html">Image</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../array.html">Array</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../obsdata.html">Obsdata</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../movie.html">Movie</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../model.html">Image</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../imager.html">Imager</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../calibration.html">Calibration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../plotting.html">Plotting</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../scattering.html">Scattering</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../statistics.html">Statistics</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../survey.html">Survey</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../vex.html">Vex</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">ehtim</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../index.html" class="icon icon-home"></a> &raquo;</li>
+          <li><a href="../index.html">Module code</a> &raquo;</li>
+      <li>ehtim.survey</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for ehtim.survey</h1><div class="highlight"><pre>
+<span></span><span class="c1"># survey.py</span>
+<span class="c1"># a parameter survey class</span>
+<span class="c1">#</span>
+<span class="c1">#    Copyright (C) 2018 Andrew Chael</span>
+<span class="c1">#</span>
+<span class="c1">#    This program is free software: you can redistribute it and/or modify</span>
+<span class="c1">#    it under the terms of the GNU General Public License as published by</span>
+<span class="c1">#    the Free Software Foundation, either version 3 of the License, or</span>
+<span class="c1">#    (at your option) any later version.</span>
+<span class="c1">#</span>
+<span class="c1">#    This program is distributed in the hope that it will be useful,</span>
+<span class="c1">#    but WITHOUT ANY WARRANTY; without even the implied warranty of</span>
+<span class="c1">#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the</span>
+<span class="c1">#    GNU General Public License for more details.</span>
+<span class="c1">#</span>
+<span class="c1">#    You should have received a copy of the GNU General Public License</span>
+<span class="c1">#    along with this program.  If not, see &lt;http://www.gnu.org/licenses/&gt;.</span>
+
+<span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
+<span class="kn">import</span> <span class="nn">os</span>
+
+<span class="kn">import</span> <span class="nn">ehtim</span> <span class="k">as</span> <span class="nn">eh</span>
+<span class="kn">import</span> <span class="nn">paramsurvey</span>
+<span class="kn">import</span> <span class="nn">paramsurvey.params</span>
+
+
+<span class="c1">##################################################################################################</span>
+<span class="c1"># ParameterSet object</span>
+<span class="c1">##################################################################################################</span>
+
+<span class="k">class</span> <span class="nc">ParameterSet</span><span class="p">:</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">paramset</span><span class="p">,</span> <span class="n">params_fixed</span><span class="o">=</span><span class="p">{}):</span>
+
+        <span class="sd">&quot;&quot;&quot;An object for one parameter set</span>
+
+<span class="sd">           Args:</span>
+<span class="sd">               paramset (dict): A dict containing single parameter set</span>
+<span class="sd">               params_fixed (dict): A dict containing non-varying parameters</span>
+
+<span class="sd">            Returns:</span>
+<span class="sd">                a ParameterSet object</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="c1"># set each item in paramset dict to an attribute</span>
+        <span class="k">for</span> <span class="n">param</span> <span class="ow">in</span> <span class="n">paramset</span><span class="p">:</span>
+            <span class="nb">setattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">param</span><span class="p">,</span> <span class="n">paramset</span><span class="p">[</span><span class="n">param</span><span class="p">])</span>
+
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">params_fixed</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">param</span> <span class="ow">in</span> <span class="n">params_fixed</span><span class="p">:</span>
+                <span class="nb">setattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">param</span><span class="p">,</span> <span class="n">params_fixed</span><span class="p">[</span><span class="n">param</span><span class="p">])</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">paramset</span> <span class="o">=</span> <span class="n">paramset</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">params_fixed</span> <span class="o">=</span> <span class="n">params_fixed</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">outfile</span> <span class="o">=</span> <span class="s1">&#39;</span><span class="si">%s</span><span class="s1">_</span><span class="si">%0.7i</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">outfile_base</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">i</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">fov</span> <span class="o">*=</span> <span class="n">eh</span><span class="o">.</span><span class="n">RADPERUAS</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">reverse_taper_uas</span> <span class="o">*=</span> <span class="n">eh</span><span class="o">.</span><span class="n">RADPERUAS</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">prior_fwhm</span> <span class="o">*=</span> <span class="n">eh</span><span class="o">.</span><span class="n">RADPERUAS</span>
+
+    <span class="k">def</span> <span class="nf">load_data</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Loads in uvfits file from self.infile into eht-imaging obs object and averages using self.avg_time</span>
+<span class="sd">        Creates self.obs</span>
+
+<span class="sd">            Args:</span>
+
+<span class="sd">            Returns:</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="c1"># load the uvfits file</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">obs</span> <span class="o">=</span> <span class="n">eh</span><span class="o">.</span><span class="n">obsdata</span><span class="o">.</span><span class="n">load_uvfits</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">infile</span><span class="p">)</span>
+
+        <span class="c1"># identify the scans (times of continuous observation) in the data</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">obs</span><span class="o">.</span><span class="n">add_scans</span><span class="p">()</span>
+
+        <span class="c1"># coherently average</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">avg_time</span> <span class="o">==</span> <span class="s1">&#39;scan&#39;</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">obs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">obs</span><span class="o">.</span><span class="n">avg_coherent</span><span class="p">(</span><span class="mf">0.</span><span class="p">,</span> <span class="n">scan_avg</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">obs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">obs</span><span class="o">.</span><span class="n">avg_coherent</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">avg_time</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">preimcal</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Applies pre-imaging calibration to self.obs. This includes flagging sites with no measurements, rescaling</span>
+<span class="sd">        short baselines so only compact flux is being imaged, applying a u-v taper, and adding extra sys noise. Creates</span>
+<span class="sd">        self.obs_sc which will have self-cal applied in future steps and self.obs_sc_init which is a copy of the initial</span>
+<span class="sd">        preimcal observation</span>
+
+<span class="sd">            Args:</span>
+
+<span class="sd">            Returns:</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="c1"># handle site name change of APEX between 2017 (AP) to 2018 (AX)</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">zbl_tot</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">median</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">obs</span><span class="o">.</span><span class="n">unpack_bl</span><span class="p">(</span><span class="s1">&#39;AA&#39;</span><span class="p">,</span> <span class="s1">&#39;AX&#39;</span><span class="p">,</span> <span class="s1">&#39;amp&#39;</span><span class="p">)[</span><span class="s1">&#39;amp&#39;</span><span class="p">])</span>
+        <span class="k">except</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">zbl_tot</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">median</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">obs</span><span class="o">.</span><span class="n">unpack_bl</span><span class="p">(</span><span class="s1">&#39;AA&#39;</span><span class="p">,</span> <span class="s1">&#39;AP&#39;</span><span class="p">,</span> <span class="s1">&#39;amp&#39;</span><span class="p">)[</span><span class="s1">&#39;amp&#39;</span><span class="p">])</span>
+
+        <span class="c1"># Flag out sites in the obs.tarr table with no measurements</span>
+        <span class="n">allsites</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">obs</span><span class="o">.</span><span class="n">unpack</span><span class="p">([</span><span class="s1">&#39;t1&#39;</span><span class="p">])[</span><span class="s1">&#39;t1&#39;</span><span class="p">])</span> <span class="o">|</span> <span class="nb">set</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">obs</span><span class="o">.</span><span class="n">unpack</span><span class="p">([</span><span class="s1">&#39;t2&#39;</span><span class="p">])[</span><span class="s1">&#39;t2&#39;</span><span class="p">])</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">obs</span><span class="o">.</span><span class="n">tarr</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">obs</span><span class="o">.</span><span class="n">tarr</span><span class="p">[[</span><span class="n">o</span> <span class="ow">in</span> <span class="n">allsites</span> <span class="k">for</span> <span class="n">o</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">obs</span><span class="o">.</span><span class="n">tarr</span><span class="p">[</span><span class="s1">&#39;site&#39;</span><span class="p">]]]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">obs</span> <span class="o">=</span> <span class="n">eh</span><span class="o">.</span><span class="n">obsdata</span><span class="o">.</span><span class="n">Obsdata</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">obs</span><span class="o">.</span><span class="n">ra</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">obs</span><span class="o">.</span><span class="n">dec</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">obs</span><span class="o">.</span><span class="n">rf</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">obs</span><span class="o">.</span><span class="n">bw</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">obs</span><span class="o">.</span><span class="n">data</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">obs</span><span class="o">.</span><span class="n">tarr</span><span class="p">,</span>
+                                      <span class="n">source</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">obs</span><span class="o">.</span><span class="n">source</span><span class="p">,</span> <span class="n">mjd</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">obs</span><span class="o">.</span><span class="n">mjd</span><span class="p">,</span>
+                                      <span class="n">ampcal</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">obs</span><span class="o">.</span><span class="n">ampcal</span><span class="p">,</span> <span class="n">phasecal</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">obs</span><span class="o">.</span><span class="n">phasecal</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">obs_orig</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">obs</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+
+        <span class="c1"># Rescale short baselines to excise contributions from extended flux.</span>
+        <span class="c1"># setting zbl &lt; zbl_tot assumes there is an extended constant flux component of zbl_tot-zbl Jy</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">zbl</span> <span class="o">!=</span> <span class="bp">self</span><span class="o">.</span><span class="n">zbl_tot</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">obs</span><span class="o">.</span><span class="n">data</span><span class="p">)):</span>
+                <span class="k">if</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">obs</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s1">&#39;u&#39;</span><span class="p">][</span><span class="n">j</span><span class="p">]</span> <span class="o">**</span> <span class="mi">2</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">obs</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s1">&#39;v&#39;</span><span class="p">][</span><span class="n">j</span><span class="p">]</span> <span class="o">**</span> <span class="mi">2</span><span class="p">)</span> <span class="o">**</span> <span class="mf">0.5</span> <span class="o">&gt;=</span> <span class="bp">self</span><span class="o">.</span><span class="n">uv_zblcut</span><span class="p">:</span> <span class="k">continue</span>
+                <span class="k">for</span> <span class="n">field</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;vis&#39;</span><span class="p">,</span> <span class="s1">&#39;qvis&#39;</span><span class="p">,</span> <span class="s1">&#39;uvis&#39;</span><span class="p">,</span> <span class="s1">&#39;vvis&#39;</span><span class="p">,</span> <span class="s1">&#39;sigma&#39;</span><span class="p">,</span> <span class="s1">&#39;qsigma&#39;</span><span class="p">,</span> <span class="s1">&#39;usigma&#39;</span><span class="p">,</span> <span class="s1">&#39;vsigma&#39;</span><span class="p">]:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">obs</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">field</span><span class="p">][</span><span class="n">j</span><span class="p">]</span> <span class="o">*=</span> <span class="bp">self</span><span class="o">.</span><span class="n">zbl</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">zbl_tot</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">obs</span><span class="o">.</span><span class="n">reorder_tarr_snr</span><span class="p">()</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">obs_sc</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">obs</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+        <span class="c1"># Reverse taper the observation: this enforces a maximum resolution on reconstructed features</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">reverse_taper_uas</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">obs_sc</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">obs_sc</span><span class="o">.</span><span class="n">reverse_taper</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">reverse_taper_uas</span><span class="p">)</span>
+
+        <span class="c1"># Add non-closing systematic noise to the observation</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">obs_sc</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">obs_sc</span><span class="o">.</span><span class="n">add_fractional_noise</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">sys_noise</span><span class="p">)</span>
+
+        <span class="c1"># Make a copy of the initial data (before any self-calibration but after the taper)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">obs_sc_init</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">obs_sc</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+
+    <span class="k">def</span> <span class="nf">init_img</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Creates initial/prior image. Only gaussian prior option at present, but creates prior attritubute self.initimg</span>
+<span class="sd">        using self.zbl and self.prior_fwhm</span>
+
+<span class="sd">            Args:</span>
+
+<span class="sd">            Returns:</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># create guassian prior/inital image</span>
+        <span class="n">emptyprior</span> <span class="o">=</span> <span class="n">eh</span><span class="o">.</span><span class="n">image</span><span class="o">.</span><span class="n">make_square</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">obs_sc</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">npixels</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">fov</span><span class="p">)</span>
+
+        <span class="n">gaussprior</span> <span class="o">=</span> <span class="n">emptyprior</span><span class="o">.</span><span class="n">add_gauss</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">zbl</span><span class="p">,</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">prior_fwhm</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">prior_fwhm</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">))</span>
+        <span class="c1"># To avoid gradient singularities in the first step, add an additional small Gaussian</span>
+        <span class="n">gaussprior</span> <span class="o">=</span> <span class="n">gaussprior</span><span class="o">.</span><span class="n">add_gauss</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">zbl</span> <span class="o">*</span> <span class="mf">1e-3</span><span class="p">,</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">prior_fwhm</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">prior_fwhm</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span>
+                                                            <span class="bp">self</span><span class="o">.</span><span class="n">prior_fwhm</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">prior_fwhm</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">initimg</span> <span class="o">=</span> <span class="n">gaussprior</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+
+    <span class="k">def</span> <span class="nf">make_img</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Reconstructs image with specified parameters (data weights, amount of self-cal, etc) described in paramset dict</span>
+<span class="sd">        Creates attributes self.im_out containing the final image and self.caltab containing a corresponding calibration</span>
+<span class="sd">        table object for the final image</span>
+
+<span class="sd">            Args:</span>
+
+<span class="sd">            Returns:</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># specify  data terms</span>
+        <span class="n">data_term</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s1">&#39;vis&#39;</span><span class="p">)</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">vis</span> <span class="o">!=</span> <span class="mf">0.</span><span class="p">:</span>
+            <span class="n">data_term</span><span class="p">[</span><span class="s1">&#39;vis&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">vis</span>
+        <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s1">&#39;amp&#39;</span><span class="p">)</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">amp</span> <span class="o">!=</span> <span class="mf">0.</span><span class="p">:</span>
+            <span class="n">data_term</span><span class="p">[</span><span class="s1">&#39;amp&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">amp</span>
+        <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s1">&#39;diag_closure&#39;</span><span class="p">)</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">diag_closure</span> <span class="ow">is</span> <span class="kc">True</span><span class="p">:</span>
+            <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s1">&#39;logcamp_diag&#39;</span><span class="p">)</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">logcamp_diag</span> <span class="o">!=</span> <span class="mf">0.</span><span class="p">:</span>
+                <span class="n">data_term</span><span class="p">[</span><span class="s1">&#39;logcamp_diag&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">logcamp</span>
+            <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s1">&#39;cphase_diag&#39;</span><span class="p">)</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">cphase_diag</span> <span class="o">!=</span> <span class="mf">0.</span><span class="p">:</span>
+                <span class="n">data_term</span><span class="p">[</span><span class="s1">&#39;cphase_diag&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">cphase</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s1">&#39;logcamp&#39;</span><span class="p">)</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">logcamp</span> <span class="o">!=</span> <span class="mf">0.</span><span class="p">:</span>
+                <span class="n">data_term</span><span class="p">[</span><span class="s1">&#39;logcamp&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">logcamp</span>
+            <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s1">&#39;cphase&#39;</span><span class="p">)</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">cphase</span> <span class="o">!=</span> <span class="mf">0.</span><span class="p">:</span>
+                <span class="n">data_term</span><span class="p">[</span><span class="s1">&#39;cphase&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">cphase</span>
+
+        <span class="c1"># specify regularizer terms</span>
+        <span class="n">reg_term</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s1">&#39;simple&#39;</span><span class="p">)</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">simple</span> <span class="o">!=</span> <span class="mf">0.</span><span class="p">:</span>
+            <span class="n">reg_term</span><span class="p">[</span><span class="s1">&#39;simple&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">simple</span>
+        <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s1">&#39;tv2&#39;</span><span class="p">)</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">tv2</span> <span class="o">!=</span> <span class="mf">0.</span><span class="p">:</span>
+            <span class="n">reg_term</span><span class="p">[</span><span class="s1">&#39;tv2&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">tv2</span>
+        <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s1">&#39;tv&#39;</span><span class="p">)</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">tv</span> <span class="o">!=</span> <span class="mf">0.</span><span class="p">:</span>
+            <span class="n">reg_term</span><span class="p">[</span><span class="s1">&#39;tv&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">tv</span>
+        <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s1">&#39;l1&#39;</span><span class="p">)</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">l1</span> <span class="o">!=</span> <span class="mf">0.</span><span class="p">:</span>
+            <span class="n">reg_term</span><span class="p">[</span><span class="s1">&#39;l1&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">l1</span>
+        <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s1">&#39;flux&#39;</span><span class="p">)</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">flux</span> <span class="o">!=</span> <span class="mf">0.</span><span class="p">:</span>
+            <span class="n">reg_term</span><span class="p">[</span><span class="s1">&#39;flux&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">flux</span>
+        <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s1">&#39;rgauss&#39;</span><span class="p">)</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">rgauss</span> <span class="o">!=</span> <span class="mf">0.</span><span class="p">:</span>
+            <span class="n">reg_term</span><span class="p">[</span><span class="s1">&#39;rgauss&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">rgauss</span>
+
+        <span class="c1">### How to make this more general? ###</span>
+        <span class="c1"># Add systematic noise tolerance for amplitude a-priori calibration errors</span>
+        <span class="c1"># Start with the SEFD noise (but need sqrt)</span>
+        <span class="c1"># then rescale to ensure that final results respect the stated error budget</span>
+        <span class="n">systematic_noise</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">SEFD_error_budget</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+        <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">systematic_noise</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+            <span class="n">systematic_noise</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="p">((</span><span class="mf">1.0</span> <span class="o">+</span> <span class="n">systematic_noise</span><span class="p">[</span><span class="n">key</span><span class="p">])</span> <span class="o">**</span> <span class="mf">0.5</span> <span class="o">-</span> <span class="mf">1.0</span><span class="p">)</span> <span class="o">*</span> <span class="mf">0.25</span>
+
+        <span class="c1"># set up imager</span>
+        <span class="n">imgr</span> <span class="o">=</span> <span class="n">eh</span><span class="o">.</span><span class="n">imager</span><span class="o">.</span><span class="n">Imager</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">obs_sc</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">initimg</span><span class="p">,</span> <span class="n">prior_im</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">initimg</span><span class="p">,</span> <span class="n">flux</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">zbl</span><span class="p">,</span>
+                                <span class="n">data_term</span><span class="o">=</span><span class="n">data_term</span><span class="p">,</span> <span class="n">maxit</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">maxit</span><span class="p">,</span> <span class="n">norm_reg</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">systematic_noise</span><span class="o">=</span><span class="n">systematic_noise</span><span class="p">,</span>
+                                <span class="n">reg_term</span><span class="o">=</span><span class="n">reg_term</span><span class="p">,</span> <span class="n">ttype</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">ttype</span><span class="p">,</span> <span class="n">cp_uv_min</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">uv_zblcut</span><span class="p">,</span> <span class="n">stop</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">stop</span><span class="p">)</span>
+
+        <span class="n">res</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">obs</span><span class="o">.</span><span class="n">res</span><span class="p">()</span>
+
+        <span class="n">imgr</span><span class="o">.</span><span class="n">make_image_I</span><span class="p">(</span><span class="n">show_updates</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">niter</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">niter_static</span><span class="p">,</span> <span class="n">blur_frac</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">blurfrac</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">selfcal</span><span class="p">:</span>
+            <span class="c1"># Self-calibrate to the previous model (phase-only);</span>
+            <span class="c1"># The solution_interval is 0 to align phases from high and low bands if needed</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">obs_sc</span> <span class="o">=</span> <span class="n">eh</span><span class="o">.</span><span class="n">selfcal</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">obs_sc</span><span class="p">,</span> <span class="n">imgr</span><span class="o">.</span><span class="n">out_last</span><span class="p">(),</span> <span class="n">method</span><span class="o">=</span><span class="s1">&#39;phase&#39;</span><span class="p">,</span> <span class="n">ttype</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">ttype</span><span class="p">,</span>
+                                     <span class="n">solution_interval</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">processes</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span>
+
+            <span class="n">sc_p_idx</span> <span class="o">=</span> <span class="mi">0</span>
+            <span class="n">dterms</span> <span class="o">=</span> <span class="n">data_term</span><span class="o">.</span><span class="n">keys</span><span class="p">()</span>
+            <span class="k">while</span> <span class="n">sc_p_idx</span> <span class="o">&lt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">sc_phase</span><span class="p">:</span>
+
+                <span class="c1"># Blur the previous reconstruction to the intrinsic resolution</span>
+                <span class="n">init</span> <span class="o">=</span> <span class="n">imgr</span><span class="o">.</span><span class="n">out_last</span><span class="p">()</span><span class="o">.</span><span class="n">blur_circ</span><span class="p">(</span><span class="n">res</span><span class="p">)</span>
+
+                <span class="c1"># Increase the data weights and reinitialize imaging</span>
+                <span class="k">if</span> <span class="n">sc_p_idx</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                    <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">dterms</span><span class="p">:</span>
+                        <span class="n">data_term</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">*=</span> <span class="bp">self</span><span class="o">.</span><span class="n">xdw_phase</span>
+
+                <span class="c1"># set up imager</span>
+                <span class="n">imgr</span> <span class="o">=</span> <span class="n">eh</span><span class="o">.</span><span class="n">imager</span><span class="o">.</span><span class="n">Imager</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">obs_sc</span><span class="p">,</span> <span class="n">init</span><span class="p">,</span> <span class="n">prior_im</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">initimg</span><span class="p">,</span> <span class="n">flux</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">zbl</span><span class="p">,</span>
+                                        <span class="n">data_term</span><span class="o">=</span><span class="n">data_term</span><span class="p">,</span> <span class="n">maxit</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">maxit</span><span class="p">,</span> <span class="n">norm_reg</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                                        <span class="n">systematic_noise</span><span class="o">=</span><span class="n">systematic_noise</span><span class="p">,</span>
+                                        <span class="n">reg_term</span><span class="o">=</span><span class="n">reg_term</span><span class="p">,</span> <span class="n">ttype</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">ttype</span><span class="p">,</span> <span class="n">cp_uv_min</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">uv_zblcut</span><span class="p">,</span> <span class="n">stop</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">stop</span><span class="p">)</span>
+
+                <span class="c1"># Imaging</span>
+                <span class="n">imgr</span><span class="o">.</span><span class="n">make_image_I</span><span class="p">(</span><span class="n">show_updates</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">niter</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">niter_static</span><span class="p">,</span> <span class="n">blur_frac</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">blurfrac</span><span class="p">)</span>
+
+                <span class="c1"># apply self-calibration to original calibrated data</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">obs_sc</span> <span class="o">=</span> <span class="n">eh</span><span class="o">.</span><span class="n">selfcal</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">obs_sc_init</span><span class="p">,</span> <span class="n">imgr</span><span class="o">.</span><span class="n">out_last</span><span class="p">(),</span> <span class="n">method</span><span class="o">=</span><span class="s1">&#39;phase&#39;</span><span class="p">,</span> <span class="n">ttype</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">ttype</span><span class="p">)</span>
+
+                <span class="n">sc_p_idx</span> <span class="o">+=</span> <span class="mi">1</span>
+
+            <span class="c1"># repeat amp+phase self-calibration</span>
+            <span class="n">sc_ap_idx</span> <span class="o">=</span> <span class="mi">0</span>
+
+            <span class="k">while</span> <span class="n">sc_ap_idx</span> <span class="o">&lt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">sc_ap</span><span class="p">:</span>
+
+                <span class="c1"># Blur the previous reconstruction to the intrinsic resolution</span>
+                <span class="n">init</span> <span class="o">=</span> <span class="n">imgr</span><span class="o">.</span><span class="n">out_last</span><span class="p">()</span><span class="o">.</span><span class="n">blur_circ</span><span class="p">(</span><span class="n">res</span><span class="p">)</span>
+
+                <span class="c1"># Increase the data weights and reinitialize imaging</span>
+                <span class="k">if</span> <span class="n">sc_p_idx</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                    <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">dterms</span><span class="p">:</span>
+                        <span class="n">data_term</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">*=</span> <span class="bp">self</span><span class="o">.</span><span class="n">xdw_ap</span>
+
+                <span class="c1"># set up imager</span>
+                <span class="n">imgr</span> <span class="o">=</span> <span class="n">eh</span><span class="o">.</span><span class="n">imager</span><span class="o">.</span><span class="n">Imager</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">obs_sc</span><span class="p">,</span> <span class="n">init</span><span class="p">,</span> <span class="n">prior_im</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">initimg</span><span class="p">,</span> <span class="n">flux</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">zbl</span><span class="p">,</span>
+                                        <span class="n">data_term</span><span class="o">=</span><span class="n">data_term</span><span class="p">,</span> <span class="n">maxit</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">maxit</span><span class="p">,</span> <span class="n">norm_reg</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                                        <span class="n">systematic_noise</span><span class="o">=</span><span class="n">systematic_noise</span><span class="p">,</span>
+                                        <span class="n">reg_term</span><span class="o">=</span><span class="n">reg_term</span><span class="p">,</span> <span class="n">ttype</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">ttype</span><span class="p">,</span> <span class="n">cp_uv_min</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">uv_zblcut</span><span class="p">,</span> <span class="n">stop</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">stop</span><span class="p">)</span>
+
+                <span class="c1"># Imaging</span>
+                <span class="n">imgr</span><span class="o">.</span><span class="n">make_image_I</span><span class="p">(</span><span class="n">show_updates</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">niter</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">niter_static</span><span class="p">,</span> <span class="n">blur_frac</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">blurfrac</span><span class="p">)</span>
+
+                <span class="n">caltab</span> <span class="o">=</span> <span class="n">eh</span><span class="o">.</span><span class="n">selfcal</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">obs_sc_init</span><span class="p">,</span> <span class="n">imgr</span><span class="o">.</span><span class="n">out_last</span><span class="p">(),</span> <span class="n">method</span><span class="o">=</span><span class="s1">&#39;both&#39;</span><span class="p">,</span>
+                                    <span class="n">ttype</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">ttype</span><span class="p">,</span> <span class="n">gain_tol</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">gaintol</span><span class="p">,</span> <span class="n">caltable</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">processes</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">obs_sc</span> <span class="o">=</span> <span class="n">caltab</span><span class="o">.</span><span class="n">applycal</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">obs_sc_init</span><span class="p">,</span> <span class="n">interp</span><span class="o">=</span><span class="s1">&#39;nearest&#39;</span><span class="p">,</span> <span class="n">extrapolate</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+                <span class="n">sc_ap_idx</span> <span class="o">+=</span> <span class="mi">1</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">im_out</span> <span class="o">=</span> <span class="n">imgr</span><span class="o">.</span><span class="n">out_last</span><span class="p">()</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">caltab</span> <span class="o">=</span> <span class="n">caltab</span>
+
+    <span class="k">def</span> <span class="nf">output_results</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Outputs all requested files pertaining to final image</span>
+
+<span class="sd">            Args:</span>
+
+<span class="sd">            Returns:</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="c1"># Add a large gaussian component to account for the missing flux</span>
+        <span class="c1"># so the final image can be compared with the original data</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">im_addcmp</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">im_out</span><span class="o">.</span><span class="n">add_zblterm</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">obs_orig</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">uv_zblcut</span><span class="p">,</span> <span class="n">debias</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">obs_sc_addcmp</span> <span class="o">=</span> <span class="n">eh</span><span class="o">.</span><span class="n">selfcal</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">obs_orig</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">im_addcmp</span><span class="p">,</span> <span class="n">method</span><span class="o">=</span><span class="s1">&#39;both&#39;</span><span class="p">,</span> <span class="n">ttype</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">ttype</span><span class="p">)</span>
+
+        <span class="c1"># If an inverse taper was used, restore the final image</span>
+        <span class="c1"># to be consistent with the original data</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">reverse_taper_uas</span> <span class="o">&gt;</span> <span class="mf">0.0</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">im_out</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">im_out</span><span class="o">.</span><span class="n">blur_circ</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">reverse_taper_uas</span><span class="p">)</span>
+
+        <span class="c1"># Save the final image</span>
+        <span class="n">outfits</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">outpath</span><span class="p">,</span> <span class="s1">&#39;</span><span class="si">%s</span><span class="s1">.fits&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">outfile</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">im_out</span><span class="o">.</span><span class="n">save_fits</span><span class="p">(</span><span class="n">outfits</span><span class="p">)</span>
+
+        <span class="c1"># Save caltab</span>
+        <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s1">&#39;save_caltab&#39;</span><span class="p">)</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">save_caltab</span> <span class="o">==</span> <span class="kc">True</span><span class="p">:</span>
+            <span class="n">outcal</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">outpath</span><span class="p">,</span> <span class="s1">&#39;</span><span class="si">%s</span><span class="s1">/&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">outfile</span><span class="p">))</span>
+            <span class="n">eh</span><span class="o">.</span><span class="n">caltable</span><span class="o">.</span><span class="n">save_caltable</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">caltab</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">obs_sc_init</span><span class="p">,</span> <span class="n">outcal</span><span class="p">)</span>
+
+        <span class="c1"># Save self-calibrated uvfits</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">save_uvfits</span><span class="p">:</span>
+            <span class="n">outuvfits</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">outpath</span><span class="p">,</span> <span class="s1">&#39;</span><span class="si">%s</span><span class="s1">.uvfits&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">outfile</span><span class="p">))</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">obs_sc_addcmp</span><span class="o">.</span><span class="n">save_uvfits</span><span class="p">(</span><span class="n">outuvfits</span><span class="p">)</span>
+
+        <span class="c1"># Save pdf of final image</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">save_pdf</span><span class="p">:</span>
+            <span class="n">outpdf</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">outpath</span><span class="p">,</span> <span class="s1">&#39;</span><span class="si">%s</span><span class="s1">.pdf&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">outfile</span><span class="p">))</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">im_out</span><span class="o">.</span><span class="n">display</span><span class="p">(</span><span class="n">cbar_unit</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;Tb&#39;</span><span class="p">],</span> <span class="n">label_type</span><span class="o">=</span><span class="s1">&#39;scale&#39;</span><span class="p">,</span> <span class="n">export_pdf</span><span class="o">=</span><span class="n">outpdf</span><span class="p">)</span>
+
+        <span class="c1"># Save pdf of image summary</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">save_imgsums</span><span class="p">:</span>
+            <span class="c1"># Save an image summary sheet</span>
+            <span class="n">plt</span><span class="o">.</span><span class="n">close</span><span class="p">(</span><span class="s1">&#39;all&#39;</span><span class="p">)</span>
+            <span class="n">outimgsum</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">outpath</span><span class="p">,</span> <span class="s1">&#39;</span><span class="si">%s</span><span class="s1">_imgsum.pdf&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">outfile</span><span class="p">))</span>
+            <span class="n">eh</span><span class="o">.</span><span class="n">imgsum</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">im_addcmp</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">obs_sc_addcmp</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">obs_orig</span><span class="p">,</span> <span class="n">outimgsum</span><span class="p">,</span> <span class="n">cp_uv_min</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">uv_zblcut</span><span class="p">,</span>
+                      <span class="n">processes</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">save_statistics</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Saves a csv file with the following statistics:</span>
+<span class="sd">        chi^2 closure phase, logcamp, vis wrt the original observation</span>
+<span class="sd">        chi^2 vis wrt to original observation with self-cal to final image applied</span>
+<span class="sd">        chi^2 closure phase, logcamp, vis wrt the original observation with sys noise and self-cal applied</span>
+
+<span class="sd">            Args:</span>
+
+<span class="sd">            Returns:</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">stats_dict</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="n">stats_dict</span><span class="p">[</span><span class="s1">&#39;i&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">i</span><span class="p">]</span>
+
+        <span class="n">outstats</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">outpath</span><span class="p">,</span> <span class="s1">&#39;</span><span class="si">%s</span><span class="s1">_stats.csv&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">outfile</span><span class="p">))</span>
+
+        <span class="c1"># if ground truth image available, compute nxcorr</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">ground_truth_img</span> <span class="o">!=</span> <span class="s1">&#39;None&#39;</span><span class="p">:</span>
+            <span class="n">gt_im</span> <span class="o">=</span> <span class="n">eh</span><span class="o">.</span><span class="n">image</span><span class="o">.</span><span class="n">load_fits</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ground_truth_img</span><span class="p">)</span>
+
+            <span class="n">fov_</span> <span class="o">=</span> <span class="mi">200</span> <span class="o">*</span> <span class="n">eh</span><span class="o">.</span><span class="n">RADPERUAS</span>
+            <span class="n">psize_</span> <span class="o">=</span> <span class="n">fov_</span> <span class="o">/</span> <span class="mi">256</span>
+            <span class="n">nxcorr_</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">gt_im</span><span class="o">.</span><span class="n">compare_images</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">im_addcmp</span><span class="p">,</span> <span class="n">metric</span><span class="o">=</span><span class="s1">&#39;nxcorr&#39;</span><span class="p">,</span> <span class="n">target_fov</span><span class="o">=</span><span class="n">fov_</span><span class="p">,</span> <span class="n">psize</span><span class="o">=</span><span class="n">psize_</span><span class="p">)</span>
+            <span class="n">nxcorr</span> <span class="o">=</span> <span class="n">nxcorr_</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+
+            <span class="n">stats_dict</span><span class="p">[</span><span class="s1">&#39;nxcorr&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="n">nxcorr</span><span class="p">]</span>
+
+        <span class="c1"># chi^2 for closure phase (cp) and log camp (lc)</span>
+        <span class="c1"># original uv data</span>
+        <span class="n">obs_ref</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">obs_orig</span>
+        <span class="n">chi2_cp_ref</span> <span class="o">=</span> <span class="n">obs_ref</span><span class="o">.</span><span class="n">chisq</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">im_addcmp</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="s1">&#39;cphase&#39;</span><span class="p">,</span>
+                                    <span class="n">ttype</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">ttype</span><span class="p">,</span> <span class="n">systematic_noise</span><span class="o">=</span><span class="mf">0.</span><span class="p">,</span>
+                                    <span class="n">systematic_cphase_noise</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">maxset</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                                    <span class="n">cp_uv_min</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">uv_zblcut</span><span class="p">)</span>
+        <span class="n">chi2_lc_ref</span> <span class="o">=</span> <span class="n">obs_ref</span><span class="o">.</span><span class="n">chisq</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">im_addcmp</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="s1">&#39;logcamp&#39;</span><span class="p">,</span>
+                                    <span class="n">ttype</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">ttype</span><span class="p">,</span> <span class="n">systematic_noise</span><span class="o">=</span><span class="mf">0.</span><span class="p">,</span>
+                                    <span class="n">snrcut</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span> <span class="n">maxset</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                                    <span class="n">cp_uv_min</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">uv_zblcut</span><span class="p">)</span>  <span class="c1"># snrcut to remove large chi2 point</span>
+        <span class="n">chi2_vis_ref</span> <span class="o">=</span> <span class="n">obs_ref</span><span class="o">.</span><span class="n">chisq</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">im_addcmp</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="s1">&#39;vis&#39;</span><span class="p">,</span>
+                                     <span class="n">ttype</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">ttype</span><span class="p">,</span> <span class="n">systematic_noise</span><span class="o">=</span><span class="mf">0.</span><span class="p">,</span>
+                                     <span class="n">snrcut</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span> <span class="n">maxset</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                                     <span class="n">cp_uv_min</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">uv_zblcut</span><span class="p">)</span>  <span class="c1"># snrcut to remove large chi2 point</span>
+
+        <span class="n">stats_dict</span><span class="p">[</span><span class="s1">&#39;chi2_cp_ref&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="n">chi2_cp_ref</span><span class="p">]</span>
+        <span class="n">stats_dict</span><span class="p">[</span><span class="s1">&#39;chi2_lc_ref&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="n">chi2_lc_ref</span><span class="p">]</span>
+        <span class="n">stats_dict</span><span class="p">[</span><span class="s1">&#39;chi2_vis_ref&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="n">chi2_vis_ref</span><span class="p">]</span>
+
+        <span class="c1"># orig data self-cal to final image</span>
+        <span class="n">obs_sub</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">obs_sc_addcmp</span>
+        <span class="n">chi2_vis_sub</span> <span class="o">=</span> <span class="n">obs_sub</span><span class="o">.</span><span class="n">chisq</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">im_addcmp</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="s1">&#39;vis&#39;</span><span class="p">,</span>
+                                     <span class="n">ttype</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">ttype</span><span class="p">,</span> <span class="n">systematic_noise</span><span class="o">=</span><span class="mf">0.</span><span class="p">,</span>
+                                     <span class="n">snrcut</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span> <span class="n">maxset</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                                     <span class="n">cp_uv_min</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">uv_zblcut</span><span class="p">)</span>  <span class="c1"># snrcut to remove large chi2 point</span>
+
+        <span class="n">stats_dict</span><span class="p">[</span><span class="s1">&#39;chi2_vis_sub&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="n">chi2_vis_sub</span><span class="p">]</span>
+
+        <span class="c1"># orig data with sys noise added + self-cal to final image</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">obs_sc_addcmp_sys</span> <span class="o">=</span> <span class="n">eh</span><span class="o">.</span><span class="n">selfcal</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">obs_sc_init</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">im_addcmp</span><span class="p">,</span> <span class="n">method</span><span class="o">=</span><span class="s1">&#39;both&#39;</span><span class="p">,</span> <span class="n">ttype</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">ttype</span><span class="p">)</span>
+        <span class="n">obs_sys</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">obs_sc_addcmp_sys</span>
+        <span class="n">chi2_cp_sys</span> <span class="o">=</span> <span class="n">obs_sys</span><span class="o">.</span><span class="n">chisq</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">im_addcmp</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="s1">&#39;cphase&#39;</span><span class="p">,</span>
+                                    <span class="n">ttype</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">ttype</span><span class="p">,</span> <span class="n">systematic_noise</span><span class="o">=</span><span class="mf">0.</span><span class="p">,</span>
+                                    <span class="n">systematic_cphase_noise</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">maxset</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                                    <span class="n">cp_uv_min</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">uv_zblcut</span><span class="p">)</span>
+        <span class="n">chi2_lc_sys</span> <span class="o">=</span> <span class="n">obs_sys</span><span class="o">.</span><span class="n">chisq</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">im_addcmp</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="s1">&#39;logcamp&#39;</span><span class="p">,</span>
+                                    <span class="n">ttype</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">ttype</span><span class="p">,</span> <span class="n">systematic_noise</span><span class="o">=</span><span class="mf">0.</span><span class="p">,</span>
+                                    <span class="n">snrcut</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span> <span class="n">maxset</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                                    <span class="n">cp_uv_min</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">uv_zblcut</span><span class="p">)</span>  <span class="c1"># snrcut to remove large chi2 point</span>
+        <span class="n">chi2_vis_sys</span> <span class="o">=</span> <span class="n">obs_sys</span><span class="o">.</span><span class="n">chisq</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">im_addcmp</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="s1">&#39;vis&#39;</span><span class="p">,</span>
+                                     <span class="n">ttype</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">ttype</span><span class="p">,</span> <span class="n">systematic_noise</span><span class="o">=</span><span class="mf">0.</span><span class="p">,</span>
+                                     <span class="n">snrcut</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span> <span class="n">maxset</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                                     <span class="n">cp_uv_min</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">uv_zblcut</span><span class="p">)</span>  <span class="c1"># snrcut to remove large chi2 point</span>
+
+        <span class="n">stats_dict</span><span class="p">[</span><span class="s1">&#39;chi2_cp_sys&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="n">chi2_cp_sys</span><span class="p">]</span>
+        <span class="n">stats_dict</span><span class="p">[</span><span class="s1">&#39;chi2_lc_sys&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="n">chi2_lc_sys</span><span class="p">]</span>
+        <span class="n">stats_dict</span><span class="p">[</span><span class="s1">&#39;chi2_vis_sys&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="n">chi2_vis_sys</span><span class="p">]</span>
+
+        <span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="o">.</span><span class="n">from_dict</span><span class="p">(</span><span class="n">stats_dict</span><span class="p">)</span>
+        <span class="n">df</span><span class="o">.</span><span class="n">to_csv</span><span class="p">(</span><span class="n">outstats</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">save_params</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Saves a csv file with parameter set details</span>
+
+<span class="sd">            Args:</span>
+
+<span class="sd">            Returns:</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">paramset</span><span class="p">[</span><span class="s1">&#39;fov&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">fov</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">paramset</span><span class="p">[</span><span class="s1">&#39;zbl_tot&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">zbl_tot</span>
+
+        <span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="o">.</span><span class="n">from_dict</span><span class="p">([</span><span class="bp">self</span><span class="o">.</span><span class="n">paramset</span><span class="p">])</span>
+
+        <span class="n">outparams</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">outpath</span><span class="p">,</span> <span class="s1">&#39;</span><span class="si">%s</span><span class="s1">_params.csv&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">outfile</span><span class="p">))</span>
+        <span class="n">df</span><span class="o">.</span><span class="n">to_csv</span><span class="p">(</span><span class="n">outparams</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+
+        <span class="sd">&quot;&quot;&quot;</span>
+
+<span class="sd">        Run imaging pipeline for one parameter set.</span>
+
+<span class="sd">            Args:</span>
+
+<span class="sd">            Returns:</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="c1"># if a *_params.csv file exists, it means this parameter has already been run and can be skipped</span>
+        <span class="c1"># useful in case survey with multiple parameter sets gets interrupted</span>
+        <span class="n">outcsv</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">outpath</span><span class="p">,</span> <span class="s1">&#39;</span><span class="si">%s</span><span class="s1">_params.csv&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">outfile</span><span class="p">))</span>
+        <span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">outcsv</span><span class="p">):</span>
+            <span class="k">pass</span>
+
+        <span class="k">else</span><span class="p">:</span>
+
+            <span class="c1"># load in data</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">load_data</span><span class="p">()</span>
+
+            <span class="c1"># do pre-imaging calibration</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">preimcal</span><span class="p">()</span>
+
+            <span class="c1"># create initial/prior image</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">init_img</span><span class="p">()</span>
+
+            <span class="c1"># run imaging step</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">make_img</span><span class="p">()</span>
+
+            <span class="c1"># output the results</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">output_results</span><span class="p">()</span>
+
+            <span class="c1"># save params to text</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">save_params</span><span class="p">()</span>
+
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">save_stats</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">save_statistics</span><span class="p">()</span>
+
+
+<div class="viewcode-block" id="run_pset"><a class="viewcode-back" href="../../survey.html#ehtim.survey.run_pset">[docs]</a><span class="k">def</span> <span class="nf">run_pset</span><span class="p">(</span><span class="n">pset</span><span class="p">,</span> <span class="n">system_kwargs</span><span class="p">,</span> <span class="n">params_fixed</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Run imaging for one parameter set</span>
+
+<span class="sd">           Args:</span>
+<span class="sd">               pset (dict): A dict containing single parameter set</span>
+<span class="sd">               params_fixed (dict): A dict containing non-varying parameters</span>
+
+<span class="sd">        Returns:</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">os</span><span class="o">.</span><span class="n">makedirs</span><span class="p">(</span><span class="n">params_fixed</span><span class="p">[</span><span class="s1">&#39;outpath&#39;</span><span class="p">],</span> <span class="n">exist_ok</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">PSet</span> <span class="o">=</span> <span class="n">ParameterSet</span><span class="p">(</span><span class="n">pset</span><span class="p">,</span> <span class="n">params_fixed</span><span class="p">)</span>
+    <span class="n">PSet</span><span class="o">.</span><span class="n">run</span><span class="p">()</span></div>
+
+<div class="viewcode-block" id="run_survey"><a class="viewcode-back" href="../../survey.html#ehtim.survey.run_survey">[docs]</a><span class="k">def</span> <span class="nf">run_survey</span><span class="p">(</span><span class="n">psets</span><span class="p">,</span> <span class="n">params_fixed</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Run survey for all parameter sets using paramsurvey</span>
+
+<span class="sd">           Args:</span>
+<span class="sd">               psets (DataFrame): A pandas DataFrame containing all parameter sets</span>
+<span class="sd">               params_fixed (dict): A dict containing non-varying parameters</span>
+
+<span class="sd">        Returns:</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># run whole survey using map function</span>
+    <span class="n">paramsurvey</span><span class="o">.</span><span class="n">init</span><span class="p">(</span><span class="n">backend</span><span class="o">=</span><span class="n">params_fixed</span><span class="p">[</span><span class="s1">&#39;backend&#39;</span><span class="p">],</span> <span class="n">ncores</span><span class="o">=</span><span class="n">params_fixed</span><span class="p">[</span><span class="s1">&#39;nproc&#39;</span><span class="p">])</span>
+    <span class="n">paramsurvey</span><span class="o">.</span><span class="n">map</span><span class="p">(</span><span class="n">run_pset</span><span class="p">,</span> <span class="n">psets</span><span class="p">,</span> <span class="n">user_kwargs</span><span class="o">=</span><span class="n">params_fixed</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="create_params_fixed"><a class="viewcode-back" href="../../survey.html#ehtim.survey.create_params_fixed">[docs]</a><span class="k">def</span> <span class="nf">create_params_fixed</span><span class="p">(</span><span class="n">infile</span><span class="p">,</span> <span class="n">outfile_base</span><span class="p">,</span> <span class="n">outpath</span><span class="p">,</span> <span class="n">ground_truth_img</span><span class="o">=</span><span class="s1">&#39;None&#39;</span><span class="p">,</span>
+                        <span class="n">save_imgsums</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">save_uvfits</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">save_pdf</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">save_stats</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">save_caltab</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                        <span class="n">nproc</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">backend</span><span class="o">=</span><span class="s1">&#39;multiprocessing&#39;</span><span class="p">,</span> <span class="n">ttype</span><span class="o">=</span><span class="s1">&#39;nfft&#39;</span><span class="p">,</span>
+                        <span class="n">selfcal</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">gaintol</span><span class="o">=</span><span class="p">[</span><span class="mf">0.02</span><span class="p">,</span><span class="mf">0.2</span><span class="p">],</span> <span class="n">niter_static</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span> <span class="n">blurfrac</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+                        <span class="n">maxit</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span> <span class="n">stop</span><span class="o">=</span><span class="mf">1e-4</span><span class="p">,</span> <span class="n">fov</span><span class="o">=</span><span class="mi">128</span><span class="p">,</span> <span class="n">npixels</span><span class="o">=</span><span class="mi">64</span><span class="p">,</span> <span class="n">reverse_taper_uas</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span> <span class="n">uv_zblcut</span><span class="o">=</span><span class="mf">0.1e9</span><span class="p">,</span>
+                        <span class="n">SEFD_error_budget</span><span class="o">=</span><span class="p">{</span><span class="s1">&#39;AA&#39;</span><span class="p">:</span><span class="mf">0.1</span><span class="p">,</span><span class="s1">&#39;AX&#39;</span><span class="p">:</span><span class="mf">0.1</span><span class="p">,</span><span class="s1">&#39;GL&#39;</span><span class="p">:</span><span class="mf">0.1</span><span class="p">,</span><span class="s1">&#39;LM&#39;</span><span class="p">:</span><span class="mf">0.1</span><span class="p">,</span><span class="s1">&#39;MG&#39;</span><span class="p">:</span><span class="mf">0.1</span><span class="p">,</span><span class="s1">&#39;MM&#39;</span><span class="p">:</span><span class="mf">0.1</span><span class="p">,</span><span class="s1">&#39;PV&#39;</span><span class="p">:</span><span class="mf">0.1</span><span class="p">,</span><span class="s1">&#39;SW&#39;</span><span class="p">:</span><span class="mf">0.1</span><span class="p">}):</span>
+
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Create a dict for all non-varying survery parameters</span>
+
+<span class="sd">           Args:</span>
+
+<span class="sd">                infile (str): path to input uvfits observation file</span>
+<span class="sd">                outfile_base (str): name of base filename for all outputs</span>
+<span class="sd">                outpath (str): path to directory where all outputs should be stored</span>
+<span class="sd">                ground_truth_img (str): if applicable, path to ground truth fits file</span>
+<span class="sd">                save_imgsums (bool): save summary pdf for each image</span>
+<span class="sd">                save_uvfits (bool): save final self-cal observation to uvfits file</span>
+<span class="sd">                save_pdf (bool): save pdf of each image</span>
+<span class="sd">                save_stats (bool): save csv file containing statistics for each image</span>
+<span class="sd">                save_caltab (bool): save a calibration table for each image</span>
+<span class="sd">                nproc (int): number of parallel processes</span>
+<span class="sd">                backend (str): either &#39;multiprocessing&#39; or &#39;ray&#39;</span>
+<span class="sd">                ttype (str): “fast” or “nfft” or “direct”</span>
+<span class="sd">                selfcal (bool): perform self-calibration steps during imaging</span>
+<span class="sd">                gaintol (array): tolerance for gains to be under/over unity respectively during self-cal</span>
+<span class="sd">                niter_static (int): number of iterations for each imaging step</span>
+<span class="sd">                blurfrac (int): factor to blur initial image between iterations</span>
+<span class="sd">                maxit (int): maximum number of iterations if image does not converge</span>
+<span class="sd">                stop (float): convergence criterion for imaging</span>
+<span class="sd">                fov (int): image field of view in uas</span>
+<span class="sd">                npixels (int): number of image pixels</span>
+<span class="sd">                reverse_taper_uas (int): fwhm of gassuain in uas to reverse taper observation</span>
+<span class="sd">                uv_zblcut (float): maximum uv-distance to which is considered short baseline flux</span>
+<span class="sd">                SEFD_error_budget (dict): SEFD percentage error for each station</span>
+
+
+<span class="sd">        Returns:</span>
+
+<span class="sd">                params_fixed (dict): dict containing all non-varying survery parameters</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="c1"># take all arguments and put them in a dict</span>
+    <span class="n">args</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="nb">locals</span><span class="p">()</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span>
+    <span class="n">params_fixed</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="k">for</span> <span class="n">arg</span> <span class="ow">in</span> <span class="n">args</span><span class="p">:</span>
+        <span class="n">params_fixed</span><span class="p">[</span><span class="n">arg</span><span class="p">]</span> <span class="o">=</span> <span class="nb">locals</span><span class="p">()</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">arg</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">params_fixed</span></div>
+
+<div class="viewcode-block" id="create_survey_psets"><a class="viewcode-back" href="../../survey.html#ehtim.survey.create_survey_psets">[docs]</a><span class="k">def</span> <span class="nf">create_survey_psets</span><span class="p">(</span><span class="n">zbl</span><span class="o">=</span><span class="p">[</span><span class="mf">0.6</span><span class="p">],</span> <span class="n">sys_noise</span><span class="o">=</span><span class="p">[</span><span class="mf">0.02</span><span class="p">],</span> <span class="n">avg_time</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;scan&#39;</span><span class="p">],</span> <span class="n">prior_fwhm</span><span class="o">=</span><span class="p">[</span><span class="mi">40</span><span class="p">],</span>
+                     <span class="n">sc_phase</span><span class="o">=</span><span class="p">[</span><span class="mi">2</span><span class="p">],</span> <span class="n">xdw_phase</span><span class="o">=</span><span class="p">[</span><span class="mi">10</span><span class="p">],</span> <span class="n">sc_ap</span><span class="o">=</span><span class="p">[</span><span class="mi">2</span><span class="p">],</span> <span class="n">xdw_ap</span><span class="o">=</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">amp</span><span class="o">=</span><span class="p">[</span><span class="mf">0.2</span><span class="p">],</span> <span class="n">cphase</span><span class="o">=</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">logcamp</span><span class="o">=</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span>
+                     <span class="n">simple</span><span class="o">=</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">l1</span><span class="o">=</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">tv</span><span class="o">=</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">tv2</span><span class="o">=</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">flux</span><span class="o">=</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">epsilon_tv</span><span class="o">=</span><span class="p">[</span><span class="mf">1e-10</span><span class="p">]):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Create a dataframe given all survey parameters. Default values will create an example dataframe but these values</span>
+<span class="sd">    should be adjusted for each specific observation</span>
+
+<span class="sd">           Args:</span>
+
+<span class="sd">               zbl (array): compact flux value (Jy)</span>
+<span class="sd">               sys_noise (array): percent addition of systematic noise</span>
+<span class="sd">               avg_time (array): in seconds or &#39;scan&#39; for scan averaging</span>
+<span class="sd">               prior_fwhm (array): fwhm of gaussian prior in uas</span>
+<span class="sd">               sc_phase (array): number of iterations to perform phase-only self-cal</span>
+<span class="sd">               xdw_phase (array): multiplicative factor for data weights after one round of phase-only self-cal</span>
+<span class="sd">               sc_ap (array): number of iterations to perform amp+phase self-cal</span>
+<span class="sd">               xdw_ap (array): multiplicative factor for data weights after one round of amp+phase self-cal</span>
+<span class="sd">               amp (array): data weight to be placed on amplitudes</span>
+<span class="sd">               cphase (array): data weight to be placed on closure phases</span>
+<span class="sd">               logcamp (array): data weight to be placed on log closure amplitudes</span>
+<span class="sd">               simple (array): regularizer weight for relative entropy, favoring similarity to prior image</span>
+<span class="sd">               l1 (array): regularizer weight for l1 norm, favoring image sparsity</span>
+<span class="sd">               tv (array): regularizer weight for total variation, favoring sharp edges</span>
+<span class="sd">               tv2 (array): regularizer weight for total squared variation, favoring smooth edges</span>
+<span class="sd">               flux (array): regularizer weight for total flux density, favoring final images with flux close to zbl</span>
+<span class="sd">               epsilon_tv (array): epsilon value used in definition of total variation - rarely need to change this</span>
+
+<span class="sd">        Returns:</span>
+
+<span class="sd">                psets (DataFrame): pandas DataFrame containing all combination of parameter sets along with index values</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="c1"># take all arguments and put them in a dict</span>
+    <span class="n">args</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="nb">locals</span><span class="p">()</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span>
+    <span class="n">params</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="k">for</span> <span class="n">arg</span> <span class="ow">in</span> <span class="n">args</span><span class="p">:</span>
+        <span class="n">params</span><span class="p">[</span><span class="n">arg</span><span class="p">]</span> <span class="o">=</span> <span class="nb">locals</span><span class="p">()</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">arg</span><span class="p">)</span>
+
+    <span class="c1"># pandas dataframe containing all combinations of parameters to survey</span>
+    <span class="n">psets</span> <span class="o">=</span> <span class="n">paramsurvey</span><span class="o">.</span><span class="n">params</span><span class="o">.</span><span class="n">product</span><span class="p">(</span><span class="n">params</span><span class="p">)</span>
+
+    <span class="c1"># add pset index number to each row of dataframe</span>
+    <span class="n">psets</span><span class="p">[</span><span class="s1">&#39;i&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">psets</span><span class="p">)))</span>
+
+    <span class="k">return</span> <span class="n">psets</span></div>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2021, Andrew Chael.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

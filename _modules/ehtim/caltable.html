@@ -48,6 +48,7 @@
 <li class="toctree-l1"><a class="reference internal" href="../../plotting.html">Plotting</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../scattering.html">Scattering</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../statistics.html">Statistics</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../survey.html">Survey</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../vex.html">Vex</a></li>
 </ul>
 
@@ -763,7 +764,7 @@
     <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">tarr</span><span class="p">)):</span>
 
         <span class="n">site</span> <span class="o">=</span> <span class="n">tarr</span><span class="p">[</span><span class="n">s</span><span class="p">][</span><span class="s1">&#39;site&#39;</span><span class="p">]</span>
-        <span class="n">filename</span> <span class="o">=</span> <span class="n">datadir</span> <span class="o">+</span> <span class="n">obs</span><span class="o">.</span><span class="n">source</span> <span class="o">+</span> <span class="s1">&#39;_&#39;</span> <span class="o">+</span> <span class="n">site</span> <span class="o">+</span> <span class="s1">&#39;.txt&#39;</span>
+        <span class="n">filename</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">datadir</span><span class="p">,</span> <span class="n">obs</span><span class="o">.</span><span class="n">source</span> <span class="o">+</span> <span class="s1">&#39;_&#39;</span> <span class="o">+</span> <span class="n">site</span> <span class="o">+</span> <span class="s1">&#39;.txt&#39;</span><span class="p">)</span>
         <span class="k">try</span><span class="p">:</span>
             <span class="n">data</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">loadtxt</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">bytes</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">str</span><span class="p">)</span>
         <span class="k">except</span> <span class="ne">IOError</span><span class="p">:</span>

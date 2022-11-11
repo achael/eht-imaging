@@ -48,6 +48,7 @@
 <li class="toctree-l1"><a class="reference internal" href="../../plotting.html">Plotting</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../scattering.html">Scattering</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../statistics.html">Statistics</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../survey.html">Survey</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../vex.html">Vex</a></li>
 </ul>
 
@@ -1459,9 +1460,9 @@
 
         <span class="k">def</span> <span class="nf">gaussim</span><span class="p">(</span><span class="n">blurfrac</span><span class="p">):</span>
             <span class="n">gauss</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([[</span><span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="o">-</span><span class="p">(</span><span class="n">j</span> <span class="o">*</span> <span class="n">cth</span> <span class="o">+</span> <span class="n">i</span> <span class="o">*</span> <span class="n">sth</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span> <span class="o">/</span> <span class="p">(</span><span class="mi">2</span> <span class="o">*</span> <span class="p">(</span><span class="n">blurfrac</span> <span class="o">*</span> <span class="n">sigma_maj</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span> <span class="o">-</span>
-                                       <span class="p">(</span><span class="n">i</span> <span class="o">*</span> <span class="n">cth</span> <span class="o">-</span> <span class="n">j</span> <span class="o">*</span> <span class="n">sth</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span> <span class="o">/</span> <span class="p">(</span><span class="mf">2.</span> <span class="o">*</span> <span class="p">(</span><span class="n">blurfrac</span> <span class="o">*</span> <span class="n">sigma_min</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span><span class="p">))</span>
+                                       <span class="p">(</span><span class="n">i</span> <span class="o">*</span> <span class="n">cth</span> <span class="o">-</span> <span class="n">j</span> <span class="o">*</span> <span class="n">sth</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span> <span class="o">/</span> <span class="p">(</span><span class="mi">2</span> <span class="o">*</span> <span class="p">(</span><span class="n">blurfrac</span> <span class="o">*</span> <span class="n">sigma_min</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span><span class="p">))</span>
                                <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">xlist</span><span class="p">]</span>
-                              <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="n">ylist</span><span class="p">])</span>
+                               <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="n">ylist</span><span class="p">])</span>
             <span class="n">gauss</span> <span class="o">=</span> <span class="n">gauss</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="bp">self</span><span class="o">.</span><span class="n">ydim</span><span class="p">,</span> <span class="mi">0</span><span class="p">:</span><span class="bp">self</span><span class="o">.</span><span class="n">xdim</span><span class="p">]</span>
             <span class="n">gauss</span> <span class="o">=</span> <span class="n">gauss</span> <span class="o">/</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">gauss</span><span class="p">)</span>  <span class="c1"># normalize to 1</span>
             <span class="k">return</span> <span class="n">gauss</span>
@@ -1509,30 +1510,68 @@
 
         <span class="k">return</span> <span class="n">outim</span></div>
 
-<div class="viewcode-block" id="Image.blur_circ"><a class="viewcode-back" href="../../image.html#ehtim.image.Image.blur_circ">[docs]</a>    <span class="k">def</span> <span class="nf">blur_circ</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">fwhm_i</span><span class="p">,</span> <span class="n">fwhm_pol</span><span class="o">=</span><span class="mi">0</span><span class="p">):</span>
+<div class="viewcode-block" id="Image.blur_circ"><a class="viewcode-back" href="../../image.html#ehtim.image.Image.blur_circ">[docs]</a>    <span class="k">def</span> <span class="nf">blur_circ</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">fwhm_i</span><span class="p">,</span> <span class="n">fwhm_pol</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">filttype</span><span class="o">=</span><span class="s1">&#39;gauss&#39;</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Apply a circular gaussian filter to the image, with FWHM in radians.</span>
 
 <span class="sd">           Args:</span>
 <span class="sd">               fwhm_i (float): circular beam size for Stokes I  blurring in  radian</span>
 <span class="sd">               fwhm_pol (float): circular beam size for Stokes Q,U,V  blurring in  radian</span>
-
+<span class="sd">               filttype (str): &quot;gauss&quot; or &quot;butter&quot; </span>
+<span class="sd">               </span>
 <span class="sd">           Returns:</span>
 <span class="sd">               (Image): output image</span>
 <span class="sd">        &quot;&quot;&quot;</span>
 
         <span class="n">sigma</span> <span class="o">=</span> <span class="n">fwhm_i</span> <span class="o">/</span> <span class="p">(</span><span class="mf">2.</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="mf">2.</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="mf">2.</span><span class="p">)))</span>
         <span class="n">sigmap</span> <span class="o">=</span> <span class="n">sigma</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">psize</span>
-
+        <span class="n">fwhmp</span> <span class="o">=</span> <span class="n">fwhm_i</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">psize</span>
+        <span class="n">fwhmp_pol</span> <span class="o">=</span> <span class="n">fwhm_pol</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">psize</span>
+        
         <span class="c1"># Define a convolution function</span>
-        <span class="k">def</span> <span class="nf">blur</span><span class="p">(</span><span class="n">imarr</span><span class="p">,</span> <span class="n">sigma</span><span class="p">):</span>
+        <span class="k">def</span> <span class="nf">blur_gauss</span><span class="p">(</span><span class="n">imarr</span><span class="p">,</span> <span class="n">fwhm</span><span class="p">):</span>
+            <span class="n">sigma</span> <span class="o">=</span> <span class="n">fwhmp</span> <span class="o">/</span> <span class="p">(</span><span class="mf">2.</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="mf">2.</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="mf">2.</span><span class="p">)))</span>
             <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">any</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">imag</span><span class="p">(</span><span class="n">imarr</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">):</span>
                 <span class="k">return</span> <span class="n">blur</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">real</span><span class="p">(</span><span class="n">imarr</span><span class="p">),</span> <span class="n">sigma</span><span class="p">)</span> <span class="o">+</span> <span class="mi">1</span><span class="n">j</span> <span class="o">*</span> <span class="n">blur</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">imag</span><span class="p">(</span><span class="n">imarr</span><span class="p">),</span> <span class="n">sigma</span><span class="p">)</span>
             <span class="n">imarr_blur</span> <span class="o">=</span> <span class="n">filt</span><span class="o">.</span><span class="n">gaussian_filter</span><span class="p">(</span><span class="n">imarr</span><span class="p">,</span> <span class="p">(</span><span class="n">sigma</span><span class="p">,</span> <span class="n">sigma</span><span class="p">))</span>
             <span class="k">return</span> <span class="n">imarr_blur</span>
+            
+        <span class="k">def</span> <span class="nf">blur_butter</span><span class="p">(</span><span class="n">imarr</span><span class="p">,</span> <span class="n">size</span><span class="p">):</span>
 
+            <span class="c1">#bfilt  = scipy.signal.butter(2,freq,btype=&#39;low&#39;,output=&#39;sos&#39;)</span>
+            <span class="c1">#if np.any(np.imag(imarr) != 0):</span>
+            <span class="c1">#    return blur(np.real(imarr), sigma) + 1j * blur(np.imag(imarr), sigma)</span>
+                
+            <span class="c1">#imarr_blur = scipy.signal.sosfilt(bfilt, imarr, axis=0)</span>
+            <span class="c1">#imarr_blur = scipy.signal.sosfilt(bfilt, imarr_blur, axis=1)            </span>
+
+            <span class="k">if</span> <span class="n">size</span><span class="o">==</span><span class="mi">0</span><span class="p">:</span>
+                <span class="k">return</span> <span class="n">imarr</span>
+            
+            <span class="n">cutoff</span> <span class="o">=</span> <span class="mi">1</span><span class="o">/</span><span class="n">size</span>    
+            <span class="n">Nx</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">xdim</span>
+            <span class="n">Ny</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">ydim</span>
+
+            <span class="n">s</span><span class="p">,</span> <span class="n">t</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">meshgrid</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">fft</span><span class="o">.</span><span class="n">fftfreq</span><span class="p">(</span><span class="n">Nx</span><span class="p">,</span> <span class="n">d</span><span class="o">=</span><span class="mf">1.0</span> <span class="p">),</span> <span class="n">np</span><span class="o">.</span><span class="n">fft</span><span class="o">.</span><span class="n">fftfreq</span><span class="p">(</span><span class="n">Ny</span><span class="p">,</span> <span class="n">d</span><span class="o">=</span><span class="mf">1.0</span> <span class="p">))</span>
+            <span class="c1">#s, t = np.meshgrid(np.fft.fftfreq(Nx, d=1.0 / Nx), np.fft.fftfreq(Ny, d=1.0 / Ny))</span>
+            <span class="n">r</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">s</span><span class="o">**</span><span class="mi">2</span> <span class="o">+</span> <span class="n">t</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span>
+            
+            <span class="n">bfilt</span> <span class="o">=</span> <span class="mf">1.</span><span class="o">/</span><span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="mi">1</span> <span class="o">+</span> <span class="p">(</span><span class="n">r</span><span class="o">/</span><span class="n">cutoff</span><span class="p">)</span><span class="o">**</span><span class="mi">4</span><span class="p">)</span>
+
+            <span class="n">imarr</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">imvec</span><span class="o">.</span><span class="n">reshape</span><span class="p">((</span><span class="n">Ny</span><span class="p">,</span> <span class="n">Nx</span><span class="p">))</span>
+            <span class="n">imarr_filt</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">real</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">fft</span><span class="o">.</span><span class="n">ifft2</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">fft</span><span class="o">.</span><span class="n">fft2</span><span class="p">(</span><span class="n">imarr</span><span class="p">)</span> <span class="o">*</span> <span class="n">bfilt</span><span class="p">))</span>
+            <span class="k">return</span> <span class="n">imarr_filt</span>
+            
+            
+        <span class="k">if</span> <span class="n">filttype</span><span class="o">==</span><span class="s1">&#39;gauss&#39;</span><span class="p">:</span>
+            <span class="n">blur</span> <span class="o">=</span> <span class="n">blur_gauss</span>
+        <span class="k">elif</span> <span class="n">filttype</span><span class="o">==</span><span class="s1">&#39;butter&#39;</span><span class="p">:</span>
+            <span class="n">blur</span> <span class="o">=</span> <span class="n">blur_butter</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;filttype not recognized in blur_circ!&quot;</span><span class="p">)</span>
+            
         <span class="c1"># Blur the primary image</span>
         <span class="n">imarr</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">imvec</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ydim</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">xdim</span><span class="p">)</span>
-        <span class="n">imarr_blur</span> <span class="o">=</span> <span class="n">blur</span><span class="p">(</span><span class="n">imarr</span><span class="p">,</span> <span class="n">sigmap</span><span class="p">)</span>
+        <span class="n">imarr_blur</span> <span class="o">=</span> <span class="n">blur</span><span class="p">(</span><span class="n">imarr</span><span class="p">,</span> <span class="n">fwhmp</span><span class="p">)</span>
 
         <span class="n">arglist</span><span class="p">,</span> <span class="n">argdict</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">image_args</span><span class="p">()</span>
         <span class="n">arglist</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">imarr_blur</span>
@@ -1543,14 +1582,14 @@
         <span class="k">for</span> <span class="n">mfvec</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_mflist</span><span class="p">:</span>
             <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">mfvec</span><span class="p">):</span>
                 <span class="n">mfarr</span> <span class="o">=</span> <span class="n">mfvec</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ydim</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">xdim</span><span class="p">)</span>
-                <span class="n">mfarr</span> <span class="o">=</span> <span class="n">blur</span><span class="p">(</span><span class="n">mfarr</span><span class="p">,</span> <span class="n">sigmap</span><span class="p">)</span>
+                <span class="n">mfarr</span> <span class="o">=</span> <span class="n">blur</span><span class="p">(</span><span class="n">mfarr</span><span class="p">,</span> <span class="n">fwhmp</span><span class="p">)</span>
                 <span class="n">mfvec_out</span> <span class="o">=</span> <span class="n">mfarr</span><span class="o">.</span><span class="n">flatten</span><span class="p">()</span>
             <span class="k">else</span><span class="p">:</span>
                 <span class="n">mfvec_out</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([])</span>
             <span class="n">mflist_out</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">mfvec_out</span><span class="p">)</span>
         <span class="n">outim</span><span class="o">.</span><span class="n">_mflist</span> <span class="o">=</span> <span class="n">mflist_out</span>
 
-        <span class="c1"># Blur all polarizations and copy over</span>
+        <span class="c1"># Blur all polarizations and copy overi</span>
         <span class="k">for</span> <span class="n">pol</span> <span class="ow">in</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_imdict</span><span class="o">.</span><span class="n">keys</span><span class="p">()):</span>
             <span class="k">if</span> <span class="n">pol</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">pol_prim</span><span class="p">:</span>
                 <span class="k">continue</span>
@@ -1558,15 +1597,57 @@
             <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">polvec</span><span class="p">):</span>
                 <span class="n">polarr</span> <span class="o">=</span> <span class="n">polvec</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ydim</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">xdim</span><span class="p">)</span>
                 <span class="k">if</span> <span class="n">fwhm_pol</span><span class="p">:</span>
-                    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Blurring polarization&quot;</span><span class="p">)</span>
-                    <span class="n">sigma</span> <span class="o">=</span> <span class="n">fwhm_pol</span> <span class="o">/</span> <span class="p">(</span><span class="mf">2.</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="mf">2.</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="mf">2.</span><span class="p">)))</span>
-                    <span class="n">sigmap</span> <span class="o">=</span> <span class="n">sigma</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">psize</span>
-                    <span class="n">polarr</span> <span class="o">=</span> <span class="n">blur</span><span class="p">(</span><span class="n">polarr</span><span class="p">,</span> <span class="n">sigmap</span><span class="p">)</span>
+                    <span class="c1">#print(&quot;Blurring polarization&quot;)</span>
+                    <span class="n">polarr</span> <span class="o">=</span> <span class="n">blur</span><span class="p">(</span><span class="n">polarr</span><span class="p">,</span> <span class="n">fwhmp_pol</span><span class="p">)</span>
                 <span class="n">outim</span><span class="o">.</span><span class="n">add_pol_image</span><span class="p">(</span><span class="n">polarr</span><span class="p">,</span> <span class="n">pol</span><span class="p">)</span>
 
 
         <span class="k">return</span> <span class="n">outim</span></div>
 
+<div class="viewcode-block" id="Image.blur_mf"><a class="viewcode-back" href="../../image.html#ehtim.image.Image.blur_mf">[docs]</a>    <span class="k">def</span> <span class="nf">blur_mf</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">freqs</span><span class="p">,</span> <span class="n">fwhm</span><span class="p">,</span> <span class="n">fit_order</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">filttype</span><span class="o">=</span><span class="s1">&#39;gauss&#39;</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Blur image correctly across multiple frequencies</span>
+<span class="sd">           WARNING: does not currently do polarization correctly!</span>
+
+<span class="sd">           Args:</span>
+<span class="sd">               freqs (float): Frequencies to include in the blurring &amp; spectral index fit</span>
+<span class="sd">               fwhm (float): circular beam size </span>
+<span class="sd">               fit_order (int): how many orders to fit spectrum: 1 or 2</span>
+<span class="sd">               filttype (str): &quot;gauss&quot; or &quot;butter&quot; </span>
+<span class="sd">               </span>
+<span class="sd">           Returns:</span>
+<span class="sd">               (Image): output image          </span>
+<span class="sd">           </span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">fit_order</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">]:</span> 
+            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;fit_order must be 1 or 2 in blur_mf!&quot;</span><span class="p">)</span>
+           
+        <span class="n">reffreq</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">rf</span>
+
+        <span class="c1"># remove any zeros in the images               </span>
+        <span class="n">imlist</span> <span class="o">=</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">get_image_mf</span><span class="p">(</span><span class="n">rf</span><span class="p">)</span><span class="o">.</span><span class="n">blur_circ</span><span class="p">(</span><span class="n">kernel</span><span class="p">,</span> <span class="n">filttype</span><span class="o">=</span><span class="n">filttype</span><span class="p">)</span> <span class="k">for</span> <span class="n">rf</span> <span class="ow">in</span> <span class="n">freqs</span><span class="p">]</span>
+        <span class="k">for</span> <span class="n">image</span> <span class="ow">in</span> <span class="n">imlist</span><span class="p">:</span>
+            <span class="n">image</span><span class="o">.</span><span class="n">imvec</span><span class="p">[</span><span class="n">image</span><span class="o">.</span><span class="n">imvec</span><span class="o">&lt;=</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">min</span><span class="p">(</span><span class="n">image</span><span class="o">.</span><span class="n">imvec</span><span class="p">[</span><span class="n">image</span><span class="o">.</span><span class="n">imvec</span><span class="o">!=</span><span class="mi">0</span><span class="p">])</span>
+            
+        <span class="n">xfit</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">freqs</span><span class="p">)</span><span class="o">/</span><span class="n">reffreq</span><span class="p">)</span>
+        <span class="n">yfit</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">im</span><span class="o">.</span><span class="n">imvec</span> <span class="k">for</span> <span class="n">im</span> <span class="ow">in</span> <span class="n">imlist</span><span class="p">]))</span>
+        
+        <span class="k">if</span> <span class="n">fit_order</span> <span class="o">==</span> <span class="mi">2</span><span class="p">:</span>
+            <span class="n">coeffs</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">polyfit</span><span class="p">(</span><span class="n">xfit</span><span class="p">,</span><span class="n">yfit</span><span class="p">,</span><span class="mi">2</span><span class="p">)</span>
+            <span class="n">beta</span> <span class="o">=</span> <span class="n">coeffs</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+            <span class="n">alpha</span> <span class="o">=</span> <span class="n">coeffs</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>    
+        <span class="k">elif</span> <span class="n">fit_order</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="n">coeffs</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">polyfit</span><span class="p">(</span><span class="n">xfit</span><span class="p">,</span><span class="n">yfit</span><span class="p">,</span><span class="mi">1</span><span class="p">)</span>
+            <span class="n">alpha</span> <span class="o">=</span> <span class="n">coeffs</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>    
+            <span class="n">beta</span> <span class="o">=</span> <span class="mi">0</span><span class="o">*</span><span class="n">alpha</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">alpha</span> <span class="o">=</span> <span class="mi">0</span><span class="o">*</span><span class="n">yfit</span>
+            <span class="n">beta</span> <span class="o">=</span> <span class="mi">0</span><span class="o">*</span><span class="n">yfit</span>
+            
+        <span class="n">outim</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">blur_circ</span><span class="p">(</span><span class="n">kernel</span><span class="p">,</span> <span class="n">filttype</span><span class="o">=</span><span class="n">filttype</span><span class="p">)</span>
+        <span class="n">outim</span><span class="o">.</span><span class="n">specvec</span> <span class="o">=</span> <span class="n">alpha</span>
+        <span class="n">outim</span><span class="o">.</span><span class="n">curvvec</span> <span class="o">=</span> <span class="n">beta</span>
+        <span class="k">return</span> <span class="n">outim</span></div>
+        
 <div class="viewcode-block" id="Image.grad"><a class="viewcode-back" href="../../image.html#ehtim.image.Image.grad">[docs]</a>    <span class="k">def</span> <span class="nf">grad</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">gradtype</span><span class="o">=</span><span class="s1">&#39;abs&#39;</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Return the gradient image</span>
 
@@ -2524,6 +2605,7 @@
 <div class="viewcode-block" id="Image.observe"><a class="viewcode-back" href="../../image.html#ehtim.image.Image.observe">[docs]</a>    <span class="k">def</span> <span class="nf">observe</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">array</span><span class="p">,</span> <span class="n">tint</span><span class="p">,</span> <span class="n">tadv</span><span class="p">,</span> <span class="n">tstart</span><span class="p">,</span> <span class="n">tstop</span><span class="p">,</span> <span class="n">bw</span><span class="p">,</span>
                 <span class="n">mjd</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">timetype</span><span class="o">=</span><span class="s1">&#39;UTC&#39;</span><span class="p">,</span> <span class="n">polrep_obs</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
                 <span class="n">elevmin</span><span class="o">=</span><span class="n">ehc</span><span class="o">.</span><span class="n">ELEV_LOW</span><span class="p">,</span> <span class="n">elevmax</span><span class="o">=</span><span class="n">ehc</span><span class="o">.</span><span class="n">ELEV_HIGH</span><span class="p">,</span>
+                <span class="n">no_elevcut_space</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>                
                 <span class="n">ttype</span><span class="o">=</span><span class="s1">&#39;nfft&#39;</span><span class="p">,</span> <span class="n">fft_pad_factor</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">fix_theta_GMST</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
                 <span class="n">sgrscat</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">add_th_noise</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
                 <span class="n">jones</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">inv_jones</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
@@ -2553,7 +2635,8 @@
 <span class="sd">               polrep_obs (str): &#39;stokes&#39; or &#39;circ&#39; sets the data polarimetric representation</span>
 <span class="sd">               elevmin (float): station minimum elevation in degrees</span>
 <span class="sd">               elevmax (float): station maximum elevation in degrees</span>
-
+<span class="sd">               no_elevcut_space (bool): if True, do not apply elevation cut to orbiters</span>
+<span class="sd">           </span>
 <span class="sd">               ttype (str): &quot;fast&quot;, &quot;nfft&quot; or &quot;dtft&quot;</span>
 <span class="sd">               fft_pad_factor (float): zero pad the image to fft_pad_factor * image size in the FFT</span>
 <span class="sd">               fix_theta_GMST (bool): if True, stops earth rotation to sample fixed u,v</span>
@@ -2621,8 +2704,10 @@
             <span class="n">polrep_obs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">polrep</span>
 
         <span class="n">obs</span> <span class="o">=</span> <span class="n">array</span><span class="o">.</span><span class="n">obsdata</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ra</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">dec</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">rf</span><span class="p">,</span> <span class="n">bw</span><span class="p">,</span> <span class="n">tint</span><span class="p">,</span> <span class="n">tadv</span><span class="p">,</span> <span class="n">tstart</span><span class="p">,</span> <span class="n">tstop</span><span class="p">,</span> <span class="n">mjd</span><span class="o">=</span><span class="n">mjd</span><span class="p">,</span>
-                            <span class="n">polrep</span><span class="o">=</span><span class="n">polrep_obs</span><span class="p">,</span> <span class="n">tau</span><span class="o">=</span><span class="n">tau</span><span class="p">,</span> <span class="n">timetype</span><span class="o">=</span><span class="n">timetype</span><span class="p">,</span>
-                            <span class="n">elevmin</span><span class="o">=</span><span class="n">elevmin</span><span class="p">,</span> <span class="n">elevmax</span><span class="o">=</span><span class="n">elevmax</span><span class="p">,</span> <span class="n">fix_theta_GMST</span><span class="o">=</span><span class="n">fix_theta_GMST</span><span class="p">)</span>
+                            <span class="n">polrep</span><span class="o">=</span><span class="n">polrep_obs</span><span class="p">,</span> <span class="n">tau</span><span class="o">=</span><span class="n">tau</span><span class="p">,</span> 
+                            <span class="n">elevmin</span><span class="o">=</span><span class="n">elevmin</span><span class="p">,</span> <span class="n">elevmax</span><span class="o">=</span><span class="n">elevmax</span><span class="p">,</span> 
+                            <span class="n">no_elevcut_space</span><span class="o">=</span><span class="n">no_elevcut_space</span><span class="p">,</span>                            
+                            <span class="n">timetype</span><span class="o">=</span><span class="n">timetype</span><span class="p">,</span> <span class="n">fix_theta_GMST</span><span class="o">=</span><span class="n">fix_theta_GMST</span><span class="p">)</span>
 
         <span class="c1"># Observe on the same baselines as the empty observation and add noise</span>
         <span class="n">obs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">observe_same</span><span class="p">(</span><span class="n">obs</span><span class="p">,</span> <span class="n">ttype</span><span class="o">=</span><span class="n">ttype</span><span class="p">,</span> <span class="n">fft_pad_factor</span><span class="o">=</span><span class="n">fft_pad_factor</span><span class="p">,</span>
@@ -3350,7 +3435,9 @@
                 <span class="n">export_pdf</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="n">pdf_pad_inches</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">show</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">beamparams</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
                 <span class="n">cbar_orientation</span><span class="o">=</span><span class="s2">&quot;vertical&quot;</span><span class="p">,</span> <span class="n">scinot</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
                 <span class="n">scale_lw</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">beam_lw</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">cbar_fontsize</span><span class="o">=</span><span class="mi">12</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
-                <span class="n">scale_fontsize</span><span class="o">=</span><span class="mi">12</span><span class="p">,</span> <span class="n">power</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">beamcolor</span><span class="o">=</span><span class="s1">&#39;w&#39;</span><span class="p">,</span> <span class="n">dpi</span><span class="o">=</span><span class="mi">500</span><span class="p">):</span>
+                <span class="n">scale_fontsize</span><span class="o">=</span><span class="mi">12</span><span class="p">,</span> 
+                <span class="n">power</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> 
+                <span class="n">beamcolor</span><span class="o">=</span><span class="s1">&#39;w&#39;</span><span class="p">,</span> <span class="n">beampos</span><span class="o">=</span><span class="s1">&#39;right&#39;</span><span class="p">,</span> <span class="n">scalecolor</span><span class="o">=</span><span class="s1">&#39;w&#39;</span><span class="p">,</span><span class="n">dpi</span><span class="o">=</span><span class="mi">500</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Display the image.</span>
 
 <span class="sd">           Args:</span>
@@ -3368,7 +3455,7 @@
 <span class="sd">               plotp (bool): True to plot linear polarimetic image</span>
 <span class="sd">               plot_stokes (bool): True to plot stokes subplots along with plotp</span>
 <span class="sd">               nvec (int): number of polarimetric vectors to plot</span>
-<span class="sd">               vec_cfun (str): color function for vectors colored by |m|</span>
+<span class="sd">               vec_cfun (str): color function for vectors colored by lin pol frac</span>
 
 <span class="sd">               scut (float): minimum stokes I value for displaying spectral index</span>
 <span class="sd">               pcut (float): minimum stokes I value for displaying polarimetric vectors</span>
@@ -3390,9 +3477,10 @@
 <span class="sd">               cbar_fontsize (float): Fontsize of the text elements of the colorbar</span>
 <span class="sd">               axis (matplotlib.axes.Axes): An axis object</span>
 <span class="sd">               scale_fontsize (float): Fontsize of the scale label</span>
+
 <span class="sd">               power (float): Passed to colorbar for division of ticks by 1e(power)</span>
 <span class="sd">               beamcolor (str): color of the beam overlay</span>
-
+<span class="sd">               scalecolor (str): color of the scale label overlay            </span>
 <span class="sd">           Returns:</span>
 <span class="sd">               (matplotlib.figure.Figure): figure object with image</span>
 
@@ -3615,8 +3703,12 @@
                 <span class="n">im</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">imshow</span><span class="p">(</span><span class="n">imarr</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="n">alpha</span><span class="p">,</span> <span class="n">cmap</span><span class="o">=</span><span class="n">cmap</span><span class="p">,</span> <span class="n">interpolation</span><span class="o">=</span><span class="n">interp</span><span class="p">)</span>
 
             <span class="k">if</span> <span class="ow">not</span><span class="p">(</span><span class="n">beamparams</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">beamparams</span> <span class="ow">is</span> <span class="kc">False</span><span class="p">):</span>
-                <span class="n">beamparams</span> <span class="o">=</span> <span class="p">[</span><span class="n">beamparams</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">beamparams</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">beamparams</span><span class="p">[</span><span class="mi">2</span><span class="p">],</span>
-                              <span class="o">-.</span><span class="mi">35</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">fovx</span><span class="p">(),</span> <span class="o">-.</span><span class="mi">35</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">fovy</span><span class="p">()]</span>
+                <span class="k">if</span> <span class="n">beampos</span><span class="o">==</span><span class="s1">&#39;left&#39;</span><span class="p">:</span>
+                    <span class="n">beamparams</span> <span class="o">=</span> <span class="p">[</span><span class="n">beamparams</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">beamparams</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">beamparams</span><span class="p">[</span><span class="mi">2</span><span class="p">],</span>
+                                  <span class="o">+.</span><span class="mi">4</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">fovx</span><span class="p">(),</span> <span class="o">-.</span><span class="mi">4</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">fovy</span><span class="p">()]</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">beamparams</span> <span class="o">=</span> <span class="p">[</span><span class="n">beamparams</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">beamparams</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">beamparams</span><span class="p">[</span><span class="mi">2</span><span class="p">],</span>
+                                  <span class="o">-.</span><span class="mi">35</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">fovx</span><span class="p">(),</span> <span class="o">-.</span><span class="mi">35</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">fovy</span><span class="p">()]</span>                              
                 <span class="n">beamimage</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
                 <span class="n">beamimage</span><span class="o">.</span><span class="n">imvec</span> <span class="o">*=</span> <span class="mi">0</span>
                 <span class="n">beamimage</span> <span class="o">=</span> <span class="n">beamimage</span><span class="o">.</span><span class="n">add_gauss</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">beamparams</span><span class="p">)</span>
@@ -3910,9 +4002,9 @@
             <span class="n">start</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">xdim</span> <span class="o">*</span> <span class="n">roughfactor</span> <span class="o">/</span> <span class="mf">3.0</span>  <span class="c1"># select the start location</span>
             <span class="n">end</span> <span class="o">=</span> <span class="n">start</span> <span class="o">+</span> <span class="n">fov_scale</span> <span class="o">/</span> <span class="n">fov_uas</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">xdim</span>  <span class="c1"># determine the end location</span>
             <span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">([</span><span class="n">start</span><span class="p">,</span> <span class="n">end</span><span class="p">],</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">ydim</span> <span class="o">-</span> <span class="n">start</span> <span class="o">-</span> <span class="mi">5</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">ydim</span> <span class="o">-</span> <span class="n">start</span> <span class="o">-</span> <span class="mi">5</span><span class="p">],</span>
-                     <span class="n">color</span><span class="o">=</span><span class="s2">&quot;white&quot;</span><span class="p">,</span> <span class="n">lw</span><span class="o">=</span><span class="n">scale_lw</span><span class="p">)</span>  <span class="c1"># plot a line</span>
+                     <span class="n">color</span><span class="o">=</span><span class="n">scalecolor</span><span class="p">,</span> <span class="n">lw</span><span class="o">=</span><span class="n">scale_lw</span><span class="p">)</span>  <span class="c1"># plot a line</span>
             <span class="n">plt</span><span class="o">.</span><span class="n">text</span><span class="p">(</span><span class="n">x</span><span class="o">=</span><span class="p">(</span><span class="n">start</span> <span class="o">+</span> <span class="n">end</span><span class="p">)</span> <span class="o">/</span> <span class="mf">2.0</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">ydim</span> <span class="o">-</span> <span class="n">start</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">ydim</span> <span class="o">/</span> <span class="mi">30</span><span class="p">,</span>
-                     <span class="n">s</span><span class="o">=</span><span class="nb">str</span><span class="p">(</span><span class="n">fov_scale</span><span class="p">)</span> <span class="o">+</span> <span class="sa">r</span><span class="s2">&quot; $\mu$as&quot;</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s2">&quot;white&quot;</span><span class="p">,</span>
+                     <span class="n">s</span><span class="o">=</span><span class="nb">str</span><span class="p">(</span><span class="n">fov_scale</span><span class="p">)</span> <span class="o">+</span> <span class="sa">r</span><span class="s2">&quot; $\mu$as&quot;</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="n">scalecolor</span><span class="p">,</span>
                      <span class="n">ha</span><span class="o">=</span><span class="s2">&quot;center&quot;</span><span class="p">,</span> <span class="n">va</span><span class="o">=</span><span class="s2">&quot;center&quot;</span><span class="p">,</span> <span class="n">fontsize</span><span class="o">=</span><span class="n">scale_fontsize</span><span class="p">)</span>
             <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">gca</span><span class="p">()</span>
             <span class="k">if</span> <span class="n">axis</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
@@ -4208,6 +4300,102 @@
 
     <span class="k">return</span> <span class="n">ehtim</span><span class="o">.</span><span class="n">io</span><span class="o">.</span><span class="n">load</span><span class="o">.</span><span class="n">load_im_fits</span><span class="p">(</span><span class="n">fname</span><span class="p">,</span> <span class="n">aipscc</span><span class="o">=</span><span class="n">aipscc</span><span class="p">,</span> <span class="n">pulse</span><span class="o">=</span><span class="n">pulse</span><span class="p">,</span>
                                       <span class="n">polrep</span><span class="o">=</span><span class="n">polrep</span><span class="p">,</span> <span class="n">pol_prim</span><span class="o">=</span><span class="n">pol_prim</span><span class="p">,</span> <span class="n">zero_pol</span><span class="o">=</span><span class="n">zero_pol</span><span class="p">)</span></div>
+                                      
+<div class="viewcode-block" id="avg_imlist"><a class="viewcode-back" href="../../image.html#ehtim.image.avg_imlist">[docs]</a><span class="k">def</span> <span class="nf">avg_imlist</span><span class="p">(</span><span class="n">imlist</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Average a list of images.</span>
+
+<span class="sd">       Args:</span>
+<span class="sd">           imlist (list): list of image objects</span>
+
+<span class="sd">       Returns:</span>
+<span class="sd">           (Image): average image object</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    
+    <span class="n">imavg</span> <span class="o">=</span> <span class="n">imlist</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+
+    <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">any</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">im</span><span class="o">.</span><span class="n">polrep</span> <span class="k">for</span> <span class="n">im</span> <span class="ow">in</span> <span class="n">imlist</span><span class="p">])</span> <span class="o">!=</span> <span class="n">imavg</span><span class="o">.</span><span class="n">polrep</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;im.polrep in all images are not the same in avg_imlist!&quot;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">any</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">im</span><span class="o">.</span><span class="n">source</span> <span class="k">for</span> <span class="n">im</span> <span class="ow">in</span> <span class="n">imlist</span><span class="p">])</span> <span class="o">!=</span> <span class="n">imavg</span><span class="o">.</span><span class="n">source</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;im.source in all images are not the same in avg_imlist!&quot;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">any</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">im</span><span class="o">.</span><span class="n">rf</span> <span class="k">for</span> <span class="n">im</span> <span class="ow">in</span> <span class="n">imlist</span><span class="p">])</span> <span class="o">!=</span> <span class="n">imavg</span><span class="o">.</span><span class="n">rf</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;im.rf in all images are not the same in avg_imlist!&quot;</span><span class="p">)</span>
+           
+    <span class="n">keys</span> <span class="o">=</span> <span class="n">imavg</span><span class="o">.</span><span class="n">_imdict</span><span class="o">.</span><span class="n">keys</span><span class="p">()</span>
+                
+    <span class="k">for</span> <span class="n">im</span> <span class="ow">in</span> <span class="n">imlist</span><span class="p">[</span><span class="mi">1</span><span class="p">:]:</span>
+        <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">keys</span><span class="p">:</span>
+            <span class="n">imavg</span><span class="o">.</span><span class="n">_imdict</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">+=</span> <span class="n">im</span><span class="o">.</span><span class="n">_imdict</span><span class="p">[</span><span class="n">key</span><span class="p">]</span>
+
+    <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">keys</span><span class="p">:</span>
+        <span class="n">imavg</span><span class="o">.</span><span class="n">_imdict</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">/=</span> <span class="nb">float</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">imlist</span><span class="p">))</span>
+
+    
+    <span class="k">return</span> <span class="n">imavg</span></div>
+
+<div class="viewcode-block" id="get_specim"><a class="viewcode-back" href="../../image.html#ehtim.image.get_specim">[docs]</a><span class="k">def</span> <span class="nf">get_specim</span><span class="p">(</span><span class="n">imlist</span><span class="p">,</span> <span class="n">reffreq</span><span class="p">,</span> <span class="n">fit_order</span><span class="o">=</span><span class="mi">2</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;get the spectral index/curvature from a list of images&quot;&quot;&quot;</span>
+    <span class="n">freqs</span> <span class="o">=</span> <span class="p">[</span><span class="n">im</span><span class="o">.</span><span class="n">rf</span> <span class="k">for</span> <span class="n">im</span> <span class="ow">in</span> <span class="n">imlist</span><span class="p">]</span>
+
+    <span class="c1"># remove any zeros in the images</span>
+    <span class="k">for</span> <span class="n">im</span> <span class="ow">in</span> <span class="n">imlist</span><span class="p">:</span>
+        <span class="n">im</span><span class="o">.</span><span class="n">imvec</span><span class="p">[</span><span class="n">im</span><span class="o">.</span><span class="n">imvec</span><span class="o">&lt;=</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">min</span><span class="p">(</span><span class="n">im</span><span class="o">.</span><span class="n">imvec</span><span class="p">[</span><span class="n">im</span><span class="o">.</span><span class="n">imvec</span><span class="o">!=</span><span class="mi">0</span><span class="p">])</span>
+    
+    <span class="c1"># fit</span>
+    <span class="n">xfit</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">freqs</span><span class="p">)</span><span class="o">/</span><span class="n">reffreq</span><span class="p">)</span>
+    <span class="n">yfit</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">im</span><span class="o">.</span><span class="n">imvec</span> <span class="k">for</span> <span class="n">im</span> <span class="ow">in</span> <span class="n">imlist</span><span class="p">]))</span>
+
+    <span class="k">if</span> <span class="n">fit_order</span> <span class="o">==</span> <span class="mi">2</span><span class="p">:</span>
+        <span class="n">coeffs</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">polyfit</span><span class="p">(</span><span class="n">xfit</span><span class="p">,</span><span class="n">yfit</span><span class="p">,</span><span class="mi">2</span><span class="p">)</span>
+        <span class="n">beta</span> <span class="o">=</span> <span class="n">coeffs</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="n">alpha</span> <span class="o">=</span> <span class="n">coeffs</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> 
+        <span class="n">imvec</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="n">coeffs</span><span class="p">[</span><span class="mi">2</span><span class="p">])</span>   
+    <span class="k">elif</span> <span class="n">fit_order</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+        <span class="n">coeffs</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">polyfit</span><span class="p">(</span><span class="n">xfit</span><span class="p">,</span><span class="n">yfit</span><span class="p">,</span><span class="mi">1</span><span class="p">)</span>
+        <span class="n">alpha</span> <span class="o">=</span> <span class="n">coeffs</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>    
+        <span class="n">beta</span> <span class="o">=</span> <span class="mi">0</span><span class="o">*</span><span class="n">alpha</span>
+        <span class="n">imvec</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="n">coeffs</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">Exception</span><span class="p">()</span>
+        
+    <span class="n">outim</span> <span class="o">=</span> <span class="n">imlist</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span> <span class="c1">#TODO no polarization</span>
+    <span class="n">outim</span><span class="o">.</span><span class="n">imvec</span> <span class="o">=</span> <span class="n">imvec</span>
+    <span class="n">outim</span><span class="o">.</span><span class="n">rf</span> <span class="o">=</span> <span class="n">reffreq</span>
+    <span class="n">outim</span><span class="o">.</span><span class="n">specvec</span> <span class="o">=</span> <span class="n">alpha</span>
+    <span class="n">outim</span><span class="o">.</span><span class="n">curvvec</span> <span class="o">=</span> <span class="n">beta</span>
+    
+    <span class="k">return</span> <span class="n">outim</span></div>
+
+
+<div class="viewcode-block" id="blur_mf"><a class="viewcode-back" href="../../image.html#ehtim.image.blur_mf">[docs]</a><span class="k">def</span> <span class="nf">blur_mf</span><span class="p">(</span><span class="n">im</span><span class="p">,</span><span class="n">freqs</span><span class="p">,</span><span class="n">kernel</span><span class="p">,</span><span class="n">fit_order</span><span class="o">=</span><span class="mi">2</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;blur multifrequncy images with the same beam&quot;&quot;&quot;</span>
+    <span class="n">reffreq</span> <span class="o">=</span> <span class="n">im</span><span class="o">.</span><span class="n">rf</span>
+
+    <span class="c1"># remove any zeros in the images</span>
+
+           
+    <span class="n">imlist</span> <span class="o">=</span> <span class="p">[</span><span class="n">im</span><span class="o">.</span><span class="n">get_image_mf</span><span class="p">(</span><span class="n">rf</span><span class="p">)</span><span class="o">.</span><span class="n">blur_circ</span><span class="p">(</span><span class="n">kernel</span><span class="p">)</span> <span class="k">for</span> <span class="n">rf</span> <span class="ow">in</span> <span class="n">freqs</span><span class="p">]</span>
+    <span class="k">for</span> <span class="n">image</span> <span class="ow">in</span> <span class="n">imlist</span><span class="p">:</span>
+        <span class="n">image</span><span class="o">.</span><span class="n">imvec</span><span class="p">[</span><span class="n">image</span><span class="o">.</span><span class="n">imvec</span><span class="o">&lt;=</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">min</span><span class="p">(</span><span class="n">image</span><span class="o">.</span><span class="n">imvec</span><span class="p">[</span><span class="n">image</span><span class="o">.</span><span class="n">imvec</span><span class="o">!=</span><span class="mi">0</span><span class="p">])</span>
+        
+    <span class="n">xfit</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">freqs</span><span class="p">)</span><span class="o">/</span><span class="n">reffreq</span><span class="p">)</span>
+    <span class="n">yfit</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">im</span><span class="o">.</span><span class="n">imvec</span> <span class="k">for</span> <span class="n">im</span> <span class="ow">in</span> <span class="n">imlist</span><span class="p">]))</span>
+    
+    <span class="k">if</span> <span class="n">fit_order</span> <span class="o">==</span> <span class="mi">2</span><span class="p">:</span>
+        <span class="n">coeffs</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">polyfit</span><span class="p">(</span><span class="n">xfit</span><span class="p">,</span><span class="n">yfit</span><span class="p">,</span><span class="mi">2</span><span class="p">)</span>
+        <span class="n">beta</span> <span class="o">=</span> <span class="n">coeffs</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="n">alpha</span> <span class="o">=</span> <span class="n">coeffs</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>    
+    <span class="k">elif</span> <span class="n">fit_order</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+        <span class="n">coeffs</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">polyfit</span><span class="p">(</span><span class="n">xfit</span><span class="p">,</span><span class="n">yfit</span><span class="p">,</span><span class="mi">1</span><span class="p">)</span>
+        <span class="n">alpha</span> <span class="o">=</span> <span class="n">coeffs</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>    
+        <span class="n">beta</span> <span class="o">=</span> <span class="mi">0</span><span class="o">*</span><span class="n">alpha</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">alpha</span> <span class="o">=</span> <span class="mi">0</span><span class="o">*</span><span class="n">yfit</span>
+        <span class="n">beta</span> <span class="o">=</span> <span class="mi">0</span><span class="o">*</span><span class="n">yfit</span>
+        
+    <span class="n">outim</span> <span class="o">=</span> <span class="n">im</span><span class="o">.</span><span class="n">blur_circ</span><span class="p">(</span><span class="n">kernel</span><span class="p">)</span>
+    <span class="n">outim</span><span class="o">.</span><span class="n">specvec</span> <span class="o">=</span> <span class="n">alpha</span>
+    <span class="n">outim</span><span class="o">.</span><span class="n">curvvec</span> <span class="o">=</span> <span class="n">beta</span>
+    <span class="k">return</span> <span class="n">outim</span></div>
 </pre></div>
 
            </div>

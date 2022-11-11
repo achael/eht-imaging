@@ -48,6 +48,7 @@
 <li class="toctree-l1"><a class="reference internal" href="../../plotting.html">Plotting</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../scattering.html">Scattering</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../statistics.html">Statistics</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../survey.html">Survey</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../vex.html">Vex</a></li>
 </ul>
 
@@ -120,7 +121,7 @@
 <span class="n">EPS</span> <span class="o">=</span> <span class="mf">1e-8</span>
 
 <span class="n">DATATERMS</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;vis&#39;</span><span class="p">,</span> <span class="s1">&#39;bs&#39;</span><span class="p">,</span> <span class="s1">&#39;amp&#39;</span><span class="p">,</span> <span class="s1">&#39;cphase&#39;</span><span class="p">,</span> <span class="s1">&#39;cphase_diag&#39;</span><span class="p">,</span> <span class="s1">&#39;camp&#39;</span><span class="p">,</span> <span class="s1">&#39;logcamp&#39;</span><span class="p">,</span> <span class="s1">&#39;logcamp_diag&#39;</span><span class="p">]</span>
-<span class="n">REGULARIZERS</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;gs&#39;</span><span class="p">,</span> <span class="s1">&#39;tv&#39;</span><span class="p">,</span> <span class="s1">&#39;tv2&#39;</span><span class="p">,</span> <span class="s1">&#39;l1&#39;</span><span class="p">,</span> <span class="s1">&#39;l1w&#39;</span><span class="p">,</span> <span class="s1">&#39;lA&#39;</span><span class="p">,</span> <span class="s1">&#39;patch&#39;</span><span class="p">,</span>
+<span class="n">REGULARIZERS</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;gs&#39;</span><span class="p">,</span> <span class="s1">&#39;tv&#39;</span><span class="p">,</span> <span class="s1">&#39;tvlog&#39;</span><span class="p">,</span><span class="s1">&#39;tv2&#39;</span><span class="p">,</span> <span class="s1">&#39;l1&#39;</span><span class="p">,</span> <span class="s1">&#39;l1w&#39;</span><span class="p">,</span> <span class="s1">&#39;lA&#39;</span><span class="p">,</span> <span class="s1">&#39;patch&#39;</span><span class="p">,</span>
                 <span class="s1">&#39;flux&#39;</span><span class="p">,</span> <span class="s1">&#39;cm&#39;</span><span class="p">,</span> <span class="s1">&#39;simple&#39;</span><span class="p">,</span> <span class="s1">&#39;compact&#39;</span><span class="p">,</span> <span class="s1">&#39;compact2&#39;</span><span class="p">,</span> <span class="s1">&#39;rgauss&#39;</span><span class="p">,</span> <span class="s1">&#39;hw&#39;</span><span class="p">]</span>
 <span class="n">REGULARIZERS_SPECIND</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;l2_alpha&#39;</span><span class="p">,</span> <span class="s1">&#39;tv_alpha&#39;</span><span class="p">]</span>
 <span class="n">REGULARIZERS_CURV</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;l2_beta&#39;</span><span class="p">,</span> <span class="s1">&#39;tv_beta&#39;</span><span class="p">]</span>
@@ -272,6 +273,7 @@
 
         <span class="c1"># multifrequency</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">mf_next</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">reg_all_freq_mf</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;reg_all_freq_mf&#39;</span><span class="p">,</span><span class="kc">False</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">mf_which_solve</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;mf_which_solve&#39;</span><span class="p">,</span><span class="n">MF_WHICH_SOLVE</span><span class="p">)</span>
 
         <span class="c1"># Set embedding matrices and prepare imager</span>
@@ -318,6 +320,7 @@
 <span class="sd">        &quot;&quot;&quot;</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">mf_next</span> <span class="o">=</span> <span class="n">mf</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">reg_all_freq_mf</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;reg_all_freq_mf&#39;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">reg_all_freq_mf</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">mf_which_solve</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;mf_which_solve&#39;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">mf_which_solve</span><span class="p">)</span>
 
         <span class="k">if</span> <span class="n">pol</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
@@ -356,6 +359,7 @@
         <span class="k">def</span> <span class="nf">callback_func</span><span class="p">(</span><span class="n">xcur</span><span class="p">):</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">plotcur</span><span class="p">(</span><span class="n">xcur</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
 
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Imaging . . .&quot;</span><span class="p">)</span>
         <span class="n">tstart</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
         <span class="k">if</span> <span class="n">grads</span><span class="p">:</span>
             <span class="n">res</span> <span class="o">=</span> <span class="n">opt</span><span class="o">.</span><span class="n">minimize</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">objfunc</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_xinit</span><span class="p">,</span> <span class="n">method</span><span class="o">=</span><span class="s1">&#39;L-BFGS-B&#39;</span><span class="p">,</span> <span class="n">jac</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">objgrad</span><span class="p">,</span>
@@ -394,7 +398,7 @@
         <span class="n">chi2_term_dict</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">make_chisq_dict</span><span class="p">(</span><span class="n">out</span><span class="p">)</span>
         <span class="k">for</span> <span class="n">dname</span> <span class="ow">in</span> <span class="nb">sorted</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">dat_term_next</span><span class="o">.</span><span class="n">keys</span><span class="p">()):</span>
             <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">obs</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">obslist_next</span><span class="p">):</span>
-                <span class="k">if</span> <span class="n">i</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">obslist_next</span><span class="p">)</span><span class="o">==</span><span class="mi">1</span><span class="p">:</span>
                     <span class="n">dname_key</span> <span class="o">=</span> <span class="n">dname</span>
                 <span class="k">else</span><span class="p">:</span>
                     <span class="n">dname_key</span> <span class="o">=</span> <span class="n">dname</span> <span class="o">+</span> <span class="p">(</span><span class="s1">&#39;_</span><span class="si">%i</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="n">i</span><span class="p">)</span>
@@ -469,21 +473,46 @@
         <span class="c1"># Return Image object</span>
         <span class="k">return</span> <span class="n">outim</span></div>
 
-<div class="viewcode-block" id="Imager.make_image_I"><a class="viewcode-back" href="../../imager.html#ehtim.imager.Imager.make_image_I">[docs]</a>    <span class="k">def</span> <span class="nf">make_image_I</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">grads</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">converge</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">niter</span><span class="p">,</span> <span class="n">blur_frac</span><span class="p">,</span> <span class="n">pol</span><span class="p">,</span> <span class="n">grads</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+
+        <span class="k">for</span> <span class="n">repeat</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">niter</span><span class="o">-</span><span class="mi">1</span><span class="p">):</span>
+            <span class="n">init</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">out_last</span><span class="p">()</span><span class="o">.</span><span class="n">blur_circ</span><span class="p">(</span><span class="n">blur_frac</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">obs_next</span><span class="o">.</span><span class="n">res</span><span class="p">())</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">init_next</span> <span class="o">=</span> <span class="n">init</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">make_image</span><span class="p">(</span><span class="n">pol</span><span class="o">=</span><span class="n">pol</span><span class="p">,</span> <span class="n">grads</span><span class="o">=</span><span class="n">grads</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="Imager.make_image_I"><a class="viewcode-back" href="../../imager.html#ehtim.imager.Imager.make_image_I">[docs]</a>    <span class="k">def</span> <span class="nf">make_image_I</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">grads</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">niter</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">blur_frac</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Make Stokes I image using current imager settings.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">make_image</span><span class="p">(</span><span class="n">pol</span><span class="o">=</span><span class="s1">&#39;I&#39;</span><span class="p">,</span> <span class="n">grads</span><span class="o">=</span><span class="n">grads</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></div>
+        <span class="n">pol</span> <span class="o">=</span> <span class="s1">&#39;I&#39;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">make_image</span><span class="p">(</span><span class="n">pol</span><span class="o">=</span><span class="n">pol</span><span class="p">,</span> <span class="n">grads</span><span class="o">=</span><span class="n">grads</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">converge</span><span class="p">(</span><span class="n">niter</span><span class="p">,</span> <span class="n">blur_frac</span><span class="p">,</span> <span class="n">pol</span><span class="p">,</span> <span class="n">grads</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
 
-<div class="viewcode-block" id="Imager.make_image_P"><a class="viewcode-back" href="../../imager.html#ehtim.imager.Imager.make_image_P">[docs]</a>    <span class="k">def</span> <span class="nf">make_image_P</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">grads</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">out_last</span><span class="p">()</span></div>
+
+        <span class="c1">#return self.make_image(pol=&#39;I&#39;, grads=grads, **kwargs)</span>
+
+<div class="viewcode-block" id="Imager.make_image_P"><a class="viewcode-back" href="../../imager.html#ehtim.imager.Imager.make_image_P">[docs]</a>    <span class="k">def</span> <span class="nf">make_image_P</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">grads</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">niter</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">blur_frac</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Make Stokes P polarimetric image using current imager settings.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">pol</span> <span class="o">=</span> <span class="s1">&#39;P&#39;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">make_image</span><span class="p">(</span><span class="n">pol</span><span class="o">=</span><span class="n">pol</span><span class="p">,</span> <span class="n">grads</span><span class="o">=</span><span class="n">grads</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">converge</span><span class="p">(</span><span class="n">niter</span><span class="p">,</span> <span class="n">blur_frac</span><span class="p">,</span> <span class="n">pol</span><span class="p">,</span> <span class="n">grads</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
 
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">make_image</span><span class="p">(</span><span class="n">pol</span><span class="o">=</span><span class="s1">&#39;P&#39;</span><span class="p">,</span> <span class="n">grads</span><span class="o">=</span><span class="n">grads</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></div>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">out_last</span><span class="p">()</span></div>
 
-<div class="viewcode-block" id="Imager.make_image_IP"><a class="viewcode-back" href="../../imager.html#ehtim.imager.Imager.make_image_IP">[docs]</a>    <span class="k">def</span> <span class="nf">make_image_IP</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">grads</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="c1">#return self.make_image(pol=&#39;P&#39;, grads=grads, **kwargs)</span>
+
+<div class="viewcode-block" id="Imager.make_image_IP"><a class="viewcode-back" href="../../imager.html#ehtim.imager.Imager.make_image_IP">[docs]</a>    <span class="k">def</span> <span class="nf">make_image_IP</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">grads</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">niter</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">blur_frac</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Make Stokes I and P polarimetric image simultaneously using current imager settings.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">make_image</span><span class="p">(</span><span class="n">pol</span><span class="o">=</span><span class="s1">&#39;IP&#39;</span><span class="p">,</span> <span class="n">grads</span><span class="o">=</span><span class="n">grads</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></div>
+        <span class="n">pol</span> <span class="o">=</span> <span class="s1">&#39;IP&#39;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">make_image</span><span class="p">(</span><span class="n">pol</span><span class="o">=</span><span class="n">pol</span><span class="p">,</span> <span class="n">grads</span><span class="o">=</span><span class="n">grads</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">converge</span><span class="p">(</span><span class="n">niter</span><span class="p">,</span> <span class="n">blur_frac</span><span class="p">,</span> <span class="n">pol</span><span class="p">,</span> <span class="n">grads</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">out_last</span><span class="p">()</span></div>
+
+        <span class="c1">#return self.make_image(pol=&#39;IP&#39;, grads=grads, **kwargs)</span>
 
 <div class="viewcode-block" id="Imager.set_embed"><a class="viewcode-back" href="../../imager.html#ehtim.imager.Imager.set_embed">[docs]</a>    <span class="k">def</span> <span class="nf">set_embed</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Set embedding matrix.</span>
@@ -494,9 +523,16 @@
 
         <span class="n">xmax</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">prior_next</span><span class="o">.</span><span class="n">xdim</span><span class="o">//</span><span class="mi">2</span>
         <span class="n">ymax</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">prior_next</span><span class="o">.</span><span class="n">ydim</span><span class="o">//</span><span class="mi">2</span>
+        
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">prior_next</span><span class="o">.</span><span class="n">xdim</span> <span class="o">%</span> <span class="mi">2</span><span class="p">:</span> <span class="n">xmin</span><span class="o">=-</span><span class="n">xmax</span><span class="o">-</span><span class="mi">1</span>
+        <span class="k">else</span><span class="p">:</span> <span class="n">xmin</span><span class="o">=-</span><span class="n">xmax</span>
+        
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">prior_next</span><span class="o">.</span><span class="n">ydim</span> <span class="o">%</span> <span class="mi">2</span><span class="p">:</span> <span class="n">ymin</span><span class="o">=-</span><span class="n">ymax</span><span class="o">-</span><span class="mi">1</span>
+        <span class="k">else</span><span class="p">:</span> <span class="n">ymin</span><span class="o">=-</span><span class="n">ymax</span>
+        
         <span class="n">coord</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([[[</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">]</span>
-                           <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">xmax</span><span class="p">,</span> <span class="o">-</span><span class="n">ymax</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">)]</span>
-                          <span class="k">for</span> <span class="n">y</span> <span class="ow">in</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">ymax</span><span class="p">,</span> <span class="o">-</span><span class="n">ymax</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">)])</span>
+                           <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">xmax</span><span class="p">,</span> <span class="n">xmin</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">)]</span>
+                           <span class="k">for</span> <span class="n">y</span> <span class="ow">in</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">ymax</span><span class="p">,</span> <span class="n">ymin</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">)])</span>
 
         <span class="n">coord</span> <span class="o">=</span> <span class="n">coord</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">prior_next</span><span class="o">.</span><span class="n">ydim</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">prior_next</span><span class="o">.</span><span class="n">xdim</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
         <span class="n">coord</span> <span class="o">=</span> <span class="n">coord</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">prior_next</span><span class="o">.</span><span class="n">psize</span>
@@ -1035,7 +1071,7 @@
                 <span class="c1"># Loop over all observations in the list</span>
                 <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">obs</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">obslist_next</span><span class="p">):</span>
                     <span class="c1"># Each entry in the dterm dictionary past the first has an appended number</span>
-                    <span class="k">if</span> <span class="n">i</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">obslist_next</span><span class="p">)</span><span class="o">==</span><span class="mi">1</span><span class="p">:</span>
                         <span class="n">dname_key</span> <span class="o">=</span> <span class="n">dname</span>
                     <span class="k">else</span><span class="p">:</span>
                         <span class="n">dname_key</span> <span class="o">=</span> <span class="n">dname</span> <span class="o">+</span> <span class="p">(</span><span class="s1">&#39;_</span><span class="si">%i</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="n">i</span><span class="p">)</span>
@@ -1121,7 +1157,7 @@
         <span class="k">for</span> <span class="n">dname</span> <span class="ow">in</span> <span class="nb">sorted</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">dat_term_next</span><span class="o">.</span><span class="n">keys</span><span class="p">()):</span>
             <span class="c1"># Loop over all observations in the list</span>
             <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">obs</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">obslist_next</span><span class="p">):</span>
-                <span class="k">if</span> <span class="n">i</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">obslist_next</span><span class="p">)</span><span class="o">==</span><span class="mi">1</span><span class="p">:</span>
                     <span class="n">dname_key</span> <span class="o">=</span> <span class="n">dname</span>
                 <span class="k">else</span><span class="p">:</span>
                     <span class="n">dname_key</span> <span class="o">=</span> <span class="n">dname</span> <span class="o">+</span> <span class="p">(</span><span class="s1">&#39;_</span><span class="si">%i</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="n">i</span><span class="p">)</span>
@@ -1129,7 +1165,6 @@
                 <span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">sigma</span><span class="p">,</span> <span class="n">A</span><span class="p">)</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_data_tuples</span><span class="p">[</span><span class="n">dname_key</span><span class="p">]</span>
 
                 <span class="k">if</span> <span class="n">dname</span> <span class="ow">in</span> <span class="n">DATATERMS_POL</span><span class="p">:</span>
-                <span class="c1">#if self.pol_next == &#39;P&#39;:</span>
                     <span class="n">chi2</span> <span class="o">=</span> <span class="n">polutils</span><span class="o">.</span><span class="n">polchisq</span><span class="p">(</span><span class="n">imcur</span><span class="p">,</span> <span class="n">A</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">sigma</span><span class="p">,</span> <span class="n">dname</span><span class="p">,</span>
                                              <span class="n">ttype</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_ttype</span><span class="p">,</span> <span class="n">mask</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_embed_mask</span><span class="p">,</span>
                                              <span class="n">pol_prim</span><span class="o">=</span><span class="n">POL_PRIM_SOLVE</span><span class="p">)</span>
@@ -1162,7 +1197,7 @@
         <span class="k">for</span> <span class="n">dname</span> <span class="ow">in</span> <span class="nb">sorted</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">dat_term_next</span><span class="o">.</span><span class="n">keys</span><span class="p">()):</span>
             <span class="c1"># Loop over all observations in the list</span>
             <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">obs</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">obslist_next</span><span class="p">):</span>
-                <span class="k">if</span> <span class="n">i</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">obslist_next</span><span class="p">)</span><span class="o">==</span><span class="mi">1</span><span class="p">:</span>
                     <span class="n">dname_key</span> <span class="o">=</span> <span class="n">dname</span>
                 <span class="k">else</span><span class="p">:</span>
                     <span class="n">dname_key</span> <span class="o">=</span> <span class="n">dname</span> <span class="o">+</span> <span class="p">(</span><span class="s1">&#39;_</span><span class="si">%i</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="n">i</span><span class="p">)</span>
@@ -1195,11 +1230,10 @@
                     <span class="c1"># transform the image gradients for all the solved quantities</span>
                     <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">mf_next</span><span class="p">:</span>
                         <span class="n">logfreqratio</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_logfreqratio_list</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
-                        <span class="n">chi2grad</span> <span class="o">=</span> <span class="n">mfutils</span><span class="o">.</span><span class="n">mf_all_chisqgrads</span><span class="p">(</span>
-                            <span class="n">chi2grad</span><span class="p">,</span> <span class="n">imcur_nu</span><span class="p">,</span> <span class="n">imref</span><span class="p">,</span> <span class="n">logfreqratio</span><span class="p">)</span>
+                        <span class="n">chi2grad</span> <span class="o">=</span> <span class="n">mfutils</span><span class="o">.</span><span class="n">mf_all_grads_chain</span><span class="p">(</span><span class="n">chi2grad</span><span class="p">,</span> <span class="n">imcur_nu</span><span class="p">,</span> <span class="n">imref</span><span class="p">,</span> <span class="n">logfreqratio</span><span class="p">)</span>
 
                     <span class="c1"># If imaging polarization simultaneously, bundle the gradient properly</span>
-                    <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">pol_next</span> <span class="o">==</span> <span class="s1">&#39;IP&#39;</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">pol_next</span> <span class="o">==</span> <span class="s1">&#39;IQU&#39;</span><span class="p">:</span> <span class="c1"># TODO AC AA MAKE MORE ELEGANT</span>
+                    <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">pol_next</span> <span class="o">==</span> <span class="s1">&#39;IP&#39;</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">pol_next</span> <span class="o">==</span> <span class="s1">&#39;IQU&#39;</span><span class="p">:</span> 
                         <span class="n">chi2grad</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">((</span><span class="n">chi2grad</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_nimage</span><span class="p">),</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_nimage</span><span class="p">)))</span>
 
                 <span class="k">else</span><span class="p">:</span>
@@ -1213,9 +1247,10 @@
         <span class="sd">&quot;&quot;&quot;Make a dictionary of current regularizer values</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">reg_dict</span> <span class="o">=</span> <span class="p">{}</span>
+                           
         <span class="k">for</span> <span class="n">regname</span> <span class="ow">in</span> <span class="nb">sorted</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">reg_term_next</span><span class="o">.</span><span class="n">keys</span><span class="p">()):</span>
+        
             <span class="c1"># Polarimetric regularizer</span>
-            <span class="c1">#if self.pol_next == &#39;P&#39;:</span>
             <span class="k">if</span> <span class="n">regname</span> <span class="ow">in</span> <span class="n">REGULARIZERS_POL</span><span class="p">:</span>
                 <span class="n">reg</span> <span class="o">=</span> <span class="n">polutils</span><span class="o">.</span><span class="n">polregularizer</span><span class="p">(</span><span class="n">imcur</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_embed_mask</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">flux_next</span><span class="p">,</span>
                                               <span class="bp">self</span><span class="o">.</span><span class="n">prior_next</span><span class="o">.</span><span class="n">xdim</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">prior_next</span><span class="o">.</span><span class="n">ydim</span><span class="p">,</span>
@@ -1223,15 +1258,39 @@
                                               <span class="n">norm_reg</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">norm_reg</span><span class="p">,</span> <span class="n">beam_size</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">beam_size</span><span class="p">,</span>
                                               <span class="n">pol_prim</span><span class="o">=</span><span class="n">POL_PRIM_SOLVE</span><span class="p">,</span> <span class="n">pol_solve</span><span class="o">=</span><span class="n">POL_WHICH_SOLVE</span><span class="p">)</span>
 
-            <span class="c1"># Multifrequency regularizer</span>
+            <span class="c1"># Multifrequency regularizers</span>
             <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">mf_next</span><span class="p">:</span>
-                <span class="k">if</span> <span class="n">regname</span> <span class="ow">in</span> <span class="n">REGULARIZERS</span><span class="p">:</span>
-                    <span class="n">reg</span> <span class="o">=</span> <span class="n">imutils</span><span class="o">.</span><span class="n">regularizer</span><span class="p">(</span><span class="n">imcur</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">priortuple</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">_embed_mask</span><span class="p">,</span>
-                                              <span class="bp">self</span><span class="o">.</span><span class="n">flux_next</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">prior_next</span><span class="o">.</span><span class="n">xdim</span><span class="p">,</span>
-                                              <span class="bp">self</span><span class="o">.</span><span class="n">prior_next</span><span class="o">.</span><span class="n">ydim</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">prior_next</span><span class="o">.</span><span class="n">psize</span><span class="p">,</span>
-                                              <span class="n">regname</span><span class="p">,</span>
-                                              <span class="n">norm_reg</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">norm_reg</span><span class="p">,</span> <span class="n">beam_size</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">beam_size</span><span class="p">,</span>
-                                              <span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">regparams</span><span class="p">)</span>
+            
+                <span class="c1"># Image regularizer(s)</span>
+                <span class="k">if</span> <span class="n">regname</span> <span class="ow">in</span> <span class="n">REGULARIZERS</span><span class="p">:</span>         
+                    <span class="c1"># new option to regularize ALL the images in multifrequency imaging</span>
+                    <span class="c1"># TODO total fluxes not right? </span>
+                    <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">reg_all_freq_mf</span><span class="p">:</span>
+                        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">obslist_next</span><span class="p">)):</span>
+                            <span class="n">regname_key</span> <span class="o">=</span> <span class="n">regname</span> <span class="o">+</span> <span class="p">(</span><span class="s1">&#39;_</span><span class="si">%i</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="n">i</span><span class="p">)</span>
+                            <span class="n">logfreqratio</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_logfreqratio_list</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+                            <span class="n">imcur_nu</span> <span class="o">=</span> <span class="n">mfutils</span><span class="o">.</span><span class="n">imvec_at_freq</span><span class="p">(</span><span class="n">imcur</span><span class="p">,</span> <span class="n">logfreqratio</span><span class="p">)</span>
+                            <span class="n">prior_nu</span> <span class="o">=</span> <span class="n">mfutils</span><span class="o">.</span><span class="n">imvec_at_freq</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">priortuple</span><span class="p">,</span> <span class="n">logfreqratio</span><span class="p">)</span>
+                            <span class="n">imref</span> <span class="o">=</span><span class="n">imcur</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+                            
+                            <span class="n">reg</span> <span class="o">=</span> <span class="n">imutils</span><span class="o">.</span><span class="n">regularizer</span><span class="p">(</span><span class="n">imcur_nu</span><span class="p">,</span> <span class="n">prior_nu</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_embed_mask</span><span class="p">,</span>
+                                                      <span class="bp">self</span><span class="o">.</span><span class="n">flux_next</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">prior_next</span><span class="o">.</span><span class="n">xdim</span><span class="p">,</span>
+                                                      <span class="bp">self</span><span class="o">.</span><span class="n">prior_next</span><span class="o">.</span><span class="n">ydim</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">prior_next</span><span class="o">.</span><span class="n">psize</span><span class="p">,</span>
+                                                      <span class="n">regname</span><span class="p">,</span>
+                                                      <span class="n">norm_reg</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">norm_reg</span><span class="p">,</span> <span class="n">beam_size</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">beam_size</span><span class="p">,</span>
+                                                      <span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">regparams</span><span class="p">)</span>
+                            <span class="n">reg_dict</span><span class="p">[</span><span class="n">regname_key</span><span class="p">]</span> <span class="o">=</span> <span class="n">reg</span>                                
+                    
+                    <span class="c1"># normally we only regularize reference frequency image</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="n">reg</span> <span class="o">=</span> <span class="n">imutils</span><span class="o">.</span><span class="n">regularizer</span><span class="p">(</span><span class="n">imcur</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">priortuple</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">_embed_mask</span><span class="p">,</span>
+                                                  <span class="bp">self</span><span class="o">.</span><span class="n">flux_next</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">prior_next</span><span class="o">.</span><span class="n">xdim</span><span class="p">,</span>
+                                                  <span class="bp">self</span><span class="o">.</span><span class="n">prior_next</span><span class="o">.</span><span class="n">ydim</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">prior_next</span><span class="o">.</span><span class="n">psize</span><span class="p">,</span>
+                                                  <span class="n">regname</span><span class="p">,</span>
+                                                  <span class="n">norm_reg</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">norm_reg</span><span class="p">,</span> <span class="n">beam_size</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">beam_size</span><span class="p">,</span>
+                                                  <span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">regparams</span><span class="p">)</span>
+                    
+                <span class="c1"># Spectral index regularizer(s)                                                      </span>
                 <span class="k">elif</span> <span class="n">regname</span> <span class="ow">in</span> <span class="n">REGULARIZERS_SPECIND</span><span class="p">:</span>
                     <span class="n">reg</span> <span class="o">=</span> <span class="n">mfutils</span><span class="o">.</span><span class="n">regularizer_mf</span><span class="p">(</span><span class="n">imcur</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">priortuple</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">_embed_mask</span><span class="p">,</span>
                                                  <span class="bp">self</span><span class="o">.</span><span class="n">flux_next</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">prior_next</span><span class="o">.</span><span class="n">xdim</span><span class="p">,</span>
@@ -1240,6 +1299,7 @@
                                                  <span class="n">norm_reg</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">norm_reg</span><span class="p">,</span> <span class="n">beam_size</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">beam_size</span><span class="p">,</span>
                                                  <span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">regparams</span><span class="p">)</span>
 
+                <span class="c1"># Curvature index regularizer(s)                                                      </span>
                 <span class="k">elif</span> <span class="n">regname</span> <span class="ow">in</span> <span class="n">REGULARIZERS_CURV</span><span class="p">:</span>
                     <span class="n">reg</span> <span class="o">=</span> <span class="n">mfutils</span><span class="o">.</span><span class="n">regularizer_mf</span><span class="p">(</span><span class="n">imcur</span><span class="p">[</span><span class="mi">2</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">priortuple</span><span class="p">[</span><span class="mi">2</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">_embed_mask</span><span class="p">,</span>
                                                  <span class="bp">self</span><span class="o">.</span><span class="n">flux_next</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">prior_next</span><span class="o">.</span><span class="n">xdim</span><span class="p">,</span>
@@ -1248,7 +1308,7 @@
                                                  <span class="n">norm_reg</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">norm_reg</span><span class="p">,</span> <span class="n">beam_size</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">beam_size</span><span class="p">,</span>
                                                  <span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">regparams</span><span class="p">)</span>
 
-            <span class="c1"># Normal regularizer</span>
+            <span class="c1"># Normal, single polarization, single-frequency regularizer</span>
             <span class="k">elif</span> <span class="n">regname</span> <span class="ow">in</span> <span class="n">REGULARIZERS</span><span class="p">:</span>
                 <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">pol_next</span> <span class="o">==</span> <span class="s1">&#39;IP&#39;</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">pol_next</span> <span class="o">==</span> <span class="s1">&#39;IQU&#39;</span><span class="p">:</span>
                     <span class="n">imcur0</span> <span class="o">=</span> <span class="n">imcur</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
@@ -1264,19 +1324,23 @@
             <span class="k">else</span><span class="p">:</span>
                 <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;regularizer term </span><span class="si">%s</span><span class="s2"> not recognized!&quot;</span> <span class="o">%</span> <span class="n">regname</span><span class="p">)</span>
 
-            <span class="n">reg_dict</span><span class="p">[</span><span class="n">regname</span><span class="p">]</span> <span class="o">=</span> <span class="n">reg</span>
+            <span class="c1"># multifrequency regularizer terms are already in the dictionary</span>
+            <span class="c1"># if we regularize all images with self.reg_all_freq_mf            </span>
+            <span class="k">if</span> <span class="ow">not</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">mf_next</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">reg_all_freq_mf</span> <span class="ow">and</span> <span class="p">(</span><span class="n">regname</span> <span class="ow">in</span> <span class="n">REGULARIZERS</span><span class="p">)):</span> 
+                <span class="n">reg_dict</span><span class="p">[</span><span class="n">regname</span><span class="p">]</span> <span class="o">=</span> <span class="n">reg</span>
 
         <span class="k">return</span> <span class="n">reg_dict</span></div>
 
 <div class="viewcode-block" id="Imager.make_reggrad_dict"><a class="viewcode-back" href="../../imager.html#ehtim.imager.Imager.make_reggrad_dict">[docs]</a>    <span class="k">def</span> <span class="nf">make_reggrad_dict</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">imcur</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Make a dictionary of current regularizer gradient values</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-
+                
         <span class="n">reggrad_dict</span> <span class="o">=</span> <span class="p">{}</span>
+        
+                    
         <span class="k">for</span> <span class="n">regname</span> <span class="ow">in</span> <span class="nb">sorted</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">reg_term_next</span><span class="o">.</span><span class="n">keys</span><span class="p">()):</span>
 
             <span class="c1"># Polarimetric regularizer</span>
-            <span class="c1">#if self.pol_next == &#39;P&#39;:</span>
             <span class="k">if</span> <span class="n">regname</span> <span class="ow">in</span> <span class="n">REGULARIZERS_POL</span><span class="p">:</span>
                 <span class="n">reg</span> <span class="o">=</span> <span class="n">polutils</span><span class="o">.</span><span class="n">polregularizergrad</span><span class="p">(</span><span class="n">imcur</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_embed_mask</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">flux_next</span><span class="p">,</span>
                                                   <span class="bp">self</span><span class="o">.</span><span class="n">prior_next</span><span class="o">.</span><span class="n">xdim</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">prior_next</span><span class="o">.</span><span class="n">ydim</span><span class="p">,</span>
@@ -1287,17 +1351,44 @@
 
             <span class="c1"># Multifrequency regularizer</span>
             <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">mf_next</span><span class="p">:</span>
-
+            
+                <span class="c1"># Image regularizer(s)</span>
                 <span class="k">if</span> <span class="n">regname</span> <span class="ow">in</span> <span class="n">REGULARIZERS</span><span class="p">:</span>
-                    <span class="n">reg</span> <span class="o">=</span> <span class="n">imutils</span><span class="o">.</span><span class="n">regularizergrad</span><span class="p">(</span><span class="n">imcur</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">priortuple</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span>
-                                                  <span class="bp">self</span><span class="o">.</span><span class="n">_embed_mask</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">flux_next</span><span class="p">,</span>
-                                                  <span class="bp">self</span><span class="o">.</span><span class="n">prior_next</span><span class="o">.</span><span class="n">xdim</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">prior_next</span><span class="o">.</span><span class="n">ydim</span><span class="p">,</span>
-                                                  <span class="bp">self</span><span class="o">.</span><span class="n">prior_next</span><span class="o">.</span><span class="n">psize</span><span class="p">,</span> <span class="n">regname</span><span class="p">,</span>
-                                                  <span class="n">norm_reg</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">norm_reg</span><span class="p">,</span>
-                                                  <span class="n">beam_size</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">beam_size</span><span class="p">,</span>
-                                                  <span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">regparams</span><span class="p">)</span>
-                    <span class="n">reg</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">((</span><span class="n">reg</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_nimage</span><span class="p">),</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_nimage</span><span class="p">)))</span>
+                    <span class="c1"># new option to regularize ALL the images in multifrequency imaging</span>
+                    <span class="c1"># TODO total fluxes not right? </span>
+                    <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">reg_all_freq_mf</span><span class="p">:</span>
+                        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">obslist_next</span><span class="p">)):</span>
+                            <span class="n">regname_key</span> <span class="o">=</span> <span class="n">regname</span> <span class="o">+</span> <span class="p">(</span><span class="s1">&#39;_</span><span class="si">%i</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="n">i</span><span class="p">)</span>
+                            <span class="n">logfreqratio</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_logfreqratio_list</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+                            <span class="n">imcur_nu</span> <span class="o">=</span> <span class="n">mfutils</span><span class="o">.</span><span class="n">imvec_at_freq</span><span class="p">(</span><span class="n">imcur</span><span class="p">,</span> <span class="n">logfreqratio</span><span class="p">)</span>
+                            <span class="n">prior_nu</span> <span class="o">=</span> <span class="n">mfutils</span><span class="o">.</span><span class="n">imvec_at_freq</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">priortuple</span><span class="p">,</span> <span class="n">logfreqratio</span><span class="p">)</span>
+                            <span class="n">imref</span> <span class="o">=</span><span class="n">imcur</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+                                                        
+                            <span class="n">reg</span> <span class="o">=</span> <span class="n">imutils</span><span class="o">.</span><span class="n">regularizergrad</span><span class="p">(</span><span class="n">imcur_nu</span><span class="p">,</span> <span class="n">prior_nu</span><span class="p">,</span>
+                                                          <span class="bp">self</span><span class="o">.</span><span class="n">_embed_mask</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">flux_next</span><span class="p">,</span>
+                                                          <span class="bp">self</span><span class="o">.</span><span class="n">prior_next</span><span class="o">.</span><span class="n">xdim</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">prior_next</span><span class="o">.</span><span class="n">ydim</span><span class="p">,</span>
+                                                          <span class="bp">self</span><span class="o">.</span><span class="n">prior_next</span><span class="o">.</span><span class="n">psize</span><span class="p">,</span> <span class="n">regname</span><span class="p">,</span>
+                                                          <span class="n">norm_reg</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">norm_reg</span><span class="p">,</span>
+                                                          <span class="n">beam_size</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">beam_size</span><span class="p">,</span>
+                                                          <span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">regparams</span><span class="p">)</span>
+                                                          
 
+                            <span class="n">reg</span> <span class="o">=</span> <span class="n">mfutils</span><span class="o">.</span><span class="n">mf_all_grads_chain</span><span class="p">(</span><span class="n">reg</span><span class="p">,</span> <span class="n">imcur_nu</span><span class="p">,</span> <span class="n">imref</span><span class="p">,</span> <span class="n">logfreqratio</span><span class="p">)</span>
+                            <span class="n">reg_dict</span><span class="p">[</span><span class="n">regname_key</span><span class="p">]</span> <span class="o">=</span> <span class="n">reg</span>                                
+                    
+                    <span class="c1"># normally we only regularize the reference frequency image</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="n">reg</span> <span class="o">=</span> <span class="n">imutils</span><span class="o">.</span><span class="n">regularizergrad</span><span class="p">(</span><span class="n">imcur</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">priortuple</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span>
+                                                      <span class="bp">self</span><span class="o">.</span><span class="n">_embed_mask</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">flux_next</span><span class="p">,</span>
+                                                      <span class="bp">self</span><span class="o">.</span><span class="n">prior_next</span><span class="o">.</span><span class="n">xdim</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">prior_next</span><span class="o">.</span><span class="n">ydim</span><span class="p">,</span>
+                                                      <span class="bp">self</span><span class="o">.</span><span class="n">prior_next</span><span class="o">.</span><span class="n">psize</span><span class="p">,</span> <span class="n">regname</span><span class="p">,</span>
+                                                      <span class="n">norm_reg</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">norm_reg</span><span class="p">,</span>
+                                                      <span class="n">beam_size</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">beam_size</span><span class="p">,</span>
+                                                      <span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">regparams</span><span class="p">)</span>
+                        <span class="n">reg</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">((</span><span class="n">reg</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_nimage</span><span class="p">),</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_nimage</span><span class="p">)))</span>
+                                              
+
+                <span class="c1"># Spectral index regularizer(s)</span>
                 <span class="k">elif</span> <span class="n">regname</span> <span class="ow">in</span> <span class="n">REGULARIZERS_SPECIND</span><span class="p">:</span>
                     <span class="n">reg</span> <span class="o">=</span> <span class="n">mfutils</span><span class="o">.</span><span class="n">regularizergrad_mf</span><span class="p">(</span><span class="n">imcur</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">priortuple</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span>
                                                      <span class="bp">self</span><span class="o">.</span><span class="n">_embed_mask</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">flux_next</span><span class="p">,</span>
@@ -1308,6 +1399,7 @@
                                                      <span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">regparams</span><span class="p">)</span>
                     <span class="n">reg</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">((</span><span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_nimage</span><span class="p">),</span> <span class="n">reg</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_nimage</span><span class="p">)))</span>
 
+                <span class="c1"># Curvature index regularizer(s)</span>
                 <span class="k">elif</span> <span class="n">regname</span> <span class="ow">in</span> <span class="n">REGULARIZERS_CURV</span><span class="p">:</span>
                     <span class="n">reg</span> <span class="o">=</span> <span class="n">mfutils</span><span class="o">.</span><span class="n">regularizergrad_mf</span><span class="p">(</span><span class="n">imcur</span><span class="p">[</span><span class="mi">2</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">priortuple</span><span class="p">[</span><span class="mi">2</span><span class="p">],</span>
                                                      <span class="bp">self</span><span class="o">.</span><span class="n">_embed_mask</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">flux_next</span><span class="p">,</span>
@@ -1318,7 +1410,7 @@
                                                      <span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">regparams</span><span class="p">)</span>
                     <span class="n">reg</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">((</span><span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_nimage</span><span class="p">),</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_nimage</span><span class="p">),</span> <span class="n">reg</span><span class="p">))</span>
 
-            <span class="c1"># Normal regularizer</span>
+            <span class="c1"># Normal, single polarization, single-frequency regularizer</span>
             <span class="k">elif</span> <span class="n">regname</span> <span class="ow">in</span> <span class="n">REGULARIZERS</span><span class="p">:</span>
                 <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">pol_next</span> <span class="o">==</span> <span class="s1">&#39;IP&#39;</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">pol_next</span> <span class="o">==</span> <span class="s1">&#39;IQU&#39;</span><span class="p">:</span> <span class="c1"># TODO AC AA MAKE MORE ELEGANT</span>
                     <span class="n">imcur0</span> <span class="o">=</span> <span class="n">imcur</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
@@ -1335,7 +1427,10 @@
             <span class="k">else</span><span class="p">:</span>
                 <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;regularizer term </span><span class="si">%s</span><span class="s2"> not recognized!&quot;</span> <span class="o">%</span> <span class="n">regname</span><span class="p">)</span>
 
-            <span class="n">reggrad_dict</span><span class="p">[</span><span class="n">regname</span><span class="p">]</span> <span class="o">=</span> <span class="n">reg</span>
+            <span class="c1"># multifrequency regularizer gradient terms are already in the dictionary</span>
+            <span class="c1"># if we regularize all images with self.reg_all_freq_mf</span>
+            <span class="k">if</span> <span class="ow">not</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">mf_next</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">reg_all_freq_mf</span> <span class="ow">and</span> <span class="p">(</span><span class="n">regname</span> <span class="ow">in</span> <span class="n">REGULARIZERS</span><span class="p">)):</span> 
+                <span class="n">reggrad_dict</span><span class="p">[</span><span class="n">regname</span><span class="p">]</span> <span class="o">=</span> <span class="n">reg</span>
 
         <span class="k">return</span> <span class="n">reggrad_dict</span></div>
 
@@ -1375,7 +1470,7 @@
             <span class="n">hyperparameter</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">dat_term_next</span><span class="p">[</span><span class="n">dname</span><span class="p">]</span>
 
             <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">obs</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">obslist_next</span><span class="p">):</span>
-                <span class="k">if</span> <span class="n">i</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">obslist_next</span><span class="p">)</span><span class="o">==</span><span class="mi">1</span><span class="p">:</span>
                     <span class="n">dname_key</span> <span class="o">=</span> <span class="n">dname</span>
                 <span class="k">else</span><span class="p">:</span>
                     <span class="n">dname_key</span> <span class="o">=</span> <span class="n">dname</span> <span class="o">+</span> <span class="p">(</span><span class="s1">&#39;_</span><span class="si">%i</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="n">i</span><span class="p">)</span>
@@ -1392,10 +1487,22 @@
         <span class="n">reg_term_dict</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">make_reg_dict</span><span class="p">(</span><span class="n">imcur</span><span class="p">)</span>
         <span class="k">for</span> <span class="n">regname</span> <span class="ow">in</span> <span class="nb">sorted</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">reg_term_next</span><span class="o">.</span><span class="n">keys</span><span class="p">()):</span>
             <span class="n">hyperparameter</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">reg_term_next</span><span class="p">[</span><span class="n">regname</span><span class="p">]</span>
-            <span class="n">regularizer</span> <span class="o">=</span> <span class="n">reg_term_dict</span><span class="p">[</span><span class="n">regname</span><span class="p">]</span>
-            <span class="n">regterm</span> <span class="o">+=</span> <span class="n">hyperparameter</span> <span class="o">*</span> <span class="n">regularizer</span>
+            <span class="c1"># multifrequency imaging, regularize every frequency</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">mf_next</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">reg_all_freq_mf</span> <span class="ow">and</span> <span class="p">(</span><span class="n">regname</span> <span class="ow">in</span> <span class="n">REGULARIZERS</span><span class="p">):</span>
+                <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">obslist_next</span><span class="p">)):</span>
+                    <span class="n">regname_key</span> <span class="o">=</span> <span class="n">regname</span> <span class="o">+</span> <span class="p">(</span><span class="s1">&#39;_</span><span class="si">%i</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="n">i</span><span class="p">)</span>
+                    <span class="n">regularizer</span> <span class="o">=</span> <span class="n">reg_term_dict</span><span class="p">[</span><span class="n">regname_key</span><span class="p">]</span>        
+                    <span class="n">regterm</span> <span class="o">+=</span> <span class="n">hyperparameter</span> <span class="o">*</span> <span class="n">regularizer</span>
+                    
+            <span class="c1"># but normally just one regularizer                    </span>
+            <span class="k">else</span><span class="p">:</span>        
+                <span class="n">regularizer</span> <span class="o">=</span> <span class="n">reg_term_dict</span><span class="p">[</span><span class="n">regname</span><span class="p">]</span>
+                <span class="n">regterm</span> <span class="o">+=</span> <span class="n">hyperparameter</span> <span class="o">*</span> <span class="n">regularizer</span>
 
-        <span class="k">return</span> <span class="n">datterm</span> <span class="o">+</span> <span class="n">regterm</span></div>
+        <span class="c1"># Total cost</span>
+        <span class="n">cost</span> <span class="o">=</span> <span class="n">datterm</span> <span class="o">+</span> <span class="n">regterm</span>
+        
+        <span class="k">return</span> <span class="n">cost</span></div>
 
 <div class="viewcode-block" id="Imager.objgrad"><a class="viewcode-back" href="../../imager.html#ehtim.imager.Imager.objgrad">[docs]</a>    <span class="k">def</span> <span class="nf">objgrad</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">imvec</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Current objective function gradient.</span>
@@ -1427,7 +1534,6 @@
             <span class="k">else</span><span class="p">:</span>
                 <span class="n">imcur</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="n">imcur</span><span class="p">)</span>
 
-
         <span class="c1"># Data terms</span>
         <span class="n">datterm</span> <span class="o">=</span> <span class="mf">0.</span>
         <span class="n">chi2_term_dict</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">make_chisqgrad_dict</span><span class="p">(</span><span class="n">imcur</span><span class="p">)</span>
@@ -1437,7 +1543,7 @@
             <span class="n">hyperparameter</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">dat_term_next</span><span class="p">[</span><span class="n">dname</span><span class="p">]</span>
 
             <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">obs</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">obslist_next</span><span class="p">):</span>
-                <span class="k">if</span> <span class="n">i</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">obslist_next</span><span class="p">)</span><span class="o">==</span><span class="mi">1</span><span class="p">:</span>
                     <span class="n">dname_key</span> <span class="o">=</span> <span class="n">dname</span>
                 <span class="k">else</span><span class="p">:</span>
                     <span class="n">dname_key</span> <span class="o">=</span> <span class="n">dname</span> <span class="o">+</span> <span class="p">(</span><span class="s1">&#39;_</span><span class="si">%i</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="n">i</span><span class="p">)</span>
@@ -1455,9 +1561,20 @@
         <span class="n">reg_term_dict</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">make_reggrad_dict</span><span class="p">(</span><span class="n">imcur</span><span class="p">)</span>
         <span class="k">for</span> <span class="n">regname</span> <span class="ow">in</span> <span class="nb">sorted</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">reg_term_next</span><span class="o">.</span><span class="n">keys</span><span class="p">()):</span>
             <span class="n">hyperparameter</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">reg_term_next</span><span class="p">[</span><span class="n">regname</span><span class="p">]</span>
-            <span class="n">regularizer_grad</span> <span class="o">=</span> <span class="n">reg_term_dict</span><span class="p">[</span><span class="n">regname</span><span class="p">]</span>
-            <span class="n">regterm</span> <span class="o">+=</span> <span class="n">hyperparameter</span> <span class="o">*</span> <span class="n">regularizer_grad</span>
+            
+            <span class="c1"># multifrequency imaging, regularize every frequency</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">mf_next</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">reg_all_freq_mf</span> <span class="ow">and</span> <span class="p">(</span><span class="n">regname</span> <span class="ow">in</span> <span class="n">REGULARIZERS</span><span class="p">):</span>
+                <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">obslist_next</span><span class="p">)):</span>
+                    <span class="n">regname_key</span> <span class="o">=</span> <span class="n">regname</span> <span class="o">+</span> <span class="p">(</span><span class="s1">&#39;_</span><span class="si">%i</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="n">i</span><span class="p">)</span>
+                    <span class="n">regularizer</span> <span class="o">=</span> <span class="n">reg_term_dict</span><span class="p">[</span><span class="n">regname_key</span><span class="p">]</span>        
+                    <span class="n">regterm</span> <span class="o">+=</span> <span class="n">hyperparameter</span> <span class="o">*</span> <span class="n">regularizer</span>
+                    
+            <span class="c1"># but normally just one regularizer</span>
+            <span class="k">else</span><span class="p">:</span>                    
+                <span class="n">regularizer_grad</span> <span class="o">=</span> <span class="n">reg_term_dict</span><span class="p">[</span><span class="n">regname</span><span class="p">]</span>
+                <span class="n">regterm</span> <span class="o">+=</span> <span class="n">hyperparameter</span> <span class="o">*</span> <span class="n">regularizer_grad</span>
 
+        <span class="c1"># Total gradient</span>
         <span class="n">grad</span> <span class="o">=</span> <span class="n">datterm</span> <span class="o">+</span> <span class="n">regterm</span>
 
         <span class="c1"># Chain rule term for change of variables</span>
@@ -1525,7 +1642,7 @@
                 <span class="n">outstr</span> <span class="o">+=</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="si">%4d</span><span class="s2"> | &quot;</span> <span class="o">%</span> <span class="bp">self</span><span class="o">.</span><span class="n">_nit</span>
                 <span class="k">for</span> <span class="n">dname</span> <span class="ow">in</span> <span class="nb">sorted</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">dat_term_next</span><span class="o">.</span><span class="n">keys</span><span class="p">()):</span>
                     <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">obs</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">obslist_next</span><span class="p">):</span>
-                        <span class="k">if</span> <span class="n">i</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">obslist_next</span><span class="p">)</span><span class="o">==</span><span class="mi">1</span><span class="p">:</span>
                             <span class="n">dname_key</span> <span class="o">=</span> <span class="n">dname</span>
                         <span class="k">else</span><span class="p">:</span>
                             <span class="n">dname_key</span> <span class="o">=</span> <span class="n">dname</span> <span class="o">+</span> <span class="p">(</span><span class="s1">&#39;_</span><span class="si">%i</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="n">i</span><span class="p">)</span>
@@ -1533,7 +1650,7 @@
                 <span class="n">outstr</span> <span class="o">+=</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">        &quot;</span>
                 <span class="k">for</span> <span class="n">dname</span> <span class="ow">in</span> <span class="nb">sorted</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">dat_term_next</span><span class="o">.</span><span class="n">keys</span><span class="p">()):</span>
                     <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">obs</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">obslist_next</span><span class="p">):</span>
-                        <span class="k">if</span> <span class="n">i</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">obslist_next</span><span class="p">)</span><span class="o">==</span><span class="mi">1</span><span class="p">:</span>
                             <span class="n">dname_key</span> <span class="o">=</span> <span class="n">dname</span>
                         <span class="k">else</span><span class="p">:</span>
                             <span class="n">dname_key</span> <span class="o">=</span> <span class="n">dname</span> <span class="o">+</span> <span class="p">(</span><span class="s1">&#39;_</span><span class="si">%i</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="n">i</span><span class="p">)</span>
@@ -1542,8 +1659,15 @@
 
                 <span class="n">outstr</span> <span class="o">+=</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">        &quot;</span>
                 <span class="k">for</span> <span class="n">regname</span> <span class="ow">in</span> <span class="nb">sorted</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">reg_term_next</span><span class="o">.</span><span class="n">keys</span><span class="p">()):</span>
-                    <span class="n">rval</span> <span class="o">=</span> <span class="n">reg_term_dict</span><span class="p">[</span><span class="n">regname</span><span class="p">]</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">reg_term_next</span><span class="p">[</span><span class="n">regname</span><span class="p">]</span>
-                    <span class="n">outstr</span> <span class="o">+=</span> <span class="s2">&quot;</span><span class="si">%s</span><span class="s2"> : </span><span class="si">%0.1f</span><span class="s2"> &quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">regname</span><span class="p">,</span> <span class="n">rval</span><span class="p">)</span>
+                
+                    <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">mf_next</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">reg_all_freq_mf</span> <span class="ow">and</span> <span class="p">(</span><span class="n">regname</span> <span class="ow">in</span> <span class="n">REGULARIZERS</span><span class="p">):</span>
+                        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">obslist_next</span><span class="p">)):</span>
+                            <span class="n">regname_key</span> <span class="o">=</span> <span class="n">regname</span> <span class="o">+</span> <span class="p">(</span><span class="s1">&#39;_</span><span class="si">%i</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="n">i</span><span class="p">)</span>
+                            <span class="n">rval</span> <span class="o">=</span> <span class="n">reg_term_dict</span><span class="p">[</span><span class="n">regname_key</span><span class="p">]</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">reg_term_next</span><span class="p">[</span><span class="n">regname</span><span class="p">]</span>
+                            <span class="n">outstr</span> <span class="o">+=</span> <span class="s2">&quot;</span><span class="si">%s</span><span class="s2"> : </span><span class="si">%0.1f</span><span class="s2"> &quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">regname_key</span><span class="p">,</span> <span class="n">rval</span><span class="p">)</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="n">rval</span> <span class="o">=</span> <span class="n">reg_term_dict</span><span class="p">[</span><span class="n">regname</span><span class="p">]</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">reg_term_next</span><span class="p">[</span><span class="n">regname</span><span class="p">]</span>
+                        <span class="n">outstr</span> <span class="o">+=</span> <span class="s2">&quot;</span><span class="si">%s</span><span class="s2"> : </span><span class="si">%0.1f</span><span class="s2"> &quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">regname</span><span class="p">,</span> <span class="n">rval</span><span class="p">)</span>
 
                 <span class="c1"># Embed and plot the image</span>
                 <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">pol_next</span> <span class="o">==</span> <span class="s1">&#39;P&#39;</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">pol_next</span> <span class="o">==</span> <span class="s1">&#39;IP&#39;</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">pol_next</span> <span class="o">==</span> <span class="s1">&#39;IQU&#39;</span><span class="p">:</span>

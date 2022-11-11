@@ -48,6 +48,7 @@
 <li class="toctree-l1"><a class="reference internal" href="../../plotting.html">Plotting</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../scattering.html">Scattering</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../statistics.html">Statistics</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../survey.html">Survey</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../vex.html">Vex</a></li>
 </ul>
 
@@ -551,7 +552,7 @@
         <span class="k">return</span> <span class="n">mov</span></div>
 
 <div class="viewcode-block" id="Movie.add_pol_movie"><a class="viewcode-back" href="../../movie.html#ehtim.movie.Movie.add_pol_movie">[docs]</a>    <span class="k">def</span> <span class="nf">add_pol_movie</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">movie</span><span class="p">,</span> <span class="n">pol</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Add another movie polarization. f</span>
+        <span class="sd">&quot;&quot;&quot;Add another movie polarization. </span>
 
 <span class="sd">           Args:</span>
 <span class="sd">               movie (list): list of 2D frames (possibly complex) in a Jy/pixel array</span>
@@ -1308,6 +1309,7 @@
 <div class="viewcode-block" id="Movie.observe"><a class="viewcode-back" href="../../movie.html#ehtim.movie.Movie.observe">[docs]</a>    <span class="k">def</span> <span class="nf">observe</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">array</span><span class="p">,</span> <span class="n">tint</span><span class="p">,</span> <span class="n">tadv</span><span class="p">,</span> <span class="n">tstart</span><span class="p">,</span> <span class="n">tstop</span><span class="p">,</span> <span class="n">bw</span><span class="p">,</span> <span class="n">repeat</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
                 <span class="n">mjd</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">timetype</span><span class="o">=</span><span class="s1">&#39;UTC&#39;</span><span class="p">,</span> <span class="n">polrep_obs</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
                 <span class="n">elevmin</span><span class="o">=</span><span class="n">ehc</span><span class="o">.</span><span class="n">ELEV_LOW</span><span class="p">,</span> <span class="n">elevmax</span><span class="o">=</span><span class="n">ehc</span><span class="o">.</span><span class="n">ELEV_HIGH</span><span class="p">,</span>
+                <span class="n">no_elevcut_space</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
                 <span class="n">ttype</span><span class="o">=</span><span class="s1">&#39;nfft&#39;</span><span class="p">,</span> <span class="n">fft_pad_factor</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">fix_theta_GMST</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
                 <span class="n">sgrscat</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">add_th_noise</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
                 <span class="n">jones</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">inv_jones</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
@@ -1336,7 +1338,8 @@
 <span class="sd">               polrep_obs (str): &#39;stokes&#39; or &#39;circ&#39; sets the data polarimetric representation</span>
 <span class="sd">               elevmin (float): station minimum elevation in degrees</span>
 <span class="sd">               elevmax (float): station maximum elevation in degrees</span>
-
+<span class="sd">               no_elevcut_space (bool): if True, do not apply elevation cut to orbiters</span>
+<span class="sd">           </span>
 <span class="sd">               ttype (str): &quot;fast&quot;, &quot;nfft&quot; or &quot;dtft&quot;</span>
 <span class="sd">               fft_pad_factor (float): zero pad the image to fft_pad_factor * image size in the FFT</span>
 <span class="sd">               fix_theta_GMST (bool): if True, stops earth rotation to sample fixed u,v</span>
@@ -1398,6 +1401,7 @@
                             <span class="n">mjd</span><span class="o">=</span><span class="n">mjd</span><span class="p">,</span> <span class="n">polrep</span><span class="o">=</span><span class="n">polrep_obs</span><span class="p">,</span>
                             <span class="n">tau</span><span class="o">=</span><span class="n">tau</span><span class="p">,</span> <span class="n">timetype</span><span class="o">=</span><span class="n">timetype</span><span class="p">,</span>
                             <span class="n">elevmin</span><span class="o">=</span><span class="n">elevmin</span><span class="p">,</span> <span class="n">elevmax</span><span class="o">=</span><span class="n">elevmax</span><span class="p">,</span>
+                            <span class="n">no_elevcut_space</span><span class="o">=</span><span class="n">no_elevcut_space</span><span class="p">,</span>
                             <span class="n">fix_theta_GMST</span><span class="o">=</span><span class="n">fix_theta_GMST</span><span class="p">)</span>
 
         <span class="c1"># Observe on the same baselines as the empty observation and add noise</span>

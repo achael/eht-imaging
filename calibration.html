@@ -50,6 +50,7 @@
 <li class="toctree-l1"><a class="reference internal" href="plotting.html">Plotting</a></li>
 <li class="toctree-l1"><a class="reference internal" href="scattering.html">Scattering</a></li>
 <li class="toctree-l1"><a class="reference internal" href="statistics.html">Statistics</a></li>
+<li class="toctree-l1"><a class="reference internal" href="survey.html">Survey</a></li>
 <li class="toctree-l1"><a class="reference internal" href="vex.html">Vex</a></li>
 </ul>
 
@@ -88,7 +89,7 @@
 <dd><p>The source name</p>
 <dl class="field-list simple">
 <dt class="field-odd">Type</dt>
-<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.10)">str</a></p>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.11)">str</a></p>
 </dd>
 </dl>
 </dd></dl>
@@ -99,7 +100,7 @@
 <dd><p>The source Right Ascension in fractional hours</p>
 <dl class="field-list simple">
 <dt class="field-odd">Type</dt>
-<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.10)">float</a></p>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.11)">float</a></p>
 </dd>
 </dl>
 </dd></dl>
@@ -110,7 +111,7 @@
 <dd><p>The source declination in fractional degrees</p>
 <dl class="field-list simple">
 <dt class="field-odd">Type</dt>
-<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.10)">float</a></p>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.11)">float</a></p>
 </dd>
 </dl>
 </dd></dl>
@@ -121,7 +122,7 @@
 <dd><p>The integer MJD of the observation</p>
 <dl class="field-list simple">
 <dt class="field-odd">Type</dt>
-<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.10)">int</a></p>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.11)">int</a></p>
 </dd>
 </dl>
 </dd></dl>
@@ -132,7 +133,7 @@
 <dd><p>The observation frequency in Hz</p>
 <dl class="field-list simple">
 <dt class="field-odd">Type</dt>
-<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.10)">float</a></p>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.11)">float</a></p>
 </dd>
 </dl>
 </dd></dl>
@@ -143,7 +144,7 @@
 <dd><p>The observation bandwidth in Hz</p>
 <dl class="field-list simple">
 <dt class="field-odd">Type</dt>
-<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.10)">float</a></p>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.11)">float</a></p>
 </dd>
 </dl>
 </dd></dl>
@@ -154,7 +155,7 @@
 <dd><p>How to interpret tstart and tstop; either ‘GMST’ or ‘UTC’</p>
 <dl class="field-list simple">
 <dt class="field-odd">Type</dt>
-<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.10)">str</a></p>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.11)">str</a></p>
 </dd>
 </dl>
 </dd></dl>
@@ -176,7 +177,7 @@
 <dd><p>A dictionary of rows in the tarr for each site name</p>
 <dl class="field-list simple">
 <dt class="field-odd">Type</dt>
-<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.10)">dict</a></p>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.11)">dict</a></p>
 </dd>
 </dl>
 </dd></dl>
@@ -187,7 +188,7 @@
 <dd><p>keys are sites in tarr, entries are calibration data tables of type DTCAL</p>
 <dl class="field-list simple">
 <dt class="field-odd">Type</dt>
-<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.10)">dict</a></p>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.11)">dict</a></p>
 </dd>
 </dl>
 </dd></dl>
@@ -200,9 +201,9 @@
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>obs</strong> (<a class="reference internal" href="obsdata.html#ehtim.obsdata.Obsdata" title="ehtim.obsdata.Obsdata"><em>Obsdata</em></a>) – The observation  with data to be calibrated</p></li>
-<li><p><strong>interp</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.10)"><em>str</em></a>) – Interpolation method (‘linear’,’nearest’,’cubic’)</p></li>
-<li><p><strong>extrapolate</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.10)"><em>bool</em></a>) – If True, points outside interpolation range will be extrapolated.</p></li>
-<li><p><strong>force_singlepol</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.10)"><em>str</em></a>) – If ‘L’ or ‘R’, will set opposite polarization gains
+<li><p><strong>interp</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.11)"><em>str</em></a>) – Interpolation method (‘linear’,’nearest’,’cubic’)</p></li>
+<li><p><strong>extrapolate</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.11)"><em>bool</em></a>) – If True, points outside interpolation range will be extrapolated.</p></li>
+<li><p><strong>force_singlepol</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.11)"><em>str</em></a>) – If ‘L’ or ‘R’, will set opposite polarization gains
 equal to chosen polarization</p></li>
 </ul>
 </dd>
@@ -240,10 +241,10 @@ By rescaling the entire gain curve to enforce a specified minimum site gain.</p>
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>caltab</strong> (<a class="reference internal" href="#ehtim.caltable.Caltable" title="ehtim.caltable.Caltable"><em>Caltable</em></a>) – Input Caltable with station gains</p></li>
-<li><p><strong>method</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.10)"><em>str</em></a>) – ‘median’, ‘mean’, or ‘min’</p></li>
-<li><p><strong>min_gain</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.10)"><em>float</em></a>) – Site gains above this value are not modified.</p></li>
-<li><p><strong>sites</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.10)"><em>list</em></a>) – List of sites to check and adjust. For sites=[], all sites are fixed.</p></li>
-<li><p><strong>verbose</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.10)"><em>bool</em></a>) – If True, print corrections.</p></li>
+<li><p><strong>method</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.11)"><em>str</em></a>) – ‘median’, ‘mean’, or ‘min’</p></li>
+<li><p><strong>min_gain</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.11)"><em>float</em></a>) – Site gains above this value are not modified.</p></li>
+<li><p><strong>sites</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.11)"><em>list</em></a>) – List of sites to check and adjust. For sites=[], all sites are fixed.</p></li>
+<li><p><strong>verbose</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.11)"><em>bool</em></a>) – If True, print corrections.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns</dt>
@@ -262,9 +263,9 @@ By rescaling the entire gain curve to enforce a specified minimum site gain.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>caltablelist</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.10)"><em>list</em></a>) – The list of caltables to be merged</p></li>
-<li><p><strong>interp</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.10)"><em>str</em></a>) – Interpolation method (‘linear’,’nearest’,’cubic’)</p></li>
-<li><p><strong>extrapolate</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.10)"><em>bool</em></a>) – If True, points outside interpolation range will be extrapolated.</p></li>
+<li><p><strong>caltablelist</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.11)"><em>list</em></a>) – The list of caltables to be merged</p></li>
+<li><p><strong>interp</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.11)"><em>str</em></a>) – Interpolation method (‘linear’,’nearest’,’cubic’)</p></li>
+<li><p><strong>extrapolate</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.11)"><em>bool</em></a>) – If True, points outside interpolation range will be extrapolated.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns</dt>
@@ -283,8 +284,8 @@ By rescaling the entire gain curve to enforce a specified minimum site gain.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>maxdiff</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.10)"><em>float</em></a>) – “scan” separation length (seconds)</p></li>
-<li><p><strong>padtype</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.10)"><em>str</em></a>) – padding type, ‘endval’ or ‘median’</p></li>
+<li><p><strong>maxdiff</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.11)"><em>float</em></a>) – “scan” separation length (seconds)</p></li>
+<li><p><strong>padtype</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.11)"><em>str</em></a>) – padding type, ‘endval’ or ‘median’</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns</dt>
@@ -416,34 +417,35 @@ By rescaling the entire gain curve to enforce a specified minimum site gain.</p>
 
 <span class="target" id="module-ehtim.calibrating.self_cal"></span><dl class="py function">
 <dt id="ehtim.calibrating.self_cal.self_cal">
-<code class="sig-prename descclassname">ehtim.calibrating.self_cal.</code><code class="sig-name descname">self_cal</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">obs</span></em>, <em class="sig-param"><span class="n">im</span></em>, <em class="sig-param"><span class="n">sites</span><span class="o">=</span><span class="default_value">[]</span></em>, <em class="sig-param"><span class="n">method</span><span class="o">=</span><span class="default_value">'both'</span></em>, <em class="sig-param"><span class="n">pol</span><span class="o">=</span><span class="default_value">'I'</span></em>, <em class="sig-param"><span class="n">minimizer_method</span><span class="o">=</span><span class="default_value">'BFGS'</span></em>, <em class="sig-param"><span class="n">pad_amp</span><span class="o">=</span><span class="default_value">0.0</span></em>, <em class="sig-param"><span class="n">gain_tol</span><span class="o">=</span><span class="default_value">0.2</span></em>, <em class="sig-param"><span class="n">solution_interval</span><span class="o">=</span><span class="default_value">0.0</span></em>, <em class="sig-param"><span class="n">scan_solutions</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">ttype</span><span class="o">=</span><span class="default_value">'direct'</span></em>, <em class="sig-param"><span class="n">fft_pad_factor</span><span class="o">=</span><span class="default_value">2</span></em>, <em class="sig-param"><span class="n">caltable</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">debias</span><span class="o">=</span><span class="default_value">True</span></em>, <em class="sig-param"><span class="n">apply_dterms</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">copy_closure_tables</span><span class="o">=</span><span class="default_value">True</span></em>, <em class="sig-param"><span class="n">processes</span><span class="o">=</span><span class="default_value">- 1</span></em>, <em class="sig-param"><span class="n">show_solution</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">msgtype</span><span class="o">=</span><span class="default_value">'bar'</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/calibrating/self_cal.html#self_cal"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.calibrating.self_cal.self_cal" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname">ehtim.calibrating.self_cal.</code><code class="sig-name descname">self_cal</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">obs</span></em>, <em class="sig-param"><span class="n">im</span></em>, <em class="sig-param"><span class="n">sites</span><span class="o">=</span><span class="default_value">[]</span></em>, <em class="sig-param"><span class="n">method</span><span class="o">=</span><span class="default_value">'both'</span></em>, <em class="sig-param"><span class="n">pol</span><span class="o">=</span><span class="default_value">'I'</span></em>, <em class="sig-param"><span class="n">minimizer_method</span><span class="o">=</span><span class="default_value">'BFGS'</span></em>, <em class="sig-param"><span class="n">pad_amp</span><span class="o">=</span><span class="default_value">0.0</span></em>, <em class="sig-param"><span class="n">gain_tol</span><span class="o">=</span><span class="default_value">0.2</span></em>, <em class="sig-param"><span class="n">solution_interval</span><span class="o">=</span><span class="default_value">0.0</span></em>, <em class="sig-param"><span class="n">scan_solutions</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">ttype</span><span class="o">=</span><span class="default_value">'direct'</span></em>, <em class="sig-param"><span class="n">fft_pad_factor</span><span class="o">=</span><span class="default_value">2</span></em>, <em class="sig-param"><span class="n">caltable</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">debias</span><span class="o">=</span><span class="default_value">True</span></em>, <em class="sig-param"><span class="n">apply_dterms</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">copy_closure_tables</span><span class="o">=</span><span class="default_value">True</span></em>, <em class="sig-param"><span class="n">processes</span><span class="o">=</span><span class="default_value">- 1</span></em>, <em class="sig-param"><span class="n">show_solution</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">msgtype</span><span class="o">=</span><span class="default_value">'bar'</span></em>, <em class="sig-param"><span class="n">use_grad</span><span class="o">=</span><span class="default_value">False</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/calibrating/self_cal.html#self_cal"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.calibrating.self_cal.self_cal" title="Permalink to this definition">¶</a></dt>
 <dd><p>Self-calibrate a dataset to an image.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>obs</strong> (<a class="reference internal" href="obsdata.html#ehtim.obsdata.Obsdata" title="ehtim.obsdata.Obsdata"><em>Obsdata</em></a>) – The observation to be calibrated</p></li>
 <li><p><strong>im</strong> (<a class="reference internal" href="image.html#ehtim.image.Image" title="ehtim.image.Image"><em>Image</em></a>) – the image to be calibrated  to</p></li>
-<li><p><strong>sites</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.10)"><em>list</em></a>) – list of sites to include in the self calibration.
+<li><p><strong>sites</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.11)"><em>list</em></a>) – list of sites to include in the self calibration.
 empty list calibrates all sites</p></li>
-<li><p><strong>method</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.10)"><em>str</em></a>) – chooses what to calibrate, ‘amp’, ‘phase’, or ‘both’</p></li>
-<li><p><strong>minimizer_method</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.10)"><em>str</em></a>) – Method for scipy.optimize.minimize (e.g., ‘CG’, ‘BFGS’)</p></li>
-<li><p><strong>pol</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.10)"><em>str</em></a>) – which image polarization to self-calibrate visibilities to</p></li>
-<li><p><strong>pad_amp</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.10)"><em>float</em></a>) – adds fractional uncertainty to amplitude sigmas in quadrature</p></li>
-<li><p><strong>gain_tol</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.10)"><em>float</em></a><em> or </em><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.10)"><em>list</em></a>) – gains that exceed this value will be disfavored by the prior
+<li><p><strong>method</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.11)"><em>str</em></a>) – chooses what to calibrate, ‘amp’, ‘phase’, or ‘both’</p></li>
+<li><p><strong>minimizer_method</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.11)"><em>str</em></a>) – Method for scipy.optimize.minimize (e.g., ‘CG’, ‘BFGS’)</p></li>
+<li><p><strong>pol</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.11)"><em>str</em></a>) – which image polarization to self-calibrate visibilities to</p></li>
+<li><p><strong>pad_amp</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.11)"><em>float</em></a>) – adds fractional uncertainty to amplitude sigmas in quadrature</p></li>
+<li><p><strong>gain_tol</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.11)"><em>float</em></a><em> or </em><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.11)"><em>list</em></a>) – gains that exceed this value will be disfavored by the prior
 for asymmetric gain_tol for corrections below/above unity,
 pass a 2-element list</p></li>
-<li><p><strong>solution_interval</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.10)"><em>float</em></a>) – solution interval in seconds;
+<li><p><strong>solution_interval</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.11)"><em>float</em></a>) – solution interval in seconds;
 If 0., determine solution for each unique time</p></li>
-<li><p><strong>scan_solutions</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.10)"><em>bool</em></a>) – If True, determine one gain per site per scan
+<li><p><strong>scan_solutions</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.11)"><em>bool</em></a>) – If True, determine one gain per site per scan
 (supersedes solution_interval)</p></li>
-<li><p><strong>caltable</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.10)"><em>bool</em></a>) – if True, returns a Caltable instead of an Obsdata</p></li>
-<li><p><strong>processes</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.10)"><em>int</em></a>) – number of cores to use in multiprocessing</p></li>
-<li><p><strong>ttype</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.10)"><em>str</em></a>) – if “fast” or “nfft” use FFT to produce visibilities. Else “direct” for DTFT</p></li>
-<li><p><strong>fft_pad_factor</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.10)"><em>float</em></a>) – zero pad the image to fft_pad_factor * image size in FFT</p></li>
-<li><p><strong>debias</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.10)"><em>bool</em></a>) – If True, debias the amplitudes</p></li>
-<li><p><strong>apply_dterms</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.10)"><em>bool</em></a>) – if True, apply dterms (in obs.tarr) to clean data before calibrating</p></li>
-<li><p><strong>show_solution</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.10)"><em>bool</em></a>) – if True, display the solution as it is calculated</p></li>
-<li><p><strong>msgtype</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.10)"><em>str</em></a>) – type of progress message to be printed, default is ‘bar’</p></li>
+<li><p><strong>caltable</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.11)"><em>bool</em></a>) – if True, returns a Caltable instead of an Obsdata</p></li>
+<li><p><strong>processes</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.11)"><em>int</em></a>) – number of cores to use in multiprocessing</p></li>
+<li><p><strong>ttype</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.11)"><em>str</em></a>) – if “fast” or “nfft” use FFT to produce visibilities. Else “direct” for DTFT</p></li>
+<li><p><strong>fft_pad_factor</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.11)"><em>float</em></a>) – zero pad the image to fft_pad_factor * image size in FFT</p></li>
+<li><p><strong>debias</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.11)"><em>bool</em></a>) – If True, debias the amplitudes</p></li>
+<li><p><strong>apply_dterms</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.11)"><em>bool</em></a>) – if True, apply dterms (in obs.tarr) to clean data before calibrating</p></li>
+<li><p><strong>show_solution</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.11)"><em>bool</em></a>) – if True, display the solution as it is calculated</p></li>
+<li><p><strong>msgtype</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.11)"><em>str</em></a>) – type of progress message to be printed, default is ‘bar’</p></li>
+<li><p><strong>use_grad</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.11)"><em>bool</em></a>) – if True, use gradients in minimizer</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns</dt>
@@ -458,28 +460,29 @@ If 0., determine solution for each unique time</p></li>
 
 <dl class="py function">
 <dt id="ehtim.calibrating.self_cal.self_cal_scan">
-<code class="sig-prename descclassname">ehtim.calibrating.self_cal.</code><code class="sig-name descname">self_cal_scan</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">scan</span></em>, <em class="sig-param"><span class="n">im</span></em>, <em class="sig-param"><span class="n">V_scan</span><span class="o">=</span><span class="default_value">[]</span></em>, <em class="sig-param"><span class="n">sites</span><span class="o">=</span><span class="default_value">[]</span></em>, <em class="sig-param"><span class="n">polrep</span><span class="o">=</span><span class="default_value">'stokes'</span></em>, <em class="sig-param"><span class="n">pol</span><span class="o">=</span><span class="default_value">'I'</span></em>, <em class="sig-param"><span class="n">method</span><span class="o">=</span><span class="default_value">'both'</span></em>, <em class="sig-param"><span class="n">minimizer_method</span><span class="o">=</span><span class="default_value">'BFGS'</span></em>, <em class="sig-param"><span class="n">show_solution</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">pad_amp</span><span class="o">=</span><span class="default_value">0.0</span></em>, <em class="sig-param"><span class="n">gain_tol</span><span class="o">=</span><span class="default_value">0.2</span></em>, <em class="sig-param"><span class="n">debias</span><span class="o">=</span><span class="default_value">True</span></em>, <em class="sig-param"><span class="n">caltable</span><span class="o">=</span><span class="default_value">False</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/calibrating/self_cal.html#self_cal_scan"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.calibrating.self_cal.self_cal_scan" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname">ehtim.calibrating.self_cal.</code><code class="sig-name descname">self_cal_scan</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">scan</span></em>, <em class="sig-param"><span class="n">im</span></em>, <em class="sig-param"><span class="n">V_scan</span><span class="o">=</span><span class="default_value">[]</span></em>, <em class="sig-param"><span class="n">sites</span><span class="o">=</span><span class="default_value">[]</span></em>, <em class="sig-param"><span class="n">polrep</span><span class="o">=</span><span class="default_value">'stokes'</span></em>, <em class="sig-param"><span class="n">pol</span><span class="o">=</span><span class="default_value">'I'</span></em>, <em class="sig-param"><span class="n">method</span><span class="o">=</span><span class="default_value">'both'</span></em>, <em class="sig-param"><span class="n">minimizer_method</span><span class="o">=</span><span class="default_value">'BFGS'</span></em>, <em class="sig-param"><span class="n">show_solution</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">pad_amp</span><span class="o">=</span><span class="default_value">0.0</span></em>, <em class="sig-param"><span class="n">gain_tol</span><span class="o">=</span><span class="default_value">0.2</span></em>, <em class="sig-param"><span class="n">debias</span><span class="o">=</span><span class="default_value">True</span></em>, <em class="sig-param"><span class="n">caltable</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">use_grad</span><span class="o">=</span><span class="default_value">False</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/calibrating/self_cal.html#self_cal_scan"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.calibrating.self_cal.self_cal_scan" title="Permalink to this definition">¶</a></dt>
 <dd><p>Self-calibrate a scan to an image.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>scan</strong> (<em>np.recarray</em>) – data array of type DTPOL_STOKES or DTPOL_CIRC</p></li>
 <li><p><strong>im</strong> (<a class="reference internal" href="image.html#ehtim.image.Image" title="ehtim.image.Image"><em>Image</em></a>) – the image to be calibrated  to</p></li>
-<li><p><strong>sites</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.10)"><em>list</em></a>) – list of sites to include in the self calibration.
+<li><p><strong>sites</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.11)"><em>list</em></a>) – list of sites to include in the self calibration.
 empty list calibrates all sites</p></li>
-<li><p><strong>V_scan</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.10)"><em>list</em></a>) – precomputed scan visibilities</p></li>
-<li><p><strong>polrep</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.10)"><em>str</em></a>) – ‘stokes’ or ‘circ’ to specify the  polarization products in scan</p></li>
-<li><p><strong>pol</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.10)"><em>str</em></a>) – which image polarization to self-calibrate visibilities to</p></li>
-<li><p><strong>method</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.10)"><em>str</em></a>) – chooses what to calibrate, ‘amp’, ‘phase’, or ‘both’</p></li>
-<li><p><strong>minimizer_method</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.10)"><em>str</em></a>) – Method for scipy.optimize.minimize
+<li><p><strong>V_scan</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.11)"><em>list</em></a>) – precomputed scan visibilities</p></li>
+<li><p><strong>polrep</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.11)"><em>str</em></a>) – ‘stokes’ or ‘circ’ to specify the  polarization products in scan</p></li>
+<li><p><strong>pol</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.11)"><em>str</em></a>) – which image polarization to self-calibrate visibilities to</p></li>
+<li><p><strong>method</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.11)"><em>str</em></a>) – chooses what to calibrate, ‘amp’, ‘phase’, or ‘both’</p></li>
+<li><p><strong>minimizer_method</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.11)"><em>str</em></a>) – Method for scipy.optimize.minimize
 (e.g., ‘CG’, ‘BFGS’, ‘Nelder-Mead’, etc.)</p></li>
-<li><p><strong>pad_amp</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.10)"><em>float</em></a>) – adds fractional uncertainty to amplitude sigmas in quadrature</p></li>
-<li><p><strong>gain_tol</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.10)"><em>float</em></a><em> or </em><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.10)"><em>list</em></a>) – gains that exceed this value will be disfavored by the prior
+<li><p><strong>pad_amp</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.11)"><em>float</em></a>) – adds fractional uncertainty to amplitude sigmas in quadrature</p></li>
+<li><p><strong>gain_tol</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.11)"><em>float</em></a><em> or </em><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.11)"><em>list</em></a>) – gains that exceed this value will be disfavored by the prior
 for asymmetric gain_tol for corrections below/above unity,
 pass a 2-element list</p></li>
-<li><p><strong>debias</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.10)"><em>bool</em></a>) – If True, debias the amplitudes</p></li>
-<li><p><strong>caltable</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.10)"><em>bool</em></a>) – if True, returns a Caltable instead of an Obsdata</p></li>
-<li><p><strong>show_solution</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.10)"><em>bool</em></a>) – if True, display the solution as it is calculated</p></li>
+<li><p><strong>debias</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.11)"><em>bool</em></a>) – If True, debias the amplitudes</p></li>
+<li><p><strong>caltable</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.11)"><em>bool</em></a>) – if True, returns a Caltable instead of an Obsdata</p></li>
+<li><p><strong>show_solution</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.11)"><em>bool</em></a>) – if True, display the solution as it is calculated</p></li>
+<li><p><strong>use_grad</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.11)"><em>bool</em></a>) – if True, use gradients in minimizer</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns</dt>
@@ -500,25 +503,25 @@ pass a 2-element list</p></li>
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>obs</strong> (<a class="reference internal" href="obsdata.html#ehtim.obsdata.Obsdata" title="ehtim.obsdata.Obsdata"><em>Obsdata</em></a>) – The observation to be calibrated</p></li>
-<li><p><strong>zbl</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.10)"><em>float</em></a><em> or </em><em>function</em>) – constant zero baseline flux in Jy, or a function of UT hour.</p></li>
-<li><p><strong>sites</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.10)"><em>list</em></a>) – list of sites to include in the network calibration.
+<li><p><strong>zbl</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.11)"><em>float</em></a><em> or </em><em>function</em>) – constant zero baseline flux in Jy, or a function of UT hour.</p></li>
+<li><p><strong>sites</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.11)"><em>list</em></a>) – list of sites to include in the network calibration.
 empty list calibrates all sites</p></li>
-<li><p><strong>zbl_uvdist_max</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.10)"><em>float</em></a>) – maximum uv-distance considered a zero baseline</p></li>
-<li><p><strong>method</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.10)"><em>str</em></a>) – chooses what to calibrate, ‘amp’, ‘phase’, or ‘both’.</p></li>
-<li><p><strong>minimizer_method</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.10)"><em>str</em></a>) – Method for scipy.optimize.minimize (e.g., ‘CG’, ‘BFGS’)</p></li>
-<li><p><strong>pol</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.10)"><em>str</em></a>) – which visibility to compute gains for</p></li>
-<li><p><strong>pad_amp</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.10)"><em>float</em></a>) – adds fractional uncertainty to amplitude sigmas in quadrature</p></li>
-<li><p><strong>gain_tol</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.10)"><em>float</em></a>) – gains that exceed this value will be disfavored by the prior</p></li>
-<li><p><strong>solution_interval</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.10)"><em>float</em></a>) – solution interval in seconds;
+<li><p><strong>zbl_uvdist_max</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.11)"><em>float</em></a>) – maximum uv-distance considered a zero baseline</p></li>
+<li><p><strong>method</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.11)"><em>str</em></a>) – chooses what to calibrate, ‘amp’, ‘phase’, or ‘both’.</p></li>
+<li><p><strong>minimizer_method</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.11)"><em>str</em></a>) – Method for scipy.optimize.minimize (e.g., ‘CG’, ‘BFGS’)</p></li>
+<li><p><strong>pol</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.11)"><em>str</em></a>) – which visibility to compute gains for</p></li>
+<li><p><strong>pad_amp</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.11)"><em>float</em></a>) – adds fractional uncertainty to amplitude sigmas in quadrature</p></li>
+<li><p><strong>gain_tol</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.11)"><em>float</em></a>) – gains that exceed this value will be disfavored by the prior</p></li>
+<li><p><strong>solution_interval</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.11)"><em>float</em></a>) – solution interval in seconds;
 one gain is derived for each interval.
 If 0.0, a solution is determined for each unique time</p></li>
-<li><p><strong>scan_solutions</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.10)"><em>bool</em></a>) – If True, determine one gain per site per scan.
+<li><p><strong>scan_solutions</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.11)"><em>bool</em></a>) – If True, determine one gain per site per scan.
 Supersedes solution_interval</p></li>
-<li><p><strong>debias</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.10)"><em>bool</em></a>) – If True, debias the amplitudes</p></li>
-<li><p><strong>caltable</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.10)"><em>bool</em></a>) – if True, returns a Caltable instead of an Obsdata</p></li>
-<li><p><strong>processes</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.10)"><em>int</em></a>) – number of cores to use in multiprocessing</p></li>
-<li><p><strong>show_solution</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.10)"><em>bool</em></a>) – if True, display the solution as it is calculated</p></li>
-<li><p><strong>msgtype</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.10)"><em>str</em></a>) – type of progress message to be printed, default is ‘bar’</p></li>
+<li><p><strong>debias</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.11)"><em>bool</em></a>) – If True, debias the amplitudes</p></li>
+<li><p><strong>caltable</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.11)"><em>bool</em></a>) – if True, returns a Caltable instead of an Obsdata</p></li>
+<li><p><strong>processes</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.11)"><em>int</em></a>) – number of cores to use in multiprocessing</p></li>
+<li><p><strong>show_solution</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.11)"><em>bool</em></a>) – if True, display the solution as it is calculated</p></li>
+<li><p><strong>msgtype</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.11)"><em>str</em></a>) – type of progress message to be printed, default is ‘bar’</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns</dt>
@@ -539,19 +542,19 @@ Supersedes solution_interval</p></li>
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>obs</strong> (<a class="reference internal" href="obsdata.html#ehtim.obsdata.Obsdata" title="ehtim.obsdata.Obsdata"><em>Obsdata</em></a>) – The observation to be calibrated</p></li>
-<li><p><strong>zbl</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.10)"><em>float</em></a><em> or </em><em>function</em>) – constant zero baseline flux in Jy, or a function of UT hour.</p></li>
-<li><p><strong>sites</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.10)"><em>list</em></a>) – list of sites to include in the network calibration.
+<li><p><strong>zbl</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.11)"><em>float</em></a><em> or </em><em>function</em>) – constant zero baseline flux in Jy, or a function of UT hour.</p></li>
+<li><p><strong>sites</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.11)"><em>list</em></a>) – list of sites to include in the network calibration.
 empty list calibrates all sites</p></li>
-<li><p><strong>clustered_sites</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#tuple" title="(in Python v3.10)"><em>tuple</em></a>) – information  on clustered sites, returned by make_cluster_data</p></li>
-<li><p><strong>polrep</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.10)"><em>str</em></a>) – ‘stokes’ or ‘circ’ to specify the  polarization products in scan</p></li>
-<li><p><strong>pol</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.10)"><em>str</em></a>) – which image polarization to self-calibrate visibilities to</p></li>
-<li><p><strong>zbl_uvdist_max</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.10)"><em>float</em></a>) – maximum uv-distance considered a zero baseline</p></li>
-<li><p><strong>method</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.10)"><em>str</em></a>) – chooses what to calibrate, ‘amp’, ‘phase’, or ‘both’</p></li>
-<li><p><strong>pad_amp</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.10)"><em>float</em></a>) – adds fractional uncertainty to amplitude sigmas in quadrature</p></li>
-<li><p><strong>gain_tol</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.10)"><em>float</em></a>) – gains that exceed this value will be disfavored by the prior</p></li>
-<li><p><strong>debias</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.10)"><em>bool</em></a>) – If True, debias the amplitudes</p></li>
-<li><p><strong>caltable</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.10)"><em>bool</em></a>) – if True, returns a Caltable instead of an Obsdata</p></li>
-<li><p><strong>show_solution</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.10)"><em>bool</em></a>) – if True, display the solution as it is calculated</p></li>
+<li><p><strong>clustered_sites</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#tuple" title="(in Python v3.11)"><em>tuple</em></a>) – information  on clustered sites, returned by make_cluster_data</p></li>
+<li><p><strong>polrep</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.11)"><em>str</em></a>) – ‘stokes’ or ‘circ’ to specify the  polarization products in scan</p></li>
+<li><p><strong>pol</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.11)"><em>str</em></a>) – which image polarization to self-calibrate visibilities to</p></li>
+<li><p><strong>zbl_uvdist_max</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.11)"><em>float</em></a>) – maximum uv-distance considered a zero baseline</p></li>
+<li><p><strong>method</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.11)"><em>str</em></a>) – chooses what to calibrate, ‘amp’, ‘phase’, or ‘both’</p></li>
+<li><p><strong>pad_amp</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.11)"><em>float</em></a>) – adds fractional uncertainty to amplitude sigmas in quadrature</p></li>
+<li><p><strong>gain_tol</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.11)"><em>float</em></a>) – gains that exceed this value will be disfavored by the prior</p></li>
+<li><p><strong>debias</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.11)"><em>bool</em></a>) – If True, debias the amplitudes</p></li>
+<li><p><strong>caltable</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.11)"><em>bool</em></a>) – if True, returns a Caltable instead of an Obsdata</p></li>
+<li><p><strong>show_solution</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.11)"><em>bool</em></a>) – if True, display the solution as it is calculated</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns</dt>
