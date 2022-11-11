@@ -351,32 +351,36 @@ chi^2 closure phase, logcamp, vis wrt the original observation with sys noise an
 <dl class="py function">
 <dt id="ehtim.survey.create_survey_psets">
 <code class="sig-prename descclassname">ehtim.survey.</code><code class="sig-name descname">create_survey_psets</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">zbl</span><span class="o">=</span><span class="default_value">[0.6]</span></em>, <em class="sig-param"><span class="n">sys_noise</span><span class="o">=</span><span class="default_value">[0.02]</span></em>, <em class="sig-param"><span class="n">avg_time</span><span class="o">=</span><span class="default_value">['scan']</span></em>, <em class="sig-param"><span class="n">prior_fwhm</span><span class="o">=</span><span class="default_value">[40]</span></em>, <em class="sig-param"><span class="n">sc_phase</span><span class="o">=</span><span class="default_value">[2]</span></em>, <em class="sig-param"><span class="n">xdw_phase</span><span class="o">=</span><span class="default_value">[10]</span></em>, <em class="sig-param"><span class="n">sc_ap</span><span class="o">=</span><span class="default_value">[2]</span></em>, <em class="sig-param"><span class="n">xdw_ap</span><span class="o">=</span><span class="default_value">[1]</span></em>, <em class="sig-param"><span class="n">amp</span><span class="o">=</span><span class="default_value">[0.2]</span></em>, <em class="sig-param"><span class="n">cphase</span><span class="o">=</span><span class="default_value">[1]</span></em>, <em class="sig-param"><span class="n">logcamp</span><span class="o">=</span><span class="default_value">[1]</span></em>, <em class="sig-param"><span class="n">simple</span><span class="o">=</span><span class="default_value">[1]</span></em>, <em class="sig-param"><span class="n">l1</span><span class="o">=</span><span class="default_value">[1]</span></em>, <em class="sig-param"><span class="n">tv</span><span class="o">=</span><span class="default_value">[1]</span></em>, <em class="sig-param"><span class="n">tv2</span><span class="o">=</span><span class="default_value">[1]</span></em>, <em class="sig-param"><span class="n">flux</span><span class="o">=</span><span class="default_value">[1]</span></em>, <em class="sig-param"><span class="n">epsilon_tv</span><span class="o">=</span><span class="default_value">[1e-10]</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/survey.html#create_survey_psets"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.survey.create_survey_psets" title="Permalink to this definition">¶</a></dt>
-<dd><p>Create a dataframe given all survey parameters. Default values will create an example dataframe but these values
-should be adjusted for each specific observation</p>
-<blockquote>
-<div><dl class="simple">
-<dt>Args:</dt><dd><p>zbl (array): compact flux value (Jy)
-sys_noise (array): percent addition of systematic noise
-avg_time (array): in seconds or ‘scan’ for scan averaging
-prior_fwhm (array): fwhm of gaussian prior in uas
-sc_phase (array): number of iterations to perform phase-only self-cal
-xdw_phase (array): multiplicative factor for data weights after one round of phase-only self-cal
-sc_ap (array): number of iterations to perform amp+phase self-cal
-xdw_ap (array): multiplicative factor for data weights after one round of amp+phase self-cal
-amp (array): data weight to be placed on amplitudes
-cphase (array): data weight to be placed on closure phases
-logcamp (array): data weight to be placed on log closure amplitudes
-simple (array): regularizer weight for relative entropy, favoring similarity to prior image
-l1 (array): regularizer weight for l1 norm, favoring image sparsity
-tv (array): regularizer weight for total variation, favoring sharp edges
-tv2 (array): regularizer weight for total squared variation, favoring smooth edges
-flux (array): regularizer weight for total flux density, favoring final images with flux close to zbl
-epsilon_tv (array): epsilon value used in definition of total variation - rarely need to change this</p>
+<dd><p>Create a dataframe given all survey parameters. Default values will create an example dataframe but these values should be adjusted for each specific observation</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>zbl</strong> (<em>array</em>) – compact flux value (Jy)</p></li>
+<li><p><strong>sys_noise</strong> (<em>array</em>) – percent addition of systematic noise</p></li>
+<li><p><strong>avg_time</strong> (<em>array</em>) – in seconds or ‘scan’ for scan averaging</p></li>
+<li><p><strong>prior_fwhm</strong> (<em>array</em>) – fwhm of gaussian prior in uas</p></li>
+<li><p><strong>sc_phase</strong> (<em>array</em>) – number of iterations to perform phase-only self-cal</p></li>
+<li><p><strong>xdw_phase</strong> (<em>array</em>) – multiplicative factor for data weights after one round of phase-only self-cal</p></li>
+<li><p><strong>sc_ap</strong> (<em>array</em>) – number of iterations to perform amp+phase self-cal</p></li>
+<li><p><strong>xdw_ap</strong> (<em>array</em>) – multiplicative factor for data weights after one round of amp+phase self-cal</p></li>
+<li><p><strong>amp</strong> (<em>array</em>) – data weight to be placed on amplitudes</p></li>
+<li><p><strong>cphase</strong> (<em>array</em>) – data weight to be placed on closure phases</p></li>
+<li><p><strong>logcamp</strong> (<em>array</em>) – data weight to be placed on log closure amplitudes</p></li>
+<li><p><strong>simple</strong> (<em>array</em>) – regularizer weight for relative entropy, favoring similarity to prior image</p></li>
+<li><p><strong>l1</strong> (<em>array</em>) – regularizer weight for l1 norm, favoring image sparsity</p></li>
+<li><p><strong>tv</strong> (<em>array</em>) – regularizer weight for total variation, favoring sharp edges</p></li>
+<li><p><strong>tv2</strong> (<em>array</em>) – regularizer weight for total squared variation, favoring smooth edges</p></li>
+<li><p><strong>flux</strong> (<em>array</em>) – regularizer weight for total flux density, favoring final images with flux close to zbl</p></li>
+<li><p><strong>epsilon_tv</strong> (<em>array</em>) – epsilon value used in definition of total variation - rarely need to change this</p></li>
+</ul>
 </dd>
-<dt>Returns:</dt><dd><p>(DataFrame): pandas DataFrame containing all combination of parameter sets along with index values</p>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>pandas DataFrame containing all combination of parameter sets along with index values</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>(DataFrame)</p>
 </dd>
 </dl>
-</div></blockquote>
 </dd></dl>
 
 <dl class="py function">

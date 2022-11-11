@@ -639,27 +639,26 @@
 <div class="viewcode-block" id="create_survey_psets"><a class="viewcode-back" href="../../survey.html#ehtim.survey.create_survey_psets">[docs]</a><span class="k">def</span> <span class="nf">create_survey_psets</span><span class="p">(</span><span class="n">zbl</span><span class="o">=</span><span class="p">[</span><span class="mf">0.6</span><span class="p">],</span> <span class="n">sys_noise</span><span class="o">=</span><span class="p">[</span><span class="mf">0.02</span><span class="p">],</span> <span class="n">avg_time</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;scan&#39;</span><span class="p">],</span> <span class="n">prior_fwhm</span><span class="o">=</span><span class="p">[</span><span class="mi">40</span><span class="p">],</span>
                      <span class="n">sc_phase</span><span class="o">=</span><span class="p">[</span><span class="mi">2</span><span class="p">],</span> <span class="n">xdw_phase</span><span class="o">=</span><span class="p">[</span><span class="mi">10</span><span class="p">],</span> <span class="n">sc_ap</span><span class="o">=</span><span class="p">[</span><span class="mi">2</span><span class="p">],</span> <span class="n">xdw_ap</span><span class="o">=</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">amp</span><span class="o">=</span><span class="p">[</span><span class="mf">0.2</span><span class="p">],</span> <span class="n">cphase</span><span class="o">=</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">logcamp</span><span class="o">=</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span>
                      <span class="n">simple</span><span class="o">=</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">l1</span><span class="o">=</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">tv</span><span class="o">=</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">tv2</span><span class="o">=</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">flux</span><span class="o">=</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">epsilon_tv</span><span class="o">=</span><span class="p">[</span><span class="mf">1e-10</span><span class="p">]):</span>
-    <span class="sd">&quot;&quot;&quot;Create a dataframe given all survey parameters. Default values will create an example dataframe but these values </span>
-<span class="sd">       should be adjusted for each specific observation</span>
+    <span class="sd">&quot;&quot;&quot;Create a dataframe given all survey parameters. Default values will create an example dataframe but these values should be adjusted for each specific observation</span>
 
 <span class="sd">        Args:</span>
-<span class="sd">           zbl (array): compact flux value (Jy)</span>
-<span class="sd">           sys_noise (array): percent addition of systematic noise</span>
-<span class="sd">           avg_time (array): in seconds or &#39;scan&#39; for scan averaging</span>
-<span class="sd">           prior_fwhm (array): fwhm of gaussian prior in uas</span>
-<span class="sd">           sc_phase (array): number of iterations to perform phase-only self-cal</span>
-<span class="sd">           xdw_phase (array): multiplicative factor for data weights after one round of phase-only self-cal</span>
-<span class="sd">           sc_ap (array): number of iterations to perform amp+phase self-cal</span>
-<span class="sd">           xdw_ap (array): multiplicative factor for data weights after one round of amp+phase self-cal</span>
-<span class="sd">           amp (array): data weight to be placed on amplitudes</span>
-<span class="sd">           cphase (array): data weight to be placed on closure phases</span>
-<span class="sd">           logcamp (array): data weight to be placed on log closure amplitudes</span>
-<span class="sd">           simple (array): regularizer weight for relative entropy, favoring similarity to prior image</span>
-<span class="sd">           l1 (array): regularizer weight for l1 norm, favoring image sparsity</span>
-<span class="sd">           tv (array): regularizer weight for total variation, favoring sharp edges</span>
-<span class="sd">           tv2 (array): regularizer weight for total squared variation, favoring smooth edges</span>
-<span class="sd">           flux (array): regularizer weight for total flux density, favoring final images with flux close to zbl</span>
-<span class="sd">           epsilon_tv (array): epsilon value used in definition of total variation - rarely need to change this</span>
+<span class="sd">            zbl (array): compact flux value (Jy)</span>
+<span class="sd">            sys_noise (array): percent addition of systematic noise</span>
+<span class="sd">            avg_time (array): in seconds or &#39;scan&#39; for scan averaging</span>
+<span class="sd">            prior_fwhm (array): fwhm of gaussian prior in uas</span>
+<span class="sd">            sc_phase (array): number of iterations to perform phase-only self-cal</span>
+<span class="sd">            xdw_phase (array): multiplicative factor for data weights after one round of phase-only self-cal</span>
+<span class="sd">            sc_ap (array): number of iterations to perform amp+phase self-cal</span>
+<span class="sd">            xdw_ap (array): multiplicative factor for data weights after one round of amp+phase self-cal</span>
+<span class="sd">            amp (array): data weight to be placed on amplitudes</span>
+<span class="sd">            cphase (array): data weight to be placed on closure phases</span>
+<span class="sd">            logcamp (array): data weight to be placed on log closure amplitudes</span>
+<span class="sd">            simple (array): regularizer weight for relative entropy, favoring similarity to prior image</span>
+<span class="sd">            l1 (array): regularizer weight for l1 norm, favoring image sparsity</span>
+<span class="sd">            tv (array): regularizer weight for total variation, favoring sharp edges</span>
+<span class="sd">            tv2 (array): regularizer weight for total squared variation, favoring smooth edges</span>
+<span class="sd">            flux (array): regularizer weight for total flux density, favoring final images with flux close to zbl</span>
+<span class="sd">            epsilon_tv (array): epsilon value used in definition of total variation - rarely need to change this</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            (DataFrame): pandas DataFrame containing all combination of parameter sets along with index values</span>
