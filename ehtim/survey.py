@@ -25,6 +25,9 @@ import ehtim as eh
 import paramsurvey
 import paramsurvey.params
 
+import warnings
+warnings.filterwarnings("ignore", category=np.VisibleDeprecationWarning)
+
 
 ##################################################################################################
 # ParameterSet object
@@ -70,6 +73,7 @@ class ParameterSet:
             for param in params_fixed:
                 setattr(self, param, params_fixed[param])
 
+        os.makedirs(self.outpath, exist_ok=True)
         self.paramset = paramset
         self.params_fixed = params_fixed
         self.outfile = '%s_%0.7i' % (self.outfile_base, self.i)
@@ -116,10 +120,20 @@ class ParameterSet:
         """
 
         # handle site name change of APEX between 2017 (AP) to 2018 (AX)
-        try:
-            self.zbl_tot = np.median(self.obs.unpack_bl('AA', 'AX', 'amp')['amp'])
-        except:
-            self.zbl_tot = np.median(self.obs.unpack_bl('AA', 'AP', 'amp')['amp'])
+        sites = list(self.obs.tkey.keys())
+
+        alma_options = ['ALMA', 'AA']
+        for opt in alma_options:
+            if opt in sites:
+                alma = opt
+
+        apex_options = ['APEX', 'AP', 'AX']
+        for opt in apex_options:
+            if opt in sites:
+                apex = opt
+
+        self.zbl_tot = np.median(self.obs.unpack_bl(alma, apex, 'amp')['amp'])
+
 
         # Flag out sites in the obs.tarr table with no measurements
         allsites = set(self.obs.unpack(['t1'])['t1']) | set(self.obs.unpack(['t2'])['t2'])
@@ -485,7 +499,7 @@ class ParameterSet:
 
 def run_pset(pset, system_kwargs, params_fixed):
     """
-    Run imaging for one parameter set
+    Run imaging for one parameter set. Not to be used individually, but called in map function for run_survey
 
         Args:
                pset (dict): A dict containing single parameter set
@@ -494,7 +508,7 @@ def run_pset(pset, system_kwargs, params_fixed):
         Returns:
 
     """
-    os.makedirs(params_fixed['outpath'], exist_ok=True)
+
     PSet = ParameterSet(pset, params_fixed)
     PSet.run()
 
@@ -568,8 +582,7 @@ def create_survey_psets(zbl=[0.6], sys_noise=[0.02], avg_time=['scan'], prior_fw
                      sc_phase=[2], xdw_phase=[10], sc_ap=[2], xdw_ap=[1], amp=[0.2], cphase=[1], logcamp=[1],
                      simple=[1], l1=[1], tv=[1], tv2=[1], flux=[1], epsilon_tv=[1e-10]):
     """
-    Create a dataframe given all survey parameters. Default values will create an example dataframe but these values
-    should be adjusted for each specific observation
+    Create a dataframe given all survey parameters. Default values will create an example dataframe but these values should be adjusted for each specific observation
 
         Args:
 
