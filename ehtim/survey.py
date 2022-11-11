@@ -45,7 +45,7 @@ class ParameterSet:
            im_out (Image): final reconstructed image
            im_addcmp (Image): final reconstructed image with extended flux added back in
            obs_sc_addcmp (Obsdata): original observation self-calibrated with im_addcmp
-           caltab (Caltab): final calibration table associated with im_out
+           caltab (Caltable): final calibration table associated with im_out
 
     """
 
@@ -484,12 +484,11 @@ class ParameterSet:
 
 
 def run_pset(pset, system_kwargs, params_fixed):
-    """
-    Run imaging for one parameter set
+    """Run imaging for one parameter set
 
         Args:
-               pset (dict): A dict containing single parameter set
-               params_fixed (dict): A dict containing non-varying parameters
+            pset (dict): A dict containing single parameter set
+            params_fixed (dict): A dict containing non-varying parameters
 
         Returns:
 
@@ -499,12 +498,11 @@ def run_pset(pset, system_kwargs, params_fixed):
     PSet.run()
 
 def run_survey(psets, params_fixed):
-    """
-    Run survey for all parameter sets using paramsurvey
+    """Run survey for all parameter sets using paramsurvey
 
         Args:
-           psets (DataFrame): A pandas DataFrame containing all parameter sets
-           params_fixed (dict): A dict containing non-varying parameters
+            psets (DataFrame): A pandas DataFrame containing all parameter sets
+            params_fixed (dict): A dict containing non-varying parameters
 
         Returns:
 
@@ -519,12 +517,9 @@ def create_params_fixed(infile, outfile_base, outpath, ground_truth_img='None',
                         selfcal=True, gaintol=[0.02,0.2], niter_static=3, blurfrac=1,
                         maxit=100, stop=1e-4, fov=128, npixels=64, reverse_taper_uas=5, uv_zblcut=0.1e9,
                         SEFD_error_budget={'AA':0.1,'AX':0.1,'GL':0.1,'LM':0.1,'MG':0.1,'MM':0.1,'PV':0.1,'SW':0.1}):
-
-    """
-    Create a dict for all non-varying survery parameters
+    """Create a dict for all non-varying survery parameters
 
         Args:
-
             infile (str): path to input uvfits observation file
             outfile_base (str): name of base filename for all outputs
             outpath (str): path to directory where all outputs should be stored
@@ -551,9 +546,7 @@ def create_params_fixed(infile, outfile_base, outpath, ground_truth_img='None',
 
 
         Returns:
-
             (dict): dict containing all non-varying survery parameters
-
     """
 
     # take all arguments and put them in a dict
@@ -567,34 +560,29 @@ def create_params_fixed(infile, outfile_base, outpath, ground_truth_img='None',
 def create_survey_psets(zbl=[0.6], sys_noise=[0.02], avg_time=['scan'], prior_fwhm=[40],
                      sc_phase=[2], xdw_phase=[10], sc_ap=[2], xdw_ap=[1], amp=[0.2], cphase=[1], logcamp=[1],
                      simple=[1], l1=[1], tv=[1], tv2=[1], flux=[1], epsilon_tv=[1e-10]):
-    """
-    Create a dataframe given all survey parameters. Default values will create an example dataframe but these values
-    should be adjusted for each specific observation
+    """Create a dataframe given all survey parameters. Default values will create an example dataframe but these values should be adjusted for each specific observation
 
         Args:
-
-           zbl (array): compact flux value (Jy)
-           sys_noise (array): percent addition of systematic noise
-           avg_time (array): in seconds or 'scan' for scan averaging
-           prior_fwhm (array): fwhm of gaussian prior in uas
-           sc_phase (array): number of iterations to perform phase-only self-cal
-           xdw_phase (array): multiplicative factor for data weights after one round of phase-only self-cal
-           sc_ap (array): number of iterations to perform amp+phase self-cal
-           xdw_ap (array): multiplicative factor for data weights after one round of amp+phase self-cal
-           amp (array): data weight to be placed on amplitudes
-           cphase (array): data weight to be placed on closure phases
-           logcamp (array): data weight to be placed on log closure amplitudes
-           simple (array): regularizer weight for relative entropy, favoring similarity to prior image
-           l1 (array): regularizer weight for l1 norm, favoring image sparsity
-           tv (array): regularizer weight for total variation, favoring sharp edges
-           tv2 (array): regularizer weight for total squared variation, favoring smooth edges
-           flux (array): regularizer weight for total flux density, favoring final images with flux close to zbl
-           epsilon_tv (array): epsilon value used in definition of total variation - rarely need to change this
+            zbl (array): compact flux value (Jy)
+            sys_noise (array): percent addition of systematic noise
+            avg_time (array): in seconds or 'scan' for scan averaging
+            prior_fwhm (array): fwhm of gaussian prior in uas
+            sc_phase (array): number of iterations to perform phase-only self-cal
+            xdw_phase (array): multiplicative factor for data weights after one round of phase-only self-cal
+            sc_ap (array): number of iterations to perform amp+phase self-cal
+            xdw_ap (array): multiplicative factor for data weights after one round of amp+phase self-cal
+            amp (array): data weight to be placed on amplitudes
+            cphase (array): data weight to be placed on closure phases
+            logcamp (array): data weight to be placed on log closure amplitudes
+            simple (array): regularizer weight for relative entropy, favoring similarity to prior image
+            l1 (array): regularizer weight for l1 norm, favoring image sparsity
+            tv (array): regularizer weight for total variation, favoring sharp edges
+            tv2 (array): regularizer weight for total squared variation, favoring smooth edges
+            flux (array): regularizer weight for total flux density, favoring final images with flux close to zbl
+            epsilon_tv (array): epsilon value used in definition of total variation - rarely need to change this
 
         Returns:
-
             (DataFrame): pandas DataFrame containing all combination of parameter sets along with index values
-
     """
 
     # take all arguments and put them in a dict

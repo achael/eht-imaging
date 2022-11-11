@@ -2,7 +2,7 @@
 
 .. _model:
 
-Image
+Model
 =====
 
 .. automodule:: ehtim.model
