@@ -25,6 +25,9 @@ import ehtim as eh
 import paramsurvey
 import paramsurvey.params
 
+import warnings
+warnings.filterwarnings("ignore", category=np.VisibleDeprecationWarning)
+
 
 ##################################################################################################
 # ParameterSet object
@@ -70,6 +73,7 @@ class ParameterSet:
             for param in params_fixed:
                 setattr(self, param, params_fixed[param])
 
+        os.makedirs(self.outpath, exist_ok=True)
         self.paramset = paramset
         self.params_fixed = params_fixed
         self.outfile = '%s_%0.7i' % (self.outfile_base, self.i)
@@ -116,10 +120,20 @@ class ParameterSet:
         """
 
         # handle site name change of APEX between 2017 (AP) to 2018 (AX)
-        try:
-            self.zbl_tot = np.median(self.obs.unpack_bl('AA', 'AX', 'amp')['amp'])
-        except:
-            self.zbl_tot = np.median(self.obs.unpack_bl('AA', 'AP', 'amp')['amp'])
+        sites = list(self.obs.tkey.keys())
+
+        alma_options = ['ALMA', 'AA']
+        for opt in alma_options:
+            if opt in sites:
+                alma = opt
+
+        apex_options = ['APEX', 'AP', 'AX']
+        for opt in apex_options:
+            if opt in sites:
+                apex = opt
+
+        self.zbl_tot = np.median(self.obs.unpack_bl(alma, apex, 'amp')['amp'])
+
 
         # Flag out sites in the obs.tarr table with no measurements
         allsites = set(self.obs.unpack(['t1'])['t1']) | set(self.obs.unpack(['t2'])['t2'])
@@ -484,7 +498,8 @@ class ParameterSet:
 
 
 def run_pset(pset, system_kwargs, params_fixed):
-    """Run imaging for one parameter set
+    """
+    Run imaging for one parameter set. Not to be used individually, but called in map function for run_survey
 
         Args:
             pset (dict): A dict containing single parameter set
@@ -493,7 +508,7 @@ def run_pset(pset, system_kwargs, params_fixed):
         Returns:
 
     """
-    os.makedirs(params_fixed['outpath'], exist_ok=True)
+
     PSet = ParameterSet(pset, params_fixed)
     PSet.run()
 
