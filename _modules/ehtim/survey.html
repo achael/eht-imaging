@@ -124,7 +124,7 @@
 <span class="sd">           im_out (Image): final reconstructed image</span>
 <span class="sd">           im_addcmp (Image): final reconstructed image with extended flux added back in</span>
 <span class="sd">           obs_sc_addcmp (Obsdata): original observation self-calibrated with im_addcmp</span>
-<span class="sd">           caltab (Caltab): final calibration table associated with im_out</span>
+<span class="sd">           caltab (Caltable): final calibration table associated with im_out</span>
 
 <span class="sd">    &quot;&quot;&quot;</span>
 
@@ -567,8 +567,8 @@
 <span class="sd">    Run imaging for one parameter set</span>
 
 <span class="sd">        Args:</span>
-<span class="sd">               pset (dict): A dict containing single parameter set</span>
-<span class="sd">               params_fixed (dict): A dict containing non-varying parameters</span>
+<span class="sd">            pset (dict): A dict containing single parameter set</span>
+<span class="sd">            params_fixed (dict): A dict containing non-varying parameters</span>
 
 <span class="sd">        Returns:</span>
 
@@ -582,8 +582,8 @@
 <span class="sd">    Run survey for all parameter sets using paramsurvey</span>
 
 <span class="sd">        Args:</span>
-<span class="sd">           psets (DataFrame): A pandas DataFrame containing all parameter sets</span>
-<span class="sd">           params_fixed (dict): A dict containing non-varying parameters</span>
+<span class="sd">            psets (DataFrame): A pandas DataFrame containing all parameter sets</span>
+<span class="sd">            params_fixed (dict): A dict containing non-varying parameters</span>
 
 <span class="sd">        Returns:</span>
 
@@ -598,12 +598,9 @@
                         <span class="n">selfcal</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">gaintol</span><span class="o">=</span><span class="p">[</span><span class="mf">0.02</span><span class="p">,</span><span class="mf">0.2</span><span class="p">],</span> <span class="n">niter_static</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span> <span class="n">blurfrac</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
                         <span class="n">maxit</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span> <span class="n">stop</span><span class="o">=</span><span class="mf">1e-4</span><span class="p">,</span> <span class="n">fov</span><span class="o">=</span><span class="mi">128</span><span class="p">,</span> <span class="n">npixels</span><span class="o">=</span><span class="mi">64</span><span class="p">,</span> <span class="n">reverse_taper_uas</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span> <span class="n">uv_zblcut</span><span class="o">=</span><span class="mf">0.1e9</span><span class="p">,</span>
                         <span class="n">SEFD_error_budget</span><span class="o">=</span><span class="p">{</span><span class="s1">&#39;AA&#39;</span><span class="p">:</span><span class="mf">0.1</span><span class="p">,</span><span class="s1">&#39;AX&#39;</span><span class="p">:</span><span class="mf">0.1</span><span class="p">,</span><span class="s1">&#39;GL&#39;</span><span class="p">:</span><span class="mf">0.1</span><span class="p">,</span><span class="s1">&#39;LM&#39;</span><span class="p">:</span><span class="mf">0.1</span><span class="p">,</span><span class="s1">&#39;MG&#39;</span><span class="p">:</span><span class="mf">0.1</span><span class="p">,</span><span class="s1">&#39;MM&#39;</span><span class="p">:</span><span class="mf">0.1</span><span class="p">,</span><span class="s1">&#39;PV&#39;</span><span class="p">:</span><span class="mf">0.1</span><span class="p">,</span><span class="s1">&#39;SW&#39;</span><span class="p">:</span><span class="mf">0.1</span><span class="p">}):</span>
-
-    <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">    Create a dict for all non-varying survery parameters</span>
+    <span class="sd">&quot;&quot;&quot;Create a dict for all non-varying survery parameters</span>
 
 <span class="sd">        Args:</span>
-
 <span class="sd">            infile (str): path to input uvfits observation file</span>
 <span class="sd">            outfile_base (str): name of base filename for all outputs</span>
 <span class="sd">            outpath (str): path to directory where all outputs should be stored</span>
@@ -630,9 +627,7 @@
 
 
 <span class="sd">        Returns:</span>
-
 <span class="sd">            (dict): dict containing all non-varying survery parameters</span>
-
 <span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="c1"># take all arguments and put them in a dict</span>
@@ -651,7 +646,6 @@
 <span class="sd">    should be adjusted for each specific observation</span>
 
 <span class="sd">        Args:</span>
-
 <span class="sd">           zbl (array): compact flux value (Jy)</span>
 <span class="sd">           sys_noise (array): percent addition of systematic noise</span>
 <span class="sd">           avg_time (array): in seconds or &#39;scan&#39; for scan averaging</span>
@@ -671,9 +665,7 @@
 <span class="sd">           epsilon_tv (array): epsilon value used in definition of total variation - rarely need to change this</span>
 
 <span class="sd">        Returns:</span>
-
 <span class="sd">            (DataFrame): pandas DataFrame containing all combination of parameter sets along with index values</span>
-
 <span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="c1"># take all arguments and put them in a dict</span>

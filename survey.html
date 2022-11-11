@@ -210,7 +210,7 @@
 <dd><p>final calibration table associated with im_out</p>
 <dl class="field-list simple">
 <dt class="field-odd">Type</dt>
-<dd class="field-odd"><p>Caltab</p>
+<dd class="field-odd"><p><a class="reference internal" href="calibration.html#ehtim.caltable.Caltable" title="ehtim.caltable.Caltable">Caltable</a></p>
 </dd>
 </dl>
 </dd></dl>
@@ -311,38 +311,41 @@ chi^2 closure phase, logcamp, vis wrt the original observation with sys noise an
 <dt id="ehtim.survey.create_params_fixed">
 <code class="sig-prename descclassname">ehtim.survey.</code><code class="sig-name descname">create_params_fixed</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">infile</span></em>, <em class="sig-param"><span class="n">outfile_base</span></em>, <em class="sig-param"><span class="n">outpath</span></em>, <em class="sig-param"><span class="n">ground_truth_img</span><span class="o">=</span><span class="default_value">'None'</span></em>, <em class="sig-param"><span class="n">save_imgsums</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">save_uvfits</span><span class="o">=</span><span class="default_value">True</span></em>, <em class="sig-param"><span class="n">save_pdf</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">save_stats</span><span class="o">=</span><span class="default_value">True</span></em>, <em class="sig-param"><span class="n">save_caltab</span><span class="o">=</span><span class="default_value">True</span></em>, <em class="sig-param"><span class="n">nproc</span><span class="o">=</span><span class="default_value">1</span></em>, <em class="sig-param"><span class="n">backend</span><span class="o">=</span><span class="default_value">'multiprocessing'</span></em>, <em class="sig-param"><span class="n">ttype</span><span class="o">=</span><span class="default_value">'nfft'</span></em>, <em class="sig-param"><span class="n">selfcal</span><span class="o">=</span><span class="default_value">True</span></em>, <em class="sig-param"><span class="n">gaintol</span><span class="o">=</span><span class="default_value">[0.02, 0.2]</span></em>, <em class="sig-param"><span class="n">niter_static</span><span class="o">=</span><span class="default_value">3</span></em>, <em class="sig-param"><span class="n">blurfrac</span><span class="o">=</span><span class="default_value">1</span></em>, <em class="sig-param"><span class="n">maxit</span><span class="o">=</span><span class="default_value">100</span></em>, <em class="sig-param"><span class="n">stop</span><span class="o">=</span><span class="default_value">0.0001</span></em>, <em class="sig-param"><span class="n">fov</span><span class="o">=</span><span class="default_value">128</span></em>, <em class="sig-param"><span class="n">npixels</span><span class="o">=</span><span class="default_value">64</span></em>, <em class="sig-param"><span class="n">reverse_taper_uas</span><span class="o">=</span><span class="default_value">5</span></em>, <em class="sig-param"><span class="n">uv_zblcut</span><span class="o">=</span><span class="default_value">100000000.0</span></em>, <em class="sig-param"><span class="n">SEFD_error_budget</span><span class="o">=</span><span class="default_value">{'AA': 0.1, 'AX': 0.1, 'GL': 0.1, 'LM': 0.1, 'MG': 0.1, 'MM': 0.1, 'PV': 0.1, 'SW': 0.1}</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/survey.html#create_params_fixed"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.survey.create_params_fixed" title="Permalink to this definition">¶</a></dt>
 <dd><p>Create a dict for all non-varying survery parameters</p>
-<blockquote>
-<div><p>Args:</p>
-<blockquote>
-<div><p>infile (str): path to input uvfits observation file
-outfile_base (str): name of base filename for all outputs
-outpath (str): path to directory where all outputs should be stored
-ground_truth_img (str): if applicable, path to ground truth fits file
-save_imgsums (bool): save summary pdf for each image
-save_uvfits (bool): save final self-cal observation to uvfits file
-save_pdf (bool): save pdf of each image
-save_stats (bool): save csv file containing statistics for each image
-save_caltab (bool): save a calibration table for each image
-nproc (int): number of parallel processes
-backend (str): either ‘multiprocessing’ or ‘ray’
-ttype (str): “fast” or “nfft” or “direct”
-selfcal (bool): perform self-calibration steps during imaging
-gaintol (array): tolerance for gains to be under/over unity respectively during self-cal
-niter_static (int): number of iterations for each imaging step
-blurfrac (int): factor to blur initial image between iterations
-maxit (int): maximum number of iterations if image does not converge
-stop (float): convergence criterion for imaging
-fov (int): image field of view in uas
-npixels (int): number of image pixels
-reverse_taper_uas (int): fwhm of gassuain in uas to reverse taper observation
-uv_zblcut (float): maximum uv-distance to which is considered short baseline flux
-SEFD_error_budget (dict): SEFD percentage error for each station</p>
-</div></blockquote>
-<p>Returns:</p>
-<blockquote>
-<div><p>(dict): dict containing all non-varying survery parameters</p>
-</div></blockquote>
-</div></blockquote>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>infile</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.11)"><em>str</em></a>) – path to input uvfits observation file</p></li>
+<li><p><strong>outfile_base</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.11)"><em>str</em></a>) – name of base filename for all outputs</p></li>
+<li><p><strong>outpath</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.11)"><em>str</em></a>) – path to directory where all outputs should be stored</p></li>
+<li><p><strong>ground_truth_img</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.11)"><em>str</em></a>) – if applicable, path to ground truth fits file</p></li>
+<li><p><strong>save_imgsums</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.11)"><em>bool</em></a>) – save summary pdf for each image</p></li>
+<li><p><strong>save_uvfits</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.11)"><em>bool</em></a>) – save final self-cal observation to uvfits file</p></li>
+<li><p><strong>save_pdf</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.11)"><em>bool</em></a>) – save pdf of each image</p></li>
+<li><p><strong>save_stats</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.11)"><em>bool</em></a>) – save csv file containing statistics for each image</p></li>
+<li><p><strong>save_caltab</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.11)"><em>bool</em></a>) – save a calibration table for each image</p></li>
+<li><p><strong>nproc</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.11)"><em>int</em></a>) – number of parallel processes</p></li>
+<li><p><strong>backend</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.11)"><em>str</em></a>) – either ‘multiprocessing’ or ‘ray’</p></li>
+<li><p><strong>ttype</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.11)"><em>str</em></a>) – “fast” or “nfft” or “direct”</p></li>
+<li><p><strong>selfcal</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.11)"><em>bool</em></a>) – perform self-calibration steps during imaging</p></li>
+<li><p><strong>gaintol</strong> (<em>array</em>) – tolerance for gains to be under/over unity respectively during self-cal</p></li>
+<li><p><strong>niter_static</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.11)"><em>int</em></a>) – number of iterations for each imaging step</p></li>
+<li><p><strong>blurfrac</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.11)"><em>int</em></a>) – factor to blur initial image between iterations</p></li>
+<li><p><strong>maxit</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.11)"><em>int</em></a>) – maximum number of iterations if image does not converge</p></li>
+<li><p><strong>stop</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.11)"><em>float</em></a>) – convergence criterion for imaging</p></li>
+<li><p><strong>fov</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.11)"><em>int</em></a>) – image field of view in uas</p></li>
+<li><p><strong>npixels</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.11)"><em>int</em></a>) – number of image pixels</p></li>
+<li><p><strong>reverse_taper_uas</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.11)"><em>int</em></a>) – fwhm of gassuain in uas to reverse taper observation</p></li>
+<li><p><strong>uv_zblcut</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.11)"><em>float</em></a>) – maximum uv-distance to which is considered short baseline flux</p></li>
+<li><p><strong>SEFD_error_budget</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.11)"><em>dict</em></a>) – SEFD percentage error for each station</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>dict containing all non-varying survery parameters</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>(<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.11)">dict</a>)</p>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="py function">
@@ -351,9 +354,8 @@ SEFD_error_budget (dict): SEFD percentage error for each station</p>
 <dd><p>Create a dataframe given all survey parameters. Default values will create an example dataframe but these values
 should be adjusted for each specific observation</p>
 <blockquote>
-<div><p>Args:</p>
-<blockquote>
-<div><p>zbl (array): compact flux value (Jy)
+<div><dl class="simple">
+<dt>Args:</dt><dd><p>zbl (array): compact flux value (Jy)
 sys_noise (array): percent addition of systematic noise
 avg_time (array): in seconds or ‘scan’ for scan averaging
 prior_fwhm (array): fwhm of gaussian prior in uas
@@ -370,11 +372,10 @@ tv (array): regularizer weight for total variation, favoring sharp edges
 tv2 (array): regularizer weight for total squared variation, favoring smooth edges
 flux (array): regularizer weight for total flux density, favoring final images with flux close to zbl
 epsilon_tv (array): epsilon value used in definition of total variation - rarely need to change this</p>
-</div></blockquote>
-<p>Returns:</p>
-<blockquote>
-<div><p>(DataFrame): pandas DataFrame containing all combination of parameter sets along with index values</p>
-</div></blockquote>
+</dd>
+<dt>Returns:</dt><dd><p>(DataFrame): pandas DataFrame containing all combination of parameter sets along with index values</p>
+</dd>
+</dl>
 </div></blockquote>
 </dd></dl>
 
