@@ -8,6 +8,7 @@ matplotlib
 networkx
 numpy
 pandas
+paramsurvey[ray]
 requests
 scipy
 scikit-image
