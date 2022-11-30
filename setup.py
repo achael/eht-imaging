@@ -44,7 +44,7 @@ if __name__ == "__main__":
                             "ephem",
                             "h5py",
                             "pandas",
-                            "paramsurvey[ray]",
+                            "paramsurvey",
                             "requests",
                             "future"
                           # optional (but recommended) libraries required for some features
