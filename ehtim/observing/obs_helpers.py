@@ -1272,6 +1272,7 @@ def uimage(iimage, mimage, chiimage):
 ##################################################################################################
 class NFFTInfo(object):
     def __init__(self, xdim, ydim, psize, pulse, npad, p_rad, uv):
+        print("NFFTINFOSTART")
         self.xdim = int(xdim)
         self.ydim = int(ydim)
         self.psize = psize
@@ -1294,7 +1295,7 @@ class NFFTInfo(object):
         pulses = np.fromiter((pulse(2*np.pi*uv_scaled[i, 0], 2*np.pi*uv_scaled[i, 1], 1., dom="F")
                               for i in range(self.uvdim)), 'c16')
         self.pulsefac = (pulses*phases)
-
+        print("NFFTINFOSTART")
 
 class SamplerInfo(object):
     def __init__(self, order, uv, pulsefac):

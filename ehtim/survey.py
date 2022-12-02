@@ -532,7 +532,8 @@ def run_survey(psets, params_fixed):
 
     """
     # run whole survey using map function
-    paramsurvey.init(backend=params_fixed['backend'], ncores=params_fixed['nproc'])
+    paramsurvey.init(backend=params_fixed['backend'], ncores=params_fixed['nproc'],
+                     verbose=0,vstats=0)
     paramsurvey.map(run_pset, psets, user_kwargs=params_fixed, verbose=0)
 
 def create_params_fixed(infile, outfile_base, outpath, ground_truth_img='None',
