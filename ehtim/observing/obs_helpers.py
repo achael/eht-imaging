@@ -1272,7 +1272,6 @@ def uimage(iimage, mimage, chiimage):
 ##################################################################################################
 class NFFTInfo(object):
     def __init__(self, xdim, ydim, psize, pulse, npad, p_rad, uv):
-        print("NFFTINFOSTART")
         self.xdim = int(xdim)
         self.ydim = int(ydim)
         self.psize = psize
