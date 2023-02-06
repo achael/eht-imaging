@@ -1569,7 +1569,8 @@ def _display_img(im, beamparams=None, scale='linear', gamma=0.5, cbar_lims=False
     ax.axes.get_yaxis().set_visible(False)
 
     if show:
-        plt.show(block=False)
+        #plt.show(block=False)
+        ehc.show_noblock()
 
     return ax
 
@@ -1726,6 +1727,7 @@ def _display_img_pol(im, beamparams=None, scale='linear', gamma=0.5, cbar_lims=F
     ax.axes.get_yaxis().set_visible(False)
 
     if show:
-        plt.show(block=False)
+        #plt.show(block=False)
+        ehc.show_noblock()
 
     return ax

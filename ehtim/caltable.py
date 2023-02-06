@@ -265,7 +265,8 @@ class Caltable(object):
         if export_pdf != "" and not axis:
             fig.savefig(export_pdf, bbox_inches='tight')
         if show:
-            plt.show(block=False)
+            #plt.show(block=False)
+            ehc.show_noblock()
 
         return x
 
@@ -1000,6 +1001,7 @@ def plot_compare_gains(caltab1, caltab2, obs, sites='all', pol='R', gain_type='a
     if export_pdf != "" and not axis:
         fig.savefig(export_pdf, bbox_inches='tight')
     if show:
-        plt.show(block=False)
+        #plt.show(block=False)
+        ehc.show_noblock()
 
     return x

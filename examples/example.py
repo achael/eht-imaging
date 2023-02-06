@@ -79,7 +79,7 @@ out  = eh.imager_func(obs, gaussprior, gaussprior, flux,
                       d1='bs', s1='simple',
                       alpha_s1=1, alpha_d1=100,
                       alpha_flux=100, alpha_cm=50,
-                      maxit=100, ttype=ttype, show_updates=False)
+                      maxit=100, ttype=ttype, show_updates=True)
 
 # Blur the image with a circular beam and image again to help convergance
 out = out.blur_circ(res)

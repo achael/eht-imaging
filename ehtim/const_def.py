@@ -24,6 +24,8 @@ from builtins import range
 from builtins import object
 
 import matplotlib as mpl
+import matplotlib.pyplot as plt
+from packaging import version
 
 from ehtim.observing.pulses import trianglePulse2D
 
@@ -165,6 +167,20 @@ FIELDS_SNRS = ["snr", "qsnr", "usnr", "vsnr", "psnr", "msnr",
 # Plotting
 MARKERSIZE = 3
 
+def show_noblock(pause=0.001):
+    """helper function for image display with different matplotlib versions"""
+    # TODO can't close via gui X!
+    if version.parse(mpl.__version__) <= version.parse('3.2.2'):
+        plt.show(block=False)
+    else:
+        plt.ion()
+        plt.show()
+        plt.pause(pause)
+        plt.draw()
+        #plt.show(block=False)
+        plt.pause(pause)
+        #plt.ioff()
+                
 FIELD_LABELS = {'time': 'Time',
                 'time_utc': 'Time (UTC)',
                 'time_gmst': 'Time (GMST)',

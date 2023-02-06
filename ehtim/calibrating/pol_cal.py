@@ -393,6 +393,7 @@ def plot_leakage(obs, sites=[], axis=False, rangex=False, rangey=False,
     if export_pdf != "":  # and not axis:
         fig.savefig(export_pdf, bbox_inches='tight')
     if show:
-        plt.show(block=False)
+        #plt.show(block=False)
+        ehc.show_noblock()
 
     return x

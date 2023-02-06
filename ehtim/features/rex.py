@@ -404,7 +404,8 @@ class Profiles(object):
             plt.savefig(fname)
             plt.close()
         else:
-            plt.show()
+            #plt.show(block=False)
+            ehc.show_noblock()
 
     def plot_unwrapped(self, postprocdir=POSTPROCDIR, save_png=False,
                        xlabel=True, ylabel=True, xticklabel=True, yticklabel=True,
@@ -500,7 +501,8 @@ class Profiles(object):
             plt.savefig(fname)
             plt.close()
         elif show:
-            plt.show()
+            #plt.show(block=False)
+            ehc.show_noblock()
 
     def save_unwrapped(self, fname):
 
@@ -538,7 +540,8 @@ class Profiles(object):
             plt.savefig(fname)
             plt.close()
         else:
-            plt.show()
+            #plt.show(block=False)
+            ehc.show_noblock()
 
     def plot_prof_band(self, postprocdir=POSTPROCDIR, save_png=False,
                        color='b', fontsize=14, show=True, axis=None, xlabel=True, ylabel=False):
@@ -609,7 +612,8 @@ class Profiles(object):
             plt.savefig(fname)
             plt.close()
         if show:
-            plt.show()
+            #plt.show(block=False)
+            ehc.show_noblock()
 
     def plot_meanprof(self, postprocdir=POSTPROCDIR, save_png=False, color='k'):
         fig = plt.figure()
@@ -633,7 +637,8 @@ class Profiles(object):
             plt.savefig(fname)
             plt.close()
         else:
-            plt.show()
+            #plt.show(block=False)
+            ehc.show_noblock()
 
     def plot_meanprof_theta(self, postprocdir=POSTPROCDIR, save_png=False, color='k'):
         fig = plt.figure()
@@ -670,7 +675,8 @@ class Profiles(object):
             plt.savefig(fname)
             plt.close()
         else:
-            plt.show()
+            #plt.show(block=False)
+            ehc.show_noblock()
 
 ###################################################################################################
 # Other functions
