@@ -159,15 +159,15 @@ def save_im_fits(im, fname, mjd=False, time=False):
     hdu = fits.PrimaryHDU(image, header=header)
     hdulist = [hdu]
     if len(im.qvec):
-        qimage = np.reshape(im.qvec, (im.xdim, im.ydim))[::-1, :]
-        uimage = np.reshape(im.uvec, (im.xdim, im.ydim))[::-1, :]
+        qimage = np.reshape(im.qvec, (im.ydim, im.xdim))[::-1, :]
+        uimage = np.reshape(im.uvec, (im.ydim, im.xdim))[::-1, :]
         header['STOKES'] = 'Q'
         hduq = fits.ImageHDU(qimage, name='Q', header=header)
         header['STOKES'] = 'U'
         hduu = fits.ImageHDU(uimage, name='U', header=header)
         hdulist = [hdu, hduq, hduu]
     if len(im.vvec):
-        vimage = np.reshape(im.vvec, (im.xdim, im.ydim))[::-1, :]
+        vimage = np.reshape(im.vvec, (im.ydim, im.xdim))[::-1, :]
         header['STOKES'] = 'V'
         hduv = fits.ImageHDU(vimage, name='V', header=header)
         hdulist.append(hduv)
