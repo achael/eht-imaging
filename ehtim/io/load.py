@@ -296,11 +296,20 @@ def load_im_fits(filename, aipscc=False, pulse=ehc.PULSE_DEFAULT,
     # Check for multiple stokes in top hdu
     stokes_in_hdu0 = False
     if len(data.shape) == 4:
-        print("reading stokes images from top HDU -- assuming IQUV")
-        stokesdata = data
+        print("reading all stokes images from top HDU -- assuming IQUV order")
+        stokesdata = data[:4,:,:,:] # ignore fields after the first 4
         data = stokesdata[0, 0]
         stokes_in_hdu0 = True
 
+    elif len(data.shape) == 3:  
+        # ANDREW added this for BHAC models 3/22/23
+        print("reading all stokes images from top HDU -- assuming IQUV order")
+        stokesdata = data[:4,:,:] # ignore fields after the first 4
+        stokesdata = stokesdata.reshape(4,-1,stokesdata.shape[-2],stokesdata.shape[-1])
+        data = stokesdata[0, 0]
+        stokes_in_hdu0 = True
+            
+    #data = data.reshape((data.shape[-2], data.shape[-1]))
     data = data.reshape((data.shape[-2], data.shape[-1]))
 
     # Update the image using the AIPS CC table
