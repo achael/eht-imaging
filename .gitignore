@@ -20,6 +20,13 @@ build/*
 data/3C279JUN16.UVP
 data/OJ287AUG10B.UVP
 
+examples/*.log
+examples/*.mp4
+examples/old_examples/*
+examples/.ipynb_checkpoints/*
+
+arrays/old_arrays/*
+
 # Unit tests should be included
 !ehtim/tests/
 !ehtim/tests/test_*.py
