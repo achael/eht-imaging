@@ -194,6 +194,15 @@ class Obsdata(object):
         self.logcamp = None
         self.logcamp_diag = None
 
+    @property 
+    def tarr(self):
+        return self._tarr
+        
+    @tarr.setter 
+    def tarr(self, tarr):
+        self._tarr = tarr
+        self.tkey = {tarr[i]['site']: i for i in range(len(tarr))}
+        
     def obsdata_args(self):
         """"Copy arguments for making a  new Obsdata into a list and dictonary
         """

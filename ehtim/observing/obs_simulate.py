@@ -106,6 +106,7 @@ def make_uvpoints(array, ra, dec, rf, bw, tint, tadv, tstart, tstop,
                 site2 = array.tarr[i2]['site']
                 coord1 = ((array.tarr[i1]['x'], array.tarr[i1]['y'], array.tarr[i1]['z']))
                 coord2 = ((array.tarr[i2]['x'], array.tarr[i2]['y'], array.tarr[i2]['z']))
+                
                 # Optical Depth
                 if type(tau) == dict:
                     try:
