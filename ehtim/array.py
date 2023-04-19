@@ -29,6 +29,7 @@ import ehtim.observing.obs_simulate as simobs
 import ehtim.io.save
 import ehtim.io.load
 import ehtim.const_def as ehc
+from ehtim.caltable import plot_tarr_dterms
 
 ###################################################################################################
 # Array object
@@ -150,6 +151,41 @@ class Array(object):
         ehtim.io.save.save_array_txt(self, fname)
         return
 
+    def plot_dterms(self, sites='all', label=None, legend=True, clist=ehc.SCOLORS,
+                    rangex=False, rangey=False, markersize=2 * ehc.MARKERSIZE,
+                    show=True, grid=True, export_pdf=""):
+        """Make a plot of the D-terms.
+
+           Args:
+               sites (list) : list of sites to plot
+               label (str) : title for plot
+               legend (bool) : add telescope legend or not
+               clist (list) : list of colors for different stations
+               rangex (list) : lower and upper x-axis limits  
+               rangey (list) : lower and upper y-axis limits 
+               markersize (float) : marker size
+               show (bool) : display the plot or not
+               grid (bool) : add a grid to the plot or not
+               export_pdf (str) : save a pdf file to this path 
+               
+           Returns:
+               matplotlib.axes
+        """
+        # sites
+        if sites in ['all' or 'All'] or sites == []:
+            sites = list(self.tkey.keys())
+
+        if not isinstance(sites, list):
+            sites = [sites]
+
+        keys = [self.tkey[site] for site in sites]
+
+        axes = plot_tarr_dterms(self.tarr, keys=keys, label=label, legend=legend, clist=clist,
+                                rangex=rangex, rangey=rangey, markersize=markersize,
+                                show=show, grid=grid, export_pdf=export_pdf)
+
+        return axes
+        
 ##########################################################################
 # Array creation functions
 ##########################################################################
@@ -161,7 +197,7 @@ def load_txt(fname, ephemdir='ephemeris'):
 
        Args:
            fname (str) : path to input array file
-           ephemdir (str) : path to directory with 2TLE ephemerides for spacecraft
+           ephemdir (str) : path to directory with TLE ephemerides for spacecraft
        Returns:
            Array: an Array object loaded from file
     """

@@ -833,14 +833,25 @@ def load_array_txt(filename, ephemdir='ephemeris'):
                               float(x[6]), float(x[7]), float(x[8])),
                              dtype=ehc.DTARR) for x in tdata]
 
+    # load spacecraft
     tdataout = np.array(tdataout)
     edata = {}
     for line in tdataout:
         if np.all(np.array([line['x'], line['y'], line['z']]) == (0., 0., 0.)):
             sitename = str(line['site'])
-            # TODO ephempath shouldn't always start with path
-            ephempath = path + '/' + ephemdir + '/' + sitename
+            
+            # TODO ephempath shouldn't always start with array file path
+
+
             try:
+                ephempath = path + '/' + ephemdir + '/' + sitename + '.tle'
+                edata[sitename] = np.loadtxt(ephempath, dtype=bytes,
+                                             comments='#', delimiter='/').astype(str)
+                print('loaded spacecraft ephemeris %s' % ephempath)
+            except IOError:
+                pass
+            try: 
+                ephempath = path + '/' + ephemdir + '/' + sitename 
                 edata[sitename] = np.loadtxt(ephempath, dtype=bytes,
                                              comments='#', delimiter='/').astype(str)
                 print('loaded spacecraft ephemeris %s' % ephempath)

@@ -235,7 +235,8 @@ def leakage_cal(obs, im=None, sites=[], leakage_tol=.1, pol_fit=['RL', 'LR'], dt
     Dpar_guess = np.zeros((len(sites) + const_fpol*2)*2, dtype=np.complex128).view(dtype=np.float64)
     print("Minimizing...")
     res = opt.minimize(errfunc, Dpar_guess, method=minimizer_method, options=optdict)
-
+    print(errfunc(Dpar_guess),errfunc(res.x))
+    
     # get solution
     D_fit = res.x.astype(np.float64).view(dtype=np.complex128)  # all the D-terms (complex)
 
