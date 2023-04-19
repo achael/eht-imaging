@@ -41,6 +41,9 @@ import scipy.spatial.distance
 import copy
 import sys
 
+from sgp4.api import Satrec, WGS72
+import skyfield.api
+
 import ehtim.const_def as ehc
 
 import warnings
@@ -101,17 +104,39 @@ def compute_uv_coordinates(array, site1, site2, time, mjd, ra, dec, rf, timetype
     coord1 = np.vstack((array.tarr[i1]['x'], array.tarr[i1]['y'], array.tarr[i1]['z'])).T
     coord2 = np.vstack((array.tarr[i2]['x'], array.tarr[i2]['y'], array.tarr[i2]['z'])).T
 
-    # TODO speed up?
-    # use spacecraft ephemeris to get position of site 1
+    # Satellites: new method
     spacemask1 = [np.all(coord == (0., 0., 0.)) for coord in coord1]
+    spacemask2 = [np.all(coord == (0., 0., 0.)) for coord in coord2]
+        
+    satnames = array.ephem.keys()
+    satdict = {satname: sat_skyfield_from_ephementry(satname, array.ephem, mjd) for satname in satnames}
+    for satname in satnames:
+        sat = satdict[satname]
+
+        mask1 = (site1==satname)    
+        c1 = orbit_skyfield(sat, fracmjd[mask1], whichout='itrs')          
+        coord1[mask1] = c1.T
+
+        mask2 = (site2==satname)    
+        c2 = orbit_skyfield(sat, fracmjd[mask2], whichout='itrs')
+        coord2[mask2] = c2.T
+    
+    # Satellites: old method
+    """
     if np.any(spacemask1):
         if timetype == 'GMST':
             raise Exception("Spacecraft ephemeris only work with UTC!")
 
         site1space_list = site1[spacemask1]
+        site1space_fracmjdlist = fracmjd[spacemask1]
         site1space_dtolist = dto[spacemask1]
         coord1space = []
+        
         for k in range(len(site1space_list)):
+
+            
+            # old method with pyephem
+
             site1space = site1space_list[k]
             dto_now = site1space_dtolist[k]
             sat = ephem.readtle(array.ephem[site1space][0],
@@ -124,6 +149,7 @@ def compute_uv_coordinates(array, site1, site2, time, mjd, ra, dec, rf, timetype
             c1 = coords.EarthLocation.from_geodetic(lon, lat, elev, ellipsoid=None)
             c1 = np.array((c1.x.value, c1.y.value, c1.z.value))
             coord1space.append(c1)
+            
         coord1space = np.array(coord1space)
         coord1[spacemask1] = coord1space
 
@@ -134,13 +160,15 @@ def compute_uv_coordinates(array, site1, site2, time, mjd, ra, dec, rf, timetype
             raise Exception("Spacecraft ephemeris only work with UTC!")
 
         site2space_list = site2[spacemask2]
+        site2space_fracmjdlist = fracmjd[spacemask2]
         site2space_dtolist = dto[spacemask2]
         coord2space = []
         for k in range(len(site2space_list)):
+
             site2space = site2space_list[k]
             dto_now = site2space_dtolist[k]
             sat = ephem.readtle(array.ephem[site2space][0],
-                                array.ephem[site2space][1],
+                               array.ephem[site2space][1],
                                 array.ephem[site2space][2])
             sat.compute(dto_now)  # often complains if ephemeris out of date!
             elev = sat.elevation
@@ -149,10 +177,12 @@ def compute_uv_coordinates(array, site1, site2, time, mjd, ra, dec, rf, timetype
             # pyephem doesn't use an ellipsoid earth model!
             c2 = coords.EarthLocation.from_geodetic(lon, lat, elev, ellipsoid=None)
             c2 = np.array((c2.x.value, c2.y.value, c2.z.value))
-            coord2space.append(c2)
+            coord2space.append(c2)            
+
         coord2space = np.array(coord2space)
         coord2[spacemask2] = coord2space
-
+    """
+    
     # rotate the station coordinates with the earth
     coord1 = earthrot(coord1, theta)
     coord2 = earthrot(coord2, theta)
@@ -1642,3 +1672,106 @@ def prog_msg(nscan, totscans, msgtype='bar', nscan_last=0):
         printstr = "\rScan %0"+ndigit+"i/%i : %i%% done . . ."
         sys.stdout.write(printstr % barparams)
         sys.stdout.flush()
+        
+def sat_skyfield_from_elements(satname, epoch_mjd, perigee_mjd, 
+                               period_days, eccentricity,
+                               inclination, arg_perigee, long_ascending):
+                              
+    """skyfield EarthSatellite object from keplerian orbital elements
+       perfect keplerian orbit is assumed, no derivatives
+       epoch, pericenter given in mjd
+       period given in days
+       inclination, arg_perigee, long_ascending given in degrees
+    """
+    
+    if not(0<=eccentricity<1): 
+        raise Exception("eccentricity must be between 0 and 1")
+    if not(0<=inclination<=180): 
+        raise Exception("inclination must be between 0 and 180")
+    if not(0<=arg_perigee<=180): 
+        raise Exception("arg_perigee must be between 0 and 180")
+    if not(0<=long_ascending<=360): 
+        raise Exception("arg_perigee must be between 0 and 360")
+
+    satrec = Satrec()
+    ts = skyfield.api.load.timescale()                                
+    ref_mjd = 33281. # mjd 1949 December 31 00:00 UT
+    epoch_wrt_ref = epoch_mjd - ref_mjd
+
+    inclination_rad = inclination*ehc.DEGREE
+    arg_perigee_rad = arg_perigee*ehc.DEGREE 
+    long_ascending_rad = long_ascending*ehc.DEGREE
+    
+    mean_motion = 2*np.pi/(period_days*24.*60.) # radians/minute
+
+    mean_anomaly = mean_motion*(epoch_mjd - perigee_mjd)
+    mean_anomaly = np.mod(mean_anomaly, 2*np.pi)
+    
+    satrec.sgp4init(
+        WGS72,           # gravity model
+        'i',             # 'a' = old AFSPC mode, 'i' = improved mode
+        1,               # satnum: Satellite number
+        epoch_wrt_ref,     # epoch: days since 1949 December 31 00:00 UT
+        0.0,             # bstar: drag coefficient (/earth radii)
+        0.0,             # ndot: ballistic coefficient (revs/day)
+        0.0,             # nddot: second derivative of mean motion (revs/day^3)
+        eccentricity,    # ecco: eccentricity
+        arg_perigee_rad,     # argpo: argument of perigee (radians)
+        inclination_rad,     # inclo: inclination (radians)
+        mean_anomaly,    # mo: mean anomaly (radians)
+        mean_motion,     # no_kozai: mean motion (radians/minute)
+        long_ascending_rad,    # nodeo: right ascension of ascending node (radians)
+    )
+    sat_skyfield = skyfield.api.EarthSatellite.from_satrec(satrec, ts)
+            
+    return sat_skyfield
+    
+def sat_skyfield_from_tle(satname, line1, line2):
+    ts = skyfield.api.load.timescale()
+    sat_skyfield = skyfield.api.EarthSatellite(line1, line2, satname, ts)
+    return sat_skyfield
+
+def sat_skyfield_from_ephementry(satname, ephem, epoch_mjd):
+    if len(ephem[satname])==3: # TLE
+        line1 = ephem[satname][1]
+        line2 = ephem[satname][2]            
+        sat = sat_skyfield_from_tle(satname, line1, line2)
+    elif len(ephem[satname])==6: #keplerian elements
+        elements = ephem[satname]
+        sat = sat_skyfield_from_elements(satname, epoch_mjd,
+                                         elements[0],elements[1],elements[2],elements[3],elements[4],elements[5])
+    else:
+        raise Exception("ephemeris format not recognized for %s"%satellite)    
+
+    return sat
+                                                                         
+def orbit_skyfield(sat, fracmjds, whichout='itrs'):
+
+    """uses skyfield to propagate a earth satellite orbit and return x,y,z coordinates in co-rotating earth frame
+       sat is a skyfield.sgp4lib.EarthSatellite object
+       times is a list of fractional mjds
+       whichout is 'itrs' (co-rotating) or 'gcrs' (fixed x-axis to equinox)
+    """
+    
+    #fractional days of orbit in jd
+    mjd_to_jd = 2400000.5
+    ts = skyfield.api.load.timescale()
+    t = ts.ut1_jd(mjd_to_jd+fracmjds)
+
+    # propagate orbit
+    time_data = sat.at(t)
+    
+    if whichout=='gcrs':
+        # GCRS coordinates in km
+        positions = time_data.xyz.m
+        
+    elif whichout=='itrs':
+        # get coordinates in earth frame (WGS84 ellipsiod)
+        geographic_position = skyfield.api.wgs84.geographic_position_of(time_data)
+        positions = geographic_position.itrs_xyz.m
+
+    else:
+        raise Excption("orbit_skyfield whichout must be 'itrs' or 'gcrs'")
+        
+    return positions        
+
