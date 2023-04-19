@@ -41,7 +41,7 @@ if __name__ == "__main__":
                             "scipy",
                             "astropy",
                             "matplotlib",
-                            "ephem",
+                            "skyfield",
                             "h5py",
                             "pandas",
                             "paramsurvey",

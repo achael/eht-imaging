@@ -24,9 +24,11 @@ from builtins import range
 from builtins import object
 
 try:
-    import ephem
+    from sgp4.api import Satrec, WGS72
+    import skyfield.api
 except ImportError:
-    print("Warning: ephem not installed: cannot simulate space VLBI")
+    print("Warning: skyfield not installed: cannot simulate space VLBI")
+    
 try:
     from pynfft.nfft import NFFT
 except ImportError:
@@ -40,9 +42,6 @@ import scipy.ndimage as nd
 import scipy.spatial.distance
 import copy
 import sys
-
-from sgp4.api import Satrec, WGS72
-import skyfield.api
 
 import ehtim.const_def as ehc
 
