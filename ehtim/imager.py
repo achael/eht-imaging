@@ -42,7 +42,7 @@ STOP = 1e-6  # convergence criterion
 EPS = 1e-8
 
 DATATERMS = ['vis', 'bs', 'amp', 'cphase', 'cphase_diag', 'camp', 'logcamp', 'logcamp_diag']
-REGULARIZERS = ['gs', 'tv', 'tvlog','tv2', 'l1', 'l1w', 'lA', 'patch',
+REGULARIZERS = ['gs', 'tv', 'tvlog','tv2', 'tv2log', 'l1', 'l1w', 'lA', 'patch',
                 'flux', 'cm', 'simple', 'compact', 'compact2', 'rgauss', 'hw']
 REGULARIZERS_SPECIND = ['l2_alpha', 'tv_alpha']
 REGULARIZERS_CURV = ['l2_beta', 'tv_beta']

@@ -47,7 +47,7 @@ STOP = 1.e-8  # convergence criterion
 
 DATATERMS = ['vis', 'bs', 'amp', 'cphase', 'cphase_diag',
              'camp', 'logcamp', 'logcamp_diag', 'logamp']
-REGULARIZERS = ['gs', 'tv', 'tv2', 'l1w', 'lA', 'patch', 'simple', 'compact', 'compact2', 'rgauss']
+REGULARIZERS = ['gs', 'tv', 'tvlog','tv2', 'tv2log','l1w', 'lA', 'patch', 'simple', 'compact', 'compact2', 'rgauss']
 
 nit = 0  # global variable to track the iteration number in the plotting callback
 
@@ -570,17 +570,25 @@ def regularizer(imvec, nprior, mask, flux, xdim, ydim, psize, stype, **kwargs):
     elif stype == "tv":
         if np.any(np.invert(mask)):
             imvec = embed(imvec, mask, randomfloor=True)
-        s = -stv(imvec, xdim, ydim, psize, flux, norm_reg=norm_reg,
-                 beam_size=beam_size, epsilon=epsilon)
-    elif stype == "tvlog": # TODO ANDREW
+        s = -stv(imvec, xdim, ydim, psize, flux, norm_reg=norm_reg,beam_size=beam_size, epsilon=epsilon)
+    elif stype == "tvlog": 
         if np.any(np.invert(mask)):
             imvec = embed(imvec, mask, clipfloor=epsilon, randomfloor=True)
-        s = -stv(np.log(imvec), xdim, ydim, psize, flux, norm_reg=norm_reg,
-                 beam_size=beam_size, epsilon=epsilon)
+        npix = xdim*ydim
+        logvec = np.log(imvec)
+        logflux = npix*np.abs(np.log(flux/npix))
+        s = -stv(logvec, xdim, ydim, psize, logflux, norm_reg=norm_reg,beam_size=beam_size, epsilon=epsilon)
     elif stype == "tv2":
         if np.any(np.invert(mask)):
             imvec = embed(imvec, mask, randomfloor=True)
         s = -stv2(imvec, xdim, ydim, psize, flux, norm_reg=norm_reg, beam_size=beam_size)
+    elif stype == "tv2log":
+        if np.any(np.invert(mask)):
+            imvec = embed(imvec, mask, randomfloor=True)      
+        npix = xdim*ydim
+        logvec = np.log(imvec)
+        logflux = npix*np.abs(np.log(flux/npix))
+        s = -stv2(logvec, xdim, ydim, psize, logflux, norm_reg=norm_reg, beam_size=beam_size)
     elif stype == "compact":
         if np.any(np.invert(mask)):
             imvec = embed(imvec, mask, randomfloor=True)
@@ -638,8 +646,10 @@ def regularizergrad(imvec, nprior, mask, flux, xdim, ydim, psize, stype, **kwarg
     elif stype == "tvlog":
         if np.any(np.invert(mask)):
             imvec = embed(imvec, mask, clipfloor=epsilon, randomfloor=True)
-        s = -stvgrad(np.log(imvec), xdim, ydim, psize, flux, norm_reg=norm_reg,
-                     beam_size=beam_size, epsilon=epsilon)
+        npix = xdim*ydim
+        logvec = np.log(imvec)
+        logflux = npix*np.abs(np.log(flux/npix))
+        s = -stvgrad(logvec, xdim, ydim, psize, logflux, norm_reg=norm_reg,beam_size=beam_size, epsilon=epsilon)
         s = s / imvec
         s = s[mask]        
     elif stype == "tv2":
@@ -647,6 +657,15 @@ def regularizergrad(imvec, nprior, mask, flux, xdim, ydim, psize, stype, **kwarg
             imvec = embed(imvec, mask, randomfloor=True)
         s = -stv2grad(imvec, xdim, ydim, psize, flux, norm_reg=norm_reg, beam_size=beam_size)
         s = s[mask]
+    elif stype == "tv2log":
+        if np.any(np.invert(mask)):
+            imvec = embed(imvec, mask, randomfloor=True)
+        npix = xdim*ydim
+        logvec = np.log(imvec)
+        logflux = npix*np.abs(np.log(flux/npix))
+        s = -stv2grad(logvec, xdim, ydim, psize, logflux, norm_reg=norm_reg, beam_size=beam_size)
+        s = s / imvec
+        s = s[mask]        
     elif stype == "compact":
         if np.any(np.invert(mask)):
             imvec = embed(imvec, mask, randomfloor=True)
@@ -2584,7 +2603,6 @@ def stv(imvec, nx, ny, psize, flux, norm_reg=NORM_REGULARIZER, beam_size=None, e
     impad = np.pad(im, 1, mode='constant', constant_values=0)
     im_l1 = np.roll(impad, -1, axis=0)[1:ny+1, 1:nx+1]
     im_l2 = np.roll(impad, -1, axis=1)[1:ny+1, 1:nx+1]
-    #out = -np.sum(np.sqrt(np.abs(im_l1 - im)**2 + np.abs(im_l2 - im)**2) + epsilon)
     out = -np.sum(np.sqrt(np.abs(im_l1 - im)**2 + np.abs(im_l2 - im)**2 + epsilon))
     return out/norm
 
