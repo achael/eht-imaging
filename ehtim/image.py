@@ -2343,8 +2343,8 @@ class Image(object):
         if (np.abs(self.rf - obs.rf) / obs.rf > tolerance):
             raise Exception("Image frequency is not the same as observation frequency!")
 
-        if ttype == 'direct' or ttype == 'fast' or ttype == 'nfft':
-            print("Producing clean visibilities from image with " + ttype + " FT . . . ")
+        if (ttype == 'direct' or ttype == 'fast' or ttype == 'nfft'):
+            if verbose: print("Producing clean visibilities from image with " + ttype + " FT . . . ")
         else:
             raise Exception("ttype=%s, options for ttype are 'direct', 'fast', 'nfft'" % ttype)
 
@@ -2618,7 +2618,7 @@ class Image(object):
         """
 
         # Generate empty observation
-        print("Generating empty observation file . . . ")
+        if verbose: print("Generating empty observation file . . . ")
 
         if mjd is None:
             mjd = self.mjd

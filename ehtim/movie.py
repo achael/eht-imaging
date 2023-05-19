@@ -1008,7 +1008,7 @@ class Movie(object):
             raise Exception("Movie frequency is not the same as observation frequency!")
 
         if ttype == 'direct' or ttype == 'fast' or ttype == 'nfft':
-            print("Producing clean visibilities from movie with " + ttype + " FT . . . ")
+            if verbose: print("Producing clean visibilities from movie with " + ttype + " FT . . . ")
         else:
             raise Exception("ttype=%s, options for ttype are 'direct', 'fast', 'nfft'" % ttype)
 
@@ -1312,7 +1312,7 @@ class Movie(object):
         """
 
         # Generate empty observation
-        print("Generating empty observation file . . . ")
+        if verbose: print("Generating empty observation file . . . ")
         if mjd is None:
             mjd = self.mjd
         if polrep_obs is None:
