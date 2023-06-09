@@ -37,7 +37,7 @@ Alternatively, first install NFFT manually following the instructions on the `re
 
 Documentation
 -------------
-Documentation is  `here <https://achael.github.io/eht-imaging>`_ .
+Documentation is  `here <https://achael.github.io/eht-imaging>`_.
 
 A full tutorial is in progress, but here are some ways to learn to use the code:
 
@@ -122,7 +122,7 @@ Let us know if you use ehtim in your publication and we'll list it here!
 
 - Unravelling the Innermost Jet Structure of OJ 287 with the First GMVA+ALMA Observations, `Zhao et al. 2022 <https://arxiv.org/pdf/2205.00554.pdf>`_
 
-Documentation
+oifits Documentation
 ----------------
 
 The oifits_new.py file used for reading/writing .oifits files is a slightly modified version of Paul Boley's package `oifits <http://astro.ins.urfu.ru/pages/~pboley/oifits/>`_.  
