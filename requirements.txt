@@ -7,7 +7,7 @@ ipython
 matplotlib
 networkx
 numpy
-pandas
+pandas < '2'
 paramsurvey[ray]
 requests
 scipy
