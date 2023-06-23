@@ -32,3 +32,6 @@ tutorials/tutorial_results/*
 # Unit tests should be included
 !ehtim/tests/
 !ehtim/tests/test_*.py
+
+.ipynb_checkpoints
+
