@@ -33,7 +33,7 @@ Installing with pip will update most of the required libraries automatically (`n
 
 Alternatively, first install NFFT manually following the instructions on the `readme <https://github.com/NFFT/nfft>`_, making sure to use the ``--enable-openmp`` flag in compilation. Then install `pynfft <https://github.com/ghisvail/pyNFFT/>`_, with pip, following the readme instructions to link the installation to where you installed NFFT. Finally, reinstall ehtim.
 
-For M1 Macs (OS >= v12.0), install the M1 Mac version of `pynfft <https://github.com/rohandahale/pyNFFT.git>`_ and follow the instructions on the `readme  <https://github.com/rohandahale/pyNFFT.git>`_. It has the instructions to install `fftw <http://www.fftw.org>`_, `nfft <https://github.com/NFFT/nfft>`_ and then `pynfft <https://github.com/rohandahale/pyNFFT.git>`_.
+**For M1 Macs (OS >= v12.0)**, install the M1 Mac version of `pynfft <https://github.com/rohandahale/pyNFFT.git>`_ and follow the instructions on the `readme  <https://github.com/rohandahale/pyNFFT.git>`_. It has the instructions to install `fftw <http://www.fftw.org>`_, `nfft <https://github.com/NFFT/nfft>`_ and then `pynfft <https://github.com/rohandahale/pyNFFT.git>`_.
 
 **Certain eht-imaging functions require other external packages that are not automatically installed.** In addition to pynfft, these include  `networkx <https://networkx.github.io/>`_ (for image comparison functions), `requests <http://docs.python-requests.org/en/master/>`_ (for dynamical imaging), and `scikit-image <https://scikit-image.org/>`_ (for a few image analysis functions). However, the vast majority of the code will work without these dependencies.
 
@@ -41,7 +41,9 @@ Documentation
 -------------
 Documentation is  `here <https://achael.github.io/eht-imaging>`_.
 
-A full tutorial is in progress, but here are some ways to learn to use the code:
+A intro to imaging tutorial jupyter notebook can be found in the repo at tutorials/ehtim_tutorial.ipynb 
+
+Here are some other ways to learn to use the code:
 
 - Start with the script examples/example.py, which contains a series of sample commands to load an image and array, generate data, and produce an image with various imaging algorithms.
 
