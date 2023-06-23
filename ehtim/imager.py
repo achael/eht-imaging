@@ -467,7 +467,7 @@ class Imager(object):
         """
         if ((self.prior_next.psize != self.init_next.psize) or
             (self.prior_next.xdim != self.init_next.xdim) or
-                (self.prior_next.ydim != self.prior_next.ydim)):
+                (self.prior_next.ydim != self.init_next.ydim)):
             raise Exception("Initial image does not match dimensions of the prior image!")
 
         if ((self.prior_next.rf != self.init_next.rf)):
