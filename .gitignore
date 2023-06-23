@@ -27,6 +27,8 @@ examples/.ipynb_checkpoints/*
 
 arrays/old_arrays/*
 
+tutorials/tutorial_results/*
+
 # Unit tests should be included
 !ehtim/tests/
 !ehtim/tests/test_*.py
