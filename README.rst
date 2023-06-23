@@ -37,17 +37,18 @@ Alternatively, first install NFFT manually following the instructions on the `re
 
 **Certain eht-imaging functions require other external packages that are not automatically installed.** In addition to pynfft, these include  `networkx <https://networkx.github.io/>`_ (for image comparison functions), `requests <http://docs.python-requests.org/en/master/>`_ (for dynamical imaging), and `scikit-image <https://scikit-image.org/>`_ (for a few image analysis functions). However, the vast majority of the code will work without these dependencies.
 
-Documentation
+Documentation and Tutorials
 -------------
 Documentation is  `here <https://achael.github.io/eht-imaging>`_.
 
 A intro to imaging tutorial jupyter notebook can be found in the repo at tutorials/ehtim_tutorial.ipynb 
+`Slides <https://docs.google.com/presentation/d/1A0y9omYI2ueSUa6_t5reylBhw6eiLwjqDzw-HUOk8Ac/edit?usp=sharing>`_ for the included tutorial walk through the basic steps of reconstructing EHT images with the code
 
 Here are some other ways to learn to use the code:
 
 - Start with the script examples/example.py, which contains a series of sample commands to load an image and array, generate data, and produce an image with various imaging algorithms.
 
-- `Slides <https://www.dropbox.com/s/7533ucj8bt54yh7/Bouman_Chael.pdf?dl=0>`_ from the EHT2016 data generation and imaging workshop contain a tutorial on generating data with the VLBI imaging `website <http://vlbiimaging.csail.mit.edu>`_, loading into the library, and producing an image.
+- Older `Slides <https://www.dropbox.com/s/7533ucj8bt54yh7/Bouman_Chael.pdf?dl=0>`_ from the EHT2016 data generation and imaging workshop contain a tutorial on generating data with the VLBI imaging `website <http://vlbiimaging.csail.mit.edu>`_, loading into the library, and producing an image.
 
 Citation
 --------------------------------
