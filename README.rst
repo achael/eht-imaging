@@ -42,6 +42,7 @@ Documentation and Tutorials
 Documentation is  `here <https://achael.github.io/eht-imaging>`_.
 
 A intro to imaging tutorial jupyter notebook can be found in the repo at tutorials/ehtim_tutorial.ipynb 
+
 `Slides <https://docs.google.com/presentation/d/1A0y9omYI2ueSUa6_t5reylBhw6eiLwjqDzw-HUOk8Ac/edit?usp=sharing>`_ for the included tutorial walk through the basic steps of reconstructing EHT images with the code
 
 Here are some other ways to learn to use the code:
