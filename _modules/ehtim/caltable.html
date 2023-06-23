@@ -191,10 +191,26 @@
                                 <span class="n">source</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">source</span><span class="p">,</span> <span class="n">mjd</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">mjd</span><span class="p">,</span> <span class="n">timetype</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">timetype</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">new_caltable</span></div>
 
-    <span class="k">def</span> <span class="nf">plot_dterms</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">sites</span><span class="o">=</span><span class="s1">&#39;all&#39;</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">legend</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">clist</span><span class="o">=</span><span class="n">ehc</span><span class="o">.</span><span class="n">SCOLORS</span><span class="p">,</span>
+<div class="viewcode-block" id="Caltable.plot_dterms"><a class="viewcode-back" href="../../calibration.html#ehtim.caltable.Caltable.plot_dterms">[docs]</a>    <span class="k">def</span> <span class="nf">plot_dterms</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">sites</span><span class="o">=</span><span class="s1">&#39;all&#39;</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">legend</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">clist</span><span class="o">=</span><span class="n">ehc</span><span class="o">.</span><span class="n">SCOLORS</span><span class="p">,</span>
                     <span class="n">rangex</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">rangey</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">markersize</span><span class="o">=</span><span class="mi">2</span> <span class="o">*</span> <span class="n">ehc</span><span class="o">.</span><span class="n">MARKERSIZE</span><span class="p">,</span>
                     <span class="n">show</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">grid</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">export_pdf</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Make a plot of the D-terms.</span>
 
+<span class="sd">           Args:</span>
+<span class="sd">               sites (list) : list of sites to plot</span>
+<span class="sd">               label (str) : title for plot</span>
+<span class="sd">               legend (bool) : add telescope legend or not</span>
+<span class="sd">               clist (list) : list of colors for different stations</span>
+<span class="sd">               rangex (list) : lower and upper x-axis limits  </span>
+<span class="sd">               rangey (list) : lower and upper y-axis limits </span>
+<span class="sd">               markersize (float) : marker size</span>
+<span class="sd">               show (bool) : display the plot or not</span>
+<span class="sd">               grid (bool) : add a grid to the plot or not</span>
+<span class="sd">               export_pdf (str) : save a pdf file to this path </span>
+<span class="sd">               </span>
+<span class="sd">           Returns:</span>
+<span class="sd">               matplotlib.axes</span>
+<span class="sd">        &quot;&quot;&quot;</span>
         <span class="c1"># sites</span>
         <span class="k">if</span> <span class="n">sites</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;all&#39;</span> <span class="ow">or</span> <span class="s1">&#39;All&#39;</span><span class="p">]</span> <span class="ow">or</span> <span class="n">sites</span> <span class="o">==</span> <span class="p">[]:</span>
             <span class="n">sites</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span>
@@ -208,7 +224,7 @@
                                 <span class="n">rangex</span><span class="o">=</span><span class="n">rangex</span><span class="p">,</span> <span class="n">rangey</span><span class="o">=</span><span class="n">rangey</span><span class="p">,</span> <span class="n">markersize</span><span class="o">=</span><span class="n">markersize</span><span class="p">,</span>
                                 <span class="n">show</span><span class="o">=</span><span class="n">show</span><span class="p">,</span> <span class="n">grid</span><span class="o">=</span><span class="n">grid</span><span class="p">,</span> <span class="n">export_pdf</span><span class="o">=</span><span class="n">export_pdf</span><span class="p">)</span>
 
-        <span class="k">return</span> <span class="n">axes</span>
+        <span class="k">return</span> <span class="n">axes</span></div>
 
 <div class="viewcode-block" id="Caltable.plot_gains"><a class="viewcode-back" href="../../calibration.html#ehtim.caltable.Caltable.plot_gains">[docs]</a>    <span class="k">def</span> <span class="nf">plot_gains</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">sites</span><span class="p">,</span> <span class="n">gain_type</span><span class="o">=</span><span class="s1">&#39;amp&#39;</span><span class="p">,</span> <span class="n">pol</span><span class="o">=</span><span class="s1">&#39;R&#39;</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
                    <span class="n">ang_unit</span><span class="o">=</span><span class="s1">&#39;deg&#39;</span><span class="p">,</span> <span class="n">timetype</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">yscale</span><span class="o">=</span><span class="s1">&#39;log&#39;</span><span class="p">,</span> <span class="n">legend</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
@@ -344,7 +360,8 @@
         <span class="k">if</span> <span class="n">export_pdf</span> <span class="o">!=</span> <span class="s2">&quot;&quot;</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">axis</span><span class="p">:</span>
             <span class="n">fig</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="n">export_pdf</span><span class="p">,</span> <span class="n">bbox_inches</span><span class="o">=</span><span class="s1">&#39;tight&#39;</span><span class="p">)</span>
         <span class="k">if</span> <span class="n">show</span><span class="p">:</span>
-            <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">(</span><span class="n">block</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+            <span class="c1">#plt.show(block=False)</span>
+            <span class="n">ehc</span><span class="o">.</span><span class="n">show_noblock</span><span class="p">()</span>
 
         <span class="k">return</span> <span class="n">x</span></div>
 
@@ -683,8 +700,16 @@
 
         <span class="k">return</span> <span class="n">save_caltable</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">obs</span><span class="p">,</span> <span class="n">datadir</span><span class="o">=</span><span class="n">datadir</span><span class="p">,</span> <span class="n">sqrt_gains</span><span class="o">=</span><span class="n">sqrt_gains</span><span class="p">)</span></div>
 
-    <span class="k">def</span> <span class="nf">scan_avg</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">obs</span><span class="p">,</span> <span class="n">incoherent</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+<div class="viewcode-block" id="Caltable.scan_avg"><a class="viewcode-back" href="../../calibration.html#ehtim.caltable.Caltable.scan_avg">[docs]</a>    <span class="k">def</span> <span class="nf">scan_avg</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">obs</span><span class="p">,</span> <span class="n">incoherent</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;average the gains across scans.</span>
 
+<span class="sd">           Args:</span>
+<span class="sd">               obs (ehtim.Obsdata) : input observation</span>
+<span class="sd">               incoherent (bool) : True to average gain amps, False to average amps+phase</span>
+<span class="sd">               </span>
+<span class="sd">           Returns:</span>
+<span class="sd">               (Caltable): the averaged Caltable object</span>
+<span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">sites</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">keys</span><span class="p">()</span>
         <span class="n">ntele</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">sites</span><span class="p">)</span>
 
@@ -731,7 +756,7 @@
         <span class="k">else</span><span class="p">:</span>
             <span class="n">caltable</span> <span class="o">=</span> <span class="kc">False</span>
 
-        <span class="k">return</span> <span class="n">caltable</span>
+        <span class="k">return</span> <span class="n">caltable</span></div>
 
     <span class="k">def</span> <span class="nf">invert_gains</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
 
@@ -1079,7 +1104,8 @@
     <span class="k">if</span> <span class="n">export_pdf</span> <span class="o">!=</span> <span class="s2">&quot;&quot;</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">axis</span><span class="p">:</span>
         <span class="n">fig</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="n">export_pdf</span><span class="p">,</span> <span class="n">bbox_inches</span><span class="o">=</span><span class="s1">&#39;tight&#39;</span><span class="p">)</span>
     <span class="k">if</span> <span class="n">show</span><span class="p">:</span>
-        <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">(</span><span class="n">block</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+        <span class="c1">#plt.show(block=False)</span>
+        <span class="n">ehc</span><span class="o">.</span><span class="n">show_noblock</span><span class="p">()</span>
 
     <span class="k">return</span> <span class="n">x</span>
 </pre></div>

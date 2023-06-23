@@ -115,6 +115,7 @@
 <span class="kn">import</span> <span class="nn">scipy.interpolate</span>
 <span class="kn">from</span> <span class="nn">scipy</span> <span class="kn">import</span> <span class="n">ndimage</span> <span class="k">as</span> <span class="n">ndi</span>
 
+
 <span class="k">try</span><span class="p">:</span>
     <span class="kn">from</span> <span class="nn">skimage.feature</span> <span class="kn">import</span> <span class="n">canny</span>
     <span class="kn">from</span> <span class="nn">skimage.transform</span> <span class="kn">import</span> <span class="n">hough_circle</span><span class="p">,</span> <span class="n">hough_circle_peaks</span>
@@ -2421,8 +2422,8 @@
         <span class="k">if</span> <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">rf</span> <span class="o">-</span> <span class="n">obs</span><span class="o">.</span><span class="n">rf</span><span class="p">)</span> <span class="o">/</span> <span class="n">obs</span><span class="o">.</span><span class="n">rf</span> <span class="o">&gt;</span> <span class="n">tolerance</span><span class="p">):</span>
             <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;Image frequency is not the same as observation frequency!&quot;</span><span class="p">)</span>
 
-        <span class="k">if</span> <span class="n">ttype</span> <span class="o">==</span> <span class="s1">&#39;direct&#39;</span> <span class="ow">or</span> <span class="n">ttype</span> <span class="o">==</span> <span class="s1">&#39;fast&#39;</span> <span class="ow">or</span> <span class="n">ttype</span> <span class="o">==</span> <span class="s1">&#39;nfft&#39;</span><span class="p">:</span>
-            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Producing clean visibilities from image with &quot;</span> <span class="o">+</span> <span class="n">ttype</span> <span class="o">+</span> <span class="s2">&quot; FT . . . &quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="p">(</span><span class="n">ttype</span> <span class="o">==</span> <span class="s1">&#39;direct&#39;</span> <span class="ow">or</span> <span class="n">ttype</span> <span class="o">==</span> <span class="s1">&#39;fast&#39;</span> <span class="ow">or</span> <span class="n">ttype</span> <span class="o">==</span> <span class="s1">&#39;nfft&#39;</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">verbose</span><span class="p">:</span> <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Producing clean visibilities from image with &quot;</span> <span class="o">+</span> <span class="n">ttype</span> <span class="o">+</span> <span class="s2">&quot; FT . . . &quot;</span><span class="p">)</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;ttype=</span><span class="si">%s</span><span class="s2">, options for ttype are &#39;direct&#39;, &#39;fast&#39;, &#39;nfft&#39;&quot;</span> <span class="o">%</span> <span class="n">ttype</span><span class="p">)</span>
 
@@ -2696,7 +2697,7 @@
 <span class="sd">        &quot;&quot;&quot;</span>
 
         <span class="c1"># Generate empty observation</span>
-        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Generating empty observation file . . . &quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">verbose</span><span class="p">:</span> <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Generating empty observation file . . . &quot;</span><span class="p">)</span>
 
         <span class="k">if</span> <span class="n">mjd</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
             <span class="n">mjd</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">mjd</span>
@@ -3415,9 +3416,9 @@
             <span class="n">plt</span><span class="o">.</span><span class="n">legend</span><span class="p">()</span>
 
         <span class="k">if</span> <span class="n">show</span><span class="p">:</span>
-            <span class="n">plt</span><span class="o">.</span><span class="n">ion</span><span class="p">()</span>
-            <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">(</span><span class="n">block</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
-
+            <span class="c1">#plt.show(block=False)</span>
+            <span class="n">ehc</span><span class="o">.</span><span class="n">show_noblock</span><span class="p">()</span>
+            
         <span class="k">if</span> <span class="n">export_pdf</span> <span class="o">!=</span> <span class="s2">&quot;&quot;</span><span class="p">:</span>
             <span class="n">ax</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="n">export_pdf</span><span class="p">,</span> <span class="n">bbox_inches</span><span class="o">=</span><span class="s1">&#39;tight&#39;</span><span class="p">,</span> <span class="n">pad_inches</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
 
@@ -3429,7 +3430,8 @@
                 <span class="n">scale</span><span class="o">=</span><span class="s1">&#39;lin&#39;</span><span class="p">,</span> <span class="n">gamma</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span> <span class="n">dynamic_range</span><span class="o">=</span><span class="mf">1.e3</span><span class="p">,</span>
                 <span class="n">plotp</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">plot_stokes</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">nvec</span><span class="o">=</span><span class="mi">20</span><span class="p">,</span>
                 <span class="n">vec_cfun</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
-                <span class="n">scut</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">pcut</span><span class="o">=</span><span class="mf">0.1</span><span class="p">,</span> <span class="n">mcut</span><span class="o">=</span><span class="mf">0.01</span><span class="p">,</span> <span class="n">log_offset</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                <span class="n">scut</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">pcut</span><span class="o">=</span><span class="mf">0.1</span><span class="p">,</span> <span class="n">mcut</span><span class="o">=</span><span class="mf">0.01</span><span class="p">,</span> <span class="n">scale_ticks</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                <span class="n">log_offset</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
                 <span class="n">label_type</span><span class="o">=</span><span class="s1">&#39;ticks&#39;</span><span class="p">,</span> <span class="n">has_title</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
                 <span class="n">has_cbar</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">only_cbar</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">cbar_lims</span><span class="o">=</span><span class="p">(),</span> <span class="n">cbar_unit</span><span class="o">=</span><span class="p">(</span><span class="s1">&#39;Jy&#39;</span><span class="p">,</span> <span class="s1">&#39;pixel&#39;</span><span class="p">),</span>
                 <span class="n">export_pdf</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="n">pdf_pad_inches</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">show</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">beamparams</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
@@ -3693,7 +3695,7 @@
 
             <span class="k">if</span> <span class="ow">not</span> <span class="n">cfun</span><span class="p">:</span>
                 <span class="n">cfun</span> <span class="o">=</span> <span class="n">cfun_p</span>
-            <span class="n">cmap</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">get_cmap</span><span class="p">(</span><span class="n">cfun</span><span class="p">)</span>
+            <span class="n">cmap</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">get_cmap</span><span class="p">(</span><span class="n">cfun</span><span class="p">)</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
             <span class="n">cmap</span><span class="o">.</span><span class="n">set_bad</span><span class="p">(</span><span class="n">color</span><span class="o">=</span><span class="s1">&#39;whitesmoke&#39;</span><span class="p">)</span>
 
             <span class="k">if</span> <span class="n">cbar_lims</span><span class="p">:</span>
@@ -3815,6 +3817,12 @@
 
             <span class="n">voi</span> <span class="o">=</span> <span class="p">(</span><span class="n">vvec</span> <span class="o">/</span> <span class="n">imvec</span><span class="p">)</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ydim</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">xdim</span><span class="p">)</span>
             <span class="n">voi</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">logical_not</span><span class="p">(</span><span class="n">mask</span><span class="p">)]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span>
+
+            <span class="k">if</span> <span class="n">scale_ticks</span><span class="p">:</span>
+                <span class="n">pticks</span> <span class="o">=</span> <span class="p">((</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">qvec</span> <span class="o">+</span> <span class="mi">1</span><span class="n">j</span> <span class="o">*</span> <span class="n">uvec</span><span class="p">))</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ydim</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">xdim</span><span class="p">))[::</span><span class="n">thin</span><span class="p">,</span> <span class="p">::</span><span class="n">thin</span><span class="p">][</span><span class="n">mask2</span><span class="p">]</span>
+                <span class="n">pscale</span> <span class="o">=</span> <span class="p">(</span><span class="n">pticks</span> <span class="o">-</span> <span class="n">np</span><span class="o">.</span><span class="n">min</span><span class="p">(</span><span class="n">pticks</span><span class="p">))</span><span class="o">/</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">pticks</span><span class="p">)</span> <span class="o">-</span> <span class="n">np</span><span class="o">.</span><span class="n">min</span><span class="p">(</span><span class="n">pticks</span><span class="p">))</span>
+                <span class="n">a</span> <span class="o">*=</span> <span class="n">pscale</span>
+                <span class="n">b</span> <span class="o">*=</span> <span class="n">pscale</span>
 
             <span class="c1"># Little pol plots</span>
             <span class="k">if</span> <span class="n">plot_stokes</span><span class="p">:</span>
@@ -4022,8 +4030,9 @@
         <span class="k">if</span> <span class="n">axis</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
             <span class="k">return</span> <span class="n">axis</span>
         <span class="k">if</span> <span class="n">show</span><span class="p">:</span>
-            <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">(</span><span class="n">block</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
-
+            <span class="c1">#plt.show(block=False)</span>
+            <span class="n">ehc</span><span class="o">.</span><span class="n">show_noblock</span><span class="p">()</span>
+            
         <span class="k">if</span> <span class="n">export_pdf</span> <span class="o">!=</span> <span class="s2">&quot;&quot;</span><span class="p">:</span>
             <span class="n">f</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="n">export_pdf</span><span class="p">,</span> <span class="n">bbox_inches</span><span class="o">=</span><span class="s1">&#39;tight&#39;</span><span class="p">,</span> <span class="n">pad_inches</span><span class="o">=</span><span class="n">pdf_pad_inches</span><span class="p">,</span> <span class="n">dpi</span><span class="o">=</span><span class="n">dpi</span><span class="p">)</span>
 
@@ -4129,8 +4138,8 @@
         <span class="n">plt</span><span class="o">.</span><span class="n">ylabel</span><span class="p">(</span><span class="sa">r</span><span class="s1">&#39;Relative Dec ($\mu$as)&#39;</span><span class="p">)</span>
 
         <span class="k">if</span> <span class="n">show</span><span class="p">:</span>
-            <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">(</span><span class="n">block</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
-
+            <span class="c1">#plt.show(block=False)</span>
+            <span class="n">ehc</span><span class="o">.</span><span class="n">show_noblock</span><span class="p">()</span>
         <span class="k">if</span> <span class="n">export_pdf</span> <span class="o">!=</span> <span class="s2">&quot;&quot;</span><span class="p">:</span>
             <span class="n">f</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="n">export_pdf</span><span class="p">,</span> <span class="n">bbox_inches</span><span class="o">=</span><span class="s1">&#39;tight&#39;</span><span class="p">)</span>
 

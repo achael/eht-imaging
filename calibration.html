@@ -298,6 +298,31 @@ By rescaling the entire gain curve to enforce a specified minimum site gain.</p>
 </dd></dl>
 
 <dl class="py method">
+<dt id="ehtim.caltable.Caltable.plot_dterms">
+<code class="sig-name descname">plot_dterms</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">sites</span><span class="o">=</span><span class="default_value">'all'</span></em>, <em class="sig-param"><span class="n">label</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">legend</span><span class="o">=</span><span class="default_value">True</span></em>, <em class="sig-param"><span class="n">clist</span><span class="o">=</span><span class="default_value">[0.11764705882352941, 0.5647058823529412, 1.0, 1.0, 0.38823529411764707, 0.2784313725490196, 0.5411764705882353, 0.16862745098039217, 0.8862745098039215, 0.4196078431372549, 0.5568627450980392, 0.13725490196078433, 1.0, 0.6470588235294118, 0.0, 0.5450980392156862, 0.27058823529411763, 0.07450980392156863, 0.0, 0.0, 0.803921568627451, 1.0, 0.0, 0.0, 0.0, 1.0, 1.0, 1.0, 0.0, 1.0, 0.0, 0.39215686274509803, 0.0, 0.8235294117647058, 0.7058823529411765, 0.5490196078431373, 0.0, 0.0, 0.0]</span></em>, <em class="sig-param"><span class="n">rangex</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">rangey</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">markersize</span><span class="o">=</span><span class="default_value">6</span></em>, <em class="sig-param"><span class="n">show</span><span class="o">=</span><span class="default_value">True</span></em>, <em class="sig-param"><span class="n">grid</span><span class="o">=</span><span class="default_value">True</span></em>, <em class="sig-param"><span class="n">export_pdf</span><span class="o">=</span><span class="default_value">''</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/caltable.html#Caltable.plot_dterms"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.caltable.Caltable.plot_dterms" title="Permalink to this definition">¶</a></dt>
+<dd><p>Make a plot of the D-terms.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>sites</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.11)"><em>list</em></a>) – list of sites to plot</p></li>
+<li><p><strong>label</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.11)"><em>str</em></a>) – title for plot</p></li>
+<li><p><strong>legend</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.11)"><em>bool</em></a>) – add telescope legend or not</p></li>
+<li><p><strong>clist</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.11)"><em>list</em></a>) – list of colors for different stations</p></li>
+<li><p><strong>rangex</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.11)"><em>list</em></a>) – lower and upper x-axis limits</p></li>
+<li><p><strong>rangey</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.11)"><em>list</em></a>) – lower and upper y-axis limits</p></li>
+<li><p><strong>markersize</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.11)"><em>float</em></a>) – marker size</p></li>
+<li><p><strong>show</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.11)"><em>bool</em></a>) – display the plot or not</p></li>
+<li><p><strong>grid</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.11)"><em>bool</em></a>) – add a grid to the plot or not</p></li>
+<li><p><strong>export_pdf</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.11)"><em>str</em></a>) – save a pdf file to this path</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>matplotlib.axes</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
 <dt id="ehtim.caltable.Caltable.plot_gains">
 <code class="sig-name descname">plot_gains</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">sites</span></em>, <em class="sig-param"><span class="n">gain_type</span><span class="o">=</span><span class="default_value">'amp'</span></em>, <em class="sig-param"><span class="n">pol</span><span class="o">=</span><span class="default_value">'R'</span></em>, <em class="sig-param"><span class="n">label</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">ang_unit</span><span class="o">=</span><span class="default_value">'deg'</span></em>, <em class="sig-param"><span class="n">timetype</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">yscale</span><span class="o">=</span><span class="default_value">'log'</span></em>, <em class="sig-param"><span class="n">legend</span><span class="o">=</span><span class="default_value">True</span></em>, <em class="sig-param"><span class="n">clist</span><span class="o">=</span><span class="default_value">[0.11764705882352941, 0.5647058823529412, 1.0, 1.0, 0.38823529411764707, 0.2784313725490196, 0.5411764705882353, 0.16862745098039217, 0.8862745098039215, 0.4196078431372549, 0.5568627450980392, 0.13725490196078433, 1.0, 0.6470588235294118, 0.0, 0.5450980392156862, 0.27058823529411763, 0.07450980392156863, 0.0, 0.0, 0.803921568627451, 1.0, 0.0, 0.0, 0.0, 1.0, 1.0, 1.0, 0.0, 1.0, 0.0, 0.39215686274509803, 0.0, 0.8235294117647058, 0.7058823529411765, 0.5490196078431373, 0.0, 0.0, 0.0]</span></em>, <em class="sig-param"><span class="n">rangex</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">rangey</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">markersize</span><span class="o">=</span><span class="default_value">[3]</span></em>, <em class="sig-param"><span class="n">show</span><span class="o">=</span><span class="default_value">True</span></em>, <em class="sig-param"><span class="n">grid</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">axislabels</span><span class="o">=</span><span class="default_value">True</span></em>, <em class="sig-param"><span class="n">axis</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">export_pdf</span><span class="o">=</span><span class="default_value">''</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/caltable.html#Caltable.plot_gains"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.caltable.Caltable.plot_gains" title="Permalink to this definition">¶</a></dt>
 <dd><p>Plot gains on multiple sites vs time.
@@ -356,6 +381,26 @@ By rescaling the entire gain curve to enforce a specified minimum site gain.</p>
 :param sqrt_gains: If True, we square gains before saving.
 :type sqrt_gains: bool</p>
 <p>Returns:</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="ehtim.caltable.Caltable.scan_avg">
+<code class="sig-name descname">scan_avg</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">obs</span></em>, <em class="sig-param"><span class="n">incoherent</span><span class="o">=</span><span class="default_value">True</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/caltable.html#Caltable.scan_avg"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.caltable.Caltable.scan_avg" title="Permalink to this definition">¶</a></dt>
+<dd><p>average the gains across scans.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>obs</strong> (<em>ehtim.Obsdata</em>) – input observation</p></li>
+<li><p><strong>incoherent</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.11)"><em>bool</em></a>) – True to average gain amps, False to average amps+phase</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>the averaged Caltable object</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>(<a class="reference internal" href="#ehtim.caltable.Caltable" title="ehtim.caltable.Caltable">Caltable</a>)</p>
+</dd>
+</dl>
 </dd></dl>
 
 </dd></dl>

@@ -1340,6 +1340,20 @@ and optionally baseline / stations</p>
 </dd></dl>
 
 <dl class="py method">
+<dt id="ehtim.obsdata.Obsdata.getClosestScan">
+<code class="sig-name descname">getClosestScan</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">time</span></em>, <em class="sig-param"><span class="n">splitObs</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/obsdata.html#Obsdata.getClosestScan"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.obsdata.Obsdata.getClosestScan" title="Permalink to this definition">¶</a></dt>
+<dd><p>Split observation by scan and grab scan closest to timestamp</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>time</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.11)"><em>float</em></a>) – Time (GMST) you want to find the scan closest to</p></li>
+<li><p><strong>splitObs</strong> – a list of Obsdata objects, output from split_obs, to save time</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
 <dt id="ehtim.obsdata.Obsdata.make_hdulist">
 <code class="sig-name descname">make_hdulist</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">force_singlepol</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">polrep_out</span><span class="o">=</span><span class="default_value">'circ'</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/obsdata.html#Obsdata.make_hdulist"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.obsdata.Obsdata.make_hdulist" title="Permalink to this definition">¶</a></dt>
 <dd><p>Returns an hdulist in the same format as in a saved .uvfits file.
@@ -1919,6 +1933,42 @@ when converting ‘stokes’ to ‘circ’ if only I is present</p></li>
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>arrfile</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.11)"><em>str</em></a>) – path to input array file</p></li>
+<li><p><strong>obsspec</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.11)"><em>str</em></a>) – path to input obs spec file</p></li>
+<li><p><strong>ifile</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.11)"><em>str</em></a>) – path to input Stokes I data file</p></li>
+<li><p><strong>qfile</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.11)"><em>str</em></a>) – path to input Stokes Q data file</p></li>
+<li><p><strong>ufile</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.11)"><em>str</em></a>) – path to input Stokes U data file</p></li>
+<li><p><strong>vfile</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.11)"><em>str</em></a>) – path to input Stokes V data file</p></li>
+<li><p><strong>src</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.11)"><em>str</em></a>) – source name</p></li>
+<li><p><strong>mjd</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.11)"><em>int</em></a>) – integer observation  MJD</p></li>
+<li><p><strong>ampcal</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.11)"><em>bool</em></a>) – True if amplitude calibrated</p></li>
+<li><p><strong>phasecal</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.11)"><em>bool</em></a>) – True if phase calibrated</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>Obsdata object loaded from file</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>obs (<a class="reference internal" href="#ehtim.obsdata.Obsdata" title="ehtim.obsdata.Obsdata">Obsdata</a>)</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="ehtim.obsdata.load_obs">
+<code class="sig-prename descclassname">ehtim.obsdata.</code><code class="sig-name descname">load_obs</code><span class="sig-paren">(</span><em class="sig-param">fname</em>, <em class="sig-param">polrep='stokes'</em>, <em class="sig-param">flipbl=False</em>, <em class="sig-param">remove_nan=False</em>, <em class="sig-param">force_singlepol=None</em>, <em class="sig-param">channel=&lt;built-in function all&gt;</em>, <em class="sig-param">IF=&lt;built-in function all&gt;</em>, <em class="sig-param">allow_singlepol=True</em>, <em class="sig-param">flux=1.0</em>, <em class="sig-param">obsspec=None</em>, <em class="sig-param">ifile=None</em>, <em class="sig-param">qfile=None</em>, <em class="sig-param">ufile=None</em>, <em class="sig-param">vfile=None</em>, <em class="sig-param">src='SgrA'</em>, <em class="sig-param">mjd=51544</em>, <em class="sig-param">ampcal=False</em>, <em class="sig-param">phasecal=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/obsdata.html#load_obs"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.obsdata.load_obs" title="Permalink to this definition">¶</a></dt>
+<dd><p>Smart obs read-in, detects file type and loads appropriately.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>fname</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.11)"><em>str</em></a>) – path to input text file</p></li>
+<li><p><strong>polrep</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.11)"><em>str</em></a>) – load data as either ‘stokes’ or ‘circ’</p></li>
+<li><p><strong>flipbl</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.11)"><em>bool</em></a>) – flip baseline phases if True.</p></li>
+<li><p><strong>remove_nan</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.11)"><em>bool</em></a>) – True to remove nans from missing polarizations</p></li>
+<li><p><strong>polrep</strong> – load data as either ‘stokes’ or ‘circ’</p></li>
+<li><p><strong>force_singlepol</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.11)"><em>str</em></a>) – ‘R’ or ‘L’ to load only 1 polarization</p></li>
+<li><p><strong>channel</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.11)"><em>list</em></a>) – list of channels to average in the import. channel=all averages all</p></li>
+<li><p><strong>IF</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.11)"><em>list</em></a>) – list of IFs to  average in  the import. IF=all averages all IFS</p></li>
+<li><p><strong>flux</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.11)"><em>float</em></a>) – normalization total flux</p></li>
 <li><p><strong>obsspec</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.11)"><em>str</em></a>) – path to input obs spec file</p></li>
 <li><p><strong>ifile</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.11)"><em>str</em></a>) – path to input Stokes I data file</p></li>
 <li><p><strong>qfile</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.11)"><em>str</em></a>) – path to input Stokes Q data file</p></li>

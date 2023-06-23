@@ -1087,7 +1087,7 @@
             <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;Movie frequency is not the same as observation frequency!&quot;</span><span class="p">)</span>
 
         <span class="k">if</span> <span class="n">ttype</span> <span class="o">==</span> <span class="s1">&#39;direct&#39;</span> <span class="ow">or</span> <span class="n">ttype</span> <span class="o">==</span> <span class="s1">&#39;fast&#39;</span> <span class="ow">or</span> <span class="n">ttype</span> <span class="o">==</span> <span class="s1">&#39;nfft&#39;</span><span class="p">:</span>
-            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Producing clean visibilities from movie with &quot;</span> <span class="o">+</span> <span class="n">ttype</span> <span class="o">+</span> <span class="s2">&quot; FT . . . &quot;</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">verbose</span><span class="p">:</span> <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Producing clean visibilities from movie with &quot;</span> <span class="o">+</span> <span class="n">ttype</span> <span class="o">+</span> <span class="s2">&quot; FT . . . &quot;</span><span class="p">)</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;ttype=</span><span class="si">%s</span><span class="s2">, options for ttype are &#39;direct&#39;, &#39;fast&#39;, &#39;nfft&#39;&quot;</span> <span class="o">%</span> <span class="n">ttype</span><span class="p">)</span>
 
@@ -1391,7 +1391,7 @@
 <span class="sd">        &quot;&quot;&quot;</span>
 
         <span class="c1"># Generate empty observation</span>
-        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Generating empty observation file . . . &quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">verbose</span><span class="p">:</span> <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Generating empty observation file . . . &quot;</span><span class="p">)</span>
         <span class="k">if</span> <span class="n">mjd</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
             <span class="n">mjd</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">mjd</span>
         <span class="k">if</span> <span class="n">polrep_obs</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>

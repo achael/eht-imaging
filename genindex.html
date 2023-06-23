@@ -185,13 +185,19 @@
       </ul></li>
       <li><a href="image.html#ehtim.image.Image.add_random_pol">add_random_pol() (ehtim.image.Image method)</a>
 </li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="model.html#ehtim.model.Model.add_ring">add_ring() (ehtim.model.Model method)</a>
 </li>
       <li><a href="image.html#ehtim.image.Image.add_ring_m1">add_ring_m1() (ehtim.image.Image method)</a>
 </li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="array.html#ehtim.array.Array.add_satellite_elements">add_satellite_elements() (ehtim.array.Array method)</a>
+</li>
+      <li><a href="array.html#ehtim.array.Array.add_satellite_tle">add_satellite_tle() (ehtim.array.Array method)</a>
+</li>
       <li><a href="obsdata.html#ehtim.obsdata.Obsdata.add_scans">add_scans() (ehtim.obsdata.Obsdata method)</a>
+</li>
+      <li><a href="array.html#ehtim.array.Array.add_site">add_site() (ehtim.array.Array method)</a>
 </li>
       <li><a href="model.html#ehtim.model.Model.add_stretched_mring">add_stretched_mring() (ehtim.model.Model method)</a>
 </li>
@@ -363,9 +369,11 @@
 </li>
       <li><a href="image.html#ehtim.image.Image.contour">contour() (ehtim.image.Image method)</a>
 </li>
-      <li><a href="calibration.html#ehtim.caltable.Caltable.copy">copy() (ehtim.caltable.Caltable method)</a>
+      <li><a href="array.html#ehtim.array.Array.copy">copy() (ehtim.array.Array method)</a>
 
       <ul>
+        <li><a href="calibration.html#ehtim.caltable.Caltable.copy">(ehtim.caltable.Caltable method)</a>
+</li>
         <li><a href="image.html#ehtim.image.Image.copy">(ehtim.image.Image method)</a>
 </li>
         <li><a href="model.html#ehtim.model.Model.copy">(ehtim.model.Model method)</a>
@@ -663,10 +671,10 @@
 </li>
       <li><a href="image.html#ehtim.image.Image.get_polvec">get_polvec() (ehtim.image.Image method)</a>
 </li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="plotting.html#ehtim.plotting.comparisons.get_psize_fov">get_psize_fov() (in module ehtim.plotting.comparisons)</a>
 </li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="vex.html#ehtim.vex.Vex.get_sector">get_sector() (ehtim.vex.Vex method)</a>
 </li>
       <li><a href="vex.html#ehtim.vex.Vex.get_SEFD">get_SEFD() (ehtim.vex.Vex method)</a>
@@ -674,6 +682,8 @@
       <li><a href="image.html#ehtim.image.get_specim">get_specim() (in module ehtim.image)</a>
 </li>
       <li><a href="vex.html#ehtim.vex.Vex.get_variable">get_variable() (ehtim.vex.Vex method)</a>
+</li>
+      <li><a href="obsdata.html#ehtim.obsdata.Obsdata.getClosestScan">getClosestScan() (ehtim.obsdata.Obsdata method)</a>
 </li>
       <li><a href="image.html#ehtim.image.Image.grad">grad() (ehtim.image.Image method)</a>
 </li>
@@ -772,6 +782,8 @@
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="obsdata.html#ehtim.obsdata.load_maps">load_maps() (in module ehtim.obsdata)</a>
+</li>
+      <li><a href="obsdata.html#ehtim.obsdata.load_obs">load_obs() (in module ehtim.obsdata)</a>
 </li>
       <li><a href="obsdata.html#ehtim.obsdata.load_oifits">load_oifits() (in module ehtim.obsdata)</a>
 </li>
@@ -1107,16 +1119,22 @@
 </li>
       <li><a href="plotting.html#ehtim.plotting.comp_plots.plot_cphase_obs_im_compare">plot_cphase_obs_im_compare() (in module ehtim.plotting.comp_plots)</a>
 </li>
+      <li><a href="array.html#ehtim.array.Array.plot_dterms">plot_dterms() (ehtim.array.Array method)</a>
+
+      <ul>
+        <li><a href="calibration.html#ehtim.caltable.Caltable.plot_dterms">(ehtim.caltable.Caltable method)</a>
+</li>
+      </ul></li>
       <li><a href="calibration.html#ehtim.caltable.Caltable.plot_gains">plot_gains() (ehtim.caltable.Caltable method)</a>
 </li>
       <li><a href="obsdata.html#ehtim.obsdata.Obsdata.plotall">plotall() (ehtim.obsdata.Obsdata method)</a>
 </li>
       <li><a href="plotting.html#ehtim.plotting.comp_plots.plotall_compare">plotall_compare() (in module ehtim.plotting.comp_plots)</a>
 </li>
-      <li><a href="plotting.html#ehtim.plotting.comp_plots.plotall_obs_compare">plotall_obs_compare() (in module ehtim.plotting.comp_plots)</a>
-</li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="plotting.html#ehtim.plotting.comp_plots.plotall_obs_compare">plotall_obs_compare() (in module ehtim.plotting.comp_plots)</a>
+</li>
       <li><a href="plotting.html#ehtim.plotting.comp_plots.plotall_obs_im_compare">plotall_obs_im_compare() (in module ehtim.plotting.comp_plots)</a>
 </li>
       <li><a href="plotting.html#ehtim.plotting.comp_plots.plotall_obs_im_cphases">plotall_obs_im_cphases() (in module ehtim.plotting.comp_plots)</a>
@@ -1205,6 +1223,8 @@
       <li><a href="imager.html#ehtim.imager.Imager.reg_terms_last">reg_terms_last() (ehtim.imager.Imager method)</a>
 </li>
       <li><a href="image.html#ehtim.image.Image.regrid_image">regrid_image() (ehtim.image.Image method)</a>
+</li>
+      <li><a href="array.html#ehtim.array.Array.remove_site">remove_site() (ehtim.array.Array method)</a>
 </li>
       <li><a href="obsdata.html#ehtim.obsdata.Obsdata.reorder_baselines">reorder_baselines() (ehtim.obsdata.Obsdata method)</a>
 </li>
@@ -1301,6 +1321,8 @@
 </li>
       </ul></li>
       <li><a href="obsdata.html#ehtim.obsdata.Obsdata.save_uvfits">save_uvfits() (ehtim.obsdata.Obsdata method)</a>
+</li>
+      <li><a href="calibration.html#ehtim.caltable.Caltable.scan_avg">scan_avg() (ehtim.caltable.Caltable method)</a>
 </li>
       <li><a href="obsdata.html#ehtim.obsdata.Obsdata.scantable">scantable (ehtim.obsdata.Obsdata attribute)</a>
 </li>

@@ -119,6 +119,57 @@ Space antennas have x=y=z=0 in the tarr</p>
 </dd></dl>
 
 <dl class="py method">
+<dt id="ehtim.array.Array.add_satellite_elements">
+<code class="sig-name descname">add_satellite_elements</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">satname</span></em>, <em class="sig-param"><span class="n">perigee_mjd</span><span class="o">=</span><span class="default_value">60118.82002145405</span></em>, <em class="sig-param"><span class="n">period_days</span><span class="o">=</span><span class="default_value">1.0</span></em>, <em class="sig-param"><span class="n">eccentricity</span><span class="o">=</span><span class="default_value">0.0</span></em>, <em class="sig-param"><span class="n">inclination</span><span class="o">=</span><span class="default_value">0.0</span></em>, <em class="sig-param"><span class="n">arg_perigee</span><span class="o">=</span><span class="default_value">0.0</span></em>, <em class="sig-param"><span class="n">long_ascending</span><span class="o">=</span><span class="default_value">0.0</span></em>, <em class="sig-param"><span class="n">sefd</span><span class="o">=</span><span class="default_value">10000</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/array.html#Array.add_satellite_elements"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.array.Array.add_satellite_elements" title="Permalink to this definition">¶</a></dt>
+<dd><p>Add an earth-orbiting satellite to the array from simple keplerian elements
+perfect keplerian orbit is assumed, no derivatives</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>time given in mjd</strong> (<em>perigee</em>) – </p></li>
+<li><p><strong>given in days</strong> (<em>period</em>) – </p></li>
+<li><p><strong>arg_perigee</strong><strong>, </strong><strong>long_ascending given in degrees</strong> (<em>inclination</em><em>,</em>) – </p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="ehtim.array.Array.add_satellite_tle">
+<code class="sig-name descname">add_satellite_tle</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">tlelist</span></em>, <em class="sig-param"><span class="n">sefd</span><span class="o">=</span><span class="default_value">10000</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/array.html#Array.add_satellite_tle"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.array.Array.add_satellite_tle" title="Permalink to this definition">¶</a></dt>
+<dd><p>Add an earth-orbiting satellite to the array from a TLE</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>tlearr</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.11)"><em>str</em></a>) – 3 element list with [name, tle line 1, tle line 2] as strings</p></li>
+<li><p><strong>sefd</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.11)"><em>float</em></a>) – assumed sefd for the array file (assumes sefdl = sefdr)</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="ehtim.array.Array.add_site">
+<code class="sig-name descname">add_site</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">site</span></em>, <em class="sig-param"><span class="n">coords</span></em>, <em class="sig-param"><span class="n">sefd</span><span class="o">=</span><span class="default_value">10000</span></em>, <em class="sig-param"><span class="n">fr_par</span><span class="o">=</span><span class="default_value">0</span></em>, <em class="sig-param"><span class="n">fr_elev</span><span class="o">=</span><span class="default_value">0</span></em>, <em class="sig-param"><span class="n">fr_off</span><span class="o">=</span><span class="default_value">0</span></em>, <em class="sig-param"><span class="n">dr</span><span class="o">=</span><span class="default_value">0j</span></em>, <em class="sig-param"><span class="n">dl</span><span class="o">=</span><span class="default_value">0j</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/array.html#Array.add_site"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.array.Array.add_site" title="Permalink to this definition">¶</a></dt>
+<dd><p>Add a ground station to the array</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="ehtim.array.Array.copy">
+<code class="sig-name descname">copy</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/array.html#Array.copy"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.array.Array.copy" title="Permalink to this definition">¶</a></dt>
+<dd><p>Copy the array object.</p>
+<p>Args:</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>a copy of the Array object.</p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p>(<a class="reference internal" href="#ehtim.array.Array" title="ehtim.array.Array">Array</a>)</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
 <dt id="ehtim.array.Array.listbls">
 <code class="sig-name descname">listbls</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/array.html#Array.listbls"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.array.Array.listbls" title="Permalink to this definition">¶</a></dt>
 <dd><p>List all baselines.</p>
@@ -177,6 +228,37 @@ Space antennas have x=y=z=0 in the tarr</p>
 </dd></dl>
 
 <dl class="py method">
+<dt id="ehtim.array.Array.plot_dterms">
+<code class="sig-name descname">plot_dterms</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">sites</span><span class="o">=</span><span class="default_value">'all'</span></em>, <em class="sig-param"><span class="n">label</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">legend</span><span class="o">=</span><span class="default_value">True</span></em>, <em class="sig-param"><span class="n">clist</span><span class="o">=</span><span class="default_value">[0.11764705882352941, 0.5647058823529412, 1.0, 1.0, 0.38823529411764707, 0.2784313725490196, 0.5411764705882353, 0.16862745098039217, 0.8862745098039215, 0.4196078431372549, 0.5568627450980392, 0.13725490196078433, 1.0, 0.6470588235294118, 0.0, 0.5450980392156862, 0.27058823529411763, 0.07450980392156863, 0.0, 0.0, 0.803921568627451, 1.0, 0.0, 0.0, 0.0, 1.0, 1.0, 1.0, 0.0, 1.0, 0.0, 0.39215686274509803, 0.0, 0.8235294117647058, 0.7058823529411765, 0.5490196078431373, 0.0, 0.0, 0.0]</span></em>, <em class="sig-param"><span class="n">rangex</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">rangey</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">markersize</span><span class="o">=</span><span class="default_value">6</span></em>, <em class="sig-param"><span class="n">show</span><span class="o">=</span><span class="default_value">True</span></em>, <em class="sig-param"><span class="n">grid</span><span class="o">=</span><span class="default_value">True</span></em>, <em class="sig-param"><span class="n">export_pdf</span><span class="o">=</span><span class="default_value">''</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/array.html#Array.plot_dterms"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.array.Array.plot_dterms" title="Permalink to this definition">¶</a></dt>
+<dd><p>Make a plot of the D-terms.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>sites</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.11)"><em>list</em></a>) – list of sites to plot</p></li>
+<li><p><strong>label</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.11)"><em>str</em></a>) – title for plot</p></li>
+<li><p><strong>legend</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.11)"><em>bool</em></a>) – add telescope legend or not</p></li>
+<li><p><strong>clist</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.11)"><em>list</em></a>) – list of colors for different stations</p></li>
+<li><p><strong>rangex</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.11)"><em>list</em></a>) – lower and upper x-axis limits</p></li>
+<li><p><strong>rangey</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.11)"><em>list</em></a>) – lower and upper y-axis limits</p></li>
+<li><p><strong>markersize</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.11)"><em>float</em></a>) – marker size</p></li>
+<li><p><strong>show</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.11)"><em>bool</em></a>) – display the plot or not</p></li>
+<li><p><strong>grid</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.11)"><em>bool</em></a>) – add a grid to the plot or not</p></li>
+<li><p><strong>export_pdf</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.11)"><em>str</em></a>) – save a pdf file to this path</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>matplotlib.axes</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="ehtim.array.Array.remove_site">
+<code class="sig-name descname">remove_site</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">site</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/array.html#Array.remove_site"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.array.Array.remove_site" title="Permalink to this definition">¶</a></dt>
+<dd><p>Remove a site from the array</p>
+</dd></dl>
+
+<dl class="py method">
 <dt id="ehtim.array.Array.save_txt">
 <code class="sig-name descname">save_txt</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">fname</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/array.html#Array.save_txt"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.array.Array.save_txt" title="Permalink to this definition">¶</a></dt>
 <dd><p>Save the array data in a text file.</p>
@@ -198,7 +280,7 @@ Sites with x=y=z=0 are spacecraft, TLE ephemerides read from ephemdir.</p>
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>fname</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.11)"><em>str</em></a>) – path to input array file</p></li>
-<li><p><strong>ephemdir</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.11)"><em>str</em></a>) – path to directory with 2TLE ephemerides for spacecraft</p></li>
+<li><p><strong>ephemdir</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.11)"><em>str</em></a>) – path to directory with TLE ephemerides for spacecraft</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns</dt>

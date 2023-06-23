@@ -103,11 +103,17 @@
 <span class="kn">from</span> <span class="nn">builtins</span> <span class="kn">import</span> <span class="nb">object</span>
 
 <span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
-
+<span class="kn">import</span> <span class="nn">copy</span>
+<span class="kn">from</span> <span class="nn">astropy.time</span> <span class="kn">import</span> <span class="n">Time</span>
+<span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
+<span class="kn">import</span> <span class="nn">matplotlib</span>
 <span class="kn">import</span> <span class="nn">ehtim.observing.obs_simulate</span> <span class="k">as</span> <span class="nn">simobs</span>
+<span class="kn">import</span> <span class="nn">ehtim.observing.obs_helpers</span> <span class="k">as</span> <span class="nn">obsh</span>
 <span class="kn">import</span> <span class="nn">ehtim.io.save</span>
 <span class="kn">import</span> <span class="nn">ehtim.io.load</span>
 <span class="kn">import</span> <span class="nn">ehtim.const_def</span> <span class="k">as</span> <span class="nn">ehc</span>
+<span class="kn">from</span> <span class="nn">ehtim.caltable</span> <span class="kn">import</span> <span class="n">plot_tarr_dterms</span>
+
 
 <span class="c1">###################################################################################################</span>
 <span class="c1"># Array object</span>
@@ -138,12 +144,33 @@
                 <span class="k">except</span> <span class="ne">NameError</span><span class="p">:</span>
                     <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s1">&#39;no ephemeris for site </span><span class="si">%s</span><span class="s1"> !&#39;</span> <span class="o">%</span> <span class="n">sitename</span><span class="p">)</span>
                 <span class="k">if</span> <span class="n">elen</span> <span class="o">!=</span> <span class="mi">3</span><span class="p">:</span>
-
                     <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s1">&#39;wrong ephemeris format for site </span><span class="si">%s</span><span class="s1"> !&#39;</span> <span class="o">%</span> <span class="n">sitename</span><span class="p">)</span>
 
         <span class="c1"># Dictionary of array indices for site names</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">tkey</span> <span class="o">=</span> <span class="p">{</span><span class="bp">self</span><span class="o">.</span><span class="n">tarr</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="s1">&#39;site&#39;</span><span class="p">]:</span> <span class="n">i</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">tarr</span><span class="p">))}</span>
 
+    <span class="nd">@property</span> 
+    <span class="k">def</span> <span class="nf">tarr</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_tarr</span>
+        
+    <span class="nd">@tarr</span><span class="o">.</span><span class="n">setter</span> 
+    <span class="k">def</span> <span class="nf">tarr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">tarr</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_tarr</span> <span class="o">=</span> <span class="n">tarr</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">tkey</span> <span class="o">=</span> <span class="p">{</span><span class="n">tarr</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="s1">&#39;site&#39;</span><span class="p">]:</span> <span class="n">i</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">tarr</span><span class="p">))}</span>
+
+<div class="viewcode-block" id="Array.copy"><a class="viewcode-back" href="../../array.html#ehtim.array.Array.copy">[docs]</a>    <span class="k">def</span> <span class="nf">copy</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Copy the array object.</span>
+
+<span class="sd">           Args:</span>
+
+<span class="sd">           Returns:</span>
+<span class="sd">               (Array): a copy of the Array object.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="n">newarr</span> <span class="o">=</span> <span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">newarr</span></div>
+
+       
 <div class="viewcode-block" id="Array.listbls"><a class="viewcode-back" href="../../array.html#ehtim.array.Array.listbls">[docs]</a>    <span class="k">def</span> <span class="nf">listbls</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;List all baselines.</span>
 
@@ -227,8 +254,199 @@
 <span class="sd">               fname (str) : path to output array file</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">ehtim</span><span class="o">.</span><span class="n">io</span><span class="o">.</span><span class="n">save</span><span class="o">.</span><span class="n">save_array_txt</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">fname</span><span class="p">)</span>
-        <span class="k">return</span></div></div>
+        <span class="k">return</span></div>
 
+<div class="viewcode-block" id="Array.plot_dterms"><a class="viewcode-back" href="../../array.html#ehtim.array.Array.plot_dterms">[docs]</a>    <span class="k">def</span> <span class="nf">plot_dterms</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">sites</span><span class="o">=</span><span class="s1">&#39;all&#39;</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">legend</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">clist</span><span class="o">=</span><span class="n">ehc</span><span class="o">.</span><span class="n">SCOLORS</span><span class="p">,</span>
+                    <span class="n">rangex</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">rangey</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">markersize</span><span class="o">=</span><span class="mi">2</span> <span class="o">*</span> <span class="n">ehc</span><span class="o">.</span><span class="n">MARKERSIZE</span><span class="p">,</span>
+                    <span class="n">show</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">grid</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">export_pdf</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Make a plot of the D-terms.</span>
+
+<span class="sd">           Args:</span>
+<span class="sd">               sites (list) : list of sites to plot</span>
+<span class="sd">               label (str) : title for plot</span>
+<span class="sd">               legend (bool) : add telescope legend or not</span>
+<span class="sd">               clist (list) : list of colors for different stations</span>
+<span class="sd">               rangex (list) : lower and upper x-axis limits  </span>
+<span class="sd">               rangey (list) : lower and upper y-axis limits </span>
+<span class="sd">               markersize (float) : marker size</span>
+<span class="sd">               show (bool) : display the plot or not</span>
+<span class="sd">               grid (bool) : add a grid to the plot or not</span>
+<span class="sd">               export_pdf (str) : save a pdf file to this path </span>
+<span class="sd">               </span>
+<span class="sd">           Returns:</span>
+<span class="sd">               matplotlib.axes</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># sites</span>
+        <span class="k">if</span> <span class="n">sites</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;all&#39;</span> <span class="ow">or</span> <span class="s1">&#39;All&#39;</span><span class="p">]</span> <span class="ow">or</span> <span class="n">sites</span> <span class="o">==</span> <span class="p">[]:</span>
+            <span class="n">sites</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">tkey</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">sites</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+            <span class="n">sites</span> <span class="o">=</span> <span class="p">[</span><span class="n">sites</span><span class="p">]</span>
+
+        <span class="n">keys</span> <span class="o">=</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">tkey</span><span class="p">[</span><span class="n">site</span><span class="p">]</span> <span class="k">for</span> <span class="n">site</span> <span class="ow">in</span> <span class="n">sites</span><span class="p">]</span>
+
+        <span class="n">axes</span> <span class="o">=</span> <span class="n">plot_tarr_dterms</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">tarr</span><span class="p">,</span> <span class="n">keys</span><span class="o">=</span><span class="n">keys</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="n">label</span><span class="p">,</span> <span class="n">legend</span><span class="o">=</span><span class="n">legend</span><span class="p">,</span> <span class="n">clist</span><span class="o">=</span><span class="n">clist</span><span class="p">,</span>
+                                <span class="n">rangex</span><span class="o">=</span><span class="n">rangex</span><span class="p">,</span> <span class="n">rangey</span><span class="o">=</span><span class="n">rangey</span><span class="p">,</span> <span class="n">markersize</span><span class="o">=</span><span class="n">markersize</span><span class="p">,</span>
+                                <span class="n">show</span><span class="o">=</span><span class="n">show</span><span class="p">,</span> <span class="n">grid</span><span class="o">=</span><span class="n">grid</span><span class="p">,</span> <span class="n">export_pdf</span><span class="o">=</span><span class="n">export_pdf</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">axes</span></div>
+
+<div class="viewcode-block" id="Array.add_site"><a class="viewcode-back" href="../../array.html#ehtim.array.Array.add_site">[docs]</a>    <span class="k">def</span> <span class="nf">add_site</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">site</span><span class="p">,</span> <span class="n">coords</span><span class="p">,</span> <span class="n">sefd</span><span class="o">=</span><span class="mi">10000</span><span class="p">,</span> 
+                 <span class="n">fr_par</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">fr_elev</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">fr_off</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> 
+                 <span class="n">dr</span><span class="o">=</span><span class="mf">0.</span><span class="o">+</span><span class="mf">0.</span><span class="n">j</span><span class="p">,</span> <span class="n">dl</span><span class="o">=</span><span class="mf">0.</span><span class="o">+</span><span class="mf">0.</span><span class="n">j</span><span class="p">):</span>
+    
+        <span class="sd">&quot;&quot;&quot;Add a ground station to the array</span>
+<span class="sd">             </span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">tarr_old</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">tarr</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+        <span class="n">ephem_old</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">ephem</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+        
+        
+        <span class="n">tarr_newline</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">((</span><span class="nb">str</span><span class="p">(</span><span class="n">site</span><span class="p">),</span> <span class="nb">float</span><span class="p">(</span><span class="n">coords</span><span class="p">[</span><span class="mi">0</span><span class="p">]),</span> <span class="nb">float</span><span class="p">(</span><span class="n">coords</span><span class="p">[</span><span class="mi">1</span><span class="p">]),</span> <span class="nb">float</span><span class="p">(</span><span class="n">coords</span><span class="p">[</span><span class="mi">2</span><span class="p">]),</span> 
+                                 <span class="nb">float</span><span class="p">(</span><span class="n">sefd</span><span class="p">),</span> <span class="nb">float</span><span class="p">(</span><span class="n">sefd</span><span class="p">),</span> 
+                                 <span class="n">dr</span><span class="p">,</span> <span class="n">dl</span><span class="p">,</span> 
+                                 <span class="nb">float</span><span class="p">(</span><span class="n">fr_par</span><span class="p">),</span> <span class="nb">float</span><span class="p">(</span><span class="n">fr_elev</span><span class="p">),</span> <span class="nb">float</span><span class="p">(</span><span class="n">fr_off</span><span class="p">)),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">ehc</span><span class="o">.</span><span class="n">DTARR</span><span class="p">)</span>
+        <span class="n">tarr_new</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">tarr_old</span><span class="p">,</span> <span class="n">tarr_newline</span><span class="p">)</span>
+        
+        <span class="n">arr_out</span> <span class="o">=</span> <span class="n">Array</span><span class="p">(</span><span class="n">tarr_new</span><span class="p">,</span> <span class="n">ephem_old</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">arr_out</span></div>
+            
+<div class="viewcode-block" id="Array.remove_site"><a class="viewcode-back" href="../../array.html#ehtim.array.Array.remove_site">[docs]</a>    <span class="k">def</span> <span class="nf">remove_site</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">site</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Remove a site from the array</span>
+<span class="sd">           </span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">tarr_old</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">tarr</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+        <span class="n">ephem_old</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">ephem</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+        <span class="n">ephem_new</span> <span class="o">=</span> <span class="n">ephem_old</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+        
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">tarr_new</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">delete</span><span class="p">(</span><span class="n">tarr_old</span><span class="o">.</span><span class="n">copy</span><span class="p">(),</span> <span class="bp">self</span><span class="o">.</span><span class="n">tkey</span><span class="p">[</span><span class="n">site</span><span class="p">])</span>
+            <span class="k">if</span> <span class="n">site</span> <span class="ow">in</span> <span class="n">ephem_old</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+                <span class="n">ephem_new</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="n">site</span><span class="p">)</span> 
+        <span class="k">except</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;could not find site </span><span class="si">%s</span><span class="s2"> to delete from Array!&quot;</span><span class="o">%</span><span class="n">site</span><span class="p">)</span>
+        
+        <span class="n">arr_out</span> <span class="o">=</span> <span class="n">Array</span><span class="p">(</span><span class="n">tarr_new</span><span class="p">,</span> <span class="n">ephem_new</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">arr_out</span></div>
+
+<div class="viewcode-block" id="Array.add_satellite_tle"><a class="viewcode-back" href="../../array.html#ehtim.array.Array.add_satellite_tle">[docs]</a>    <span class="k">def</span> <span class="nf">add_satellite_tle</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">tlelist</span><span class="p">,</span> <span class="n">sefd</span><span class="o">=</span><span class="mi">10000</span><span class="p">):</span>
+    
+        <span class="sd">&quot;&quot;&quot;Add an earth-orbiting satellite to the array from a TLE</span>
+<span class="sd">        </span>
+<span class="sd">           Args: </span>
+<span class="sd">             tlearr (str) : 3 element list with [name, tle line 1, tle line 2] as strings</span>
+<span class="sd">             sefd (float) : assumed sefd for the array file (assumes sefdl = sefdr)     </span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">satname</span> <span class="o">=</span> <span class="n">tlearr</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="n">tarr_new</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">tarr</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+        <span class="n">ephem_new</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">ephem</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+        
+        <span class="n">tarr_newline</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">((</span><span class="nb">str</span><span class="p">(</span><span class="n">satname</span><span class="p">),</span> <span class="mf">0.</span><span class="p">,</span> <span class="mf">0.</span><span class="p">,</span> <span class="mf">0.</span><span class="p">,</span>
+                                 <span class="nb">float</span><span class="p">(</span><span class="n">sefd</span><span class="p">),</span> <span class="nb">float</span><span class="p">(</span><span class="n">sefd</span><span class="p">),</span> 
+                                 <span class="mf">0.</span><span class="p">,</span> <span class="mf">0.</span><span class="p">,</span> <span class="mf">0.</span><span class="p">,</span> <span class="mf">0.</span><span class="p">,</span> <span class="mf">0.</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">ehc</span><span class="o">.</span><span class="n">DTARR</span><span class="p">)</span>
+        <span class="n">tarr_new</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">tarr_new</span><span class="p">,</span> <span class="n">tarr_newline</span><span class="p">)</span>
+        <span class="n">ephem_new</span><span class="p">[</span><span class="n">satname</span><span class="p">]</span> <span class="o">=</span> <span class="n">tlearr</span>
+        <span class="n">arr_out</span> <span class="o">=</span> <span class="n">Array</span><span class="p">(</span><span class="n">tarr_new</span><span class="p">,</span> <span class="n">ephem_new</span><span class="p">)</span>
+        
+        <span class="k">return</span> <span class="n">arr_out</span></div>
+
+<div class="viewcode-block" id="Array.add_satellite_elements"><a class="viewcode-back" href="../../array.html#ehtim.array.Array.add_satellite_elements">[docs]</a>    <span class="k">def</span> <span class="nf">add_satellite_elements</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">satname</span><span class="p">,</span> 
+                               <span class="n">perigee_mjd</span><span class="o">=</span><span class="n">Time</span><span class="o">.</span><span class="n">now</span><span class="p">()</span><span class="o">.</span><span class="n">mjd</span><span class="p">,</span> 
+                               <span class="n">period_days</span><span class="o">=</span><span class="mf">1.</span><span class="p">,</span> <span class="n">eccentricity</span><span class="o">=</span><span class="mf">0.</span><span class="p">,</span>
+                               <span class="n">inclination</span><span class="o">=</span><span class="mf">0.</span><span class="p">,</span> <span class="n">arg_perigee</span><span class="o">=</span><span class="mf">0.</span><span class="p">,</span> <span class="n">long_ascending</span><span class="o">=</span><span class="mf">0.</span><span class="p">,</span> 
+                               <span class="n">sefd</span><span class="o">=</span><span class="mi">10000</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Add an earth-orbiting satellite to the array from simple keplerian elements</span>
+<span class="sd">           perfect keplerian orbit is assumed, no derivatives</span>
+<span class="sd">                   </span>
+<span class="sd">           Args: </span>
+<span class="sd">               perigee time given in mjd</span>
+<span class="sd">               period given in days</span>
+<span class="sd">               inclination, arg_perigee, long_ascending given in degrees</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="n">tarr_new</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">tarr</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+        <span class="n">ephem_new</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">ephem</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+        
+        <span class="n">tarr_newline</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">((</span><span class="nb">str</span><span class="p">(</span><span class="n">satname</span><span class="p">),</span> <span class="mf">0.</span><span class="p">,</span> <span class="mf">0.</span><span class="p">,</span> <span class="mf">0.</span><span class="p">,</span>
+                                 <span class="nb">float</span><span class="p">(</span><span class="n">sefd</span><span class="p">),</span> <span class="nb">float</span><span class="p">(</span><span class="n">sefd</span><span class="p">),</span> 
+                                 <span class="mf">0.</span><span class="p">,</span> <span class="mf">0.</span><span class="p">,</span> <span class="mf">0.</span><span class="p">,</span> <span class="mf">0.</span><span class="p">,</span> <span class="mf">0.</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">ehc</span><span class="o">.</span><span class="n">DTARR</span><span class="p">)</span>
+        <span class="n">tarr_new</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">tarr_new</span><span class="p">,</span> <span class="n">tarr_newline</span><span class="p">)</span>
+        
+        <span class="n">ephem_new</span><span class="p">[</span><span class="n">satname</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="n">perigee_mjd</span><span class="p">,</span> <span class="n">period_days</span><span class="p">,</span> <span class="n">eccentricity</span><span class="p">,</span> <span class="n">inclination</span><span class="p">,</span> <span class="n">arg_perigee</span><span class="p">,</span> <span class="n">long_ascending</span><span class="p">]</span>
+        <span class="n">arr_out</span> <span class="o">=</span> <span class="n">Array</span><span class="p">(</span><span class="n">tarr_new</span><span class="p">,</span> <span class="n">ephem_new</span><span class="p">)</span>
+                
+        <span class="k">return</span> <span class="n">arr_out</span></div>
+        
+    <span class="k">def</span> <span class="nf">plot_satellite_orbits</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">tstart_mjd</span><span class="o">=</span><span class="n">Time</span><span class="o">.</span><span class="n">now</span><span class="p">()</span><span class="o">.</span><span class="n">mjd</span><span class="p">,</span> <span class="n">tstop_mjd</span><span class="o">=</span><span class="n">Time</span><span class="o">.</span><span class="n">now</span><span class="p">()</span><span class="o">.</span><span class="n">mjd</span><span class="o">+</span><span class="mi">1</span><span class="p">,</span> <span class="n">npoints</span><span class="o">=</span><span class="mi">1000</span><span class="p">):</span>
+        <span class="n">earth_radius_polar</span> <span class="o">=</span> <span class="mf">6357.</span> <span class="c1">#km</span>
+        <span class="n">earth_radius_eq</span> <span class="o">=</span> <span class="mf">6378.</span>
+    
+        <span class="n">fig</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">18</span><span class="p">,</span><span class="mi">6</span><span class="p">))</span>
+        <span class="n">gs</span> <span class="o">=</span> <span class="n">matplotlib</span><span class="o">.</span><span class="n">gridspec</span><span class="o">.</span><span class="n">GridSpec</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="mi">3</span><span class="p">,</span><span class="n">width_ratios</span><span class="o">=</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">])</span>
+        
+        <span class="n">satellites</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">ephem</span><span class="o">.</span><span class="n">keys</span><span class="p">()</span>
+        <span class="k">for</span> <span class="n">i</span><span class="p">,</span><span class="n">satellite</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">satellites</span><span class="p">):</span>
+        
+            <span class="k">if</span> <span class="n">i</span><span class="o">==</span><span class="mi">0</span><span class="p">:</span> <span class="n">color</span><span class="o">=</span><span class="s1">&#39;k&#39;</span>
+            <span class="k">else</span><span class="p">:</span> <span class="n">color</span><span class="o">=</span><span class="n">ehc</span><span class="o">.</span><span class="n">SCOLORS</span><span class="p">[</span><span class="n">i</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+            
+            <span class="c1"># get skyfield satelllite object</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ephem</span><span class="p">[</span><span class="n">satellite</span><span class="p">])</span><span class="o">==</span><span class="mi">3</span><span class="p">:</span> <span class="c1"># TLE</span>
+                <span class="n">line1</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">ephem</span><span class="p">[</span><span class="n">satellite</span><span class="p">][</span><span class="mi">1</span><span class="p">]</span>
+                <span class="n">line2</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">ephem</span><span class="p">[</span><span class="n">satellite</span><span class="p">][</span><span class="mi">2</span><span class="p">]</span>            
+                <span class="n">sat</span> <span class="o">=</span> <span class="n">obsh</span><span class="o">.</span><span class="n">sat_skyfield_from_tle</span><span class="p">(</span><span class="n">satellite</span><span class="p">,</span> <span class="n">line1</span><span class="p">,</span> <span class="n">line2</span><span class="p">)</span>
+            <span class="k">elif</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ephem</span><span class="p">[</span><span class="n">satellite</span><span class="p">])</span><span class="o">==</span><span class="mi">6</span><span class="p">:</span> <span class="c1">#keplerian elements</span>
+                <span class="n">elements</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">ephem</span><span class="p">[</span><span class="n">satellite</span><span class="p">]</span>
+                <span class="n">sat</span> <span class="o">=</span> <span class="n">obsh</span><span class="o">.</span><span class="n">sat_skyfield_from_elements</span><span class="p">(</span><span class="n">satellite</span><span class="p">,</span> <span class="n">tstart_mjd</span><span class="p">,</span>
+                                                      <span class="n">elements</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span><span class="n">elements</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span><span class="n">elements</span><span class="p">[</span><span class="mi">2</span><span class="p">],</span><span class="n">elements</span><span class="p">[</span><span class="mi">3</span><span class="p">],</span><span class="n">elements</span><span class="p">[</span><span class="mi">4</span><span class="p">],</span><span class="n">elements</span><span class="p">[</span><span class="mi">5</span><span class="p">])</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;ephemeris format not recognized for </span><span class="si">%s</span><span class="s2">&quot;</span><span class="o">%</span><span class="n">satellite</span><span class="p">)</span>    
+        
+            <span class="c1"># get GCRS positions</span>
+            <span class="n">fracmjds</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="n">tstart_mjd</span><span class="p">,</span> <span class="n">tstop_mjd</span><span class="p">,</span> <span class="n">npoints</span><span class="p">)</span>
+            <span class="n">positions</span> <span class="o">=</span> <span class="n">obsh</span><span class="o">.</span><span class="n">orbit_skyfield</span><span class="p">(</span><span class="n">sat</span><span class="p">,</span> <span class="n">fracmjds</span><span class="p">,</span> <span class="n">whichout</span><span class="o">=</span><span class="s1">&#39;gcrs&#39;</span><span class="p">)</span>
+            <span class="n">positions</span> <span class="o">*=</span> <span class="mf">1.e-3</span> <span class="c1"># convert to km</span>
+            <span class="n">distances</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">positions</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">**</span><span class="mi">2</span> <span class="o">+</span> <span class="n">positions</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">**</span><span class="mi">2</span> <span class="o">+</span> <span class="n">positions</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span>
+            <span class="n">maxdist</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">distances</span><span class="p">)</span>
+            
+            <span class="n">ax1</span> <span class="o">=</span> <span class="n">fig</span><span class="o">.</span><span class="n">add_subplot</span><span class="p">(</span><span class="n">gs</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+            <span class="n">ax1</span><span class="o">.</span><span class="n">set_aspect</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+            <span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">positions</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">positions</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">color</span><span class="o">=</span><span class="n">color</span><span class="p">,</span> <span class="n">marker</span><span class="o">=</span><span class="s1">&#39;.&#39;</span><span class="p">,</span><span class="n">ls</span><span class="o">=</span><span class="s1">&#39;None&#39;</span><span class="p">)</span>
+            <span class="n">circle1</span> <span class="o">=</span> <span class="n">matplotlib</span><span class="o">.</span><span class="n">patches</span><span class="o">.</span><span class="n">Circle</span><span class="p">((</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">),</span> <span class="n">earth_radius_eq</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s1">&#39;b&#39;</span><span class="p">)</span>
+            <span class="n">plt</span><span class="o">.</span><span class="n">gca</span><span class="p">()</span><span class="o">.</span><span class="n">add_patch</span><span class="p">(</span><span class="n">circle1</span><span class="p">)</span>
+            <span class="n">plt</span><span class="o">.</span><span class="n">xlabel</span><span class="p">(</span><span class="s1">&#39;x (km)&#39;</span><span class="p">)</span>
+            <span class="n">plt</span><span class="o">.</span><span class="n">ylabel</span><span class="p">(</span><span class="s1">&#39;y (km)&#39;</span><span class="p">)</span>
+            <span class="n">plt</span><span class="o">.</span><span class="n">xlim</span><span class="p">(</span><span class="o">-</span><span class="mf">1.1</span><span class="o">*</span><span class="n">maxdist</span><span class="p">,</span> <span class="mf">1.1</span><span class="o">*</span><span class="n">maxdist</span><span class="p">)</span>
+            <span class="n">plt</span><span class="o">.</span><span class="n">ylim</span><span class="p">(</span><span class="o">-</span><span class="mf">1.1</span><span class="o">*</span><span class="n">maxdist</span><span class="p">,</span> <span class="mf">1.1</span><span class="o">*</span><span class="n">maxdist</span><span class="p">)</span>
+            <span class="n">plt</span><span class="o">.</span><span class="n">grid</span><span class="p">()</span>
+
+            <span class="n">ax2</span> <span class="o">=</span> <span class="n">fig</span><span class="o">.</span><span class="n">add_subplot</span><span class="p">(</span><span class="n">gs</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+            <span class="n">ax2</span><span class="o">.</span><span class="n">set_aspect</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+            <span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">positions</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">positions</span><span class="p">[</span><span class="mi">2</span><span class="p">],</span> <span class="n">color</span><span class="o">=</span><span class="n">color</span><span class="p">,</span> <span class="n">marker</span><span class="o">=</span><span class="s1">&#39;.&#39;</span><span class="p">,</span><span class="n">ls</span><span class="o">=</span><span class="s1">&#39;None&#39;</span><span class="p">)</span>
+            <span class="n">circle1</span> <span class="o">=</span> <span class="n">matplotlib</span><span class="o">.</span><span class="n">patches</span><span class="o">.</span><span class="n">Ellipse</span><span class="p">((</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">),</span> <span class="mi">2</span><span class="o">*</span><span class="n">earth_radius_eq</span><span class="p">,</span> <span class="mi">2</span><span class="o">*</span><span class="n">earth_radius_polar</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s1">&#39;b&#39;</span><span class="p">)</span>
+            <span class="n">plt</span><span class="o">.</span><span class="n">gca</span><span class="p">()</span><span class="o">.</span><span class="n">add_patch</span><span class="p">(</span><span class="n">circle1</span><span class="p">)</span>
+            <span class="n">plt</span><span class="o">.</span><span class="n">xlabel</span><span class="p">(</span><span class="s1">&#39;y (km)&#39;</span><span class="p">)</span>
+            <span class="n">plt</span><span class="o">.</span><span class="n">ylabel</span><span class="p">(</span><span class="s1">&#39;z (km)&#39;</span><span class="p">)</span>
+            <span class="n">plt</span><span class="o">.</span><span class="n">xlim</span><span class="p">(</span><span class="o">-</span><span class="mf">1.1</span><span class="o">*</span><span class="n">maxdist</span><span class="p">,</span> <span class="mf">1.1</span><span class="o">*</span><span class="n">maxdist</span><span class="p">)</span>
+            <span class="n">plt</span><span class="o">.</span><span class="n">ylim</span><span class="p">(</span><span class="o">-</span><span class="mf">1.1</span><span class="o">*</span><span class="n">maxdist</span><span class="p">,</span> <span class="mf">1.1</span><span class="o">*</span><span class="n">maxdist</span><span class="p">)</span>
+            <span class="n">plt</span><span class="o">.</span><span class="n">grid</span><span class="p">()</span>  
+            
+            <span class="n">ax3</span> <span class="o">=</span> <span class="n">fig</span><span class="o">.</span><span class="n">add_subplot</span><span class="p">(</span><span class="n">gs</span><span class="p">[</span><span class="mi">2</span><span class="p">])</span>
+            <span class="n">ax3</span><span class="o">.</span><span class="n">set_aspect</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+            <span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">positions</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">positions</span><span class="p">[</span><span class="mi">2</span><span class="p">],</span> <span class="n">color</span><span class="o">=</span><span class="n">color</span><span class="p">,</span> <span class="n">marker</span><span class="o">=</span><span class="s1">&#39;.&#39;</span><span class="p">,</span><span class="n">ls</span><span class="o">=</span><span class="s1">&#39;None&#39;</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="n">satellite</span><span class="p">)</span>
+            <span class="n">circle1</span> <span class="o">=</span> <span class="n">matplotlib</span><span class="o">.</span><span class="n">patches</span><span class="o">.</span><span class="n">Ellipse</span><span class="p">((</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">),</span> <span class="mi">2</span><span class="o">*</span><span class="n">earth_radius_eq</span><span class="p">,</span> <span class="mi">2</span><span class="o">*</span><span class="n">earth_radius_polar</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s1">&#39;b&#39;</span><span class="p">)</span>
+            <span class="n">plt</span><span class="o">.</span><span class="n">gca</span><span class="p">()</span><span class="o">.</span><span class="n">add_patch</span><span class="p">(</span><span class="n">circle1</span><span class="p">)</span>
+            <span class="n">plt</span><span class="o">.</span><span class="n">xlabel</span><span class="p">(</span><span class="s1">&#39;x (km)&#39;</span><span class="p">)</span>
+            <span class="n">plt</span><span class="o">.</span><span class="n">ylabel</span><span class="p">(</span><span class="s1">&#39;z (km)&#39;</span><span class="p">)</span>
+            <span class="n">plt</span><span class="o">.</span><span class="n">xlim</span><span class="p">(</span><span class="o">-</span><span class="mf">1.1</span><span class="o">*</span><span class="n">maxdist</span><span class="p">,</span> <span class="mf">1.1</span><span class="o">*</span><span class="n">maxdist</span><span class="p">)</span>
+            <span class="n">plt</span><span class="o">.</span><span class="n">ylim</span><span class="p">(</span><span class="o">-</span><span class="mf">1.1</span><span class="o">*</span><span class="n">maxdist</span><span class="p">,</span> <span class="mf">1.1</span><span class="o">*</span><span class="n">maxdist</span><span class="p">)</span>
+            <span class="n">plt</span><span class="o">.</span><span class="n">legend</span><span class="p">(</span><span class="n">frameon</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span><span class="n">loc</span><span class="o">=</span><span class="s1">&#39;center left&#39;</span><span class="p">,</span> <span class="n">bbox_to_anchor</span><span class="o">=</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mf">0.5</span><span class="p">))</span>
+            <span class="n">plt</span><span class="o">.</span><span class="n">grid</span><span class="p">()</span>
+
+        <span class="n">plt</span><span class="o">.</span><span class="n">subplots_adjust</span><span class="p">(</span><span class="n">wspace</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+        <span class="n">ehc</span><span class="o">.</span><span class="n">show_noblock</span><span class="p">()</span>            
+        <span class="k">return</span></div>
+                                 
 <span class="c1">##########################################################################</span>
 <span class="c1"># Array creation functions</span>
 <span class="c1">##########################################################################</span>
@@ -240,7 +458,7 @@
 
 <span class="sd">       Args:</span>
 <span class="sd">           fname (str) : path to input array file</span>
-<span class="sd">           ephemdir (str) : path to directory with 2TLE ephemerides for spacecraft</span>
+<span class="sd">           ephemdir (str) : path to directory with TLE ephemerides for spacecraft</span>
 <span class="sd">       Returns:</span>
 <span class="sd">           Array: an Array object loaded from file</span>
 <span class="sd">    &quot;&quot;&quot;</span>

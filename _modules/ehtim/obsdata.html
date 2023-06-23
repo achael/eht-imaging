@@ -273,6 +273,15 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">logcamp</span> <span class="o">=</span> <span class="kc">None</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">logcamp_diag</span> <span class="o">=</span> <span class="kc">None</span>
 
+    <span class="nd">@property</span> 
+    <span class="k">def</span> <span class="nf">tarr</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_tarr</span>
+        
+    <span class="nd">@tarr</span><span class="o">.</span><span class="n">setter</span> 
+    <span class="k">def</span> <span class="nf">tarr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">tarr</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_tarr</span> <span class="o">=</span> <span class="n">tarr</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">tkey</span> <span class="o">=</span> <span class="p">{</span><span class="n">tarr</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="s1">&#39;site&#39;</span><span class="p">]:</span> <span class="n">i</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">tarr</span><span class="p">))}</span>
+        
 <div class="viewcode-block" id="Obsdata.obsdata_args"><a class="viewcode-back" href="../../obsdata.html#ehtim.obsdata.Obsdata.obsdata_args">[docs]</a>    <span class="k">def</span> <span class="nf">obsdata_args</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;&quot;Copy arguments for making a  new Obsdata into a list and dictonary</span>
 <span class="sd">        &quot;&quot;&quot;</span>
@@ -691,6 +700,36 @@
             <span class="n">splitlist</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">Obsdata</span><span class="p">(</span><span class="o">*</span><span class="n">arglist</span><span class="p">,</span> <span class="o">**</span><span class="n">argdict</span><span class="p">))</span>
 
         <span class="k">return</span> <span class="n">splitlist</span></div>
+
+
+<div class="viewcode-block" id="Obsdata.getClosestScan"><a class="viewcode-back" href="../../obsdata.html#ehtim.obsdata.Obsdata.getClosestScan">[docs]</a>    <span class="k">def</span> <span class="nf">getClosestScan</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">time</span><span class="p">,</span> <span class="n">splitObs</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Split observation by scan and grab scan closest to timestamp</span>
+
+<span class="sd">           Args:</span>
+<span class="sd">                time (float): Time (GMST) you want to find the scan closest to</span>
+<span class="sd">                splitObs (bool): a list of Obsdata objects, output from split_obs, to save time</span>
+
+<span class="sd">            Returns:</span>
+<span class="sd">                (Obsdata): Obsdata object composed of scan closest to time</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="c1">## check if splitObs has been passed in alread ##</span>
+        <span class="k">if</span> <span class="n">splitObs</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">splitObs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">split_obs</span><span class="p">()</span>
+
+        <span class="c1">## check for the scan with the closest start time to time arg ##</span>
+        <span class="c1">## TODO: allow user to choose start time, end time, or mid-time</span>
+        <span class="n">closest_index</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="n">delta_t</span> <span class="o">=</span> <span class="mf">1e22</span>
+        <span class="k">for</span> <span class="n">s</span><span class="p">,</span> <span class="n">s_obs</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">splitObs</span><span class="p">):</span>
+            <span class="n">dt</span> <span class="o">=</span> <span class="nb">abs</span><span class="p">(</span><span class="n">s_obs</span><span class="o">.</span><span class="n">tstart</span> <span class="o">-</span> <span class="n">time</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">dt</span> <span class="o">&lt;</span> <span class="n">delta_t</span><span class="p">:</span>
+                <span class="n">delta_t</span> <span class="o">=</span> <span class="n">dt</span> 
+                <span class="n">closest_index</span> <span class="o">=</span> <span class="n">s</span> 
+
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Using scan with time </span><span class="si">{</span><span class="n">splitObs</span><span class="p">[</span><span class="n">closest_index</span><span class="p">]</span><span class="o">.</span><span class="n">tstart</span><span class="si">}</span><span class="s2">.&quot;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">splitObs</span><span class="p">[</span><span class="n">closest_index</span><span class="p">]</span></div>
+
 
 <div class="viewcode-block" id="Obsdata.bllist"><a class="viewcode-back" href="../../obsdata.html#ehtim.obsdata.Obsdata.bllist">[docs]</a>    <span class="k">def</span> <span class="nf">bllist</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">conj</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Group the data in a list of same baseline datatables.</span>
@@ -4234,7 +4273,8 @@
             <span class="n">fig</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">gcf</span><span class="p">()</span>
             <span class="n">fig</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="n">export_pdf</span><span class="p">,</span> <span class="n">bbox_inches</span><span class="o">=</span><span class="s1">&#39;tight&#39;</span><span class="p">)</span>
         <span class="k">if</span> <span class="n">show</span><span class="p">:</span>
-            <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">(</span><span class="n">block</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+            <span class="c1">#plt.show(block=False)</span>
+            <span class="n">ehc</span><span class="o">.</span><span class="n">show_noblock</span><span class="p">()</span>
 
         <span class="k">return</span> <span class="n">x</span></div>
 
@@ -4369,8 +4409,8 @@
             <span class="n">fig</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">gcf</span><span class="p">()</span>
             <span class="n">fig</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="n">export_pdf</span><span class="p">,</span> <span class="n">bbox_inches</span><span class="o">=</span><span class="s1">&#39;tight&#39;</span><span class="p">)</span>
         <span class="k">if</span> <span class="n">show</span><span class="p">:</span>
-            <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">(</span><span class="n">block</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
-
+            <span class="c1">#plt.show(block=False)</span>
+            <span class="n">ehc</span><span class="o">.</span><span class="n">show_noblock</span><span class="p">()</span>
         <span class="k">return</span> <span class="n">x</span></div>
 
 <div class="viewcode-block" id="Obsdata.plot_cphase"><a class="viewcode-back" href="../../obsdata.html#ehtim.obsdata.Obsdata.plot_cphase">[docs]</a>    <span class="k">def</span> <span class="nf">plot_cphase</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">site1</span><span class="p">,</span> <span class="n">site2</span><span class="p">,</span> <span class="n">site3</span><span class="p">,</span>
@@ -4494,7 +4534,8 @@
             <span class="n">fig</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">gcf</span><span class="p">()</span>
             <span class="n">fig</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="n">export_pdf</span><span class="p">,</span> <span class="n">bbox_inches</span><span class="o">=</span><span class="s1">&#39;tight&#39;</span><span class="p">)</span>
         <span class="k">if</span> <span class="n">show</span><span class="p">:</span>
-            <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">(</span><span class="n">block</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+            <span class="c1">#plt.show(block=False)</span>
+            <span class="n">ehc</span><span class="o">.</span><span class="n">show_noblock</span><span class="p">()</span>
 
         <span class="k">return</span> <span class="n">x</span></div>
 
@@ -4632,7 +4673,8 @@
             <span class="n">fig</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">gcf</span><span class="p">()</span>
             <span class="n">fig</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="n">export_pdf</span><span class="p">,</span> <span class="n">bbox_inches</span><span class="o">=</span><span class="s1">&#39;tight&#39;</span><span class="p">)</span>
         <span class="k">if</span> <span class="n">show</span><span class="p">:</span>
-            <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">(</span><span class="n">block</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+            <span class="c1">#plt.show(block=False)</span>
+            <span class="n">ehc</span><span class="o">.</span><span class="n">show_noblock</span><span class="p">()</span>
             <span class="k">return</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="k">return</span> <span class="n">x</span></div>
@@ -4853,6 +4895,81 @@
     <span class="k">return</span> <span class="n">ehtim</span><span class="o">.</span><span class="n">io</span><span class="o">.</span><span class="n">load</span><span class="o">.</span><span class="n">load_obs_maps</span><span class="p">(</span><span class="n">arrfile</span><span class="p">,</span> <span class="n">obsspec</span><span class="p">,</span> <span class="n">ifile</span><span class="p">,</span>
                                        <span class="n">qfile</span><span class="o">=</span><span class="n">qfile</span><span class="p">,</span> <span class="n">ufile</span><span class="o">=</span><span class="n">ufile</span><span class="p">,</span> <span class="n">vfile</span><span class="o">=</span><span class="n">vfile</span><span class="p">,</span>
                                        <span class="n">src</span><span class="o">=</span><span class="n">src</span><span class="p">,</span> <span class="n">mjd</span><span class="o">=</span><span class="n">mjd</span><span class="p">,</span> <span class="n">ampcal</span><span class="o">=</span><span class="n">ampcal</span><span class="p">,</span> <span class="n">phasecal</span><span class="o">=</span><span class="n">phasecal</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="load_obs"><a class="viewcode-back" href="../../obsdata.html#ehtim.obsdata.load_obs">[docs]</a><span class="k">def</span> <span class="nf">load_obs</span><span class="p">(</span>
+                <span class="n">fname</span><span class="p">,</span>                  
+                <span class="n">polrep</span><span class="o">=</span><span class="s1">&#39;stokes&#39;</span><span class="p">,</span>        
+                <span class="n">flipbl</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>               
+                <span class="n">remove_nan</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> 
+                <span class="n">force_singlepol</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> 
+                <span class="n">channel</span><span class="o">=</span><span class="nb">all</span><span class="p">,</span> 
+                <span class="n">IF</span><span class="o">=</span><span class="nb">all</span><span class="p">,</span> 
+                <span class="n">allow_singlepol</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                <span class="n">flux</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span>
+                <span class="n">obsspec</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> 
+                <span class="n">ifile</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> 
+                <span class="n">qfile</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> 
+                <span class="n">ufile</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> 
+                <span class="n">vfile</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                <span class="n">src</span><span class="o">=</span><span class="n">ehc</span><span class="o">.</span><span class="n">SOURCE_DEFAULT</span><span class="p">,</span> 
+                <span class="n">mjd</span><span class="o">=</span><span class="n">ehc</span><span class="o">.</span><span class="n">MJD_DEFAULT</span><span class="p">,</span> 
+                <span class="n">ampcal</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> 
+                <span class="n">phasecal</span><span class="o">=</span><span class="kc">False</span>
+    <span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Smart obs read-in, detects file type and loads appropriately.</span>
+
+<span class="sd">       Args:</span>
+<span class="sd">           fname (str): path to input text file</span>
+<span class="sd">           polrep (str): load data as either &#39;stokes&#39; or &#39;circ&#39;</span>
+<span class="sd">           flipbl (bool): flip baseline phases if True.</span>
+<span class="sd">           remove_nan (bool): True to remove nans from missing polarizations</span>
+<span class="sd">           polrep (str): load data as either &#39;stokes&#39; or &#39;circ&#39;</span>
+<span class="sd">           force_singlepol (str): &#39;R&#39; or &#39;L&#39; to load only 1 polarization</span>
+<span class="sd">           channel (list): list of channels to average in the import. channel=all averages all</span>
+<span class="sd">           IF (list): list of IFs to  average in  the import. IF=all averages all IFS</span>
+<span class="sd">           flux (float): normalization total flux</span>
+<span class="sd">           obsspec (str): path to input obs spec file</span>
+<span class="sd">           ifile (str): path to input Stokes I data file</span>
+<span class="sd">           qfile (str): path to input Stokes Q data file</span>
+<span class="sd">           ufile (str): path to input Stokes U data file</span>
+<span class="sd">           vfile (str): path to input Stokes V data file</span>
+<span class="sd">           src (str): source name</span>
+<span class="sd">           mjd (int): integer observation  MJD</span>
+<span class="sd">           ampcal (bool): True if amplitude calibrated</span>
+<span class="sd">           phasecal (bool): True if phase calibrated</span>
+
+<span class="sd">       Returns:</span>
+<span class="sd">           obs (Obsdata): Obsdata object loaded from file</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+
+    <span class="c1">## grab file ending ##</span>
+    <span class="n">fname_extension</span> <span class="o">=</span> <span class="n">fname</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;.&#39;</span><span class="p">)[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Extension is </span><span class="si">{</span><span class="n">fname_extension</span><span class="si">}</span><span class="s2">.&quot;</span><span class="p">)</span>
+
+    <span class="c1">## check extension ##</span>
+    <span class="k">if</span> <span class="n">fname_extension</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="o">==</span> <span class="s1">&#39;uvfits&#39;</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">load_uvfits</span><span class="p">(</span><span class="n">fname</span><span class="p">,</span> <span class="n">flipbl</span><span class="o">=</span><span class="n">flipbl</span><span class="p">,</span> <span class="n">remove_nan</span><span class="o">=</span><span class="n">remove_nan</span><span class="p">,</span> <span class="n">force_singlepol</span><span class="o">=</span><span class="n">force_singlepol</span><span class="p">,</span> <span class="n">channel</span><span class="o">=</span><span class="n">channel</span><span class="p">,</span> <span class="n">IF</span><span class="o">=</span><span class="n">IF</span><span class="p">,</span> <span class="n">polrep</span><span class="o">=</span><span class="n">polrep</span><span class="p">,</span> <span class="n">allow_singlepol</span><span class="o">=</span><span class="n">allow_singlepol</span><span class="p">)</span>
+
+    <span class="k">elif</span> <span class="n">fname_extension</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;txt&#39;</span><span class="p">,</span> <span class="s1">&#39;text&#39;</span><span class="p">]:</span>
+        <span class="k">return</span> <span class="n">load_txt</span><span class="p">(</span><span class="n">fname</span><span class="p">,</span> <span class="n">polrep</span><span class="o">=</span><span class="n">polrep</span><span class="p">)</span>
+
+    <span class="k">elif</span> <span class="n">fname_extension</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="o">==</span> <span class="s1">&#39;oifits&#39;</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">load_oifits</span><span class="p">(</span><span class="n">fname</span><span class="p">,</span> <span class="n">flux</span><span class="o">=</span><span class="n">flux</span><span class="p">)</span>
+
+
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">obsspec</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">ifile</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;You have provided a value for &lt;obsspec&gt; but no value for &lt;ifile&gt;&quot;</span><span class="p">)</span>
+            <span class="k">return</span> 
+        <span class="k">elif</span> <span class="n">obsspec</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">ifile</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;You have provided a value for &lt;ifile&gt; but no value for &lt;obsspec&gt;&quot;</span><span class="p">)</span>
+            <span class="k">return</span> 
+
+        <span class="k">elif</span> <span class="n">obsspec</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">ifile</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">load_maps</span><span class="p">(</span><span class="n">fname</span><span class="p">,</span> <span class="n">obsspec</span><span class="p">,</span> <span class="n">ifile</span><span class="p">,</span> <span class="n">qfile</span><span class="o">=</span><span class="n">qfile</span><span class="p">,</span> <span class="n">ufile</span><span class="o">=</span><span class="n">ufile</span><span class="p">,</span> <span class="n">vfile</span><span class="o">=</span><span class="n">vfile</span><span class="p">,</span>
+              <span class="n">src</span><span class="o">=</span><span class="n">src</span><span class="p">,</span> <span class="n">mjd</span><span class="o">=</span><span class="n">mjd</span><span class="p">,</span> <span class="n">ampcal</span><span class="o">=</span><span class="n">ampcal</span><span class="p">,</span> <span class="n">phasecal</span><span class="o">=</span><span class="n">phasecal</span><span class="p">)</span></div>
+
 </pre></div>
 
            </div>
