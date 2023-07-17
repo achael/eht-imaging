@@ -594,7 +594,6 @@ class Obsdata(object):
                     data, lambda x: np.searchsorted(self.scans[:, 0], x['time'])):
                 datalist.append(np.array([obs for obs in group]))
 
-#        return np.array(datalist)
         return np.array(datalist, dtype=object)
 
 
@@ -674,7 +673,6 @@ class Obsdata(object):
         for key, group in it.groupby(data[idx], lambda x: set((x['t1'], x['t2']))):
             datalist.append(np.array([obs for obs in group]))
 
-#        return np.array(datalist)
         return np.array(datalist, dtype=object)
         
     def unpack_bl(self, site1, site2, fields, ang_unit='deg', debias=False, timetype=False):
@@ -718,7 +716,6 @@ class Obsdata(object):
 
                     allout.append(out)
 
-#        return np.array(allout)
         return np.array(allout, dtype=object)
         
     def unpack(self, fields, mode='all', ang_unit='deg', debias=False, conj=False, timetype=False):
