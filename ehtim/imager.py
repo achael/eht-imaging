@@ -982,8 +982,7 @@ class Imager(object):
                 print("Initializing imager data products . . .")
             if self.nruns > 0:
                 print("Recomputing imager data products . . .")
-#            if hasattr(self, "_data_tuples"):
-#                del self._data_tuples
+
             self._data_tuples = {}
 
             # Loop over all data term types
@@ -999,7 +998,6 @@ class Imager(object):
 
                     # Polarimetric data products
                     if dname in DATATERMS_POL:
-                    #if self.pol_next == 'P':
                         tup = polutils.polchisqdata(obs, self.prior_next, self._embed_mask, dname,
                                                     ttype=self._ttype,
                                                     fft_pad_factor=self._fft_pad_factor,

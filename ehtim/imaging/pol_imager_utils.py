@@ -124,7 +124,6 @@ def pol_imager_func(Obsdata, InitIm, Prior,
     clipfloor = kwargs.get('clipfloor', -1)
     ttype = kwargs.get('ttype','direct')
     grads = kwargs.get('grads',True)
-    #mcv_transform = kwargs.get('logim',True) f#transform m,chi with mcv (see below)
     norm_init = kwargs.get('norm_init',False)
     show_updates = kwargs.get('show_updates',True)
 
@@ -370,7 +369,9 @@ def pack_poltuple(poltuple, pol_solve = (0,1,1)):
             vec = np.hstack((vec,poltuple[1]))
         if pol_solve[2] != 0:
             vec = np.hstack((vec,poltuple[2]))
-
+        if len(pol_solve)==4 and pol_solve[3] != 0:
+            vec = np.hstack((vec,poltuple[3]))
+                    
         return vec
 
 
@@ -381,7 +382,8 @@ def unpack_poltuple(polvec, inittuple, nimage, pol_solve = (0,1,1)):
         init0 = inittuple[0]
         init1 = inittuple[1]
         init2 = inittuple[2]
-
+        if len(pol_solve)==4: init3 = inittuple[3]
+        
         imct = 0
         if pol_solve[0] == 0:
             im0 = init0
@@ -400,7 +402,17 @@ def unpack_poltuple(polvec, inittuple, nimage, pol_solve = (0,1,1)):
         else:
             im2 = polvec[imct*nimage:(imct+1)*nimage]
             imct += 1
-        return np.array((im0, im1, im2))
+            
+        if len(pol_solve)==4:
+            if pol_solve[3] == 0:
+                im3 = init3
+            else:
+                im3 = polvec[imct*nimage:(imct+1)*nimage]
+                imct += 1    
+            out = np.array((im0, im1, im2, im3))        
+        else:        
+            out = np.array((im0, im1, im2))    
+        return out
 
 def make_p_image(imtuple, pol_prim="amp_phase"):
     """construct a polarimetric image P = Q + iU
@@ -455,7 +467,7 @@ def make_q_image(imtuple, pol_prim="amp_phase"):
     elif pol_prim=="qu_frac":
         qimage = imtuple[1]*imtuple[0]
     else:
-        raise Exception("polarimetric representation %s not recognized in make_m_image!"%pol_prim)
+        raise Exception("polarimetric representation %s not recognized in make_q_image!"%pol_prim)
     return qimage
 
 def make_u_image(imtuple, pol_prim="amp_phase"):
@@ -469,23 +481,52 @@ def make_u_image(imtuple, pol_prim="amp_phase"):
     elif pol_prim=="qu_frac":
         uimage =imtuple[2]*imtuple[0]
     else:
-        raise Exception("polarimetric representation %s not recognized in make_chi_image!"%pol_prim)
+        raise Exception("polarimetric representation %s not recognized in make_u_image!"%pol_prim)
     return uimage
 
+def make_v_image(imtuple, pol_prim="amp_phase"):
+    """construct an image of stokes V
+    """
+
+    if pol_prim=="amp_phase":
+        vimage = imtuple[0] * imtuple[3]
+    else:
+        raise Exception("polarimetric representation %s not recognized in make_chi_image!"%pol_prim)
+    return vimage
+
+def make_vfrac_image(imtuple, pol_prim="amp_phase"):
+    """construct an image of stokes V
+    """
+
+    if pol_prim=="amp_phase":
+        vfimage = imtuple[3]
+    else:
+        raise Exception("polarimetric representation %s not recognized in make_chi_image!"%pol_prim)
+    return vfimage
+    
+        
 # these change of variables only apply to polarimetric ratios
 # !AC In these pol. changes of variables, might be useful to 
 # take m -> m/100 by adjusting B (function becomes less steep around m' = 0)
 B = .5
+BV = 1
 def mcv(imtuple):
     """Change of pol. ratio from range (-inf, inf) to (0,1)
     """
+    
     iimage = imtuple[0]
     mimage =  imtuple[1]
     chiimage = imtuple[2]
 
     mtrans = 0.5 + np.arctan(mimage/B)/np.pi
+    if len(imtuple)==4:
+        vfimage = imtuple[3]
+        vtrans = 2*np.arctan(vfimage/BV)/np.pi    
+        out = np.array((iimage, mtrans, chiimage, vtrans))
+    else:
+        out = np.array((iimage, mtrans, chiimage))    
+    
 
-    out = np.array((iimage, mtrans, chiimage))
     return out
 
 def mcv_r(imtuple):
@@ -496,8 +537,13 @@ def mcv_r(imtuple):
     chiimage = imtuple[2]
 
     mtrans = B*np.tan(np.pi*(mimage - 0.5))
-
-    out = np.array((iimage, mtrans, chiimage))
+    if len(imtuple)==4:
+        vfimage = imtuple[3]
+        vtrans = BV*np.tan(0.5*np.pi*(vfimage))    
+        out = np.array((iimage, mtrans, chiimage, vtrans))
+    else:
+        out = np.array((iimage, mtrans, chiimage))
+                
     return out
 
 def mchain(imtuple):
@@ -507,12 +553,19 @@ def mchain(imtuple):
     mimage =  imtuple[1]
     chiimage = imtuple[2]
 
-    mchain = 1 / (B*np.pi*(1 + (mimage/B)**2))
-    chichain = np.ones(len(chiimage))
     ichain = np.ones(len(iimage))
-
-    out = np.array((ichain, mchain, chichain))
+    mmchain = 1 / (B*np.pi*(1 + (mimage/B)**2))
+    chichain = np.ones(len(chiimage))
+    
+    if len(imtuple)==4:
+        vfimage = imtuple[3]
+        vchain = 2. / (BV*np.pi*(1 + (vfimage/B)**2))
+        out = np.array((ichain, mmchain, chichain, vchain))
+    else:
+        out = np.array((ichain, mmchain, chichain))
+        
     return np.array(out)
+
 
 ##################################################################################################
 # Wrapper Functions
@@ -529,15 +582,18 @@ def polchisq(imtuple, A, data, sigma, dtype, ttype='direct', mask=[], pol_prim="
         raise Exception("Possible ttype values are 'fast' and 'direct'!")
 
     if ttype == 'direct':
+        # linear
         if dtype == 'pvis':
             chisq = chisq_p(imtuple, A, data, sigma, pol_prim)
-
         elif dtype == 'm':
             chisq = chisq_m(imtuple, A, data, sigma, pol_prim)
-
         elif dtype == 'pbs':
             chisq = chisq_pbs(imtuple, A, data, sigma, pol_prim)
-    
+            
+        # circular
+        elif dtype == 'vvis':
+            chisq = chisq_v(imtuple, A, data, sigma, pol_prim)        
+            
     elif ttype== 'fast':
         raise Exception("FFT not yet implemented in polchisq!")
 
@@ -545,15 +601,17 @@ def polchisq(imtuple, A, data, sigma, dtype, ttype='direct', mask=[], pol_prim="
         if len(mask)>0 and np.any(np.invert(mask)):
             imtuple = embed_pol(imtuple, mask, randomfloor=True)
 
+        # linear
         if dtype == 'pvis':
             chisq = chisq_p_nfft(imtuple, A, data, sigma, pol_prim)
-
         elif dtype == 'm':
             chisq = chisq_m_nfft(imtuple, A, data, sigma, pol_prim)
-
         elif dtype == 'pbs':
             chisq = chisq_pbs_nfft(imtuple, A, data, sigma, pol_prim)
-
+            
+        # circular
+        elif dtype == 'vvis':
+            chisq = chisq_v_nfft(imtuple, A, data, sigma, pol_prim)        
 
     return chisq
 
@@ -570,33 +628,42 @@ def polchisqgrad(imtuple, A, data, sigma, dtype, ttype='direct',
         raise Exception("Possible ttype values are 'fast' and 'direct'!")
 
     if ttype == 'direct':
+        # linear
         if dtype == 'pvis':
             chisqgrad = chisqgrad_p(imtuple, A, data, sigma, pol_prim,pol_solve)
-
         elif dtype == 'm':
             chisqgrad = chisqgrad_m(imtuple, A, data, sigma, pol_prim,pol_solve)
-
         elif dtype == 'pbs':
             chisqgrad = chisqgrad_pbs(imtuple, A, data, sigma, pol_prim,pol_solve)
-    
+            
+        # circular
+        elif dtype == 'vvis':
+            chisqgrad = chisqgrad_v(imtuple, A, data, sigma, pol_prim,pol_solve)
+                
     elif ttype== 'fast':
         raise Exception("FFT not yet implemented in polchisqgrad!")
 
     elif ttype== 'nfft':
         if len(mask)>0 and np.any(np.invert(mask)):
             imtuple = embed_pol(imtuple, mask, randomfloor=True)
-
+      
+        # linear
         if dtype == 'pvis':
             chisqgrad = chisqgrad_p_nfft(imtuple, A, data, sigma, pol_prim,pol_solve)
-
         elif dtype == 'm':
             chisqgrad = chisqgrad_m_nfft(imtuple, A, data, sigma, pol_prim,pol_solve)
-
         elif dtype == 'pbs':
-            chisqgrad = chisqgrad_pbs_nffts(imtuple, A, data, sigma, pol_prim,pol_solve)
+            chisqgrad = chisqgrad_pbs_nfft(imtuple, A, data, sigma, pol_prim,pol_solve)
 
+        # circular
+        elif dtype == 'vvis':
+            chisqgrad = chisqgrad_v_nfft(imtuple, A, data, sigma, pol_prim,pol_solve)
+            
         if len(mask)>0 and np.any(np.invert(mask)):
-            chisqgrad = np.array((chisqgrad[0][mask],chisqgrad[1][mask],chisqgrad[2][mask]))
+            if len(chisqgrad==4):
+                chisqgrad = np.array((chisqgrad[0][mask],chisqgrad[1][mask],chisqgrad[2][mask],chisqgrad[3][mask]))
+            else:
+                chisqgrad = np.array((chisqgrad[0][mask],chisqgrad[1][mask],chisqgrad[2][mask]))
 
     return chisqgrad
 
@@ -608,6 +675,7 @@ def polregularizer(imtuple, mask, flux, xdim, ydim, psize, stype, **kwargs):
     pol_solve = kwargs.get('pol_solve', (0,1,1))
     beam_size = kwargs.get('beam_size',1)
 
+    # linear
     if stype == "msimple":
         reg = -sm(imtuple, flux, pol_prim, norm_reg=norm_reg)
     elif stype == "hw":
@@ -617,6 +685,12 @@ def polregularizer(imtuple, mask, flux, xdim, ydim, psize, stype, **kwargs):
             imtuple = embed_pol(imtuple, mask, randomfloor=True)
         reg = -stv_pol(imtuple, flux, xdim, ydim, psize, pol_prim, 
                        norm_reg=norm_reg, beam_size=beam_size)
+    # circular
+    elif stype == "l1v":
+        reg = -sl1v(imtuple, flux, pol_prim, norm_reg=norm_reg)
+    elif stype == "l2v":
+        reg = -sl2v(imtuple, flux, pol_prim, norm_reg=norm_reg)
+                       
     else:
         reg = 0
 
@@ -629,6 +703,7 @@ def polregularizergrad(imtuple, mask, flux, xdim, ydim, psize, stype, **kwargs):
     pol_solve = kwargs.get('pol_solve', (0,1,1))
     beam_size = kwargs.get('beam_size',1)
 
+    # linear
     if stype == "msimple":
         reggrad = -smgrad(imtuple, flux, pol_prim, pol_solve, norm_reg=norm_reg)
     elif stype == "hw":
@@ -639,9 +714,19 @@ def polregularizergrad(imtuple, mask, flux, xdim, ydim, psize, stype, **kwargs):
         reggrad = -stv_pol_grad(imtuple, flux, xdim, ydim, psize, pol_prim, pol_solve,
                                 norm_reg=norm_reg, beam_size=beam_size)
         if np.any(np.invert(mask)):
-            reggrad = np.array((reggrad[0][mask],reggrad[1][mask],reggrad[2][mask]))
+            if len(reggrad==4): 
+                reggrad = np.array((reggrad[0][mask],reggrad[1][mask],reggrad[2][mask],reggrad[3][mask]))
+            else: 
+                reggrad = np.array((reggrad[0][mask],reggrad[1][mask],reggrad[2][mask]))
+
+    # circular
+    elif stype == "l1v":
+        reg = -sl1vgrad(imtuple, flux, pol_prim, norm_reg=norm_reg)
+    elif stype == "l2v":
+        reg = -sl2vgrad(imtuple, flux, pol_prim, norm_reg=norm_reg)    
+                
     else:
-        reggrad = np.zeros((3,len(imtuple[0])))
+        reggrad = np.zeros((len(imtuple),len(imtuple[0])))
 
     return reggrad
 
@@ -663,7 +748,8 @@ def polchisqdata(Obsdata, Prior, mask, dtype, **kwargs):
             (data, sigma, A) = chisqdata_m(Obsdata, Prior, mask)
         elif dtype == 'pbs':
             (data, sigma, A) = chisqdata_pbs(Obsdata, Prior, mask)
-
+        elif dtype == 'vvis':
+            (data, sigma, A) = chisqdata_vvis(Obsdata, Prior, mask)
     elif ttype=='fast':
         raise Exception("FFT not yet implemented in polchisqdata!")
 
@@ -674,7 +760,8 @@ def polchisqdata(Obsdata, Prior, mask, dtype, **kwargs):
             (data, sigma, A) = chisqdata_m_nfft(Obsdata, Prior, mask, **kwargs)
         elif dtype == 'pbs':
             (data, sigma, A) = chisqdata_pbs_nfft(Obsdata, Prior, mask, **kwargs)
-
+        elif dtype == 'vvis':
+            (data, sigma, A) = chisqdata_v_nfft(Obsdata, Prior, mask, **kwargs)
         
     return (data, sigma, A)
 
@@ -684,7 +771,7 @@ def polchisqdata(Obsdata, Prior, mask, dtype, **kwargs):
 ##################################################################################################
 
 def chisq_p(imtuple, Amatrix, p, sigmap, pol_prim="amp_phase"):
-    """Polarimetric ratio chi-squared
+    """Polarimetric visibility chi-squared
     """
 
     pimage = make_p_image(imtuple, pol_prim)
@@ -693,7 +780,7 @@ def chisq_p(imtuple, Amatrix, p, sigmap, pol_prim="amp_phase"):
     return chisq
 
 def chisqgrad_p(imtuple, Amatrix, p, sigmap, pol_prim="amp_phase",pol_solve=(0,1,1)):
-    """Polarimetric ratio chi-squared gradient
+    """Polarimetric visibility chi-squared gradient
     """
     
 
@@ -714,7 +801,7 @@ def chisqgrad_p(imtuple, Amatrix, p, sigmap, pol_prim="amp_phase",pol_solve=(0,1
             gradi = zeros
 
         if pol_solve[1]!=0:
-            gradm = -np.real(iimage*np.exp(-2j*chiimage) * np.dot(Amatrix.conj().T, pdiff)) / len(p)
+            gradm = -np.real(iimage * np.exp(-2j*chiimage) * np.dot(Amatrix.conj().T, pdiff)) / len(p)
         else:
             gradm = zeros
 
@@ -723,7 +810,12 @@ def chisqgrad_p(imtuple, Amatrix, p, sigmap, pol_prim="amp_phase",pol_solve=(0,1
         else:
             gradchi = zeros
 
-        gradout = np.array((gradi, gradm, gradchi))
+        # output tuple can be length 3 or 4 depending on V
+        if len(imtuple)==4:
+            gradout = np.array((gradi, gradm, gradchi, zeros))        
+        else:
+            gradout = np.array((gradi, gradm, gradchi))
+            
 
     else:
         raise Exception("polarimetric representation %s not added to pol gradient yet!" % pol_prim)
@@ -773,7 +865,12 @@ def chisqgrad_m(imtuple, Amatrix, m, sigmam, pol_prim="amp_phase",pol_solve=(0,1
         else:
             gradchi = zeros
 
-        gradout = np.array((gradi, gradm, gradchi))
+        # output tuple can be length 3 or 4 depending on V
+        if len(imtuple)==4:
+            gradout = np.array((gradi, gradm, gradchi, zeros))        
+        else:
+            gradout = np.array((gradi, gradm, gradchi))
+            
 
     else:
         raise Exception("polarimetric representation %s not added to pol gradient yet!" % pol_prim)
@@ -791,7 +888,7 @@ def chisq_pbs(imtuple, Amatrices, bis_p, sigma, pol_prim="amp_phase"):
     return chisq
 
 def chisqgrad_pbs(imtuple, Amatrices, bis_p, sigma, pol_prim="amp_phase",pol_solve=(0,1,1)):
-    """The gradient of the polarimetric bispectrum chisq 
+    """Polarimetric bispectrum chi-squared gradient
     """
     pimage = make_p_image(imtuple, pol_prim)
     bisamples_p = np.dot(Amatrices[0], pimage) * np.dot(Amatrices[1], pimage) * np.dot(Amatrices[2], pimage)
@@ -820,7 +917,52 @@ def chisqgrad_pbs(imtuple, Amatrices, bis_p, sigma, pol_prim="amp_phase",pol_sol
         else:
             gradchi = zeros
 
-        gradout = np.array((gradi, gradm, gradchi))
+        # output tuple can be length 3 or 4 depending on V
+        if len(imtuple)==4:
+            gradout = np.array((gradi, gradm, gradchi, zeros))        
+        else:
+            gradout = np.array((gradi, gradm, gradchi))
+            
+    else:
+        raise Exception("polarimetric representation %s not added to pol gradient yet!" % pol_prim)
+
+    return gradout
+
+# stokes v
+def chisq_v(imtuple, Amatrix, v, sigmav, pol_prim="amp_phase"):
+    """V visibility chi-squared
+    """
+
+    vimage = make_v_image(imtuple, pol_prim)
+    vsamples = np.dot(Amatrix, vimage) 
+    chisq =  np.sum(np.abs((v - vsamples))**2/(sigmav**2)) / (2*len(v))   
+    return chisq
+
+def chisqgrad_v(imtuple, Amatrix, v, sigmap, pol_prim="amp_phase",pol_solve=(0,1,1)):
+    """V visibility chi-squared gradient
+    """
+    
+
+    iimage = imtuple[0]
+    vimage = make_v_image(imtuple, pol_prim)
+    vsamples = np.dot(Amatrix, vimage)
+    pdiff = (v - vsamples) / (sigmav**2)
+    zeros =  np.zeros(len(iimage))
+        
+    if pol_prim=="amp_phase":
+        vfimage = imtuple[3] # fractional   
+        if pol_solve[0]!=0:
+            gradi = -np.real(vfimage * np.dot(Amatrix.conj().T, vdiff)) / len(v)
+        else:
+            gradi = zeros
+
+        if pol_solve[3]!=0:
+            gradv = -np.real(iimage * np.dot(Amatrix.conj().T, vdiff)) / len(v)
+        else:
+            gradm = zeros
+
+
+        gradout = np.array((gradi, zeros, zeros, gradv))
 
     else:
         raise Exception("polarimetric representation %s not added to pol gradient yet!" % pol_prim)
@@ -831,7 +973,7 @@ def chisqgrad_pbs(imtuple, Amatrices, bis_p, sigma, pol_prim="amp_phase",pol_sol
 # NFFT Chi-squared and Gradient Functions
 ##################################################################################################
 def chisq_p_nfft(imtuple, A, p, sigmap, pol_prim="amp_phase"):
-    """Polarimetric ratio chi-squared
+    """P visibility chi-squared
     """
 
     #get nfft object
@@ -851,7 +993,7 @@ def chisq_p_nfft(imtuple, A, p, sigmap, pol_prim="amp_phase"):
     return chisq
 
 def chisqgrad_p_nfft(imtuple, A, p, sigmap, pol_prim="amp_phase",pol_solve=(0,1,1)):
-    """Polarimetric ratio chi-squared gradient
+    """P visibility chi-squared gradient
     """
     
     #get nfft object
@@ -895,7 +1037,10 @@ def chisqgrad_p_nfft(imtuple, A, p, sigmap, pol_prim="amp_phase",pol_solve=(0,1,
         else:
             gradchi = zeros
 
-        gradout = np.array((gradi, gradm, gradchi))
+        if len(imtuple)==4:
+            gradout = np.array((gradi, gradm, gradchi, zeros))        
+        else:
+            gradout = np.array((gradi, gradm, gradchi))
 
     else:
         raise Exception("polarimetric representation %s not added to pol gradient yet!" % pol_prim)
@@ -928,7 +1073,7 @@ def chisq_m_nfft(imtuple, A, m, sigmam, pol_prim="amp_phase"):
     return chisq
 
 def chisqgrad_m_nfft(imtuple, A, m, sigmam, pol_prim="amp_phase",pol_solve=(0,1,1)):
-    """The gradient of the polarimetric ratio chisq
+    """Polarimetric ratio chi-squared gradient
     """
     iimage = imtuple[0]
     pimage = make_p_image(imtuple, pol_prim)
@@ -983,7 +1128,12 @@ def chisqgrad_m_nfft(imtuple, A, m, sigmam, pol_prim="amp_phase",pol_solve=(0,1,
         else:
             gradchi = zeros
 
-        gradout = np.array((gradi, gradm, gradchi))
+        # output tuple can be length 3 or 4 depending on V
+        if len(imtuple)==4:
+            gradout = np.array((gradi, gradm, gradchi, zeros))        
+        else:
+            gradout = np.array((gradi, gradm, gradchi))
+            
 
     else:
         raise Exception("polarimetric representation %s not added to pol gradient yet!" % pol_prim)
@@ -1030,7 +1180,7 @@ def chisq_pbs_nfft(imtuple, A, bis_p, sigma, pol_prim="amp_phase"):
     return chisq
 
 def chisqgrad_pbs(imtuple, Amatrices, bis_p, sigma, pol_prim="amp_phase",pol_solve=(0,1,1)):
-    """The gradient of the polarimetric bispectrum chisq 
+    """Polarimetric bispectrum chi-squared gradient 
     """
 
     #get nfft objects
@@ -1100,13 +1250,84 @@ def chisqgrad_pbs(imtuple, Amatrices, bis_p, sigma, pol_prim="amp_phase",pol_sol
         else:
             gradchi = zeros
 
-        gradout = np.array((gradi, gradm, gradchi))
+        # output tuple can be length 3 or 4 depending on V
+        if len(imtuple)==4:
+            gradout = np.array((gradi, gradm, gradchi, zeros))        
+        else:
+            gradout = np.array((gradi, gradm, gradchi))
+            
 
     else:
         raise Exception("polarimetric representation %s not added to pol gradient yet!" % pol_prim)
 
     return gradout
 
+# stokes v
+def chisq_v_nfft(imtuple, A, v, sigmav, pol_prim="amp_phase"):
+    """V visibility chi-squared
+    """
+
+    #get nfft object
+    nfft_info = A[0]
+    plan = nfft_info.plan
+    pulsefac = nfft_info.pulsefac
+
+    #compute uniform --> nonuniform transform
+    vimage = make_v_image(imtuple, pol_prim)
+    plan.f_hat = pimage.copy().reshape((nfft_info.ydim,nfft_info.xdim)).T
+    plan.trafo()
+    vsamples = plan.f.copy()*pulsefac
+
+    #compute chi^2
+    chisq =  np.sum(np.abs((v - vsamples))**2/(sigmav**2)) / (2*len(v))   
+
+    return chisq
+
+def chisqgrad_v_nfft(imtuple, A, v, sigmav, pol_prim="amp_phase",pol_solve=(0,1,1)):
+    """V visibility chi-squared gradient
+    """
+    
+    #get nfft object
+    nfft_info = A[0]
+    plan = nfft_info.plan
+    pulsefac = nfft_info.pulsefac
+
+    #compute uniform --> nonuniform transform
+    iimage = imtuple[0]
+    vimage = make_v_image(imtuple, pol_prim)
+    plan.f_hat = pimage.copy().reshape((nfft_info.ydim,nfft_info.xdim)).T
+    plan.trafo()
+    vsamples = plan.f.copy()*pulsefac
+
+
+    vdiff_vec = (-1.0/len(v)) * (v - vsamples) / (sigmav**2) * pulsefac.conj()
+    plan.f = vdiff_vec
+    plan.adjoint()
+    vpart = (plan.f_hat.copy().T).reshape(nfft_info.xdim*nfft_info.ydim)
+
+    zeros =  np.zeros(len(iimage))
+        
+    if pol_prim=="amp_phase":
+
+        vfimage = imtuple[3] #fractional
+        
+        if pol_solve[0]!=0:
+            gradi = np.real(vfimage*vpart)
+        else:
+            gradi = zeros
+
+        if pol_solve[3]!=0:
+            gradv = np.real(iimage*vpart) 
+        else:
+            gradv = zeros
+
+
+        gradout = np.array((gradi, zeros, zeros, gradv))
+
+    else:
+        raise Exception("polarimetric representation %s not added to pol gradient yet!" % pol_prim)
+
+    return gradout
 
 ##################################################################################################
 # Polarimetric Entropy and Gradient Functions
@@ -1137,14 +1358,24 @@ def smgrad(imtuple, flux, pol_prim="amp_phase",pol_solve=(0,1,1),
     mimage = make_m_image(imtuple, pol_prim) 
 
     if pol_prim=="amp_phase":
-        gradi = zeros
-        gradchi = zeros
+
+        
+        if pol_solve[0]!=0:
+            gradi = -np.log(mimage)
+        else:
+            gradi = zeros
+            
         if pol_solve[1]!=0:
             gradm = -iimage / mimage
         else:
             gradm = zeros
+        
+        gradchi = zeros
 
-        out = (gradi, gradm, gradchi)
+        if len(imtuple)==4:
+            out = (gradi, gradm, gradchi,zeros)
+        else:        
+            out = (gradi, gradm, gradchi)
     else:
         raise Exception("polarimetric representation %s not added to pol gradient yet!" % pol_prim)
 
@@ -1173,13 +1404,23 @@ def shwgrad(imtuple, flux, pol_prim="amp_phase",pol_solve=(0,1,1),
     zeros =  np.zeros(len(iimage))
     mimage = make_m_image(imtuple, pol_prim)    
     if pol_prim=="amp_phase":
-        gradi = zeros
-        gradchi = zeros
+
+        if pol_solve[0]!=0:
+            gradi =  -(((1+mimage)/2) * np.log((1+mimage)/2) + ((1-mimage)/2) * np.log((1-mimage)/2))
+        else:
+            gradi = zeros
+            
         if pol_solve[1]!=0:
             gradm = -iimage * np.arctanh(mimage)
         else:
             gradm = zeros
-        out = (gradi, gradm, gradchi)
+            
+        gradchi = zeros
+        
+        if len(imtuple)==4:
+            out = (gradi, gradm, gradchi,zeros)
+        else:        
+            out = (gradi, gradm, gradchi)
     else:
         raise Exception("polarimetric representation %s not added to pol gradient yet!" % pol_prim)
 
@@ -1257,40 +1498,103 @@ def stv_pol_grad(imtuple, flux, nx, ny, psize, pol_prim="amp_phase", pol_solve=(
         else:
             chigrad = zeros
 
-        out = np.array((igrad, mgrad, chigrad))
+        if len(imtuple)==4:
+            out = (igrad, mgrad, chigrad,zeros)
+        else:        
+            out = (igrad, mgrad, chigrad,)
 
     else:
         raise Exception("polarimetric representation %s not added to pol gradient yet!" % pol_prim)
 
     return out/norm
 
+# circular polarization
+# TODO check!!
+def sl1v(imtuple, flux, pol_prim="amp_phase", norm_reg=NORM_REGULARIZER):
+    """L1 norm regularizer on V/I
+    """
+    if norm_reg: norm = len(imtuple[0])
+    else: norm = 1
 
+    iimage = imtuple[0]    
+    vfimage = make_vfrac_image(imtuple, pol_prim) 
+    l1 = -np.sum(np.abs(vfrac_image))
+    return l1/norm
+
+
+def sl1vgrad(imtuple, flux, pol_prim="amp_phase", norm_reg=NORM_REGULARIZER):
+    """L1 norm gradient
+    """
+    if norm_reg: norm = len(imtuple[0])
+    else: norm = 1
+     
+    iimage = imtuple[0]    
+    zeros  =  np.zeros(len(iimage))
+    vfimage = make_vfrac_image(imtuple, pol_prim) 
+    vfgrad = -np.sign(vfrac_image)
+    l1grad = np.array((zeros, zeros, zeros, vfgrad))
+    
+    return l1grad/norm
+    
+def sl2v(imtuple, flux, pol_prim="amp_phase", norm_reg=NORM_REGULARIZER):
+    """L1 norm regularizer on V/I
+    """
+    if norm_reg: norm = len(imtuple[0])
+    else: norm = 1
+
+    iimage = imtuple[0]    
+    vfimage = make_vfrac_image(imtuple, pol_prim) 
+    l1 = -np.sum((vfrac_image)**2)
+    return l1/norm
+
+
+def sl2vgrad(imtuple, flux, pol_prim="amp_phase", norm_reg=NORM_REGULARIZER):
+    """L2 norm gradient
+    """
+    if norm_reg: norm = len(imtuple[0])
+    else: norm = 1
+
+    iimage = imtuple[0]    
+    zeros  =  np.zeros(len(iimage))
+    vfimage = make_vfrac_image(imtuple, pol_prim) 
+    vfgrad = -2*vfrac_image
+    l2grad = np.array((zeros, zeros, zeros, vfgrad))
+    
+    return l2grad/norm    
+    
 ##################################################################################################
 # Embedding and Chi^2 Data functions
 ##################################################################################################
 def embed_pol(imtuple, mask, clipfloor=0., randomfloor=False):
     """Embeds a polarimetric image tuple into the size of boolean embed mask
     """
+
     out0=np.zeros(len(mask))
     out1=np.zeros(len(mask))
     out2=np.zeros(len(mask))
-
+    if len(imtuple)==4: out3=np.zeros(len(mask))
+    
     # Here's a much faster version than before 
     out0[mask.nonzero()] = imtuple[0]
     out1[mask.nonzero()] = imtuple[1]
     out2[mask.nonzero()] = imtuple[2]
-
+    if len(imtuple)==4: 
+        out3[mask.nonzero()] = imtuple[3]
+        
     if clipfloor != 0.0:       
+        out0[(mask-1).nonzero()] = clipfloor
+        out1[(mask-1).nonzero()] = 0
+        out2[(mask-1).nonzero()] = 0
+        if len(imtuple)==4: out3[(mask-1).nonzero()] = 0
         if randomfloor: # prevent total variation gradient singularities
-            out0[(mask-1).nonzero()] = clipfloor * np.abs(np.random.normal(size=len((mask-1).nonzero())))
-            out1[(mask-1).nonzero()] = 0 #ANDREW TODO Right? 
-            out2[(mask-1).nonzero()] = 0
-        else:
-            out0[(mask-1).nonzero()] = clipfloor
-            out1[(mask-1).nonzero()] = 0
-            out2[(mask-1).nonzero()] = 0
-
-    return (out0, out1, out2)
+            out0[(mask-1).nonzero()] *= np.abs(np.random.normal(size=len((mask-1).nonzero())))   
+            
+    if len(imtuple==4):
+        out = (out0, out1, out2, out3)
+    else:
+        out = (out0, out1, out2)
+          
+    return out
 
 def chisqdata_pvis(Obsdata, Prior, mask):
     """Return the visibilities, sigmas, and fourier matrix for an observation, prior, mask
@@ -1403,6 +1707,38 @@ def chisqdata_pbs_nfft(Obsdata, Prior, mask):
 
     return (bi, sigma, A)
 
+def chisqdata_vvis(Obsdata, Prior, mask):
+    """Return the visibilities, sigmas, and fourier matrix for an observation, prior, mask
+    """
+
+    data_arr = Obsdata.unpack(['u','v','vvis','vsigma'], conj=True)
+    uv = np.hstack((data_arr['u'].reshape(-1,1), data_arr['v'].reshape(-1,1)))
+    vis = data_arr['vvis']
+    sigma = data_arr['vsigma']
+    A = ftmatrix(Prior.psize, Prior.xdim, Prior.ydim, uv, pulse=Prior.pulse, mask=mask)
+
+    return (vis, sigma, A)
+
+def chisqdata_vvis_nfft(Obsdata, Prior, mask, **kwargs):
+    """Return the visibilities, sigmas, and fourier matrix for an observation, prior, mask
+    """
+
+    # unpack keyword args
+    fft_pad_factor = kwargs.get('fft_pad_factor',FFT_PAD_DEFAULT)
+    p_rad = kwargs.get('p_rad', GRIDDER_P_RAD_DEFAULT)
+
+    # unpack data
+    data_arr = Obsdata.unpack(['u','v','vvis','vsigma'], conj=True)
+    uv = np.hstack((data_arr['u'].reshape(-1,1), data_arr['v'].reshape(-1,1)))
+    vis = data_arr['vvis']
+    sigma = data_arr['vsigma']
+
+    # get NFFT info
+    npad = int(fft_pad_factor * np.max((Prior.xdim, Prior.ydim)))
+    A1 = NFFTInfo(Prior.xdim, Prior.ydim, Prior.psize, Prior.pulse, npad, p_rad, uv)
+    A = [A1]
+
+    return (vis, sigma, A)
 
 ##################################################################################################
 # Plotting
