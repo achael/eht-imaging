@@ -58,8 +58,9 @@ FFT_INTERP_DEFAULT = 3
 REG_DEFAULT = {'simple': 1}
 DAT_DEFAULT = {'vis': 100}
 
-POL_PRIM_SOLVE = "amp_phase"  # this means we solve for polarization in the m, chi basis
-POL_WHICH_SOLVE = (0, 1, 1)   # this means that pol imaging solves for m & chi (not I), for now
+POL_TRANS = "amp_phase"  # this means we solve for polarization in the m, chi basis
+#POL_WHICH_SOLVE = (0, 1, 1)   # this means that pol imaging solves for m & chi (not I), for now
+                               # not used, now determined by 'pol_next'
 MF_WHICH_SOLVE = (1, 1, 0)    # this means that mf imaging solves for I0 and alpha (not beta), for now
                               # DEFAULT ONLY: object now uses self.mf_which_solve
 
@@ -341,8 +342,8 @@ class Imager(object):
             if np.any(np.invert(self._embed_mask)):
                 out = polutils.embed_pol(out, self._embed_mask)
             iimage_out = out[0]
-            qimage_out = polutils.make_q_image(out, POL_PRIM_SOLVE)
-            uimage_out = polutils.make_u_image(out, POL_PRIM_SOLVE)
+            qimage_out = polutils.make_q_image(out, POL_TRANS)
+            uimage_out = polutils.make_u_image(out, POL_TRANS)
 
         elif self.mf_next:
             if np.any(np.invert(self._embed_mask)):
@@ -903,11 +904,11 @@ class Imager(object):
 
             # Pack into single vector
             if self.pol_next == 'P':
-                pol_which_solve = (0,1,1) # solve only for polarization, fix I
+                self._pol_which_solve = (0,1,1) # solve only for polarization, fix I
             else:
-                pol_which_solve = (1,1,1) # solve simultaneously for full lin pol field
+                self._pol_which_solve = (1,1,1) # solve simultaneously for full lin pol field
 
-            self._xinit = polutils.pack_poltuple(self._xtuple, pol_which_solve)
+            self._xinit = polutils.pack_poltuple(self._xtuple, self._pol_which_solve)
 
         # Set prior & initial image vectors for multifrequency imaging
         elif self.mf_next:
@@ -1086,7 +1087,7 @@ class Imager(object):
                 if dname in DATATERMS_POL:
                     chi2 = polutils.polchisq(imcur, A, data, sigma, dname,
                                              ttype=self._ttype, mask=self._embed_mask,
-                                             pol_prim=POL_PRIM_SOLVE)
+                                             pol_trans=POL_TRANS)
 
                 elif dname in DATATERMS:
                     # If multifrequency imaging, get the image at the right frequency
@@ -1127,8 +1128,8 @@ class Imager(object):
                 if dname in DATATERMS_POL:
                     chi2grad = polutils.polchisqgrad(imcur, A, data, sigma, dname,
                                                      ttype=self._ttype, mask=self._embed_mask,
-                                                     pol_prim=POL_PRIM_SOLVE,
-                                                     pol_solve=POL_WHICH_SOLVE)
+                                                     pol_solve=self._pol_which_solve,
+                                                     pol_trans=POL_TRANS)
 
                 # Single polarization data products
                 elif dname in DATATERMS:
@@ -1175,7 +1176,7 @@ class Imager(object):
                                               self.prior_next.xdim, self.prior_next.ydim,
                                               self.prior_next.psize, regname,
                                               norm_reg=self.norm_reg, beam_size=self.beam_size,
-                                              pol_prim=POL_PRIM_SOLVE, pol_solve=POL_WHICH_SOLVE)
+                                              pol_trans=POL_TRANS)
 
             # Multifrequency regularizers
             elif self.mf_next:
@@ -1265,8 +1266,8 @@ class Imager(object):
                                                   self.prior_next.xdim, self.prior_next.ydim,
                                                   self.prior_next.psize, regname,
                                                   norm_reg=self.norm_reg, beam_size=self.beam_size,
-                                                  pol_prim=POL_PRIM_SOLVE,
-                                                  pol_solve=POL_WHICH_SOLVE)
+                                                  pol_solve=self._pol_which_solve,
+                                                  pol_trans=POL_TRANS)
 
             # Multifrequency regularizer
             elif self.mf_next:
@@ -1359,11 +1360,11 @@ class Imager(object):
 
         # Unpack polarimetric/multifrequency vector into an array
         if self.pol_next == 'P' or self.pol_next == 'IP' or self.pol_next == 'IQU':
-            if self.pol_next == 'P':
-                pol_which_solve = (0,1,1) # solve only for polarization, fix I
-            else:
-                pol_which_solve = (1,1,1) # solve simultaneously for full lin pol field
-            imcur = polutils.unpack_poltuple(imvec, self._xtuple, self._nimage, pol_which_solve)
+#            if self.pol_next == 'P':
+#                pol_which_solve = (0,1,1) # solve only for polarization, fix I
+#            else:
+#                pol_which_solve = (1,1,1) # solve simultaneously for full lin pol field
+            imcur = polutils.unpack_poltuple(imvec, self._xtuple, self._nimage, self._pol_which_solve)
         elif self.mf_next:
             imcur = mfutils.unpack_mftuple(imvec, self._xtuple, self._nimage, self.mf_which_solve)
         else:
@@ -1429,11 +1430,11 @@ class Imager(object):
 
         # Unpack polarimetric/multifrequency vector into an array
         if self.pol_next == 'P' or self.pol_next == 'IP' or self.pol_next == 'IQU':
-            if self.pol_next == 'P':
-                pol_which_solve = (0,1,1) # solve only for polarization, fix I
-            else:
-                pol_which_solve = (1,1,1) # solve simultaneously for full lin pol field
-            imcur = polutils.unpack_poltuple(imvec, self._xtuple, self._nimage, pol_which_solve)
+#            if self.pol_next == 'P':
+#                pol_which_solve = (0,1,1) # solve only for polarization, fix I
+#            else:
+#                pol_which_solve = (1,1,1) # solve simultaneously for full lin pol field
+            imcur = polutils.unpack_poltuple(imvec, self._xtuple, self._nimage, self._pol_which_solve)
         elif self.mf_next:
             imcur = mfutils.unpack_mftuple(imvec, self._xtuple, self._nimage, self.mf_which_solve)
         else:
@@ -1511,9 +1512,9 @@ class Imager(object):
 
         # Repack gradient for polarimetric imaging
         if self.pol_next == 'P' or self.pol_next == 'IP' or self.pol_next == 'IQU':
-            if self.pol_next == 'P': pol_which_solve = (0,1,1)
-            else: pol_which_solve = (1,1,1)
-            grad = polutils.pack_poltuple(grad, pol_which_solve)
+#            if self.pol_next == 'P': pol_which_solve = (0,1,1)
+#            else: pol_which_solve = (1,1,1)
+            grad = polutils.pack_poltuple(grad, self._pol_which_solve)
 
         # repack gradient for multifrequency imaging
         elif self.mf_next:
@@ -1528,10 +1529,10 @@ class Imager(object):
         if self._show_updates:
             if self._nit % self._update_interval == 0:
                 if self.pol_next == 'P' or self.pol_next == 'IP' or self.pol_next == 'IQU':
-                    if self.pol_next == 'P': pol_which_solve = (0,1,1)
-                    else: pol_which_solve = (1,1,1)
+#                    if self.pol_next == 'P': pol_which_solve = (0,1,1)
+#                    else: pol_which_solve = (1,1,1)
                     imcur = polutils.unpack_poltuple(
-                        imvec, self._xtuple, self._nimage, pol_which_solve)
+                        imvec, self._xtuple, self._nimage, self._pol_which_solve)
                 elif self.mf_next:
                     imcur = mfutils.unpack_mftuple(
                         imvec, self._xtuple, self._nimage, self.mf_which_solve)
