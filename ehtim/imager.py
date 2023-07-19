@@ -58,7 +58,7 @@ FFT_INTERP_DEFAULT = 3
 REG_DEFAULT = {'simple': 1}
 DAT_DEFAULT = {'vis': 100}
 
-POL_TRANS = "amp_phase"  # this means we solve for polarization in the m, chi basis
+POL_TRANS = True  # this means we solve for polarization in the m, chi basis
 #POL_WHICH_SOLVE = (0, 1, 1)   # this means that pol imaging solves for m & chi (not I), for now
                                # not used, now determined by 'pol_next'
 MF_WHICH_SOLVE = (1, 1, 0)    # this means that mf imaging solves for I0 and alpha (not beta), for now
