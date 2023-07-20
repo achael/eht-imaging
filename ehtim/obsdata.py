@@ -1162,8 +1162,8 @@ class Obsdata(object):
                 (float): image chi^2
         """
 
-        if dtype not in ['pvis', 'm', 'pbs']:
-            raise Exception("Only supported polarimetric dterms are 'pvis','m, 'pbs'!")
+        if dtype not in ['pvis', 'm', 'pbs','vvis']:
+            raise Exception("Only supported polarimetric dterms are 'pvis','m, 'pbs','vvis'!")
 
         # TODO -- should import this at top, but the circular dependencies create a mess...
         import ehtim.imaging.pol_imager_utils as piu
@@ -1177,20 +1177,24 @@ class Obsdata(object):
             ivec = imstokes.imvec
             mvec = (np.abs(imstokes.qvec + 1j * imstokes.uvec) / ivec)
             chivec = np.angle(imstokes.qvec + 1j * imstokes.uvec) / 2
+            vvec = imstokes.vvec/ivec
             if len(mask) > 0 and np.any(np.invert(mask)):
                 ivec = ivec[mask]
                 mvec = mvec[mask]
                 chivec = chivec[mask]
-            imtuple = np.array((ivec, mvec, chivec))
+                vvec = vvec[mask]
+            imtuple = np.array((ivec, mvec, chivec,vvec))
         else:
             ivec = imstokes.imvec
             qvec = imstokes.qvec
             uvec = imstokes.uvec
+            vvec = imstokes.vvec
             if len(mask) > 0 and np.any(np.invert(mask)):
                 ivec = ivec[mask]
                 qvec = qvec[mask]
                 uvec = uvec[mask]
-            imtuple = np.array((ivec, qvec, uvec))
+                vvec = vvec[mask]
+            imtuple = np.array((ivec, qvec, uvec,vvec))
 
 
         # Calculate the chi^2

@@ -30,7 +30,7 @@ import time
 import copy
 import numpy as np
 import scipy.optimize as opt
-import scipy.ndimage as nd
+import scipy.ndimage as ndF
 import scipy.ndimage.filters as filt
 import matplotlib.pyplot as plt
 try:
@@ -45,6 +45,9 @@ from . import linearize_energy as le
 from ehtim.const_def import *
 from ehtim.observing.obs_helpers import *
 
+TANWIDTH_M = 0.5
+TANWIDTH_V = 0.5
+
 ##################################################################################################
 # Constants & Definitions
 ##################################################################################################
@@ -56,8 +59,8 @@ NHIST = 100 # number of steps to store for hessian approx
 MAXIT = 100 # maximum number of iterations
 STOP = 1.e-100 # convergence criterion
 
-DATATERMS = ['pvis','m','pbs']
-REGULARIZERS = ['msimple', 'hw', 'ptv']
+DATATERMS_POL = ['pvis', 'm', 'pbs','vvis']
+REGULARIZERS_POL = ['msimple', 'hw', 'ptv','l1v','l2v']
 
 nit = 0 # global variable to track the iteration number in the plotting callback
 
@@ -136,10 +139,10 @@ def pol_imager_func(Obsdata, InitIm, Prior,
         raise Exception("Must have at least one data term!")
     if not s1 and not s2:
         raise Exception("Must have at least one regularizer term!")
-    if (not ((d1 in DATATERMS) or d1==False)) or (not ((d2 in DATATERMS) or d2==False)):
-        raise Exception("Invalid data term: valid data terms are: " + ' '.join(DATATERMS))
-    if (not ((s1 in REGULARIZERS) or s1==False)) or (not ((s2 in REGULARIZERS) or s2==False)):
-        raise Exception("Invalid regularizer: valid regularizers are: " + ' '.join(REGULARIZERS))
+    if (not ((d1 in DATATERMS_POL) or d1==False)) or (not ((d2 in DATATERMS_POL) or d2==False)):
+        raise Exception("Invalid data term: valid data terms are: " + ' '.join(DATATERMS_POL))
+    if (not ((s1 in REGULARIZERS_POL) or s1==False)) or (not ((s2 in REGULARIZERS_POL) or s2==False)):
+        raise Exception("Invalid regularizer: valid regularizers are: " + ' '.join(REGULARIZERS_POL))
     if (Prior.psize != InitIm.psize) or (Prior.xdim != InitIm.xdim) or (Prior.ydim != InitIm.ydim):
         raise Exception("Initial image does not match dimensions of the prior image!")
     if (ttype not in ["direct","nfft"]):
@@ -297,9 +300,9 @@ def pol_imager_func(Obsdata, InitIm, Prior,
     # Print stats
     print("Initial S_1: %f S_2: %f" % (reg1(inittuple), reg2(inittuple)))
     print("Initial Chi^2_1: %f Chi^2_2: %f" % (chisq1(inittuple), chisq2(inittuple)))
-    if d1 in DATATERMS:
+    if d1 in DATATERMS_POL:
         print("Total Data 1: ", (len(data1)))
-    if d2 in DATATERMS:
+    if d2 in DATATERMS_POL:
         print("Total Data 2: ", (len(data2)))
     print("Total Pixel #: ", (len(Prior.imvec)))
     print("Clipped Pixel #: ", nimage)
@@ -471,28 +474,34 @@ def make_v_image(imtuple, pol_trans=True):
     """construct an image of stokes V
     """
 
-    if pol_trans:
-        vimage = imtuple[0] * imtuple[3]
+    if len(imtuple)==4:
+        if pol_trans:
+            vimage = imtuple[0] * imtuple[3]
+        else:
+            vimage = imtuple[3]
     else:
-        vimage = imtuple[3]
+        vimage = np.zeros(imtuple[0].shape)
+        
     return vimage
 
 def make_vfrac_image(imtuple, pol_trans=True):
     """construct an image of stokes V
     """
-
-    if pol_trans:
-        vfimage = imtuple[3]
+    if len(imtuple)==4:
+        if pol_trans:
+            vfimage = imtuple[3]
+        else:
+            vfimage = imtuple[3]/imtuple[0]
     else:
-        vfimage = imtuple[3]/imtuple[0]
+        vfimage = np.zeros(imtuple[0].shape)
+        
     return vfimage
     
         
 # these change of variables only apply to polarimetric ratios
 # !AC In these pol. changes of variables, might be useful to 
 # take m -> m/100 by adjusting B (function becomes less steep around m' = 0)
-B = .5
-BV = 1
+
 def mcv(imtuple):
     """Change of pol. ratio from range (-inf, inf) to (0,1)
     """
@@ -501,10 +510,10 @@ def mcv(imtuple):
     mimage =  imtuple[1]
     chiimage = imtuple[2]
 
-    mtrans = 0.5 + np.arctan(mimage/B)/np.pi
+    mtrans = 0.5 + np.arctan(mimage/TANWIDTH_M)/np.pi
     if len(imtuple)==4:
         vfimage = imtuple[3]
-        vtrans = 2*np.arctan(vfimage/BV)/np.pi    
+        vtrans = 2*np.arctan(vfimage/TANWIDTH_V)/np.pi    
         out = np.array((iimage, mtrans, chiimage, vtrans))
     else:
         out = np.array((iimage, mtrans, chiimage))    
@@ -519,10 +528,10 @@ def mcv_r(imtuple):
     mimage =  imtuple[1]
     chiimage = imtuple[2]
 
-    mtrans = B*np.tan(np.pi*(mimage - 0.5))
+    mtrans = TANWIDTH_M*np.tan(np.pi*(mimage - 0.5))
     if len(imtuple)==4:
         vfimage = imtuple[3]
-        vtrans = BV*np.tan(0.5*np.pi*(vfimage))    
+        vtrans = TANWIDTH_V*np.tan(0.5*np.pi*(vfimage))    
         out = np.array((iimage, mtrans, chiimage, vtrans))
     else:
         out = np.array((iimage, mtrans, chiimage))
@@ -537,12 +546,12 @@ def mchain(imtuple):
     chiimage = imtuple[2]
 
     ichain = np.ones(len(iimage))
-    mmchain = 1 / (B*np.pi*(1 + (mimage/B)**2))
+    mmchain = 1 / (TANWIDTH_M*np.pi*(1 + (mimage/TANWIDTH_M)**2))
     chichain = np.ones(len(chiimage))
     
     if len(imtuple)==4:
         vfimage = imtuple[3]
-        vchain = 2. / (BV*np.pi*(1 + (vfimage/B)**2))
+        vchain = 2. / (TANWIDTH_V*np.pi*(1 + (vfimage/TANWIDTH_V)**2))
         out = np.array((ichain, mmchain, chichain, vchain))
     else:
         out = np.array((ichain, mmchain, chichain))
@@ -559,7 +568,7 @@ def polchisq(imtuple, A, data, sigma, dtype, ttype='direct', mask=[], pol_trans=
     """
 
     chisq = 1 
-    if not dtype in DATATERMS:
+    if not dtype in DATATERMS_POL:
         return chisq
     if ttype not in ['fast','direct','nfft']:
         raise Exception("Possible ttype values are 'fast' and 'direct'!")
@@ -575,7 +584,7 @@ def polchisq(imtuple, A, data, sigma, dtype, ttype='direct', mask=[], pol_trans=
             
         # circular
         elif dtype == 'vvis':
-            chisq = chisq_v(imtuple, A, data, sigma, pol_trans)        
+            chisq = chisq_vvis(imtuple, A, data, sigma, pol_trans)        
             
     elif ttype== 'fast':
         raise Exception("FFT not yet implemented in polchisq!")
@@ -594,7 +603,7 @@ def polchisq(imtuple, A, data, sigma, dtype, ttype='direct', mask=[], pol_trans=
             
         # circular
         elif dtype == 'vvis':
-            chisq = chisq_v_nfft(imtuple, A, data, sigma, pol_trans)        
+            chisq = chisq_vvis_nfft(imtuple, A, data, sigma, pol_trans)        
 
     return chisq
 
@@ -605,7 +614,7 @@ def polchisqgrad(imtuple, A, data, sigma, dtype, ttype='direct',
     """
 
     chisqgrad = np.zeros((3,len(imtuple[0])))
-    if not dtype in DATATERMS:
+    if not dtype in DATATERMS_POL:
         return chisqgrad
     if ttype not in ['fast','direct','nfft']:
         raise Exception("Possible ttype values are 'fast' and 'direct'!")
@@ -621,7 +630,7 @@ def polchisqgrad(imtuple, A, data, sigma, dtype, ttype='direct',
             
         # circular
         elif dtype == 'vvis':
-            chisqgrad = chisqgrad_v(imtuple, A, data, sigma, pol_trans,pol_solve)
+            chisqgrad = chisqgrad_vvis(imtuple, A, data, sigma, pol_trans,pol_solve)
                 
     elif ttype== 'fast':
         raise Exception("FFT not yet implemented in polchisqgrad!")
@@ -640,7 +649,7 @@ def polchisqgrad(imtuple, A, data, sigma, dtype, ttype='direct',
 
         # circular
         elif dtype == 'vvis':
-            chisqgrad = chisqgrad_v_nfft(imtuple, A, data, sigma, pol_trans,pol_solve)
+            chisqgrad = chisqgrad_vvis_nfft(imtuple, A, data, sigma, pol_trans,pol_solve)
             
         if len(mask)>0 and np.any(np.invert(mask)):
             if len(chisqgrad==4):
@@ -703,9 +712,9 @@ def polregularizergrad(imtuple, mask, flux, xdim, ydim, psize, stype, **kwargs):
 
     # circular
     elif stype == "l1v":
-        reg = -sl1vgrad(imtuple, flux, pol_trans, norm_reg=norm_reg)
+        reggrad = -sl1vgrad(imtuple, flux, pol_trans, norm_reg=norm_reg)
     elif stype == "l2v":
-        reg = -sl2vgrad(imtuple, flux, pol_trans, norm_reg=norm_reg)    
+        reggrad = -sl2vgrad(imtuple, flux, pol_trans, norm_reg=norm_reg)    
                 
     else:
         reggrad = np.zeros((len(imtuple),len(imtuple[0])))
@@ -743,7 +752,7 @@ def polchisqdata(Obsdata, Prior, mask, dtype, **kwargs):
         elif dtype == 'pbs':
             (data, sigma, A) = chisqdata_pbs_nfft(Obsdata, Prior, mask, **kwargs)
         elif dtype == 'vvis':
-            (data, sigma, A) = chisqdata_v_nfft(Obsdata, Prior, mask, **kwargs)
+            (data, sigma, A) = chisqdata_vvis_nfft(Obsdata, Prior, mask, **kwargs)
         
     return (data, sigma, A)
 
@@ -911,7 +920,7 @@ def chisqgrad_pbs(imtuple, Amatrices, bis_p, sigma, pol_trans=True,pol_solve=(0,
     return gradout
 
 # stokes v
-def chisq_v(imtuple, Amatrix, v, sigmav, pol_trans=True):
+def chisq_vvis(imtuple, Amatrix, v, sigmav, pol_trans=True):
     """V visibility chi-squared
     """
 
@@ -920,7 +929,7 @@ def chisq_v(imtuple, Amatrix, v, sigmav, pol_trans=True):
     chisq =  np.sum(np.abs((v - vsamples))**2/(sigmav**2)) / (2*len(v))   
     return chisq
 
-def chisqgrad_v(imtuple, Amatrix, v, sigmap, pol_trans=True,pol_solve=(0,1,1)):
+def chisqgrad_vvis(imtuple, Amatrix, v, sigmap, pol_trans=True,pol_solve=(0,1,1)):
     """V visibility chi-squared gradient
     """
     
@@ -1245,7 +1254,7 @@ def chisqgrad_pbs(imtuple, Amatrices, bis_p, sigma, pol_trans=True,pol_solve=(0,
     return gradout
 
 # stokes v
-def chisq_v_nfft(imtuple, A, v, sigmav, pol_trans=True):
+def chisq_vvis_nfft(imtuple, A, v, sigmav, pol_trans=True):
     """V visibility chi-squared
     """
 
@@ -1256,7 +1265,7 @@ def chisq_v_nfft(imtuple, A, v, sigmav, pol_trans=True):
 
     #compute uniform --> nonuniform transform
     vimage = make_v_image(imtuple, pol_trans)
-    plan.f_hat = pimage.copy().reshape((nfft_info.ydim,nfft_info.xdim)).T
+    plan.f_hat = vimage.copy().reshape((nfft_info.ydim,nfft_info.xdim)).T
     plan.trafo()
     vsamples = plan.f.copy()*pulsefac
 
@@ -1265,7 +1274,7 @@ def chisq_v_nfft(imtuple, A, v, sigmav, pol_trans=True):
 
     return chisq
 
-def chisqgrad_v_nfft(imtuple, A, v, sigmav, pol_trans=True,pol_solve=(0,1,1)):
+def chisqgrad_vvis_nfft(imtuple, A, v, sigmav, pol_trans=True,pol_solve=(0,1,1)):
     """V visibility chi-squared gradient
     """
     
@@ -1277,7 +1286,7 @@ def chisqgrad_v_nfft(imtuple, A, v, sigmav, pol_trans=True,pol_solve=(0,1,1)):
     #compute uniform --> nonuniform transform
     iimage = imtuple[0]
     vimage = make_v_image(imtuple, pol_trans)
-    plan.f_hat = pimage.copy().reshape((nfft_info.ydim,nfft_info.xdim)).T
+    plan.f_hat = vimage.copy().reshape((nfft_info.ydim,nfft_info.xdim)).T
     plan.trafo()
     vsamples = plan.f.copy()*pulsefac
 
@@ -1500,7 +1509,7 @@ def sl1v(imtuple, flux, pol_trans=True, norm_reg=NORM_REGULARIZER):
 
     iimage = imtuple[0]    
     vfimage = make_vfrac_image(imtuple, pol_trans) 
-    l1 = -np.sum(np.abs(vfrac_image))
+    l1 = -np.sum(np.abs(vfimage))
     return l1/norm
 
 
@@ -1513,7 +1522,7 @@ def sl1vgrad(imtuple, flux, pol_trans=True, norm_reg=NORM_REGULARIZER):
     iimage = imtuple[0]    
     zeros  =  np.zeros(len(iimage))
     vfimage = make_vfrac_image(imtuple, pol_trans) 
-    vfgrad = -np.sign(vfrac_image)
+    vfgrad = -np.sign(vfimage)
     l1grad = np.array((zeros, zeros, zeros, vfgrad))
     
     return l1grad/norm
@@ -1526,7 +1535,7 @@ def sl2v(imtuple, flux, pol_trans=True, norm_reg=NORM_REGULARIZER):
 
     iimage = imtuple[0]    
     vfimage = make_vfrac_image(imtuple, pol_trans) 
-    l1 = -np.sum((vfrac_image)**2)
+    l1 = -np.sum((vfimage)**2)
     return l1/norm
 
 
@@ -1539,7 +1548,7 @@ def sl2vgrad(imtuple, flux, pol_trans=True, norm_reg=NORM_REGULARIZER):
     iimage = imtuple[0]    
     zeros  =  np.zeros(len(iimage))
     vfimage = make_vfrac_image(imtuple, pol_trans) 
-    vfgrad = -2*vfrac_image
+    vfgrad = -2*vfimage
     l2grad = np.array((zeros, zeros, zeros, vfgrad))
     
     return l2grad/norm    
@@ -1693,7 +1702,7 @@ def chisqdata_vvis(Obsdata, Prior, mask):
     """Return the visibilities, sigmas, and fourier matrix for an observation, prior, mask
     """
 
-    data_arr = Obsdata.unpack(['u','v','vvis','vsigma'], conj=True)
+    data_arr = Obsdata.unpack(['u','v','vvis','vsigma'], conj=False)
     uv = np.hstack((data_arr['u'].reshape(-1,1), data_arr['v'].reshape(-1,1)))
     vis = data_arr['vvis']
     sigma = data_arr['vsigma']
@@ -1710,7 +1719,7 @@ def chisqdata_vvis_nfft(Obsdata, Prior, mask, **kwargs):
     p_rad = kwargs.get('p_rad', GRIDDER_P_RAD_DEFAULT)
 
     # unpack data
-    data_arr = Obsdata.unpack(['u','v','vvis','vsigma'], conj=True)
+    data_arr = Obsdata.unpack(['u','v','vvis','vsigma'], conj=False)
     uv = np.hstack((data_arr['u'].reshape(-1,1), data_arr['v'].reshape(-1,1)))
     vis = data_arr['vvis']
     sigma = data_arr['vsigma']
