@@ -50,7 +50,7 @@ REGULARIZERS_CURV = ['l2_beta', 'tv_beta']
 
 
 DATATERMS_POL = ['pvis', 'm', 'pbs','vvis']
-REGULARIZERS_POL = ['msimple', 'hw', 'ptv','l1v','l2v']
+REGULARIZERS_POL = ['msimple', 'hw', 'ptv','l1v','l2v','hwv']
 
 GRIDDER_P_RAD_DEFAULT = 2
 GRIDDER_CONV_FUNC_DEFAULT = 'gaussian'

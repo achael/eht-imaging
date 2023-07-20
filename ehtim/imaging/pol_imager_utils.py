@@ -60,7 +60,7 @@ MAXIT = 100 # maximum number of iterations
 STOP = 1.e-100 # convergence criterion
 
 DATATERMS_POL = ['pvis', 'm', 'pbs','vvis']
-REGULARIZERS_POL = ['msimple', 'hw', 'ptv','l1v','l2v']
+REGULARIZERS_POL = ['msimple', 'hw', 'ptv','l1v','l2v','hwv']
 
 nit = 0 # global variable to track the iteration number in the plotting callback
 
@@ -384,7 +384,8 @@ def unpack_poltuple(polvec, inittuple, nimage, pol_solve = (0,1,1)):
         init0 = inittuple[0]
         init1 = inittuple[1]
         init2 = inittuple[2]
-        if len(pol_solve)==4: init3 = inittuple[3]
+        if len(pol_solve)==4: 
+            init3 = inittuple[3]
         
         imct = 0
         if pol_solve[0] == 0:
@@ -413,7 +414,8 @@ def unpack_poltuple(polvec, inittuple, nimage, pol_solve = (0,1,1)):
                 imct += 1    
             out = np.array((im0, im1, im2, im3))        
         else:        
-            out = np.array((im0, im1, im2))    
+            out = np.array((im0, im1, im2)) 
+               
         return out
 
 def make_p_image(imtuple, pol_trans=True):
@@ -652,7 +654,7 @@ def polchisqgrad(imtuple, A, data, sigma, dtype, ttype='direct',
             chisqgrad = chisqgrad_vvis_nfft(imtuple, A, data, sigma, pol_trans,pol_solve)
             
         if len(mask)>0 and np.any(np.invert(mask)):
-            if len(chisqgrad==4):
+            if len(chisqgrad)==4:
                 chisqgrad = np.array((chisqgrad[0][mask],chisqgrad[1][mask],chisqgrad[2][mask],chisqgrad[3][mask]))
             else:
                 chisqgrad = np.array((chisqgrad[0][mask],chisqgrad[1][mask],chisqgrad[2][mask]))
@@ -681,7 +683,9 @@ def polregularizer(imtuple, mask, flux, xdim, ydim, psize, stype, **kwargs):
         reg = -sl1v(imtuple, flux, pol_trans, norm_reg=norm_reg)
     elif stype == "l2v":
         reg = -sl2v(imtuple, flux, pol_trans, norm_reg=norm_reg)
-                       
+    elif stype == "hwv":
+        reg = -shwv(imtuple, flux, pol_trans, norm_reg=norm_reg)
+                               
     else:
         reg = 0
 
@@ -705,7 +709,7 @@ def polregularizergrad(imtuple, mask, flux, xdim, ydim, psize, stype, **kwargs):
         reggrad = -stv_pol_grad(imtuple, flux, xdim, ydim, psize, pol_trans, pol_solve,
                                 norm_reg=norm_reg, beam_size=beam_size)
         if np.any(np.invert(mask)):
-            if len(reggrad==4): 
+            if len(reggrad)==4: 
                 reggrad = np.array((reggrad[0][mask],reggrad[1][mask],reggrad[2][mask],reggrad[3][mask]))
             else: 
                 reggrad = np.array((reggrad[0][mask],reggrad[1][mask],reggrad[2][mask]))
@@ -715,7 +719,8 @@ def polregularizergrad(imtuple, mask, flux, xdim, ydim, psize, stype, **kwargs):
         reggrad = -sl1vgrad(imtuple, flux, pol_trans, norm_reg=norm_reg)
     elif stype == "l2v":
         reggrad = -sl2vgrad(imtuple, flux, pol_trans, norm_reg=norm_reg)    
-                
+    elif stype == "hwv":
+        reggrad = -shwvgrad(imtuple, flux, pol_trans, norm_reg=norm_reg)                    
     else:
         reggrad = np.zeros((len(imtuple),len(imtuple[0])))
 
@@ -1552,7 +1557,47 @@ def sl2vgrad(imtuple, flux, pol_trans=True, norm_reg=NORM_REGULARIZER):
     l2grad = np.array((zeros, zeros, zeros, vfgrad))
     
     return l2grad/norm    
+
+def shwv(imtuple, flux, pol_trans=True, norm_reg=NORM_REGULARIZER):
+    """Holdaway-Wardle polarimetric entropy for V
+    """
     
+    if norm_reg: norm = flux
+    else: norm = 1
+
+    iimage = imtuple[0]    
+    vfimage = make_vfrac_image(imtuple, pol_trans) 
+    S = -np.sum(iimage * (((1+vfimage)/2) * np.log((1+vfimage)/2) + ((1-vfimage)/2) * np.log((1-vfimage)/2)))
+    return S/norm
+
+def shwvgrad(imtuple, flux, pol_trans=True,pol_solve=(0,0,0,1),
+            norm_reg=NORM_REGULARIZER):
+    """Gradient of the Holdaway-Wardle polarimetric entropy for V
+    """
+    if norm_reg: norm = flux
+    else: norm = 1
+
+    iimage = imtuple[0]
+    vfimage = make_vfrac_image(imtuple, pol_trans)  
+    zeros = np.zeros(len(iimage))  
+    if pol_trans:
+
+        if pol_solve[0]!=0:
+            gradi =  -(((1+vfimage)/2) * np.log((1+vfimage)/2) + ((1-vfimage)/2) * np.log((1-vfimage)/2))
+        else:
+            gradi = zeros
+            
+        if pol_solve[3]!=0:
+            gradv = -iimage * np.arctanh(vfimage)
+        else:
+            gradv = zeros
+            
+        out = np.array((gradi, zeros,zeros,gradv))
+
+    else:
+        raise Exception("polarimetric representation %s not added to pol gradient yet!" % pol_trans)
+
+    return np.array(out)/norm    
 ##################################################################################################
 # Embedding and Chi^2 Data functions
 ##################################################################################################
@@ -1580,7 +1625,7 @@ def embed_pol(imtuple, mask, clipfloor=0., randomfloor=False):
         if randomfloor: # prevent total variation gradient singularities
             out0[(mask-1).nonzero()] *= np.abs(np.random.normal(size=len((mask-1).nonzero())))   
             
-    if len(imtuple==4):
+    if len(imtuple)==4:
         out = (out0, out1, out2, out3)
     else:
         out = (out0, out1, out2)
