@@ -46,7 +46,7 @@ from ehtim.const_def import *
 from ehtim.observing.obs_helpers import *
 
 TANWIDTH_M = 0.5
-TANWIDTH_V = 0.5
+TANWIDTH_V = 1
 
 ##################################################################################################
 # Constants & Definitions
@@ -60,7 +60,7 @@ MAXIT = 100 # maximum number of iterations
 STOP = 1.e-100 # convergence criterion
 
 DATATERMS_POL = ['pvis', 'm', 'pbs','vvis']
-REGULARIZERS_POL = ['msimple', 'hw', 'ptv','l1v','l2v','hwv']
+REGULARIZERS_POL = ['msimple', 'hw', 'ptv','l1v','l2v','vtv','v2tv2']
 
 nit = 0 # global variable to track the iteration number in the plotting callback
 
@@ -683,9 +683,16 @@ def polregularizer(imtuple, mask, flux, xdim, ydim, psize, stype, **kwargs):
         reg = -sl1v(imtuple, flux, pol_trans, norm_reg=norm_reg)
     elif stype == "l2v":
         reg = -sl2v(imtuple, flux, pol_trans, norm_reg=norm_reg)
-    elif stype == "hwv":
-        reg = -shwv(imtuple, flux, pol_trans, norm_reg=norm_reg)
-                               
+    elif stype == "vtv":
+        if np.any(np.invert(mask)):
+            imtuple = embed_pol(imtuple, mask, randomfloor=True)
+        reg = -stv_v(imtuple, flux, xdim, ydim, psize, pol_trans, 
+                     norm_reg=norm_reg, beam_size=beam_size)
+    elif stype == "vtv2":
+        if np.any(np.invert(mask)):
+            imtuple = embed_pol(imtuple, mask, randomfloor=True)
+        reg = -stv2_v(imtuple, flux, xdim, ydim, psize, pol_trans, 
+                      norm_reg=norm_reg, beam_size=beam_size)                               
     else:
         reg = 0
 
@@ -716,11 +723,24 @@ def polregularizergrad(imtuple, mask, flux, xdim, ydim, psize, stype, **kwargs):
 
     # circular
     elif stype == "l1v":
-        reggrad = -sl1vgrad(imtuple, flux, pol_trans, norm_reg=norm_reg)
+        reggrad = -sl1vgrad(imtuple, flux, pol_trans, pol_solve=pol_solve, norm_reg=norm_reg)
     elif stype == "l2v":
-        reggrad = -sl2vgrad(imtuple, flux, pol_trans, norm_reg=norm_reg)    
-    elif stype == "hwv":
-        reggrad = -shwvgrad(imtuple, flux, pol_trans, norm_reg=norm_reg)                    
+        reggrad = -sl2vgrad(imtuple, flux, pol_trans, pol_solve=pol_solve, norm_reg=norm_reg)    
+    elif stype == "vtv":
+        if np.any(np.invert(mask)):
+            imtuple = embed_pol(imtuple, mask, randomfloor=True)
+        reggrad = -stv_v_grad(imtuple, flux, xdim, ydim, psize, pol_trans,
+                              pol_solve=pol_solve, norm_reg=norm_reg, beam_size=beam_size)
+        if np.any(np.invert(mask)):
+            reggrad = np.array((reggrad[0][mask],reggrad[1][mask],reggrad[2][mask],reggrad[3][mask]))
+    elif stype == "vtv2":
+        if np.any(np.invert(mask)):
+            imtuple = embed_pol(imtuple, mask, randomfloor=True)
+        reggrad = -stv2_v_grad(imtuple, flux, xdim, ydim, psize, pol_trans, 
+                               pol_solve=pol_solve, norm_reg=norm_reg, beam_size=beam_size)
+        if np.any(np.invert(mask)):
+            reggrad = np.array((reggrad[0][mask],reggrad[1][mask],reggrad[2][mask],reggrad[3][mask]))
+
     else:
         reggrad = np.zeros((len(imtuple),len(imtuple[0])))
 
@@ -1507,97 +1527,253 @@ def stv_pol_grad(imtuple, flux, nx, ny, psize, pol_trans=True, pol_solve=(0,1,1)
 # circular polarization
 # TODO check!!
 def sl1v(imtuple, flux, pol_trans=True, norm_reg=NORM_REGULARIZER):
-    """L1 norm regularizer on V/I
+    """L1 norm regularizer on V
     """
-    if norm_reg: norm = len(imtuple[0])
+    if norm_reg: norm = flux
     else: norm = 1
 
-    iimage = imtuple[0]    
-    vfimage = make_vfrac_image(imtuple, pol_trans) 
-    l1 = -np.sum(np.abs(vfimage))
+    vimage = make_v_image(imtuple, pol_trans) 
+    l1 = -np.sum(np.abs(vimage))
     return l1/norm
 
 
-def sl1vgrad(imtuple, flux, pol_trans=True, norm_reg=NORM_REGULARIZER):
+def sl1vgrad(imtuple, flux, pol_trans=True, pol_solve=(0,0,0,1),  norm_reg=NORM_REGULARIZER):
     """L1 norm gradient
     """
-    if norm_reg: norm = len(imtuple[0])
+    if norm_reg: norm = flux
     else: norm = 1
      
     iimage = imtuple[0]    
     zeros  =  np.zeros(len(iimage))
-    vfimage = make_vfrac_image(imtuple, pol_trans) 
-    vfgrad = -np.sign(vfimage)
-    l1grad = np.array((zeros, zeros, zeros, vfgrad))
+    vimage = make_v_image(imtuple, pol_trans) 
+    grad = -np.sign(vimage)
     
-    return l1grad/norm
+    if pol_trans:
+
+        # dS/dI Numerators
+        if pol_solve[0]!=0:
+            igrad = (vimage/iimage)*grad
+        else:
+            igrad = zeros
+
+        # dS/dm numerators
+        if pol_solve[3]!=0:
+            vgrad = iimage*grad
+        else: 
+            vgrad=zeros
+
+
+        out = np.array((igrad, zeros, zeros, vgrad))
+    else:
+        raise Exception("polarimetric representation %s not added to pol gradient yet!" % pol_trans)            
+    
+    return out/norm
     
 def sl2v(imtuple, flux, pol_trans=True, norm_reg=NORM_REGULARIZER):
-    """L1 norm regularizer on V/I
+    """L1 norm regularizer on V
     """
-    if norm_reg: norm = len(imtuple[0])
+    if norm_reg: norm = flux
     else: norm = 1
 
     iimage = imtuple[0]    
-    vfimage = make_vfrac_image(imtuple, pol_trans) 
-    l1 = -np.sum((vfimage)**2)
-    return l1/norm
+    vimage = make_v_image(imtuple, pol_trans) 
+    l2 = -np.sum((vimage)**2)
+    return l2/norm
 
 
-def sl2vgrad(imtuple, flux, pol_trans=True, norm_reg=NORM_REGULARIZER):
+def sl2vgrad(imtuple, flux, pol_trans=True, pol_solve=(0,0,0,1), norm_reg=NORM_REGULARIZER):
     """L2 norm gradient
     """
-    if norm_reg: norm = len(imtuple[0])
+    if norm_reg: norm = flux
     else: norm = 1
 
     iimage = imtuple[0]    
     zeros  =  np.zeros(len(iimage))
-    vfimage = make_vfrac_image(imtuple, pol_trans) 
-    vfgrad = -2*vfimage
-    l2grad = np.array((zeros, zeros, zeros, vfgrad))
-    
-    return l2grad/norm    
+    vimage = make_v_image(imtuple, pol_trans) 
+    grad = -2*vimage
 
-def shwv(imtuple, flux, pol_trans=True, norm_reg=NORM_REGULARIZER):
-    """Holdaway-Wardle polarimetric entropy for V
-    """
-    
-    if norm_reg: norm = flux
-    else: norm = 1
-
-    iimage = imtuple[0]    
-    vfimage = make_vfrac_image(imtuple, pol_trans) 
-    S = -np.sum(iimage * (((1+vfimage)/2) * np.log((1+vfimage)/2) + ((1-vfimage)/2) * np.log((1-vfimage)/2)))
-    return S/norm
-
-def shwvgrad(imtuple, flux, pol_trans=True,pol_solve=(0,0,0,1),
-            norm_reg=NORM_REGULARIZER):
-    """Gradient of the Holdaway-Wardle polarimetric entropy for V
-    """
-    if norm_reg: norm = flux
-    else: norm = 1
-
-    iimage = imtuple[0]
-    vfimage = make_vfrac_image(imtuple, pol_trans)  
-    zeros = np.zeros(len(iimage))  
     if pol_trans:
 
+        # dS/dI Numerators
         if pol_solve[0]!=0:
-            gradi =  -(((1+vfimage)/2) * np.log((1+vfimage)/2) + ((1-vfimage)/2) * np.log((1-vfimage)/2))
+            igrad = (vimage/iimage)*grad
         else:
-            gradi = zeros
-            
+            igrad = zeros
+
+        # dS/dm numerators
         if pol_solve[3]!=0:
-            gradv = -iimage * np.arctanh(vfimage)
-        else:
-            gradv = zeros
+            vgrad = iimage*grad
+        else: 
+            vgrad=zeros
+
+
+        out = np.array((igrad, zeros, zeros, vgrad))
+    else:
+        raise Exception("polarimetric representation %s not added to pol gradient yet!" % pol_trans)            
             
-        out = np.array((gradi, zeros,zeros,gradv))
+    return out/norm    
+
+def stv_v(imtuple, flux, nx, ny, psize, pol_trans=True, 
+          norm_reg=NORM_REGULARIZER, beam_size=None, epsilon=0.):
+    """Total variation of I*vfrac"""
+    
+    if beam_size is None: beam_size = psize
+    if norm_reg: norm = flux*psize / beam_size
+    else: norm = 1
+
+    vimage = make_v_image(imtuple, pol_trans)
+    im = vimage.reshape(ny, nx)
+
+    impad = np.pad(im, 1, mode='constant', constant_values=0)
+    im_l1 = np.roll(impad, -1, axis=0)[1:ny+1, 1:nx+1]
+    im_l2 = np.roll(impad, -1, axis=1)[1:ny+1, 1:nx+1]
+    S = -np.sum(np.sqrt(np.abs(im_l1 - im)**2 + np.abs(im_l2 - im)**2+epsilon))
+    return S/norm
+
+def stv_v_grad(imtuple, flux, nx, ny, psize, pol_trans=True, pol_solve=(0,0,0,1), 
+             norm_reg=NORM_REGULARIZER, beam_size=None, epsilon=0.):
+    """Total variation gradient"""
+
+    if beam_size is None: beam_size = psize
+    if norm_reg: norm = flux*psize / beam_size
+    else: norm = 1
+
+    iimage = imtuple[0]   
+    zeros =  np.zeros(len(iimage)) 
+    vimage = make_v_image(imtuple, pol_trans)
+
+    im = vimage.reshape(ny, nx)
+    
+    impad = np.pad(im, 1, mode='constant', constant_values=0)
+    im_l1 = np.roll(impad, -1, axis=0)[1:ny+1, 1:nx+1]
+    im_l2 = np.roll(impad, -1, axis=1)[1:ny+1, 1:nx+1]
+    im_r1 = np.roll(impad, 1, axis=0)[1:ny+1, 1:nx+1]
+    im_r2 = np.roll(impad, 1, axis=1)[1:ny+1, 1:nx+1]
+
+    # rotate images
+    im_r1l2 = np.roll(np.roll(impad,  1, axis=0), -1, axis=1)[1:ny+1, 1:nx+1]
+    im_l1r2 = np.roll(np.roll(impad, -1, axis=0), 1, axis=1)[1:ny+1, 1:nx+1]
+
+    # add together terms and return
+    g1 = (2*im - im_l1 - im_l2) / np.sqrt((im - im_l1)**2 + (im - im_l2)**2 + epsilon)
+    g2 = (im - im_r1) / np.sqrt((im - im_r1)**2 + (im_r1l2 - im_r1)**2 + epsilon)
+    g3 = (im - im_r2) / np.sqrt((im - im_r2)**2 + (im_l1r2 - im_r2)**2 + epsilon)
+
+    # mask the first row column gradient terms that don't exist
+    mask1 = np.zeros(im.shape)
+    mask2 = np.zeros(im.shape)
+    mask1[0, :] = 1
+    mask2[:, 0] = 1
+    g2[mask1.astype(bool)] = 0
+    g3[mask2.astype(bool)] = 0
+
+    # add terms together and return
+    grad = -(g1 + g2 + g3).flatten()
+    
+    if pol_trans:
+
+        # dS/dI Numerators
+        if pol_solve[0]!=0:
+            igrad = (vimage/iimage)*grad
+        else:
+            igrad = zeros
+
+        # dS/dm numerators
+        if pol_solve[3]!=0:
+            vgrad = iimage*grad
+        else: 
+            vgrad=zeros
+
+
+        out = np.array((igrad, zeros, zeros, vgrad))
+
 
     else:
         raise Exception("polarimetric representation %s not added to pol gradient yet!" % pol_trans)
 
-    return np.array(out)/norm    
+    return out/norm
+
+def stv2_v(imtuple, flux, nx, ny, psize, pol_trans=True, 
+           norm_reg=NORM_REGULARIZER, beam_size=None):
+    """Squared Total variation of I*vfrac
+    """
+    
+    if beam_size is None:
+        beam_size = psize
+    if norm_reg:
+        norm = psize**4 * flux**2 / beam_size**4
+    else:
+        norm = 1
+
+    vimage = make_v_image(imtuple, pol_trans)
+    im = vimage.reshape(ny, nx)
+    
+    impad = np.pad(im, 1, mode='constant', constant_values=0)
+    im_l1 = np.roll(impad, -1, axis=0)[1:ny+1, 1:nx+1]
+    im_l2 = np.roll(impad, -1, axis=1)[1:ny+1, 1:nx+1]
+    out = -np.sum((im_l1 - im)**2 + (im_l2 - im)**2)
+    return out/norm
+
+def stv2_v_grad(imtuple, flux, nx, ny, psize, pol_trans=True, pol_solve=(0,0,0,1), 
+               norm_reg=NORM_REGULARIZER, beam_size=None):
+    """Squared Total variation gradient
+    """
+    if beam_size is None:
+        beam_size = psize
+    if norm_reg:
+        norm = psize**4 * flux**2 / beam_size**4
+    else:
+        norm = 1
+
+    iimage = imtuple[0]   
+    zeros =  np.zeros(len(iimage)) 
+    vimage = make_v_image(imtuple, pol_trans)
+    im = vimage.reshape(ny, nx)
+    
+    impad = np.pad(im, 1, mode='constant', constant_values=0)
+    im_l1 = np.roll(impad, -1, axis=0)[1:ny+1, 1:nx+1]
+    im_l2 = np.roll(impad, -1, axis=1)[1:ny+1, 1:nx+1]
+    im_r1 = np.roll(impad, 1, axis=0)[1:ny+1, 1:nx+1]
+    im_r2 = np.roll(impad, 1, axis=1)[1:ny+1, 1:nx+1]
+
+    g1 = (2*im - im_l1 - im_l2)
+    g2 = (im - im_r1)
+    g3 = (im - im_r2)
+
+    # mask the first row column gradient terms that don't exist
+    mask1 = np.zeros(im.shape)
+    mask2 = np.zeros(im.shape)
+    mask1[0, :] = 1
+    mask2[:, 0] = 1
+    g2[mask1.astype(bool)] = 0
+    g3[mask2.astype(bool)] = 0
+
+    # add together terms and return
+    grad = -2*(g1 + g2 + g3).flatten()
+    
+    if pol_trans:
+
+        # dS/dI Numerators
+        if pol_solve[0]!=0:
+            igrad = (vimage/iimage)*grad
+        else:
+            igrad = zeros
+
+        # dS/dm numerators
+        if pol_solve[3]!=0:
+            vgrad = iimage*grad
+        else: 
+            vgrad=zeros
+
+
+        out = np.array((igrad, zeros, zeros, vgrad))
+
+
+    else:
+        raise Exception("polarimetric representation %s not added to pol gradient yet!" % pol_trans)
+
+    return out/norm
+
 ##################################################################################################
 # Embedding and Chi^2 Data functions
 ##################################################################################################

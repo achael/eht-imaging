@@ -43,14 +43,14 @@ EPS = 1e-8
 
 DATATERMS = ['vis', 'bs', 'amp', 'cphase', 'cphase_diag', 'camp', 'logcamp', 'logcamp_diag']
 REGULARIZERS = ['gs', 'tv', 'tvlog','tv2', 'tv2log', 'l1', 'l1w', 'lA', 'patch',
-                'flux', 'cm', 'simple', 'compact', 'compact2', 'rgauss', 'hw']
+                'flux', 'cm', 'simple', 'compact', 'compact2', 'rgauss']
 REGULARIZERS_SPECIND = ['l2_alpha', 'tv_alpha']
 REGULARIZERS_CURV = ['l2_beta', 'tv_beta']
 
 
 
 DATATERMS_POL = ['pvis', 'm', 'pbs','vvis']
-REGULARIZERS_POL = ['msimple', 'hw', 'ptv','l1v','l2v','hwv']
+REGULARIZERS_POL = ['msimple', 'hw', 'ptv','l1v','l2v','vtv','vtv2']
 
 GRIDDER_P_RAD_DEFAULT = 2
 GRIDDER_CONV_FUNC_DEFAULT = 'gaussian'
@@ -878,7 +878,8 @@ class Imager(object):
                     # !AC TODO get the actual zero baseline polarization fraction from the data?
                     print("No V polarimetric image in init_next!")
                     print("--initializing with random vector")
-                    init3 = 0.05 * np.random.randn(self._nimage) 
+                    #init3 = 0.05 * np.random.randn(self._nimage) 
+                    init3 = 0.01 * (np.ones(self._nimage) + 1e-2 * np.random.rand(self._nimage))
                 self._inittuple = np.array((iinit, init1, init2, init3))                    
             else:                    
                 self._inittuple = np.array((iinit, init1, init2))
