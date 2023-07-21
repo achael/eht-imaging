@@ -1134,7 +1134,7 @@ class Obsdata(object):
 
         return chisq
 
-    def polchisq(self, im, dtype='pvis', ttype='nfft', pol_prim='amp_phase', mask=[], **kwargs):
+    def polchisq(self, im, dtype='pvis', ttype='nfft', pol_trans=True, mask=[], **kwargs):
         """Give the reduced chi^2 for the specified image and polarimetric datatype.
 
            Args:
@@ -1143,7 +1143,7 @@ class Obsdata(object):
                 pol (str): polarization type ('I', 'Q', 'U', 'V', 'LL', 'RR', 'LR', or 'RL'
                 mask (arr): mask of same dimension as im.imvec
                 ttype (str): if "fast" or "nfft" or "direct"
-                pol_prim (str): "amp_phase" I,m,chi "qu" for IQU, "qu_frac" for I,Q/I,U/I
+                pol_trans (bool): True for I,m,chi, False for IQU
                 fft_pad_factor (float): zero pad the image to (fft_pad_factor * image size) in FFT
                 conv_func ('str'):  The convolving function for gridding; 'gaussian', 'pill','cubic'
                 p_rad (int): The pixel radius for the convolving function
@@ -1162,8 +1162,8 @@ class Obsdata(object):
                 (float): image chi^2
         """
 
-        if dtype not in ['pvis', 'm', 'pbs']:
-            raise Exception("Only supported polarimetric dterms are 'pvis','m, 'pbs'!")
+        if dtype not in ['pvis', 'm', 'pbs','vvis']:
+            raise Exception("Only supported polarimetric dterms are 'pvis','m, 'pbs','vvis'!")
 
         # TODO -- should import this at top, but the circular dependencies create a mess...
         import ehtim.imaging.pol_imager_utils as piu
@@ -1173,30 +1173,33 @@ class Obsdata(object):
 
         # Pack the comparison image in the proper format
         imstokes = im.switch_polrep(polrep_out='stokes', pol_prim_out='I')
-        if pol_prim == 'amp_phase':
+        if pol_trans:
             ivec = imstokes.imvec
             mvec = (np.abs(imstokes.qvec + 1j * imstokes.uvec) / ivec)
             chivec = np.angle(imstokes.qvec + 1j * imstokes.uvec) / 2
+            vvec = imstokes.vvec/ivec
             if len(mask) > 0 and np.any(np.invert(mask)):
                 ivec = ivec[mask]
                 mvec = mvec[mask]
                 chivec = chivec[mask]
-            imtuple = np.array((ivec, mvec, chivec))
-        elif pol_prim == 'qu':
+                vvec = vvec[mask]
+            imtuple = np.array((ivec, mvec, chivec,vvec))
+        else:
             ivec = imstokes.imvec
             qvec = imstokes.qvec
             uvec = imstokes.uvec
+            vvec = imstokes.vvec
             if len(mask) > 0 and np.any(np.invert(mask)):
                 ivec = ivec[mask]
                 qvec = qvec[mask]
                 uvec = uvec[mask]
-            imtuple = np.array((ivec, qvec, uvec))
-        else:
-            raise Exception("Only amp_phase & qu pol_prim are currently supported in polchisq!")
+                vvec = vvec[mask]
+            imtuple = np.array((ivec, qvec, uvec,vvec))
+
 
         # Calculate the chi^2
         chisq = piu.polchisq(imtuple, A, data, sigma, dtype,
-                             ttype=ttype, mask=mask, pol_prim=pol_prim)
+                             ttype=ttype, mask=mask, pol_trans=pol_trans)
 
         return chisq
 

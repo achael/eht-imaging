@@ -984,18 +984,18 @@ def imgsum_pol(im, obs, obs_uncal, outname,
 
         # compute chi^2
         chi2pvis = obs.polchisq(im, dtype='m', ttype='nfft',
-                                systematic_noise=sysnoise, pol_prim='qu')
+                                systematic_noise=sysnoise, pol_trans=False)
         chi2m = obs.polchisq(im, dtype='m', ttype='nfft',
-                             systematic_noise=sysnoise, pol_prim='qu')
+                             systematic_noise=sysnoise, pol_trans=False)
         chi2qvis = obs.chisq(im, dtype='vis', ttype='nfft',
                              systematic_noise=sysnoise, pol='Q')
         chi2uvis = obs.chisq(im, dtype='vis', ttype='nfft',
                              systematic_noise=sysnoise, pol='U')
 
         chi2pvis_uncal = obs_uncal.polchisq(im, dtype='m', ttype='nfft',
-                                            systematic_noise=sysnoise, pol_prim='qu')
+                                            systematic_noise=sysnoise, pol_trans=False)
         chi2m_uncal = obs_uncal.polchisq(im, dtype='m', ttype='nfft',
-                                         systematic_noise=sysnoise, pol_prim='qu')
+                                         systematic_noise=sysnoise, pol_trans=False)
         chi2qvis_uncal = obs_uncal.chisq(im, dtype='vis', ttype='nfft',
                                          systematic_noise=sysnoise, pol='Q')
         chi2uvis_uncal = obs_uncal.chisq(im, dtype='vis', ttype='nfft',
