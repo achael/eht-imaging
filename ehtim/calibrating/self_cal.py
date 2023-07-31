@@ -50,11 +50,12 @@ STOP = 1e-6  # convergence criterion
 ###################################################################################################
 
 
-def self_cal(obs, im, sites=[], method="both", pol='I', minimizer_method='BFGS',
+def self_cal(obs, im, sites=[], pol='I', apply_singlepol=False, method="both", 
+             minimizer_method='BFGS',
              pad_amp=0., gain_tol=.2, solution_interval=0.0, scan_solutions=False,
              ttype='direct', fft_pad_factor=2, caltable=False,
              debias=True, apply_dterms=False,
-             copy_closure_tables=True,
+             copy_closure_tables=False,
              processes=-1, show_solution=False, msgtype='bar',
              use_grad=False):
     """Self-calibrate a dataset to an image.
@@ -64,9 +65,13 @@ def self_cal(obs, im, sites=[], method="both", pol='I', minimizer_method='BFGS',
            im (Image): the image to be calibrated  to
            sites (list): list of sites to include in the self calibration.
                          empty list calibrates all sites
-           method (str): chooses what to calibrate, 'amp', 'phase', or 'both'
-           minimizer_method (str): Method for scipy.optimize.minimize (e.g., 'CG', 'BFGS')
+
            pol (str): which image polarization to self-calibrate visibilities to
+           apply_singlepol (str): if calibrating to pol='RR' or pol='LL', 
+                                  apply solution only to the single polarization
+
+           method (str): chooses what to calibrate, 'amp', 'phase', or 'both'           
+           minimizer_method (str): Method for scipy.optimize.minimize (e.g., 'CG', 'BFGS')
 
            pad_amp (float): adds fractional uncertainty to amplitude sigmas in quadrature
            gain_tol (float or list): gains that exceed this value will be disfavored by the prior
@@ -95,17 +100,21 @@ def self_cal(obs, im, sites=[], method="both", pol='I', minimizer_method='BFGS',
     """
     if use_grad and (method=='phase' or method=='amp'):
         raise Exception("errfunc_grad in self_cal only works with method=='both'!")
-    if pol not in ['I', 'Q', 'U', 'V', 'RR', 'LL']:
-        raise Exception("Can only self-calibrate to I, Q, U, V, RR, or LL images!")
+
     if pol in ['I', 'Q', 'U', 'V']:
         if obs.polrep != 'stokes':
             raise Exception("selfcal pol is a stokes parameter, but obs.polrep!='stokes'")
         im = im.switch_polrep('stokes', pol)
-    elif pol in ['RR', 'LL', 'RRLL']:
+    elif pol in ['RR', 'LL']:
         if obs.polrep != 'circ':
             raise Exception("selfcal pol is RR or LL, but obs.polrep!='circ'")
         im = im.switch_polrep('circ', pol)
-
+    else:
+        raise Exception("Can only self-calibrate to I, Q, U, V, RR, or LL images!")
+        
+    if apply_singlepol and obs.polrep!='circ':
+        raise Exception("apply_singlepol must be False unless self-calibrating to 'RR' or 'LL'")
+                
     # V = model visibility, V' = measured visibility, G_i = site gain
     # G_i * conj(G_j) * V_ij = V'_ij
     if len(sites) == 0:
@@ -151,7 +160,7 @@ def self_cal(obs, im, sites=[], method="both", pol='I', minimizer_method='BFGS',
     if processes > 0:  # run on multiple cores with multiprocessing
         scans_cal = np.array(pool.map(get_selfcal_scan_cal, [[i, len(scans), scans[i],
                                                               im, V_scans[i], sites,
-                                                              obs.polrep, pol,
+                                                              obs.polrep, pol, apply_singlepol,
                                                               method, minimizer_method,
                                                               show_solution, pad_amp, gain_tol,
                                                               debias, caltable, msgtype,
@@ -162,7 +171,7 @@ def self_cal(obs, im, sites=[], method="both", pol='I', minimizer_method='BFGS',
         for i in range(len(scans)):
             obsh.prog_msg(i, len(scans), msgtype=msgtype, nscan_last=i - 1)
             scans_cal[i] = self_cal_scan(scans[i], im, V_scan=V_scans[i], sites=sites,
-                                         polrep=obs.polrep, pol=pol,
+                                         polrep=obs.polrep, pol=pol, apply_singlepol=apply_singlepol,
                                          method=method, minimizer_method=minimizer_method,
                                          show_solution=show_solution, 
                                          pad_amp=pad_amp, gain_tol=gain_tol, 
@@ -208,7 +217,8 @@ def self_cal(obs, im, sites=[], method="both", pol='I', minimizer_method='BFGS',
     return out
 
 
-def self_cal_scan(scan, im, V_scan=[], sites=[], polrep='stokes', pol='I', method="both",
+def self_cal_scan(scan, im, V_scan=[], sites=[], polrep='stokes', pol='I', apply_singlepol=False,
+                  method="both",
                   minimizer_method='BFGS', show_solution=False,
                   pad_amp=0., gain_tol=.2, debias=True, caltable=False,
                   use_grad=False):
@@ -223,6 +233,9 @@ def self_cal_scan(scan, im, V_scan=[], sites=[], polrep='stokes', pol='I', metho
 
            polrep (str): 'stokes' or 'circ' to specify the  polarization products in scan
            pol (str): which image polarization to self-calibrate visibilities to
+           apply_singlepol (str): if calibrating to pol='RR' or pol='LL', 
+                                  apply solution only to the single polarization
+           
            method (str): chooses what to calibrate, 'amp', 'phase', or 'both'
            minimizer_method (str): Method for scipy.optimize.minimize
                                   (e.g., 'CG', 'BFGS', 'Nelder-Mead', etc.)
@@ -249,7 +262,7 @@ def self_cal_scan(scan, im, V_scan=[], sites=[], polrep='stokes', pol='I', metho
         sites = list(set(scan['t1']).union(set(scan['t2'])))
 
     if len(V_scan) < 1:
-        # This is not correct. Need to update to use polarization dictionary
+        # TODO This is not correct. Need to update to use polarization dictionary
         uv = np.hstack((scan['u'].reshape(-1, 1), scan['v'].reshape(-1, 1)))
         A = obsh.ftmatrix(im.psize, im.xdim, im.ydim, uv, pulse=im.pulse)
         V_scan = np.dot(A, im.imvec)
@@ -343,10 +356,19 @@ def self_cal_scan(scan, im, V_scan=[], sites=[], polrep='stokes', pol='I', metho
             else:
                 site_key = -1
 
+            # TODO: ANDREW - this has been changed
             # We will *always* set the R and L gain corrections to be equal in self calibration,
             # to avoid breaking polarization consistency relationships
-            rscale = g_fit[site_key]**-1
-            lscale = g_fit[site_key]**-1
+            if apply_singlepol:
+                if pol=='RR':
+                    rscale = g_fit[site_key]**-1
+                    lscale = np.ones(g_fit[site_key].shape)
+                elif pol=='LL':
+                    rscale = np.ones(g_fit[site_key].shape)                
+                    lscale = g_fit[site_key]**-1
+            else:
+                rscale = g_fit[site_key]**-1
+                lscale = g_fit[site_key]**-1
 
             # TODO: we may want to give two entries for the start/stop times
             # when a non-zero interval is used
@@ -357,23 +379,56 @@ def self_cal_scan(scan, im, V_scan=[], sites=[], polrep='stokes', pol='I', metho
     else:
         g1_fit = g_fit[g1_keys]
         g2_fit = g_fit[g2_keys]
-
         gij_inv = (g1_fit * g2_fit.conj())**(-1)
 
         if polrep == 'stokes':
+            # gain factors
+            g1_fit = g_fit[g1_keys]
+            g2_fit = g_fit[g2_keys]
+            gij_inv = (g1_fit * g2_fit.conj())**(-1)
+        
             # scale visibilities
             for vistype in ['vis', 'qvis', 'uvis', 'vvis']:
                 scan[vistype] *= gij_inv
             # scale sigmas
             for sigtype in ['sigma', 'qsigma', 'usigma', 'vsigma']:
                 scan[sigtype] *= np.abs(gij_inv)
+                
         elif polrep == 'circ':
-            # scale visibilities
-            for vistype in ['rrvis', 'llvis', 'rlvis', 'lrvis']:
-                scan[vistype] *= gij_inv
-            # scale sigmas
-            for sigtype in ['rrsigma', 'llsigma', 'rlsigma', 'lrsigma']:
-                scan[sigtype] *= np.abs(gij_inv)
+            if apply_singlepol: #scale only solved polarization
+                if pol=='RR':
+                    grr_inv = (g1_fit * g2_fit.conj())**(-1)
+                    gll_inv = np.ones(g1_fit.shape)
+                    grl_inv = (g1_fit)**(-1)
+                    glr_inv = (g2_fit.conj())**(-1)                        
+                                                        
+                elif pol=='LL':
+                    grr_inv = np.ones(g1_fit.shape)                
+                    gll_inv = (g1_fit * g2_fit.conj())**(-1)
+                    grl_inv = (g2_fit.conj())**(-1)
+                    glr_inv = (g1_fit)**(-1) 
+                       
+                # scale visibilities    
+                scan['rrvis'] *= grr_inv  
+                scan['llvis'] *= gll_inv  
+                scan['rlvis'] *= grl_inv  
+                scan['lrvis'] *= glr_inv  
+
+                # scale sigmas    
+                scan['rrsigma'] *= np.abs(grr_inv)  
+                scan['llsigma'] *= np.abs(gll_inv) 
+                scan['rlsigma'] *= np.abs(grl_inv) 
+                scan['lrsigma'] *= np.abs(glr_inv)   
+                                                                                                 
+            else: #scale both polarizations
+                gij_inv = (g1_fit * g2_fit.conj())**(-1)          
+                                                                          
+                # scale visibilities
+                for vistype in ['rrvis', 'llvis', 'rlvis', 'lrvis']:
+                    scan[vistype] *= gij_inv
+                # scale sigmas
+                for sigtype in ['rrsigma', 'llsigma', 'rlsigma', 'lrsigma']:
+                    scan[sigtype] *= np.abs(gij_inv)
 
         out = scan
 
@@ -389,14 +444,14 @@ def get_selfcal_scan_cal(args):
     return get_selfcal_scan_cal2(*args)
 
 
-def get_selfcal_scan_cal2(i, n, scan, im, V_scan, sites, polrep, pol, method, minimizer_method,
+def get_selfcal_scan_cal2(i, n, scan, im, V_scan, sites, polrep, pol, apply_singlepol, method, minimizer_method,
                           show_solution, pad_amp, gain_tol, debias, caltable, msgtype, use_grad):
     if n > 1:
         global counter
         counter.increment()
         obsh.prog_msg(counter.value(), counter.maxval, msgtype, counter.value() - 1)
 
-    return self_cal_scan(scan, im, V_scan=V_scan, sites=sites, polrep=polrep, pol=pol,
+    return self_cal_scan(scan, im, V_scan=V_scan, sites=sites, polrep=polrep, pol=pol, apply_singlepol=apply_singlepol,
                          method=method, minimizer_method=minimizer_method,
                          show_solution=show_solution,
                          pad_amp=pad_amp, gain_tol=gain_tol, debias=debias, caltable=caltable,
