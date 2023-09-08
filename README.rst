@@ -24,32 +24,32 @@ Incremental updates are developed on the `dev branch <https://github.com/achael/
 
 Installing with pip will update most of the required libraries automatically (`numpy <http://www.numpy.org/>`_, `scipy <http://www.scipy.org/>`_, `matplotlib <http://www.matplotlib.org/>`_, `astropy <http://www.astropy.org/>`_, `ephem <http://pypi.python.org/pypi/pyephem/>`_, `future <http://pypi.python.org/pypi/future>`_, `h5py <http://www.h5py.org/>`_, and `pandas <http://www.pandas.pydata.org/>`_).
 
-**If you want to use fast fourier transforms, you will also need to separately install** `NFFT <https://github.com/NFFT/nfft>`_ **and its** `pynfft wrapper <https://github.com/ghisvail/pyNFFT/>`_. The simplest way is to use `conda <https://anaconda.org/conda-forge/pynfft/>`__ to install both:
+**If you want to use fast fourier transforms, you will also need to separately install** `NFFT <https://github.com/NFFT/nfft>`_ **and its** `pynfft wrapper <https://github.com/ghisvail/pyNFFT/>`__. The simplest way is to use `conda <https://anaconda.org/conda-forge/pynfft/>`__ to install both:
 
 
 .. code-block:: bash
 
     conda install -c conda-forge pynfft
 
-Alternatively, first install NFFT manually following the instructions on the `readme <https://github.com/NFFT/nfft>`_, making sure to use the ``--enable-openmp`` flag in compilation. Then install `pynfft <https://github.com/ghisvail/pyNFFT/>`_, with pip, following the readme instructions to link the installation to where you installed NFFT. Finally, reinstall ehtim.
+Alternatively, first install NFFT manually following the instructions on the `readme <https://github.com/NFFT/nfft>`__, making sure to use the ``--enable-openmp`` flag in compilation. Then install `pynfft <https://github.com/ghisvail/pyNFFT/>`__, with pip, following the readme instructions to link the installation to where you installed NFFT. Finally, reinstall ehtim.
 
-**For M1 Macs (OS >= v12.0)**, install the M1 Mac version of `pynfft <https://github.com/rohandahale/pyNFFT.git>`_ and follow the instructions on the `readme  <https://github.com/rohandahale/pyNFFT.git>`_. It has the instructions to install `fftw <http://www.fftw.org>`_, `nfft <https://github.com/NFFT/nfft>`_ and then `pynfft <https://github.com/rohandahale/pyNFFT.git>`_.
+**For M1 Macs (OS >= v12.0)**, install the M1 Mac version of `pynfft <https://github.com/rohandahale/pyNFFT.git>`__ and follow the instructions on the `readme  <https://github.com/rohandahale/pyNFFT.git>`__. It has the instructions to install `fftw <http://www.fftw.org>`_, `nfft <https://github.com/NFFT/nfft>`__ and then `pynfft <https://github.com/rohandahale/pyNFFT.git>`__.
 
 **Certain eht-imaging functions require other external packages that are not automatically installed.** In addition to pynfft, these include  `networkx <https://networkx.github.io/>`_ (for image comparison functions), `requests <http://docs.python-requests.org/en/master/>`_ (for dynamical imaging), and `scikit-image <https://scikit-image.org/>`_ (for a few image analysis functions). However, the vast majority of the code will work without these dependencies.
 
 Documentation and Tutorials
--------------
+---------------------------
 Documentation is  `here <https://achael.github.io/eht-imaging>`_.
 
-A intro to imaging tutorial jupyter notebook can be found in the repo at tutorials/ehtim_tutorial.ipynb 
+A intro to imaging tutorial jupyter notebook can be found in the repo at `tutorials/ehtim_tutorial.ipynb <https://github.com/achael/eht-imaging/blob/main/tutorials/ehtim_tutorial.ipynb>`__
 
-`Slides <https://docs.google.com/presentation/d/1A0y9omYI2ueSUa6_t5reylBhw6eiLwjqDzw-HUOk8Ac/edit?usp=sharing>`_ for the included tutorial walk through the basic steps of reconstructing EHT images with the code
+`Slides <https://docs.google.com/presentation/d/1A0y9omYI2ueSUa6_t5reylBhw6eiLwjqDzw-HUOk8Ac/edit?usp=sharing>`__ for the included tutorial walk through the basic steps of reconstructing EHT images with the code
 
 Here are some other ways to learn to use the code:
 
 - Start with the script examples/example.py, which contains a series of sample commands to load an image and array, generate data, and produce an image with various imaging algorithms.
 
-- Older `Slides <https://www.dropbox.com/s/7533ucj8bt54yh7/Bouman_Chael.pdf?dl=0>`_ from the EHT2016 data generation and imaging workshop contain a tutorial on generating data with the VLBI imaging `website <http://vlbiimaging.csail.mit.edu>`_, loading into the library, and producing an image.
+- Older `Slides <https://www.dropbox.com/s/7533ucj8bt54yh7/Bouman_Chael.pdf?dl=0>`__ from the EHT2016 data generation and imaging workshop contain a tutorial on generating data with the VLBI imaging `website <http://vlbiimaging.csail.mit.edu>`_, loading into the library, and producing an image.
 
 Citation
 --------------------------------
@@ -58,7 +58,7 @@ If you use ehtim in your publication, please cite `Chael+ 2018 <http://adsabs.ha
 The latest version is also available as a static doi on `Zenodo <https://zenodo.org/badge/latestdoi/42943499Zenodo>`_.
 
 Selected publications that use ehtim
---------------------------------
+------------------------------------
 
 Let us know if you use ehtim in your publication and we'll list it here!
 
@@ -129,7 +129,7 @@ Let us know if you use ehtim in your publication and we'll list it here!
 - Unravelling the Innermost Jet Structure of OJ 287 with the First GMVA+ALMA Observations, `Zhao et al. 2022 <https://arxiv.org/pdf/2205.00554.pdf>`_
 
 oifits Documentation
-----------------
+--------------------
 
 The oifits_new.py file used for reading/writing .oifits files is a slightly modified version of Paul Boley's package `oifits <http://astro.ins.urfu.ru/pages/~pboley/oifits/>`_.  
 The oifits read/write functionality in ehtim is still being developed and may not work with all versions of python or astropy.
