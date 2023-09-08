@@ -1,4 +1,4 @@
-cff-version: 1.2.4
+cff-version: 1.2.6
 message: "If you use this software, please cite it as below."
 authors:
 - family-names: "Chael"
@@ -6,7 +6,7 @@ authors:
   orcid: "https://orcid.org/0000-0003-2966-6220
 "
 title: "eht-imaging"
-version: 1.2.4
-doi: 10.5281/zenodo.6519440
+version: 1.2.6
+doi: 10.5281/zenodo.7226661
 date-released: 2022-05-04
 url: "https://github.com/achael/eht-imaging"

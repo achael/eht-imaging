@@ -7,7 +7,7 @@ def read(fname):
 if __name__ == "__main__":
     setup(name="ehtim",
 
-          version = "1.2.5",
+          version = "1.2.6",
 
           author = "Andrew Chael",
           author_email = "achael@princeton.edu",
@@ -41,9 +41,10 @@ if __name__ == "__main__":
                             "scipy",
                             "astropy",
                             "matplotlib",
-                            "ephem",
+                            "skyfield",
                             "h5py",
                             "pandas",
+                            "paramsurvey",
                             "requests",
                             "future"
                           # optional (but recommended) libraries required for some features

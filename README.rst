@@ -10,7 +10,7 @@ The package contains several primary classes for loading, simulating, and manipu
 Installation
 ------------
 
-The latest stable version (`1.2.4 <https://github.com/achael/eht-imaging/releases/tag/v1.2.4>`_) is available on `PyPi <https://pypi.org/project/ehtim/>`_. Simply install pip and run
+The latest stable version (`1.2.6 <https://github.com/achael/eht-imaging/releases/tag/v1.2.6>`_) is available on `PyPi <https://pypi.org/project/ehtim/>`_. Simply install pip and run
 
 .. code-block:: bash
 
@@ -33,17 +33,23 @@ Installing with pip will update most of the required libraries automatically (`n
 
 Alternatively, first install NFFT manually following the instructions on the `readme <https://github.com/NFFT/nfft>`_, making sure to use the ``--enable-openmp`` flag in compilation. Then install `pynfft <https://github.com/ghisvail/pyNFFT/>`_, with pip, following the readme instructions to link the installation to where you installed NFFT. Finally, reinstall ehtim.
 
+**For M1 Macs (OS >= v12.0)**, install the M1 Mac version of `pynfft <https://github.com/rohandahale/pyNFFT.git>`_ and follow the instructions on the `readme  <https://github.com/rohandahale/pyNFFT.git>`_. It has the instructions to install `fftw <http://www.fftw.org>`_, `nfft <https://github.com/NFFT/nfft>`_ and then `pynfft <https://github.com/rohandahale/pyNFFT.git>`_.
+
 **Certain eht-imaging functions require other external packages that are not automatically installed.** In addition to pynfft, these include  `networkx <https://networkx.github.io/>`_ (for image comparison functions), `requests <http://docs.python-requests.org/en/master/>`_ (for dynamical imaging), and `scikit-image <https://scikit-image.org/>`_ (for a few image analysis functions). However, the vast majority of the code will work without these dependencies.
 
-Documentation
+Documentation and Tutorials
 -------------
-Documentation is  `here <https://achael.github.io/eht-imaging>`_ .
+Documentation is  `here <https://achael.github.io/eht-imaging>`_.
 
-A full tutorial is in progress, but here are some ways to learn to use the code:
+A intro to imaging tutorial jupyter notebook can be found in the repo at tutorials/ehtim_tutorial.ipynb 
+
+`Slides <https://docs.google.com/presentation/d/1A0y9omYI2ueSUa6_t5reylBhw6eiLwjqDzw-HUOk8Ac/edit?usp=sharing>`_ for the included tutorial walk through the basic steps of reconstructing EHT images with the code
+
+Here are some other ways to learn to use the code:
 
 - Start with the script examples/example.py, which contains a series of sample commands to load an image and array, generate data, and produce an image with various imaging algorithms.
 
-- `Slides <https://www.dropbox.com/s/7533ucj8bt54yh7/Bouman_Chael.pdf?dl=0>`_ from the EHT2016 data generation and imaging workshop contain a tutorial on generating data with the VLBI imaging `website <http://vlbiimaging.csail.mit.edu>`_, loading into the library, and producing an image.
+- Older `Slides <https://www.dropbox.com/s/7533ucj8bt54yh7/Bouman_Chael.pdf?dl=0>`_ from the EHT2016 data generation and imaging workshop contain a tutorial on generating data with the VLBI imaging `website <http://vlbiimaging.csail.mit.edu>`_, loading into the library, and producing an image.
 
 Citation
 --------------------------------
@@ -122,7 +128,7 @@ Let us know if you use ehtim in your publication and we'll list it here!
 
 - Unravelling the Innermost Jet Structure of OJ 287 with the First GMVA+ALMA Observations, `Zhao et al. 2022 <https://arxiv.org/pdf/2205.00554.pdf>`_
 
-Documentation
+oifits Documentation
 ----------------
 
 The oifits_new.py file used for reading/writing .oifits files is a slightly modified version of Paul Boley's package `oifits <http://astro.ins.urfu.ru/pages/~pboley/oifits/>`_.  

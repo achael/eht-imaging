@@ -97,7 +97,8 @@ def plotall_compare(obslist, imlist, field1, field2,
     if grid:
         axis.grid()
     if show:
-        plt.show(block=False)
+        #plt.show(block=False)
+        ehc.show_noblock()
 
     if export_pdf != "":
         plt.savefig(export_pdf, bbox_inches='tight', pad_inches=0)
@@ -163,7 +164,8 @@ def plot_bl_compare(obslist, imlist, site1, site2, field,
     if grid:
         axis.grid()
     if show:
-        plt.show(block=False)
+        #plt.show(block=False)
+        ehc.show_noblock()
 
     if export_pdf != "":
         plt.savefig(export_pdf, bbox_inches='tight', pad_inches=0)
@@ -252,7 +254,8 @@ def plot_cphase_compare(obslist, imlist, site1, site2, site3,
     if grid:
         axis.grid()
     if show:
-        plt.show(block=False)
+        #plt.show(block=False)
+        ehc.show_noblock()
     if export_pdf != "":
         plt.savefig(export_pdf, bbox_inches='tight', pad_inches=0)
 
@@ -352,7 +355,8 @@ def plot_camp_compare(obslist, imlist, site1, site2, site3, site4,
     if grid:
         axis.grid()
     if show:
-        plt.show(block=False)
+        #plt.show(block=False)
+        ehc.show_noblock()
     if export_pdf != "":
         plt.savefig(export_pdf, bbox_inches='tight', pad_inches=0)
 

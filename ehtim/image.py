@@ -36,6 +36,7 @@ import scipy.ndimage.filters as filt
 import scipy.interpolate
 from scipy import ndimage as ndi
 
+
 try:
     from skimage.feature import canny
     from skimage.transform import hough_circle, hough_circle_peaks
@@ -2342,8 +2343,8 @@ class Image(object):
         if (np.abs(self.rf - obs.rf) / obs.rf > tolerance):
             raise Exception("Image frequency is not the same as observation frequency!")
 
-        if ttype == 'direct' or ttype == 'fast' or ttype == 'nfft':
-            print("Producing clean visibilities from image with " + ttype + " FT . . . ")
+        if (ttype == 'direct' or ttype == 'fast' or ttype == 'nfft'):
+            if verbose: print("Producing clean visibilities from image with " + ttype + " FT . . . ")
         else:
             raise Exception("ttype=%s, options for ttype are 'direct', 'fast', 'nfft'" % ttype)
 
@@ -2617,7 +2618,7 @@ class Image(object):
         """
 
         # Generate empty observation
-        print("Generating empty observation file . . . ")
+        if verbose: print("Generating empty observation file . . . ")
 
         if mjd is None:
             mjd = self.mjd
@@ -3336,9 +3337,9 @@ class Image(object):
             plt.legend()
 
         if show:
-            plt.ion()
-            plt.show(block=False)
-
+            #plt.show(block=False)
+            ehc.show_noblock()
+            
         if export_pdf != "":
             ax.savefig(export_pdf, bbox_inches='tight', pad_inches=0)
 
@@ -3350,7 +3351,8 @@ class Image(object):
                 scale='lin', gamma=0.5, dynamic_range=1.e3,
                 plotp=False, plot_stokes=False, nvec=20,
                 vec_cfun=None,
-                scut=0, pcut=0.1, mcut=0.01, log_offset=False,
+                scut=0, pcut=0.1, mcut=0.01, scale_ticks=False,
+                log_offset=False,
                 label_type='ticks', has_title=True, alpha=1,
                 has_cbar=True, only_cbar=False, cbar_lims=(), cbar_unit=('Jy', 'pixel'),
                 export_pdf="", pdf_pad_inches=0.0, show=True, beamparams=None,
@@ -3614,7 +3616,7 @@ class Image(object):
 
             if not cfun:
                 cfun = cfun_p
-            cmap = plt.get_cmap(cfun)
+            cmap = plt.get_cmap(cfun).copy()
             cmap.set_bad(color='whitesmoke')
 
             if cbar_lims:
@@ -3736,6 +3738,12 @@ class Image(object):
 
             voi = (vvec / imvec).reshape(self.ydim, self.xdim)
             voi[np.logical_not(mask)] = np.nan
+
+            if scale_ticks:
+                pticks = ((np.abs(qvec + 1j * uvec)).reshape(self.ydim, self.xdim))[::thin, ::thin][mask2]
+                pscale = (pticks - np.min(pticks))/(np.max(pticks) - np.min(pticks))
+                a *= pscale
+                b *= pscale
 
             # Little pol plots
             if plot_stokes:
@@ -3943,8 +3951,9 @@ class Image(object):
         if axis is not None:
             return axis
         if show:
-            plt.show(block=False)
-
+            #plt.show(block=False)
+            ehc.show_noblock()
+            
         if export_pdf != "":
             f.savefig(export_pdf, bbox_inches='tight', pad_inches=pdf_pad_inches, dpi=dpi)
 
@@ -4050,8 +4059,8 @@ class Image(object):
         plt.ylabel(r'Relative Dec ($\mu$as)')
 
         if show:
-            plt.show(block=False)
-
+            #plt.show(block=False)
+            ehc.show_noblock()
         if export_pdf != "":
             f.savefig(export_pdf, bbox_inches='tight')
 

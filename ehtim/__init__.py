@@ -42,6 +42,7 @@ import ehtim.array
 import ehtim.movie
 import ehtim.image
 import ehtim.model
+import ehtim.survey
 
 
 import warnings

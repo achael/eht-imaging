@@ -1,5 +1,5 @@
 astropy
-ephem
+skyfield
 future
 h5py
 html; python_version < '3.1'
@@ -7,13 +7,12 @@ ipython
 matplotlib
 networkx
 numpy
-pandas
+pandas < '2'
+paramsurvey[ray]
 requests
 scipy
 scikit-image
 
-# pyfits is now included in astropy.
-#pyfits
 
 # pynfft requires external dependency; install with Conda.
 #pynfft

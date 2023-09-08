@@ -115,7 +115,23 @@ class Caltable(object):
     def plot_dterms(self, sites='all', label=None, legend=True, clist=ehc.SCOLORS,
                     rangex=False, rangey=False, markersize=2 * ehc.MARKERSIZE,
                     show=True, grid=True, export_pdf=""):
+        """Make a plot of the D-terms.
 
+           Args:
+               sites (list) : list of sites to plot
+               label (str) : title for plot
+               legend (bool) : add telescope legend or not
+               clist (list) : list of colors for different stations
+               rangex (list) : lower and upper x-axis limits  
+               rangey (list) : lower and upper y-axis limits 
+               markersize (float) : marker size
+               show (bool) : display the plot or not
+               grid (bool) : add a grid to the plot or not
+               export_pdf (str) : save a pdf file to this path 
+               
+           Returns:
+               matplotlib.axes
+        """
         # sites
         if sites in ['all' or 'All'] or sites == []:
             sites = list(self.data.keys())
@@ -265,7 +281,8 @@ class Caltable(object):
         if export_pdf != "" and not axis:
             fig.savefig(export_pdf, bbox_inches='tight')
         if show:
-            plt.show(block=False)
+            #plt.show(block=False)
+            ehc.show_noblock()
 
         return x
 
@@ -605,7 +622,15 @@ class Caltable(object):
         return save_caltable(self, obs, datadir=datadir, sqrt_gains=sqrt_gains)
 
     def scan_avg(self, obs, incoherent=True):
+        """average the gains across scans.
 
+           Args:
+               obs (ehtim.Obsdata) : input observation
+               incoherent (bool) : True to average gain amps, False to average amps+phase
+               
+           Returns:
+               (Caltable): the averaged Caltable object
+        """
         sites = self.data.keys()
         ntele = len(sites)
 
@@ -685,7 +710,7 @@ def load_caltable(obs, datadir, sqrt_gains=False):
     for s in range(0, len(tarr)):
 
         site = tarr[s]['site']
-        filename = datadir + obs.source + '_' + site + '.txt'
+        filename = os.path.join(datadir, obs.source + '_' + site + '.txt')
         try:
             data = np.loadtxt(filename, dtype=bytes).astype(str)
         except IOError:
@@ -1000,6 +1025,7 @@ def plot_compare_gains(caltab1, caltab2, obs, sites='all', pol='R', gain_type='a
     if export_pdf != "" and not axis:
         fig.savefig(export_pdf, bbox_inches='tight')
     if show:
-        plt.show(block=False)
+        #plt.show(block=False)
+        ehc.show_noblock()
 
     return x

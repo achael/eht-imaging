@@ -296,11 +296,20 @@ def load_im_fits(filename, aipscc=False, pulse=ehc.PULSE_DEFAULT,
     # Check for multiple stokes in top hdu
     stokes_in_hdu0 = False
     if len(data.shape) == 4:
-        print("reading stokes images from top HDU -- assuming IQUV")
-        stokesdata = data
+        print("reading all stokes images from top HDU -- assuming IQUV order")
+        stokesdata = data[:4,:,:,:] # ignore fields after the first 4
         data = stokesdata[0, 0]
         stokes_in_hdu0 = True
 
+    elif len(data.shape) == 3:  
+        # ANDREW added this for BHAC models 3/22/23
+        print("reading all stokes images from top HDU -- assuming IQUV order")
+        stokesdata = data[:4,:,:] # ignore fields after the first 4
+        stokesdata = stokesdata.reshape(4,-1,stokesdata.shape[-2],stokesdata.shape[-1])
+        data = stokesdata[0, 0]
+        stokes_in_hdu0 = True
+            
+    #data = data.reshape((data.shape[-2], data.shape[-1]))
     data = data.reshape((data.shape[-2], data.shape[-1]))
 
     # Update the image using the AIPS CC table
@@ -824,14 +833,25 @@ def load_array_txt(filename, ephemdir='ephemeris'):
                               float(x[6]), float(x[7]), float(x[8])),
                              dtype=ehc.DTARR) for x in tdata]
 
+    # load spacecraft
     tdataout = np.array(tdataout)
     edata = {}
     for line in tdataout:
         if np.all(np.array([line['x'], line['y'], line['z']]) == (0., 0., 0.)):
             sitename = str(line['site'])
-            # TODO ephempath shouldn't always start with path
-            ephempath = path + '/' + ephemdir + '/' + sitename
+            
+            # TODO ephempath shouldn't always start with array file path
+
+
             try:
+                ephempath = path + '/' + ephemdir + '/' + sitename + '.tle'
+                edata[sitename] = np.loadtxt(ephempath, dtype=bytes,
+                                             comments='#', delimiter='/').astype(str)
+                print('loaded spacecraft ephemeris %s' % ephempath)
+            except IOError:
+                pass
+            try: 
+                ephempath = path + '/' + ephemdir + '/' + sitename 
                 edata[sitename] = np.loadtxt(ephempath, dtype=bytes,
                                              comments='#', delimiter='/').astype(str)
                 print('loaded spacecraft ephemeris %s' % ephempath)

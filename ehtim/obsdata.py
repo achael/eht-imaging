@@ -194,6 +194,15 @@ class Obsdata(object):
         self.logcamp = None
         self.logcamp_diag = None
 
+    @property 
+    def tarr(self):
+        return self._tarr
+        
+    @tarr.setter 
+    def tarr(self, tarr):
+        self._tarr = tarr
+        self.tkey = {tarr[i]['site']: i for i in range(len(tarr))}
+        
     def obsdata_args(self):
         """"Copy arguments for making a  new Obsdata into a list and dictonary
         """
@@ -585,8 +594,8 @@ class Obsdata(object):
                     data, lambda x: np.searchsorted(self.scans[:, 0], x['time'])):
                 datalist.append(np.array([obs for obs in group]))
 
-#        return np.array(datalist, dtype=object)
-        return np.array(datalist)
+        return np.array(datalist, dtype=object)
+
 
     def split_obs(self, t_gather=0., scan_gather=False):
         """Split single observation into multiple observation files, one per scan..
@@ -613,6 +622,36 @@ class Obsdata(object):
 
         return splitlist
 
+
+    def getClosestScan(self, time, splitObs=None):
+        """Split observation by scan and grab scan closest to timestamp
+
+           Args:
+                time (float): Time (GMST) you want to find the scan closest to
+                splitObs (bool): a list of Obsdata objects, output from split_obs, to save time
+
+            Returns:
+                (Obsdata): Obsdata object composed of scan closest to time
+        """
+
+        ## check if splitObs has been passed in alread ##
+        if splitObs is None:
+            splitObs = self.split_obs()
+
+        ## check for the scan with the closest start time to time arg ##
+        ## TODO: allow user to choose start time, end time, or mid-time
+        closest_index = 0
+        delta_t = 1e22
+        for s, s_obs in enumerate(splitObs):
+            dt = abs(s_obs.tstart - time)
+            if dt < delta_t:
+                delta_t = dt 
+                closest_index = s 
+
+        print(f"Using scan with time {splitObs[closest_index].tstart}.")
+        return splitObs[closest_index]
+
+
     def bllist(self, conj=False):
         """Group the data in a list of same baseline datatables.
 
@@ -634,9 +673,8 @@ class Obsdata(object):
         for key, group in it.groupby(data[idx], lambda x: set((x['t1'], x['t2']))):
             datalist.append(np.array([obs for obs in group]))
 
-#        return np.array(datalist, dtype=object)
-        return np.array(datalist)
-
+        return np.array(datalist, dtype=object)
+        
     def unpack_bl(self, site1, site2, fields, ang_unit='deg', debias=False, timetype=False):
         """Unpack the data over time on the selected baseline site1-site2.
 
@@ -678,9 +716,8 @@ class Obsdata(object):
 
                     allout.append(out)
 
-#        return np.array(allout, dtype=object)
-        return np.array(allout)
-
+        return np.array(allout, dtype=object)
+        
     def unpack(self, fields, mode='all', ang_unit='deg', debias=False, conj=False, timetype=False):
         """Unpack the data for the whole observation .
 
@@ -1097,7 +1134,7 @@ class Obsdata(object):
 
         return chisq
 
-    def polchisq(self, im, dtype='pvis', ttype='nfft', pol_prim='amp_phase', mask=[], **kwargs):
+    def polchisq(self, im, dtype='pvis', ttype='nfft', pol_trans=True, mask=[], **kwargs):
         """Give the reduced chi^2 for the specified image and polarimetric datatype.
 
            Args:
@@ -1106,7 +1143,7 @@ class Obsdata(object):
                 pol (str): polarization type ('I', 'Q', 'U', 'V', 'LL', 'RR', 'LR', or 'RL'
                 mask (arr): mask of same dimension as im.imvec
                 ttype (str): if "fast" or "nfft" or "direct"
-                pol_prim (str): "amp_phase" I,m,chi "qu" for IQU, "qu_frac" for I,Q/I,U/I
+                pol_trans (bool): True for I,m,chi, False for IQU
                 fft_pad_factor (float): zero pad the image to (fft_pad_factor * image size) in FFT
                 conv_func ('str'):  The convolving function for gridding; 'gaussian', 'pill','cubic'
                 p_rad (int): The pixel radius for the convolving function
@@ -1125,8 +1162,8 @@ class Obsdata(object):
                 (float): image chi^2
         """
 
-        if dtype not in ['pvis', 'm', 'pbs']:
-            raise Exception("Only supported polarimetric dterms are 'pvis','m, 'pbs'!")
+        if dtype not in ['pvis', 'm', 'pbs','vvis']:
+            raise Exception("Only supported polarimetric dterms are 'pvis','m, 'pbs','vvis'!")
 
         # TODO -- should import this at top, but the circular dependencies create a mess...
         import ehtim.imaging.pol_imager_utils as piu
@@ -1136,30 +1173,33 @@ class Obsdata(object):
 
         # Pack the comparison image in the proper format
         imstokes = im.switch_polrep(polrep_out='stokes', pol_prim_out='I')
-        if pol_prim == 'amp_phase':
+        if pol_trans:
             ivec = imstokes.imvec
             mvec = (np.abs(imstokes.qvec + 1j * imstokes.uvec) / ivec)
             chivec = np.angle(imstokes.qvec + 1j * imstokes.uvec) / 2
+            vvec = imstokes.vvec/ivec
             if len(mask) > 0 and np.any(np.invert(mask)):
                 ivec = ivec[mask]
                 mvec = mvec[mask]
                 chivec = chivec[mask]
-            imtuple = np.array((ivec, mvec, chivec))
-        elif pol_prim == 'qu':
+                vvec = vvec[mask]
+            imtuple = np.array((ivec, mvec, chivec,vvec))
+        else:
             ivec = imstokes.imvec
             qvec = imstokes.qvec
             uvec = imstokes.uvec
+            vvec = imstokes.vvec
             if len(mask) > 0 and np.any(np.invert(mask)):
                 ivec = ivec[mask]
                 qvec = qvec[mask]
                 uvec = uvec[mask]
-            imtuple = np.array((ivec, qvec, uvec))
-        else:
-            raise Exception("Only amp_phase & qu pol_prim are currently supported in polchisq!")
+                vvec = vvec[mask]
+            imtuple = np.array((ivec, qvec, uvec,vvec))
+
 
         # Calculate the chi^2
         chisq = piu.polchisq(imtuple, A, data, sigma, dtype,
-                             ttype=ttype, mask=mask, pol_prim=pol_prim)
+                             ttype=ttype, mask=mask, pol_trans=pol_trans)
 
         return chisq
 
@@ -4155,7 +4195,8 @@ class Obsdata(object):
             fig = plt.gcf()
             fig.savefig(export_pdf, bbox_inches='tight')
         if show:
-            plt.show(block=False)
+            #plt.show(block=False)
+            ehc.show_noblock()
 
         return x
 
@@ -4290,8 +4331,8 @@ class Obsdata(object):
             fig = plt.gcf()
             fig.savefig(export_pdf, bbox_inches='tight')
         if show:
-            plt.show(block=False)
-
+            #plt.show(block=False)
+            ehc.show_noblock()
         return x
 
     def plot_cphase(self, site1, site2, site3,
@@ -4415,7 +4456,8 @@ class Obsdata(object):
             fig = plt.gcf()
             fig.savefig(export_pdf, bbox_inches='tight')
         if show:
-            plt.show(block=False)
+            #plt.show(block=False)
+            ehc.show_noblock()
 
         return x
 
@@ -4553,7 +4595,8 @@ class Obsdata(object):
             fig = plt.gcf()
             fig.savefig(export_pdf, bbox_inches='tight')
         if show:
-            plt.show(block=False)
+            #plt.show(block=False)
+            ehc.show_noblock()
             return
         else:
             return x
@@ -4774,3 +4817,78 @@ def load_maps(arrfile, obsspec, ifile, qfile=0, ufile=0, vfile=0,
     return ehtim.io.load.load_obs_maps(arrfile, obsspec, ifile,
                                        qfile=qfile, ufile=ufile, vfile=vfile,
                                        src=src, mjd=mjd, ampcal=ampcal, phasecal=phasecal)
+
+def load_obs(
+                fname,                  
+                polrep='stokes',        
+                flipbl=False,               
+                remove_nan=False, 
+                force_singlepol=None, 
+                channel=all, 
+                IF=all, 
+                allow_singlepol=True,
+                flux=1.0,
+                obsspec=None, 
+                ifile=None, 
+                qfile=None, 
+                ufile=None, 
+                vfile=None,
+                src=ehc.SOURCE_DEFAULT, 
+                mjd=ehc.MJD_DEFAULT, 
+                ampcal=False, 
+                phasecal=False
+    ):
+    """Smart obs read-in, detects file type and loads appropriately.
+
+       Args:
+           fname (str): path to input text file
+           polrep (str): load data as either 'stokes' or 'circ'
+           flipbl (bool): flip baseline phases if True.
+           remove_nan (bool): True to remove nans from missing polarizations
+           polrep (str): load data as either 'stokes' or 'circ'
+           force_singlepol (str): 'R' or 'L' to load only 1 polarization
+           channel (list): list of channels to average in the import. channel=all averages all
+           IF (list): list of IFs to  average in  the import. IF=all averages all IFS
+           flux (float): normalization total flux
+           obsspec (str): path to input obs spec file
+           ifile (str): path to input Stokes I data file
+           qfile (str): path to input Stokes Q data file
+           ufile (str): path to input Stokes U data file
+           vfile (str): path to input Stokes V data file
+           src (str): source name
+           mjd (int): integer observation  MJD
+           ampcal (bool): True if amplitude calibrated
+           phasecal (bool): True if phase calibrated
+
+       Returns:
+           obs (Obsdata): Obsdata object loaded from file
+    """
+
+
+    ## grab file ending ##
+    fname_extension = fname.split('.')[-1]
+    print(f"Extension is {fname_extension}.")
+
+    ## check extension ##
+    if fname_extension.lower() == 'uvfits':
+        return load_uvfits(fname, flipbl=flipbl, remove_nan=remove_nan, force_singlepol=force_singlepol, channel=channel, IF=IF, polrep=polrep, allow_singlepol=allow_singlepol)
+
+    elif fname_extension.lower() in ['txt', 'text']:
+        return load_txt(fname, polrep=polrep)
+
+    elif fname_extension.lower() == 'oifits':
+        return load_oifits(fname, flux=flux)
+
+
+    else:
+        if obsspec is not None and ifile is None:
+            print("You have provided a value for <obsspec> but no value for <ifile>")
+            return 
+        elif obsspec is None and ifile is not None:
+            print("You have provided a value for <ifile> but no value for <obsspec>")
+            return 
+
+        elif obsspec is not None and ifile is not None:
+            return load_maps(fname, obsspec, ifile, qfile=qfile, ufile=ufile, vfile=vfile,
+              src=src, mjd=mjd, ampcal=ampcal, phasecal=phasecal)
+
