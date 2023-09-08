@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Obsdata &mdash; ehtim 1.2.3 documentation</title><link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <title>Obsdata &mdash; ehtim 1.2.6 documentation</title><link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
   <!--[if lt IE 9]>
     <script src="_static/js/html5shiv.min.js"></script>
@@ -28,7 +28,7 @@
             <a href="index.html" class="icon icon-home"> ehtim
           </a>
               <div class="version">
-                1.2
+                1.2.6
               </div>
 <div role="search">
   <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
@@ -1536,7 +1536,7 @@ and optionally baseline / stations</p>
 
 <dl class="py method">
 <dt id="ehtim.obsdata.Obsdata.polchisq">
-<code class="sig-name descname">polchisq</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">im</span></em>, <em class="sig-param"><span class="n">dtype</span><span class="o">=</span><span class="default_value">'pvis'</span></em>, <em class="sig-param"><span class="n">ttype</span><span class="o">=</span><span class="default_value">'nfft'</span></em>, <em class="sig-param"><span class="n">pol_prim</span><span class="o">=</span><span class="default_value">'amp_phase'</span></em>, <em class="sig-param"><span class="n">mask</span><span class="o">=</span><span class="default_value">[]</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/obsdata.html#Obsdata.polchisq"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.obsdata.Obsdata.polchisq" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">polchisq</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">im</span></em>, <em class="sig-param"><span class="n">dtype</span><span class="o">=</span><span class="default_value">'pvis'</span></em>, <em class="sig-param"><span class="n">ttype</span><span class="o">=</span><span class="default_value">'nfft'</span></em>, <em class="sig-param"><span class="n">pol_trans</span><span class="o">=</span><span class="default_value">True</span></em>, <em class="sig-param"><span class="n">mask</span><span class="o">=</span><span class="default_value">[]</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/obsdata.html#Obsdata.polchisq"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.obsdata.Obsdata.polchisq" title="Permalink to this definition">¶</a></dt>
 <dd><p>Give the reduced chi^2 for the specified image and polarimetric datatype.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
@@ -1546,7 +1546,7 @@ and optionally baseline / stations</p>
 <li><p><strong>pol</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.11)"><em>str</em></a>) – polarization type (‘I’, ‘Q’, ‘U’, ‘V’, ‘LL’, ‘RR’, ‘LR’, or ‘RL’</p></li>
 <li><p><strong>mask</strong> (<em>arr</em>) – mask of same dimension as im.imvec</p></li>
 <li><p><strong>ttype</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.11)"><em>str</em></a>) – if “fast” or “nfft” or “direct”</p></li>
-<li><p><strong>pol_prim</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.11)"><em>str</em></a>) – “amp_phase” I,m,chi “qu” for IQU, “qu_frac” for I,Q/I,U/I</p></li>
+<li><p><strong>pol_trans</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.11)"><em>bool</em></a>) – True for I,m,chi, False for IQU</p></li>
 <li><p><strong>fft_pad_factor</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.11)"><em>float</em></a>) – zero pad the image to (fft_pad_factor * image size) in FFT</p></li>
 <li><p><strong>conv_func</strong> (<em>'str'</em>) – The convolving function for gridding; ‘gaussian’, ‘pill’,’cubic’</p></li>
 <li><p><strong>p_rad</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.11)"><em>int</em></a>) – The pixel radius for the convolving function</p></li>
@@ -2087,7 +2087,7 @@ when converting ‘stokes’ to ‘circ’ if only I is present</p></li>
   <hr/>
 
   <div role="contentinfo">
-    <p>&#169; Copyright 2021, Andrew Chael.</p>
+    <p>&#169; Copyright 2023, Andrew Chael.</p>
   </div>
 
   Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a

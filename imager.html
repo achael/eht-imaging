@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Imager &mdash; ehtim 1.2.3 documentation</title><link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <title>Imager &mdash; ehtim 1.2.6 documentation</title><link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
   <!--[if lt IE 9]>
     <script src="_static/js/html5shiv.min.js"></script>
@@ -28,7 +28,7 @@
             <a href="index.html" class="icon icon-home"> ehtim
           </a>
               <div class="version">
-                1.2
+                1.2.6
               </div>
 <div role="search">
   <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
@@ -243,6 +243,12 @@ i indexes the observation number in self.obslist_next</p>
 </dd></dl>
 
 <dl class="py method">
+<dt id="ehtim.imager.Imager.make_image_IV">
+<code class="sig-name descname">make_image_IV</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">grads</span><span class="o">=</span><span class="default_value">True</span></em>, <em class="sig-param"><span class="n">niter</span><span class="o">=</span><span class="default_value">1</span></em>, <em class="sig-param"><span class="n">blur_frac</span><span class="o">=</span><span class="default_value">1</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/imager.html#Imager.make_image_IV"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.imager.Imager.make_image_IV" title="Permalink to this definition">¶</a></dt>
+<dd><p>Make Stokes I image using current imager settings.</p>
+</dd></dl>
+
+<dl class="py method">
 <dt id="ehtim.imager.Imager.make_image_I_stochastic_optics">
 <code class="sig-name descname">make_image_I_stochastic_optics</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">grads</span><span class="o">=</span><span class="default_value">True</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/imager.html#Imager.make_image_I_stochastic_optics"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.imager.Imager.make_image_I_stochastic_optics" title="Permalink to this definition">¶</a></dt>
 <dd><p>Reconstructs an image of total flux density
@@ -270,6 +276,12 @@ Returns the estimated unscattered image.</p>
 <dt id="ehtim.imager.Imager.make_image_P">
 <code class="sig-name descname">make_image_P</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">grads</span><span class="o">=</span><span class="default_value">True</span></em>, <em class="sig-param"><span class="n">niter</span><span class="o">=</span><span class="default_value">1</span></em>, <em class="sig-param"><span class="n">blur_frac</span><span class="o">=</span><span class="default_value">1</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/imager.html#Imager.make_image_P"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.imager.Imager.make_image_P" title="Permalink to this definition">¶</a></dt>
 <dd><p>Make Stokes P polarimetric image using current imager settings.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="ehtim.imager.Imager.make_image_V">
+<code class="sig-name descname">make_image_V</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">grads</span><span class="o">=</span><span class="default_value">True</span></em>, <em class="sig-param"><span class="n">niter</span><span class="o">=</span><span class="default_value">1</span></em>, <em class="sig-param"><span class="n">blur_frac</span><span class="o">=</span><span class="default_value">1</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/imager.html#Imager.make_image_V"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.imager.Imager.make_image_V" title="Permalink to this definition">¶</a></dt>
+<dd><p>Make Stokes I image using current imager settings.</p>
 </dd></dl>
 
 <dl class="py method">
@@ -437,7 +449,7 @@ Returns the estimated unscattered image.</p>
   <hr/>
 
   <div role="contentinfo">
-    <p>&#169; Copyright 2021, Andrew Chael.</p>
+    <p>&#169; Copyright 2023, Andrew Chael.</p>
   </div>
 
   Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a

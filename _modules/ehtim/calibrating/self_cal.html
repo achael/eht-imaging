@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>ehtim.calibrating.self_cal &mdash; ehtim 1.2.3 documentation</title><link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+  <title>ehtim.calibrating.self_cal &mdash; ehtim 1.2.6 documentation</title><link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
     <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
   <!--[if lt IE 9]>
     <script src="../../../_static/js/html5shiv.min.js"></script>
@@ -26,7 +26,7 @@
             <a href="../../../index.html" class="icon icon-home"> ehtim
           </a>
               <div class="version">
-                1.2
+                1.2.6
               </div>
 <div role="search">
   <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
@@ -129,11 +129,12 @@
 <span class="c1">###################################################################################################</span>
 
 
-<div class="viewcode-block" id="self_cal"><a class="viewcode-back" href="../../../calibration.html#ehtim.calibrating.self_cal.self_cal">[docs]</a><span class="k">def</span> <span class="nf">self_cal</span><span class="p">(</span><span class="n">obs</span><span class="p">,</span> <span class="n">im</span><span class="p">,</span> <span class="n">sites</span><span class="o">=</span><span class="p">[],</span> <span class="n">method</span><span class="o">=</span><span class="s2">&quot;both&quot;</span><span class="p">,</span> <span class="n">pol</span><span class="o">=</span><span class="s1">&#39;I&#39;</span><span class="p">,</span> <span class="n">minimizer_method</span><span class="o">=</span><span class="s1">&#39;BFGS&#39;</span><span class="p">,</span>
+<div class="viewcode-block" id="self_cal"><a class="viewcode-back" href="../../../calibration.html#ehtim.calibrating.self_cal.self_cal">[docs]</a><span class="k">def</span> <span class="nf">self_cal</span><span class="p">(</span><span class="n">obs</span><span class="p">,</span> <span class="n">im</span><span class="p">,</span> <span class="n">sites</span><span class="o">=</span><span class="p">[],</span> <span class="n">pol</span><span class="o">=</span><span class="s1">&#39;I&#39;</span><span class="p">,</span> <span class="n">apply_singlepol</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">method</span><span class="o">=</span><span class="s2">&quot;both&quot;</span><span class="p">,</span> 
+             <span class="n">minimizer_method</span><span class="o">=</span><span class="s1">&#39;BFGS&#39;</span><span class="p">,</span>
              <span class="n">pad_amp</span><span class="o">=</span><span class="mf">0.</span><span class="p">,</span> <span class="n">gain_tol</span><span class="o">=.</span><span class="mi">2</span><span class="p">,</span> <span class="n">solution_interval</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">scan_solutions</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
              <span class="n">ttype</span><span class="o">=</span><span class="s1">&#39;direct&#39;</span><span class="p">,</span> <span class="n">fft_pad_factor</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">caltable</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
              <span class="n">debias</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">apply_dterms</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
-             <span class="n">copy_closure_tables</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+             <span class="n">copy_closure_tables</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
              <span class="n">processes</span><span class="o">=-</span><span class="mi">1</span><span class="p">,</span> <span class="n">show_solution</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">msgtype</span><span class="o">=</span><span class="s1">&#39;bar&#39;</span><span class="p">,</span>
              <span class="n">use_grad</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;Self-calibrate a dataset to an image.</span>
@@ -143,9 +144,13 @@
 <span class="sd">           im (Image): the image to be calibrated  to</span>
 <span class="sd">           sites (list): list of sites to include in the self calibration.</span>
 <span class="sd">                         empty list calibrates all sites</span>
-<span class="sd">           method (str): chooses what to calibrate, &#39;amp&#39;, &#39;phase&#39;, or &#39;both&#39;</span>
-<span class="sd">           minimizer_method (str): Method for scipy.optimize.minimize (e.g., &#39;CG&#39;, &#39;BFGS&#39;)</span>
+
 <span class="sd">           pol (str): which image polarization to self-calibrate visibilities to</span>
+<span class="sd">           apply_singlepol (str): if calibrating to pol=&#39;RR&#39; or pol=&#39;LL&#39;, </span>
+<span class="sd">                                  apply solution only to the single polarization</span>
+
+<span class="sd">           method (str): chooses what to calibrate, &#39;amp&#39;, &#39;phase&#39;, or &#39;both&#39;           </span>
+<span class="sd">           minimizer_method (str): Method for scipy.optimize.minimize (e.g., &#39;CG&#39;, &#39;BFGS&#39;)</span>
 
 <span class="sd">           pad_amp (float): adds fractional uncertainty to amplitude sigmas in quadrature</span>
 <span class="sd">           gain_tol (float or list): gains that exceed this value will be disfavored by the prior</span>
@@ -174,17 +179,21 @@
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">if</span> <span class="n">use_grad</span> <span class="ow">and</span> <span class="p">(</span><span class="n">method</span><span class="o">==</span><span class="s1">&#39;phase&#39;</span> <span class="ow">or</span> <span class="n">method</span><span class="o">==</span><span class="s1">&#39;amp&#39;</span><span class="p">):</span>
         <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;errfunc_grad in self_cal only works with method==&#39;both&#39;!&quot;</span><span class="p">)</span>
-    <span class="k">if</span> <span class="n">pol</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;I&#39;</span><span class="p">,</span> <span class="s1">&#39;Q&#39;</span><span class="p">,</span> <span class="s1">&#39;U&#39;</span><span class="p">,</span> <span class="s1">&#39;V&#39;</span><span class="p">,</span> <span class="s1">&#39;RR&#39;</span><span class="p">,</span> <span class="s1">&#39;LL&#39;</span><span class="p">]:</span>
-        <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;Can only self-calibrate to I, Q, U, V, RR, or LL images!&quot;</span><span class="p">)</span>
+
     <span class="k">if</span> <span class="n">pol</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;I&#39;</span><span class="p">,</span> <span class="s1">&#39;Q&#39;</span><span class="p">,</span> <span class="s1">&#39;U&#39;</span><span class="p">,</span> <span class="s1">&#39;V&#39;</span><span class="p">]:</span>
         <span class="k">if</span> <span class="n">obs</span><span class="o">.</span><span class="n">polrep</span> <span class="o">!=</span> <span class="s1">&#39;stokes&#39;</span><span class="p">:</span>
             <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;selfcal pol is a stokes parameter, but obs.polrep!=&#39;stokes&#39;&quot;</span><span class="p">)</span>
         <span class="n">im</span> <span class="o">=</span> <span class="n">im</span><span class="o">.</span><span class="n">switch_polrep</span><span class="p">(</span><span class="s1">&#39;stokes&#39;</span><span class="p">,</span> <span class="n">pol</span><span class="p">)</span>
-    <span class="k">elif</span> <span class="n">pol</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;RR&#39;</span><span class="p">,</span> <span class="s1">&#39;LL&#39;</span><span class="p">,</span> <span class="s1">&#39;RRLL&#39;</span><span class="p">]:</span>
+    <span class="k">elif</span> <span class="n">pol</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;RR&#39;</span><span class="p">,</span> <span class="s1">&#39;LL&#39;</span><span class="p">]:</span>
         <span class="k">if</span> <span class="n">obs</span><span class="o">.</span><span class="n">polrep</span> <span class="o">!=</span> <span class="s1">&#39;circ&#39;</span><span class="p">:</span>
             <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;selfcal pol is RR or LL, but obs.polrep!=&#39;circ&#39;&quot;</span><span class="p">)</span>
         <span class="n">im</span> <span class="o">=</span> <span class="n">im</span><span class="o">.</span><span class="n">switch_polrep</span><span class="p">(</span><span class="s1">&#39;circ&#39;</span><span class="p">,</span> <span class="n">pol</span><span class="p">)</span>
-
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;Can only self-calibrate to I, Q, U, V, RR, or LL images!&quot;</span><span class="p">)</span>
+        
+    <span class="k">if</span> <span class="n">apply_singlepol</span> <span class="ow">and</span> <span class="n">obs</span><span class="o">.</span><span class="n">polrep</span><span class="o">!=</span><span class="s1">&#39;circ&#39;</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;apply_singlepol must be False unless self-calibrating to &#39;RR&#39; or &#39;LL&#39;&quot;</span><span class="p">)</span>
+                
     <span class="c1"># V = model visibility, V&#39; = measured visibility, G_i = site gain</span>
     <span class="c1"># G_i * conj(G_j) * V_ij = V&#39;_ij</span>
     <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">sites</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
@@ -230,7 +239,7 @@
     <span class="k">if</span> <span class="n">processes</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>  <span class="c1"># run on multiple cores with multiprocessing</span>
         <span class="n">scans_cal</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">pool</span><span class="o">.</span><span class="n">map</span><span class="p">(</span><span class="n">get_selfcal_scan_cal</span><span class="p">,</span> <span class="p">[[</span><span class="n">i</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">scans</span><span class="p">),</span> <span class="n">scans</span><span class="p">[</span><span class="n">i</span><span class="p">],</span>
                                                               <span class="n">im</span><span class="p">,</span> <span class="n">V_scans</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">sites</span><span class="p">,</span>
-                                                              <span class="n">obs</span><span class="o">.</span><span class="n">polrep</span><span class="p">,</span> <span class="n">pol</span><span class="p">,</span>
+                                                              <span class="n">obs</span><span class="o">.</span><span class="n">polrep</span><span class="p">,</span> <span class="n">pol</span><span class="p">,</span> <span class="n">apply_singlepol</span><span class="p">,</span>
                                                               <span class="n">method</span><span class="p">,</span> <span class="n">minimizer_method</span><span class="p">,</span>
                                                               <span class="n">show_solution</span><span class="p">,</span> <span class="n">pad_amp</span><span class="p">,</span> <span class="n">gain_tol</span><span class="p">,</span>
                                                               <span class="n">debias</span><span class="p">,</span> <span class="n">caltable</span><span class="p">,</span> <span class="n">msgtype</span><span class="p">,</span>
@@ -241,7 +250,7 @@
         <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">scans</span><span class="p">)):</span>
             <span class="n">obsh</span><span class="o">.</span><span class="n">prog_msg</span><span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">scans</span><span class="p">),</span> <span class="n">msgtype</span><span class="o">=</span><span class="n">msgtype</span><span class="p">,</span> <span class="n">nscan_last</span><span class="o">=</span><span class="n">i</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span>
             <span class="n">scans_cal</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">self_cal_scan</span><span class="p">(</span><span class="n">scans</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">im</span><span class="p">,</span> <span class="n">V_scan</span><span class="o">=</span><span class="n">V_scans</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">sites</span><span class="o">=</span><span class="n">sites</span><span class="p">,</span>
-                                         <span class="n">polrep</span><span class="o">=</span><span class="n">obs</span><span class="o">.</span><span class="n">polrep</span><span class="p">,</span> <span class="n">pol</span><span class="o">=</span><span class="n">pol</span><span class="p">,</span>
+                                         <span class="n">polrep</span><span class="o">=</span><span class="n">obs</span><span class="o">.</span><span class="n">polrep</span><span class="p">,</span> <span class="n">pol</span><span class="o">=</span><span class="n">pol</span><span class="p">,</span> <span class="n">apply_singlepol</span><span class="o">=</span><span class="n">apply_singlepol</span><span class="p">,</span>
                                          <span class="n">method</span><span class="o">=</span><span class="n">method</span><span class="p">,</span> <span class="n">minimizer_method</span><span class="o">=</span><span class="n">minimizer_method</span><span class="p">,</span>
                                          <span class="n">show_solution</span><span class="o">=</span><span class="n">show_solution</span><span class="p">,</span> 
                                          <span class="n">pad_amp</span><span class="o">=</span><span class="n">pad_amp</span><span class="p">,</span> <span class="n">gain_tol</span><span class="o">=</span><span class="n">gain_tol</span><span class="p">,</span> 
@@ -287,7 +296,8 @@
     <span class="k">return</span> <span class="n">out</span></div>
 
 
-<div class="viewcode-block" id="self_cal_scan"><a class="viewcode-back" href="../../../calibration.html#ehtim.calibrating.self_cal.self_cal_scan">[docs]</a><span class="k">def</span> <span class="nf">self_cal_scan</span><span class="p">(</span><span class="n">scan</span><span class="p">,</span> <span class="n">im</span><span class="p">,</span> <span class="n">V_scan</span><span class="o">=</span><span class="p">[],</span> <span class="n">sites</span><span class="o">=</span><span class="p">[],</span> <span class="n">polrep</span><span class="o">=</span><span class="s1">&#39;stokes&#39;</span><span class="p">,</span> <span class="n">pol</span><span class="o">=</span><span class="s1">&#39;I&#39;</span><span class="p">,</span> <span class="n">method</span><span class="o">=</span><span class="s2">&quot;both&quot;</span><span class="p">,</span>
+<div class="viewcode-block" id="self_cal_scan"><a class="viewcode-back" href="../../../calibration.html#ehtim.calibrating.self_cal.self_cal_scan">[docs]</a><span class="k">def</span> <span class="nf">self_cal_scan</span><span class="p">(</span><span class="n">scan</span><span class="p">,</span> <span class="n">im</span><span class="p">,</span> <span class="n">V_scan</span><span class="o">=</span><span class="p">[],</span> <span class="n">sites</span><span class="o">=</span><span class="p">[],</span> <span class="n">polrep</span><span class="o">=</span><span class="s1">&#39;stokes&#39;</span><span class="p">,</span> <span class="n">pol</span><span class="o">=</span><span class="s1">&#39;I&#39;</span><span class="p">,</span> <span class="n">apply_singlepol</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                  <span class="n">method</span><span class="o">=</span><span class="s2">&quot;both&quot;</span><span class="p">,</span>
                   <span class="n">minimizer_method</span><span class="o">=</span><span class="s1">&#39;BFGS&#39;</span><span class="p">,</span> <span class="n">show_solution</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
                   <span class="n">pad_amp</span><span class="o">=</span><span class="mf">0.</span><span class="p">,</span> <span class="n">gain_tol</span><span class="o">=.</span><span class="mi">2</span><span class="p">,</span> <span class="n">debias</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">caltable</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
                   <span class="n">use_grad</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
@@ -302,6 +312,9 @@
 
 <span class="sd">           polrep (str): &#39;stokes&#39; or &#39;circ&#39; to specify the  polarization products in scan</span>
 <span class="sd">           pol (str): which image polarization to self-calibrate visibilities to</span>
+<span class="sd">           apply_singlepol (str): if calibrating to pol=&#39;RR&#39; or pol=&#39;LL&#39;, </span>
+<span class="sd">                                  apply solution only to the single polarization</span>
+<span class="sd">           </span>
 <span class="sd">           method (str): chooses what to calibrate, &#39;amp&#39;, &#39;phase&#39;, or &#39;both&#39;</span>
 <span class="sd">           minimizer_method (str): Method for scipy.optimize.minimize</span>
 <span class="sd">                                  (e.g., &#39;CG&#39;, &#39;BFGS&#39;, &#39;Nelder-Mead&#39;, etc.)</span>
@@ -328,7 +341,7 @@
         <span class="n">sites</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="n">scan</span><span class="p">[</span><span class="s1">&#39;t1&#39;</span><span class="p">])</span><span class="o">.</span><span class="n">union</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="n">scan</span><span class="p">[</span><span class="s1">&#39;t2&#39;</span><span class="p">])))</span>
 
     <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">V_scan</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mi">1</span><span class="p">:</span>
-        <span class="c1"># This is not correct. Need to update to use polarization dictionary</span>
+        <span class="c1"># TODO This is not correct. Need to update to use polarization dictionary</span>
         <span class="n">uv</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">hstack</span><span class="p">((</span><span class="n">scan</span><span class="p">[</span><span class="s1">&#39;u&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">),</span> <span class="n">scan</span><span class="p">[</span><span class="s1">&#39;v&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">)))</span>
         <span class="n">A</span> <span class="o">=</span> <span class="n">obsh</span><span class="o">.</span><span class="n">ftmatrix</span><span class="p">(</span><span class="n">im</span><span class="o">.</span><span class="n">psize</span><span class="p">,</span> <span class="n">im</span><span class="o">.</span><span class="n">xdim</span><span class="p">,</span> <span class="n">im</span><span class="o">.</span><span class="n">ydim</span><span class="p">,</span> <span class="n">uv</span><span class="p">,</span> <span class="n">pulse</span><span class="o">=</span><span class="n">im</span><span class="o">.</span><span class="n">pulse</span><span class="p">)</span>
         <span class="n">V_scan</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">A</span><span class="p">,</span> <span class="n">im</span><span class="o">.</span><span class="n">imvec</span><span class="p">)</span>
@@ -422,10 +435,19 @@
             <span class="k">else</span><span class="p">:</span>
                 <span class="n">site_key</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span>
 
+            <span class="c1"># TODO: ANDREW - this has been changed</span>
             <span class="c1"># We will *always* set the R and L gain corrections to be equal in self calibration,</span>
             <span class="c1"># to avoid breaking polarization consistency relationships</span>
-            <span class="n">rscale</span> <span class="o">=</span> <span class="n">g_fit</span><span class="p">[</span><span class="n">site_key</span><span class="p">]</span><span class="o">**-</span><span class="mi">1</span>
-            <span class="n">lscale</span> <span class="o">=</span> <span class="n">g_fit</span><span class="p">[</span><span class="n">site_key</span><span class="p">]</span><span class="o">**-</span><span class="mi">1</span>
+            <span class="k">if</span> <span class="n">apply_singlepol</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">pol</span><span class="o">==</span><span class="s1">&#39;RR&#39;</span><span class="p">:</span>
+                    <span class="n">rscale</span> <span class="o">=</span> <span class="n">g_fit</span><span class="p">[</span><span class="n">site_key</span><span class="p">]</span><span class="o">**-</span><span class="mi">1</span>
+                    <span class="n">lscale</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="n">g_fit</span><span class="p">[</span><span class="n">site_key</span><span class="p">]</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
+                <span class="k">elif</span> <span class="n">pol</span><span class="o">==</span><span class="s1">&#39;LL&#39;</span><span class="p">:</span>
+                    <span class="n">rscale</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="n">g_fit</span><span class="p">[</span><span class="n">site_key</span><span class="p">]</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>                
+                    <span class="n">lscale</span> <span class="o">=</span> <span class="n">g_fit</span><span class="p">[</span><span class="n">site_key</span><span class="p">]</span><span class="o">**-</span><span class="mi">1</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">rscale</span> <span class="o">=</span> <span class="n">g_fit</span><span class="p">[</span><span class="n">site_key</span><span class="p">]</span><span class="o">**-</span><span class="mi">1</span>
+                <span class="n">lscale</span> <span class="o">=</span> <span class="n">g_fit</span><span class="p">[</span><span class="n">site_key</span><span class="p">]</span><span class="o">**-</span><span class="mi">1</span>
 
             <span class="c1"># TODO: we may want to give two entries for the start/stop times</span>
             <span class="c1"># when a non-zero interval is used</span>
@@ -436,23 +458,56 @@
     <span class="k">else</span><span class="p">:</span>
         <span class="n">g1_fit</span> <span class="o">=</span> <span class="n">g_fit</span><span class="p">[</span><span class="n">g1_keys</span><span class="p">]</span>
         <span class="n">g2_fit</span> <span class="o">=</span> <span class="n">g_fit</span><span class="p">[</span><span class="n">g2_keys</span><span class="p">]</span>
-
         <span class="n">gij_inv</span> <span class="o">=</span> <span class="p">(</span><span class="n">g1_fit</span> <span class="o">*</span> <span class="n">g2_fit</span><span class="o">.</span><span class="n">conj</span><span class="p">())</span><span class="o">**</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span>
 
         <span class="k">if</span> <span class="n">polrep</span> <span class="o">==</span> <span class="s1">&#39;stokes&#39;</span><span class="p">:</span>
+            <span class="c1"># gain factors</span>
+            <span class="n">g1_fit</span> <span class="o">=</span> <span class="n">g_fit</span><span class="p">[</span><span class="n">g1_keys</span><span class="p">]</span>
+            <span class="n">g2_fit</span> <span class="o">=</span> <span class="n">g_fit</span><span class="p">[</span><span class="n">g2_keys</span><span class="p">]</span>
+            <span class="n">gij_inv</span> <span class="o">=</span> <span class="p">(</span><span class="n">g1_fit</span> <span class="o">*</span> <span class="n">g2_fit</span><span class="o">.</span><span class="n">conj</span><span class="p">())</span><span class="o">**</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+        
             <span class="c1"># scale visibilities</span>
             <span class="k">for</span> <span class="n">vistype</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;vis&#39;</span><span class="p">,</span> <span class="s1">&#39;qvis&#39;</span><span class="p">,</span> <span class="s1">&#39;uvis&#39;</span><span class="p">,</span> <span class="s1">&#39;vvis&#39;</span><span class="p">]:</span>
                 <span class="n">scan</span><span class="p">[</span><span class="n">vistype</span><span class="p">]</span> <span class="o">*=</span> <span class="n">gij_inv</span>
             <span class="c1"># scale sigmas</span>
             <span class="k">for</span> <span class="n">sigtype</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;sigma&#39;</span><span class="p">,</span> <span class="s1">&#39;qsigma&#39;</span><span class="p">,</span> <span class="s1">&#39;usigma&#39;</span><span class="p">,</span> <span class="s1">&#39;vsigma&#39;</span><span class="p">]:</span>
                 <span class="n">scan</span><span class="p">[</span><span class="n">sigtype</span><span class="p">]</span> <span class="o">*=</span> <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">gij_inv</span><span class="p">)</span>
+                
         <span class="k">elif</span> <span class="n">polrep</span> <span class="o">==</span> <span class="s1">&#39;circ&#39;</span><span class="p">:</span>
-            <span class="c1"># scale visibilities</span>
-            <span class="k">for</span> <span class="n">vistype</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;rrvis&#39;</span><span class="p">,</span> <span class="s1">&#39;llvis&#39;</span><span class="p">,</span> <span class="s1">&#39;rlvis&#39;</span><span class="p">,</span> <span class="s1">&#39;lrvis&#39;</span><span class="p">]:</span>
-                <span class="n">scan</span><span class="p">[</span><span class="n">vistype</span><span class="p">]</span> <span class="o">*=</span> <span class="n">gij_inv</span>
-            <span class="c1"># scale sigmas</span>
-            <span class="k">for</span> <span class="n">sigtype</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;rrsigma&#39;</span><span class="p">,</span> <span class="s1">&#39;llsigma&#39;</span><span class="p">,</span> <span class="s1">&#39;rlsigma&#39;</span><span class="p">,</span> <span class="s1">&#39;lrsigma&#39;</span><span class="p">]:</span>
-                <span class="n">scan</span><span class="p">[</span><span class="n">sigtype</span><span class="p">]</span> <span class="o">*=</span> <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">gij_inv</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">apply_singlepol</span><span class="p">:</span> <span class="c1">#scale only solved polarization</span>
+                <span class="k">if</span> <span class="n">pol</span><span class="o">==</span><span class="s1">&#39;RR&#39;</span><span class="p">:</span>
+                    <span class="n">grr_inv</span> <span class="o">=</span> <span class="p">(</span><span class="n">g1_fit</span> <span class="o">*</span> <span class="n">g2_fit</span><span class="o">.</span><span class="n">conj</span><span class="p">())</span><span class="o">**</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+                    <span class="n">gll_inv</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="n">g1_fit</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
+                    <span class="n">grl_inv</span> <span class="o">=</span> <span class="p">(</span><span class="n">g1_fit</span><span class="p">)</span><span class="o">**</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+                    <span class="n">glr_inv</span> <span class="o">=</span> <span class="p">(</span><span class="n">g2_fit</span><span class="o">.</span><span class="n">conj</span><span class="p">())</span><span class="o">**</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span>                        
+                                                        
+                <span class="k">elif</span> <span class="n">pol</span><span class="o">==</span><span class="s1">&#39;LL&#39;</span><span class="p">:</span>
+                    <span class="n">grr_inv</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="n">g1_fit</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>                
+                    <span class="n">gll_inv</span> <span class="o">=</span> <span class="p">(</span><span class="n">g1_fit</span> <span class="o">*</span> <span class="n">g2_fit</span><span class="o">.</span><span class="n">conj</span><span class="p">())</span><span class="o">**</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+                    <span class="n">grl_inv</span> <span class="o">=</span> <span class="p">(</span><span class="n">g2_fit</span><span class="o">.</span><span class="n">conj</span><span class="p">())</span><span class="o">**</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+                    <span class="n">glr_inv</span> <span class="o">=</span> <span class="p">(</span><span class="n">g1_fit</span><span class="p">)</span><span class="o">**</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span> 
+                       
+                <span class="c1"># scale visibilities    </span>
+                <span class="n">scan</span><span class="p">[</span><span class="s1">&#39;rrvis&#39;</span><span class="p">]</span> <span class="o">*=</span> <span class="n">grr_inv</span>  
+                <span class="n">scan</span><span class="p">[</span><span class="s1">&#39;llvis&#39;</span><span class="p">]</span> <span class="o">*=</span> <span class="n">gll_inv</span>  
+                <span class="n">scan</span><span class="p">[</span><span class="s1">&#39;rlvis&#39;</span><span class="p">]</span> <span class="o">*=</span> <span class="n">grl_inv</span>  
+                <span class="n">scan</span><span class="p">[</span><span class="s1">&#39;lrvis&#39;</span><span class="p">]</span> <span class="o">*=</span> <span class="n">glr_inv</span>  
+
+                <span class="c1"># scale sigmas    </span>
+                <span class="n">scan</span><span class="p">[</span><span class="s1">&#39;rrsigma&#39;</span><span class="p">]</span> <span class="o">*=</span> <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">grr_inv</span><span class="p">)</span>  
+                <span class="n">scan</span><span class="p">[</span><span class="s1">&#39;llsigma&#39;</span><span class="p">]</span> <span class="o">*=</span> <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">gll_inv</span><span class="p">)</span> 
+                <span class="n">scan</span><span class="p">[</span><span class="s1">&#39;rlsigma&#39;</span><span class="p">]</span> <span class="o">*=</span> <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">grl_inv</span><span class="p">)</span> 
+                <span class="n">scan</span><span class="p">[</span><span class="s1">&#39;lrsigma&#39;</span><span class="p">]</span> <span class="o">*=</span> <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">glr_inv</span><span class="p">)</span>   
+                                                                                                 
+            <span class="k">else</span><span class="p">:</span> <span class="c1">#scale both polarizations</span>
+                <span class="n">gij_inv</span> <span class="o">=</span> <span class="p">(</span><span class="n">g1_fit</span> <span class="o">*</span> <span class="n">g2_fit</span><span class="o">.</span><span class="n">conj</span><span class="p">())</span><span class="o">**</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span>          
+                                                                          
+                <span class="c1"># scale visibilities</span>
+                <span class="k">for</span> <span class="n">vistype</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;rrvis&#39;</span><span class="p">,</span> <span class="s1">&#39;llvis&#39;</span><span class="p">,</span> <span class="s1">&#39;rlvis&#39;</span><span class="p">,</span> <span class="s1">&#39;lrvis&#39;</span><span class="p">]:</span>
+                    <span class="n">scan</span><span class="p">[</span><span class="n">vistype</span><span class="p">]</span> <span class="o">*=</span> <span class="n">gij_inv</span>
+                <span class="c1"># scale sigmas</span>
+                <span class="k">for</span> <span class="n">sigtype</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;rrsigma&#39;</span><span class="p">,</span> <span class="s1">&#39;llsigma&#39;</span><span class="p">,</span> <span class="s1">&#39;rlsigma&#39;</span><span class="p">,</span> <span class="s1">&#39;lrsigma&#39;</span><span class="p">]:</span>
+                    <span class="n">scan</span><span class="p">[</span><span class="n">sigtype</span><span class="p">]</span> <span class="o">*=</span> <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">gij_inv</span><span class="p">)</span>
 
         <span class="n">out</span> <span class="o">=</span> <span class="n">scan</span>
 
@@ -468,14 +523,14 @@
     <span class="k">return</span> <span class="n">get_selfcal_scan_cal2</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">)</span>
 
 
-<span class="k">def</span> <span class="nf">get_selfcal_scan_cal2</span><span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="n">n</span><span class="p">,</span> <span class="n">scan</span><span class="p">,</span> <span class="n">im</span><span class="p">,</span> <span class="n">V_scan</span><span class="p">,</span> <span class="n">sites</span><span class="p">,</span> <span class="n">polrep</span><span class="p">,</span> <span class="n">pol</span><span class="p">,</span> <span class="n">method</span><span class="p">,</span> <span class="n">minimizer_method</span><span class="p">,</span>
+<span class="k">def</span> <span class="nf">get_selfcal_scan_cal2</span><span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="n">n</span><span class="p">,</span> <span class="n">scan</span><span class="p">,</span> <span class="n">im</span><span class="p">,</span> <span class="n">V_scan</span><span class="p">,</span> <span class="n">sites</span><span class="p">,</span> <span class="n">polrep</span><span class="p">,</span> <span class="n">pol</span><span class="p">,</span> <span class="n">apply_singlepol</span><span class="p">,</span> <span class="n">method</span><span class="p">,</span> <span class="n">minimizer_method</span><span class="p">,</span>
                           <span class="n">show_solution</span><span class="p">,</span> <span class="n">pad_amp</span><span class="p">,</span> <span class="n">gain_tol</span><span class="p">,</span> <span class="n">debias</span><span class="p">,</span> <span class="n">caltable</span><span class="p">,</span> <span class="n">msgtype</span><span class="p">,</span> <span class="n">use_grad</span><span class="p">):</span>
     <span class="k">if</span> <span class="n">n</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
         <span class="k">global</span> <span class="n">counter</span>
         <span class="n">counter</span><span class="o">.</span><span class="n">increment</span><span class="p">()</span>
         <span class="n">obsh</span><span class="o">.</span><span class="n">prog_msg</span><span class="p">(</span><span class="n">counter</span><span class="o">.</span><span class="n">value</span><span class="p">(),</span> <span class="n">counter</span><span class="o">.</span><span class="n">maxval</span><span class="p">,</span> <span class="n">msgtype</span><span class="p">,</span> <span class="n">counter</span><span class="o">.</span><span class="n">value</span><span class="p">()</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span>
 
-    <span class="k">return</span> <span class="n">self_cal_scan</span><span class="p">(</span><span class="n">scan</span><span class="p">,</span> <span class="n">im</span><span class="p">,</span> <span class="n">V_scan</span><span class="o">=</span><span class="n">V_scan</span><span class="p">,</span> <span class="n">sites</span><span class="o">=</span><span class="n">sites</span><span class="p">,</span> <span class="n">polrep</span><span class="o">=</span><span class="n">polrep</span><span class="p">,</span> <span class="n">pol</span><span class="o">=</span><span class="n">pol</span><span class="p">,</span>
+    <span class="k">return</span> <span class="n">self_cal_scan</span><span class="p">(</span><span class="n">scan</span><span class="p">,</span> <span class="n">im</span><span class="p">,</span> <span class="n">V_scan</span><span class="o">=</span><span class="n">V_scan</span><span class="p">,</span> <span class="n">sites</span><span class="o">=</span><span class="n">sites</span><span class="p">,</span> <span class="n">polrep</span><span class="o">=</span><span class="n">polrep</span><span class="p">,</span> <span class="n">pol</span><span class="o">=</span><span class="n">pol</span><span class="p">,</span> <span class="n">apply_singlepol</span><span class="o">=</span><span class="n">apply_singlepol</span><span class="p">,</span>
                          <span class="n">method</span><span class="o">=</span><span class="n">method</span><span class="p">,</span> <span class="n">minimizer_method</span><span class="o">=</span><span class="n">minimizer_method</span><span class="p">,</span>
                          <span class="n">show_solution</span><span class="o">=</span><span class="n">show_solution</span><span class="p">,</span>
                          <span class="n">pad_amp</span><span class="o">=</span><span class="n">pad_amp</span><span class="p">,</span> <span class="n">gain_tol</span><span class="o">=</span><span class="n">gain_tol</span><span class="p">,</span> <span class="n">debias</span><span class="o">=</span><span class="n">debias</span><span class="p">,</span> <span class="n">caltable</span><span class="o">=</span><span class="n">caltable</span><span class="p">,</span>
@@ -624,7 +679,7 @@
   <hr/>
 
   <div role="contentinfo">
-    <p>&#169; Copyright 2021, Andrew Chael.</p>
+    <p>&#169; Copyright 2023, Andrew Chael.</p>
   </div>
 
   Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a

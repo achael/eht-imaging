@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>ehtim.obsdata &mdash; ehtim 1.2.3 documentation</title><link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
+  <title>ehtim.obsdata &mdash; ehtim 1.2.6 documentation</title><link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
     <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
   <!--[if lt IE 9]>
     <script src="../../_static/js/html5shiv.min.js"></script>
@@ -26,7 +26,7 @@
             <a href="../../index.html" class="icon icon-home"> ehtim
           </a>
               <div class="version">
-                1.2
+                1.2.6
               </div>
 <div role="search">
   <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
@@ -673,8 +673,8 @@
                     <span class="n">data</span><span class="p">,</span> <span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">searchsorted</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">scans</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">],</span> <span class="n">x</span><span class="p">[</span><span class="s1">&#39;time&#39;</span><span class="p">])):</span>
                 <span class="n">datalist</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">obs</span> <span class="k">for</span> <span class="n">obs</span> <span class="ow">in</span> <span class="n">group</span><span class="p">]))</span>
 
-<span class="c1">#        return np.array(datalist, dtype=object)</span>
-        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">datalist</span><span class="p">)</span></div>
+        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">datalist</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">object</span><span class="p">)</span></div>
+
 
 <div class="viewcode-block" id="Obsdata.split_obs"><a class="viewcode-back" href="../../obsdata.html#ehtim.obsdata.Obsdata.split_obs">[docs]</a>    <span class="k">def</span> <span class="nf">split_obs</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">t_gather</span><span class="o">=</span><span class="mf">0.</span><span class="p">,</span> <span class="n">scan_gather</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Split single observation into multiple observation files, one per scan..</span>
@@ -752,9 +752,8 @@
         <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">group</span> <span class="ow">in</span> <span class="n">it</span><span class="o">.</span><span class="n">groupby</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="n">idx</span><span class="p">],</span> <span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="nb">set</span><span class="p">((</span><span class="n">x</span><span class="p">[</span><span class="s1">&#39;t1&#39;</span><span class="p">],</span> <span class="n">x</span><span class="p">[</span><span class="s1">&#39;t2&#39;</span><span class="p">]))):</span>
             <span class="n">datalist</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">obs</span> <span class="k">for</span> <span class="n">obs</span> <span class="ow">in</span> <span class="n">group</span><span class="p">]))</span>
 
-<span class="c1">#        return np.array(datalist, dtype=object)</span>
-        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">datalist</span><span class="p">)</span></div>
-
+        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">datalist</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">object</span><span class="p">)</span></div>
+        
 <div class="viewcode-block" id="Obsdata.unpack_bl"><a class="viewcode-back" href="../../obsdata.html#ehtim.obsdata.Obsdata.unpack_bl">[docs]</a>    <span class="k">def</span> <span class="nf">unpack_bl</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">site1</span><span class="p">,</span> <span class="n">site2</span><span class="p">,</span> <span class="n">fields</span><span class="p">,</span> <span class="n">ang_unit</span><span class="o">=</span><span class="s1">&#39;deg&#39;</span><span class="p">,</span> <span class="n">debias</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">timetype</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Unpack the data over time on the selected baseline site1-site2.</span>
 
@@ -796,9 +795,8 @@
 
                     <span class="n">allout</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">out</span><span class="p">)</span>
 
-<span class="c1">#        return np.array(allout, dtype=object)</span>
-        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">allout</span><span class="p">)</span></div>
-
+        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">allout</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">object</span><span class="p">)</span></div>
+        
 <div class="viewcode-block" id="Obsdata.unpack"><a class="viewcode-back" href="../../obsdata.html#ehtim.obsdata.Obsdata.unpack">[docs]</a>    <span class="k">def</span> <span class="nf">unpack</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">fields</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s1">&#39;all&#39;</span><span class="p">,</span> <span class="n">ang_unit</span><span class="o">=</span><span class="s1">&#39;deg&#39;</span><span class="p">,</span> <span class="n">debias</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">conj</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">timetype</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Unpack the data for the whole observation .</span>
 
@@ -1215,7 +1213,7 @@
 
         <span class="k">return</span> <span class="n">chisq</span></div>
 
-<div class="viewcode-block" id="Obsdata.polchisq"><a class="viewcode-back" href="../../obsdata.html#ehtim.obsdata.Obsdata.polchisq">[docs]</a>    <span class="k">def</span> <span class="nf">polchisq</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">im</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="s1">&#39;pvis&#39;</span><span class="p">,</span> <span class="n">ttype</span><span class="o">=</span><span class="s1">&#39;nfft&#39;</span><span class="p">,</span> <span class="n">pol_prim</span><span class="o">=</span><span class="s1">&#39;amp_phase&#39;</span><span class="p">,</span> <span class="n">mask</span><span class="o">=</span><span class="p">[],</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+<div class="viewcode-block" id="Obsdata.polchisq"><a class="viewcode-back" href="../../obsdata.html#ehtim.obsdata.Obsdata.polchisq">[docs]</a>    <span class="k">def</span> <span class="nf">polchisq</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">im</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="s1">&#39;pvis&#39;</span><span class="p">,</span> <span class="n">ttype</span><span class="o">=</span><span class="s1">&#39;nfft&#39;</span><span class="p">,</span> <span class="n">pol_trans</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">mask</span><span class="o">=</span><span class="p">[],</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Give the reduced chi^2 for the specified image and polarimetric datatype.</span>
 
 <span class="sd">           Args:</span>
@@ -1224,7 +1222,7 @@
 <span class="sd">                pol (str): polarization type (&#39;I&#39;, &#39;Q&#39;, &#39;U&#39;, &#39;V&#39;, &#39;LL&#39;, &#39;RR&#39;, &#39;LR&#39;, or &#39;RL&#39;</span>
 <span class="sd">                mask (arr): mask of same dimension as im.imvec</span>
 <span class="sd">                ttype (str): if &quot;fast&quot; or &quot;nfft&quot; or &quot;direct&quot;</span>
-<span class="sd">                pol_prim (str): &quot;amp_phase&quot; I,m,chi &quot;qu&quot; for IQU, &quot;qu_frac&quot; for I,Q/I,U/I</span>
+<span class="sd">                pol_trans (bool): True for I,m,chi, False for IQU</span>
 <span class="sd">                fft_pad_factor (float): zero pad the image to (fft_pad_factor * image size) in FFT</span>
 <span class="sd">                conv_func (&#39;str&#39;):  The convolving function for gridding; &#39;gaussian&#39;, &#39;pill&#39;,&#39;cubic&#39;</span>
 <span class="sd">                p_rad (int): The pixel radius for the convolving function</span>
@@ -1243,8 +1241,8 @@
 <span class="sd">                (float): image chi^2</span>
 <span class="sd">        &quot;&quot;&quot;</span>
 
-        <span class="k">if</span> <span class="n">dtype</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;pvis&#39;</span><span class="p">,</span> <span class="s1">&#39;m&#39;</span><span class="p">,</span> <span class="s1">&#39;pbs&#39;</span><span class="p">]:</span>
-            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;Only supported polarimetric dterms are &#39;pvis&#39;,&#39;m, &#39;pbs&#39;!&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">dtype</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;pvis&#39;</span><span class="p">,</span> <span class="s1">&#39;m&#39;</span><span class="p">,</span> <span class="s1">&#39;pbs&#39;</span><span class="p">,</span><span class="s1">&#39;vvis&#39;</span><span class="p">]:</span>
+            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;Only supported polarimetric dterms are &#39;pvis&#39;,&#39;m, &#39;pbs&#39;,&#39;vvis&#39;!&quot;</span><span class="p">)</span>
 
         <span class="c1"># TODO -- should import this at top, but the circular dependencies create a mess...</span>
         <span class="kn">import</span> <span class="nn">ehtim.imaging.pol_imager_utils</span> <span class="k">as</span> <span class="nn">piu</span>
@@ -1254,30 +1252,33 @@
 
         <span class="c1"># Pack the comparison image in the proper format</span>
         <span class="n">imstokes</span> <span class="o">=</span> <span class="n">im</span><span class="o">.</span><span class="n">switch_polrep</span><span class="p">(</span><span class="n">polrep_out</span><span class="o">=</span><span class="s1">&#39;stokes&#39;</span><span class="p">,</span> <span class="n">pol_prim_out</span><span class="o">=</span><span class="s1">&#39;I&#39;</span><span class="p">)</span>
-        <span class="k">if</span> <span class="n">pol_prim</span> <span class="o">==</span> <span class="s1">&#39;amp_phase&#39;</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">pol_trans</span><span class="p">:</span>
             <span class="n">ivec</span> <span class="o">=</span> <span class="n">imstokes</span><span class="o">.</span><span class="n">imvec</span>
             <span class="n">mvec</span> <span class="o">=</span> <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">imstokes</span><span class="o">.</span><span class="n">qvec</span> <span class="o">+</span> <span class="mi">1</span><span class="n">j</span> <span class="o">*</span> <span class="n">imstokes</span><span class="o">.</span><span class="n">uvec</span><span class="p">)</span> <span class="o">/</span> <span class="n">ivec</span><span class="p">)</span>
             <span class="n">chivec</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">angle</span><span class="p">(</span><span class="n">imstokes</span><span class="o">.</span><span class="n">qvec</span> <span class="o">+</span> <span class="mi">1</span><span class="n">j</span> <span class="o">*</span> <span class="n">imstokes</span><span class="o">.</span><span class="n">uvec</span><span class="p">)</span> <span class="o">/</span> <span class="mi">2</span>
+            <span class="n">vvec</span> <span class="o">=</span> <span class="n">imstokes</span><span class="o">.</span><span class="n">vvec</span><span class="o">/</span><span class="n">ivec</span>
             <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">mask</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="ow">and</span> <span class="n">np</span><span class="o">.</span><span class="n">any</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">invert</span><span class="p">(</span><span class="n">mask</span><span class="p">)):</span>
                 <span class="n">ivec</span> <span class="o">=</span> <span class="n">ivec</span><span class="p">[</span><span class="n">mask</span><span class="p">]</span>
                 <span class="n">mvec</span> <span class="o">=</span> <span class="n">mvec</span><span class="p">[</span><span class="n">mask</span><span class="p">]</span>
                 <span class="n">chivec</span> <span class="o">=</span> <span class="n">chivec</span><span class="p">[</span><span class="n">mask</span><span class="p">]</span>
-            <span class="n">imtuple</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">((</span><span class="n">ivec</span><span class="p">,</span> <span class="n">mvec</span><span class="p">,</span> <span class="n">chivec</span><span class="p">))</span>
-        <span class="k">elif</span> <span class="n">pol_prim</span> <span class="o">==</span> <span class="s1">&#39;qu&#39;</span><span class="p">:</span>
+                <span class="n">vvec</span> <span class="o">=</span> <span class="n">vvec</span><span class="p">[</span><span class="n">mask</span><span class="p">]</span>
+            <span class="n">imtuple</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">((</span><span class="n">ivec</span><span class="p">,</span> <span class="n">mvec</span><span class="p">,</span> <span class="n">chivec</span><span class="p">,</span><span class="n">vvec</span><span class="p">))</span>
+        <span class="k">else</span><span class="p">:</span>
             <span class="n">ivec</span> <span class="o">=</span> <span class="n">imstokes</span><span class="o">.</span><span class="n">imvec</span>
             <span class="n">qvec</span> <span class="o">=</span> <span class="n">imstokes</span><span class="o">.</span><span class="n">qvec</span>
             <span class="n">uvec</span> <span class="o">=</span> <span class="n">imstokes</span><span class="o">.</span><span class="n">uvec</span>
+            <span class="n">vvec</span> <span class="o">=</span> <span class="n">imstokes</span><span class="o">.</span><span class="n">vvec</span>
             <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">mask</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="ow">and</span> <span class="n">np</span><span class="o">.</span><span class="n">any</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">invert</span><span class="p">(</span><span class="n">mask</span><span class="p">)):</span>
                 <span class="n">ivec</span> <span class="o">=</span> <span class="n">ivec</span><span class="p">[</span><span class="n">mask</span><span class="p">]</span>
                 <span class="n">qvec</span> <span class="o">=</span> <span class="n">qvec</span><span class="p">[</span><span class="n">mask</span><span class="p">]</span>
                 <span class="n">uvec</span> <span class="o">=</span> <span class="n">uvec</span><span class="p">[</span><span class="n">mask</span><span class="p">]</span>
-            <span class="n">imtuple</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">((</span><span class="n">ivec</span><span class="p">,</span> <span class="n">qvec</span><span class="p">,</span> <span class="n">uvec</span><span class="p">))</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;Only amp_phase &amp; qu pol_prim are currently supported in polchisq!&quot;</span><span class="p">)</span>
+                <span class="n">vvec</span> <span class="o">=</span> <span class="n">vvec</span><span class="p">[</span><span class="n">mask</span><span class="p">]</span>
+            <span class="n">imtuple</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">((</span><span class="n">ivec</span><span class="p">,</span> <span class="n">qvec</span><span class="p">,</span> <span class="n">uvec</span><span class="p">,</span><span class="n">vvec</span><span class="p">))</span>
+
 
         <span class="c1"># Calculate the chi^2</span>
         <span class="n">chisq</span> <span class="o">=</span> <span class="n">piu</span><span class="o">.</span><span class="n">polchisq</span><span class="p">(</span><span class="n">imtuple</span><span class="p">,</span> <span class="n">A</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">sigma</span><span class="p">,</span> <span class="n">dtype</span><span class="p">,</span>
-                             <span class="n">ttype</span><span class="o">=</span><span class="n">ttype</span><span class="p">,</span> <span class="n">mask</span><span class="o">=</span><span class="n">mask</span><span class="p">,</span> <span class="n">pol_prim</span><span class="o">=</span><span class="n">pol_prim</span><span class="p">)</span>
+                             <span class="n">ttype</span><span class="o">=</span><span class="n">ttype</span><span class="p">,</span> <span class="n">mask</span><span class="o">=</span><span class="n">mask</span><span class="p">,</span> <span class="n">pol_trans</span><span class="o">=</span><span class="n">pol_trans</span><span class="p">)</span>
 
         <span class="k">return</span> <span class="n">chisq</span></div>
 
@@ -4979,7 +4980,7 @@
   <hr/>
 
   <div role="contentinfo">
-    <p>&#169; Copyright 2021, Andrew Chael.</p>
+    <p>&#169; Copyright 2023, Andrew Chael.</p>
   </div>
 
   Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a

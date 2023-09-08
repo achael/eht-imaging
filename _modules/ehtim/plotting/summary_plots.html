@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>ehtim.plotting.summary_plots &mdash; ehtim 1.2.3 documentation</title><link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+  <title>ehtim.plotting.summary_plots &mdash; ehtim 1.2.6 documentation</title><link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
     <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
   <!--[if lt IE 9]>
     <script src="../../../_static/js/html5shiv.min.js"></script>
@@ -26,7 +26,7 @@
             <a href="../../../index.html" class="icon icon-home"> ehtim
           </a>
               <div class="version">
-                1.2
+                1.2.6
               </div>
 <div role="search">
   <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
@@ -1063,18 +1063,18 @@
 
         <span class="c1"># compute chi^2</span>
         <span class="n">chi2pvis</span> <span class="o">=</span> <span class="n">obs</span><span class="o">.</span><span class="n">polchisq</span><span class="p">(</span><span class="n">im</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="s1">&#39;m&#39;</span><span class="p">,</span> <span class="n">ttype</span><span class="o">=</span><span class="s1">&#39;nfft&#39;</span><span class="p">,</span>
-                                <span class="n">systematic_noise</span><span class="o">=</span><span class="n">sysnoise</span><span class="p">,</span> <span class="n">pol_prim</span><span class="o">=</span><span class="s1">&#39;qu&#39;</span><span class="p">)</span>
+                                <span class="n">systematic_noise</span><span class="o">=</span><span class="n">sysnoise</span><span class="p">,</span> <span class="n">pol_trans</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
         <span class="n">chi2m</span> <span class="o">=</span> <span class="n">obs</span><span class="o">.</span><span class="n">polchisq</span><span class="p">(</span><span class="n">im</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="s1">&#39;m&#39;</span><span class="p">,</span> <span class="n">ttype</span><span class="o">=</span><span class="s1">&#39;nfft&#39;</span><span class="p">,</span>
-                             <span class="n">systematic_noise</span><span class="o">=</span><span class="n">sysnoise</span><span class="p">,</span> <span class="n">pol_prim</span><span class="o">=</span><span class="s1">&#39;qu&#39;</span><span class="p">)</span>
+                             <span class="n">systematic_noise</span><span class="o">=</span><span class="n">sysnoise</span><span class="p">,</span> <span class="n">pol_trans</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
         <span class="n">chi2qvis</span> <span class="o">=</span> <span class="n">obs</span><span class="o">.</span><span class="n">chisq</span><span class="p">(</span><span class="n">im</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="s1">&#39;vis&#39;</span><span class="p">,</span> <span class="n">ttype</span><span class="o">=</span><span class="s1">&#39;nfft&#39;</span><span class="p">,</span>
                              <span class="n">systematic_noise</span><span class="o">=</span><span class="n">sysnoise</span><span class="p">,</span> <span class="n">pol</span><span class="o">=</span><span class="s1">&#39;Q&#39;</span><span class="p">)</span>
         <span class="n">chi2uvis</span> <span class="o">=</span> <span class="n">obs</span><span class="o">.</span><span class="n">chisq</span><span class="p">(</span><span class="n">im</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="s1">&#39;vis&#39;</span><span class="p">,</span> <span class="n">ttype</span><span class="o">=</span><span class="s1">&#39;nfft&#39;</span><span class="p">,</span>
                              <span class="n">systematic_noise</span><span class="o">=</span><span class="n">sysnoise</span><span class="p">,</span> <span class="n">pol</span><span class="o">=</span><span class="s1">&#39;U&#39;</span><span class="p">)</span>
 
         <span class="n">chi2pvis_uncal</span> <span class="o">=</span> <span class="n">obs_uncal</span><span class="o">.</span><span class="n">polchisq</span><span class="p">(</span><span class="n">im</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="s1">&#39;m&#39;</span><span class="p">,</span> <span class="n">ttype</span><span class="o">=</span><span class="s1">&#39;nfft&#39;</span><span class="p">,</span>
-                                            <span class="n">systematic_noise</span><span class="o">=</span><span class="n">sysnoise</span><span class="p">,</span> <span class="n">pol_prim</span><span class="o">=</span><span class="s1">&#39;qu&#39;</span><span class="p">)</span>
+                                            <span class="n">systematic_noise</span><span class="o">=</span><span class="n">sysnoise</span><span class="p">,</span> <span class="n">pol_trans</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
         <span class="n">chi2m_uncal</span> <span class="o">=</span> <span class="n">obs_uncal</span><span class="o">.</span><span class="n">polchisq</span><span class="p">(</span><span class="n">im</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="s1">&#39;m&#39;</span><span class="p">,</span> <span class="n">ttype</span><span class="o">=</span><span class="s1">&#39;nfft&#39;</span><span class="p">,</span>
-                                         <span class="n">systematic_noise</span><span class="o">=</span><span class="n">sysnoise</span><span class="p">,</span> <span class="n">pol_prim</span><span class="o">=</span><span class="s1">&#39;qu&#39;</span><span class="p">)</span>
+                                         <span class="n">systematic_noise</span><span class="o">=</span><span class="n">sysnoise</span><span class="p">,</span> <span class="n">pol_trans</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
         <span class="n">chi2qvis_uncal</span> <span class="o">=</span> <span class="n">obs_uncal</span><span class="o">.</span><span class="n">chisq</span><span class="p">(</span><span class="n">im</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="s1">&#39;vis&#39;</span><span class="p">,</span> <span class="n">ttype</span><span class="o">=</span><span class="s1">&#39;nfft&#39;</span><span class="p">,</span>
                                          <span class="n">systematic_noise</span><span class="o">=</span><span class="n">sysnoise</span><span class="p">,</span> <span class="n">pol</span><span class="o">=</span><span class="s1">&#39;Q&#39;</span><span class="p">)</span>
         <span class="n">chi2uvis_uncal</span> <span class="o">=</span> <span class="n">obs_uncal</span><span class="o">.</span><span class="n">chisq</span><span class="p">(</span><span class="n">im</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="s1">&#39;vis&#39;</span><span class="p">,</span> <span class="n">ttype</span><span class="o">=</span><span class="s1">&#39;nfft&#39;</span><span class="p">,</span>
@@ -1819,7 +1819,7 @@
   <hr/>
 
   <div role="contentinfo">
-    <p>&#169; Copyright 2021, Andrew Chael.</p>
+    <p>&#169; Copyright 2023, Andrew Chael.</p>
   </div>
 
   Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
