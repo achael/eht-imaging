@@ -31,7 +31,8 @@ import copy
 try:
     from pynfft.nfft import NFFT
 except ImportError:
-    print("Warning: No NFFT installed!")
+    pass
+    #print("Warning: No NFFT installed!")
 
 from . import obs_helpers as obsh
 import ehtim.const_def as ehc

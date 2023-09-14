@@ -32,7 +32,7 @@ except ImportError:
 try:
     from pynfft.nfft import NFFT
 except ImportError:
-    print("Warning: No NFFT installed! Cannot use nfft functions")
+    print("Warning: No NFFT installed!")
 
 import astropy.time as at
 import astropy.coordinates as coords

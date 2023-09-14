@@ -32,7 +32,8 @@ import matplotlib.pyplot as plt
 try:
     from pynfft.nfft import NFFT
 except ImportError:
-    print("Warning: No NFFT installed! Cannot use nfft functions")
+    pass
+    #print("Warning: No NFFT installed! Cannot use nfft functions")
 
 import ehtim.image as image
 from . import linearize_energy as le

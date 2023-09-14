@@ -33,7 +33,8 @@ import matplotlib.pyplot as plt
 try:
     from pynfft.nfft import NFFT
 except ImportError:
-    print("Warning: No NFFT installed!")
+    pass
+    #print("Warning: No NFFT installed!")
 import numpy.polynomial.polynomial as p
 
 import ehtim.image as image
