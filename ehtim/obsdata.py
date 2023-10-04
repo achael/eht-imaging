@@ -716,7 +716,6 @@ class Obsdata(object):
 
                     allout.append(out)
         
-        #return np.array(allout, dtype=object)
         return np.array(allout)
         
     def unpack(self, fields, mode='all', ang_unit='deg', debias=False, conj=False, timetype=False):
