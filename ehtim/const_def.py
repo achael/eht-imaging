@@ -169,17 +169,16 @@ MARKERSIZE = 3
 
 def show_noblock(pause=0.001):
     """helper function for image display with different matplotlib versions"""
-    plt.show(block=False)
 
-# this was required for matplotlib version 3.5
-#    if version.parse(mpl.__version__) <= version.parse('3.2.2'):
-#        plt.show(block=False)
-#    else:
-#        plt.ion()
-#        plt.show()
-#        plt.pause(pause)
-#        plt.draw()
-#        plt.pause(pause)
+# this seems to be required for matplotlib version 3.5
+    if version.parse(mpl.__version__) <= version.parse('3.2.2') or version.parse(mpl.__version__) > version.parse('3.6'):
+        plt.show(block=False)
+    else:
+        plt.ion()
+        plt.show()
+        plt.pause(pause)
+        plt.draw()
+        plt.pause(pause)
                 
 FIELD_LABELS = {'time': 'Time',
                 'time_utc': 'Time (UTC)',
