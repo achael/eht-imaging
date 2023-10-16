@@ -50,7 +50,7 @@ REGULARIZERS_CURV = ['l2_beta', 'tv_beta']
 
 
 DATATERMS_POL = ['pvis', 'm', 'pbs','vvis']
-REGULARIZERS_POL = ['msimple', 'hw', 'ptv','l1v','l2v','vtv','vtv2']
+REGULARIZERS_POL = ['msimple', 'hw', 'ptv','l1v','l2v','vtv','vtv2','vflux']
 
 GRIDDER_P_RAD_DEFAULT = 2
 GRIDDER_CONV_FUNC_DEFAULT = 'gaussian'
@@ -93,7 +93,6 @@ class Imager(object):
         self._out_list = []
         self._out_list_epsilon = []
         self._out_list_scattered = []
-        self._flux_list = {}
         self._reg_term_list = []
         self._dat_term_list = []
         self._clipfloor_list = []
@@ -102,6 +101,8 @@ class Imager(object):
         self._maxit_list = []
         self._stop_list = []
         self._flux_list = []
+        self._pflux_list = []
+        slef._vflux_list = []
         self._snrcut_list = []
         self._debias_list = []
         self._systematic_noise_list = []
@@ -110,7 +111,7 @@ class Imager(object):
         self._weighting_list = []
 
         # Regularizer/data terms for the next imaging iteration
-        self.reg_term_next = reg_term  # e.g. [('simple',1), ('l1',10), ('flux',500), ('cm',500)]
+        self.reg_term_next = reg_term   # e.g. [('simple',1), ('l1',10), ('flux',500), ('cm',500)]
         self.dat_term_next = data_term  # e.g. [('amp', 1000), ('cphase',100)]
 
         # Observations, frequencies
@@ -135,6 +136,9 @@ class Imager(object):
         else:
             self.flux_next = flux
 
+        self.pflux_next = kwargs.get('pflux', self.prior_next.lin_polfrac()*self.prior_next.total_flux())
+        self.vflux_next = kwargs.get('vflux', self.prior_next.circ_polfrac()*self.prior_next.total_flux())
+                
         # Polarization
         self.pol_next = kwargs.get('pol', self.init_next.pol_prim)
 
@@ -753,6 +757,22 @@ class Imager(object):
             return
         return self._flux_list[-1]
 
+    def pflux_last(self):
+        """Return last total linear polarimetric flux constraint.
+        """
+        if self.nruns == 0:
+            print("No imager runs yet!")
+            return
+        return self._pflux_list[-1]
+
+    def vflux_last(self):
+        """Return last total circular polarimetric flux constraint.
+        """
+        if self.nruns == 0:
+            print("No imager runs yet!")
+            return
+        return self._vflux_list[-1]
+
     def clipfloor_last(self):
         """Return last clip floor.
         """
@@ -1175,7 +1195,8 @@ class Imager(object):
         
             # Polarimetric regularizer
             if regname in REGULARIZERS_POL:
-                reg = polutils.polregularizer(imcur, self._embed_mask, self.flux_next,
+                reg = polutils.polregularizer(imcur, self._embed_mask, 
+                                              self.flux_next, self.pflux_next, self.vflux_next,
                                               self.prior_next.xdim, self.prior_next.ydim,
                                               self.prior_next.psize, regname,
                                               norm_reg=self.norm_reg, beam_size=self.beam_size,
@@ -1265,7 +1286,8 @@ class Imager(object):
 
             # Polarimetric regularizer
             if regname in REGULARIZERS_POL:
-                reg = polutils.polregularizergrad(imcur, self._embed_mask, self.flux_next,
+                reg = polutils.polregularizergrad(imcur, self._embed_mask, 
+                                                  self.flux_next, self.pflux_next, self.vflux_next,
                                                   self.prior_next.xdim, self.prior_next.ydim,
                                                   self.prior_next.psize, regname,
                                                   norm_reg=self.norm_reg, beam_size=self.beam_size,
@@ -1970,6 +1992,8 @@ class Imager(object):
         self._systematic_cphase_noise_list.append(self.systematic_cphase_noise_next)
         self._snrcut_list.append(self.snrcut_next)
         self._flux_list.append(self.flux_next)
+        self._pflux_list.append(self.pflux_next)
+        self._vflux_list.append(self.vflux_next)        
         self._pol_list.append(self.pol_next)
         self._clipfloor_list.append(self.clipfloor_next)
         self._maxset_list.append(self.clipfloor_next)
