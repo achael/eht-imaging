@@ -102,7 +102,7 @@ class Imager(object):
         self._stop_list = []
         self._flux_list = []
         self._pflux_list = []
-        slef._vflux_list = []
+        self._vflux_list = []
         self._snrcut_list = []
         self._debias_list = []
         self._systematic_noise_list = []
@@ -136,8 +136,10 @@ class Imager(object):
         else:
             self.flux_next = flux
 
-        self.pflux_next = kwargs.get('pflux', self.prior_next.lin_polfrac()*self.prior_next.total_flux())
-        self.vflux_next = kwargs.get('vflux', self.prior_next.circ_polfrac()*self.prior_next.total_flux())
+        # set polarimetric flux values equal to Stokes I flux by default
+        # used in regularizer normalization
+        self.pflux_next = kwargs.get('pflux', flux)
+        self.vflux_next = kwargs.get('vflux', flux)
                 
         # Polarization
         self.pol_next = kwargs.get('pol', self.init_next.pol_prim)
