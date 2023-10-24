@@ -25,6 +25,7 @@ from builtins import object
 
 import numpy as np
 import astropy.io.fits as fits
+import astropy.time as atime
 import datetime
 import os
 import copy
@@ -1257,6 +1258,12 @@ def load_obs_uvfits(filename, polrep='stokes', flipbl=False,
 
     mjd = int(np.min(jds) - 2400000.5)
     times = (jds - 2400000.5 - mjd) * 24.0
+
+    # If this field exists in the header then we will use this as our MJD and not
+    # what is computed above
+    if "DATE-OBS" in header.keys():
+        jd = atime.Time(datetime.datetime.strptime(header["DATE-OBS"], "%Y-%m-%d")).jd
+        mjd = jd - 2400000.5
 
     try:
         scantable = []
