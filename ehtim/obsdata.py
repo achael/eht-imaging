@@ -383,6 +383,13 @@ class Obsdata(object):
                                 lr = dat['lrvis'].copy()
                                 dat['rlvis'] = np.conj(lr)
                                 dat['lrvis'] = np.conj(rl)
+                                
+                                # You also have to switch the errors for the coherency!
+                                rlerr = dat['rlsigma'].copy()
+                                lrerr = dat['lrsigma'].copy()
+                                dat["rlsigma"] = lrerr
+                                dat["lrsigma"] = rlerr
+
                             else:
                                 raise Exception("polrep must be either 'stokes' or 'circ'")
 
@@ -439,7 +446,14 @@ class Obsdata(object):
             rl = dat['rlvis'].copy()
             lr = dat['lrvis'].copy()
             dat['rlvis'][ordermask] = np.conj(lr[ordermask])
-            dat['lrvis'][ordermask] = np.conj(rl[ordermask])            
+            dat['lrvis'][ordermask] = np.conj(rl[ordermask])
+
+            # Also need to switch error matrix
+            rle = dat['rlsigma'].copy()
+            lre = dat['lrsigma'].copy()
+            dat['rlsigma'][ordermask] = lre[ordermask]
+            dat['lrsigma'][ordermask] = rle[ordermask]
+
         else:
             raise Exception("polrep must be either 'stokes' or 'circ'")
 
@@ -543,8 +557,15 @@ class Obsdata(object):
                         data[f] = np.hstack((self.data['rlvis'], np.conj(self.data['lrvis'])))
                     elif f == 'lrvis':
                         data[f] = np.hstack((self.data['lrvis'], np.conj(self.data['rlvis'])))
+
+                    # ALSO SWITCH THE ERRORS!                    
                 else:
                     raise Exception("polrep must be either 'stokes' or 'circ'")
+            # The conjugate baselines need the transpose error terms.
+            elif f == "rlsigma":
+                data[f] = np.hstack((self.data["rlsigma"], self.data["lrsigma"]))
+            elif f == "lrsigma":
+                data[f] = np.hstack((self.data["lrsigma"], self.data["rlsigma"]))
 
             else:
                 data[f] = np.hstack((self.data[f], self.data[f]))
