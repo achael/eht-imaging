@@ -1003,9 +1003,11 @@ def load_obs_txt(filename, polrep='stokes'):
     return out
 
 # TODO can we save new telescope array terms and flags to uvfits and load them?
+# TODO uv coordinates, multiply by IF freqs and not header FREQ? 
 def load_obs_uvfits(filename, polrep='stokes', flipbl=False,
                     allow_singlepol=True, force_singlepol=None,
                     channel=all, IF=all, remove_nan=False,
+                    ignore_pzero_date=True,
                     trial_speedups=False):
     """Load observation data from a uvfits file.
 
@@ -1019,6 +1021,9 @@ def load_obs_uvfits(filename, polrep='stokes', flipbl=False,
            channel (list): list of channels to average in the import. channel=all averages all
            IF (list): list of IFs to  average in  the import. IF=all averages all
            remove_nan (bool): whether or not to remove entries with nan data
+           
+           ignore_pzero_date (bool): if True, ignore the offset parameters in DATE field 
+                                     TODO: what is the correct behavior per AIPS memo 117?
        Returns:
            obs (Obsdata): Obsdata object loaded from file
     """
@@ -1243,7 +1248,7 @@ def load_obs_uvfits(filename, polrep='stokes', flipbl=False,
         jd1zero = header["PZERO%d"%(paridx)]
     else:
         jd1zero = 0.0
-    if "PSCAL%d"%(paridx) in header.keys():
+    if "PSCAL%d"%(paridx+1) in header.keys():
         jd2scal = header["PSCAL%d"%(paridx+1)]
     else:
         jd2scal = 1.0
@@ -1252,6 +1257,12 @@ def load_obs_uvfits(filename, polrep='stokes', flipbl=False,
     else:
         jd2zero = 0.0
     
+    if ignore_pzero_date:
+        if jd1zero!=0. or jd2zero!=0.:
+            print("Warning! ignoring nonzero header PZERO values for DATE. Check your observation mjd/times!")
+        jd1zero = 0.
+        jd2zero = 0.
+        
     jds = jd1scal * data['DATE'][mask].astype('d') + jd1zero
     jds += jd2scal * data['_DATE'][mask].astype('d') + jd2zero
 
