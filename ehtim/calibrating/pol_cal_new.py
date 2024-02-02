@@ -204,13 +204,6 @@ def leakage_cal_new(obs, im, sites=[], leakage_tol=.1, rescale_leakage_tol=False
         DR2 = np.asarray([D[2*sites.index(s)] if s in sites else 0. for s in t2])
         DL2 = np.asarray([D[2*sites.index(s)+1] if s in sites else 0. for s in t2])
         
-        # rotate the D-terms by twice the field rotation
-        # TODO: for now, use explicit phase terms
-#        DR1 = np.exp(2j*fr1)*DR1
-#        DL1 = np.exp(-2j*fr1)*DL1 
-#        DR2 = np.exp(2j*fr2)*DR2
-#        DL2 = np.exp(-2j*fr2)*DL2
-        
         # simulated visibilities and chisqs with leakage
         chisq_RR = chisq_LL = chisq_RL = chisq_LR = 0.0
         if 'RR' in pol_fit:
@@ -257,71 +250,57 @@ def leakage_cal_new(obs, im, sites=[], leakage_tol=.1, rescale_leakage_tol=False
 
     def chisq_total_grad(Dpar):
         
-        chisqgrad = np.zeros(len(Dpar))
-
-        # all the D-terms as complex numbers.
-        # stored in groups of 4 per site [Re(DR), Im(DR), Re(DL), Im(DL)]
-        D = Dpar.astype(np.float64).view(dtype=np.complex128)
-
-        # current D-terms for each baseline, zero for stations not calibrated (TODO faster?)
-        DR1 = np.asarray([D[2*sites.index(s)] if s in sites else 0. for s in t1])
-        DL1 = np.asarray([D[2*sites.index(s)+1] if s in sites else 0. for s in t1])
-        
-        DR2 = np.asarray([D[2*sites.index(s)] if s in sites else 0. for s in t2])
-        DL2 = np.asarray([D[2*sites.index(s)+1] if s in sites else 0. for s in t2])
-       
-        # residual and dV/dD terms
+       # residual and dV/dD terms
         if 'RR' in pol_fit:
-            vis_RR_leak = GR1*GR2.conj()*(ft_RR + DR1*DR2.conj()*ft_LL + DR1*ft_LR + DR2.conj()*ft_RL)
+            vis_RR_leak = ft_RR + DR1*DR2.conj()*np.exp(2j*Delta)*ft_LL + DR1*np.exp(2j*fr1)*ft_LR + DR2.conj()*np.exp(-2j*fr2)*ft_RL
+            vis_RR_leak *= GR1*GR2.conj()
 
             resid_RR = (vis_RR - vis_RR_leak).conj() 
 
             dRR_dReDR1 = DR2.conj()*np.exp(2j*Delta)*ft_LL + np.exp(2j*fr1)*ft_LR
             dRR_dReDR1 *= GR1*GR2.conj()
-            dRR_dImDR1 = 1j*dRR_dReDR1
             
             dRR_dReDR2 = DR1*np.exp(2j*Delta)*ft_LL + np.exp(-2j*fr2)*ft_RL
             dRR_dReDR2 *= GR1*GR2.conj()
-            dRR_dImDR2 = -1j*dRR_dReDR2            
 
         if 'LL' in pol_fit:
             vis_LL_leak = ft_LL + DL1*DL2.conj()*np.exp(-2j*Delta)*ft_RR + DL1*np.exp(-2j*fr1)*ft_RL + DL2.conj()*np.exp(2j*fr2)*ft_LR
+            vis_LL_leak *= GL1*GL2.conj()
 
             resid_LL = (vis_LL - vis_LL_leak).conj() 
 
             dLL_dReDL1 = DL2.conj()*np.exp(-2j*Delta)*ft_RR + np.exp(-2j*fr1)*ft_RL
             dLL_dReDL1 *= GL1*GL2.conj()
-            dLL_dImDL1 = 1j*dLL_dReDL1
-            
+
             dLL_dReDL2 = DL1*np.exp(-2j*Delta)*ft_RR + np.exp(2j*fr2)*ft_LR
             dLL_dReDL2 *= GL1*GL2.conj()
-            dLL_dImDL2 = -1j*dLL_dReDL2            
+
 
         if 'RL' in pol_fit:
-            vis_RL_leak = GR1*GL2.conj()*(ft_RL + DR1*DL2.conj()*ft_LR + DR1*ft_LL + DL2.conj()*ft_RR)            
+            vis_RL_leak = ft_RL + DR1*DL2.conj()*np.exp(2j*Phi)*ft_LR + DR1*np.exp(2j*fr1)*ft_LL + DL2.conj()*np.exp(2j*fr2)*ft_RR          
+            vis_RL_leak *= GR1*GL2.conj()  
 
             resid_RL = (vis_RL - vis_RL_leak).conj() 
 
             dRL_dReDR1 = DL2.conj()*np.exp(2j*Phi)*ft_LR + np.exp(2j*fr1)*ft_LL
             dRL_dReDR1 *= GR1*GL2.conj()
-            dRL_dImDR1 = 1j*dRL_dReDR1
-            
+    
             dRL_dReDL2 = DR1*np.exp(2j*Phi)*ft_LR + np.exp(2j*fr2)*ft_RR
             dRL_dReDL2 *= GR1*GL2.conj()
-            dRL_dImDL2 = -1j*dRL_dReDL2            
+
             
         if 'LR' in pol_fit:
-            vis_LR_leak = GL1*GR2.conj()*(ft_LR + DL1*DR2.conj()*ft_RL + DL1*ft_RR + DR2.conj()*ft_LL)                        
+            vis_LR_leak = ft_LR + DL1*DR2.conj()*np.exp(-2j*Phi)*ft_RL + DL1*np.exp(-2j*fr1)*ft_RR + DR2.conj()*np.exp(-2j*fr2)*ft_LL                       
+            vis_LR_leak *= GL1*GR2.conj()
 
             resid_LR = (vis_LR - vis_LR_leak).conj() 
 
             dLR_dReDL1 = DR2.conj()*np.exp(-2j*Phi)*ft_RL + np.exp(-2j*fr1)*ft_RR
             dLR_dReDL1 *= GL1*GR2.conj()
-            dLR_dImDL1 = 1j*dLR_dReDL1
-            
+ 
             dLR_dReDR2 = DL1*np.exp(-2j*Phi)*ft_RL + np.exp(-2j*fr2)*ft_LL
             dLR_dReDR2 *= GL1*GR2.conj()
-            dLR_dImDR2 = -1j*dLR_dReDR2            
+
                     
         # gradients, sum over baselines
         # TODO remove for loop with some fancy vectorization? 
@@ -329,87 +308,58 @@ def leakage_cal_new(obs, im, sites=[], leakage_tol=.1, rescale_leakage_tol=False
             mask1 = (idx1 == isite)
             mask2 = (idx2 == isite)
             
-            # Re(DR)
-            grad= 0
+            # DR
+            regrad = 0
+            imgrad = 0
             if 'RR' in pol_fit:
-                terms = -1 * np.real(resid_RR[mask1] * dRR_dReDR1[mask1]) / (sigma_RR[mask1]**2)
-                grad += np.sum(terms)/Nvis
-
-                terms = -1 * np.real(resid_RR[mask2] * dRR_dReDR2[mask2]) / (sigma_RR[mask2]**2)
-                grad += np.sum(terms)/Nvis                            
+                terms = -1 * resid_RR[mask1] * dRR_dReDR1[mask1] / (sigma_RR[mask1]**2)
+                regrad += np.sum(np.real(terms))/Nvis
+                imgrad += -1*np.sum(np.imag(terms))/Nvis
+                
+                terms = -1 * resid_RR[mask2] * dRR_dReDR2[mask2] / (sigma_RR[mask2]**2)
+                regrad += np.sum(np.real(terms))/Nvis
+                imgrad += np.sum(np.imag(terms))/Nvis
           
             if 'RL' in pol_fit:
-                terms = -1 * np.real(resid_RL[mask1] * dRL_dReDR1[mask1]) / (sigma_RL[mask1]**2)
-                grad += np.sum(terms)/Nvis
+                terms = -1 * resid_RL[mask1] * dRL_dReDR1[mask1] / (sigma_RL[mask1]**2)
+                regrad += np.sum(np.real(terms))/Nvis
+                imgrad += -1*np.sum(np.imag(terms))/Nvis
           
             if 'LR' in pol_fit: 
-                terms = -1 * np.real(resid_LR[mask2] * dLR_dReDR2[mask2]) / (sigma_LR[mask2]**2)
-                grad += np.sum(terms)/Nvis            
+                terms = -1 * resid_LR[mask2] * dLR_dReDR2[mask2] / (sigma_LR[mask2]**2)
+                regrad += np.sum(np.real(terms))/Nvis
+                imgrad += np.sum(np.imag(terms))/Nvis
           
-            chisqgrad[4*isite] += grad/len(pol_fit)
-            
-            # Im(DR)
-            grad= 0
-            if 'RR' in pol_fit:
-                terms = -1 * np.real(resid_RR[mask1] * dRR_dImDR1[mask1]) / (sigma_RR[mask1]**2)
-                grad += np.sum(terms)/Nvis
-
-                terms = -1 * np.real(resid_RR[mask2] * dRR_dImDR2[mask2]) / (sigma_RR[mask2]**2)
-                grad += np.sum(terms)/Nvis                            
-          
-            if 'RL' in pol_fit:
-                terms = -1 * np.real(resid_RL[mask1] * dRL_dImDR1[mask1]) / (sigma_RL[mask1]**2)
-                grad += np.sum(terms)/Nvis
-          
-            if 'LR' in pol_fit: 
-                terms = -1 * np.real(resid_LR[mask2] * dLR_dImDR2[mask2]) / (sigma_LR[mask2]**2)
-                grad += np.sum(terms)/Nvis            
-                
-            chisqgrad[4*isite+1] += grad/len(pol_fit)
-            
-            # Re(DL)
-            grad= 0
+            chisqgrad[4*isite] += regrad  # Re(DR)
+            chisqgrad[4*isite+1] += imgrad  # Im(DR)
+                          
+            # DL
+            regrad = 0
+            imgrad = 0
             if 'LL' in pol_fit:
-                terms = -1 * np.real(resid_LL[mask1] * dLL_dReDL1[mask1]) / (sigma_LL[mask1]**2)
-                grad += np.sum(terms)/Nvis
+                terms = -1 * resid_LL[mask1] * dLL_dReDL1[mask1] / (sigma_LL[mask1]**2)
+                regrad += np.sum(np.real(terms))/Nvis
+                imgrad += -1*np.sum(np.imag(terms))/Nvis
 
-                terms = -1 * np.real(resid_LL[mask2] * dLL_dReDL2[mask2]) / (sigma_LL[mask2]**2)
-                grad += np.sum(terms)/Nvis                            
-
+                terms = -1 * resid_LL[mask2] * dLL_dReDL2[mask2] / (sigma_LL[mask2]**2)
+                regrad += np.sum(np.real(terms))/Nvis
+                imgrad += np.sum(np.imag(terms))/Nvis
+          
             if 'RL' in pol_fit: 
-                terms = -1 * np.real(resid_RL[mask2] * dRL_dReDL2[mask2]) / (sigma_RL[mask2]**2)
-                grad += np.sum(terms)/Nvis          
+                terms = -1 * resid_RL[mask2] * dRL_dReDL2[mask2] / (sigma_RL[mask2]**2)
+                regrad += np.sum(np.real(terms))/Nvis
+                imgrad += np.sum(np.imag(terms))/Nvis
                           
             if 'LR' in pol_fit:
-                terms = -1 * np.real(resid_LR[mask1] * dLR_dReDL1[mask1]) / (sigma_LR[mask1]**2)
-                grad += np.sum(terms)/Nvis
-          
-
+                terms = -1 * resid_LR[mask1] * dLR_dReDL1[mask1] / (sigma_LR[mask1]**2)
+                regrad += np.sum(np.real(terms))/Nvis
+                imgrad += -1*np.sum(np.imag(terms))/Nvis
                 
-            chisqgrad[4*isite+2] += grad/len(pol_fit)
-            
-            # Im(DL)
-            grad= 0
-            if 'LL' in pol_fit:
-                terms = -1 * np.real(resid_LL[mask1] * dLL_dImDL1[mask1]) / (sigma_LL[mask1]**2)
-                grad += np.sum(terms)/Nvis
-
-                terms = -1 * np.real(resid_LL[mask2] * dLL_dImDL2[mask2]) / (sigma_LL[mask2]**2)
-                grad += np.sum(terms)/Nvis                            
-
-            if 'RL' in pol_fit: 
-                terms = -1 * np.real(resid_RL[mask2] * dRL_dImDL2[mask2]) / (sigma_RL[mask2]**2)
-                grad += np.sum(terms)/Nvis        
-                          
-            if 'LR' in pol_fit:
-                terms = -1 * np.real(resid_LR[mask1] * dLR_dImDL1[mask1]) / (sigma_LR[mask1]**2)
-                grad += np.sum(terms)/Nvis
-          
-
+            chisqgrad[4*isite+2] += regrad  # Re(DL)
+            chisqgrad[4*isite+3] += imgrad  # Im(DL)
+           
+        chisqgrad /= len(pol_fit)
                     
-            chisqgrad[4*isite+3] += grad/len(pol_fit)
-                    
-
         return chisqgrad
         
     def errfunc_grad(Dpar):
