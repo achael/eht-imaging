@@ -54,7 +54,7 @@ def leakage_cal_new(obs, im, sites=[], leakage_tol=.1, rescale_leakage_tol=False
                     minimizer_method='L-BFGS-B', 
                     ttype='direct', fft_pad_factor=2, 
                     use_grad=True,
-                    show_solution=True):
+                    show_solution=True, apply_solution=True):
     """Polarimetric calibration (detects and removes polarimetric leakage,
        based on consistency with a given image)
 
@@ -78,7 +78,7 @@ def leakage_cal_new(obs, im, sites=[], leakage_tol=.1, rescale_leakage_tol=False
            use_grad (bool): if True, use gradients in minimizer
            
            show_solution (bool): if True, display the solution as it is calculated
-
+           apply_solution (bool): if True, apply the solution to the Obsdata, otherwise just return in tarr
            
        Returns:
            (Obsdata): the calibrated observation, with computed leakage values added to the obs.tarr
@@ -441,15 +441,22 @@ def leakage_cal_new(obs, im, sites=[], leakage_tol=.1, rescale_leakage_tol=False
     Dpar_fit  =  res.x.astype(np.float64)
     D_fit = Dpar_fit.view(dtype=np.complex128)  # all the D-terms (complex)
 
-    # Apply the solution
+    # fill in the new D-terms to the tarr
     obs_out = obs_circ.copy() # TODO or overwrite directly?
-    for isite in range(len(sites)):
+    for isite in range(len(sites)):     
         obs_out.tarr['dr'][site_index[isite]] = D_fit[2*isite]
         obs_out.tarr['dl'][site_index[isite]] = D_fit[2*isite+1]
-    obs_out.data = simobs.apply_jones_inverse(obs_out, dcal=False, frcal=True, opacitycal=True, verbose=False)
-    obs_out.dcal = True
 
+    # Apply the solution
+    if apply_solution:
+        obs_out.data = simobs.apply_jones_inverse(obs_out, dcal=False, frcal=True, opacitycal=True, verbose=False)
+        obs_out.dcal = True
+    else:
+        obs_out.dcal = False
+        
     # Re-populate any additional leakage terms that were present
+    # NOTE we don't want to do this above, in case we want to ignore these terms in apply_jones inverse
+    # TODO can we do this better? 
     for j in range(len(obs_out.tarr)):
         if obs_out.tarr[j]['site'] in sites:
             continue
@@ -458,7 +465,6 @@ def leakage_cal_new(obs, im, sites=[], leakage_tol=.1, rescale_leakage_tol=False
 
     # TODO are these diagnostics correct? 
     if show_solution:
-
         chisq_orig = chisq_total(Dpar_fit*0)
         chisq_new  = chisq_total(Dpar_fit)
 
@@ -474,7 +480,6 @@ def leakage_cal_new(obs, im, sites=[], leakage_tol=.1, rescale_leakage_tol=False
 
 
     obs_out = obs_out.switch_polrep(obs.polrep)
-
 
     return obs_out
     
