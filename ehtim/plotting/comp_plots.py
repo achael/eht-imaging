@@ -745,7 +745,7 @@ def plotall_obs_im_cphases(obs, imlist,
     else:
         nplots = len(uniqueclosure_tri)
         ncols = 4
-        nrows = nplots / ncols
+        nrows = np.ceil(nplots / ncols).astype(int)
         show = False
         fig = plt.figure(figsize=(nrows*20, 40))
 
@@ -755,7 +755,7 @@ def plotall_obs_im_cphases(obs, imlist,
     nplot = 0
     for c in range(0, len(uniqueclosure_tri)):
         cphases_obs_tri = obs.cphase_tri(uniqueclosure_tri[c][0],
-                                         uniqueclosure_tri[c][1],
+                                         uniqueclosure_tri[cs][1],
                                          uniqueclosure_tri[c][2],
                                          vtype=vtype, ang_unit='deg', cphases=cphases_obs)
 
@@ -780,7 +780,7 @@ def plotall_obs_im_cphases(obs, imlist,
                 ax = False
 
             else:
-                ax = plt.subplot2grid((nrows, ncols), (nplot/ncols, nplot % ncols), fig=fig)
+                ax = plt.subplot2grid((nrows, ncols), (nplot//ncols, nplot % ncols), fig=fig)
                 axislabels = False
 
             f = plot_cphase_obs_compare(obs_all,
