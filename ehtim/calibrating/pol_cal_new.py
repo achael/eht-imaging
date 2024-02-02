@@ -247,10 +247,21 @@ def leakage_cal_new(obs, im, sites=[], leakage_tol=.1, rescale_leakage_tol=False
         return  chisq_tot + prior             
 
     # define the error function gradient
-
     def chisq_total_grad(Dpar):
+        chisqgrad = np.zeros(len(Dpar))
+
+        # all the D-terms as complex numbers.
+        # stored in groups of 4 per site [Re(DR), Im(DR), Re(DL), Im(DL)]
+        D = Dpar.astype(np.float64).view(dtype=np.complex128)
+
+        # current D-terms for each baseline, zero for stations not calibrated (TODO faster?)
+        DR1 = np.asarray([D[2*sites.index(s)] if s in sites else 0. for s in t1])
+        DL1 = np.asarray([D[2*sites.index(s)+1] if s in sites else 0. for s in t1])
         
-       # residual and dV/dD terms
+        DR2 = np.asarray([D[2*sites.index(s)] if s in sites else 0. for s in t2])
+        DL2 = np.asarray([D[2*sites.index(s)+1] if s in sites else 0. for s in t2])
+       
+        # residual and dV/dD terms
         if 'RR' in pol_fit:
             vis_RR_leak = ft_RR + DR1*DR2.conj()*np.exp(2j*Delta)*ft_LL + DR1*np.exp(2j*fr1)*ft_LR + DR2.conj()*np.exp(-2j*fr2)*ft_RL
             vis_RR_leak *= GR1*GR2.conj()
@@ -302,7 +313,7 @@ def leakage_cal_new(obs, im, sites=[], leakage_tol=.1, rescale_leakage_tol=False
             dLR_dReDR2 *= GL1*GR2.conj()
 
                     
-        # gradients, sum over baselines
+        # to get gradients, sum over baselines
         # TODO remove for loop with some fancy vectorization? 
         for isite in range(len(sites)):
             mask1 = (idx1 == isite)
@@ -312,23 +323,23 @@ def leakage_cal_new(obs, im, sites=[], leakage_tol=.1, rescale_leakage_tol=False
             regrad = 0
             imgrad = 0
             if 'RR' in pol_fit:
-                terms = -1 * resid_RR[mask1] * dRR_dReDR1[mask1] / (sigma_RR[mask1]**2)
-                regrad += np.sum(np.real(terms))/Nvis
-                imgrad += -1*np.sum(np.imag(terms))/Nvis
+                terms = resid_RR[mask1] * dRR_dReDR1[mask1] / (sigma_RR[mask1]**2)
+                regrad += -1*np.sum(np.real(terms))
+                imgrad +=    np.sum(np.imag(terms))
                 
-                terms = -1 * resid_RR[mask2] * dRR_dReDR2[mask2] / (sigma_RR[mask2]**2)
-                regrad += np.sum(np.real(terms))/Nvis
-                imgrad += np.sum(np.imag(terms))/Nvis
+                terms = resid_RR[mask2] * dRR_dReDR2[mask2] / (sigma_RR[mask2]**2)
+                regrad += -1*np.sum(np.real(terms))
+                imgrad += -1*np.sum(np.imag(terms))
           
             if 'RL' in pol_fit:
-                terms = -1 * resid_RL[mask1] * dRL_dReDR1[mask1] / (sigma_RL[mask1]**2)
-                regrad += np.sum(np.real(terms))/Nvis
-                imgrad += -1*np.sum(np.imag(terms))/Nvis
+                terms = resid_RL[mask1] * dRL_dReDR1[mask1] / (sigma_RL[mask1]**2)
+                regrad += -1*np.sum(np.real(terms))
+                imgrad +=    np.sum(np.imag(terms))
           
             if 'LR' in pol_fit: 
-                terms = -1 * resid_LR[mask2] * dLR_dReDR2[mask2] / (sigma_LR[mask2]**2)
-                regrad += np.sum(np.real(terms))/Nvis
-                imgrad += np.sum(np.imag(terms))/Nvis
+                terms = resid_LR[mask2] * dLR_dReDR2[mask2] / (sigma_LR[mask2]**2)
+                regrad += -1*np.sum(np.real(terms))
+                imgrad += -1*np.sum(np.imag(terms))
           
             chisqgrad[4*isite] += regrad  # Re(DR)
             chisqgrad[4*isite+1] += imgrad  # Im(DR)
@@ -337,28 +348,28 @@ def leakage_cal_new(obs, im, sites=[], leakage_tol=.1, rescale_leakage_tol=False
             regrad = 0
             imgrad = 0
             if 'LL' in pol_fit:
-                terms = -1 * resid_LL[mask1] * dLL_dReDL1[mask1] / (sigma_LL[mask1]**2)
-                regrad += np.sum(np.real(terms))/Nvis
-                imgrad += -1*np.sum(np.imag(terms))/Nvis
+                terms = resid_LL[mask1] * dLL_dReDL1[mask1] / (sigma_LL[mask1]**2)
+                regrad += -1*np.sum(np.real(terms))
+                imgrad +=    np.sum(np.imag(terms))
 
-                terms = -1 * resid_LL[mask2] * dLL_dReDL2[mask2] / (sigma_LL[mask2]**2)
-                regrad += np.sum(np.real(terms))/Nvis
-                imgrad += np.sum(np.imag(terms))/Nvis
+                terms = resid_LL[mask2] * dLL_dReDL2[mask2] / (sigma_LL[mask2]**2)
+                regrad += -1*np.sum(np.real(terms))
+                imgrad += -1*np.sum(np.imag(terms))
           
             if 'RL' in pol_fit: 
-                terms = -1 * resid_RL[mask2] * dRL_dReDL2[mask2] / (sigma_RL[mask2]**2)
-                regrad += np.sum(np.real(terms))/Nvis
-                imgrad += np.sum(np.imag(terms))/Nvis
+                terms = resid_RL[mask2] * dRL_dReDL2[mask2] / (sigma_RL[mask2]**2)
+                regrad += -1*np.sum(np.real(terms))
+                imgrad += -1*np.sum(np.imag(terms))
                           
             if 'LR' in pol_fit:
-                terms = -1 * resid_LR[mask1] * dLR_dReDL1[mask1] / (sigma_LR[mask1]**2)
-                regrad += np.sum(np.real(terms))/Nvis
-                imgrad += -1*np.sum(np.imag(terms))/Nvis
+                terms = resid_LR[mask1] * dLR_dReDL1[mask1] / (sigma_LR[mask1]**2)
+                regrad += -1*np.sum(np.real(terms))
+                imgrad +=    np.sum(np.imag(terms))
                 
             chisqgrad[4*isite+2] += regrad  # Re(DL)
             chisqgrad[4*isite+3] += imgrad  # Im(DL)
            
-        chisqgrad /= len(pol_fit)
+        chisqgrad /= (Nvis*len(pol_fit))
                     
         return chisqgrad
         
