@@ -255,11 +255,10 @@ def leakage_cal_new(obs, im, sites=[], leakage_tol=.1, rescale_leakage_tol=False
 
     # define the error function gradient
 
-    def errfunc_grad(Dpar):
+    def chisq_total_grad(Dpar):
         
         chisqgrad = np.zeros(len(Dpar))
-        priorgrad = np.zeros(len(Dpar))
-                
+
         # all the D-terms as complex numbers.
         # stored in groups of 4 per site [Re(DR), Im(DR), Re(DL), Im(DL)]
         D = Dpar.astype(np.float64).view(dtype=np.complex128)
@@ -384,7 +383,9 @@ def leakage_cal_new(obs, im, sites=[], leakage_tol=.1, rescale_leakage_tol=False
             if 'LR' in pol_fit:
                 terms = -1 * np.real(resid_LR[mask1] * dLR_dReDL1[mask1]) / (sigma_LR[mask1]**2)
                 grad += np.sum(terms)/Nvis
-                      
+          
+
+                
             chisqgrad[4*isite+2] += grad/len(pol_fit)
             
             # Im(DL)
@@ -403,10 +404,18 @@ def leakage_cal_new(obs, im, sites=[], leakage_tol=.1, rescale_leakage_tol=False
             if 'LR' in pol_fit:
                 terms = -1 * np.real(resid_LR[mask1] * dLR_dImDL1[mask1]) / (sigma_LR[mask1]**2)
                 grad += np.sum(terms)/Nvis
+          
+
                     
             chisqgrad[4*isite+3] += grad/len(pol_fit)
+                    
 
-
+        return chisqgrad
+        
+    def errfunc_grad(Dpar):
+        # gradient of the chi^2
+        chisqgrad = chisq_total_grad(Dpar)
+        
         # gradient of the prior
         priorgrad = 2*Dpar / (leakage_tol**2)
         if rescale_leakage_tol:
@@ -415,37 +424,37 @@ def leakage_cal_new(obs, im, sites=[], leakage_tol=.1, rescale_leakage_tol=False
         return  chisqgrad + priorgrad      
 
     # Gradient test - remove!
-    def test_grad(Dpar):
-        grad_ana = errfunc_grad(Dpar)
-        grad_num1 = np.zeros(len(Dpar))
-        for i in range(len(Dpar)):
-            dd = 1.e-8
-            Dpar_dd = Dpar.copy()
-            Dpar_dd[i] += dd
-            grad_num1[i] = (errfunc(Dpar_dd) - errfunc(Dpar))/dd
-        grad_num2 = np.zeros(len(Dpar))
-        for i in range(len(Dpar)):
-            dd = -1.e-8
-            Dpar_dd = Dpar.copy()
-            Dpar_dd[i] += dd
-            grad_num2[i] = (errfunc(Dpar_dd) - errfunc(Dpar))/dd
-                        
-        plt.close('all')
-        plt.ion()
-        plt.figure()
-        plt.plot(np.arange(len(Dpar)), grad_ana, 'ro')
-        plt.plot(np.arange(len(Dpar)), grad_num1, 'b.')     
-        plt.plot(np.arange(len(Dpar)), grad_num2, 'bx')   
-        plt.xticks(np.arange(0,len(Dpar),4), sites)
-                
-        plt.figure()
-        zscal = 1.e-32*np.min(np.abs(grad_ana)[grad_ana!=0])
-        plt.plot(np.arange(len(Dpar)), 100-100*(grad_num1+zscal)/(grad_ana+zscal),'b.') 
-        plt.plot(np.arange(len(Dpar)), 100-100*(grad_num2+zscal)/(grad_ana+zscal),'bx') 
-        plt.xticks(np.arange(0,len(Dpar),4), sites)
-        plt.ylim(-1,1)
-        plt.show()
-        return
+#    def test_grad(Dpar):
+#        grad_ana = errfunc_grad(Dpar)
+#        grad_num1 = np.zeros(len(Dpar))
+#        for i in range(len(Dpar)):
+#            dd = 1.e-8
+#            Dpar_dd = Dpar.copy()
+#            Dpar_dd[i] += dd
+#            grad_num1[i] = (errfunc(Dpar_dd) - errfunc(Dpar))/dd
+#        grad_num2 = np.zeros(len(Dpar))
+#        for i in range(len(Dpar)):
+#            dd = -1.e-8
+#            Dpar_dd = Dpar.copy()
+#            Dpar_dd[i] += dd
+#            grad_num2[i] = (errfunc(Dpar_dd) - errfunc(Dpar))/dd
+#                        
+#        plt.close('all')
+#        plt.ion()
+#        plt.figure()
+#        plt.plot(np.arange(len(Dpar)), grad_ana, 'ro')
+#        plt.plot(np.arange(len(Dpar)), grad_num1, 'b.')     
+#        plt.plot(np.arange(len(Dpar)), grad_num2, 'bx')   
+#        plt.xticks(np.arange(0,len(Dpar),4), sites)
+#                
+#        plt.figure()
+#        zscal = 1.e-32*np.min(np.abs(grad_ana)[grad_ana!=0])
+#        plt.plot(np.arange(len(Dpar)), 100-100*(grad_num1+zscal)/(grad_ana+zscal),'b.') 
+#        plt.plot(np.arange(len(Dpar)), 100-100*(grad_num2+zscal)/(grad_ana+zscal),'bx') 
+#        plt.xticks(np.arange(0,len(Dpar),4), sites)
+#        plt.ylim(-1,1)
+#        plt.show()
+#        return
       
 #    Dpar_guess = .1*np.random.randn(len(sites)*4)
 #    test_grad(Dpar_guess)
