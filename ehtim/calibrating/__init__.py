@@ -9,6 +9,7 @@
 from . import self_cal
 from . import network_cal
 from . import pol_cal
+from . import pol_cal_new
 from . import polgains_cal
 
 from ..const_def import *

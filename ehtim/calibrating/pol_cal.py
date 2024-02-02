@@ -66,7 +66,6 @@ def leakage_cal(obs, im=None, sites=[], leakage_tol=.1, pol_fit=['RL', 'LR'], dt
 
            show_solution (bool): if True, display the solution as it is calculated
            obs_apply (Obsdata): apply the solution to another observation
-           
        Returns:
            (Obsdata): the calibrated observation, with computed leakage values added to the obs.tarr
     """
