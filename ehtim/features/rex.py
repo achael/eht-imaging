@@ -479,7 +479,7 @@ class Profiles(object):
         plt.axvline(x=rhloc, color=angcolor, linewidth=1, linestyle=':')
 
         # bright peak point
-        plt.plot([self.abspk_loc_ang], [self.abspk_loc_rad], 'kx', mew=2, ms=6, color=pkcolor)
+        plt.plot([self.abspk_loc_ang], [self.abspk_loc_rad], marker='x', mew=2, ms=6, color=pkcolor)
 
         # labels
         if xlabel:
