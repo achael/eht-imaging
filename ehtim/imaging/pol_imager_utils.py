@@ -965,7 +965,7 @@ def chisqgrad_vvis(imtuple, Amatrix, v, sigmap, pol_trans=True,pol_solve=(0,1,1)
     iimage = imtuple[0]
     vimage = make_v_image(imtuple, pol_trans)
     vsamples = np.dot(Amatrix, vimage)
-    pdiff = (v - vsamples) / (sigmav**2)
+    vdiff = (v - vsamples) / (sigmav**2)
     zeros =  np.zeros(len(iimage))
         
     if pol_trans:
