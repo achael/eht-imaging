@@ -740,25 +740,6 @@ class Image(object):
 
         return newim
 
-    def flip_chi(self):
-        """Flip between the different conventions for measuring the EVPA (E of N vs N of E).
-
-           Args:
-
-           Returns:
-               (Image): image with flipped EVPA
-        """
-
-        im = self.copy()
-        if im.polrep == 'stokes':
-            im.qvec *= -1
-
-        elif im.polrep == 'circ':
-            im.lrvec = -np.conjugate(im.lrvec)
-            im.rlvec = -np.conjugate(im.rlvec)
-
-        return im
-
     def orth_chi(self):
         """Rotate the EVPA 90 degrees
 
