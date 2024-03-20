@@ -769,10 +769,13 @@ class Image(object):
         """
         im = self.copy()
         if im.polrep == 'stokes':
+            im.qvec *= -1
             im.uvec *= -1
         elif im.polrep == 'circ':
-            im.lrvec = np.conjugate(im.rlvec)
-            im.rlvec = np.conjugate(im.rlvec)
+            im.lrvec *= -1# np.conjugate(im.rlvec)
+            im.rlvec *= -1#np.conjugate(im.rlvec)
+            #im.lrvec = np.conjugate(im.rlvec)
+            #im.rlvec = np.conjugate(im.rlvec)
 
         return im
 
