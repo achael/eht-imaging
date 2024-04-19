@@ -75,7 +75,8 @@ POSTPROCDIR = '.'  # default postprocessing directory
 
 class Profiles(object):
 
-    def __init__(self, im, x0, y0, profs, thetas, rmin=RMIN, rmax=RMAX, flux_norm=NORMFLUX,
+    def __init__(self, im, x0, y0, profs, thetas, rmin=RMIN, rmax=RMAX, 
+                 interptype='cubic',flux_norm=NORMFLUX,
                  profsQ=[], profsU=[]):
 
         self.x0 = x0
@@ -103,7 +104,7 @@ class Profiles(object):
 
         self.xs = np.arange(im.xdim)*im.psize/ehc.RADPERUAS
         self.ys = np.arange(im.ydim)*im.psize/ehc.RADPERUAS
-        self.interp = scipy.interpolate.interp2d(self.ys, self.xs, self.imarr, kind='cubic')
+        self.interp = scipy.interpolate.interp2d(self.ys, self.xs, self.imarr, kind=interptype)
 
         self.profiles = np.array(profs)
         self.profilesQ = np.array(profsQ)
@@ -709,7 +710,8 @@ def quad_interp_radius(r_max, dr, val_list):
 
 def compute_ring_profile(im, x0, y0, title="",
                          nrays=NRAYS, nrs=NRS, rmin=RMIN, rmax=RMAX,
-                         flux_norm=NORMFLUX, pol_profs=False):
+                         flux_norm=NORMFLUX, pol_profs=False,
+                         interptype='cubic'):
     """compute a ring profile  given a center location
     """
 
@@ -722,7 +724,7 @@ def compute_ring_profile(im, x0, y0, title="",
     ys = np.arange(im.ydim)*im.psize/ehc.RADPERUAS
 
     # TODO: test fiducial images with linear?
-    interp = scipy.interpolate.interp2d(ys, xs, imarr, kind='cubic')
+    interp = scipy.interpolate.interp2d(ys, xs, imarr, kind=interptype)
 
     def ringVals(theta):
         xxs = x0 - rs*np.sin(theta)
@@ -742,8 +744,8 @@ def compute_ring_profile(im, x0, y0, title="",
     if len(im.qvec) > 0 and len(im.uvec > 0) and pol_profs:
         qarr = im.qvec.reshape(im.ydim, im.xdim)[::-1] * factor  # in brightness temperature K
         uarr = im.uvec.reshape(im.ydim, im.xdim)[::-1] * factor  # in brightness temperature K
-        interpQ = scipy.interpolate.interp2d(ys, xs, qarr, kind='cubic')
-        interpU = scipy.interpolate.interp2d(ys, xs, uarr, kind='cubic')
+        interpQ = scipy.interpolate.interp2d(ys, xs, qarr, kind=interptype)
+        interpU = scipy.interpolate.interp2d(ys, xs, uarr, kind=interptype)
 
         def ringValsQ(theta):
             xxs = x0 - rs*np.sin(theta)
@@ -765,8 +767,9 @@ def compute_ring_profile(im, x0, y0, title="",
             valsU = ringValsU(thetas[j])
             profsU.append(valsU)
 
-    profiles = Profiles(im, x0, y0, profs, thetas, rmin=rmin, rmax=rmax, flux_norm=flux_norm,
-                        profsQ=profsQ, profsU=profsU)
+    
+    profiles = Profiles(im, x0, y0, profs, thetas, rmin=rmin, rmax=rmax, interptype=interptype,
+                        flux_norm=flux_norm,profsQ=profsQ, profsU=profsU)
 
     return profiles
 

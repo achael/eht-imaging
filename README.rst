@@ -10,7 +10,7 @@ The package contains several primary classes for loading, simulating, and manipu
 Installation
 ------------
 
-The latest stable version (`1.2.7 <https://github.com/achael/eht-imaging/releases/tag/v1.2.7>`_) is available on `PyPi <https://pypi.org/project/ehtim/>`_. Simply install pip and run
+The latest stable version (`1.2.8 <https://github.com/achael/eht-imaging/releases/tag/v1.2.7>`_) is available on `PyPi <https://pypi.org/project/ehtim/>`_. Simply install pip and run
 
 .. code-block:: bash
 
@@ -86,15 +86,7 @@ Let us know if you use ehtim in your publication and we'll list it here!
 
 - First M87 Event Horizon Telescope Results IV: Imaging the Central Supermassive Black Hole, `EHTC et al. 2019 <https://arxiv.org/abs/1906.11241>`_
 
-- VLBI Imaging of black holes via second moment regularization, `Issaoun et al. 2019b <https://arxiv.org/pdf/1908.01296.pdf>`_
-
-- Using evolutionary algorithms to model relativistic jets: Application to NGC 1052, `Fromm et al. 2019 <https://arxiv.org/pdf/1904.00106.pdf>`_
-
 - EHT-HOPS Pipeline for Millimeter VLBI Data Reduction, `Blackburn et al. 2019 <https://arxiv.org/pdf/1903.08832>`_
-
-- Multi-wavelength torus-jet model for Sagittarius A*, `Vincent et al. 2019 <https://arxiv.org/pdf/1902.01175>`_
-
-- How to tell an accreting boson star from a black hole, `Olivares et al. 2020 <https://arxiv.org/abs/1809.08682>`_
 
 - Discriminating Accretion States via Rotational Symmetry in Simulated Polarimetric Images of M87, `Palumbo et al. 2020 <https://arxiv.org/pdf/2004.01751.pdf>`_
 
@@ -114,8 +106,6 @@ Let us know if you use ehtim in your publication and we'll list it here!
 
 - A D-term Modeling Code (DMC) for Simultaneous Calibration and Full-Stokes Imaging of VLBI Data, `Pesce et al. 2021 <https://iopscience.iop.org/article/10.3847/1538-3881/abe3f8/pdf>`_
 
-- Polarization Images of Accretion Flows around Supermassive BLack Holes: Imprints of Toroidal Field Structure, `Tsunetoe et al. 2021 <https://watermark.silverchair.com/psab054.pdf?token=AQECAHi208BE49Ooan9kkhW_Ercy7Dm3ZL_9Cf3qfKAc485ysgAAAsUwggLBBgkqhkiG9w0BBwagggKyMIICrgIBADCCAqcGCSqGSIb3DQEHATAeBglghkgBZQMEAS4wEQQMdrsOAaUsDGsDHa2cAgEQgIICeMLAC3MR9Ld7lYRP4iEip8FSTz3TTR4K_yaxhw9kPthLhZLq4Zxs8_b7EyY8BywyYn6jUVlNM1czBskta4icw9YOQf2WX-2SkBGlQo7EdpZmHStribHPOF3ZtF4YA1dWNfzrXMFSR-ZZZW9iAfUFhKhgsyc0AY1O0rJLIAvlYPBE8SEAFUpV4Ck2nV-j-u_lyqe3CZcNO_tNB4fdE1x1HwhVWb_rxyC6n13hJhCJI7U3UJ5Q2u6dNH2BS4SUzet3JZ9RvIr9GkkSRRfdp0EDwNw6aG9TpAf8B-Fu7oW_NI7w_Jvh8kZBGzhnHisZ8acBRoMwbdHMv3cHqEUY5SKcYXVYART-z0QY_MJgxCoa4KDPG6rHl52Vf-eXJaYCmL4Y7xVas_hyPeUNk9TbhPqz4c8kOceb_BTo5oC5AFnwIIKw8kWmvwL7ofkcYmsrTlo0zWtgJ1I6lU7S1wxgD2JzRDg4gtVFdIcapB8q6ZhWWcBEvmwZ9Ad39UbH-hi4VZC8-IvzbvHNqfaifGsw1yvI86uNSu-iMY5ce0vAcZijbkVpAsbkvKGD6wP_T6OczWzayk13gegLvV2wZImleSWNFKO6cOpQSTKy2TbChWuYITc_tW3wUK-QOhjsdoB4V7SvXk_9d-bvjvBflRqDEUN5P8Yj4hpDpJYty4nxGJ4K6IWkyDRt_EZ2k9SOuwgXRZXxWA4tfJvKzvab8sRFqh98EcFNqDyAs_RZt1IVDch9GVl8X1VEbdD7MSzmw04kB-5U0l8HfmgBZyXs_i2hHUKesh1oUShTLUGcx86HApZXjtA4tSJct5CD8fvk_Vim2i5xx1_xGnBt3k7Z>`_
-
 - Using space-VLBI to probe gravity around Sgr A*, `Fromm et al. 2021 <https://www.aanda.org/articles/aa/pdf/2021/05/aa37335-19.pdf>`_
 
 - Persistent Non-Gaussian Structure in the Image of Sagittarius A* at 86 GHz, `Issaoun et al. 2021 <https://iopscience.iop.org/article/10.3847/1538-4357/ac00b0/pdf>`_
@@ -127,6 +117,20 @@ Let us know if you use ehtim in your publication and we'll list it here!
 - RadioAstron discovers a mini-cocoon around the restarted parsec-scale jet in 3C 84 `Savolainen et al. 2021 <https://arxiv.org/pdf/2111.04481.pdf>`_
 
 - Unravelling the Innermost Jet Structure of OJ 287 with the First GMVA+ALMA Observations, `Zhao et al. 2022 <https://arxiv.org/pdf/2205.00554.pdf>`_
+
+- First Sagittarius A* Event Horizon Telescope Results. III: Imaging of the Galactic Center Supermassive Black Hole, `EHTC et al. 2022 <https://arxiv.org/pdf/2311.09479.pdf>`_
+
+- Resolving the Inner Parsec of the Blazar J1924-2914 with the Event Horizon Telescope, `Issaoun et al. 2022 <https://arxiv.org/pdf/2208.01662.pdf>`_
+
+- The Event Horizon Telescope Image of the Quasar NRAO 530, `Jorstad et al. 2023 <https://arxiv.org/pdf/2302.04622.pdf>`_
+
+- First M87 Event Horizon Telescope Results. IX. Detection of Near-horizon Circular Polarization, `EHTC et al. 2023 <https://arxiv.org/pdf/2311.10976.pdf>`_
+
+- Filamentary structures as the origin of blazar jet radio variability, `Fuentes et al. 2023 <https://arxiv.org/pdf/2311.01861.pdf>`_
+
+- The persistent shadow of the supermassive black hole of M 87. I. Observations, calibration, imaging, and analysis, `EHTC et al. 2023 <https://ui.adsabs.harvard.edu/abs/2024A%26A...681A..79E/abstract>`_
+
+- Parsec-scale evolution of the gigahertz-peaked spectrum quasar PKS 0858-279, `Kosogorov et al. 2024 <https://arxiv.org/pdf/2401.03603.pdf>`_
 
 oifits Documentation
 --------------------

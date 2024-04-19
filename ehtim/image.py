@@ -2563,7 +2563,8 @@ class Image(object):
                stabilize_scan_phase (bool): if True, random phase errors are constant over scans
                stabilize_scan_amp (bool): if True, random amplitude errors are constant over scans
                neggains (bool): if True, force the applied gains to be <1
-
+               
+               tau (float): the base opacity at all sites, or a dict giving one opacity per site
                taup (float): the fractional std. dev. of the random error on the opacities
                gainp (float): the fractional std. dev. of the random error on the gains
                               or a dict giving one std. dev. per site
