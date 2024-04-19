@@ -462,6 +462,13 @@
                                 <span class="n">lr</span> <span class="o">=</span> <span class="n">dat</span><span class="p">[</span><span class="s1">&#39;lrvis&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
                                 <span class="n">dat</span><span class="p">[</span><span class="s1">&#39;rlvis&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">conj</span><span class="p">(</span><span class="n">lr</span><span class="p">)</span>
                                 <span class="n">dat</span><span class="p">[</span><span class="s1">&#39;lrvis&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">conj</span><span class="p">(</span><span class="n">rl</span><span class="p">)</span>
+                                
+                                <span class="c1"># You also have to switch the errors for the coherency!</span>
+                                <span class="n">rlerr</span> <span class="o">=</span> <span class="n">dat</span><span class="p">[</span><span class="s1">&#39;rlsigma&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+                                <span class="n">lrerr</span> <span class="o">=</span> <span class="n">dat</span><span class="p">[</span><span class="s1">&#39;lrsigma&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+                                <span class="n">dat</span><span class="p">[</span><span class="s2">&quot;rlsigma&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">lrerr</span>
+                                <span class="n">dat</span><span class="p">[</span><span class="s2">&quot;lrsigma&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">rlerr</span>
+
                             <span class="k">else</span><span class="p">:</span>
                                 <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;polrep must be either &#39;stokes&#39; or &#39;circ&#39;&quot;</span><span class="p">)</span>
 
@@ -518,7 +525,14 @@
             <span class="n">rl</span> <span class="o">=</span> <span class="n">dat</span><span class="p">[</span><span class="s1">&#39;rlvis&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
             <span class="n">lr</span> <span class="o">=</span> <span class="n">dat</span><span class="p">[</span><span class="s1">&#39;lrvis&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
             <span class="n">dat</span><span class="p">[</span><span class="s1">&#39;rlvis&#39;</span><span class="p">][</span><span class="n">ordermask</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">conj</span><span class="p">(</span><span class="n">lr</span><span class="p">[</span><span class="n">ordermask</span><span class="p">])</span>
-            <span class="n">dat</span><span class="p">[</span><span class="s1">&#39;lrvis&#39;</span><span class="p">][</span><span class="n">ordermask</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">conj</span><span class="p">(</span><span class="n">rl</span><span class="p">[</span><span class="n">ordermask</span><span class="p">])</span>            
+            <span class="n">dat</span><span class="p">[</span><span class="s1">&#39;lrvis&#39;</span><span class="p">][</span><span class="n">ordermask</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">conj</span><span class="p">(</span><span class="n">rl</span><span class="p">[</span><span class="n">ordermask</span><span class="p">])</span>
+
+            <span class="c1"># Also need to switch error matrix</span>
+            <span class="n">rle</span> <span class="o">=</span> <span class="n">dat</span><span class="p">[</span><span class="s1">&#39;rlsigma&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+            <span class="n">lre</span> <span class="o">=</span> <span class="n">dat</span><span class="p">[</span><span class="s1">&#39;lrsigma&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+            <span class="n">dat</span><span class="p">[</span><span class="s1">&#39;rlsigma&#39;</span><span class="p">][</span><span class="n">ordermask</span><span class="p">]</span> <span class="o">=</span> <span class="n">lre</span><span class="p">[</span><span class="n">ordermask</span><span class="p">]</span>
+            <span class="n">dat</span><span class="p">[</span><span class="s1">&#39;lrsigma&#39;</span><span class="p">][</span><span class="n">ordermask</span><span class="p">]</span> <span class="o">=</span> <span class="n">rle</span><span class="p">[</span><span class="n">ordermask</span><span class="p">]</span>
+
         <span class="k">else</span><span class="p">:</span>
             <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;polrep must be either &#39;stokes&#39; or &#39;circ&#39;&quot;</span><span class="p">)</span>
 
@@ -622,8 +636,15 @@
                         <span class="n">data</span><span class="p">[</span><span class="n">f</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">hstack</span><span class="p">((</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s1">&#39;rlvis&#39;</span><span class="p">],</span> <span class="n">np</span><span class="o">.</span><span class="n">conj</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s1">&#39;lrvis&#39;</span><span class="p">])))</span>
                     <span class="k">elif</span> <span class="n">f</span> <span class="o">==</span> <span class="s1">&#39;lrvis&#39;</span><span class="p">:</span>
                         <span class="n">data</span><span class="p">[</span><span class="n">f</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">hstack</span><span class="p">((</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s1">&#39;lrvis&#39;</span><span class="p">],</span> <span class="n">np</span><span class="o">.</span><span class="n">conj</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s1">&#39;rlvis&#39;</span><span class="p">])))</span>
+
+                    <span class="c1"># ALSO SWITCH THE ERRORS!                    </span>
                 <span class="k">else</span><span class="p">:</span>
                     <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;polrep must be either &#39;stokes&#39; or &#39;circ&#39;&quot;</span><span class="p">)</span>
+            <span class="c1"># The conjugate baselines need the transpose error terms.</span>
+            <span class="k">elif</span> <span class="n">f</span> <span class="o">==</span> <span class="s2">&quot;rlsigma&quot;</span><span class="p">:</span>
+                <span class="n">data</span><span class="p">[</span><span class="n">f</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">hstack</span><span class="p">((</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s2">&quot;rlsigma&quot;</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s2">&quot;lrsigma&quot;</span><span class="p">]))</span>
+            <span class="k">elif</span> <span class="n">f</span> <span class="o">==</span> <span class="s2">&quot;lrsigma&quot;</span><span class="p">:</span>
+                <span class="n">data</span><span class="p">[</span><span class="n">f</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">hstack</span><span class="p">((</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s2">&quot;lrsigma&quot;</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s2">&quot;rlsigma&quot;</span><span class="p">]))</span>
 
             <span class="k">else</span><span class="p">:</span>
                 <span class="n">data</span><span class="p">[</span><span class="n">f</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">hstack</span><span class="p">((</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">f</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">f</span><span class="p">]))</span>
@@ -794,8 +815,8 @@
                                           <span class="n">debias</span><span class="o">=</span><span class="n">debias</span><span class="p">,</span> <span class="n">timetype</span><span class="o">=</span><span class="n">timetype</span><span class="p">)</span>
 
                     <span class="n">allout</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">out</span><span class="p">)</span>
-
-        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">allout</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">object</span><span class="p">)</span></div>
+        
+        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">allout</span><span class="p">)</span></div>
         
 <div class="viewcode-block" id="Obsdata.unpack"><a class="viewcode-back" href="../../obsdata.html#ehtim.obsdata.Obsdata.unpack">[docs]</a>    <span class="k">def</span> <span class="nf">unpack</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">fields</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s1">&#39;all&#39;</span><span class="p">,</span> <span class="n">ang_unit</span><span class="o">=</span><span class="s1">&#39;deg&#39;</span><span class="p">,</span> <span class="n">debias</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">conj</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">timetype</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Unpack the data for the whole observation .</span>
@@ -4837,6 +4858,7 @@
 
 <div class="viewcode-block" id="load_uvfits"><a class="viewcode-back" href="../../obsdata.html#ehtim.obsdata.load_uvfits">[docs]</a><span class="k">def</span> <span class="nf">load_uvfits</span><span class="p">(</span><span class="n">fname</span><span class="p">,</span> <span class="n">flipbl</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">remove_nan</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">force_singlepol</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
                 <span class="n">channel</span><span class="o">=</span><span class="nb">all</span><span class="p">,</span> <span class="n">IF</span><span class="o">=</span><span class="nb">all</span><span class="p">,</span> <span class="n">polrep</span><span class="o">=</span><span class="s1">&#39;stokes&#39;</span><span class="p">,</span> <span class="n">allow_singlepol</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                <span class="n">ignore_pzero_date</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
                 <span class="n">trial_speedups</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;Load observation data from a uvfits file.</span>
 
@@ -4848,7 +4870,10 @@
 <span class="sd">           force_singlepol (str): &#39;R&#39; or &#39;L&#39; to load only 1 polarization</span>
 <span class="sd">           channel (list): list of channels to average in the import. channel=all averages all</span>
 <span class="sd">           IF (list): list of IFs to  average in  the import. IF=all averages all IFS</span>
-
+<span class="sd">           remove_nan (bool): whether or not to remove entries with nan data</span>
+<span class="sd">           </span>
+<span class="sd">           ignore_pzero_date (bool): if True, ignore the offset parameters in DATE field </span>
+<span class="sd">                                     TODO: what is the correct behavior per AIPS memo 117?</span>
 <span class="sd">       Returns:</span>
 <span class="sd">           obs (Obsdata): Obsdata object loaded from file</span>
 <span class="sd">    &quot;&quot;&quot;</span>
@@ -4856,6 +4881,7 @@
     <span class="k">return</span> <span class="n">ehtim</span><span class="o">.</span><span class="n">io</span><span class="o">.</span><span class="n">load</span><span class="o">.</span><span class="n">load_obs_uvfits</span><span class="p">(</span><span class="n">fname</span><span class="p">,</span> <span class="n">flipbl</span><span class="o">=</span><span class="n">flipbl</span><span class="p">,</span> <span class="n">force_singlepol</span><span class="o">=</span><span class="n">force_singlepol</span><span class="p">,</span>
                                          <span class="n">channel</span><span class="o">=</span><span class="n">channel</span><span class="p">,</span> <span class="n">IF</span><span class="o">=</span><span class="n">IF</span><span class="p">,</span> <span class="n">polrep</span><span class="o">=</span><span class="n">polrep</span><span class="p">,</span>
                                          <span class="n">remove_nan</span><span class="o">=</span><span class="n">remove_nan</span><span class="p">,</span> <span class="n">allow_singlepol</span><span class="o">=</span><span class="n">allow_singlepol</span><span class="p">,</span>
+                                         <span class="n">ignore_pzero_date</span><span class="o">=</span><span class="n">ignore_pzero_date</span><span class="p">,</span>
                                          <span class="n">trial_speedups</span><span class="o">=</span><span class="n">trial_speedups</span><span class="p">)</span></div>
 
 

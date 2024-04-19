@@ -787,25 +787,6 @@
 
         <span class="k">return</span> <span class="n">newmov</span></div>
 
-<div class="viewcode-block" id="Movie.flip_chi"><a class="viewcode-back" href="../../movie.html#ehtim.movie.Movie.flip_chi">[docs]</a>    <span class="k">def</span> <span class="nf">flip_chi</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Flip between the different conventions for measuring the EVPA (E of N vs N of E).</span>
-
-<span class="sd">           Args:</span>
-
-<span class="sd">           Returns:</span>
-<span class="sd">               (Image): movie with flipped EVPA</span>
-<span class="sd">        &quot;&quot;&quot;</span>
-
-        <span class="n">mov</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
-        <span class="k">if</span> <span class="n">mov</span><span class="o">.</span><span class="n">polrep</span> <span class="o">==</span> <span class="s1">&#39;stokes&#39;</span><span class="p">:</span>
-            <span class="n">mov</span><span class="o">.</span><span class="n">qframes</span> <span class="o">*=</span> <span class="p">[</span><span class="o">-</span><span class="n">qvec</span> <span class="k">for</span> <span class="n">qvec</span> <span class="ow">in</span> <span class="n">mov</span><span class="o">.</span><span class="n">qframes</span><span class="p">]</span>
-
-        <span class="k">elif</span> <span class="n">mov</span><span class="o">.</span><span class="n">polrep</span> <span class="o">==</span> <span class="s1">&#39;circ&#39;</span><span class="p">:</span>
-            <span class="n">mov</span><span class="o">.</span><span class="n">lrframes</span> <span class="o">*=</span> <span class="p">[</span><span class="o">-</span><span class="n">np</span><span class="o">.</span><span class="n">conjugate</span><span class="p">(</span><span class="n">lrvec</span><span class="p">)</span> <span class="k">for</span> <span class="n">lrvec</span> <span class="ow">in</span> <span class="n">mov</span><span class="o">.</span><span class="n">lrframes</span><span class="p">]</span>
-            <span class="n">mov</span><span class="o">.</span><span class="n">rlframes</span> <span class="o">*=</span> <span class="p">[</span><span class="o">-</span><span class="n">np</span><span class="o">.</span><span class="n">conjugate</span><span class="p">(</span><span class="n">rlvec</span><span class="p">)</span> <span class="k">for</span> <span class="n">rlvec</span> <span class="ow">in</span> <span class="n">mov</span><span class="o">.</span><span class="n">rlframes</span><span class="p">]</span>
-
-        <span class="k">return</span> <span class="n">mov</span></div>
-
 <div class="viewcode-block" id="Movie.orth_chi"><a class="viewcode-back" href="../../movie.html#ehtim.movie.Movie.orth_chi">[docs]</a>    <span class="k">def</span> <span class="nf">orth_chi</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Rotate the EVPA 90 degrees</span>
 
@@ -816,11 +797,11 @@
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">mov</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
         <span class="k">if</span> <span class="n">mov</span><span class="o">.</span><span class="n">polrep</span> <span class="o">==</span> <span class="s1">&#39;stokes&#39;</span><span class="p">:</span>
-            <span class="n">mov</span><span class="o">.</span><span class="n">qframes</span> <span class="o">*=</span> <span class="p">[</span><span class="o">-</span><span class="n">uvec</span> <span class="k">for</span> <span class="n">uvec</span> <span class="ow">in</span> <span class="n">mov</span><span class="o">.</span><span class="n">vframes</span><span class="p">]</span>
-
+            <span class="n">mov</span><span class="o">.</span><span class="n">qframes</span> <span class="o">*=</span> <span class="o">-</span><span class="mi">1</span>
+            <span class="n">mov</span><span class="o">.</span><span class="n">uframes</span> <span class="o">*=</span> <span class="o">-</span><span class="mi">1</span>
         <span class="k">elif</span> <span class="n">mov</span><span class="o">.</span><span class="n">polrep</span> <span class="o">==</span> <span class="s1">&#39;circ&#39;</span><span class="p">:</span>
-            <span class="n">mov</span><span class="o">.</span><span class="n">lrframes</span> <span class="o">*=</span> <span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">conjugate</span><span class="p">(</span><span class="n">lrvec</span><span class="p">)</span> <span class="k">for</span> <span class="n">lrvec</span> <span class="ow">in</span> <span class="n">mov</span><span class="o">.</span><span class="n">lrframes</span><span class="p">]</span>
-            <span class="n">mov</span><span class="o">.</span><span class="n">rlframes</span> <span class="o">*=</span> <span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">conjugate</span><span class="p">(</span><span class="n">rlvec</span><span class="p">)</span> <span class="k">for</span> <span class="n">rlvec</span> <span class="ow">in</span> <span class="n">mov</span><span class="o">.</span><span class="n">rlframes</span><span class="p">]</span>
+            <span class="n">mov</span><span class="o">.</span><span class="n">lrframes</span> <span class="o">*=</span> <span class="o">-</span><span class="mi">1</span>
+            <span class="n">mov</span><span class="o">.</span><span class="n">rlframes</span> <span class="o">*=</span> <span class="o">-</span><span class="mi">1</span>
 
         <span class="k">return</span> <span class="n">mov</span></div>
 
