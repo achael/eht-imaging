@@ -61,7 +61,7 @@ MAXIT = 100 # maximum number of iterations
 STOP = 1.e-100 # convergence criterion
 
 DATATERMS_POL = ['pvis', 'm', 'pbs','vvis']
-REGULARIZERS_POL = ['msimple', 'hw', 'ptv','l1v','l2v','vtv','v2tv2']
+REGULARIZERS_POL = ['msimple', 'hw', 'ptv','l1v','l2v','vtv','v2tv2','vflux']
 
 nit = 0 # global variable to track the iteration number in the plotting callback
 
@@ -217,21 +217,19 @@ def pol_imager_func(Obsdata, InitIm, Prior,
 
     # Define the regularizer and regularizer gradient
     def reg1(imtuple):
-        return polregularizer(imtuple, embed_mask, flux, 
+        return polregularizer(imtuple, embed_mask, flux, flux, flux,
                               Prior.xdim, Prior.ydim, Prior.psize, s1, **kwargs)
-        return polregularizer(imtuple, embed_mask, Prior.xdim, Prior.ydim, Prior.psize, s1, 
-                              pol_trans=pol_trans,norm_reg=norm_reg)
 
     def reg1grad(imtuple):
-        return polregularizergrad(imtuple, embed_mask, flux, 
+        return polregularizergrad(imtuple, embed_mask, flux, flux, flux,
                                   Prior.xdim, Prior.ydim, Prior.psize, s1, **kwargs)
 
     def reg2(imtuple):
-        return polregularizer(imtuple, embed_mask, flux, 
+        return polregularizer(imtuple, embed_mask, flux, flux, flux,
                               Prior.xdim, Prior.ydim, Prior.psize, s2, **kwargs)
 
     def reg2grad(imtuple):
-        return  polregularizergrad(imtuple, embed_mask, flux, 
+        return  polregularizergrad(imtuple, embed_mask, flux, flux, flux, 
                                    Prior.xdim, Prior.ydim, Prior.psize, s2, **kwargs)
 
 
@@ -663,7 +661,7 @@ def polchisqgrad(imtuple, A, data, sigma, dtype, ttype='direct',
     return chisqgrad
 
 
-def polregularizer(imtuple, mask, flux, xdim, ydim, psize, stype, **kwargs):
+def polregularizer(imtuple, mask, flux, pflux, vflux, xdim, ydim, psize, stype, **kwargs):
 
     norm_reg = kwargs.get('norm_reg', NORM_REGULARIZER)
     pol_trans = kwargs.get('pol_trans', True)
@@ -680,26 +678,28 @@ def polregularizer(imtuple, mask, flux, xdim, ydim, psize, stype, **kwargs):
         reg = -stv_pol(imtuple, flux, xdim, ydim, psize, pol_trans, 
                        norm_reg=norm_reg, beam_size=beam_size)
     # circular
+    elif stype == 'vflux':
+        reg = -svflux(imtuple, vflux, norm_reg=norm_reg)    
     elif stype == "l1v":
-        reg = -sl1v(imtuple, flux, pol_trans, norm_reg=norm_reg)
+        reg = -sl1v(imtuple, vflux, pol_trans, norm_reg=norm_reg)
     elif stype == "l2v":
-        reg = -sl2v(imtuple, flux, pol_trans, norm_reg=norm_reg)
+        reg = -sl2v(imtuple, vflux, pol_trans, norm_reg=norm_reg)
     elif stype == "vtv":
         if np.any(np.invert(mask)):
             imtuple = embed_pol(imtuple, mask, randomfloor=True)
-        reg = -stv_v(imtuple, flux, xdim, ydim, psize, pol_trans, 
+        reg = -stv_v(imtuple, vflux, xdim, ydim, psize, pol_trans, 
                      norm_reg=norm_reg, beam_size=beam_size)
     elif stype == "vtv2":
         if np.any(np.invert(mask)):
             imtuple = embed_pol(imtuple, mask, randomfloor=True)
-        reg = -stv2_v(imtuple, flux, xdim, ydim, psize, pol_trans, 
+        reg = -stv2_v(imtuple, vflux, xdim, ydim, psize, pol_trans, 
                       norm_reg=norm_reg, beam_size=beam_size)                               
     else:
         reg = 0
 
     return reg
 
-def polregularizergrad(imtuple, mask, flux, xdim, ydim, psize, stype, **kwargs):
+def polregularizergrad(imtuple, mask, flux, pflux, vflux, xdim, ydim, psize, stype, **kwargs):
 
     norm_reg = kwargs.get('norm_reg', NORM_REGULARIZER)
     pol_trans = kwargs.get('pol_trans', True)
@@ -723,21 +723,23 @@ def polregularizergrad(imtuple, mask, flux, xdim, ydim, psize, stype, **kwargs):
                 reggrad = np.array((reggrad[0][mask],reggrad[1][mask],reggrad[2][mask]))
 
     # circular
+    elif stype == 'vflux':
+        reggrad = -svfluxgrad(imtuple, vflux, pol_trans, pol_solve=pol_solve, norm_reg=norm_reg)        
     elif stype == "l1v":
-        reggrad = -sl1vgrad(imtuple, flux, pol_trans, pol_solve=pol_solve, norm_reg=norm_reg)
+        reggrad = -sl1vgrad(imtuple, vflux, pol_trans, pol_solve=pol_solve, norm_reg=norm_reg)
     elif stype == "l2v":
-        reggrad = -sl2vgrad(imtuple, flux, pol_trans, pol_solve=pol_solve, norm_reg=norm_reg)    
+        reggrad = -sl2vgrad(imtuple, vflux, pol_trans, pol_solve=pol_solve, norm_reg=norm_reg)    
     elif stype == "vtv":
         if np.any(np.invert(mask)):
             imtuple = embed_pol(imtuple, mask, randomfloor=True)
-        reggrad = -stv_v_grad(imtuple, flux, xdim, ydim, psize, pol_trans,
+        reggrad = -stv_v_grad(imtuple, vflux, xdim, ydim, psize, pol_trans,
                               pol_solve=pol_solve, norm_reg=norm_reg, beam_size=beam_size)
         if np.any(np.invert(mask)):
             reggrad = np.array((reggrad[0][mask],reggrad[1][mask],reggrad[2][mask],reggrad[3][mask]))
     elif stype == "vtv2":
         if np.any(np.invert(mask)):
             imtuple = embed_pol(imtuple, mask, randomfloor=True)
-        reggrad = -stv2_v_grad(imtuple, flux, xdim, ydim, psize, pol_trans, 
+        reggrad = -stv2_v_grad(imtuple, vflux, xdim, ydim, psize, pol_trans, 
                                pol_solve=pol_solve, norm_reg=norm_reg, beam_size=beam_size)
         if np.any(np.invert(mask)):
             reggrad = np.array((reggrad[0][mask],reggrad[1][mask],reggrad[2][mask],reggrad[3][mask]))
@@ -963,7 +965,7 @@ def chisqgrad_vvis(imtuple, Amatrix, v, sigmap, pol_trans=True,pol_solve=(0,1,1)
     iimage = imtuple[0]
     vimage = make_v_image(imtuple, pol_trans)
     vsamples = np.dot(Amatrix, vimage)
-    pdiff = (v - vsamples) / (sigmav**2)
+    vdiff = (v - vsamples) / (sigmav**2)
     zeros =  np.zeros(len(iimage))
         
     if pol_trans:
@@ -1527,10 +1529,56 @@ def stv_pol_grad(imtuple, flux, nx, ny, psize, pol_trans=True, pol_solve=(0,1,1)
 
 # circular polarization
 # TODO check!!
-def sl1v(imtuple, flux, pol_trans=True, norm_reg=NORM_REGULARIZER):
+def svflux(imtuple, vflux, pol_trans=True, norm_reg=NORM_REGULARIZER):
+    """Total flux constraint
+    """
+    if norm_reg: norm = np.abs(vflux)**2
+    else: norm = 1
+    
+    vimage = make_v_image(imtuple, pol_trans) 
+    
+    out = -(np.sum(vimage) - vflux)**2
+    return out/norm
+
+
+def svfluxgrad(imtuple, vflux, pol_trans=True,  pol_solve=(0,0,0,1), norm_reg=NORM_REGULARIZER):
+    """Total flux constraint gradient
+    """
+    if norm_reg: norm = np.abs(vflux)**2
+    else: norm = 1
+    
+
+    iimage = imtuple[0]    
+    zeros  =  np.zeros(len(iimage))
+    vimage = make_v_image(imtuple, pol_trans) 
+    grad = -2*(np.sum(vimage) - vflux)*np.ones(len(vimage))
+
+        
+    if pol_trans:
+
+        # dS/dI Numerators
+        if pol_solve[0]!=0:
+            igrad = (vimage/iimage)*grad
+        else:
+            igrad = zeros
+
+        # dS/dv numerators
+        if pol_solve[3]!=0:
+            vgrad = iimage*grad
+        else: 
+            vgrad=zeros
+
+
+        out = np.array((igrad, zeros, zeros, vgrad))
+    else:
+        raise Exception("polarimetric representation %s not added to pol gradient yet!" % pol_trans)            
+    
+    return out/norm
+    
+def sl1v(imtuple, vflux, pol_trans=True, norm_reg=NORM_REGULARIZER):
     """L1 norm regularizer on V
     """
-    if norm_reg: norm = flux
+    if norm_reg: norm = np.abs(vflux)
     else: norm = 1
 
     vimage = make_v_image(imtuple, pol_trans) 
@@ -1538,10 +1586,10 @@ def sl1v(imtuple, flux, pol_trans=True, norm_reg=NORM_REGULARIZER):
     return l1/norm
 
 
-def sl1vgrad(imtuple, flux, pol_trans=True, pol_solve=(0,0,0,1),  norm_reg=NORM_REGULARIZER):
+def sl1vgrad(imtuple, vflux, pol_trans=True, pol_solve=(0,0,0,1),  norm_reg=NORM_REGULARIZER):
     """L1 norm gradient
     """
-    if norm_reg: norm = flux
+    if norm_reg: norm = np.abs(vflux)
     else: norm = 1
      
     iimage = imtuple[0]    
@@ -1557,7 +1605,7 @@ def sl1vgrad(imtuple, flux, pol_trans=True, pol_solve=(0,0,0,1),  norm_reg=NORM_
         else:
             igrad = zeros
 
-        # dS/dm numerators
+        # dS/dv numerators
         if pol_solve[3]!=0:
             vgrad = iimage*grad
         else: 
@@ -1570,10 +1618,10 @@ def sl1vgrad(imtuple, flux, pol_trans=True, pol_solve=(0,0,0,1),  norm_reg=NORM_
     
     return out/norm
     
-def sl2v(imtuple, flux, pol_trans=True, norm_reg=NORM_REGULARIZER):
+def sl2v(imtuple, vflux, pol_trans=True, norm_reg=NORM_REGULARIZER):
     """L1 norm regularizer on V
     """
-    if norm_reg: norm = flux
+    if norm_reg: norm = np.abs(vflux**2)
     else: norm = 1
 
     iimage = imtuple[0]    
@@ -1582,10 +1630,10 @@ def sl2v(imtuple, flux, pol_trans=True, norm_reg=NORM_REGULARIZER):
     return l2/norm
 
 
-def sl2vgrad(imtuple, flux, pol_trans=True, pol_solve=(0,0,0,1), norm_reg=NORM_REGULARIZER):
+def sl2vgrad(imtuple, vflux, pol_trans=True, pol_solve=(0,0,0,1), norm_reg=NORM_REGULARIZER):
     """L2 norm gradient
     """
-    if norm_reg: norm = flux
+    if norm_reg: norm = np.abs(vflux**2)
     else: norm = 1
 
     iimage = imtuple[0]    
@@ -1601,7 +1649,7 @@ def sl2vgrad(imtuple, flux, pol_trans=True, pol_solve=(0,0,0,1), norm_reg=NORM_R
         else:
             igrad = zeros
 
-        # dS/dm numerators
+        # dS/dv numerators
         if pol_solve[3]!=0:
             vgrad = iimage*grad
         else: 
@@ -1614,12 +1662,12 @@ def sl2vgrad(imtuple, flux, pol_trans=True, pol_solve=(0,0,0,1), norm_reg=NORM_R
             
     return out/norm    
 
-def stv_v(imtuple, flux, nx, ny, psize, pol_trans=True, 
+def stv_v(imtuple, vflux, nx, ny, psize, pol_trans=True, 
           norm_reg=NORM_REGULARIZER, beam_size=None, epsilon=0.):
     """Total variation of I*vfrac"""
     
     if beam_size is None: beam_size = psize
-    if norm_reg: norm = flux*psize / beam_size
+    if norm_reg: norm = np.abs(vflux)*psize / beam_size
     else: norm = 1
 
     vimage = make_v_image(imtuple, pol_trans)
@@ -1631,12 +1679,12 @@ def stv_v(imtuple, flux, nx, ny, psize, pol_trans=True,
     S = -np.sum(np.sqrt(np.abs(im_l1 - im)**2 + np.abs(im_l2 - im)**2+epsilon))
     return S/norm
 
-def stv_v_grad(imtuple, flux, nx, ny, psize, pol_trans=True, pol_solve=(0,0,0,1), 
+def stv_v_grad(imtuple, vflux, nx, ny, psize, pol_trans=True, pol_solve=(0,0,0,1), 
              norm_reg=NORM_REGULARIZER, beam_size=None, epsilon=0.):
     """Total variation gradient"""
 
     if beam_size is None: beam_size = psize
-    if norm_reg: norm = flux*psize / beam_size
+    if norm_reg: norm = np.abs(vflux)*psize / beam_size
     else: norm = 1
 
     iimage = imtuple[0]   
@@ -1679,7 +1727,7 @@ def stv_v_grad(imtuple, flux, nx, ny, psize, pol_trans=True, pol_solve=(0,0,0,1)
         else:
             igrad = zeros
 
-        # dS/dm numerators
+        # dS/dv numerators
         if pol_solve[3]!=0:
             vgrad = iimage*grad
         else: 
@@ -1694,7 +1742,7 @@ def stv_v_grad(imtuple, flux, nx, ny, psize, pol_trans=True, pol_solve=(0,0,0,1)
 
     return out/norm
 
-def stv2_v(imtuple, flux, nx, ny, psize, pol_trans=True, 
+def stv2_v(imtuple, vflux, nx, ny, psize, pol_trans=True, 
            norm_reg=NORM_REGULARIZER, beam_size=None):
     """Squared Total variation of I*vfrac
     """
@@ -1702,7 +1750,7 @@ def stv2_v(imtuple, flux, nx, ny, psize, pol_trans=True,
     if beam_size is None:
         beam_size = psize
     if norm_reg:
-        norm = psize**4 * flux**2 / beam_size**4
+        norm = psize**4 * np.abs(vflux**2) / beam_size**4
     else:
         norm = 1
 
@@ -1715,14 +1763,14 @@ def stv2_v(imtuple, flux, nx, ny, psize, pol_trans=True,
     out = -np.sum((im_l1 - im)**2 + (im_l2 - im)**2)
     return out/norm
 
-def stv2_v_grad(imtuple, flux, nx, ny, psize, pol_trans=True, pol_solve=(0,0,0,1), 
+def stv2_v_grad(imtuple, vflux, nx, ny, psize, pol_trans=True, pol_solve=(0,0,0,1), 
                norm_reg=NORM_REGULARIZER, beam_size=None):
     """Squared Total variation gradient
     """
     if beam_size is None:
         beam_size = psize
     if norm_reg:
-        norm = psize**4 * flux**2 / beam_size**4
+        norm = psize**4 * np.abs(vflux**2) / beam_size**4
     else:
         norm = 1
 
@@ -1760,7 +1808,7 @@ def stv2_v_grad(imtuple, flux, nx, ny, psize, pol_trans=True, pol_solve=(0,0,0,1
         else:
             igrad = zeros
 
-        # dS/dm numerators
+        # dS/dv numerators
         if pol_solve[3]!=0:
             vgrad = iimage*grad
         else: 

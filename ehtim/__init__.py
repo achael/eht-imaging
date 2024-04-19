@@ -29,6 +29,7 @@ import ehtim.plotting
 from ehtim.calibrating.network_cal import network_cal as netcal
 from ehtim.calibrating.self_cal import self_cal as selfcal
 from ehtim.calibrating.pol_cal import *
+from ehtim.calibrating.pol_cal_new import *
 from ehtim.calibrating import pol_cal
 from ehtim.calibrating import network_cal
 from ehtim.calibrating import self_cal

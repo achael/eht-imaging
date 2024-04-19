@@ -165,7 +165,8 @@ def self_cal(obs, im, sites=[], pol='I', apply_singlepol=False, method="both",
                                                               show_solution, pad_amp, gain_tol,
                                                               debias, caltable, msgtype,
                                                               use_grad
-                                                              ] for i in range(len(scans))]))
+                                                              ] for i in range(len(scans))]),
+                                                              dtype=object)
 
     else:  # run on a single core
         for i in range(len(scans)):

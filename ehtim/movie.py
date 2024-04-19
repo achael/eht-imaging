@@ -708,25 +708,6 @@ class Movie(object):
 
         return newmov
 
-    def flip_chi(self):
-        """Flip between the different conventions for measuring the EVPA (E of N vs N of E).
-
-           Args:
-
-           Returns:
-               (Image): movie with flipped EVPA
-        """
-
-        mov = self.copy()
-        if mov.polrep == 'stokes':
-            mov.qframes *= [-qvec for qvec in mov.qframes]
-
-        elif mov.polrep == 'circ':
-            mov.lrframes *= [-np.conjugate(lrvec) for lrvec in mov.lrframes]
-            mov.rlframes *= [-np.conjugate(rlvec) for rlvec in mov.rlframes]
-
-        return mov
-
     def orth_chi(self):
         """Rotate the EVPA 90 degrees
 
@@ -737,11 +718,11 @@ class Movie(object):
         """
         mov = self.copy()
         if mov.polrep == 'stokes':
-            mov.qframes *= [-uvec for uvec in mov.vframes]
-
+            mov.qframes *= -1
+            mov.uframes *= -1
         elif mov.polrep == 'circ':
-            mov.lrframes *= [np.conjugate(lrvec) for lrvec in mov.lrframes]
-            mov.rlframes *= [np.conjugate(rlvec) for rlvec in mov.rlframes]
+            mov.lrframes *= -1
+            mov.rlframes *= -1
 
         return mov
 

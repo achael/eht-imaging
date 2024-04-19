@@ -740,25 +740,6 @@ class Image(object):
 
         return newim
 
-    def flip_chi(self):
-        """Flip between the different conventions for measuring the EVPA (E of N vs N of E).
-
-           Args:
-
-           Returns:
-               (Image): image with flipped EVPA
-        """
-
-        im = self.copy()
-        if im.polrep == 'stokes':
-            im.qvec *= -1
-
-        elif im.polrep == 'circ':
-            im.lrvec = -np.conjugate(im.lrvec)
-            im.rlvec = -np.conjugate(im.rlvec)
-
-        return im
-
     def orth_chi(self):
         """Rotate the EVPA 90 degrees
 
@@ -769,10 +750,13 @@ class Image(object):
         """
         im = self.copy()
         if im.polrep == 'stokes':
+            im.qvec *= -1
             im.uvec *= -1
         elif im.polrep == 'circ':
-            im.lrvec = np.conjugate(im.rlvec)
-            im.rlvec = np.conjugate(im.rlvec)
+            im.lrvec *= -1# np.conjugate(im.rlvec)
+            im.rlvec *= -1#np.conjugate(im.rlvec)
+            #im.lrvec = np.conjugate(im.rlvec)
+            #im.rlvec = np.conjugate(im.rlvec)
 
         return im
 
@@ -2579,7 +2563,8 @@ class Image(object):
                stabilize_scan_phase (bool): if True, random phase errors are constant over scans
                stabilize_scan_amp (bool): if True, random amplitude errors are constant over scans
                neggains (bool): if True, force the applied gains to be <1
-
+               
+               tau (float): the base opacity at all sites, or a dict giving one opacity per site
                taup (float): the fractional std. dev. of the random error on the opacities
                gainp (float): the fractional std. dev. of the random error on the gains
                               or a dict giving one std. dev. per site

@@ -757,9 +757,10 @@ def make_jones(obs, opacitycal=True, ampcal=True, phasecal=True, dcal=True,
 
         # Assemble the Jones Matrices and save to dictionary
         j_matrices = {times[j]: np.array([
-            [np.exp(-1j*fr_angle[j])*gainR[j], np.exp(1j*(fr_angle[j]+fr_angle_D[j]))*dR*gainR[j]],
-            [np.exp(-1j*(fr_angle[j]+fr_angle_D[j]))*dL *
-             gainL[j], np.exp(1j*fr_angle[j])*gainL[j]]
+            [np.exp(-1j*fr_angle[j])*gainR[j], 
+             np.exp(1j*(fr_angle[j]+fr_angle_D[j]))*dR*gainR[j]],
+            [np.exp(-1j*(fr_angle[j]+fr_angle_D[j]))*dL*gainL[j],
+             np.exp(1j*fr_angle[j])*gainL[j]]
         ])
             for j in range(len(times))
         }
@@ -1078,8 +1079,8 @@ def apply_jones_inverse(obs, opacitycal=True, dcal=True, frcal=True, verbose=Tru
 
        Args:
            opacitycal (bool): if False, estimated opacity terms are applied in the inverse gains
-           dcal (bool): if False, estimated inverse d-terms applied to the inverse Jones matrices
-           frcal (bool): if False, inverse feed rotation angle terms are applied to Jones matrices.
+           dcal (bool): if False, estimated d-terms applied to the inverse Jones matrices
+           frcal (bool): if False, feed rotation angle terms are applied to Jones matrices.
            verbose (bool): print updates and warnings
 
        Returns:
