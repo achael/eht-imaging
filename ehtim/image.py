@@ -3485,7 +3485,7 @@ class Image(object):
             else:
                 areaunit = 'beam'
                 beamarea = (2.0 * np.pi * beamparams[0] * beamparams[1] / (8.0 * np.log(2)))
-                factor = beamarea / (self.psize**2)
+                factor *= beamarea / (self.psize**2)
                 if power != 0:
                     areaunit = areaunit + (r' ($10^{{' + str(power) + '}}$ K)')
 
