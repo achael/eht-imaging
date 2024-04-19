@@ -128,7 +128,7 @@ Let us know if you use ehtim in your publication and we'll list it here!
 
 - Filamentary structures as the origin of blazar jet radio variability, `Fuentes et al. 2023 <https://arxiv.org/pdf/2311.01861.pdf>`_
 
-- The persistent shadow of the supermassive black hole of M 87. I. Observations, calibration, imaging, and analysis, `EHTC et al. 2023 <https://ui.adsabs.harvard.edu/abs/2024A%26A...681A..79E/abstract>`_
+- The persistent shadow of the supermassive black hole of M 87. I. Observations, calibration, imaging, and analysis, `EHTC 2023 <https://www.aanda.org/articles/aa/pdf/2024/01/aa47932-23.pdf>`_
 
 - Parsec-scale evolution of the gigahertz-peaked spectrum quasar PKS 0858-279, `Kosogorov et al. 2024 <https://arxiv.org/pdf/2401.03603.pdf>`_
 
