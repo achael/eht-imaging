@@ -37,20 +37,20 @@ if __name__ == "__main__":
                    "scripts/imgsum.py",
                    "scripts/verify_gradients.py"],
 
-          install_requires=["numpy",
-                            "scipy",
-                            "astropy",
-                            "matplotlib",
+          install_requires=["numpy>=1.24",
+                            "scipy>=1.9.3",
+                            "astropy>=5.0.4",
+                            "matplotlib>=3.7.3",
                             "skyfield",
                             "h5py",
                             "pandas",
-                            "paramsurvey",
                             "requests",
                             "future",
                             "networkx", 
                             "scikit-image", 
-                            "pynfft"
-                          ],
+                            "pynfft",
+                            "paramsurvey"
+                           ],
           classifiers=[
             'Development Status :: 3 - Alpha',     
             'Intended Audience :: Developers',    
