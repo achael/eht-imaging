@@ -16,7 +16,7 @@ if __name__ == "__main__":
           license = "GPLv3",
           keywords = "imaging astronomy EHT polarimetry",
           url = "https://github.com/achael/eht-imaging",
-          download_url = "https://github.com/achael/eht-imaging/archive/v1.2.7.tar.gz",
+          download_url = "https://github.com/achael/eht-imaging/archive/v1.2.8.tar.gz",
           packages = ["ehtim",
                       "scripts",
                       "ehtim.calibrating",
@@ -46,12 +46,10 @@ if __name__ == "__main__":
                             "pandas",
                             "paramsurvey",
                             "requests",
-                            "future"
-                          # optional (but recommended) libraries required for some features
-                          # ,"pynfft",   # optional (but highly recommended)
-                          # "networkx", # optional, only needed if using image_agreements()
-                          # "requests", # optional; only needed if using dynamical imaging
-                          # "scikit-image", #optional; only needed for certain image analysis functions  
+                            "future",
+                            "networkx", 
+                            "scikit-image", 
+                            "pynfft"
                           ],
           classifiers=[
             'Development Status :: 3 - Alpha',     
