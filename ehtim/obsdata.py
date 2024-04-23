@@ -4730,7 +4730,7 @@ def merge_obs(obs_List, force_merge=False):
     for obs in obs_List:
         mjd_offset = obs.mjd - mjd_ref
         obs.data['time'] += mjd_offset * 24
-        if not(obs.scans is None or obs.scans == []):
+        if not(obs.scans is None or len(obs.scans)==0):
             obs.scans += mjd_offset * 24
 
     # merge the data
