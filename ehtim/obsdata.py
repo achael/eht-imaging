@@ -4739,14 +4739,14 @@ def merge_obs(obs_List, force_merge=False):
     # merge the scan list
     scan_merge = None
     for obs in obs_List:
-        if (obs.scans is None or obs.scans == []):
+        if (obs.scans is None or len(obs.scans)==0):
             continue
-        if (scan_merge is None or scan_merge == []):
+        if (scan_merge is None or len(scan_merge)==0):
             scan_merge = [obs.scans]
         else:
             scan_merge.append(obs.scans)
 
-    if not (scan_merge is None or scan_merge == []):
+    if not (scan_merge is None or len(scan_merge) == 0):
         scan_merge = np.vstack(scan_merge)
         _idxsort = np.argsort(scan_merge[:, 0])
         scan_merge = scan_merge[_idxsort]

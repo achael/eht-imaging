@@ -198,7 +198,7 @@ class Array(object):
                matplotlib.axes
         """
         # sites
-        if sites in ['all' or 'All'] or sites == []:
+        if sites.lower() == 'all':
             sites = list(self.tkey.keys())
 
         if not isinstance(sites, list):

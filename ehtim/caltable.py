@@ -133,7 +133,7 @@ class Caltable(object):
                matplotlib.axes
         """
         # sites
-        if sites in ['all' or 'All'] or sites == []:
+        if sites.lower() == 'all':
             sites = list(self.data.keys())
 
         if not isinstance(sites, list):
@@ -201,7 +201,7 @@ class Caltable(object):
             x = fig.add_subplot(1, 1, 1)
 
         # sites
-        if sites in ['all' or 'All'] or sites == []:
+        if sites.lower() == 'all':
             sites = sorted(list(self.data.keys()))
 
         if not isinstance(sites, list):
@@ -936,7 +936,7 @@ def plot_compare_gains(caltab1, caltab2, obs, sites='all', pol='R', gain_type='a
         caltab2 = caltab2.scan_avg(obs, incoherent=True)
 
     # sites
-    if sites in ['all' or 'All'] or sites == []:
+    if sites.lower() == 'all':
         sites = list(set(caltab1.data.keys()).intersection(caltab2.data.keys()))
 
     if not isinstance(sites, list):

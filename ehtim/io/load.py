@@ -1622,7 +1622,7 @@ def load_obs_maps(arrfile, obsspec, ifile, qfile=0, ufile=0, vfile=0,
     stop = False
     while not stop:
         line = f.readline().split()
-        if line == [] or line[0] == '\\':
+        if len(line) == 0 or line[0] == '\\':
             continue
         elif line[0] == 'FOV_center_RA':
             x = line[2].split(':')
