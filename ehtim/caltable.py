@@ -136,7 +136,7 @@ class Caltable(object):
         if (isinstance(sites,str) and sites.lower() == 'all'):
             sites = list(self.data.keys())
 
-        if not isinstance(sites, list):
+        if isinstance(sites,str):
             sites = [sites]
             
         if len(sites)==0:
@@ -207,7 +207,7 @@ class Caltable(object):
         if (isinstance(sites,str) and sites.lower() == 'all'):
             sites = sorted(list(self.data.keys()))
 
-        if not isinstance(sites, list):
+        if isinstance(sites,str):
             sites = [sites]
 
         if len(sites)==0:
@@ -945,7 +945,7 @@ def plot_compare_gains(caltab1, caltab2, obs, sites='all', pol='R', gain_type='a
     if (isinstance(sites,str) and sites.lower() == 'all'):
         sites = list(set(caltab1.data.keys()).intersection(caltab2.data.keys()))
 
-    if not isinstance(sites, list):
+    if isinstance(sites,str):
         sites = [sites]
 
     if len(sites)==0:

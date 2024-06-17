@@ -201,7 +201,7 @@ class Array(object):
         if (isinstance(sites,str) and sites.lower() == 'all'):
             sites = list(self.tkey.keys())
 
-        if not isinstance(sites, list):
+        if isinstance(sites,str):
             sites = [sites]
 
         if len(sites)==0:
