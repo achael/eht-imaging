@@ -198,12 +198,15 @@ class Array(object):
                matplotlib.axes
         """
         # sites
-        if sites.lower() == 'all':
+        if (isinstance(sites,str) and sites.lower() == 'all'):
             sites = list(self.tkey.keys())
 
         if not isinstance(sites, list):
             sites = [sites]
 
+        if len(sites)==0:
+            sites = list(self.tkey.keys())
+                    
         keys = [self.tkey[site] for site in sites]
 
         axes = plot_tarr_dterms(self.tarr, keys=keys, label=label, legend=legend, clist=clist,
