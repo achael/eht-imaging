@@ -3335,7 +3335,7 @@ class Image(object):
     def display(self, pol=None, cfun=False, interp='gaussian',
                 scale='lin', gamma=0.5, dynamic_range=1.e3,
                 plotp=False, plot_stokes=False, nvec=20,
-                vec_cfun=None,
+                vec_cfun=None,vec_cbar_lims=(),
                 scut=0, pcut=0.1, mcut=0.01, scale_ticks=False,
                 log_offset=False,
                 label_type='ticks', has_title=True, alpha=1,
@@ -3364,11 +3364,14 @@ class Image(object):
                plot_stokes (bool): True to plot stokes subplots along with plotp
                nvec (int): number of polarimetric vectors to plot
                vec_cfun (str): color function for vectors colored by lin pol frac
-
-               scut (float): minimum stokes I value for displaying spectral index
-               pcut (float): minimum stokes I value for displaying polarimetric vectors
-                             (fraction of maximum Stokes I)
+               vec_cbar_lims (tuple): lower and upper limit of the fractional polarization colormap
+               
+               scut (float): minimum fractional stokes I value for displaying spectral index
+               pcut (float): minimum fractional stokes I value for displaying polarimetric vectors
                mcut (float): minimum fractional polarization value for displaying vectors
+               scale_ticks (bool): if True, scale polarization ticks by linear polarization magnitude
+               
+               
                label_type (string): specifies the type of axes labeling: 'ticks', 'scale', 'none'
                has_title (bool): True if you want a title on the plot
                has_cbar (bool): True if you want a colorbar on the plot
@@ -3492,7 +3495,8 @@ class Image(object):
         else:
             raise ValueError('cbar_unit ' + cbar_unit[1] + ' is not a possible option')
 
-        if not plotp:  # Plot a single polarization image
+        # Plot a single polarization image
+        if not plotp:  
             cbar_lims_p = ()
 
             if pol.lower() == 'spec':
@@ -3640,7 +3644,8 @@ class Image(object):
                     cb.formatter.set_powerlimits((0, 0))
                     cb.update_ticks()
 
-        else:  # plot polarization with ticks!
+        # plot polarization with ticks!
+        else:  
 
             im_stokes = self.switch_polrep(polrep_out='stokes')
             imvec = np.array(im_stokes.imvec).reshape(-1) / (10**power)
@@ -3874,6 +3879,14 @@ class Image(object):
                            width=.007 * self.xdim, units='x', pivot='mid', angles='uv',
                            scale=1.1 / thin)
 
+                if not vec_cbar_lims:
+                    vec_cbar_lims = (0,1)
+                    
+                plt.clim(vec_cbar_lims[0],vec_cbar_lims[1])                
+                mcbar = plt.colorbar(pad=0.04,fraction=0.046, orientation="horizontal") 
+                mcbar.set_label(r'Fractional Linear Polarization $|m|$', fontsize=cbar_fontsize)
+                mcbar.ax.tick_params(labelsize=cbar_fontsize) 
+                            
             if not(beamparams is None or beamparams is False):
                 beamparams = [beamparams[0], beamparams[1], beamparams[2],
                               -.35 * self.fovx(), -.35 * self.fovy()]
