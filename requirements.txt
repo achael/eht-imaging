@@ -12,6 +12,7 @@ paramsurvey[ray]
 requests
 scipy
 scikit-image
+numpy < '2'
 
 
 # pynfft requires external dependency; install with Conda.
