@@ -615,7 +615,7 @@ class Obsdata(object):
                     data, lambda x: np.searchsorted(self.scans[:, 0], x['time'])):
                 datalist.append(np.array([obs for obs in group]))
 
-        return np.array(datalist, dtype=object)
+        return datalist
 
 
     def split_obs(self, t_gather=0., scan_gather=False):
