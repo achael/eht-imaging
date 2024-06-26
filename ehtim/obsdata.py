@@ -3994,8 +3994,9 @@ class Obsdata(object):
 
     def plotall(self, field1, field2,
                 conj=False, debias=False, tag_bl=False, ang_unit='deg', timetype=False,
-                axis=False, rangex=False, rangey=False, snrcut=0.,
+                axis=False, rangex=False, rangey=False, xscale='linear', yscale='linear',
                 color=ehc.SCOLORS[0], marker='o', markersize=ehc.MARKERSIZE, label=None,
+                snrcut=0.,
                 grid=True, ebar=True, axislabels=True, legend=False,
                 show=True, export_pdf=""):
         """Plot two fields against each other.
@@ -4011,6 +4012,9 @@ class Obsdata(object):
                timetype (str): 'GMST' or 'UTC'
 
                axis (matplotlib.axes.Axes): add plot to this axis
+               xscale (str): 'linear' or 'log' y-axis scale               
+               yscale (str): 'linear' or 'log' y-axis scale
+               
                rangex (list): [xmin, xmax] x-axis limits
                rangey (list): [ymin, ymax] y-axis limits
 
@@ -4178,6 +4182,10 @@ class Obsdata(object):
                 x.plot(data[field1], data[field2], marker, markersize=markersize, color=color,
                        label=labelstr, picker=tolerance)
 
+        # axis scales
+        x.set_xscale(xscale)
+        x.set_yscale(yscale)
+        
         # Data ranges
         if not rangex:
             rangex = [np.min(xmins) - 0.2 * np.abs(np.min(xmins)),
@@ -4195,6 +4203,7 @@ class Obsdata(object):
 
         x.set_xlim(rangex)
         x.set_ylim(rangey)
+
 
         # label and save
         if axislabels:
