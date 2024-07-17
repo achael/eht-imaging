@@ -208,9 +208,6 @@ class Image(object):
 
     @property
     def ivec(self):
-#        if self.polrep != 'stokes':
-#            raise Exception("ivec is not defined unless self.polrep=='stokes'")
-
         ivec = np.array([])
         if self.polrep == 'stokes':
             ivec = self._imdict['I']
@@ -231,9 +228,6 @@ class Image(object):
 
     @property
     def qvec(self):
-#        if self.polrep != 'stokes':
-#            raise Exception("qvec is not defined unless self.polrep=='stokes'")
-
         qvec = np.array([])
         if self.polrep == 'stokes':
             qvec = self._imdict['Q']
@@ -254,9 +248,6 @@ class Image(object):
 
     @property
     def uvec(self):
-#        if self.polrep != 'stokes':
-#            raise Exception("qvec is not defined unless self.polrep=='stokes'")
-
         uvec = np.array([])
         if self.polrep == 'stokes':
             uvec = self._imdict['U']
@@ -277,9 +268,6 @@ class Image(object):
 
     @property
     def vvec(self):
-#        if self.polrep != 'stokes':
-#            raise Exception("vvec is not defined unless self.polrep=='stokes'")
-
         vvec = np.array([])
         if self.polrep == 'stokes':
             vvec = self._imdict['V']
@@ -300,9 +288,6 @@ class Image(object):
 
     @property
     def rrvec(self):
-#        if self.polrep != 'circ':
-#            raise Exception("rrvec is not defined unless self.polrep=='circ'")
-
         rrvec = np.array([])
         if self.polrep == 'circ':
             rrvec = self._imdict['RR']
@@ -323,9 +308,6 @@ class Image(object):
 
     @property
     def llvec(self):
-#        if self.polrep != 'circ':
-#            raise Exception("llvec is not defined unless self.polrep=='circ'")
-
         llvec = np.array([])
         if self.polrep == 'circ':
             llvec = self._imdict['LL']
@@ -346,9 +328,6 @@ class Image(object):
 
     @property
     def rlvec(self):
-#        if self.polrep != 'circ':
-#            raise Exception("rlvec is not defined unless self.polrep=='circ'")
-
         rlvec = np.array([])
         if self.polrep == 'circ':
             rlvec = self._imdict['RL']
@@ -370,9 +349,6 @@ class Image(object):
     @property
     def lrvec(self):
         """Return the imvec of LR"""
-#        if self.polrep != 'circ':
-#            raise Exception("lrvec is not defined unless self.polrep=='circ'")
-
         lrvec = np.array([])
         if self.polrep == 'circ':
             lrvec = self._imdict['LR']
@@ -762,7 +738,7 @@ class Image(object):
 
     def get_image_mf(self, nu):
         """Get image at a given frequency given the spectral information in self._mflist
-
+        
            Args:
                nu (float): frequency in Hz
 
