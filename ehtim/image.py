@@ -722,10 +722,8 @@ class Image(object):
             im.qvec *= -1
             im.uvec *= -1
         elif im.polrep == 'circ':
-            im.lrvec *= -1# np.conjugate(im.rlvec)
-            im.rlvec *= -1#np.conjugate(im.rlvec)
-            #im.lrvec = np.conjugate(im.rlvec)
-            #im.rlvec = np.conjugate(im.rlvec)
+            im.lrvec *= -1
+            im.rlvec *= -1
 
         return im
 
@@ -781,28 +779,6 @@ class Image(object):
         else:
             imarr = np.array([])
         return  imarr
-
-#        imarr = np.array([])
-#        if self.polrep == 'stokes':
-#            if pol == "I" and len(self.ivec):
-#                imarr = self.ivec.reshape(self.ydim, self.xdim)
-#            elif pol == "Q" and len(self.qvec):
-#                imarr = self.qvec.reshape(self.ydim, self.xdim)
-#            elif pol == "U" and len(self.uvec):
-#                imarr = self.uvec.reshape(self.ydim, self.xdim)
-#            elif pol == "V" and len(self.vvec):
-#                imarr = self.vvec.reshape(self.ydim, self.xdim)
-#        elif self.polrep == 'circ':
-#            if pol == "RR" and len(self.rrvec):
-#                imarr = self.rrvec.reshape(self.ydim, self.xdim)
-#            elif pol == "LL" and len(self.llvec):
-#                imarr = self.llvec.reshape(self.ydim, self.xdim)
-#            elif pol == "RL" and len(self.rlvec):
-#                imarr = self.rlvec.reshape(self.ydim, self.xdim)
-#            elif pol == "LR" and len(self.lrvec):
-#                imarr = self.lrvec.reshape(self.ydim, self.xdim)
-
-        return imarr
 
     def sourcevec(self):
         """Return the source position vector in geocentric coordinates at 0h GMST.
@@ -925,11 +901,6 @@ class Image(object):
             pol = self.pol_prim
         imvec = self.get_polvec(pol)
         pdim = self.psize
-
-#        if not (pol in list(self._imdict.keys())):
-#            raise Exception("for polrep==%s, pol must be in " %
-#                            self.polrep + ",".join(list(self._imdict.keys())))
-#        imvec = self._imdict[pol]
 
         if len(imvec):
             xlist = np.arange(0, -self.xdim, -1) * pdim + (pdim * self.xdim) / 2.0 - pdim / 2.0
@@ -1412,13 +1383,6 @@ class Image(object):
             
         def blur_butter(imarr, size):
 
-            #bfilt  = scipy.signal.butter(2,freq,btype='low',output='sos')
-            #if np.any(np.imag(imarr) != 0):
-            #    return blur(np.real(imarr), sigma) + 1j * blur(np.imag(imarr), sigma)
-                
-            #imarr_blur = scipy.signal.sosfilt(bfilt, imarr, axis=0)
-            #imarr_blur = scipy.signal.sosfilt(bfilt, imarr_blur, axis=1)            
-
             if size==0:
                 return imarr
             
@@ -1427,7 +1391,6 @@ class Image(object):
             Ny = self.ydim
 
             s, t = np.meshgrid(np.fft.fftfreq(Nx, d=1.0 ), np.fft.fftfreq(Ny, d=1.0 ))
-            #s, t = np.meshgrid(np.fft.fftfreq(Nx, d=1.0 / Nx), np.fft.fftfreq(Ny, d=1.0 / Ny))
             r = np.sqrt(s**2 + t**2)
             
             bfilt = 1./np.sqrt(1 + (r/cutoff)**4)
@@ -1472,7 +1435,6 @@ class Image(object):
             if len(polvec):
                 polarr = polvec.reshape(self.ydim, self.xdim)
                 if fwhm_pol:
-                    #print("Blurring polarization")
                     polarr = blur(polarr, fwhmp_pol)
                 outim.add_pol_image(polarr, pol)
 
@@ -1540,8 +1502,6 @@ class Image(object):
 
             imarr = imvec.reshape(self.ydim, self.xdim)
 
-            #sx = ndi.sobel(imarr, axis=0, mode='constant')
-            #sy = ndi.sobel(imarr, axis=1, mode='constant')
             sx = ndi.sobel(imarr, axis=0, mode='nearest')
             sy = ndi.sobel(imarr, axis=1, mode='nearest')
 
@@ -1630,11 +1590,10 @@ class Image(object):
                 continue
             mask.add_pol_image(maskarr, pol)
 
-        # No spectral index information in mask
+        # TODO: No spectral index information in mask
 
         return mask
 
-    # TODO make this work with a mask image of different dimensions & fov
     def apply_mask(self, mask_im, fill_val=0.):
         """Apply a mask to the image
 
@@ -4160,8 +4119,6 @@ def blur_mf(im,freqs,kernel,fit_order=2):
     reffreq = im.rf
 
     # remove any zeros in the images
-
-           
     imlist = [im.get_image_mf(rf).blur_circ(kernel) for rf in freqs]
     for image in imlist:
         image.imvec[image.imvec<=0] = np.min(image.imvec[image.imvec!=0])
