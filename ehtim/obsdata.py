@@ -1634,7 +1634,7 @@ class Obsdata(object):
 
         return
 
-    def add_scans(self, info='self', filepath='', dt=0.0165, margin=0.0001):
+    def add_scans(self, info='self', filepath='', dt=0.0165, margin=0.0001,split_subarray=False):
         """Compute scans and add self.scans to Obsdata object.
 
             Args:
@@ -1680,6 +1680,23 @@ class Obsdata(object):
         else:
             print("Parameter 'info' can only assume values 'self', 'txt' or 'vex'! ")
             scanlist = None
+
+        #Split scan in 2 wherever the array changed
+        if split_subarray:
+            timelist=self.tlist()
+            prev_array=[]
+            for cou in range(len(timelist)):
+                current_array=np.unique([timelist[cou]['t1'],timelist[cou]['t2']])
+                if set(current_array)==set(prev_array):
+                    continue
+                split_time=timelist[cou]['time'][0]
+                prev_array=current_array
+                if split_time-margin in scanlist[:,0]:
+                    continue
+                index=np.where(split_time>=scanlist.T[0])[0][-1]
+                scanlist=np.insert(scanlist,index,scanlist[index],axis=0)
+                scanlist[index,1]=split_time-margin
+                scanlist[index+1,0]=split_time+margin
 
         self.scans = scanlist
 
