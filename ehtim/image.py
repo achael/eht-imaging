@@ -36,13 +36,6 @@ import scipy.ndimage.filters as filt
 import scipy.interpolate
 from scipy import ndimage as ndi
 
-
-try:
-    from skimage.feature import canny
-    from skimage.transform import hough_circle, hough_circle_peaks
-except ImportError:
-    print("Warning: scikit-image not installed! Cannot use hough transform")
-
 import ehtim.observing.obs_simulate as simobs
 import ehtim.observing.pulses as pulses
 import ehtim.io.save
@@ -143,8 +136,8 @@ class Image(object):
         # multifrequency spectral index, curvature arrays
         # TODO -- higher orders?
         # TODO -- don't initialize to zero?
-        avec = np.array([])  # np.zeros(imvec.shape)
-        bvec = np.array([])  # np.zeros(imvec.shape)
+        avec = np.array([]) 
+        bvec = np.array([])
         self._mflist = [avec, bvec]
 
         # Save the image dimension data
@@ -2973,114 +2966,6 @@ class Image(object):
         idx = np.unravel_index(xcorr.argmax(), xcorr.shape)
 
         return [idx, xcorr, im1_pad, im2_pad]
-
-    def hough_ring(self, edgetype='canny', thresh=0.2, num_circles=3, radius_range=None,
-                   return_type='rad', display_results=True):
-        """Use a circular hough transform to find a circle in the image
-           Returns metrics only for the primary polarization imvec!
-
-           Args:
-               num_circles (int) : number of circles to return
-               radius_range (tuple): range of radii to search in Hough transform, in radian
-               edgetype (str): edge detection type, 'gradient' or 'canny'
-               thresh(float): fractional threshold for the gradient image
-               display_results (bool): True to display results of the fit
-               return_type (str): 'rad' to return in radian, 'pixel' to return in pixel units
-
-           Returns:
-               list : a list of fitted circles (xpos, ypos, radius, objFunc), in radian
-        """
-
-        if 'skimage' not in sys.modules:
-            raise Exception("scikit-image not installed: cannot use hough_ring!")
-
-        # coordinate values
-        pdim = self.psize
-        xlist = np.arange(0, -self.xdim, -1) * pdim + (pdim * self.xdim) / 2.0 - pdim / 2.0
-        ylist = np.arange(0, -self.ydim, -1) * pdim + (pdim * self.ydim) / 2.0 - pdim / 2.0
-
-        # normalize to range 0, 1
-        im = self.copy()
-        maxval = np.max(im.imvec)
-        meanval = np.mean(im.imvec)
-
-        im_norm = im.imvec / (maxval + .01 * meanval)
-        im_norm = im_norm.astype('float')  # is it a problem if it's double??
-        im_norm[np.isnan(im.imvec)] = 0  # mask nans to 0
-        im.imvec = im_norm
-
-        # detect edges
-        if edgetype == 'canny':
-            imarr = im.imvec.reshape(self.ydim, self.xdim)
-            edges = canny(imarr, sigma=0, high_threshold=thresh, low_threshold=0.01)
-            im_edges = self.copy()
-            im_edges.imvec = edges.flatten()
-
-        elif edgetype == 'grad':
-            im_edges = self.grad()
-            if not (thresh is None):
-                thresh_val = thresh * np.max(im_edges.imvec)
-                mask = im_edges.imvec > thresh_val
-                # im_edges.imvec[mask] = 1
-                im_edges.imvec[~mask] = 0
-                edges = im_edges.imvec.reshape(self.ydim, self.xdim)
-        else:
-            im_edges = im.copy()
-            if not (thresh is None):
-                thresh_val = thresh * np.max(im_edges.imvec)
-                mask = im_edges.imvec > thresh_val
-                # im_edges.imvec[mask] = 1f
-                im_edges.imvec[~mask] = 0
-                edges = im_edges.imvec.reshape(self.ydim, self.xdim)
-
-        # define radius range for Hough transform search
-        if radius_range is None:
-            hough_radii = np.arange(int(10 * ehc.RADPERUAS / self.psize),
-                                    int(50 * ehc.RADPERUAS / self.psize))
-        else:
-            hough_radii = np.linspace(
-                radius_range[0] /
-                self.psize,
-                radius_range[0] /
-                self.psize,
-                25)
-
-        # perform the hough transform and select the most prominent circles
-        hough_res = hough_circle(edges, hough_radii)
-        accums, cy, cx, radii = hough_circle_peaks(hough_res, hough_radii,
-                                                   total_num_peaks=num_circles)
-        accum_tot = np.sum(accums)
-
-        # print results, plot circles, and return
-        outlist = []
-        if display_results:
-            plt.ion()
-            fig = self.display()
-            ax = fig.gca()
-
-        i = 0
-        colors = ['b', 'r', 'w', 'lime', 'magenta', 'aqua']
-        for accum, center_y, center_x, radius in zip(accums, cy, cx, radii):
-            accum_frac = accum / accum_tot
-            if return_type == 'rad':
-                x_rad = xlist[int(np.round(center_x))]
-                y_rad = ylist[int(np.round(center_y))]
-                r_rad = radius * self.psize
-                outlist.append([x_rad, y_rad, r_rad, accum_frac])
-            else:
-                outlist.append([center_x, center_y, radius, accum_frac])
-            print(accum_frac)
-            print("%i ring diameter: %0.1f microarcsec" % (i, 2 * radius * pdim / ehc.RADPERUAS))
-            if display_results:
-                if i > len(colors):
-                    color = colors[-1]
-                else:
-                    color = colors[i]
-                circ = mpl.patches.Circle((center_y, center_x), radius, fill=False, color=color)
-                ax.add_patch(circ)
-            i += 1
-
-        return outlist
 
     def fit_gauss(self, units='rad'):
         """Determine the Gaussian parameters that short baselines would measure for the source

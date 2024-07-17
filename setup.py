@@ -47,7 +47,6 @@ if __name__ == "__main__":
                             "requests",
                             "future",
                             "networkx", 
-                            "scikit-image", 
                             "pynfft",
                             "paramsurvey"
                            ],
