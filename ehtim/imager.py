@@ -47,7 +47,10 @@ REGULARIZERS = ['gs', 'tv', 'tvlog','tv2', 'tv2log', 'l1', 'l1w', 'lA', 'patch',
 REGULARIZERS_SPECIND = ['l2_alpha', 'tv_alpha']
 REGULARIZERS_CURV = ['l2_beta', 'tv_beta']
 
+REGULARIZERS_SPECIND_P = ['l2_alphap', 'tv_alphap']
+REGULARIZERS_CURV_P = ['l2_betap', 'tv_betap']
 
+REGULARIZERS_RM = ['l2_rm', 'tv_rm']
 
 DATATERMS_POL = ['pvis', 'm', 'pbs','vvis']
 REGULARIZERS_POL = ['msimple', 'hw', 'ptv','l1v','l2v','vtv','vtv2','vflux']
@@ -61,8 +64,6 @@ REG_DEFAULT = {'simple': 1}
 DAT_DEFAULT = {'vis': 100}
 
 POL_TRANS = True  # this means we solve for polarization in the m, chi basis
-#POL_WHICH_SOLVE = (0, 1, 1)   # this means that pol imaging solves for m & chi (not I), for now
-                               # not used, now determined by 'pol_next'
 MF_WHICH_SOLVE = (1, 1, 0)    # this means that mf imaging solves for I0 and alpha (not beta), for now
                               # DEFAULT ONLY: object now uses self.mf_which_solve
 
@@ -1158,7 +1159,6 @@ class Imager(object):
                 elif dname in DATATERMS:
                     if self.mf_next: # multifrequency
                         logfreqratio = self._logfreqratio_list[i]
-                        imref = imcur[0]
                         imcur_nu = mfutils.imvec_at_freq(imcur, logfreqratio)
                     elif self.pol_next in POLARIZATION_MODES: # polarization
                         imcur_nu = imcur[0]
@@ -1172,7 +1172,7 @@ class Imager(object):
                     # transform the image gradients for all the solved quantities
                     if self.mf_next:
                         logfreqratio = self._logfreqratio_list[i]
-                        chi2grad = mfutils.mf_all_grads_chain(chi2grad, imcur_nu, imref, logfreqratio)
+                        chi2grad = mfutils.mf_all_grads_chain(chi2grad, imcur_nu, imcur, logfreqratio)
 
                     # If imaging polarization simultaneously, bundle the gradient properly
                     if self.pol_next in POLARIZATION_MODES: 
@@ -1217,7 +1217,6 @@ class Imager(object):
                             logfreqratio = self._logfreqratio_list[i]
                             imcur_nu = mfutils.imvec_at_freq(imcur, logfreqratio)
                             prior_nu = mfutils.imvec_at_freq(self.priortuple, logfreqratio)
-                            imref =imcur[0]
                             
                             reg = imutils.regularizer(imcur_nu, prior_nu, self._embed_mask,
                                                       self.flux_next, self.prior_next.xdim,
@@ -1309,7 +1308,6 @@ class Imager(object):
                             logfreqratio = self._logfreqratio_list[i]
                             imcur_nu = mfutils.imvec_at_freq(imcur, logfreqratio)
                             prior_nu = mfutils.imvec_at_freq(self.priortuple, logfreqratio)
-                            imref =imcur[0]
                                                         
                             reg = imutils.regularizergrad(imcur_nu, prior_nu,
                                                           self._embed_mask, self.flux_next,
@@ -1320,7 +1318,7 @@ class Imager(object):
                                                           **self.regparams)
                                                           
 
-                            reg = mfutils.mf_all_grads_chain(reg, imcur_nu, imref, logfreqratio)
+                            reg = mfutils.mf_all_grads_chain(reg, imcur_nu, imcur, logfreqratio)
                             reg_dict[regname_key] = reg                                
                     
                     # normally we only regularize the reference frequency image

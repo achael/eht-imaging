@@ -56,12 +56,12 @@ def regularizer_mf(imvec, nprior, mask, flux, xdim, ydim, psize, stype, **kwargs
     norm_reg = kwargs.get('norm_reg', NORM_REGULARIZER)
     beam_size = kwargs.get('beam_size', psize)
 
-    if stype == "l2_alpha" or stype=="l2_beta":
-        s = -l2_alpha(imvec, nprior, norm_reg=norm_reg)
-    elif stype == "tv_alpha" or stype=="tv_beta":
+    if "l2_" in stype:
+        s = -l2_spec(imvec, nprior, norm_reg=norm_reg)
+    elif "tv_" in stype:
         if np.any(np.invert(mask)):
             imvec = embed(imvec, mask, randomfloor=False)
-        s = -tv_alpha(imvec, xdim, ydim, psize, norm_reg=norm_reg, beam_size=beam_size)
+        s = -tv_spec(imvec, xdim, ydim, psize, norm_reg=norm_reg, beam_size=beam_size)
     else:
         s = 0
 
@@ -74,12 +74,12 @@ def regularizergrad_mf(imvec, nprior, mask, flux, xdim, ydim, psize, stype, **kw
     norm_reg = kwargs.get('norm_reg', NORM_REGULARIZER)
     beam_size = kwargs.get('beam_size', psize)
 
-    if stype == "l2_alpha" or stype=="l2_beta":
-        s = -l2_alpha_grad(imvec, nprior)
-    elif stype == "tv_alpha" or stype=="tv_beta":
+    if "l2_" in stype:
+        s = -l2_spec_grad(imvec, nprior)
+    elif "tv_" in stype:
         if np.any(np.invert(mask)):
             imvec = embed(imvec, mask, randomfloor=False)
-        s = -tv_alpha_grad(imvec, xdim, ydim, psize, norm_reg=norm_reg, beam_size=beam_size)
+        s = -tv_spec_grad(imvec, xdim, ydim, psize, norm_reg=norm_reg, beam_size=beam_size)
         s = s[mask]
     else:
         s = 0
@@ -87,7 +87,7 @@ def regularizergrad_mf(imvec, nprior, mask, flux, xdim, ydim, psize, stype, **kw
     return s
 
 
-def l2_alpha(imvec, priorvec, norm_reg=NORM_REGULARIZER):
+def l2_spec(imvec, priorvec, norm_reg=NORM_REGULARIZER):
     """L2 norm on spectral index w/r/t prior
     """
     
@@ -99,7 +99,7 @@ def l2_alpha(imvec, priorvec, norm_reg=NORM_REGULARIZER):
     out = -(np.sum((imvec - priorvec)**2))
     return out/norm
 
-def l2_alpha_grad(imvec, priorvec, norm_reg=NORM_REGULARIZER):
+def l2_spec_grad(imvec, priorvec, norm_reg=NORM_REGULARIZER):
     """L2 norm on spectral index w/r/t prior
     """
 
@@ -112,7 +112,7 @@ def l2_alpha_grad(imvec, priorvec, norm_reg=NORM_REGULARIZER):
     return out/norm
 
 
-def tv_alpha(imvec, nx, ny, psize, norm_reg=NORM_REGULARIZER, beam_size=None):
+def tv_spec(imvec, nx, ny, psize, norm_reg=NORM_REGULARIZER, beam_size=None):
     """Total variation regularizer
     """
     if beam_size is None: beam_size = psize
@@ -129,7 +129,7 @@ def tv_alpha(imvec, nx, ny, psize, norm_reg=NORM_REGULARIZER, beam_size=None):
 
     return out/norm
 
-def tv_alpha_grad(imvec, nx, ny, psize, norm_reg=NORM_REGULARIZER, beam_size=None):
+def tv_spec_grad(imvec, nx, ny, psize, norm_reg=NORM_REGULARIZER, beam_size=None):
     """Total variation gradient
     """
     if beam_size is None: beam_size = psize
@@ -169,33 +169,30 @@ def tv_alpha_grad(imvec, nx, ny, psize, norm_reg=NORM_REGULARIZER, beam_size=Non
 ##################################################################################################
 
 ##################################################################################################
+# TODO figure out a better way to encode this
+MF_SOLVE_DEFAULT = (1,1,0)
+MF_SOLVE_DEFAULT_POL = (0,0,0,1,0,0,1,1)
 def unpack_mftuple(imvec, inittuple, nimage, mf_solve = (1,1,0)):
         """unpack imvec into tuple,
            replaces quantities not iterated with their initial values
         """
-        init0 = inittuple[0]
-        init1 = inittuple[1]
-        init2 = inittuple[2]
+        # TODO: this doesn't even return a tuple!
+        # TODO: change data types more systematically? 
+        if len(mf_solve)!=len(inittuple):
+            raise Exception("in unpack_mftuple, len(mf_solve)!=len(inittuple)!)
 
         imct = 0
-        if mf_solve[0] == 0:
-            im0 = init0
-        else:
-            im0 = imvec[imct*nimage:(imct+1)*nimage]
-            imct += 1
-
-        if mf_solve[1] == 0:
-            im1 = init1
-        else:
-            im1 = imvec[imct*nimage:(imct+1)*nimage]
-            imct += 1
-
-        if mf_solve[2] == 0:
-            im2 = init2
-        else:
-            im2 = imvec[imct*nimage:(imct+1)*nimage]
-            imct += 1
-        return np.array((im0, im1, im2))
+        mftuple = ()
+        for kk in range(len(mf_solve)):
+            if mf_solve[kk]==0:
+                im = inittuple[kk]
+            else:
+                im = imvec[imct*nimage:(imct+1)*nimage]
+                imct += 1
+            mftuple += (,im) # TODO ok??         
+                
+                
+        return np.array(mftuple)
 
 def pack_mftuple(mftuple, mf_solve = (1,1,0)):
         """pack multifreq data into image vector,
@@ -203,12 +200,9 @@ def pack_mftuple(mftuple, mf_solve = (1,1,0)):
         """
 
         vec = np.array([])
-        if mf_solve[0] != 0:
-            vec = np.hstack((vec,mftuple[0]))
-        if mf_solve[1] != 0:
-            vec = np.hstack((vec,mftuple[1]))
-        if mf_solve[2] != 0:
-            vec = np.hstack((vec,mftuple[2]))
+        for kk in range(len(mf_solve)):
+            if mf_solve[kk]!=0:
+                vec = np.hstack((vec,mftuple[kk]))        
 
         return vec
 
@@ -233,25 +227,18 @@ def embed(im, mask, clipfloor=0., randomfloor=False):
 def embed_mf(imtuple, mask, clipfloor=0., randomfloor=False):
     """Embeds a multifrequency image tuple into the size of boolean embed mask
     """
-    out0=np.zeros(len(mask))
-    out1=np.zeros(len(mask))
-    out2=np.zeros(len(mask))
-
-    # Here's a much faster version than before
-    out0[mask.nonzero()] = imtuple[0]
-    out1[mask.nonzero()] = imtuple[1]
-    out2[mask.nonzero()] = imtuple[2]
-
-    if clipfloor != 0.0:
-        if randomfloor: # prevent total variation gradient singularities
-            out0[(mask-1).nonzero()] = clipfloor * np.abs(np.random.normal(size=len((mask-1).nonzero())))
-            out1[(mask-1).nonzero()] = clipfloor * np.abs(np.random.normal(size=len((mask-1).nonzero())))
-            out2[(mask-1).nonzero()] = clipfloor * np.abs(np.random.normal(size=len((mask-1).nonzero())))
-        else:
-            out0[(mask-1).nonzero()] = clipfloor
-            out1[(mask-1).nonzero()] = clipfloor
-            out2[(mask-1).nonzero()] = clipfloor
-
+    
+    outtuple = () 
+    for kk in range(len(imtuple)):
+        out = np.zeros(len(mask))
+        out[mask.nonzero()] = imtuple[kk]
+        if clipfloor != 0.0:
+            if randomfloor:
+                out[(mask-1).nonzero()] = clipfloor * np.abs(np.random.normal(size=len((mask-1).nonzero())))
+            else:
+                out[(mask-1).nonzero()] = clipfloor
+        outtuple += (,out) # TODO ok??         
+        
     return (out0, out1, out2)
 
 def imvec_at_freq(mftuple, log_freqratio):
@@ -266,13 +253,59 @@ def imvec_at_freq(mftuple, log_freqratio):
         imvec = np.exp(logimvec)
         return imvec
 
-def mf_all_grads_chain(funcgrad, imvec_cur, imvec_ref, log_freqratio):
+def mf_all_grads_chain(funcgrad, imvec_cur, mftuple, log_freqratio):
         """Get the gradients of the reference image, spectral index, and curvature
            w/r/t the gradient of a function funcgrad to the image given frequency ref_freq*e(log_freqratio)
         """
 
+        imvec_ref = mftuple[0]
+        
         dfunc_dI0    = funcgrad * imvec_cur / imvec_ref
         dfunc_dalpha = funcgrad * imvec_cur * log_freqratio
         dfunc_dbeta  = funcgrad * imvec_cur * log_freqratio * log_freqratio
 
         return np.array((dfunc_dI0, dfunc_dalpha, dfunc_dbeta))
+        
+def poltuple_at_freq(mftuple, log_freqratio):
+        """get a polarization image tuple from a multifrequency data tuple at a given frequency"""
+
+        (I0, alpha, beta, m0, malpha, mbeta, chi0, rm) = mftuple
+            
+        imvec_ref_log = np.log(I0)
+        logimvec = imvec_ref_log + alpha*log_freqratio + beta*log_freqratio*log_freqratio
+        imvec = np.exp(logimvec)
+        
+        mvec_ref_log = np.log(m0)
+        logmvec = mvec_ref_log + malpha*log_freqratio + mbeta*log_freqratio*log_freqratio
+        mvec = np.exp(logmvec)
+        
+        # we use dimensionless rm scaled by lambda0^2 = c^2/nu0^2   
+        chivec = chi0 + rm*(np.exp(-2*log_freqratio)-1)
+        
+        return (imvec, mvec, chivec)
+
+def polmf_all_grads_chain(gradtuple, imtuple_cur, mftuple, log_freqratio):
+        """apply chain rule to get derivatives w/r/t multifrequency data tuple at a given frequency"""
+        
+        (Igrad, mgrad, chigrad) = gradtuple
+        (imvec_cur, mvec_cur, chivec_cur) = imtuple_cur   
+        (I0, alpha, beta, m0, malpha, mbeta, chi0, rm) = mftuple    
+        
+        # apply chain rule to gradients w/r/t I 
+        dIgrad_dI0    = Igrad * imvec_cur / I0
+        dIgrad_dalpha = Igrad * imvec_cur * log_freqratio
+        dIgrad_dbeta  = Igrad * imvec_cur * log_freqratio * log_freqratio    
+
+        # apply chain rule for derivatives w/r/t m
+        dmgrad_dm0    = mgrad * mvec_cur / m0
+        dmgrad_dmalpha = mgrad * mvec_cur * log_freqratio
+        dmgrad_dmbeta  = mgrad * mvec_cur * log_freqratio * log_freqratio
+
+        # apply chain rule for derivatives w/r/t chi
+        dchigrad_dchi0 = chigrad
+        dchigrad_drm = chigrad*(np.exp(-2*log_freqratio)-1)
+        
+        return np.array((dIgrad_dI0, dIgrad_dalpha, dIgrad_dbeta,
+                         dmgrad_dm0, dmgrad_dmalpha, dmgrad_dmbeta,
+                         dchigrad_dchi0, dchigrad_drm))        
+        

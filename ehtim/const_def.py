@@ -32,7 +32,7 @@ from ehtim.observing.pulses import trianglePulse2D
 mpl.rc('font', **{'family': 'serif', 'size': 12})
 
 EP = 1.0e-10
-C = 299792458.0
+C = 299792458.0  # meters/second (??)
 DEGREE = 3.141592653589/180.0
 HOUR = 15.0*DEGREE
 RADPERAS = DEGREE/3600.0
