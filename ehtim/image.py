@@ -46,6 +46,10 @@ import ehtim.observing.obs_helpers as obsh
 # TODO : add time to all images
 # TODO : add arbitrary center location
 
+# P = I * p * cos(\psi) * exp(2i\chi)
+# TODO : add self._mflist_p
+# TODO : add self._mflist_chi
+# TODO : add self._mflist_psi
 ###################################################################################################
 # Image object
 ###################################################################################################

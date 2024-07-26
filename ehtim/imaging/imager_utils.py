@@ -38,13 +38,7 @@ import ehtim.const_def as ehc
 # Constants & Definitions
 ##################################################################################################
 
-NORM_REGULARIZER = False  # ANDREW TODO change this default in the future
-
-MAXLS = 100  # maximum number of line searches in L-BFGS-B
-NHIST = 100  # number of steps to store for hessian approx
-MAXIT = 100  # maximum number of iterations
-STOP = 1.e-8  # convergence criterion
-
+NORM_REGULARIZER = True
 DATATERMS = ['vis', 'bs', 'amp', 'cphase', 'cphase_diag',
              'camp', 'logcamp', 'logcamp_diag', 'logamp']
 REGULARIZERS = ['gs', 'tv', 'tvlog','tv2', 'tv2log','l1w', 'lA', 'patch', 'simple', 'compact', 'compact2', 'rgauss']
@@ -4023,7 +4017,7 @@ def chisqdata_logcamp_diag_nfft(Obsdata, Prior, pol='I', **kwargs):
     return (np.array(clamp_diag), np.array(sigma_diag), Amatrices)
 
 ##################################################################################################
-# Restoring ,Embedding, and Plotting Functions
+# Plotting Functions
 ##################################################################################################
 
 
@@ -4067,15 +4061,56 @@ def plot_i(im, Prior, nit, chi2_dict, **kwargs):
         plotstr += r"$\chi^2_{%s}$: %0.2f  " % (key, chi2_dict[key])
     plt.title(plotstr, fontsize=18)
 
+##################################################################################################
+# Restoring/Embedding Functions for Multifreq/Polarization
+##################################################################################################
 
-def embed(im, mask, clipfloor=0., randomfloor=False):
-    """Embeds a 1d image array into the size of boolean embed mask
+
+def pack_imarr(imarr, which_solve):
+    """pack image array into 1D array for minimizaiton
+       ignore quantities not solved for
+    """
+    nsolve = imarr.shape[0]    
+    nimage = imarr.shape[1]
+    if nsolve != len(which_solve):
+        raise Exception("imarr has inconsistent shape with which_solve in unpack_imarr!")
+        
+    vec = np.array([])
+    for kk in range(nsolve):
+        if mf_solve[kk]!=0:
+            vec = np.hstack((vec,mftuple[kk]))        
+
+    return vec
+    
+    
+def unpack_imarr(vec, imarr_init, which_solve):
+    """unpack minimized vector vec into array,
+       replaces quantities not solved for with their initial values
+    """
+    nsolve = imarr_init.shape[0]    
+    nimage = imarr_init.shape[1]
+    if nsolve != len(which_solve):
+        raise Exception("imarr has inconsistent shape with which_solve in unpack_imarr!")
+
+    imct = 0
+    imarr = np.empty((nsolve, nimage))
+    for kk in range(nsolve):
+        if mf_solve[kk]==0:
+            imarr[kk] = inittuple[kk]
+        else:
+            imarr[kk] = vec[imct*nimage:(imct+1)*nimage]
+            imct += 1
+
+    return imarr
+
+def embed(imvec, mask, clipfloor=0., randomfloor=False):
+    """Embeds a 1d image vector into the size of boolean embed mask
     """
 
     out = np.zeros(len(mask))
 
     # Here's a much faster version than before
-    out[mask.nonzero()] = im
+    out[mask.nonzero()] = imvec
 
     #if clipfloor != 0.0:
     if randomfloor:  # prevent total variation gradient singularities
@@ -4085,3 +4120,20 @@ def embed(im, mask, clipfloor=0., randomfloor=False):
         out[(mask-1).nonzero()] = clipfloor
 
     return out
+
+def embed_arr(imarr, mask, clipfloor=0., randomfloor=False):
+    """Embeds a multidimensional image array into the size of boolean embed mask
+    """
+    
+    nsolve = imarr.shape[0]    
+    nimage = len(mask)    
+    
+    outarr = np.empty((nsolve,nimage)) 
+    # TODO does this require the for loop? 
+    for kk in range(nsolve):
+        outarr[kk] = embed(imarr[kk], mask, clipfloor=clipfloor, randomfloor=randomfloor)
+        
+    return outarr
+    
+
+
