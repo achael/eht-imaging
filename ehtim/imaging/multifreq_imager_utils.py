@@ -47,6 +47,86 @@ NORM_REGULARIZER = True
 EPSILON = 1.e-12
 
 ##################################################################################################
+# multifrequency transformations
+##################################################################################################
+def image_at_freq(mftuple, log_freqratio):
+        """Get the image or polarization image tuple from multifrequency data
+        """
+        # Stokes I 
+        if len(mftuple==3):
+            imvec_ref_log = np.log(mftuple[0])
+            spectral_index = mftuple[1]
+            curvature = mftuple[2]
+
+            logimvec = imvec_ref_log + spectral_index*log_freqratio + curvature*log_freqratio*log_freqratio
+            imvec = np.exp(logimvec)
+            out = imvec
+        # Polarization    
+        elif len(mftuple==8):
+            (I0, alpha, beta, m0, malpha, mbeta, chi0, rm) = mftuple                    
+            imvec_ref_log = np.log(I0)
+            logimvec = imvec_ref_log + alpha*log_freqratio + beta*log_freqratio*log_freqratio
+            imvec = np.exp(logimvec)
+            
+            mvec_ref_log = np.log(m0)
+            logmvec = mvec_ref_log + malpha*log_freqratio + mbeta*log_freqratio*log_freqratio
+            mvec = np.exp(logmvec)
+            
+            # we use dimensionless rm scaled by lambda0^2 = c^2/nu0^2   
+            chivec = chi0 + rm*(np.exp(-2*log_freqratio)-1)
+            
+            out = (imvec, mvec, chivec)
+        else:
+            raise Exception("in image_at_freq, len(mftuple) must be 3 or 8!")
+            
+        return out
+
+def mf_all_grads_chain(funcgrad, image_cur, mftuple, log_freqratio):
+        """Get the gradients of the reference image, spectral index, and curvature
+           w/r/t the gradient of a function funcgrad to the image given frequency ref_freq*e(log_freqratio)
+        """
+        # Stokes I 
+        if len(mftuple==3):
+            imvec_cur = image_cur
+            imvec_ref = mftuple[0]
+            
+            dfunc_dI0    = funcgrad * imvec_cur / imvec_ref
+            dfunc_dalpha = funcgrad * imvec_cur * log_freqratio
+            dfunc_dbeta  = funcgrad * imvec_cur * log_freqratio * log_freqratio
+
+            out = np.array((dfunc_dI0, dfunc_dalpha, dfunc_dbeta))
+            
+        # Polarization
+        elif len(mftuple==8):
+            (dfunc_dI, dfunc_dm, dfunc_dchi) = funcgrad
+            (imvec_cur, mvec_cur, chivec_cur) = image_cur   
+            (I0, alpha, beta, m0, malpha, mbeta, chi0, rm) = mftuple    
+            
+            # apply chain rule to gradients w/r/t I 
+            dfunc_dI0    = dfunc_dI * imvec_cur / I0
+            dfunc_dalpha = dfunc_dI * imvec_cur * log_freqratio
+            dfunc_dbeta  = dfunc_dI * imvec_cur * log_freqratio * log_freqratio    
+
+            # apply chain rule for derivatives w/r/t m
+            dfunc_dm0     = dfunc_dm * mvec_cur / m0
+            dfunc_dmalpha = dfunc_dm * mvec_cur * log_freqratio
+            dfunc_dmbeta  = dfunc_dm * mvec_cur * log_freqratio * log_freqratio
+
+            # apply chain rule for derivatives w/r/t chi
+            dfunc_dchi0 = dfunc_dchi
+            dfunc_drm   = dfunc_dchi*(np.exp(-2*log_freqratio)-1)
+            
+            out = np.array((dfunc_dI0, dfunc_dalpha, dfunc_dbeta,
+                            dfunc_dm0, dfunc_dmalpha, dfunc_dmbeta,
+                            dfunc_dchi0, dfunc_drm))        
+                                
+        else:
+            raise Exception("in image_at_freq, len(mftuple) must be 3 or 8!")  
+                  
+        return out
+        
+        
+##################################################################################################
 # Mulitfrequency regularizers
 ##################################################################################################
 
@@ -167,83 +247,5 @@ def tv_spec_grad(imvec, nx, ny, psize, norm_reg=NORM_REGULARIZER, beam_size=None
     out= -(g1 + g2 + g3).flatten()
     return out/norm
 
-##################################################################################################
 
-##################################################################################################
-def image_at_freq(mftuple, log_freqratio):
-        """Get the image or polarization image tuple from multifrequency data
-        """
-        # Stokes I 
-        if len(mftuple==3):
-            imvec_ref_log = np.log(mftuple[0])
-            spectral_index = mftuple[1]
-            curvature = mftuple[2]
-
-            logimvec = imvec_ref_log + spectral_index*log_freqratio + curvature*log_freqratio*log_freqratio
-            imvec = np.exp(logimvec)
-            out = imvec
-        # Polarization    
-        elif len(mftuple==8):
-            (I0, alpha, beta, m0, malpha, mbeta, chi0, rm) = mftuple                    
-            imvec_ref_log = np.log(I0)
-            logimvec = imvec_ref_log + alpha*log_freqratio + beta*log_freqratio*log_freqratio
-            imvec = np.exp(logimvec)
-            
-            mvec_ref_log = np.log(m0)
-            logmvec = mvec_ref_log + malpha*log_freqratio + mbeta*log_freqratio*log_freqratio
-            mvec = np.exp(logmvec)
-            
-            # we use dimensionless rm scaled by lambda0^2 = c^2/nu0^2   
-            chivec = chi0 + rm*(np.exp(-2*log_freqratio)-1)
-            
-            out = (imvec, mvec, chivec)
-        else:
-            raise Exception("in image_at_freq, len(mftuple) must be 3 or 8!")
-            
-        return out
-
-def mf_all_grads_chain(funcgrad, image_cur, mftuple, log_freqratio):
-        """Get the gradients of the reference image, spectral index, and curvature
-           w/r/t the gradient of a function funcgrad to the image given frequency ref_freq*e(log_freqratio)
-        """
-        # Stokes I 
-        if len(mftuple==3):
-            imvec_cur = image_cur
-            imvec_ref = mftuple[0]
-            
-            dfunc_dI0    = funcgrad * imvec_cur / imvec_ref
-            dfunc_dalpha = funcgrad * imvec_cur * log_freqratio
-            dfunc_dbeta  = funcgrad * imvec_cur * log_freqratio * log_freqratio
-
-            out = np.array((dfunc_dI0, dfunc_dalpha, dfunc_dbeta))
-            
-        # Polarization
-        elif len(mftuple==8):
-            (dfunc_dI, dfunc_dm, dfunc_dchi) = funcgrad
-            (imvec_cur, mvec_cur, chivec_cur) = image_cur   
-            (I0, alpha, beta, m0, malpha, mbeta, chi0, rm) = mftuple    
-            
-            # apply chain rule to gradients w/r/t I 
-            dfunc_dI0    = dfunc_dI * imvec_cur / I0
-            dfunc_dalpha = dfunc_dI * imvec_cur * log_freqratio
-            dfunc_dbeta  = dfunc_dI * imvec_cur * log_freqratio * log_freqratio    
-
-            # apply chain rule for derivatives w/r/t m
-            dfunc_dm0     = dfunc_dm * mvec_cur / m0
-            dfunc_dmalpha = dfunc_dm * mvec_cur * log_freqratio
-            dfunc_dmbeta  = dfunc_dm * mvec_cur * log_freqratio * log_freqratio
-
-            # apply chain rule for derivatives w/r/t chi
-            dfunc_dchi0 = dfunc_dchi
-            dfunc_drm   = dfunc_dchi*(np.exp(-2*log_freqratio)-1)
-            
-            out = np.array((dfunc_dI0, dfunc_dalpha, dfunc_dbeta,
-                            dfunc_dm0, dfunc_dmalpha, dfunc_dmbeta,
-                            dfunc_dchi0, dfunc_drm))        
-                                
-        else:
-            raise Exception("in image_at_freq, len(mftuple) must be 3 or 8!")  
-                  
-        return out
-        
 
