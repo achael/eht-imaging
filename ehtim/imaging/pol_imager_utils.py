@@ -50,7 +50,7 @@ RANDOMFLOOR=True
 ##################################################################################################
 
 NORM_REGULARIZER = True
-DATATERMS_POL = ['pvis', 'm', 'pbs','vvis']
+DATATERMS_POL = ['pvis', 'm','vvis']
 REGULARIZERS_POL = ['msimple', 'hw', 'ptv','l1v','l2v','vtv','v2tv2','vflux']
 
 nit = 0 # global variable to track the iteration number in the plotting callback
@@ -237,8 +237,6 @@ def polchisq(imarr, A, data, sigma, dtype, ttype='direct', mask=[]):
             chisq = chisq_p(imarr, A, data, sigma)
         elif dtype == 'm':
             chisq = chisq_m(imarr, A, data, sigma)
-        elif dtype == 'pbs':
-            chisq = chisq_pbs(imarr, A, data, sigma)
             
         # circular
         elif dtype == 'vvis':
@@ -256,8 +254,6 @@ def polchisq(imarr, A, data, sigma, dtype, ttype='direct', mask=[]):
             chisq = chisq_p_nfft(imarr, A, data, sigma)
         elif dtype == 'm':
             chisq = chisq_m_nfft(imarr, A, data, sigma)
-        elif dtype == 'pbs':
-            chisq = chisq_pbs_nfft(imarr, A, data, sigma)
             
         # circular
         elif dtype == 'vvis':
@@ -283,8 +279,7 @@ def polchisqgrad(imarr, A, data, sigma, dtype, ttype='direct',mask=[],
             chisqgrad = chisqgrad_p(imarr, A, data, sigma, pol_solve)
         elif dtype == 'm':
             chisqgrad = chisqgrad_m(imarr, A, data, sigma, pol_solve)
-        elif dtype == 'pbs':
-            chisqgrad = chisqgrad_pbs(imarr, A, data, sigma, pol_solve)
+
             
         # circular
         elif dtype == 'vvis':
@@ -302,8 +297,7 @@ def polchisqgrad(imarr, A, data, sigma, dtype, ttype='direct',mask=[],
             chisqgrad = chisqgrad_p_nfft(imarr, A, data, sigma, pol_solve)
         elif dtype == 'm':
             chisqgrad = chisqgrad_m_nfft(imarr, A, data, sigma, pol_solve)
-        elif dtype == 'pbs':
-            chisqgrad = chisqgrad_pbs_nfft(imarr, A, data, sigma, pol_solve)
+
 
         # circular
         elif dtype == 'vvis':
@@ -421,8 +415,6 @@ def polchisqdata(Obsdata, Prior, mask, dtype, **kwargs):
             (data, sigma, A) = chisqdata_pvis(Obsdata, Prior, mask)
         elif dtype == 'm':
             (data, sigma, A) = chisqdata_m(Obsdata, Prior, mask)
-        elif dtype == 'pbs':
-            (data, sigma, A) = chisqdata_pbs(Obsdata, Prior, mask)
         elif dtype == 'vvis':
             (data, sigma, A) = chisqdata_vvis(Obsdata, Prior, mask)
             
@@ -434,8 +426,6 @@ def polchisqdata(Obsdata, Prior, mask, dtype, **kwargs):
             (data, sigma, A) = chisqdata_pvis_nfft(Obsdata, Prior, mask, **kwargs)
         elif dtype == 'm':
             (data, sigma, A) = chisqdata_m_nfft(Obsdata, Prior, mask, **kwargs)
-        elif dtype == 'pbs':
-            (data, sigma, A) = chisqdata_pbs_nfft(Obsdata, Prior, mask, **kwargs)
         elif dtype == 'vvis':
             (data, sigma, A) = chisqdata_vvis_nfft(Obsdata, Prior, mask, **kwargs)
         
@@ -538,56 +528,6 @@ def chisqgrad_m(imarr, Amatrix, m, sigmam,pol_solve=POL_SOLVE_DEFAULT):
         gradpsi = gradm * (-mimage*np.tan(psiimage))
         gradout[3] = gradpsi
         
-
-    return gradout
-
-def chisq_pbs(imarr, Amatrices, bis_p, sigma):
-    """Polarimetric bispectrum chi-squared
-    """
-    
-    iimage = make_i_image(imarr)
-    pimage = make_p_image(imarr)
-    bisamples_p = np.dot(Amatrices[0], pimage) * np.dot(Amatrices[1], pimage) * np.dot(Amatrices[2], pimage)
-    chisq =  np.sum(np.abs((bis_p - bisamples_p)/sigma)**2) / (2.*len(bis_p))
-    return chisq
-
-def chisqgrad_pbs(imarr, Amatrices, bis_p, sigma,pol_solve=POL_SOLVE_DEFAULT):
-    """Polarimetric bispectrum chi-squared gradient
-    """
-    gradout = np.zeros(imarr.shape)
-        
-    iimage = make_i_image(imarr)
-    pimage = make_p_image(imarr)
-    mimage = make_m_image(imarr)
-    chiimage = make_chi_image(imarr)
-    psiimage = make_psi_image(imarr)
-    
-    bisamples_p = np.dot(Amatrices[0], pimage) * np.dot(Amatrices[1], pimage) * np.dot(Amatrices[2], pimage)
-
-    wdiff = ((bis_p - bisamples_p).conj()) / (sigma**2)      
-    pt1 = wdiff * np.dot(Amatrices[1],pimage) * np.dot(Amatrices[2],pimage)
-    pt2 = wdiff * np.dot(Amatrices[0],pimage) * np.dot(Amatrices[2],pimage)
-    pt3 = wdiff * np.dot(Amatrices[0],pimage) * np.dot(Amatrices[1],pimage)
-    ptsum = np.dot(pt1, Amatrices[0]) + np.dot(pt2, Amatrices[1]) + np.dot(pt3, Amatrices[2])    
-    
-    if pol_solve[0]!=0:
-        gradi = -np.real(ptsum * mimage * np.exp(2j*chiimage)) / len(bis_p)
-        gradout[0] = gradi
-        
-    if pol_solve[1]!=0:
-        gradm = -np.real(ptsum * iimage * np.exp(2j*chiimage)) / len(bis_p)
-        gradrho = gradm * np.cos(psiimage)
-        gradout[1] = gradrho
-        
-    if pol_solve[2]!=0:
-        gradchi = 2 * np.imag(ptsum * pimage) / len(bis_p)
-        gradphi = 0.5*gradchi
-        gradout[2] = gradphi
-        
-    if pol_solve[3]!=0:
-        gradm = -np.real(ptsum * iimage * np.exp(2j*chiimage)) / len(bis_p)        
-        gradpsi = gradm * (-mimage*np.tan(psiimage))
-        gradout[3] = gradpsi
 
     return gradout
 
@@ -783,125 +723,6 @@ def chisqgrad_m_nfft(imarr, A, m, sigmam,pol_solve=POL_SOLVE_DEFAULT):
         gradm = np.real(iimage*np.exp(-2j*chiimage) * mpart)     
         gradpsi = gradm * (-mimage*np.tan(psiimage))
         gradout[3] = gradpsi     
-
-    return gradout
-
-
-def chisq_pbs_nfft(imarr, A, bis_p, sigma):
-    """Polarimetric bispectrum chi-squared
-    """
-
-    pimage = make_p_image(imarr)
-        
-    #get nfft objects
-    nfft_info1 = A[0]
-    plan1 = nfft_info1.plan
-    pulsefac1 = nfft_info1.pulsefac
-
-    nfft_info2 = A[1]
-    plan2 = nfft_info2.plan
-    pulsefac2 = nfft_info2.pulsefac
-
-    nfft_info3 = A[2]
-    plan3 = nfft_info3.plan
-    pulsefac3 = nfft_info3.pulsefac
-
-    #compute uniform --> nonuniform transforms
-    plan1.f_hat = pimage.copy().reshape((nfft_info1.ydim,nfft_info1.xdim)).T
-    plan1.trafo()
-    samples1 = plan1.f.copy()*pulsefac1
-
-    plan2.f_hat = pimage.copy().reshape((nfft_info2.ydim,nfft_info2.xdim)).T
-    plan2.trafo()
-    samples2 = plan2.f.copy()*pulsefac2
-
-    plan3.f_hat = pimage.copy().reshape((nfft_info3.ydim,nfft_info3.xdim)).T
-    plan3.trafo()
-    samples3 = plan3.f.copy()*pulsefac3
-
-    #compute chi^2
-    bisamples_p = samples1*samples2*samples3
-    chisq =  np.sum(np.abs((bis_p - bisamples_p)/sigma)**2) / (2.*len(bis_p))
-
-    return chisq
-
-def chisqgrad_pbs(imarr, Amatrices, bis_p, sigma,pol_solve=POL_SOLVE_DEFAULT):
-    """Polarimetric bispectrum chi-squared gradient 
-    """
-    gradout = np.zeros(imarr.shape)
-    
-    iimage = make_i_image(imarr)
-    pimage = make_p_image(imarr)
-    mimage = make_m_image(imarr)
-    chiimage = make_chi_image(imarr)
-    psiimage = make_psi_image(imarr)
-    
-    #get nfft objects
-    nfft_info1 = A[0]
-    plan1 = nfft_info1.plan
-    pulsefac1 = nfft_info1.pulsefac
-
-    nfft_info2 = A[1]
-    plan2 = nfft_info2.plan
-    pulsefac2 = nfft_info2.pulsefac
-
-    nfft_info3 = A[2]
-    plan3 = nfft_info3.plan
-    pulsefac3 = nfft_info3.pulsefac
-
-    #compute uniform --> nonuniform transforms
-    plan1.f_hat = pimage.copy().reshape((nfft_info1.ydim,nfft_info1.xdim)).T
-    plan1.trafo()
-    v1 = plan1.f.copy()*pulsefac1
-
-    plan2.f_hat = pimage.copy().reshape((nfft_info2.ydim,nfft_info2.xdim)).T
-    plan2.trafo()
-    v2 = plan2.f.copy()*pulsefac2
-
-    plan3.f_hat = pimage.copy().reshape((nfft_info3.ydim,nfft_info3.xdim)).T
-    plan3.trafo()
-    v3 = plan3.f.copy()*pulsefac3
-
-    # gradient vec  for  adjoint fft
-    bisamples_p = v1*v2*v3
-    wdiff = (-1./len(bis_p)) * ((bis_p - bisamples_p).conj()) / (sigma**2)   
-    pt1 = wdiff * (v2 * v3).conj() * pulsefac1.conj()
-    pt2 = wdiff * (v1 * v3).conj() * pulsefac2.conj()
-    pt3 = wdiff * (v1 * v2).conj() * pulsefac3.conj()
-   
-    plan1.f = pt1
-    plan1.adjoint()
-    out1 = (plan1.f_hat.copy().T).reshape(nfft_info1.xdim*nfft_info1.ydim)
-
-    plan2.f = pt2
-    plan2.adjoint()
-    out2 = (plan2.f_hat.copy().T).reshape(nfft_info2.xdim*nfft_info2.ydim)
-
-    plan3.f = pt3
-    plan3.adjoint()
-    out3 = (plan3.f_hat.copy().T).reshape(nfft_info3.xdim*nfft_info3.ydim)
-
-    ptsum = out1 + out2 + out3
-
-    
-    if pol_solve[0]!=0:
-        gradi = np.real(ptsum * mimage * np.exp(2j*chiimage)) 
-        gradout[0] = gradi
-        
-    if pol_solve[1]!=0:
-        gradm = np.real(ptsum * iimage * np.exp(2j*chiimage)) 
-        gradrho = gradm * np.cos(psiimage)        
-        gradout[1] = gradrho
-        
-    if pol_solve[2]!=0:
-        gradchi = -2 * np.imag(ptsum * pimage) 
-        gradphi = 0.5*gradchi
-        gradout[2] = gradphi
-        
-    if pol_solve[3]!=0:
-        gradm = np.real(ptsum * iimage * np.exp(2j*chiimage))     
-        gradpsi = gradm * (-mimage*np.tan(psiimage))
-        gradout[3] = gradpsi
 
     return gradout
 
@@ -1493,49 +1314,6 @@ def chisqdata_m_nfft(Obsdata, Prior, mask, **kwargs):
 
     return (m, sigmam, A)
 
-
-def chisqdata_pbs(Obsdata, Prior, mask):
-    """return the bispectra, sigmas, and fourier matrices for and observation, prior, mask
-    """
-
-    biarr = Obsdata.bispectra(mode="all", vtype='rlvis', count="min") #TODO CONJ??
-    uv1 = np.hstack((biarr['u1'].reshape(-1,1), biarr['v1'].reshape(-1,1)))
-    uv2 = np.hstack((biarr['u2'].reshape(-1,1), biarr['v2'].reshape(-1,1)))
-    uv3 = np.hstack((biarr['u3'].reshape(-1,1), biarr['v3'].reshape(-1,1)))
-    bi = biarr['bispec']
-    sigma = biarr['sigmab']
-
-    A3 = (ftmatrix(Prior.psize, Prior.xdim, Prior.ydim, uv1, pulse=Prior.pulse, mask=mask),
-          ftmatrix(Prior.psize, Prior.xdim, Prior.ydim, uv2, pulse=Prior.pulse, mask=mask),
-          ftmatrix(Prior.psize, Prior.xdim, Prior.ydim, uv3, pulse=Prior.pulse, mask=mask)
-         )
-
-    return (bi, sigma, A3)
-
-def chisqdata_pbs_nfft(Obsdata, Prior, mask):
-    """return the bispectra, sigmas, and fourier matrices for and observation, prior, mask
-    """
-
-    # unpack keyword args
-    fft_pad_factor = kwargs.get('fft_pad_factor',FFT_PAD_DEFAULT)
-    p_rad = kwargs.get('p_rad', GRIDDER_P_RAD_DEFAULT)
-
-    # unpack data
-    biarr = Obsdata.bispectra(mode="all", vtype='rlvis', count="min")
-    uv1 = np.hstack((biarr['u1'].reshape(-1,1), biarr['v1'].reshape(-1,1)))
-    uv2 = np.hstack((biarr['u2'].reshape(-1,1), biarr['v2'].reshape(-1,1)))
-    uv3 = np.hstack((biarr['u3'].reshape(-1,1), biarr['v3'].reshape(-1,1)))
-    bi = biarr['bispec']
-    sigma = biarr['sigmab']
-
-    # get NFFT info
-    npad = int(fft_pad_factor * np.max((Prior.xdim, Prior.ydim)))
-    A1 = NFFTInfo(Prior.xdim, Prior.ydim, Prior.psize, Prior.pulse, npad, p_rad, uv1)
-    A2 = NFFTInfo(Prior.xdim, Prior.ydim, Prior.psize, Prior.pulse, npad, p_rad, uv2)
-    A3 = NFFTInfo(Prior.xdim, Prior.ydim, Prior.psize, Prior.pulse, npad, p_rad, uv3)
-    A = [A1,A2,A3]
-
-    return (bi, sigma, A)
 
 def chisqdata_vvis(Obsdata, Prior, mask):
     """Return the visibilities, sigmas, and fourier matrix for an observation, prior, mask
