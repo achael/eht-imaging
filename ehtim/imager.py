@@ -46,7 +46,7 @@ STOP = 1e-6  # convergence criterion
 EPS = 1e-8
 
 DATATERMS = ['vis', 'bs', 'amp', 'cphase', 'cphase_diag', 'camp', 'logcamp', 'logcamp_diag']
-DATATERMS_POL = ['pvis', 'm', 'pbs','vvis']
+DATATERMS_POL = ['pvis', 'm', 'vvis']
 
 REGULARIZERS = ['gs', 'tv', 'tvlog','tv2', 'tv2log', 'l1', 'l1w', 'lA', 'patch',
                 'flux', 'cm', 'simple', 'compact', 'compact2', 'rgauss']
