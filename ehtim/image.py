@@ -453,7 +453,7 @@ class Image(object):
     @property
     def rhovec(self):
         """Return the total polarization fraction for each pixel"""
-        rhovec = np.sqrt(self.qvec**2 + self.uvec**2 + self.vvec**2) / self.ivec)
+        rhovec = np.sqrt(self.qvec**2 + self.uvec**2 + self.vvec**2) / self.ivec
         return rhovec
 
     @property

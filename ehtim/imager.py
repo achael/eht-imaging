@@ -720,7 +720,7 @@ class Imager(object):
         # catch errors in general imaging setup               
         if self.mf_next:
             if self.pol_next in POLARIZATION_MODES:
-                if 'I' in self.pol_next
+                if 'I' in self.pol_next:
                     rlist = REGULARIZERS + REGULARIZERS_POL + REGULARIZERS_SPECTRAL
                     dlist = DATATERMS + DATATERMS_POL
                 else:
@@ -893,7 +893,7 @@ class Imager(object):
         self._nimage = np.sum(self._embed_mask)
         
         # Set prior & initial image vectors for multifrequency imaging
-        elif self.mf_next:
+        if self.mf_next:
 
             # set reference frequency to same as prior
             self.reffreq = self.init_next.rf 
@@ -954,7 +954,7 @@ class Imager(object):
         
                 # make initial and prior images
                 randompol_circ = randompol_lin=False
-                if 'V' in self.pol_next: in ['V','IV']:
+                if 'V' in self.pol_next: 
                     randompol_circ=True
                 if ('P' in self.pol_next) or ('QU' in self.pol_next):
                     randompol_lin=True
@@ -1026,7 +1026,7 @@ class Imager(object):
                 
                 # make initial and prior images
                 randompol_circ = randompol_lin=False
-                if 'V' in self.pol_next: in ['V','IV']:
+                if 'V' in self.pol_next: 
                     randompol_circ=True
                 if ('P' in self.pol_next) or ('QU' in self.pol_next):
                     randompol_lin=True
@@ -1246,7 +1246,7 @@ class Imager(object):
 
                     # If imaging Stokes I with polarization simultaneously, bundle the gradient
                     if self.pol_next in POLARIZATION_MODES: 
-                        chi2grad = np.array((chi2grad,np.zeros(self._nimage),np.zeros(self._nimage),np.zeros(self._nimage))
+                        chi2grad = np.array((chi2grad,np.zeros(self._nimage),np.zeros(self._nimage),np.zeros(self._nimage)))
 
                 else:
                     raise Exception("data term %s not recognized!" % dname)
@@ -1450,7 +1450,7 @@ class Imager(object):
                                                   
                     # If imaging Stokes I with polarization simultaneously, bundle the gradient
                     if self.pol_next in POLARIZATION_MODES: 
-                        chi2grad = np.array((chi2grad,np.zeros(self._nimage),np.zeros(self._nimage),np.zeros(self._nimage))
+                        chi2grad = np.array((chi2grad,np.zeros(self._nimage),np.zeros(self._nimage),np.zeros(self._nimage)))
 
                 else:
                     raise Exception("regularizer term %s not recognized!" % regname)
@@ -1617,7 +1617,7 @@ class Imager(object):
         self._nit += 1
 
                 
-    def format_outim(self, outarr, pol_prim='I')    
+    def format_outim(self, outarr, pol_prim='I'): 
         """format the final image data into an Image object"""
 
         # embed the image into the full frame
@@ -1967,101 +1967,101 @@ def make_initarr(image, mask, norm_init=False, flux=1,
                  randompol_lin=False, randompol_circ=False, 
                  meanpol=0.2, sigmapol=1.e-2):
     """Make initial image array from image object, or initialize with default values"""           
-        # set initial and prior images
-        init_I = image.imvec[mask]
-        nimage = len(init_I)
-                        
-        if self.norm_init:
-            normfac = init_I / (np.sum(init_I)) 
-            init_I = flux * normfac         
-        else:
-            normfac = 1
-        
-        # TODO -- apply a floor to init_I? 
-        
-        # single-frequency, single-polarization
-        if not(pol) and not(mf):
-            initarr = np.array(init_I)
-                
-        # polarization        
-        if pol:
-            if len(image.qvec):
-                init_q = normfac*image.qvec[mask]
-            else:
-                init_q = np.zeros(nimage)
-            if len(image.uvec):
-                init_u = normfac*image.uvec[mask]
-            else:
-                init_u = np.zeros(nimage)            
-            if len(image.vvec):
-                init_v = normfac*image.vvec[mask]
-            else:
-                init_v = normfac*np.zeros(nimage)
+    # set initial and prior images
+    init_I = image.imvec[mask]
+    nimage = len(init_I)
+                    
+    if self.norm_init:
+        normfac = init_I / (np.sum(init_I)) 
+        init_I = flux * normfac         
+    else:
+        normfac = 1
 
-            init_P = np.sqrt(init_q**2 + init_u**2)
-                         
-            init_rho = np.sqrt(init_q**2 + init_u**2 + init_v**2) / init_I
-            init_phi = np.arctan2(init_u, init_q)       
-            init_psi = np.arctan2(init_v, init_P)
-                                    
-            if not(np.any(init_rho!=0)) and randompol_lin:
-                print("No polarimetric image in init!")
-                print("--initializing with 20% pol and random orientation!")
-                init_rho = meanpol * (np.ones(nimage) + sigmapol * np.random.rand(nimage))
-                init_phi = np.zeros(nimage) + sigmapol * np.random.rand(nimage)
-                
-            if not(np.any(init_psi!=0)) and randompol_circ:                
-                print("No circular polarization image in init!")
-                print("--initializing with random values!")                
-                init_rho = meanpol * (np.ones(nimage) + sigmapol * np.random.rand(nimage))
-                init_psi = np.zeros(nimage) + sigmapol * np.random.rand(nimage)
+    # TODO -- apply a floor to init_I? 
+
+    # single-frequency, single-polarization
+    if not(pol) and not(mf):
+        initarr = np.array(init_I)
             
-            if not_mf:
-                initarr = np.array((init_I, init_rho, init_phi, init_psi))
-         
-        # multi-frequency        
-        if mf: 
-            if len(image.specvec):
-                init_a = image.specvec[mask]
-            else:
-                init_a = np.zeros(nimage)
-                
-            if len(image.curvvec):
-                init_b = image.curvvec[mask]
-            else:
-                init_b = np.zeros(nimage)
-                
-            # multi-frequency, multi-polarization    
-            if pol:
-                if len(image.specvec_pol):
-                    init_ap = image.specvec_pol[mask]
-                else:
-                    init_ap = np.zeros(nimage)
+    # polarization        
+    if pol:
+        if len(image.qvec):
+            init_q = normfac*image.qvec[mask]
+        else:
+            init_q = np.zeros(nimage)
+        if len(image.uvec):
+            init_u = normfac*image.uvec[mask]
+        else:
+            init_u = np.zeros(nimage)            
+        if len(image.vvec):
+            init_v = normfac*image.vvec[mask]
+        else:
+            init_v = normfac*np.zeros(nimage)
 
-                if len(image.curvvec_pol):
-                    init_bp = self.init_next.curvvec_pol[mask]
-                else:
-                    init_bp = np.zeros(nimage)
-
-                # TODO what do we want to initialize RM and CM to? 
-                if len(image.rmvec):
-                    init_rm = image.rmvec[mask]
-                else:
-                    init_rm = np.zeros(nimage)
-
-                if len(image.cmvec):
-                    init_cm = image.cmvec[mask]
-                else:
-                    init_cm = np.zeros(nimage)
-
-                initarr = np.array((init_I, init_rho, init_phi, init_psi,
-                                    init_a, init_b, init_ap, init_bp,
-                                    init_rm, init_cm))
-           
-            else:
-                initarr = np.array((init_I, init_a, init_b))
+        init_P = np.sqrt(init_q**2 + init_u**2)
+                     
+        init_rho = np.sqrt(init_q**2 + init_u**2 + init_v**2) / init_I
+        init_phi = np.arctan2(init_u, init_q)       
+        init_psi = np.arctan2(init_v, init_P)
+                                
+        if not(np.any(init_rho!=0)) and randompol_lin:
+            print("No polarimetric image in init!")
+            print("--initializing with 20% pol and random orientation!")
+            init_rho = meanpol * (np.ones(nimage) + sigmapol * np.random.rand(nimage))
+            init_phi = np.zeros(nimage) + sigmapol * np.random.rand(nimage)
+            
+        if not(np.any(init_psi!=0)) and randompol_circ:                
+            print("No circular polarization image in init!")
+            print("--initializing with random values!")                
+            init_rho = meanpol * (np.ones(nimage) + sigmapol * np.random.rand(nimage))
+            init_psi = np.zeros(nimage) + sigmapol * np.random.rand(nimage)
         
-        return initarr
+        if not_mf:
+            initarr = np.array((init_I, init_rho, init_phi, init_psi))
+     
+    # multi-frequency        
+    if mf: 
+        if len(image.specvec):
+            init_a = image.specvec[mask]
+        else:
+            init_a = np.zeros(nimage)
+            
+        if len(image.curvvec):
+            init_b = image.curvvec[mask]
+        else:
+            init_b = np.zeros(nimage)
+            
+        # multi-frequency, multi-polarization    
+        if pol:
+            if len(image.specvec_pol):
+                init_ap = image.specvec_pol[mask]
+            else:
+                init_ap = np.zeros(nimage)
+
+            if len(image.curvvec_pol):
+                init_bp = self.init_next.curvvec_pol[mask]
+            else:
+                init_bp = np.zeros(nimage)
+
+            # TODO what do we want to initialize RM and CM to? 
+            if len(image.rmvec):
+                init_rm = image.rmvec[mask]
+            else:
+                init_rm = np.zeros(nimage)
+
+            if len(image.cmvec):
+                init_cm = image.cmvec[mask]
+            else:
+                init_cm = np.zeros(nimage)
+
+            initarr = np.array((init_I, init_rho, init_phi, init_psi,
+                                init_a, init_b, init_ap, init_bp,
+                                init_rm, init_cm))
+       
+        else:
+            initarr = np.array((init_I, init_a, init_b))
+
+    return initarr
 
 
 

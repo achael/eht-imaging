@@ -38,7 +38,8 @@ except ImportError:
 import ehtim.image as image
 from ehtim.const_def import *
 from ehtim.observing.obs_helpers import *
-from ehtim.imaging.imager_utils import embed, embed_arr
+from ehtim.imaging.imager_utils import embed
+from ehtim.imager import embed_imarr
 
 TANWIDTH_M = 0.5
 TANWIDTH_V = 1
@@ -345,7 +346,7 @@ def polchisq(imarr, A, data, sigma, dtype, ttype='direct', mask=[]):
 
     elif ttype== 'nfft':
         if len(mask)>0 and np.any(np.invert(mask)):
-            imarr = embed_arr(imarr, mask, randomfloor=RANDOMFLOOR)
+            imarr = embed_imarr(imarr, mask, randomfloor=RANDOMFLOOR)
 
         # linear
         if dtype == 'pvis':
@@ -388,7 +389,7 @@ def polchisqgrad(imarr, A, data, sigma, dtype, ttype='direct',mask=[],
 
     elif ttype== 'nfft':
         if len(mask)>0 and np.any(np.invert(mask)):
-            imarr = embed_arr(imarr, mask, randomfloor=RANDOMFLOOR)
+            imarr = embed_imarr(imarr, mask, randomfloor=RANDOMFLOOR)
       
         # linear
         if dtype == 'pvis':
@@ -424,7 +425,7 @@ def polregularizer(imarr, priorarr, mask, flux, pflux, vflux, xdim, ydim, psize,
         reg = -shw(imarr, flux, norm_reg=norm_reg)
     elif stype == "ptv":
         if np.any(np.invert(mask)):
-            imarr = embed_arr(imarr, mask, randomfloor=RANDOMFLOOR)
+            imarr = embed_imarr(imarr, mask, randomfloor=RANDOMFLOOR)
         reg = -stv_pol(imarr, flux, xdim, ydim, psize, 
                        norm_reg=norm_reg, beam_size=beam_size)
     # circular
@@ -436,12 +437,12 @@ def polregularizer(imarr, priorarr, mask, flux, pflux, vflux, xdim, ydim, psize,
         reg = -sl2v(imarr, vflux, norm_reg=norm_reg)
     elif stype == "vtv":
         if np.any(np.invert(mask)):
-            imarr = embed_arr(imarr, mask, randomfloor=RANDOMFLOOR)
+            imarr = embed_imarr(imarr, mask, randomfloor=RANDOMFLOOR)
         reg = -stv_v(imarr, vflux, xdim, ydim, psize, 
                      norm_reg=norm_reg, beam_size=beam_size)
     elif stype == "vtv2":
         if np.any(np.invert(mask)):
-            imarr = embed_arr(imarr, mask, randomfloor=RANDOMFLOOR)
+            imarr = embed_imarr(imarr, mask, randomfloor=RANDOMFLOOR)
         reg = -stv2_v(imarr, vflux, xdim, ydim, psize, 
                       norm_reg=norm_reg, beam_size=beam_size)                               
 
@@ -466,7 +467,7 @@ def polregularizergrad(imarr, priorarr, mask, flux, pflux, vflux, xdim, ydim, ps
         reggrad = -shwgrad(imarr, flux, pol_solve, norm_reg=norm_reg)
     elif stype == "ptv":
         if np.any(np.invert(mask)):
-            imarr = embed_arr(imarr, mask, randomfloor=RANDOMFLOOR)
+            imarr = embed_imarr(imarr, mask, randomfloor=RANDOMFLOOR)
         reggrad = -stv_pol_grad(imarr, flux, xdim, ydim, psize, pol_solve,
                                 norm_reg=norm_reg, beam_size=beam_size)
         if np.any(np.invert(mask)):
@@ -482,7 +483,7 @@ def polregularizergrad(imarr, priorarr, mask, flux, pflux, vflux, xdim, ydim, ps
         reggrad = -sl2vgrad(imarr, vflux, pol_solve=pol_solve, norm_reg=norm_reg)    
     elif stype == "vtv":
         if np.any(np.invert(mask)):
-            imarr = embed_arr(imarr, mask, randomfloor=RANDOMFLOOR)
+            imarr = embed_imarr(imarr, mask, randomfloor=RANDOMFLOOR)
         reggrad = -stv_v_grad(imarr, vflux, xdim, ydim, psize,
                               pol_solve=pol_solve, norm_reg=norm_reg, beam_size=beam_size)
         if np.any(np.invert(mask)):
@@ -490,7 +491,7 @@ def polregularizergrad(imarr, priorarr, mask, flux, pflux, vflux, xdim, ydim, ps
             
     elif stype == "vtv2":
         if np.any(np.invert(mask)):
-            imarr = embed_arr(imarr, mask, randomfloor=RANDOMFLOOR)
+            imarr = embed_imarr(imarr, mask, randomfloor=RANDOMFLOOR)
         reggrad = -stv2_v_grad(imarr, vflux, xdim, ydim, psize, 
                                pol_solve=pol_solve, norm_reg=norm_reg, beam_size=beam_size)
         if np.any(np.invert(mask)):
