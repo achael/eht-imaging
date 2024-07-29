@@ -4062,46 +4062,11 @@ def plot_i(im, Prior, nit, chi2_dict, **kwargs):
     plt.title(plotstr, fontsize=18)
 
 ##################################################################################################
-# Restoring/Embedding Functions for Multifreq/Polarization
+# Embedding functions
 ##################################################################################################
 
 
-def pack_imarr(imarr, which_solve):
-    """pack image array into 1D array for minimizaiton
-       ignore quantities not solved for
-    """
-    nsolve = imarr.shape[0]    
-    nimage = imarr.shape[1]
-    if nsolve != len(which_solve):
-        raise Exception("imarr has inconsistent shape with which_solve in unpack_imarr!")
-        
-    vec = np.array([])
-    for kk in range(nsolve):
-        if mf_solve[kk]!=0:
-            vec = np.hstack((vec,mftuple[kk]))        
 
-    return vec
-    
-    
-def unpack_imarr(vec, imarr_init, which_solve):
-    """unpack minimized vector vec into array,
-       replaces quantities not solved for with their initial values
-    """
-    nsolve = imarr_init.shape[0]    
-    nimage = imarr_init.shape[1]
-    if nsolve != len(which_solve):
-        raise Exception("imarr has inconsistent shape with which_solve in unpack_imarr!")
-
-    imct = 0
-    imarr = np.empty((nsolve, nimage))
-    for kk in range(nsolve):
-        if mf_solve[kk]==0:
-            imarr[kk] = inittuple[kk]
-        else:
-            imarr[kk] = vec[imct*nimage:(imct+1)*nimage]
-            imct += 1
-
-    return imarr
 
 def embed(imvec, mask, clipfloor=0., randomfloor=False):
     """Embeds a 1d image vector into the size of boolean embed mask
@@ -4121,19 +4086,7 @@ def embed(imvec, mask, clipfloor=0., randomfloor=False):
 
     return out
 
-def embed_arr(imarr, mask, clipfloor=0., randomfloor=False):
-    """Embeds a multidimensional image array into the size of boolean embed mask
-    """
-    
-    nsolve = imarr.shape[0]    
-    nimage = len(mask)    
-    
-    outarr = np.empty((nsolve,nimage)) 
-    # TODO does this require the for loop? 
-    for kk in range(nsolve):
-        outarr[kk] = embed(imarr[kk], mask, clipfloor=clipfloor, randomfloor=randomfloor)
-        
-    return outarr
+
     
 
 

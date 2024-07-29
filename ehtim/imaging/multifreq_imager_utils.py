@@ -45,20 +45,20 @@ from ehtim.imaging.imager_utils import embed
 
 NORM_REGULARIZER = True
 EPSILON = 1.e-12
-
+DD = 2 # Power for transformation limiting polarization fraction to < 1 at all frequencies
 ##################################################################################################
 # multifrequency transformations
 ##################################################################################################
-DD = 4
+
 def image_at_freq(mfarr, log_freqratio):
         """Get the image or polarization image tuple from multifrequency data
         """
         
         # Stokes I only 
         if len(mftuple==3):
-            imvec0 = mfarr[0]
-            alpha  = mfarr[1]
-            beta   = mfarr[2]
+            imvec0 = mfarr[0] # reference frequency image
+            alpha  = mfarr[1] # spectral index
+            beta   = mfarr[2] # spectral curvature
 
             logimvec = np.log(imvec0) + alpha*log_freqratio + beta*log_freqratio*log_freqratio
             imvec = np.exp(logimvec)
@@ -66,19 +66,20 @@ def image_at_freq(mfarr, log_freqratio):
             
         # Full Polarization    
         elif len(mftuple==10):
-            imvec0  = mfarr[0]
+            # reference frequency images
+            imvec0  = mfarr[0] 
             rhovec0 = mfarr[1]
             phivec0 = mfarr[2]
             psivec0 = mfarr[3]
             
-            alpha = mfarr[4] # spectral indices
-            beta = mfarr[5]
-            alpha_pol = mfarr[6] # polarization fraction indices
-            beta_pol = mfarr[7] 
-            rm = mfarr[8] # Faraday Rotation Measure
-            cm = mfarr[9] # Faraday Conversion Measure
+            alpha = mfarr[4] # spectral index
+            beta = mfarr[5]  # spectral curvature
+            alpha_pol = mfarr[6] # polarization fraction spectral index
+            beta_pol = mfarr[7] # polarization fraction spectral curvature
+            rm = mfarr[8] # Dimensionless Faraday Rotation Measure
+            cm = mfarr[9] # Dimensionless Faraday Conversion Measure
 
-            logimvec = np.log(I0) + alpha*log_freqratio + beta*log_freqratio*log_freqratio
+            logimvec = np.log(imvec0) + alpha*log_freqratio + beta*log_freqratio*log_freqratio
             imvec = np.exp(logimvec)
             
             logrhovec_prime = np.log(rhovec0) + alpha_pol*log_freqratio + beta_pol*log_freqratio*log_freqratio
@@ -90,8 +91,10 @@ def image_at_freq(mfarr, log_freqratio):
             # we use dimensionless rm scaled by lambda0^2 = c^2/nu0^2   
             phivec = phivec0 + rm*(np.exp(-2*log_freqratio)-1)
             
+            # TODO: we require psi be between -pi/2 and pi/2 for m=rho*cos(psi) to work
+            # for now, we will just keep multifrequency V off
             # and dimensionless conversion measure scaled by lamba0^3 = c^3/nu0^3
-            psivec = psivec0 + cm*(np.exp(-3*log_freqratio)-1)
+            psivec = psivec0 #Plot + cm*(np.exp(-3*log_freqratio)-1)
                         
             out = (imvec, rhovec, phivec, psivec)
         else:
@@ -101,14 +104,19 @@ def image_at_freq(mfarr, log_freqratio):
 
 def mf_all_grads_chain(funcgrad, image_cur, mfarr, log_freqratio):
         """Get the gradients of the reference image, spectral index, and curvature
-           w/r/t the gradient of a function funcgrad to the image given frequency ref_freq*e(log_freqratio)
+           w/r/t the gradient of a function funcgrad to the image 
+           at a given frequency freq = ref_freq*exp(log_freqratio)
         """
         # Stokes I 
         if len(mftuple==3):
-            imvec_cur = image_cur          
-            imvec_ref = mfarr[0]
+            # current image
+            imvec_cur = image_cur   
+            
+            # current reference image       
+            I0 = mfarr[0]
 
-            dfunc_dI0    = funcgrad * imvec_cur / imvec_ref
+            # apply chain rule
+            dfunc_dI0    = funcgrad * imvec_cur / I0
             dfunc_dalpha = funcgrad * imvec_cur * log_freqratio
             dfunc_dbeta  = funcgrad * imvec_cur * log_freqratio * log_freqratio
 
@@ -118,34 +126,37 @@ def mf_all_grads_chain(funcgrad, image_cur, mfarr, log_freqratio):
         elif len(mfarr==10):
             # current image
             (imvec_cur, rhovec_cur, phivec_cur, psivec_cur) = image_cur
-                      
+            rhovec_prime = (rhovec_cur**(-DD) - 1)**(-1/DD) # transform rho back to rho_prime
+                                              
+            # current reference image
+            I0  = mfarr[0]
+            rho0 = mfarr[1]
+
             # gradients w/r/t polarization components
             (dfunc_dI, dfunc_drho, dfunc_dphi, dfunc_dpsi) = funcgrad
             
-            # current mf vector 
-            imvec0  = mfarr[0]
-            rhovec0 = mfarr[1]
-            rhovec_prime = (rhovec_cur**(-DD) - 1)**(-1/DD)
-            
             # apply chain rule to gradients w/r/t I 
-            dfunc_dI0    = dfunc_dI * imvec_cur / imvec0
-            dfunc_dalpha = dfunc_dI * imvec_cur * log_freqratio
-            dfunc_dbeta  = dfunc_dI * imvec_cur * log_freqratio * log_freqratio    
+            dfunc_dI0    = dfunc_dI * imvec0 / I0
+            dfunc_dalpha = dfunc_dI * imvec0 * log_freqratio
+            dfunc_dbeta  = dfunc_dI * imvec0 * log_freqratio * log_freqratio    
 
             # apply chain rule for derivatives w/r/t rho
             drho_drhoprime = (rhovec_prime**(-1-DD))*((1 + rhovec_prime**(-DD))**(-1-1/DD))
         
-            dfunc_drho0     = dfunc_drho * drho_drhoprime * rhovec_cur / rhovec0
+            dfunc_drho0     = dfunc_drho * drho_drhoprime * rhovec_cur / rho0
             dfunc_dalphapol = dfunc_drho * drho_drhoprime * rhovec_cur * log_freqratio
             dfunc_dbetapol  = dfunc_drho * drho_drhoprime * rhovec_cur * log_freqratio * log_freqratio
 
-
             # apply chain rule for derivatives w/r/t phi and psi
             dfunc_dphi0 = dfunc_dphi
-            dfunc_drm   = dfunc_dphi0*(np.exp(-2*log_freqratio)-1)
+            dfunc_drm   = dfunc_dphi*(np.exp(-2*log_freqratio)-1)
 
+            # TODO: we require psi be between -pi/2 and pi/2 for m=rho*cos(psi) to work
+            # for now, we will just keep multifrequency V off
+            # and dimensionless conversion measure scaled by lamba0^3 = c^3/nu0^3
             dfunc_dpsi0 = dfunc_dpsi
-            dfunc_dcm   = dfunc_dpsi0*(np.exp(-3*log_freqratio)-1)
+            dfunc_dcm   = np.zeros(dfunc_dpsi.shape)
+            #dfunc_dcm   = dfunc_dpsi*(np.exp(-3*log_freqratio)-1)
                         
             out = np.array((dfunc_dI0, dfunc_dalpha, dfunc_dbeta,
                             dfunc_drho0, dfunc_dalphapol, dfunc_dbetapol,

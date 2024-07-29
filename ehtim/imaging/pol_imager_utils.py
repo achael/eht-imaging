@@ -42,6 +42,7 @@ from ehtim.imaging.imager_utils import embed, embed_arr
 
 TANWIDTH_M = 0.5
 TANWIDTH_V = 1
+TANWIDTH_PSI = 1
 POL_SOLVE_DEFAULT = (0,1,1,0)
 POL_SOLVE_DEFAULT_V = (0,0,0,1)
 RANDOMFLOOR=True
@@ -137,21 +138,128 @@ def make_vfrac_image(imarr):
     vimage = imarr[1] * np.sin(imarr[3])
         
     return vfimage
-   
-def pcv(imarr):
-    """change of variables rho(rho') from range (-inf, inf) to (0,1)
+
+def polcv(imarr):
+    """change of variables rho(rho') from range (-inf, inf) to (0,1) 
+       and \psi(\psi') from range (-inf, inf) to (-pi/2, pi/2)
+       input is solver values, output is physical values               
     """
     
     rho_prime =  imarr[1]
     rho = 0.5 + np.arctan(rho_prime/TANWIDTH_M)/np.pi
-    out = np.array((imarr[0], rho, imarr[2], imarr[3]))
+    
+    psi_prime = imarr[3]
+    psi = np.arctan(psi_prime/TANWIDTH_PSI)
+    
+    out = np.array((imarr[0], rho, imarr[2], phi))
+    return out
+
+def polcv_r(imarr):
+    """Reverse change of variables rho'(rho) from range (0,1) to (-inf, inf)
+       and \psi'(\psi) from range (-pi/2, pi/2) to (-inf, inf)
+       input is physical values, output is solver values               
+    """
+    
+    rho = imarr[1]
+    rho_prime = TANWIDTH_M*np.tan(np.pi*(rho - 0.5))
+
+    psi = imarr[3]
+    psi_prime = TANWIDTH_PSI*np.tan(psi)
+    
+    out = np.array((imarr[0], rho_prime, imarr[2], psi_prime))
+
+    return out
+
+def polcv_chain(imarr):
+    """chain rule term dm/dm' for mcv
+       input is solver values
+    """
+    out = np.ones(imarr.shape)
+    
+    rho_prime = imarr[1]
+    out[1] = 1 / (TANWIDTH_M*np.pi*(1 + (rho_prime/TANWIDTH_M)**2))
+    
+    psi_prime = imarr[3]
+    out[3] =  1 / (TANWIDTH_PSI*(1 + (psi_prime/TANWIDTH_PSI)**2))
+    return out
+           
+               
+def mcv(imarr):
+    """change of variables m(n') from range (-inf, inf) to (0,1)
+       input is solver values, output is physical values        
+    """
+    
+    vfrac = imarr[3] # when using this transform, we interpret transformed imarr[3] as mfrac=\rho sin(\psi)
+    mfrac_max = 1-np.abs(vfrac)
+    if np.any(mfrac_max>1):
+        raise Exception("mfrac_max>1 in mcv!")
+        
+    mfrac_prime =  imarr[1]
+    mfrac = mfrac_max*(0.5 + np.arctan(mfrac_prime/TANWIDTH_M)/np.pi)
+    
+    rho = np.sqrt(mfrac**2 + vfrac**2)
+    psi = np.arcsin(vfrac/rho)
+        
+    out = np.array((imarr[0], rho, imarr[2], psi))
+    return out
+
+def mcv_r(imarr):
+    """Reverse change of variables m'(m) from range (0,1-|v|) to (-inf, inf)
+       input is physical values, output is solver values    
+    """
+    rho = imarr[1]
+    psi = imarr[3]
+    mfrac = rho*np.cos(psi)
+    vfrac = rho*np.sin(psi)
+    mfrac_max = 1-np.abs(vfrac)
+    if np.any(mfrac_max>1):
+        raise Exception("mfrac_max>1 in mcv!")
+                
+    mfrac_prime = TANWIDTH_M*np.tan(np.pi*(mfrac/mfrac_max - 0.5))
+    out = np.array((imarr[0], mfrac_prime, imarr[2], vfrac))
     return out
     
-def vcv(imarr):
-    """change of variables for v(v') from range (-inf,inf) to (-1+m,1-m) keeping m=P/I fixed"""
-    mfrac = imarr[1] # when using this transform, imarr[2] is mfrac=\rho cos(\psi), not \rho
-    vfrac_max = np.abs(1-mfrac)
+# TODO WE ARE GOING TO HAVE TO CHECK ALL OF THESE NUMERICALLY
+def mcv_chain(imarr):
+    """chain rule terms drho/dm' and dpsi/dv' for mcv
+       input is solver values
+    """
+    out = np.ones(imarr.shape)
     
+    vfrac = imarr[3] # when using this transform, we interpret transformed imarr[3] as mfrac=\rho sin(\psi)
+    mfrac_max = 1-np.abs(vfrac)
+    if np.any(mfrac_max>1):
+        raise Exception("mfrac_max>1 in mcv!")
+        
+    mfrac_prime =  imarr[1]
+    mfrac = mfrac_max*(0.5 + np.arctan(mfrac_prime/TANWIDTH_M)/np.pi)
+    
+    rho = np.sqrt(mfrac**2 + vfrac**2)
+    psi = np.arcsin(vfrac/rho)
+
+    dm_dmprime = mfrac_max / (TANWIDTH_M*np.pi*(1 + (mfrac_prime/TANWIDTH_M)**2))
+        
+    drho_dm = mfrac / rho                # drho/dm holding v constant
+    drho_dmprime = drho_dm * dm_dmprime
+    out[1] = drho_dmprime
+
+    # we only use mcv when holding v constant, so dF/imarr[3]=0  
+    #dpsi_dm = -vfrac/ (rho*rho)         # dpsi/dm holding v constant # TODO CHECK
+    #dpsi_dmprime = dpsi_dm * dm_dmprime
+    #out[3] = dpsi_dmprime   
+    out[3] = np.zeros(out[3].shape)  
+        
+    return out
+           
+def vcv(imarr):
+    """change of variables for v(v') from range (-inf,inf) to (-1+|m|,1-|m|) while keeping m=P/I fixed
+       input is solver values, output is physical values"""
+    
+    mfrac = imarr[1] # when using this transform, we interpret transformed imarr[1] as mfrac=\rho cos(\psi)
+    vfrac_max = 1-np.abs(mfrac)
+    if np.any(vfrac_max>1):
+        raise Exception("vfrac_max>1 in vcv!")
+            
     vfrac_prime = imarr[3]
     vfrac = 2*vfrac_max*np.arctan(vfrac_prime/TANWIDTH_V)/np.pi    
     
@@ -161,44 +269,32 @@ def vcv(imarr):
     out = np.array((imarr[0], rho, imarr[2], psi))
     return out
 
-def pcv_r(imarr):
-    """Reverse change of variables rho'(rho) from range (0,1) to (-inf, inf)
-    """
-    
-    rho = imarr[1]
-    rho_prime = TANWIDTH_M*np.tan(np.pi*(rho - 0.5))
-    out = np.array((imarr[0], rho_prime, imarr[2], imarr[3]))
-    return out
-    
 def vcv_r(imarr):
-    """Reverse change of variables for v'(v) from range(-1+m,1-m) to (-inf,inf) keeping m=P/I fixed"""
+    """Reverse change of variables for v'(v) from range(-1+|m|,1-|m|) to (-inf,inf) keeping m=P/I fixed
+       input is physical values, output is solver values"""
     rho = imarr[1]
     psi = imarr[3]
     mfrac = rho*np.cos(psi)
     vfrac = rho*np.sin(psi)
-    vfrac_max = np.abs(1-mfrac)
+    vfrac_max = 1-np.abs(mfrac)
+    if np.any(vfrac_max>1):
+        raise Exception("vfrac_max>1 in vcv_r!")
     
     vfrac_prime = TANWIDTH_V*np.tan(np.pi*vfrac/(2*vfrac_max))
-    out = np.array((imarr[0], mfrac, imarr[2], vfrac_prime))
-    
+    out = np.array((imarr[0], mfrac, imarr[2], vfrac_prime))   
     return out
 
-def pcv_chain(imarr):
-    """chain rule term drho/drho' for pcv
-    """
-    out = np.ones(imarr.shape)
-    
-    rho_prime = imarr[1]
-    out[1] = 1 / (TANWIDTH_M*np.pi*(1 + (rho_prime/TANWIDTH_M)**2))
-    return out
-
+# TODO WE ARE GOING TO HAVE TO CHECK ALL OF THESE NUMERICALLY
 def vcv_chain(imarr):
     """chain rule terms drho/dv' and dpsi/dv' for vcv
+       input is solver values
     """
     out = np.ones(imarr.shape)
     
-    mfrac = imarr[1] # when using this transform, imarr[2] is mfrac=\rho cos(\psi), not \rho
-    vfrac_max = np.abs(1-mfrac)
+    mfrac = imarr[1] # when using this transform, we interpret transformed imarr[1] as mfrac=\rho cos(\psi)
+    vfrac_max = 1-np.abs(mfrac)
+    if np.any(vfrac_max>1):
+        raise Exception("vfrac_max>1 in vcv_r!")
 
     vfrac_prime = imarr[3]    
     vfrac = 2*vfrac_max*np.arctan(vfrac_prime/TANWIDTH_V)/np.pi        
@@ -206,12 +302,14 @@ def vcv_chain(imarr):
     psi = np.arcsin(vfrac/rho)
     
     dv_dvprime = 2. * vfrac_max / (TANWIDTH_V*np.pi*(1 + (vfrac_prime/TANWIDTH_V)**2))
-    
-    drho_dv = vfrac / rho
-    drho_dvprime = drho_dv * dv_dvprime
-    out[1] = drho_dvprime
-    
-    dpsi_dv = mfrac / rho
+
+    # we only use mcv when holding v constant, so dF/imarr[1]=0      
+    #drho_dv = rhofrac / v                # drho/dv holding m constant
+    #drho_dvprime = drho_dv * dv_dvprime
+    #out[1] = drho_dvprime
+    out[1] = np.zeros(out[3].shape)  
+        
+    dpsi_dv = mfrac / (rho*rho)          # dpsi/dv holding m constant # TODO CHECK
     dpsi_dvprime = dpsi_dv * dv_dvprime
     out[3] = dpsi_dvprime       
     return out
@@ -309,8 +407,9 @@ def polchisqgrad(imarr, A, data, sigma, dtype, ttype='direct',mask=[],
     return chisqgrad
 
 
-def polregularizer(imarr, mask, flux, pflux, vflux, xdim, ydim, psize, stype, **kwargs):
-
+def polregularizer(imarr, priorarr, mask, flux, pflux, vflux, xdim, ydim, psize, stype, **kwargs):
+    # NOTE: priorarr is currently not used in any regularizer 
+    
     norm_reg = kwargs.get('norm_reg', NORM_REGULARIZER)
     beam_size = kwargs.get('beam_size',1)
     
@@ -349,8 +448,9 @@ def polregularizer(imarr, mask, flux, pflux, vflux, xdim, ydim, psize, stype, **
 
     return reg
 
-def polregularizergrad(imarr, mask, flux, pflux, vflux, xdim, ydim, psize, stype, **kwargs):
-
+def polregularizergrad(imarr, priorarr, mask, flux, pflux, vflux, xdim, ydim, psize, stype, **kwargs):
+    # NOTE: priorarr is currently not used in any regularizer 
+    
     norm_reg = kwargs.get('norm_reg', NORM_REGULARIZER)
     beam_size = kwargs.get('beam_size',1)
     pol_solve = kwargs.get('pol_solve', POL_SOLVE_DEFAULT)

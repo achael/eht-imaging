@@ -42,14 +42,12 @@ import ehtim.io.save
 import ehtim.io.load
 import ehtim.const_def as ehc
 import ehtim.observing.obs_helpers as obsh
+import ehtim.imaging.pol_imager_utils as polutils
 
 # TODO : add time to all images
 # TODO : add arbitrary center location
 
-# P = I * p * cos(\psi) * exp(2i\chi)
-# TODO : add self._mflist_p
-# TODO : add self._mflist_chi
-# TODO : add self._mflist_psi
+DD_RHOPOL = 2 # transform paramter for multifrequency polarization fraction
 ###################################################################################################
 # Image object
 ###################################################################################################
@@ -74,7 +72,7 @@ class Image(object):
            polrep (str): polarization representation, either 'stokes' or 'circ'
            pol_prim (str): The default image: I,Q,U or V for Stokes, or RR,LL,LR,RL for Circular
            _imdict (dict): The dictionary with the polarimetric images
-           _mflist (list): List of spectral index images (and higher order terms)
+           _mflist (list): List of spectral index images (and higher order/polarization terms)
     """
 
     def __init__(self, image, psize, ra, dec, pa=0.0,
@@ -142,7 +140,11 @@ class Image(object):
         # TODO -- don't initialize to zero?
         avec = np.array([]) 
         bvec = np.array([])
-        self._mflist = [avec, bvec]
+        avec_pol = np.array([]) 
+        bvec_pol = np.array([])
+        self.rmvec = np.array([])
+        self.cmvec = np.array([])        
+        self._mflist = [avec, bvec, avec_pol, bvec_pol, rmvec, cmvec]
 
         # Save the image dimension data
         self.pol_prim = pol_prim
@@ -203,6 +205,50 @@ class Image(object):
             raise Exception("vec size is not consistent with xdim*ydim!")
         self._mflist[1] = vec
 
+    @property
+    def specvec_pol(self):
+        specvec_pol = self._mflist[2]
+        return specvec_pol
+
+    @specvec_pol.setter
+    def specvec_pol(self, vec):
+        if len(vec) != self.xdim * self.ydim:
+            raise Exception("vec size is not consistent with xdim*ydim!")
+        self._mflist[2] = vec
+
+    @property
+    def curvvec_pol(self):
+        curvvec_pol = self._mflist[3]
+        return curvvec_pol
+
+    @curvvec_pol.setter
+    def curvvec_pol(self, vec):
+        if len(vec) != self.xdim * self.ydim:
+            raise Exception("vec size is not consistent with xdim*ydim!")
+        self._mflist[3] = vec
+
+    @property
+    def rmvec(self):
+        rmvec = self._mflist[4]
+        return rmvec
+
+    @rmvec.setter
+    def rmvec(self, vec):
+        if len(vec) != self.xdim * self.ydim:
+            raise Exception("vec size is not consistent with xdim*ydim!")
+        self._mflist[4] = vec
+        
+    @property
+    def cmvec(self):
+        cmvec = self._mflist[5]
+        return cmvec
+
+    @cmvec.setter
+    def cmvec(self, vec):
+        if len(vec) != self.xdim * self.ydim:
+            raise Exception("vec size is not consistent with xdim*ydim!")
+        self._mflist[5] = vec
+        
     @property
     def ivec(self):
         ivec = np.array([])
@@ -369,7 +415,7 @@ class Image(object):
 
     @property
     def pvec(self):
-        """Return the polarization magnitude for each pixel"""
+        """Return the linear polarization magnitude for each pixel"""
         if self.polrep == 'circ':
             pvec = np.abs(self.rlvec)
         elif self.polrep == 'stokes':
@@ -379,7 +425,7 @@ class Image(object):
 
     @property
     def mvec(self):
-        """Return the fractional polarization for each pixel"""
+        """Return the fractional linear polarization for each pixel"""
         if self.polrep == 'circ':
             mvec = 2 * np.abs(self.rlvec) / (self.rrvec + self.llvec)
         elif self.polrep == 'stokes':
@@ -389,7 +435,7 @@ class Image(object):
 
     @property
     def chivec(self):
-        """Return the fractional polarization angle for each pixel"""
+        """Return the linear polarization angle for each pixel"""
         if self.polrep == 'circ':
             chivec = 0.5 * np.angle(self.rlvec / (self.rrvec + self.llvec))
         elif self.polrep == 'stokes':
@@ -402,6 +448,26 @@ class Image(object):
         """Return the fractional polarization angle for each pixel"""
 
         return self.chivec
+
+
+    @property
+    def rhovec(self):
+        """Return the total polarization fraction for each pixel"""
+        rhovec = np.sqrt(self.qvec**2 + self.uvec**2 + self.vvec**2) / self.ivec)
+        return rhovec
+
+    @property
+    def phivec(self):
+        """Return the linear Poincare angle, twice the EVPA"""
+        phivec = 2*self.chivec
+        return phivec
+
+    @property
+    def psivec(self):
+        """Return the circular Poincare angle"""
+        psivec = np.arctan2(self.vvec , self.pvec)
+        return psivec
+               
 
     @property
     def evec(self):
@@ -532,9 +598,9 @@ class Image(object):
         # Copy over all polarization images
         newim.copy_pol_images(self)
 
-        # Copy over spectral index information
+        # Copy over spectral information
         newim._mflist = copy.deepcopy(self._mflist)
-
+                
         return newim
 
     def copy_pol_images(self, old_image):
@@ -708,7 +774,7 @@ class Image(object):
                 polarr = polvec.reshape(self.ydim, self.xdim)
                 newim.add_pol_image(polarr, pol)
 
-        # Add in spectral index
+        # Add in spectral information
         newim._mflist = copy.deepcopy(self._mflist)
 
         return newim
@@ -733,21 +799,25 @@ class Image(object):
 
     def get_image_mf(self, nu):
         """Get image at a given frequency given the spectral information in self._mflist
-        
+           NOTE: Only to 2nd order at the moment!!
+           
            Args:
                nu (float): frequency in Hz
 
            Returns:
                (Image): image at the desired frequency
         """
-        # TODO -- what to do about polarization? Faraday rotation?
+
 
         nuref = self.rf
         log_nufrac = np.log(nu / nuref)
         log_imvec = np.log(self.imvec)
 
-        for n, mfvec in enumerate(self._mflist):
-            if len(mfvec):
+        # Stokes I/primary polarization
+#        for n, mfvec in enumerate(self._mflist):
+        for n in range(2):
+            mfvec = self._mflist[n]
+            if mfvec.size:
                 log_imvec += mfvec * (log_nufrac**(n + 1))
         imvec = np.exp(log_imvec)
 
@@ -756,10 +826,63 @@ class Image(object):
         argdict['rf'] = nu
         outim = Image(*arglist, **argdict)
 
-        # Copy over all polarization images -- unchanged for now
-        outim.copy_pol_images(self)
+        # Polarization
+        for n in range(4):
+            if self.mflist[n+2].size: do_mf_pol=True
+        if not(self.qvec.size and self.uvec.size and self.vvec.size):
+            print("WARNING: polarization multifrequency terms exist but not all Stokes parameters are defined""")
+            print("Cannot apply spectral terms to polarization in get_image_mf")
+            do_mf_pol=False
+        
+        if do_mf_pol:
+            outim = outim.switch_polrep(polrep_out='stokes')
+            im_stokes = self.switch_polrep(polrep_out='stokes')
+            rhovec = im_stokes.rhovec
+            phivec = im_stokes.phivec
+            psivec = im_stokes.psivec
+            
+            if self.specvec_pol.size: 
+                alpha_pol = self.specvec_pol
+            else:
+                alpha_pol = 0
+            if self.curvvec_pol.size: 
+                beta_pol = self.curvvec_pol
+            else:
+                beta_pol = 0
+            if self.rmvec.size: 
+                rm = self.rmvec
+            else:
+                rm = 0         
+            if self.cmvec.size: 
+                print("WARNING: cmvec exists, but Stokes V spectral behavior is not implemented yet!")
+            else:
+                cm = 0
+            
+            # TODO: can we use the same function as multifreq_imager_utils.image_at_freq??
+            logrhovec_prime = np.log(rhovec) + alpha_pol*log_nufrac + beta_pol*log_nufrac*log_nufrac
+            rhovec_prime = np.exp(logrhovec_prime)
+            
+            # transformation of rhovec to ensure it is always < 1 at any frequency
+            rhovec = (rhovec_prime**(-DD_RHOPOL) + 1)**(-1/DD_RHOPOL)
+            
+            # we use dimensionless rm scaled by lambda0^2 = c^2/nu0^2   
+            phivec = phivec + rm*(np.exp(-2*log_nufrac)-1)                               
+            psivec = psivec # Stokes V spectral behavior not implemented yet
+            
+            polarr_out = np.array((imvec, rhovec, phivec, psivec))
+            qimage_out = polutils.make_q_image(polarr_out)
+            uimage_out = polutils.make_u_image(polarr_out)
+            vimage_out = polutils.make_v_image(polarr_out)
+            outim.add_pol_image(qimage_out.reshape(outim.ydim, outim.xdim), 'Q')  
+            outim.add_pol_image(uimage_out.reshape(outim.ydim, outim.xdim), 'U')            
+            outim.add_pol_image(vimage_out.reshape(outim.ydim, outim.xdim), 'V') 
+                                                                 
+            outim = im_stokes.switch_polrep(polrep_out=self.polrep)           
+        else:
+            outim.copy_pol_images(self)
 
         # DON'T copy over spectral index information for now
+        # Because spectral terms may depend on the reference frequency
         # outim._mflist = copy.deepcopy(self._mflist)
 
         return outim
@@ -952,7 +1075,7 @@ class Image(object):
                 polarr = np.pad(polarr, ((pady, pady), (padx, padx)), 'constant')
                 outim.add_pol_image(polarr, pol)
 
-        # Add in spectral index
+        # Add in spectral data
         mflist_out = []
         for mfvec in self._mflist:
             if len(mfvec):
@@ -1033,7 +1156,7 @@ class Image(object):
                 polarr_new *= scaling
                 outim.add_pol_image(polarr_new, pol)
 
-        # Interpolate spectral index and copy over
+        # Interpolate spectral data and copy over
         mflist_out = []
         for mfvec in self._mflist:
             print("WARNING: resample_squre not debugged for spectral index resampling!")
@@ -1101,7 +1224,7 @@ class Image(object):
                 polarr_new = interp_imvec(polvec)
                 outim.add_pol_image(polarr_new, pol)
 
-        # Interpolate spectral index and copy over
+        # Interpolate spectral data and copy over
         mflist_out = []
         for mfvec in self._mflist:
             if len(mfvec):
@@ -1174,7 +1297,7 @@ class Image(object):
 
                 outim.add_pol_image(polarr_rot, pol)
 
-        # Rotate spectral index and copy over
+        # Rotate spectral data and copy over
         mflist_out = []
         for mfvec in self._mflist:
             if len(mfvec):
@@ -1219,7 +1342,7 @@ class Image(object):
                 polarr_shift = shift_imvec(polvec)
                 outim.add_pol_image(polarr_shift, pol)
 
-        # Shift spectral index and copy over
+        # Shift spectral data and copy over
         mflist_out = []
         for mfvec in self._mflist:
             if len(mfvec):
@@ -1269,7 +1392,7 @@ class Image(object):
                 imarr_rotate = np.real(np.fft.ifft2(np.fft.fft2(imarr) * rotate))
                 outim.add_pol_image(imarr_rotate, pol)
 
-        # Shift spectral index and copy over
+        # Shift spectral data and copy over
         mflist_out = []
         for mfvec in self._mflist:
             if len(mfvec):
@@ -1346,7 +1469,8 @@ class Image(object):
                     polarr = blur(polarr, gausspol)
                 outim.add_pol_image(polarr, pol)
 
-        # Blur spectral index and copy over
+        # Blur spectral data and copy over
+        # TODO WARNING!! This is not what we want to use for obtaining blurred spectral
         mflist_out = []
         for mfvec in self._mflist:
             if len(mfvec):
@@ -1419,7 +1543,8 @@ class Image(object):
         arglist[0] = imarr_blur
         outim = Image(*arglist, **argdict)
 
-        # Blur spectral index and copy over
+        # Blur spectral terms and copy over
+        # TODO WARNING!! This is not what we want to use for obtaining blurred spectral
         mflist_out = []
         for mfvec in self._mflist:
             if len(mfvec):
@@ -1431,7 +1556,7 @@ class Image(object):
             mflist_out.append(mfvec_out)
         outim._mflist = mflist_out
 
-        # Blur all polarizations and copy overi
+        # Blur all polarizations and copy over
         for pol in list(self._imdict.keys()):
             if pol == self.pol_prim:
                 continue
@@ -1534,7 +1659,7 @@ class Image(object):
                 gradarr = gradim(polvec)
                 outim.add_pol_image(gradarr, pol)
 
-        # Find the spectral index gradients and copy over
+        # Find the spectral gradients and copy over
         mflist_out = []
         for mfvec in self._mflist:
             if len(mfvec):
@@ -1637,7 +1762,7 @@ class Image(object):
                 polarr = polvec.reshape(self.ydim, self.xdim)
                 outim.add_pol_image(polarr, pol)
 
-        # Apply mask to spectral index and copy over
+        # Apply mask to spectral terms and copy over
         mflist_out = []
         for mfvec in self._mflist:
             if len(mfvec):
@@ -1717,7 +1842,7 @@ class Image(object):
                     polarr += flatarr
                 outim.add_pol_image(polarr, pol2)
 
-        # Copy the spectral index (unchanged)
+        # Copy the spectral data (unchanged)
         outim._mflist = copy.deepcopy(self._mflist)
 
         return outim
@@ -1775,7 +1900,7 @@ class Image(object):
                     polarr += hatarr
                 outim.add_pol_image(polarr, pol2)
 
-        # Copy the spectral index (unchanged)
+        # Copy the spectral data (unchanged)
         outim._mflist = copy.deepcopy(self._mflist)
 
         return outim
@@ -1846,7 +1971,7 @@ class Image(object):
                     polarr += gaussarr
                 outim.add_pol_image(polarr, pol2)
 
-        # Copy the spectral index (unchanged)
+        # Copy the spectral data (unchanged)
         outim._mflist = copy.deepcopy(self._mflist)
 
         return outim
@@ -1912,7 +2037,7 @@ class Image(object):
                     polarr += crescarr
                 outim.add_pol_image(polarr, pol2)
 
-        # Copy the spectral index (unchanged)
+        # Copy the spectral data (unchanged)
         outim._mflist = copy.deepcopy(self._mflist)
 
         return outim
@@ -1990,7 +2115,7 @@ class Image(object):
                     polarr += ringarr
                 outim.add_pol_image(polarr, pol2)
 
-        # Copy the spectral index (unchanged)
+        # Copy the spectral data (unchanged)
         outim._mflist = copy.deepcopy(self._mflist)
 
         return outim
@@ -2042,7 +2167,7 @@ class Image(object):
                 polarr = polvec.reshape(self.ydim, self.xdim).copy()
                 outim.add_pol_image(polarr, pol)
 
-        # Copy the spectral index (unchanged)
+        # Copy the spectral data (unchanged)
         outim._mflist = copy.deepcopy(self._mflist)
 
         return outim
@@ -2126,18 +2251,22 @@ class Image(object):
                 polarr = polvec.reshape(self.ydim, self.xdim).copy()
                 outim.add_pol_image(polarr, pol)
 
-        # Copy the spectral index (unchanged)
+        # Copy the spectral data (unchanged)
         outim._mflist = copy.deepcopy(self._mflist)
 
         return outim
 
-    def add_const_mf(self, alpha, beta=0.):
+    def add_const_mf(self, alpha, beta=0., alpha_pol=None, beta_pol=None, rm=None):
         """Add a constant spectral index and curvature term
 
            Args:
                alpha (float): spectral index (with no - sign)
                beta (float): curvature
-
+               alpha_pol (float): polarization fraction spectral index
+               beta_pol (float): polarization fraction spectral curvature
+               rm (float): rotation measure (dimensionless at reference freq)
+               cm (float): conversion measure (not yet implemented)
+               
            Returns:
                 (Image): output image with constant mf information added
         """
@@ -2145,9 +2274,29 @@ class Image(object):
         avec = alpha * np.ones(len(self.imvec))
         bvec = beta * np.ones(len(self.imvec))
 
+        if alpha_pol is not None:
+            apvec = alpha_pol* np.ones(len(self.imvec))
+        else:
+            apvec = np.array([])
+
+        if beta_pol is not None:
+            bpvec = beta_pol* np.ones(len(self.imvec))
+        else:
+            bpvec = np.array([])
+            
+        if rm is not None:
+            rmvec = rm* np.ones(len(self.imvec))
+        else:
+            rmvec = np.array([])
+
+        if cm is not None:
+            cmvec = cm* np.ones(len(self.imvec))
+        else:
+            cmvec = np.array([])
+                                            
         # create the new image object
         outim = self.copy()
-        outim._mflist = [avec, bvec]
+        outim._mflist = [avec, bvec, apvec,bpvec,rmvec,cmvec ]
 
         return outim
 
