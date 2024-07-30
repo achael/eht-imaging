@@ -624,11 +624,12 @@ def chisqgrad_camp(imvec, Amatrices, clamp, sigma):
     pt2 = pp/i2
     pt3 = -pp/i3
     pt4 = -pp/i4
+            
     out = (np.dot(pt1, Amatrices[0]) +
            np.dot(pt2, Amatrices[1]) +
            np.dot(pt3, Amatrices[2]) +
            np.dot(pt4, Amatrices[3]))
-    out *= (-2.0/len(clamp)) * np.real(out)
+    out = (-2.0/len(clamp)) * np.real(out)
     return out
 
 

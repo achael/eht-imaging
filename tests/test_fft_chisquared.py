@@ -6,8 +6,9 @@ import ehtim as eh
 from ehtim.imaging.imager_utils import chisqdata, chisqgrad, chisq
 import time
 
-im = eh.image.load_txt('../../models/avery_sgra_eofn.txt')
-eht = eh.array.load_txt('../../arrays/EHT2019.txt')
+path = eh.__path__[0]
+im = eh.image.load_txt(path + '/../models/avery_sgra_eofn.txt')
+eht = eh.array.load_txt(path + '/../arrays/EHT2017.txt')
 
 PADFAC=10
 PRAD_FFT = 12
@@ -76,17 +77,17 @@ for dtype in ['vis', 'bs', 'amp', 'cphase', 'camp', 'logcamp']:
     print("Fractional Difference direct-nfft %0.4f"% np.abs((chisq_dft - chisq_nfft)/(np.abs(chisq_dft))))
     print("Fractional Difference nfft-fast %0.4f"% np.abs((chisq_nfft - chisq_fft)/(np.abs(chisq_nfft))))
 
-# Testing the gradient of chi^2
+# Testing the chi^2 gradients
 for dtype in ['vis', 'bs', 'amp', 'cphase', 'camp', 'logcamp']:
     print('\nTesting',dtype)
     print('------------------------------')
-    chisqdata_dft = chisqdata(obs_dft, prior, mask, dtype, ttype='direct')
-    chisqdata_fft = chisqdata(obs_dft, prior, mask, dtype, ttype='fast', fft_pad_factor=PADFAC,p_rad=PRAD_FFT)
+    chisqdata_dft  = chisqdata(obs_dft, prior, mask, dtype, ttype='direct')
+    chisqdata_fft  = chisqdata(obs_dft, prior, mask, dtype, ttype='fast', fft_pad_factor=PADFAC,p_rad=PRAD_FFT)
     chisqdata_nfft = chisqdata(obs_dft, prior, mask, dtype, ttype='nfft', fft_pad_factor=PADFAC,p_rad=PRAD_NFFT)
   
-    chisq_dft_grad = chisqgrad(test_imvec, chisqdata_dft[2], chisqdata_dft[0], chisqdata_dft[1], dtype, ttype='direct', mask=mask)
-    chisq_fft_grad = chisqgrad(test_imvec, chisqdata_fft[2], chisqdata_fft[0], chisqdata_fft[1], dtype, ttype='fast', mask=mask)
-    chisq_nfft_grad =chisqgrad(test_imvec, chisqdata_nfft[2], chisqdata_nfft[0], chisqdata_nfft[1], dtype, ttype='nfft', mask=mask)
+    chisq_dft_grad  = chisqgrad(test_imvec, chisqdata_dft[2], chisqdata_dft[0], chisqdata_dft[1], dtype, ttype='direct', mask=mask)
+    chisq_fft_grad  = chisqgrad(test_imvec, chisqdata_fft[2], chisqdata_fft[0], chisqdata_fft[1], dtype, ttype='fast', mask=mask)
+    chisq_nfft_grad = chisqgrad(test_imvec, chisqdata_nfft[2], chisqdata_nfft[0], chisqdata_nfft[1], dtype, ttype='nfft', mask=mask)
     #print("chisq_dft_grad:",chisq_dft_grad.reshape((im.ydim,im.xdim))[47:53,47:53])
     #print("chisq_fft_grad:",chisq_fft_grad.reshape((im.ydim,im.xdim))[47:53,47:53])
     compare_floor = np.min(np.abs(chisq_dft_grad))*1.e-20 + 1.e-100

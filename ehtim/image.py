@@ -142,8 +142,8 @@ class Image(object):
         bvec = np.array([])
         avec_pol = np.array([]) 
         bvec_pol = np.array([])
-        self.rmvec = np.array([])
-        self.cmvec = np.array([])        
+        rmvec = np.array([])
+        cmvec = np.array([])        
         self._mflist = [avec, bvec, avec_pol, bvec_pol, rmvec, cmvec]
 
         # Save the image dimension data
@@ -448,7 +448,6 @@ class Image(object):
         """Return the fractional polarization angle for each pixel"""
 
         return self.chivec
-
 
     @property
     def rhovec(self):
