@@ -63,6 +63,7 @@ def image_at_freq(mfarr, log_freqratio):
             logimvec = np.log(imvec0) + alpha*log_freqratio + beta*log_freqratio*log_freqratio
             imvec = np.exp(logimvec)
             out = imvec
+
             
         # Full Polarization    
         elif len(mfarr==10):
@@ -121,7 +122,7 @@ def mf_all_grads_chain(funcgrad, image_cur, mfarr, log_freqratio):
             dfunc_dbeta  = funcgrad * imvec_cur * log_freqratio * log_freqratio
 
             out = np.array((dfunc_dI0, dfunc_dalpha, dfunc_dbeta))
-            
+
         # Full Polarization    
         elif len(mfarr==10):
             # current image
@@ -199,7 +200,7 @@ def regularizergrad_mf(imvec, nprior, mask, xdim, ydim, psize, stype, **kwargs):
     beam_size = kwargs.get('beam_size', psize)
 
     if "l2_" in stype:
-        s = -l2_spec_grad(imvec, nprior)
+        s = -l2_spec_grad(imvec, nprior, norm_reg=norm_reg)
     elif "tv_" in stype:
         if np.any(np.invert(mask)):
             imvec = embed(imvec, mask, clipfloor=0, randomfloor=False)
@@ -231,8 +232,9 @@ def l2_spec_grad(imvec, priorvec, norm_reg=NORM_REGULARIZER):
         norm = float(len(imvec))
     else:
         norm = 1
-        
-    out = -2*(np.sum(imvec - priorvec))*np.ones(len(imvec))
+    out = -2*(imvec - priorvec)
+    # PIN TODO HOW WAS THIS WRONG???????????
+#    out = -2*(np.sum(imvec - priorvec))*np.ones(len(imvec))
     return out/norm
 
 

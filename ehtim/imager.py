@@ -665,7 +665,8 @@ class Imager(object):
         if (self.prior_next.polrep == 'circ' and not(self.pol_next in ['RR', 'LL'])):
             raise Exception("Initial image polrep is 'circ': pol_next must be 'RR' or 'LL'")
 
-        if (self.prior_next.polrep == 'stokes' and not(self.pol_next in ['I', 'Q', 'U', 'V', 'P','IP','IQU','IV','IQUV'])):
+        if (self.prior_next.polrep == 'stokes' 
+            and not(self.pol_next in ['I', 'Q', 'U', 'V', 'P','IP','IQU','IV','IQUV'])):
             raise Exception(
                 "Initial image polrep is 'stokes': pol_next must be in 'I', 'Q', 'U', 'V', 'P','IP','IQU','IV','IQUV'!")
 
@@ -1250,7 +1251,10 @@ class Imager(object):
 
                     # If imaging Stokes I with polarization simultaneously, bundle the gradient
                     if self.pol_next in POLARIZATION_MODES: 
-                        chi2grad = np.array((chi2grad,np.zeros(self._nimage),np.zeros(self._nimage),np.zeros(self._nimage)))
+                        chi2grad = np.array((chi2grad,
+                                             np.zeros(self._nimage),
+                                             np.zeros(self._nimage),
+                                             np.zeros(self._nimage)))
 
                 else:
                     raise Exception("data term %s not recognized!" % dname)
@@ -1410,7 +1414,7 @@ class Imager(object):
                         idx = 8
                     elif regname in REGULARIZERS_CM:
                         idx = 9
-                    
+
                     regmf = mfutils.regularizergrad_mf(imcur[idx], self._xprior[idx], self._embed_mask,
                                                        self.prior_next.xdim, self.prior_next.ydim, self.prior_next.psize,
                                                        regname,
@@ -1803,6 +1807,7 @@ def unpack_imarr(vec, priorarr, which_solve):
     """unpack minimized vector vec into array,
        replace quantities not solved for with their initial values
     """
+    
     imarrdim = len(priorarr.shape)
     if imarrdim==2:
         nsolve = priorarr.shape[0]    
@@ -1900,7 +1905,7 @@ def transform_imarr_inverse(imarr, transforms, which_solve):
     if nimage==1 and ('log' in transforms):
         outarr = np.log(imarr)         
     elif nimage==3 and ('log' in transforms):
-        outarr[0] = np.exp(outarr[0])           
+        outarr[0] = np.log(outarr[0])           
     else:
 
         if pol_which_solve[0]==1 and ('log' in transforms):  # full polarization, including stokes I imaging

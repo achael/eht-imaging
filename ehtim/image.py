@@ -819,12 +819,13 @@ class Image(object):
             if mfvec.size:
                 log_imvec += mfvec * (log_nufrac**(n + 1))
         imvec = np.exp(log_imvec)
-
+        
         arglist, argdict = self.image_args()
         arglist[0] = imvec.reshape(self.ydim, self.xdim)
         argdict['rf'] = nu
         outim = Image(*arglist, **argdict)
 
+        
         # Polarization
         do_mf_pol=False
         for n in range(4):
@@ -878,8 +879,8 @@ class Image(object):
             outim.add_pol_image(qimage_out.reshape(outim.ydim, outim.xdim), 'Q')  
             outim.add_pol_image(uimage_out.reshape(outim.ydim, outim.xdim), 'U')            
             outim.add_pol_image(vimage_out.reshape(outim.ydim, outim.xdim), 'V') 
-                                                                 
-            outim = im_stokes.switch_polrep(polrep_out=self.polrep)           
+            outim = outim.switch_polrep(polrep_out=self.polrep)           
+
         else:
             outim.copy_pol_images(self)
 
