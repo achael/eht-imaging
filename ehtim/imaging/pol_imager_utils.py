@@ -80,7 +80,7 @@ def make_p_image(imarr):
     """
 
     # NOTE! We replaced EVPA chi with phi=2chi in the imarr
-    Pimage = imarr[0] * imarr[1] * np.exp(1j*imarr[2]) * np.cos(imarr[3])
+    pimage = imarr[0] * imarr[1] * np.exp(1j*imarr[2]) * np.cos(imarr[3])
 
     return pimage
 
@@ -1056,7 +1056,7 @@ def stv_pol_grad(imarr, flux, nx, ny, psize, pol_solve=POL_SOLVE_DEFAULT,
         gradpsi = gradm * (-mimage*np.tan(psiimage))
         gradout[3] = gradpsi     
                 
-    return out/norm
+    return gradout/norm
 
 ###############################################################
 # circular polarization

@@ -993,6 +993,7 @@ class Imager(object):
                 # prior
                 self._xprior = priorarr
 
+
                 # transform the initial image to solved for values and assign to self._xarr
                 initarr = transform_imarr_inverse(initarr, self.transform_next, self._which_solve)
                 self._xarr = initarr
@@ -1359,7 +1360,6 @@ class Imager(object):
         reggrad_dict = {}
                       
         for regname in sorted(self.reg_term_next.keys()):
-            reggradzero = np.zeros((len(imcur), self._nimage))
             
             # Multifrequency regularizers 
             if self.mf_next:
@@ -1377,8 +1377,8 @@ class Imager(object):
                                                       norm_reg=self.norm_reg, beam_size=self.beam_size,
                                                       pol_solve=pol_solve,
                                                       **self.regparams) 
-                    reg = np.zeros((len(imcur), self._nimage))
-                    reg[0:4] = regp
+                    reggrad = np.zeros((len(imcur), self._nimage))
+                    reggrad[0:4] = regp
                     
                 # Stokes I regularizers
                 elif regname in REGULARIZERS:         
@@ -1389,8 +1389,8 @@ class Imager(object):
                                                    regname,
                                                    norm_reg=self.norm_reg, beam_size=self.beam_size,
                                                    **self.regparams)
-                    reg = np.zeros((len(imcur), self._nimage))
-                    reg[0] = regi  
+                    reggrad = np.zeros((len(imcur), self._nimage))
+                    reggrad[0] = regi  
                                    
                 # Spectral regularizers
                 if regname in REGULARIZERS_SPECTRAL:
@@ -1415,8 +1415,8 @@ class Imager(object):
                                                        norm_reg=self.norm_reg, beam_size=self.beam_size,
                                                        **self.regparams)
                     
-                    reg = np.zeros((len(imcur), self._nimage))
-                    reg[idx] = regmf  
+                    reggrad = np.zeros((len(imcur), self._nimage))
+                    reggrad[idx] = regmf  
                 else:
                     raise Exception("regularizer term %s not recognized!" % regname)                            
             
@@ -1425,7 +1425,7 @@ class Imager(object):
             else:        
                 # Single-frequency polarimetric regularizer
                 if regname in REGULARIZERS_POL:
-                    reg = polutils.polregularizergrad(imcur, self.xprior, self._embed_mask, 
+                    reggrad = polutils.polregularizergrad(imcur, self._xprior, self._embed_mask, 
                                                       self.flux_next, self.pflux_next, self.vflux_next,
                                                       self.prior_next.xdim, self.prior_next.ydim,
                                                       self.prior_next.psize, regname,
@@ -1442,22 +1442,22 @@ class Imager(object):
                     else:
                         imcur0 = imcur
                         prior0 = self._xprior
-                    reg = imutils.regularizergrad(imcur0, prior0, self._embed_mask, self.flux_next,
-                                                  self.prior_next.xdim, self.prior_next.ydim,
-                                                  self.prior_next.psize,
-                                                  regname,
-                                                  norm_reg=self.norm_reg, beam_size=self.beam_size,
-                                                  **self.regparams)
+                    reggrad = imutils.regularizergrad(imcur0, prior0, self._embed_mask, self.flux_next,
+                                                      self.prior_next.xdim, self.prior_next.ydim,
+                                                      self.prior_next.psize,
+                                                      regname,
+                                                      norm_reg=self.norm_reg, beam_size=self.beam_size,
+                                                      **self.regparams)
                                                   
                     # If imaging Stokes I with polarization simultaneously, bundle the gradient
                     if self.pol_next in POLARIZATION_MODES: 
-                        chi2grad = np.array((chi2grad,np.zeros(self._nimage),np.zeros(self._nimage),np.zeros(self._nimage)))
+                        reggrad = np.array((reggrad,np.zeros(self._nimage),np.zeros(self._nimage),np.zeros(self._nimage)))
 
                 else:
                     raise Exception("regularizer term %s not recognized!" % regname)
 
             # put regularizer terms in the dictionary
-            reggrad_dict[regname] = reg
+            reggrad_dict[regname] = reggrad
 
         return reggrad_dict
 
@@ -1839,7 +1839,7 @@ def transform_imarr(imarr, transforms, which_solve):
         
     imarrdim = len(imarr.shape)   
     if imarrdim==2:
-        nimage = imarr.shape[1]
+        nimage = imarr.shape[0]
     elif imarrdim==1:
         nimage = 1
 
@@ -1881,7 +1881,7 @@ def transform_imarr_inverse(imarr, transforms, which_solve):
          
     imarrdim = len(imarr.shape)   
     if imarrdim==2:
-        nimage = imarr.shape[1]
+        nimage = imarr.shape[0]
     elif imarrdim==1:
         nimage = 1
        
@@ -1926,7 +1926,7 @@ def transform_gradients(gradarr, imarr, transforms, which_solve):
         
     imarrdim = len(imarr.shape)   
     if imarrdim==2:
-        nimage = imarr.shape[1]
+        nimage = imarr.shape[0]
     elif imarrdim==1:
         nimage = 1
 
@@ -2014,7 +2014,7 @@ def make_initarr(image, mask, norm_init=False, flux=1,
             init_rho = meanpol * (np.ones(nimage) + sigmapol * np.random.rand(nimage))
             init_psi = np.zeros(nimage) + sigmapol * np.random.rand(nimage)
         
-        if not_mf:
+        if not(mf):
             initarr = np.array((init_I, init_rho, init_phi, init_psi))
      
     # multi-frequency        
