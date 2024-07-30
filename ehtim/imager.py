@@ -59,7 +59,7 @@ REGULARIZERS_RM = ['l2_rm', 'tv_rm']
 REGULARIZERS_CM = ['l2_cm', 'tv_cm']
 REGULARIZERS_ISPECTRAL = REGULARIZERS_SPECIND + REGULARIZERS_CURV 
 REGULARIZERS_POLSPECTRAL = REGULARIZERS_SPECIND_P + REGULARIZERS_CURV_P + REGULARIZERS_RM + REGULARIZERS_CM
-REGULARIZERS_SPECTRAL = REGULARIZERS_ISPECTRAL + REGULARIZERS_ISPECTRAL
+REGULARIZERS_SPECTRAL = REGULARIZERS_ISPECTRAL + REGULARIZERS_POLSPECTRAL
 
 GRIDDER_P_RAD_DEFAULT = 2
 GRIDDER_CONV_FUNC_DEFAULT = 'gaussian'
@@ -1196,8 +1196,9 @@ class Imager(object):
                 # Single Polarization chi^2 terms
                 elif dname in DATATERMS:
                     if self.pol_next in POLARIZATION_MODES: 
-                        imcur_nu = imcur_nu[0] 
-
+                        imcur_nu_I = imcur_nu[0] 
+                    else:
+                        imcur_nu_I = imcur_nu
                     chi2 = imutils.chisq(imcur_nu, A, data, sigma, dname,
                                          ttype=self._ttype, mask=self._embed_mask)
 
@@ -1244,9 +1245,11 @@ class Imager(object):
                 # Single polarization chi^2 gradients
                 elif dname in DATATERMS:
                     if self.pol_next in POLARIZATION_MODES: # polarization
-                        imcur_nu = imcur_nu[0]
-                        
-                    chi2grad = imutils.chisqgrad(imcur_nu, A, data, sigma, dname,
+                        imcur_nu_I = imcur_nu[0]
+                    else:
+                        imcur_nu_I = imcur_nu
+                            
+                    chi2grad = imutils.chisqgrad(imcur_nu_I, A, data, sigma, dname,
                                                  ttype=self._ttype, mask=self._embed_mask)
 
                     # If imaging Stokes I with polarization simultaneously, bundle the gradient
@@ -1304,6 +1307,7 @@ class Imager(object):
                 
                 # Spectral regularizers
                 elif regname in REGULARIZERS_SPECTRAL:
+
                     if regname in REGULARIZERS_SPECIND:
                         if len(imcur)==10: idx = 4
                         else: idx=1
@@ -1361,6 +1365,7 @@ class Imager(object):
 
     def make_reggrad_dict(self, imcur):
         """Make a dictionary of current regularizer gradient values
+           input is image array transformed to bounded values         
         """
                 
         reggrad_dict = {}
@@ -1457,7 +1462,10 @@ class Imager(object):
                                                   
                     # If imaging Stokes I with polarization simultaneously, bundle the gradient
                     if self.pol_next in POLARIZATION_MODES: 
-                        reggrad = np.array((reggrad,np.zeros(self._nimage),np.zeros(self._nimage),np.zeros(self._nimage)))
+                        reggrad = np.array((reggrad,
+                                            np.zeros(self._nimage),
+                                            np.zeros(self._nimage),
+                                            np.zeros(self._nimage)))
 
                 else:
                     raise Exception("regularizer term %s not recognized!" % regname)
@@ -1977,8 +1985,8 @@ def make_initarr(image, mask, norm_init=False, flux=1,
     nimage = len(init_I)
                     
     if norm_init:
-        normfac = init_I / (np.sum(init_I)) 
-        init_I = flux * normfac         
+        normfac = flux / (np.sum(init_I)) 
+        init_I = normfac * init_I         
     else:
         normfac = 1
 
@@ -2044,7 +2052,7 @@ def make_initarr(image, mask, norm_init=False, flux=1,
                 init_ap = np.zeros(nimage)
 
             if len(image.curvvec_pol):
-                init_bp = imate.curvvec_pol[mask]
+                init_bp = image.curvvec_pol[mask]
             else:
                 init_bp = np.zeros(nimage)
 

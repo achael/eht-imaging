@@ -45,7 +45,7 @@ from ehtim.imaging.imager_utils import embed
 
 NORM_REGULARIZER = True
 EPSILON = 1.e-12
-DD = 2 # Power for transformation limiting polarization fraction to < 1 at all frequencies
+DD_RHOPOL = 1 # transform paramter for multifrequency polarization fraction
 ##################################################################################################
 # multifrequency transformations
 ##################################################################################################
@@ -53,9 +53,9 @@ DD = 2 # Power for transformation limiting polarization fraction to < 1 at all f
 def image_at_freq(mfarr, log_freqratio):
         """Get the image or polarization image tuple from multifrequency data
         """
-        
+
         # Stokes I only 
-        if len(mfarr==3):
+        if len(mfarr)==3:
             imvec0 = mfarr[0] # reference frequency image
             alpha  = mfarr[1] # spectral index
             beta   = mfarr[2] # spectral curvature
@@ -66,7 +66,7 @@ def image_at_freq(mfarr, log_freqratio):
 
             
         # Full Polarization    
-        elif len(mfarr==10):
+        elif len(mfarr)==10:
             # reference frequency images
             imvec0  = mfarr[0] 
             rhovec0 = mfarr[1]
@@ -87,7 +87,8 @@ def image_at_freq(mfarr, log_freqratio):
             rhovec_prime = np.exp(logrhovec_prime)
             
             # transformation of rhovec to ensure it is always < 1 at any frequency
-            rhovec = (rhovec_prime**(-DD) + 1)**(-1/DD)
+            # TODO: what to do about rhoprime=0?
+            rhovec = (rhovec_prime**(-DD_RHOPOL) + 1)**(-1/DD_RHOPOL)
             
             # we use dimensionless rm scaled by lambda0^2 = c^2/nu0^2   
             phivec = phivec0 + rm*(np.exp(-2*log_freqratio)-1)
@@ -97,7 +98,8 @@ def image_at_freq(mfarr, log_freqratio):
             # and dimensionless conversion measure scaled by lamba0^3 = c^3/nu0^3
             psivec = psivec0 #Plot + cm*(np.exp(-3*log_freqratio)-1)
                         
-            out = (imvec, rhovec, phivec, psivec)
+            out = np.array((imvec, rhovec, phivec, psivec))
+
         else:
             raise Exception("in image_at_freq, len(mfarr) must be 3 or 10!")
             
@@ -108,8 +110,9 @@ def mf_all_grads_chain(funcgrad, image_cur, mfarr, log_freqratio):
            w/r/t the gradient of a function funcgrad to the image 
            at a given frequency freq = ref_freq*exp(log_freqratio)
         """
+
         # Stokes I 
-        if len(mfarr==3):
+        if len(mfarr)==3:
             # current image
             imvec_cur = image_cur   
             
@@ -124,10 +127,10 @@ def mf_all_grads_chain(funcgrad, image_cur, mfarr, log_freqratio):
             out = np.array((dfunc_dI0, dfunc_dalpha, dfunc_dbeta))
 
         # Full Polarization    
-        elif len(mfarr==10):
+        elif len(mfarr)==10:
             # current image
             (imvec_cur, rhovec_cur, phivec_cur, psivec_cur) = image_cur
-            rhovec_prime = (rhovec_cur**(-DD) - 1)**(-1/DD) # transform rho back to rho_prime
+            rhovec_prime = (rhovec_cur**(-DD_RHOPOL) - 1)**(-1/DD_RHOPOL) # transform rho back to rho_prime
                                               
             # current reference image
             I0  = mfarr[0]
@@ -137,12 +140,13 @@ def mf_all_grads_chain(funcgrad, image_cur, mfarr, log_freqratio):
             (dfunc_dI, dfunc_drho, dfunc_dphi, dfunc_dpsi) = funcgrad
             
             # apply chain rule to gradients w/r/t I 
-            dfunc_dI0    = dfunc_dI * imvec0 / I0
-            dfunc_dalpha = dfunc_dI * imvec0 * log_freqratio
-            dfunc_dbeta  = dfunc_dI * imvec0 * log_freqratio * log_freqratio    
+            dfunc_dI0    = dfunc_dI * imvec_cur / I0
+            dfunc_dalpha = dfunc_dI * imvec_cur * log_freqratio
+            dfunc_dbeta  = dfunc_dI * imvec_cur * log_freqratio * log_freqratio    
 
             # apply chain rule for derivatives w/r/t rho
-            drho_drhoprime = (rhovec_prime**(-1-DD))*((1 + rhovec_prime**(-DD))**(-1-1/DD))
+            # TODO: what to do about rho=0?
+            drho_drhoprime = (rhovec_prime**(-1-DD_RHOPOL))*((1 + rhovec_prime**(-DD_RHOPOL))**(-1-1/DD_RHOPOL))
         
             dfunc_drho0     = dfunc_drho * drho_drhoprime * rhovec_cur / rho0
             dfunc_dalphapol = dfunc_drho * drho_drhoprime * rhovec_cur * log_freqratio
@@ -159,10 +163,10 @@ def mf_all_grads_chain(funcgrad, image_cur, mfarr, log_freqratio):
             dfunc_dcm   = np.zeros(dfunc_dpsi.shape)
             #dfunc_dcm   = dfunc_dpsi*(np.exp(-3*log_freqratio)-1)
                         
-            out = np.array((dfunc_dI0, dfunc_dalpha, dfunc_dbeta,
-                            dfunc_drho0, dfunc_dalphapol, dfunc_dbetapol,
-                            dfunc_dphi0, dfunc_drm,
-                            dfunc_dpsi0, dfunc_dcm))        
+            out = np.array((dfunc_dI0, dfunc_drho0, dfunc_dphi0, dfunc_dpsi0, 
+                            dfunc_dalpha, dfunc_dbeta,
+                            dfunc_dalphapol, dfunc_dbetapol,
+                            dfunc_drm, dfunc_dcm))        
                                 
         else:
             raise Exception("in image_at_freq, len(mfarr) must be 3 or 10!")  

@@ -47,7 +47,7 @@ import ehtim.imaging.pol_imager_utils as polutils
 # TODO : add time to all images
 # TODO : add arbitrary center location
 
-DD_RHOPOL = 2 # transform paramter for multifrequency polarization fraction
+from ehtim.imaging.multifreq_imager_utils import DD_RHOPOL
 ###################################################################################################
 # Image object
 ###################################################################################################
