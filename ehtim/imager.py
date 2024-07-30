@@ -124,8 +124,8 @@ class Imager(object):
         self._mf_list = []
         self._mf_order_list = []
         self._mf_order_pol_list = []
-        self._rm_list = []
-        self._cm_list = []
+        self._mf_rm_list = []
+        self._mf_cm_list = []
                 
         # iterations / convergence
         self.maxit_next = kwargs.get('maxit', MAXIT)
@@ -211,16 +211,17 @@ class Imager(object):
         self.mf_order_pol = kwargs.get('mf_order_pol',0)
         self.mf_rm = kwargs.get('mf_rm',0)
         self.mf_cm = kwargs.get('mf_cm',0)
-        
+
+        # Imager history
+        self._change_imgr_params = True
+        self.nruns = 0
+                
         # Set embedding matrices and prepare imager
         self.check_params()
         self.check_limits()
         self.init_imager()
         
-        # Imager history
-        self._change_imgr_params = True
-        self.nruns = 0
-        
+
     @property
     def obslist_next(self):
         return self._obslist_next
@@ -479,7 +480,7 @@ class Imager(object):
             self.init_next = init
             self.make_image(pol=pol, grads=grads, **kwargs)
 
-
+        
     def make_image_I(self, grads=True, niter=1, blur_frac=1, **kwargs):
         """Make Stokes I image using current imager settings.
         """
@@ -835,7 +836,7 @@ class Imager(object):
             print("changed cphase maximal/minimal set!")
             self._change_imgr_params = True
             return
-        if self.reffreq_next != self.reffreq_last():
+        if self.reffreq != self.reffreq_last():
             print("changed refrence frequency!")
             self._change_imgr_params = True
             return
@@ -1465,7 +1466,7 @@ class Imager(object):
         """
         
         # Unpack polarimetric/multifrequency vector into an array
-        imcur =  unpack_imarr(vec, self._xarr, self._which_solve)
+        imcur =  unpack_imarr(imvec, self._xarr, self._which_solve)
 
         # apply image transform to bounded values
         imcur = transform_imarr(imcur, self.transform_next, self._which_solve)
@@ -1507,7 +1508,7 @@ class Imager(object):
         """
 
         # Unpack polarimetric/multifrequency vector into an array
-        imcur =  unpack_imarr(vec, self._xarr, self._which_solve)
+        imcur =  unpack_imarr(imvec, self._xarr, self._which_solve)
 
         # apply image transform to bounded values
         imcur_prime = imcur.copy()
@@ -1561,7 +1562,7 @@ class Imager(object):
         if self._show_updates:
             if self._nit % self._update_interval == 0:
                 # Unpack polarimetric/multifrequency vector into an array
-                imcur =  unpack_imarr(vec, self._xarr, self._which_solve)
+                imcur =  unpack_imarr(imvec, self._xarr, self._which_solve)
                 
                 # apply image transform to bounded values
                 imcur_prime = imcur.copy()
@@ -1624,7 +1625,7 @@ class Imager(object):
         if np.any(np.invert(self._embed_mask)):
             outarr = embed_imarr(outarr, self._embed_mask) 
                            
-        if self._mf_next:
+        if self.mf_next:
             # multi-frequency polarization
             if self.pol_next in POLARIZATION_MODES:
                 iimage_out = outarr[0]
@@ -1657,7 +1658,7 @@ class Imager(object):
                 
             # single frequency Stokes I 
             else: 
-                iimage_out = out
+                iimage_out = outarr
 
         # Create Image object
         arglist, argdict = self.prior_next.image_args()
@@ -1688,19 +1689,16 @@ class Imager(object):
 
         # Copy over spectral information to the output image
         outim._mflist = copy.deepcopy(self.init_next._mflist)
-        outim._mflist_pol = copy.deepcopy(self.init_next._mflist_pol)
-        outim.rmvec = copy.deepcopy(self.init_next.rmvec)
-        outim.cmvec = copy.deepcopy(self.init_next.cmvec)        
         if self.mf_next:
             outim._mflist[0] = specind_out
             outim._mflist[1] = curv_out
             
             # polarization multi-frequency
             if self.pol_next in POLARIZATION_MODES: 
-                outim._mflist_pol[0] = specind_out_pol
-                outim._mflist_pol[1] = curv_out_pol
-                outim.rmvec = rm_out
-                outim.cmvec = cm_out
+                outim._mflist[2] = specind_out_pol
+                outim._mflist[3] = curv_out_pol
+                outim._mflist[4] = rm_out
+                outim._mflist[5] = cm_out
                             
         # Return Image object
         return outim
@@ -1820,7 +1818,7 @@ def unpack_imarr(vec, priorarr, which_solve):
     imct = 0
     imarr = np.empty((nsolve, nimage))
     for kk in range(nsolve):
-        if mf_solve[kk]==0:
+        if which_solve[kk]==0:
             imarr[kk] = priorarr[kk]
         else:
             imarr[kk] = vec[imct*nimage:(imct+1)*nimage]
@@ -1971,7 +1969,7 @@ def make_initarr(image, mask, norm_init=False, flux=1,
     init_I = image.imvec[mask]
     nimage = len(init_I)
                     
-    if self.norm_init:
+    if norm_init:
         normfac = init_I / (np.sum(init_I)) 
         init_I = flux * normfac         
     else:
@@ -2039,7 +2037,7 @@ def make_initarr(image, mask, norm_init=False, flux=1,
                 init_ap = np.zeros(nimage)
 
             if len(image.curvvec_pol):
-                init_bp = self.init_next.curvvec_pol[mask]
+                init_bp = imate.curvvec_pol[mask]
             else:
                 init_bp = np.zeros(nimage)
 
