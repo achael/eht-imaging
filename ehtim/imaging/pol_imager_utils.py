@@ -132,11 +132,11 @@ def make_v_image(imarr):
         
     return vimage
 
-def make_vfrac_image(imarr):
+def make_vf_image(imarr):
     """construct an image of stokes V/I
     """
     
-    vimage = imarr[1] * np.sin(imarr[3])
+    vfimage = imarr[1] * np.sin(imarr[3])
         
     return vfimage
 
@@ -152,7 +152,7 @@ def polcv(imarr):
     psi_prime = imarr[3]
     psi = np.arctan(psi_prime/TANWIDTH_PSI)
     
-    out = np.array((imarr[0], rho, imarr[2], phi))
+    out = np.array((imarr[0], rho, imarr[2], psi))
     return out
 
 def polcv_r(imarr):
@@ -458,7 +458,7 @@ def polregularizergrad(imarr, priorarr, mask, flux, pflux, vflux, xdim, ydim, ps
     reggrad = np.zeros(imarr.shape)
     
     if not stype in REGULARIZERS_POL:
-        return reg
+        return reggrad
 
     # linear
     if stype == "msimple":
@@ -642,7 +642,7 @@ def chisq_vvis(imarr, Amatrix, v, sigmav):
     chisq =  np.sum(np.abs((v - vsamples))**2/(sigmav**2)) / (2*len(v))   
     return chisq
 
-def chisqgrad_vvis(imarr, Amatrix, v, sigmap,pol_solve=POL_SOLVE_DEFAULT_V):
+def chisqgrad_vvis(imarr, Amatrix, v, sigmav, pol_solve=POL_SOLVE_DEFAULT_V):
     """V visibility chi-squared gradient
     """
     
@@ -1005,6 +1005,7 @@ def stv_pol_grad(imarr, flux, nx, ny, psize, pol_solve=POL_SOLVE_DEFAULT,
 
     iimage = make_i_image(imarr)
     pimage = make_p_image(imarr)
+    mimage = make_m_image(imarr)
     psiimage = make_psi_image(imarr)
 
     im = pimage.reshape(ny, nx)
@@ -1083,6 +1084,7 @@ def svfluxgrad(imarr, vflux,  pol_solve=POL_SOLVE_DEFAULT_V, norm_reg=NORM_REGUL
     
     iimage = make_i_image(imarr)  
     vimage = make_v_image(imarr)
+    vfimage = make_vf_image(imarr)
     psiimage = make_psi_image(imarr) 
     grad = -2*(np.sum(vimage) - vflux)*np.ones(len(vimage))
 
@@ -1126,13 +1128,14 @@ def sl1vgrad(imarr, vflux, pol_solve=POL_SOLVE_DEFAULT_V,  norm_reg=NORM_REGULAR
      
     iimage = make_i_image(imarr)  
     vimage = make_v_image(imarr)
+    vfimage = make_vf_image(imarr)
     psiimage = make_psi_image(imarr) 
     
     grad = -np.sign(vimage)
     
     # dS/dI Numerators
     if pol_solve[0]!=0:
-        gradi = (vimage/iimage)*grad
+        gradi = vfimage*grad
         gradout[0] = gradi
 
     # dS/dv numerators
@@ -1169,13 +1172,14 @@ def sl2vgrad(imarr, vflux,pol_solve=POL_SOLVE_DEFAULT_V, norm_reg=NORM_REGULARIZ
  
     iimage = make_i_image(imarr)  
     vimage = make_v_image(imarr)
+    vfimage = make_vf_image(imarr)    
     psiimage = make_psi_image(imarr) 
     
     grad = -2*vimage
 
     # dS/dI Numerators
     if pol_solve[0]!=0:
-        gradi = (vimage/iimage)*grad
+        gradi = (vfimage)*grad
         gradout[0] = gradi
 
     # dS/dv numerators
@@ -1219,6 +1223,7 @@ def stv_v_grad(imarr, vflux, nx, ny, psize, pol_solve=POL_SOLVE_DEFAULT_V,
 
     iimage = make_i_image(imarr)
     vimage = make_v_image(imarr)
+    vfimage = make_vf_image(imarr)
     psiimage = make_psi_image(imarr) 
     
     im = vimage.reshape(ny, nx)
@@ -1251,7 +1256,7 @@ def stv_v_grad(imarr, vflux, nx, ny, psize, pol_solve=POL_SOLVE_DEFAULT_V,
     
     # dS/dI Numerators
     if pol_solve[0]!=0:
-        gradi = (vimage/iimage)*grad
+        gradi = vfimage*grad
         gradout[0] = gradi
      
     # dS/dv numerators
@@ -1302,6 +1307,7 @@ def stv2_v_grad(imarr, vflux, nx, ny, psize, pol_solve=POL_SOLVE_DEFAULT_V,
 
     iimage = make_i_image(imarr)
     vimage = make_v_image(imarr)
+    vfimage = make_vf_image(imarr)
     psiimage = make_psi_image(imarr) 
     
     im = vimage.reshape(ny, nx)
@@ -1329,7 +1335,7 @@ def stv2_v_grad(imarr, vflux, nx, ny, psize, pol_solve=POL_SOLVE_DEFAULT_V,
     
     # dS/dI Numerators
     if pol_solve[0]!=0:
-        gradi = (vimage/iimage)*grad
+        gradi = vfimage*grad
         gradout[0] = gradi
 
     # dS/dv numerators

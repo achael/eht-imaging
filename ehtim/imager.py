@@ -684,8 +684,8 @@ class Imager(object):
         if self.mf_next:
             if len(set(self.freq_list)) < 2:
                 raise Exception("Must have observations at at least two frequencies for multifrequency imaging!")
-            if self.mf_order not in [1,2]:
-                raise Exception("mf_order must be in [1,2]!")
+            if self.mf_order not in [0,1,2]:
+                raise Exception("mf_order must be in [0,1,2]!")
                 
             if (self.pol_next in POLARIZATION_MODES):
                 if not (self.pol_next in ['P','QU']):
@@ -728,7 +728,7 @@ class Imager(object):
                     rlist = REGULARIZERS_POL + REGULARIZERS_POLSPECTRAL
                     dlist = DATATERMS_POL
             else:
-                rlist = REGULARIZERS_
+                rlist = REGULARIZERS + REGULARIZERS_ISPECTRAL
                 dlist = DATATERMS        
         else:     
             if self.pol_next in POLARIZATION_MODES:
@@ -908,8 +908,10 @@ class Imager(object):
                 do_a = 1; do_b = 1;
             elif self.mf_order==1:
                 do_a = 1; do_b = 0;
+            elif self.mf_order == 0:
+                do_a = 0; do_b = 0;
             else:
-                raise Exception("Imager.mf_order must be 1 or 2!")
+                raise Exception("Imager.mf_order must be 0, 1, or 2!")
                            
             # polarization multi-frequency
             if self.pol_next in POLARIZATION_MODES:
@@ -1273,7 +1275,7 @@ class Imager(object):
         
             # Multifrequency regularizers
             if self.mf_next:
-            
+
                 # Polarimetric regularizers
                 if regname in REGULARIZERS_POL:
                     # we only regularize the reference frequency image
@@ -1297,7 +1299,7 @@ class Imager(object):
                                               **self.regparams)
                 
                 # Spectral regularizers
-                if regname in REGULARIZERS_SPECTRAL:
+                elif regname in REGULARIZERS_SPECTRAL:
                     if regname in REGULARIZERS_SPECIND:
                         if len(imcur)==10: idx = 4
                         else: idx=1
@@ -1393,7 +1395,7 @@ class Imager(object):
                     reggrad[0] = regi  
                                    
                 # Spectral regularizers
-                if regname in REGULARIZERS_SPECTRAL:
+                elif regname in REGULARIZERS_SPECTRAL:
                     if regname in REGULARIZERS_SPECIND:
                         if len(imcur)==10: idx = 4
                         else: idx=1
@@ -1409,7 +1411,7 @@ class Imager(object):
                     elif regname in REGULARIZERS_CM:
                         idx = 9
                     
-                    regmf = mfutils.regularizergrad_mf(imcur[idx], self_xprior[idx], self._embed_mask,
+                    regmf = mfutils.regularizergrad_mf(imcur[idx], self._xprior[idx], self._embed_mask,
                                                        self.prior_next.xdim, self.prior_next.ydim, self.prior_next.psize,
                                                        regname,
                                                        norm_reg=self.norm_reg, beam_size=self.beam_size,

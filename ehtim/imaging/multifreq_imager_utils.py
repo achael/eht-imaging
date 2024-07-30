@@ -55,7 +55,7 @@ def image_at_freq(mfarr, log_freqratio):
         """
         
         # Stokes I only 
-        if len(mftuple==3):
+        if len(mfarr==3):
             imvec0 = mfarr[0] # reference frequency image
             alpha  = mfarr[1] # spectral index
             beta   = mfarr[2] # spectral curvature
@@ -65,7 +65,7 @@ def image_at_freq(mfarr, log_freqratio):
             out = imvec
             
         # Full Polarization    
-        elif len(mftuple==10):
+        elif len(mfarr==10):
             # reference frequency images
             imvec0  = mfarr[0] 
             rhovec0 = mfarr[1]
@@ -98,7 +98,7 @@ def image_at_freq(mfarr, log_freqratio):
                         
             out = (imvec, rhovec, phivec, psivec)
         else:
-            raise Exception("in image_at_freq, len(mftuple) must be 3 or 10!")
+            raise Exception("in image_at_freq, len(mfarr) must be 3 or 10!")
             
         return out
 
@@ -108,7 +108,7 @@ def mf_all_grads_chain(funcgrad, image_cur, mfarr, log_freqratio):
            at a given frequency freq = ref_freq*exp(log_freqratio)
         """
         # Stokes I 
-        if len(mftuple==3):
+        if len(mfarr==3):
             # current image
             imvec_cur = image_cur   
             
@@ -164,7 +164,7 @@ def mf_all_grads_chain(funcgrad, image_cur, mfarr, log_freqratio):
                             dfunc_dpsi0, dfunc_dcm))        
                                 
         else:
-            raise Exception("in image_at_freq, len(mftuple) must be 3 or 10!")  
+            raise Exception("in image_at_freq, len(mfarr) must be 3 or 10!")  
                   
         return out
         

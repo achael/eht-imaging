@@ -826,9 +826,12 @@ class Image(object):
         outim = Image(*arglist, **argdict)
 
         # Polarization
+        do_mf_pol=False
         for n in range(4):
-            if self.mflist[n+2].size: do_mf_pol=True
-        if not(self.qvec.size and self.uvec.size and self.vvec.size):
+            if self._mflist[n+2].size: 
+                do_mf_pol=True
+           
+        if do_mf_pol and not(self.qvec.size and self.uvec.size and self.vvec.size):
             print("WARNING: polarization multifrequency terms exist but not all Stokes parameters are defined""")
             print("Cannot apply spectral terms to polarization in get_image_mf")
             do_mf_pol=False
@@ -2255,7 +2258,7 @@ class Image(object):
 
         return outim
 
-    def add_const_mf(self, alpha, beta=0., alpha_pol=None, beta_pol=None, rm=None):
+    def add_const_mf(self, alpha, beta=0., alpha_pol=None, beta_pol=None, rm=None, cm=None):
         """Add a constant spectral index and curvature term
 
            Args:
