@@ -161,7 +161,8 @@ def leakage_cal_new(obs, im, sites=[], leakage_tol=.1, rescale_leakage_tol=False
                                  ttype=ttype, fft_pad_factor=fft_pad_factor)
     (ft_LR, _, _) = iu.chisqdata(obs_sim, im_circ, mask=mask, dtype=dtype, pol='LR',
                                  ttype=ttype, fft_pad_factor=fft_pad_factor)
-                                                                              
+ 
+    print("Precomputing Polarization Angles...")                                                                                  
     # field rotation angles 
     el1 = obs_circ.unpack(['el1'], ang_unit='rad')['el1']
     el2 = obs_circ.unpack(['el2'], ang_unit='rad')['el2']
@@ -191,7 +192,8 @@ def leakage_cal_new(obs, im, sites=[], leakage_tol=.1, rescale_leakage_tol=False
     if not(len(Delta)==len(vis_RR)==len(sigma_LL)==len(ft_RR)==len(t1)):
         raise Exception("not all data columns the right length in pol_cal!")
     Nvis = len(vis_RR)
-    
+
+    print("Defining error functions...")        
     # define the error function
     def chisq_total(Dpar):
         # all the D-terms as complex numbers. If const_fpol, fpol is the last parameter.
