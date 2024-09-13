@@ -2777,7 +2777,14 @@ class Obsdata(object):
             if num_antenna < 3:
                 continue
             vis = tdata['vis'].reshape(1,1,-1)
-            _, btriads = self.Triads(num_antenna)
+            ant_pairs = np.array([tdata['t1'], tdata['t2']]).T
+            unique_ant = pd.unique(ant_pairs.flatten())
+            ant_pairs = np.array([np.where(i == unique_ant)[0][0] for i in ant_pairs.flatten()]).reshape(-1, 2)
+            ant_pairs = [tuple(i) for i in ant_pairs]
+            reverse_idx = [i for i in range(len(ant_pairs)) if ant_pairs[i][0] > ant_pairs[i][1]]
+            ant_pairs = [ant_pairs[i] if i not in reverse_idx else (ant_pairs[i][1], ant_pairs[i][0]) for i in range(len(ant_pairs))]
+            vis[:,:,reverse_idx] = np.conjugate(vis[:,:,reverse_idx])
+            _, btriads = self.Triads(num_antenna, pairs=ant_pairs)
             C_oa = vis[:, :, btriads[:, 0]]
             C_ab = vis[:, :, btriads[:, 1]]
             C_bo = np.conjugate(vis[:, :, btriads[:, 2]])
@@ -2790,7 +2797,7 @@ class Obsdata(object):
 
         return out_ci
 
-    def Triads(self, n:int):
+    def Triads(self, n:int, pairs=None):
         """
         Generates arrays of antenna and baseline indicies that form triangular 
         loops pivoted around the 0th antenna. Used to calculate closure invariants
@@ -2827,7 +2834,10 @@ class Obsdata(object):
         t2 = np.arange(n, dtype=int).reshape(1, n) + np.zeros(n, dtype=int).reshape(n, 1)
         bli = np.where(t2 > t1)
         t1, t2 = t1[bli], t2[bli]
-        bl_pairs = list(zip(t1, t2))
+        if pairs == None:
+            bl_pairs = list(zip(t1, t2))
+        else:
+            bl_pairs = pairs
 
         bl_01 = np.asarray([bl_pairs.index(apair) for apair in ant_pairs_01])
         bl_12 = np.asarray([bl_pairs.index(apair) for apair in ant_pairs_12])
