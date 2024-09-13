@@ -345,6 +345,38 @@ def sample_vis(im_org, uv, sgrscat=False, polrep_obs='stokes',
 
                 obsdata.append(vis)
 
+    elif ttype == "DFT":
+        xfov, yfov = im.xdim*im.psize/4.84813681109536e-12, im.ydim*im.psize/4.84813681109536e-12
+        for i in range(4):
+            pol = pollist[i]
+            imvec = im._imdict[pol]
+            if imvec is None or len(imvec) == 0:
+                if zero_empty_pol:
+                    obsdata.append(np.zeros(len(uv)))
+                else:
+                    obsdata.append(None)
+            else:
+                imarr = imvec.reshape(im.ydim, im.xdim)
+                vis = DFT(imarr, uv, xfov=xfov, yfov=yfov)
+                obsdata.append(vis)
+
+    elif ttype == "DFT_i":
+        xfov, yfov = im.xdim*im.psize/4.84813681109536e-12, im.ydim*im.psize/4.84813681109536e-12
+        for i in range(4):
+            pol = pollist[i]
+            imvec = im._imdict[pol]
+            if imvec is None or len(imvec) == 0:
+                if zero_empty_pol:
+                    obsdata.append(np.zeros(len(uv)))
+                else:
+                    obsdata.append(None)
+            else:
+                uv = np.array([uv[:,1], uv[:,0]]).T # uv swap hack
+                imarr = imvec.reshape(im.ydim, im.xdim)
+                vis = DFT(imarr, uv, xfov=xfov, yfov=yfov)
+                obsdata.append(vis)
+
+
     # Get visibilities from DTFT
     else:
         # Construct Fourier matrix
@@ -374,6 +406,35 @@ def sample_vis(im_org, uv, sgrscat=False, polrep_obs='stokes',
             data *= ker
 
     return obsdata
+
+
+def DFT(data, uv, xfov=225, yfov=225):
+    if data.ndim == 2:
+        data = data[np.newaxis,...]
+        out_shape = (uv.shape[0],)
+    elif data.ndim > 2:
+        data = data.reshape((-1,) + data.shape[-2:])
+        out_shape = data.shape[:-2] + (uv.shape[0],)
+    ny, nx = data.shape[-2:]
+    dx = xfov*4.84813681109536e-12 / nx
+    dy = yfov*4.84813681109536e-12 / ny
+    angx = (np.arange(nx) - nx//2) * dx
+    angy = (np.arange(ny) - ny//2) * dy
+    lvect = np.sin(angx)
+    mvect = np.sin(angy)
+    l, m = np.meshgrid(lvect, mvect)
+    lm = np.concatenate([l.reshape(1,-1), m.reshape(1,-1)], axis=0)
+    imgvect = data.reshape((data.shape[0],-1))
+    x = -2*np.pi*np.dot(uv,lm)[np.newaxis, ...]
+    visr = np.sum(imgvect[:, np.newaxis, :] * np.cos(x, dtype=np.float32), axis=-1)
+    visi = np.sum(imgvect[:, np.newaxis, :] * np.sin(x, dtype=np.float32), axis=-1)
+    if data.ndim == 2:
+        vis = visr.ravel() + 1j*visi.ravel()
+    else:
+        vis = visr.ravel() + 1j*visi.ravel()
+        vis = vis.reshape(out_shape)
+    return vis
+
 
 ##################################################################################################
 # Noise + miscalibration funcitons
@@ -1199,7 +1260,7 @@ def apply_jones_inverse(obs, opacitycal=True, dcal=True, frcal=True, verbose=Tru
 # The old noise generating function.
 
 
-def add_noise(obs, add_th_noise=True, opacitycal=True, ampcal=True, phasecal=True,
+def add_noise(obs, add_th_noise=True, th_noise_factor=1, opacitycal=True, ampcal=True, phasecal=True,
               stabilize_scan_amp=False, stabilize_scan_phase=False,
               neggains=False,
               taup=ehc.GAINPDEF, gain_offset=ehc.GAINPDEF, gainp=ehc.GAINPDEF, 
@@ -1297,7 +1358,7 @@ def add_noise(obs, add_th_noise=True, opacitycal=True, ampcal=True, phasecal=Tru
         sig_rr = np.fromiter((obsh.blnoise(obs.tarr[obs.tkey[sites[i][0]]]['sefdr'],
                                            obs.tarr[obs.tkey[sites[i][1]]]['sefdr'], tint[i], bw)
                               for i in range(len(tint))), float)
-        sig_ll = np.fromiter((obsh.blnoise(obs.tarr[obs.tkey[sites[i][0]]]['sefdr'],
+        sig_ll = np.fromiter((obsh.blnoise(obs.tarr[obs.tkey[sites[i][0]]]['sefdl'],
                                            obs.tarr[obs.tkey[sites[i][1]]]['sefdl'], tint[i], bw)
                               for i in range(len(tint))), float)
         sig_rl = np.fromiter((obsh.blnoise(obs.tarr[obs.tkey[sites[i][0]]]['sefdr'],
@@ -1401,10 +1462,10 @@ def add_noise(obs, add_th_noise=True, opacitycal=True, ampcal=True, phasecal=Tru
     sigma_est4 = sigma_perf4 * gain_true * tau_est
 
     if add_th_noise:
-        vis1 = (vis1 + obsh.cerror(sigma_true1))
-        vis2 = (vis2 + obsh.cerror(sigma_true2))
-        vis3 = (vis3 + obsh.cerror(sigma_true3))
-        vis4 = (vis4 + obsh.cerror(sigma_true4))
+        vis1 = (vis1 + th_noise_factor*obsh.cerror(sigma_true1))
+        vis2 = (vis2 + th_noise_factor*obsh.cerror(sigma_true2))
+        vis3 = (vis3 + th_noise_factor*obsh.cerror(sigma_true3))
+        vis4 = (vis4 + th_noise_factor*obsh.cerror(sigma_true4))
 
     # Add the gain error to the true visibilities
     vis1 = vis1 * gain_true * tau_est / tau_true

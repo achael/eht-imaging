@@ -113,7 +113,7 @@ class Array(object):
                 mjd=ehc.MJD_DEFAULT, timetype='UTC', polrep='stokes',
                 elevmin=ehc.ELEV_LOW, elevmax=ehc.ELEV_HIGH,
                 no_elevcut_space=False,
-                tau=ehc.TAUDEF, fix_theta_GMST=False):
+                tau=ehc.TAUDEF, fix_theta_GMST=False, reorder=True):
         """Generate u,v points and baseline uncertainties.
 
            Args:
@@ -144,7 +144,7 @@ class Array(object):
                                       elevmin=elevmin, elevmax=elevmax, 
                                       no_elevcut_space=no_elevcut_space,
                                       timetype=timetype, fix_theta_GMST=fix_theta_GMST)
-
+        
         uniquetimes = np.sort(np.unique(obsarr['time']))
         scans = np.array([[time - 0.5 * tadv, time + 0.5 * tadv] for time in uniquetimes])
         source = str(ra) + ":" + str(dec)
@@ -152,7 +152,8 @@ class Array(object):
                                     source=source, mjd=mjd, timetype=timetype, polrep=polrep,
                                     ampcal=True, phasecal=True, opacitycal=True,
                                     dcal=True, frcal=True,
-                                    scantable=scans)
+                                    scantable=scans, reorder=reorder)
+
         return obs
 
     def make_subarray(self, sites):

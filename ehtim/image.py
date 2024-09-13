@@ -2303,7 +2303,7 @@ class Image(object):
 
     def observe_same_nonoise(self, obs, sgrscat=False, ttype="nfft",
                              cache=False, fft_pad_factor=2,
-                             zero_empty_pol=True, verbose=True):
+                             zero_empty_pol=True, verbose=True, reorder=True):
         """Observe the image on the same baselines as an existing observation  without noise.
 
            Args:
@@ -2327,10 +2327,10 @@ class Image(object):
         if (np.abs(self.rf - obs.rf) / obs.rf > tolerance):
             raise Exception("Image frequency is not the same as observation frequency!")
 
-        if (ttype == 'direct' or ttype == 'fast' or ttype == 'nfft'):
+        if (ttype == 'direct' or ttype == 'fast' or ttype == 'nfft' or ttype == 'DFT' or ttype == 'DFT_i'):
             if verbose: print("Producing clean visibilities from image with " + ttype + " FT . . . ")
         else:
-            raise Exception("ttype=%s, options for ttype are 'direct', 'fast', 'nfft'" % ttype)
+            raise Exception("ttype=%s, options for ttype are 'direct', 'fast', 'nfft', 'DFT', 'DFT_i'" % ttype)
 
         # Copy data to be safe
         obsdata = copy.deepcopy(obs.data)
@@ -2361,13 +2361,13 @@ class Image(object):
                                              source=self.source, mjd=self.mjd, polrep=obs.polrep,
                                              ampcal=True, phasecal=True, opacitycal=True,
                                              dcal=True, frcal=True,
-                                             timetype=obs.timetype, scantable=obs.scans)
+                                             timetype=obs.timetype, scantable=obs.scans, reorder=reorder)
 
         return obs_no_noise
 
     def observe_same(self, obs_in,
                      ttype='nfft', fft_pad_factor=2,
-                     sgrscat=False, add_th_noise=True,
+                     sgrscat=False, add_th_noise=True, th_noise_factor=1,
                      jones=False, inv_jones=False,
                      opacitycal=True, ampcal=True, phasecal=True,
                      frcal=True, dcal=True,  rlgaincal=True,
@@ -2379,7 +2379,7 @@ class Image(object):
                      dterm_offset=ehc.DTERMPDEF,
                      rlratio_std=0., rlphase_std=0.,
                      sigmat=None, phasesigmat=None, rlgsigmat=None,rlpsigmat=None,
-                     caltable_path=None, seed=False, verbose=True):
+                     caltable_path=None, seed=False, reorder=True, verbose=True):
         """Observe the image on the same baselines as an existing observation object and add noise.
 
            Args:
@@ -2443,7 +2443,7 @@ class Image(object):
 
         obs = self.observe_same_nonoise(obs_in, sgrscat=sgrscat,ttype=ttype,
                                         cache=False, fft_pad_factor=fft_pad_factor,
-                                        zero_empty_pol=True, verbose=verbose)
+                                        zero_empty_pol=True, reorder=reorder, verbose=verbose)
 
         # Jones Matrix Corruption & Calibration
         if jones:
@@ -2467,7 +2467,7 @@ class Image(object):
                                         source=obs.source, mjd=obs.mjd, polrep=obs_in.polrep,
                                         ampcal=ampcal, phasecal=phasecal, opacitycal=opacitycal,
                                         dcal=dcal, frcal=frcal,
-                                        timetype=obs.timetype, scantable=obs.scans)
+                                        timetype=obs.timetype, scantable=obs.scans, reorder=reorder)
 
             if inv_jones:
                 obsdata = simobs.apply_jones_inverse(obs,
@@ -2478,7 +2478,7 @@ class Image(object):
                                             source=obs.source, mjd=obs.mjd, polrep=obs_in.polrep,
                                             ampcal=ampcal, phasecal=phasecal,
                                             opacitycal=True, dcal=True, frcal=True,
-                                            timetype=obs.timetype, scantable=obs.scans)
+                                            timetype=obs.timetype, scantable=obs.scans, reorder=reorder)
 
         # No Jones Matrices, Add noise the old way
         # NOTE There is an asymmetry here - in the old way, we don't offer the ability to
@@ -2489,7 +2489,7 @@ class Image(object):
                 print('WARNING: the caltable is only saved if you apply noise with a Jones Matrix')
 
             # TODO -- clean up arguments
-            obsdata = simobs.add_noise(obs, add_th_noise=add_th_noise,
+            obsdata = simobs.add_noise(obs, add_th_noise=add_th_noise, th_noise_factor=th_noise_factor,
                                        opacitycal=opacitycal, ampcal=ampcal, phasecal=phasecal,
                                        stabilize_scan_phase=stabilize_scan_phase,
                                        stabilize_scan_amp=stabilize_scan_amp,
@@ -2504,7 +2504,7 @@ class Image(object):
                                         source=obs.source, mjd=obs.mjd, polrep=obs_in.polrep,
                                         ampcal=ampcal, phasecal=phasecal,
                                         opacitycal=True, dcal=True, frcal=True,
-                                        timetype=obs.timetype, scantable=obs.scans)
+                                        timetype=obs.timetype, scantable=obs.scans, reorder=reorder)
 
         return obs
 
@@ -2513,8 +2513,8 @@ class Image(object):
                 elevmin=ehc.ELEV_LOW, elevmax=ehc.ELEV_HIGH,
                 no_elevcut_space=False,                
                 ttype='nfft', fft_pad_factor=2, fix_theta_GMST=False,
-                sgrscat=False, add_th_noise=True,
-                jones=False, inv_jones=False,
+                sgrscat=False, add_th_noise=True, th_noise_factor=1,
+                jones=False, inv_jones=False, noise=True,
                 opacitycal=True, ampcal=True, phasecal=True,
                 frcal=True, dcal=True, rlgaincal=True,
                 stabilize_scan_phase=False, stabilize_scan_amp=False,
@@ -2525,7 +2525,7 @@ class Image(object):
                 dterm_offset=ehc.DTERMPDEF,
                 rlratio_std=0.,rlphase_std=0.,
                 sigmat=None, phasesigmat=None, rlgsigmat=None,rlpsigmat=None,
-                caltable_path=None, seed=False, verbose=True):
+                caltable_path=None, seed=False, reorder=True, verbose=True):
         """Generate baselines from an array object and observe the image.
 
            Args:
@@ -2614,26 +2614,33 @@ class Image(object):
                             polrep=polrep_obs, tau=tau, 
                             elevmin=elevmin, elevmax=elevmax, 
                             no_elevcut_space=no_elevcut_space,                            
-                            timetype=timetype, fix_theta_GMST=fix_theta_GMST)
+                            timetype=timetype, fix_theta_GMST=fix_theta_GMST, reorder=reorder)
+
 
         # Observe on the same baselines as the empty observation and add noise
-        obs = self.observe_same(obs, ttype=ttype, fft_pad_factor=fft_pad_factor,
-                                sgrscat=sgrscat, add_th_noise=add_th_noise,
-                                jones=jones, inv_jones=inv_jones,
-                                opacitycal=opacitycal, ampcal=ampcal,
-                                phasecal=phasecal, dcal=dcal,
-                                frcal=frcal, rlgaincal=rlgaincal,
-                                stabilize_scan_phase=stabilize_scan_phase,
-                                stabilize_scan_amp=stabilize_scan_amp,
-                                neggains=neggains,
-                                taup=taup,
-                                gain_offset=gain_offset, gainp=gainp,
-                                phase_std=phase_std,
-                                dterm_offset=dterm_offset,
-                                rlratio_std=rlratio_std,rlphase_std=rlphase_std,
-                                sigmat=sigmat,phasesigmat=phasesigmat,
-                                rlgsigmat=rlgsigmat,rlpsigmat=rlpsigmat,
-                                caltable_path=caltable_path, seed=seed, verbose=verbose)
+        if noise:
+            obs = self.observe_same(obs, ttype=ttype, fft_pad_factor=fft_pad_factor,
+                                    sgrscat=sgrscat, add_th_noise=add_th_noise, th_noise_factor=th_noise_factor,
+                                    jones=jones, inv_jones=inv_jones,
+                                    opacitycal=opacitycal, ampcal=ampcal,
+                                    phasecal=phasecal, dcal=dcal,
+                                    frcal=frcal, rlgaincal=rlgaincal,
+                                    stabilize_scan_phase=stabilize_scan_phase,
+                                    stabilize_scan_amp=stabilize_scan_amp,
+                                    neggains=neggains,
+                                    taup=taup,
+                                    gain_offset=gain_offset, gainp=gainp,
+                                    phase_std=phase_std,
+                                    dterm_offset=dterm_offset,
+                                    rlratio_std=rlratio_std,rlphase_std=rlphase_std,
+                                    sigmat=sigmat,phasesigmat=phasesigmat,
+                                    rlgsigmat=rlgsigmat,rlpsigmat=rlpsigmat,
+                                    caltable_path=caltable_path, seed=seed, reorder=reorder, verbose=verbose)
+        else:
+            obs = self.observe_same_nonoise(obs, sgrscat=sgrscat, ttype=ttype,
+                                            cache=False, fft_pad_factor=fft_pad_factor,
+                                            zero_empty_pol=True, reorder=reorder, verbose=verbose)
+
 
         obs.mjd = mjd
 

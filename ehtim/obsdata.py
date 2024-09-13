@@ -103,7 +103,7 @@ class Obsdata(object):
     def __init__(self, ra, dec, rf, bw, datatable, tarr, scantable=None,
                  polrep='stokes', source=ehc.SOURCE_DEFAULT, mjd=ehc.MJD_DEFAULT, timetype='UTC',
                  ampcal=True, phasecal=True, opacitycal=True, dcal=True, frcal=True,
-                 trial_speedups=False):
+                 trial_speedups=False, reorder=True):
         """A polarimetric VLBI observation of visibility amplitudes and phases (in Jy).
 
            Args:
@@ -175,7 +175,11 @@ class Obsdata(object):
             self.reorder_tarr_sefd(reorder_baselines=False)
             
         # reorder baselines to uvfits convention
-        self.reorder_baselines(trial_speedups=trial_speedups)
+        if reorder:
+            self.reorder_baselines(trial_speedups=trial_speedups) # comment out for Closure Invariants
+        else:
+            self.data = np.array(sorted(self.data, key=lambda x: x['time']))
+            
 
         # Get tstart, mjd and tstop
         times = self.unpack(['time'])['time']
@@ -615,6 +619,7 @@ class Obsdata(object):
                     data, lambda x: np.searchsorted(self.scans[:, 0], x['time'])):
                 datalist.append(np.array([obs for obs in group]))
 
+        # return np.array(datalist, dtype=object)
         return datalist
 
 
@@ -2748,6 +2753,87 @@ class Obsdata(object):
         gparams = res.x
 
         return gparams
+
+    def ClosureInvariants(self):
+        """
+        Calculates copolar closure invariants for visibilities assuming an n element 
+        interferometer array using method 1.
+
+        Nithyanandan, T., Rajaram, N., Joseph, S. 2022 “Invariants in copolar 
+        interferometry: An Abelian gauge theory”, PHYS. REV. D 105, 043019. 
+        https://doi.org/10.1103/PhysRevD.105.043019 
+
+        Args:
+            vis (np.ndarray): visibility data sampled by the interferometer array
+            n (int): number of antenna as part of the interferometer array
+
+        Returns:
+            ci (np.ndarray): closure invariants
+        """
+        tlist = self.tlist()
+        out_ci = np.array([])
+        for tdata in tlist:
+            num_antenna = len(np.unique(tdata['t1'])) + 1
+            if num_antenna < 3:
+                continue
+            vis = tdata['vis'].reshape(1,1,-1)
+            _, btriads = self.Triads(num_antenna)
+            C_oa = vis[:, :, btriads[:, 0]]
+            C_ab = vis[:, :, btriads[:, 1]]
+            C_bo = np.conjugate(vis[:, :, btriads[:, 2]])
+            A_oab = C_oa / np.conjugate(C_ab) * C_bo
+            A_oab = np.dstack((A_oab.real, A_oab.imag))
+            A_max = np.nanmax(np.abs(A_oab), axis=-1, keepdims=True)
+            ci = A_oab / A_max
+            ci = ci.reshape(-1)
+            out_ci = np.concatenate([out_ci, ci], axis=0)
+
+        return out_ci
+
+    def Triads(self, n:int):
+        """
+        Generates arrays of antenna and baseline indicies that form triangular 
+        loops pivoted around the 0th antenna. Used to calculate closure invariants
+        whereby specific baseline correlations need to be indexed according 
+        to those triangular loops.
+        Baseline array format [ant1, ant2]:
+        [[0, 1], [0, 2], [0, 3], [0, 4], [0, 5], [0, 6] ... 
+        [1, 2], [1, 3], [1, 4], [1, 5], [1, 6] ...
+        [2, 3], [2, 4], [2, 5], [2, 6] ...
+        [3, 4], [3, 5], [3, 6] ...
+        [4, 5], [4, 6] ...
+        [5, 6] ...
+
+        Args:
+            n (int): number of antenna in the array
+
+        Returns:
+            atriads (np.ndarray): antenna triangular loop indicies
+            btriads (np.ndarray): baseline triangular loop indicies
+        """
+        ntriads = (n-1)*(n-2)//2
+        ant1 = np.zeros(ntriads, dtype=np.uint8)
+        ant2 = np.arange(1, n, dtype=np.uint8).reshape(n-1, 1) + np.zeros(n-2, dtype=np.uint8).reshape(1, n-2)
+        ant3 = np.arange(2, n, dtype=np.uint8).reshape(1, n-2) + np.zeros(n-1, dtype=np.uint8).reshape(n-1, 1)
+        anti = np.where(ant3 > ant2)
+        ant2, ant3 = ant2[anti], ant3[anti]
+        atriads = np.concatenate([ant1.reshape(-1, 1), ant2.reshape(-1, 1), ant3.reshape(-1, 1)], axis=-1)
+        
+        ant_pairs_01 = list(zip(ant1, ant2))
+        ant_pairs_12 = list(zip(ant2, ant3))
+        ant_pairs_20 = list(zip(ant3, ant1))
+        
+        t1 = np.arange(n, dtype=int).reshape(n, 1) + np.zeros(n, dtype=int).reshape(1, n)
+        t2 = np.arange(n, dtype=int).reshape(1, n) + np.zeros(n, dtype=int).reshape(n, 1)
+        bli = np.where(t2 > t1)
+        t1, t2 = t1[bli], t2[bli]
+        bl_pairs = list(zip(t1, t2))
+
+        bl_01 = np.asarray([bl_pairs.index(apair) for apair in ant_pairs_01])
+        bl_12 = np.asarray([bl_pairs.index(apair) for apair in ant_pairs_12])
+        bl_20 = np.asarray([bl_pairs.index(tuple(reversed(apair))) for apair in ant_pairs_20])
+        btriads = np.concatenate([bl_01.reshape(-1, 1), bl_12.reshape(-1, 1), bl_20.reshape(-1, 1)], axis=-1)
+        return atriads, btriads
 
     def bispectra(self, vtype='vis', mode='all', count='min',
                   timetype=False, uv_min=False, snrcut=0.):
