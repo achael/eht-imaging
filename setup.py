@@ -34,8 +34,7 @@ if __name__ == "__main__":
                    "scripts/cli_blur_comp.py",
                    "scripts/gendata.py",
                    "scripts/imaging.py",
-                   "scripts/imgsum.py",
-                   "scripts/verify_gradients.py"],
+                   "scripts/imgsum.py"],
 
           install_requires=["numpy>=1.24,<2.0",
                             "scipy>=1.9.3",
