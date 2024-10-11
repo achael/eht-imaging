@@ -712,7 +712,6 @@ def chisqgrad_p_nfft(imarr, A, p, sigmap,pol_solve=POL_SOLVE_DEFAULT):
     pulsefac = nfft_info.pulsefac
 
     #compute uniform --> nonuniform transform 
-
     plan.f_hat = pimage.copy().reshape((nfft_info.ydim,nfft_info.xdim)).T
     plan.trafo()
     psamples = plan.f.copy()*pulsefac
