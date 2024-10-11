@@ -504,7 +504,7 @@ def chisqgrad(imvec, A, data, sigma, dtype, ttype='direct', mask=None):
         elif dtype == 'cphase_diag':
             chisqgrad = chisqgrad_cphase_diag_fft(imvec, A, data, sigma)
         elif dtype == 'camp':
-            chisqgrad = chisqgrad_camp_fft(vis_arr, A, data, sigma)
+            chisqgrad = _fft(vis_arr, A, data, sigma)
         elif dtype == 'logcamp':
             chisqgrad = chisqgrad_logcamp_fft(vis_arr, A, data, sigma)
         elif dtype == 'logcamp_diag':
@@ -530,7 +530,7 @@ def chisqgrad(imvec, A, data, sigma, dtype, ttype='direct', mask=None):
         elif dtype == 'cphase_diag':
             chisqgrad = chisqgrad_cphase_diag_nfft(imvec, A, data, sigma)
         elif dtype == 'camp':
-            chisqgrad = chisqgrad_camp_nfft(imvec, A, data, sigma)
+            chisqgrad = _nfft(imvec, A, data, sigma)
         elif dtype == 'logcamp':
             chisqgrad = chisqgrad_logcamp_nfft(imvec, A, data, sigma)
         elif dtype == 'logcamp_diag':
@@ -944,7 +944,7 @@ def chisqgrad_camp(imvec, Amatrices, clamp, sigma):
            np.dot(pt2, Amatrices[1]) +
            np.dot(pt3, Amatrices[2]) +
            np.dot(pt4, Amatrices[3]))
-    out *= (-2.0/len(clamp)) * np.real(out)
+    out = (-2.0/len(clamp)) * np.real(out)
     return out
 
 
