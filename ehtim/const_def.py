@@ -79,20 +79,20 @@ DTARR = [('site', 'U32'), ('x', 'f8'), ('y', 'f8'), ('z', 'f8'),
 DTPOL_STOKES = [('time', 'f8'), ('tint', 'f8'),
                 ('t1', 'U32'), ('t2', 'U32'),
                 ('tau1', 'f8'), ('tau2', 'f8'),
-                ('u', 'f8'), ('v', 'f8'),
+                ('u', 'f8'), ('v', 'f8'), ('w', 'f8'),
                 ('vis', 'c16'), ('qvis', 'c16'), ('uvis', 'c16'), ('vvis', 'c16'),
                 ('sigma', 'f8'), ('qsigma', 'f8'), ('usigma', 'f8'), ('vsigma', 'f8')]
 
 DTPOL_CIRC = [('time', 'f8'), ('tint', 'f8'),
               ('t1', 'U32'), ('t2', 'U32'),
               ('tau1', 'f8'), ('tau2', 'f8'),
-              ('u', 'f8'), ('v', 'f8'),
+              ('u', 'f8'), ('v', 'f8'), ('w', 'f8'),
               ('rrvis', 'c16'), ('llvis', 'c16'), ('rlvis', 'c16'), ('lrvis', 'c16'),
               ('rrsigma', 'f8'), ('llsigma', 'f8'), ('rlsigma', 'f8'), ('lrsigma', 'f8')]
 
 DTAMP = [('time', 'f8'), ('tint', 'f8'),
          ('t1', 'U32'), ('t2', 'U32'),
-         ('u', 'f8'), ('v', 'f8'),
+         ('u', 'f8'), ('v', 'f8'), 
          ('amp', 'f8'), ('sigma', 'f8')]
 
 DTBIS = [('time', 'f8'), ('t1', 'U32'), ('t2', 'U32'), ('t3', 'U32'),
@@ -100,11 +100,11 @@ DTBIS = [('time', 'f8'), ('t1', 'U32'), ('t2', 'U32'), ('t3', 'U32'),
          ('bispec', 'c16'), ('sigmab', 'f8')]
 
 DTCPHASE = [('time', 'f8'), ('t1', 'U32'), ('t2', 'U32'), ('t3', 'U32'),
-            ('u1', 'f8'), ('v1', 'f8'), ('u2', 'f8'), ('v2', 'f8'), ('u3', 'f8'), ('v3', 'f8'),
+         ('u1', 'f8'), ('v1', 'f8'), ('u2', 'f8'), ('v2', 'f8'), ('u3', 'f8'), ('v3', 'f8'),
             ('cphase', 'f8'), ('sigmacp', 'f8')]
 
 DTCAMP = [('time', 'f8'), ('t1', 'U32'), ('t2', 'U32'), ('t3', 'U32'), ('t4', 'U32'),
-          ('u1', 'f8'), ('v1', 'f8'), ('u2', 'f8'), ('v2', 'f8'),
+          ('u1', 'f8'), ('v1', 'f8'), ('u2', 'f8'), ('v2', 'f8'), 
           ('u3', 'f8'), ('v3', 'f8'), ('u4', 'f8'), ('v4', 'f8'),
           ('camp', 'f8'), ('sigmaca', 'f8')]
 
@@ -132,7 +132,7 @@ sig_poldict = {'I': 'sigma', 'Q': 'qsigma', 'U': 'usigma', 'V': 'vsigma',
 
 # Observation fields for plotting and retrieving data
 FIELDS = ['time', 'time_utc', 'time_gmst',
-          'tint', 'u', 'v', 'uvdist',
+          'tint', 'u', 'v', 'w', 'uvdist',
           't1', 't2', 'tau1', 'tau2',
           'el1', 'el2', 'hr_ang1', 'hr_ang2', 'par_ang1', 'par_ang2',
           'vis', 'amp', 'phase', 'snr',
@@ -186,6 +186,7 @@ FIELD_LABELS = {'time': 'Time',
                 'tint': 'Integration Time',
                 'u': r'$u$',
                 'v': r'$v$',
+                'w': r'$w$',
                 'uvdist': r'$u-v$ Distance',
                 't1': 'Site 1',
                 't2': 'Site 2',

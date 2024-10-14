@@ -55,7 +55,7 @@ warnings.filterwarnings("ignore", message="divide by zero encountered in double_
 
 def compute_uv_coordinates(array, site1, site2, time, mjd, ra, dec, rf, timetype='UTC',
                            elevmin=ehc.ELEV_LOW,  elevmax=ehc.ELEV_HIGH, no_elevcut_space=False,
-                           fix_theta_GMST=False):
+                           fix_theta_GMST=False, w_term=False):
                            
     """Compute u,v coordinates for an array at a given time for a source at a given ra,dec,rf
     """
@@ -189,6 +189,7 @@ def compute_uv_coordinates(array, site1, site2, time, mjd, ra, dec, rf, timetype
     # u,v coordinates
     u = np.dot((coord1 - coord2)/wvl, projU)  # u (lambda)
     v = np.dot((coord1 - coord2)/wvl, projV)  # v (lambda)
+    w = np.dot((coord1 - coord2)/wvl, sourcevec)  # w (lambda)
 
     # mask out below elevation cut
     mask_elev_1 = elevcut(coord1, sourcevec, elevmin=elevmin, elevmax=elevmax) 
@@ -205,8 +206,12 @@ def compute_uv_coordinates(array, site1, site2, time, mjd, ra, dec, rf, timetype
     time = time[mask]
     u = u[mask]
     v = v[mask]
+    w = w[mask]
 
-    # return times and uv points where we have  data
+    if w_term:
+        return (time, u, v, w)
+
+    # return times and uv points where we have data
     return (time, u, v)
 
 

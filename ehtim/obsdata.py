@@ -1229,7 +1229,7 @@ class Obsdata(object):
 
         return chisq
 
-    def recompute_uv(self):
+    def recompute_uv(self, with_w=False):
         """Recompute u,v points using observation times and metadata
 
            Args:
@@ -1245,10 +1245,17 @@ class Obsdata(object):
         print("Recomputing U,V Points using MJD %d \n RA %e \n DEC %e \n RF %e GHz"
               % (self.mjd, self.ra, self.dec, self.rf / 1.e9))
 
-        (timesout, uout, vout) = obsh.compute_uv_coordinates(arr, site1, site2, times,
-                                                             self.mjd, self.ra, self.dec, self.rf,
-                                                             timetype=self.timetype,
-                                                             elevmin=0, elevmax=90, no_elevcut_space=False)
+        if with_w:
+            (timesout, uout, vout, wout) = obsh.compute_uv_coordinates(arr, site1, site2, times,
+                                                                     self.mjd, self.ra, self.dec, self.rf,
+                                                                     timetype=self.timetype,
+                                                                     elevmin=0, elevmax=90, no_elevcut_space=False,
+                                                                     w_term=with_w)
+        else:
+            (timesout, uout, vout) = obsh.compute_uv_coordinates(arr, site1, site2, times,
+                                                                self.mjd, self.ra, self.dec, self.rf,
+                                                                timetype=self.timetype,
+                                                                elevmin=0, elevmax=90, no_elevcut_space=False)
 
         if len(timesout) != len(times):
             raise Exception(
@@ -1258,10 +1265,14 @@ class Obsdata(object):
         datatable['u'] = uout
         datatable['v'] = vout
 
+        if with_w:
+            datatable['w'] = wout
+            
         arglist, argdict = self.obsdata_args()
         arglist[DATPOS] = np.array(datatable)
         out = Obsdata(*arglist, **argdict)
 
+        
         return out
 
     def avg_coherent(self, inttime, scan_avg=False, moving=False):

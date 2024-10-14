@@ -148,9 +148,10 @@ def make_uvpoints(array, ra, dec, rf, bw, tint, tadv, tstart, tstop,
                                                     ra, dec, rf, timetype=timetype,
                                                     elevmin=elevmin, elevmax=elevmax,
                                                     no_elevcut_space=no_elevcut_space,
-                                                    fix_theta_GMST=fix_theta_GMST)
+                                                    fix_theta_GMST=fix_theta_GMST,
+                                                    w_term=True)
 
-                (timesout, uout, vout) = uvdat
+                (timesout, uout, vout, wout) = uvdat
                 for k in range(len(timesout)):
                     outlist.append(np.array((
                         timesout[k],
@@ -161,6 +162,7 @@ def make_uvpoints(array, ra, dec, rf, bw, tint, tadv, tstart, tstop,
                         tau2,     # Station 1 zenith optical depth
                         uout[k],  # u (lambda)
                         vout[k],  # v (lambda)
+                        wout[k],  # w (lambda)
                         0.0,      # 1st Visibility (Jy)
                         0.0,      # 2nd Visibility
                         0.0,      # 3rd Visibility
