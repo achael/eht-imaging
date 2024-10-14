@@ -1229,7 +1229,7 @@ class Obsdata(object):
 
         return chisq
 
-    def recompute_uv(self, with_w=False):
+    def recompute_uv(self):
         """Recompute u,v points using observation times and metadata
 
            Args:
@@ -1245,17 +1245,10 @@ class Obsdata(object):
         print("Recomputing U,V Points using MJD %d \n RA %e \n DEC %e \n RF %e GHz"
               % (self.mjd, self.ra, self.dec, self.rf / 1.e9))
 
-        if with_w:
-            (timesout, uout, vout, wout) = obsh.compute_uv_coordinates(arr, site1, site2, times,
-                                                                     self.mjd, self.ra, self.dec, self.rf,
-                                                                     timetype=self.timetype,
-                                                                     elevmin=0, elevmax=90, no_elevcut_space=False,
-                                                                     w_term=with_w)
-        else:
-            (timesout, uout, vout) = obsh.compute_uv_coordinates(arr, site1, site2, times,
-                                                                self.mjd, self.ra, self.dec, self.rf,
-                                                                timetype=self.timetype,
-                                                                elevmin=0, elevmax=90, no_elevcut_space=False)
+        (timesout, uout, vout) = obsh.compute_uv_coordinates(arr, site1, site2, times,
+                                                             self.mjd, self.ra, self.dec, self.rf,
+                                                             timetype=self.timetype,
+                                                             elevmin=0, elevmax=90, no_elevcut_space=False)
 
         if len(timesout) != len(times):
             raise Exception(
@@ -1265,14 +1258,10 @@ class Obsdata(object):
         datatable['u'] = uout
         datatable['v'] = vout
 
-        if with_w:
-            datatable['w'] = wout
-            
         arglist, argdict = self.obsdata_args()
         arglist[DATPOS] = np.array(datatable)
         out = Obsdata(*arglist, **argdict)
 
-        
         return out
 
     def avg_coherent(self, inttime, scan_avg=False, moving=False):
@@ -2788,14 +2777,7 @@ class Obsdata(object):
             if num_antenna < 3:
                 continue
             vis = tdata['vis'].reshape(1,1,-1)
-            ant_pairs = np.array([tdata['t1'], tdata['t2']]).T
-            unique_ant = pd.unique(ant_pairs.flatten())
-            ant_pairs = np.array([np.where(i == unique_ant)[0][0] for i in ant_pairs.flatten()]).reshape(-1, 2)
-            ant_pairs = [tuple(i) for i in ant_pairs]
-            reverse_idx = [i for i in range(len(ant_pairs)) if ant_pairs[i][0] > ant_pairs[i][1]]
-            ant_pairs = [ant_pairs[i] if i not in reverse_idx else (ant_pairs[i][1], ant_pairs[i][0]) for i in range(len(ant_pairs))]
-            vis[:,:,reverse_idx] = np.conjugate(vis[:,:,reverse_idx])
-            _, btriads = self.Triads(num_antenna, pairs=ant_pairs)
+            _, btriads = self.Triads(num_antenna)
             C_oa = vis[:, :, btriads[:, 0]]
             C_ab = vis[:, :, btriads[:, 1]]
             C_bo = np.conjugate(vis[:, :, btriads[:, 2]])
@@ -2808,7 +2790,7 @@ class Obsdata(object):
 
         return out_ci
 
-    def Triads(self, n:int, pairs=None):
+    def Triads(self, n:int):
         """
         Generates arrays of antenna and baseline indicies that form triangular 
         loops pivoted around the 0th antenna. Used to calculate closure invariants
@@ -2845,10 +2827,7 @@ class Obsdata(object):
         t2 = np.arange(n, dtype=int).reshape(1, n) + np.zeros(n, dtype=int).reshape(n, 1)
         bli = np.where(t2 > t1)
         t1, t2 = t1[bli], t2[bli]
-        if pairs == None:
-            bl_pairs = list(zip(t1, t2))
-        else:
-            bl_pairs = pairs
+        bl_pairs = list(zip(t1, t2))
 
         bl_01 = np.asarray([bl_pairs.index(apair) for apair in ant_pairs_01])
         bl_12 = np.asarray([bl_pairs.index(apair) for apair in ant_pairs_12])
