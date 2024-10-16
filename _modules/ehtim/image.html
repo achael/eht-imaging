@@ -115,13 +115,6 @@
 <span class="kn">import</span> <span class="nn">scipy.interpolate</span>
 <span class="kn">from</span> <span class="nn">scipy</span> <span class="kn">import</span> <span class="n">ndimage</span> <span class="k">as</span> <span class="n">ndi</span>
 
-
-<span class="k">try</span><span class="p">:</span>
-    <span class="kn">from</span> <span class="nn">skimage.feature</span> <span class="kn">import</span> <span class="n">canny</span>
-    <span class="kn">from</span> <span class="nn">skimage.transform</span> <span class="kn">import</span> <span class="n">hough_circle</span><span class="p">,</span> <span class="n">hough_circle_peaks</span>
-<span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>
-    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Warning: scikit-image not installed! Cannot use hough transform&quot;</span><span class="p">)</span>
-
 <span class="kn">import</span> <span class="nn">ehtim.observing.obs_simulate</span> <span class="k">as</span> <span class="nn">simobs</span>
 <span class="kn">import</span> <span class="nn">ehtim.observing.pulses</span> <span class="k">as</span> <span class="nn">pulses</span>
 <span class="kn">import</span> <span class="nn">ehtim.io.save</span>
@@ -222,8 +215,8 @@
         <span class="c1"># multifrequency spectral index, curvature arrays</span>
         <span class="c1"># TODO -- higher orders?</span>
         <span class="c1"># TODO -- don&#39;t initialize to zero?</span>
-        <span class="n">avec</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([])</span>  <span class="c1"># np.zeros(imvec.shape)</span>
-        <span class="n">bvec</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([])</span>  <span class="c1"># np.zeros(imvec.shape)</span>
+        <span class="n">avec</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([])</span> 
+        <span class="n">bvec</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([])</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_mflist</span> <span class="o">=</span> <span class="p">[</span><span class="n">avec</span><span class="p">,</span> <span class="n">bvec</span><span class="p">]</span>
 
         <span class="c1"># Save the image dimension data</span>
@@ -287,9 +280,6 @@
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">ivec</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-<span class="c1">#        if self.polrep != &#39;stokes&#39;:</span>
-<span class="c1">#            raise Exception(&quot;ivec is not defined unless self.polrep==&#39;stokes&#39;&quot;)</span>
-
         <span class="n">ivec</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([])</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">polrep</span> <span class="o">==</span> <span class="s1">&#39;stokes&#39;</span><span class="p">:</span>
             <span class="n">ivec</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_imdict</span><span class="p">[</span><span class="s1">&#39;I&#39;</span><span class="p">]</span>
@@ -310,9 +300,6 @@
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">qvec</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-<span class="c1">#        if self.polrep != &#39;stokes&#39;:</span>
-<span class="c1">#            raise Exception(&quot;qvec is not defined unless self.polrep==&#39;stokes&#39;&quot;)</span>
-
         <span class="n">qvec</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([])</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">polrep</span> <span class="o">==</span> <span class="s1">&#39;stokes&#39;</span><span class="p">:</span>
             <span class="n">qvec</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_imdict</span><span class="p">[</span><span class="s1">&#39;Q&#39;</span><span class="p">]</span>
@@ -333,9 +320,6 @@
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">uvec</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-<span class="c1">#        if self.polrep != &#39;stokes&#39;:</span>
-<span class="c1">#            raise Exception(&quot;qvec is not defined unless self.polrep==&#39;stokes&#39;&quot;)</span>
-
         <span class="n">uvec</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([])</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">polrep</span> <span class="o">==</span> <span class="s1">&#39;stokes&#39;</span><span class="p">:</span>
             <span class="n">uvec</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_imdict</span><span class="p">[</span><span class="s1">&#39;U&#39;</span><span class="p">]</span>
@@ -356,9 +340,6 @@
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">vvec</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-<span class="c1">#        if self.polrep != &#39;stokes&#39;:</span>
-<span class="c1">#            raise Exception(&quot;vvec is not defined unless self.polrep==&#39;stokes&#39;&quot;)</span>
-
         <span class="n">vvec</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([])</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">polrep</span> <span class="o">==</span> <span class="s1">&#39;stokes&#39;</span><span class="p">:</span>
             <span class="n">vvec</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_imdict</span><span class="p">[</span><span class="s1">&#39;V&#39;</span><span class="p">]</span>
@@ -379,9 +360,6 @@
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">rrvec</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-<span class="c1">#        if self.polrep != &#39;circ&#39;:</span>
-<span class="c1">#            raise Exception(&quot;rrvec is not defined unless self.polrep==&#39;circ&#39;&quot;)</span>
-
         <span class="n">rrvec</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([])</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">polrep</span> <span class="o">==</span> <span class="s1">&#39;circ&#39;</span><span class="p">:</span>
             <span class="n">rrvec</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_imdict</span><span class="p">[</span><span class="s1">&#39;RR&#39;</span><span class="p">]</span>
@@ -402,9 +380,6 @@
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">llvec</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-<span class="c1">#        if self.polrep != &#39;circ&#39;:</span>
-<span class="c1">#            raise Exception(&quot;llvec is not defined unless self.polrep==&#39;circ&#39;&quot;)</span>
-
         <span class="n">llvec</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([])</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">polrep</span> <span class="o">==</span> <span class="s1">&#39;circ&#39;</span><span class="p">:</span>
             <span class="n">llvec</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_imdict</span><span class="p">[</span><span class="s1">&#39;LL&#39;</span><span class="p">]</span>
@@ -425,9 +400,6 @@
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">rlvec</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-<span class="c1">#        if self.polrep != &#39;circ&#39;:</span>
-<span class="c1">#            raise Exception(&quot;rlvec is not defined unless self.polrep==&#39;circ&#39;&quot;)</span>
-
         <span class="n">rlvec</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([])</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">polrep</span> <span class="o">==</span> <span class="s1">&#39;circ&#39;</span><span class="p">:</span>
             <span class="n">rlvec</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_imdict</span><span class="p">[</span><span class="s1">&#39;RL&#39;</span><span class="p">]</span>
@@ -449,9 +421,6 @@
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">lrvec</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Return the imvec of LR&quot;&quot;&quot;</span>
-<span class="c1">#        if self.polrep != &#39;circ&#39;:</span>
-<span class="c1">#            raise Exception(&quot;lrvec is not defined unless self.polrep==&#39;circ&#39;&quot;)</span>
-
         <span class="n">lrvec</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([])</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">polrep</span> <span class="o">==</span> <span class="s1">&#39;circ&#39;</span><span class="p">:</span>
             <span class="n">lrvec</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_imdict</span><span class="p">[</span><span class="s1">&#39;LR&#39;</span><span class="p">]</span>
@@ -832,16 +801,14 @@
             <span class="n">im</span><span class="o">.</span><span class="n">qvec</span> <span class="o">*=</span> <span class="o">-</span><span class="mi">1</span>
             <span class="n">im</span><span class="o">.</span><span class="n">uvec</span> <span class="o">*=</span> <span class="o">-</span><span class="mi">1</span>
         <span class="k">elif</span> <span class="n">im</span><span class="o">.</span><span class="n">polrep</span> <span class="o">==</span> <span class="s1">&#39;circ&#39;</span><span class="p">:</span>
-            <span class="n">im</span><span class="o">.</span><span class="n">lrvec</span> <span class="o">*=</span> <span class="o">-</span><span class="mi">1</span><span class="c1"># np.conjugate(im.rlvec)</span>
-            <span class="n">im</span><span class="o">.</span><span class="n">rlvec</span> <span class="o">*=</span> <span class="o">-</span><span class="mi">1</span><span class="c1">#np.conjugate(im.rlvec)</span>
-            <span class="c1">#im.lrvec = np.conjugate(im.rlvec)</span>
-            <span class="c1">#im.rlvec = np.conjugate(im.rlvec)</span>
+            <span class="n">im</span><span class="o">.</span><span class="n">lrvec</span> <span class="o">*=</span> <span class="o">-</span><span class="mi">1</span>
+            <span class="n">im</span><span class="o">.</span><span class="n">rlvec</span> <span class="o">*=</span> <span class="o">-</span><span class="mi">1</span>
 
         <span class="k">return</span> <span class="n">im</span></div>
 
 <div class="viewcode-block" id="Image.get_image_mf"><a class="viewcode-back" href="../../image.html#ehtim.image.Image.get_image_mf">[docs]</a>    <span class="k">def</span> <span class="nf">get_image_mf</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">nu</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Get image at a given frequency given the spectral information in self._mflist</span>
-
+<span class="sd">        </span>
 <span class="sd">           Args:</span>
 <span class="sd">               nu (float): frequency in Hz</span>
 
@@ -890,29 +857,7 @@
             <span class="n">imarr</span> <span class="o">=</span> <span class="n">imvec</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ydim</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">xdim</span><span class="p">)</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="n">imarr</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([])</span>
-        <span class="k">return</span>  <span class="n">imarr</span>
-
-<span class="c1">#        imarr = np.array([])</span>
-<span class="c1">#        if self.polrep == &#39;stokes&#39;:</span>
-<span class="c1">#            if pol == &quot;I&quot; and len(self.ivec):</span>
-<span class="c1">#                imarr = self.ivec.reshape(self.ydim, self.xdim)</span>
-<span class="c1">#            elif pol == &quot;Q&quot; and len(self.qvec):</span>
-<span class="c1">#                imarr = self.qvec.reshape(self.ydim, self.xdim)</span>
-<span class="c1">#            elif pol == &quot;U&quot; and len(self.uvec):</span>
-<span class="c1">#                imarr = self.uvec.reshape(self.ydim, self.xdim)</span>
-<span class="c1">#            elif pol == &quot;V&quot; and len(self.vvec):</span>
-<span class="c1">#                imarr = self.vvec.reshape(self.ydim, self.xdim)</span>
-<span class="c1">#        elif self.polrep == &#39;circ&#39;:</span>
-<span class="c1">#            if pol == &quot;RR&quot; and len(self.rrvec):</span>
-<span class="c1">#                imarr = self.rrvec.reshape(self.ydim, self.xdim)</span>
-<span class="c1">#            elif pol == &quot;LL&quot; and len(self.llvec):</span>
-<span class="c1">#                imarr = self.llvec.reshape(self.ydim, self.xdim)</span>
-<span class="c1">#            elif pol == &quot;RL&quot; and len(self.rlvec):</span>
-<span class="c1">#                imarr = self.rlvec.reshape(self.ydim, self.xdim)</span>
-<span class="c1">#            elif pol == &quot;LR&quot; and len(self.lrvec):</span>
-<span class="c1">#                imarr = self.lrvec.reshape(self.ydim, self.xdim)</span>
-
-        <span class="k">return</span> <span class="n">imarr</span></div>
+        <span class="k">return</span>  <span class="n">imarr</span></div>
 
 <div class="viewcode-block" id="Image.sourcevec"><a class="viewcode-back" href="../../image.html#ehtim.image.Image.sourcevec">[docs]</a>    <span class="k">def</span> <span class="nf">sourcevec</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Return the source position vector in geocentric coordinates at 0h GMST.</span>
@@ -1035,11 +980,6 @@
             <span class="n">pol</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">pol_prim</span>
         <span class="n">imvec</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_polvec</span><span class="p">(</span><span class="n">pol</span><span class="p">)</span>
         <span class="n">pdim</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">psize</span>
-
-<span class="c1">#        if not (pol in list(self._imdict.keys())):</span>
-<span class="c1">#            raise Exception(&quot;for polrep==%s, pol must be in &quot; %</span>
-<span class="c1">#                            self.polrep + &quot;,&quot;.join(list(self._imdict.keys())))</span>
-<span class="c1">#        imvec = self._imdict[pol]</span>
 
         <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">imvec</span><span class="p">):</span>
             <span class="n">xlist</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="o">-</span><span class="bp">self</span><span class="o">.</span><span class="n">xdim</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span> <span class="o">*</span> <span class="n">pdim</span> <span class="o">+</span> <span class="p">(</span><span class="n">pdim</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">xdim</span><span class="p">)</span> <span class="o">/</span> <span class="mf">2.0</span> <span class="o">-</span> <span class="n">pdim</span> <span class="o">/</span> <span class="mf">2.0</span>
@@ -1522,13 +1462,6 @@
             
         <span class="k">def</span> <span class="nf">blur_butter</span><span class="p">(</span><span class="n">imarr</span><span class="p">,</span> <span class="n">size</span><span class="p">):</span>
 
-            <span class="c1">#bfilt  = scipy.signal.butter(2,freq,btype=&#39;low&#39;,output=&#39;sos&#39;)</span>
-            <span class="c1">#if np.any(np.imag(imarr) != 0):</span>
-            <span class="c1">#    return blur(np.real(imarr), sigma) + 1j * blur(np.imag(imarr), sigma)</span>
-                
-            <span class="c1">#imarr_blur = scipy.signal.sosfilt(bfilt, imarr, axis=0)</span>
-            <span class="c1">#imarr_blur = scipy.signal.sosfilt(bfilt, imarr_blur, axis=1)            </span>
-
             <span class="k">if</span> <span class="n">size</span><span class="o">==</span><span class="mi">0</span><span class="p">:</span>
                 <span class="k">return</span> <span class="n">imarr</span>
             
@@ -1537,7 +1470,6 @@
             <span class="n">Ny</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">ydim</span>
 
             <span class="n">s</span><span class="p">,</span> <span class="n">t</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">meshgrid</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">fft</span><span class="o">.</span><span class="n">fftfreq</span><span class="p">(</span><span class="n">Nx</span><span class="p">,</span> <span class="n">d</span><span class="o">=</span><span class="mf">1.0</span> <span class="p">),</span> <span class="n">np</span><span class="o">.</span><span class="n">fft</span><span class="o">.</span><span class="n">fftfreq</span><span class="p">(</span><span class="n">Ny</span><span class="p">,</span> <span class="n">d</span><span class="o">=</span><span class="mf">1.0</span> <span class="p">))</span>
-            <span class="c1">#s, t = np.meshgrid(np.fft.fftfreq(Nx, d=1.0 / Nx), np.fft.fftfreq(Ny, d=1.0 / Ny))</span>
             <span class="n">r</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">s</span><span class="o">**</span><span class="mi">2</span> <span class="o">+</span> <span class="n">t</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span>
             
             <span class="n">bfilt</span> <span class="o">=</span> <span class="mf">1.</span><span class="o">/</span><span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="mi">1</span> <span class="o">+</span> <span class="p">(</span><span class="n">r</span><span class="o">/</span><span class="n">cutoff</span><span class="p">)</span><span class="o">**</span><span class="mi">4</span><span class="p">)</span>
@@ -1582,7 +1514,6 @@
             <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">polvec</span><span class="p">):</span>
                 <span class="n">polarr</span> <span class="o">=</span> <span class="n">polvec</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ydim</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">xdim</span><span class="p">)</span>
                 <span class="k">if</span> <span class="n">fwhm_pol</span><span class="p">:</span>
-                    <span class="c1">#print(&quot;Blurring polarization&quot;)</span>
                     <span class="n">polarr</span> <span class="o">=</span> <span class="n">blur</span><span class="p">(</span><span class="n">polarr</span><span class="p">,</span> <span class="n">fwhmp_pol</span><span class="p">)</span>
                 <span class="n">outim</span><span class="o">.</span><span class="n">add_pol_image</span><span class="p">(</span><span class="n">polarr</span><span class="p">,</span> <span class="n">pol</span><span class="p">)</span>
 
@@ -1650,8 +1581,6 @@
 
             <span class="n">imarr</span> <span class="o">=</span> <span class="n">imvec</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ydim</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">xdim</span><span class="p">)</span>
 
-            <span class="c1">#sx = ndi.sobel(imarr, axis=0, mode=&#39;constant&#39;)</span>
-            <span class="c1">#sy = ndi.sobel(imarr, axis=1, mode=&#39;constant&#39;)</span>
             <span class="n">sx</span> <span class="o">=</span> <span class="n">ndi</span><span class="o">.</span><span class="n">sobel</span><span class="p">(</span><span class="n">imarr</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s1">&#39;nearest&#39;</span><span class="p">)</span>
             <span class="n">sy</span> <span class="o">=</span> <span class="n">ndi</span><span class="o">.</span><span class="n">sobel</span><span class="p">(</span><span class="n">imarr</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s1">&#39;nearest&#39;</span><span class="p">)</span>
 
@@ -1740,11 +1669,10 @@
                 <span class="k">continue</span>
             <span class="n">mask</span><span class="o">.</span><span class="n">add_pol_image</span><span class="p">(</span><span class="n">maskarr</span><span class="p">,</span> <span class="n">pol</span><span class="p">)</span>
 
-        <span class="c1"># No spectral index information in mask</span>
+        <span class="c1"># TODO: No spectral index information in mask</span>
 
         <span class="k">return</span> <span class="n">mask</span></div>
 
-    <span class="c1"># TODO make this work with a mask image of different dimensions &amp; fov</span>
 <div class="viewcode-block" id="Image.apply_mask"><a class="viewcode-back" href="../../image.html#ehtim.image.Image.apply_mask">[docs]</a>    <span class="k">def</span> <span class="nf">apply_mask</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">mask_im</span><span class="p">,</span> <span class="n">fill_val</span><span class="o">=</span><span class="mf">0.</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Apply a mask to the image</span>
 
@@ -3077,114 +3005,6 @@
 
         <span class="k">return</span> <span class="p">[</span><span class="n">idx</span><span class="p">,</span> <span class="n">xcorr</span><span class="p">,</span> <span class="n">im1_pad</span><span class="p">,</span> <span class="n">im2_pad</span><span class="p">]</span></div>
 
-<div class="viewcode-block" id="Image.hough_ring"><a class="viewcode-back" href="../../image.html#ehtim.image.Image.hough_ring">[docs]</a>    <span class="k">def</span> <span class="nf">hough_ring</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">edgetype</span><span class="o">=</span><span class="s1">&#39;canny&#39;</span><span class="p">,</span> <span class="n">thresh</span><span class="o">=</span><span class="mf">0.2</span><span class="p">,</span> <span class="n">num_circles</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span> <span class="n">radius_range</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
-                   <span class="n">return_type</span><span class="o">=</span><span class="s1">&#39;rad&#39;</span><span class="p">,</span> <span class="n">display_results</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Use a circular hough transform to find a circle in the image</span>
-<span class="sd">           Returns metrics only for the primary polarization imvec!</span>
-
-<span class="sd">           Args:</span>
-<span class="sd">               num_circles (int) : number of circles to return</span>
-<span class="sd">               radius_range (tuple): range of radii to search in Hough transform, in radian</span>
-<span class="sd">               edgetype (str): edge detection type, &#39;gradient&#39; or &#39;canny&#39;</span>
-<span class="sd">               thresh(float): fractional threshold for the gradient image</span>
-<span class="sd">               display_results (bool): True to display results of the fit</span>
-<span class="sd">               return_type (str): &#39;rad&#39; to return in radian, &#39;pixel&#39; to return in pixel units</span>
-
-<span class="sd">           Returns:</span>
-<span class="sd">               list : a list of fitted circles (xpos, ypos, radius, objFunc), in radian</span>
-<span class="sd">        &quot;&quot;&quot;</span>
-
-        <span class="k">if</span> <span class="s1">&#39;skimage&#39;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">sys</span><span class="o">.</span><span class="n">modules</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;scikit-image not installed: cannot use hough_ring!&quot;</span><span class="p">)</span>
-
-        <span class="c1"># coordinate values</span>
-        <span class="n">pdim</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">psize</span>
-        <span class="n">xlist</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="o">-</span><span class="bp">self</span><span class="o">.</span><span class="n">xdim</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span> <span class="o">*</span> <span class="n">pdim</span> <span class="o">+</span> <span class="p">(</span><span class="n">pdim</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">xdim</span><span class="p">)</span> <span class="o">/</span> <span class="mf">2.0</span> <span class="o">-</span> <span class="n">pdim</span> <span class="o">/</span> <span class="mf">2.0</span>
-        <span class="n">ylist</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="o">-</span><span class="bp">self</span><span class="o">.</span><span class="n">ydim</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span> <span class="o">*</span> <span class="n">pdim</span> <span class="o">+</span> <span class="p">(</span><span class="n">pdim</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">ydim</span><span class="p">)</span> <span class="o">/</span> <span class="mf">2.0</span> <span class="o">-</span> <span class="n">pdim</span> <span class="o">/</span> <span class="mf">2.0</span>
-
-        <span class="c1"># normalize to range 0, 1</span>
-        <span class="n">im</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
-        <span class="n">maxval</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">im</span><span class="o">.</span><span class="n">imvec</span><span class="p">)</span>
-        <span class="n">meanval</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">im</span><span class="o">.</span><span class="n">imvec</span><span class="p">)</span>
-
-        <span class="n">im_norm</span> <span class="o">=</span> <span class="n">im</span><span class="o">.</span><span class="n">imvec</span> <span class="o">/</span> <span class="p">(</span><span class="n">maxval</span> <span class="o">+</span> <span class="o">.</span><span class="mi">01</span> <span class="o">*</span> <span class="n">meanval</span><span class="p">)</span>
-        <span class="n">im_norm</span> <span class="o">=</span> <span class="n">im_norm</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="s1">&#39;float&#39;</span><span class="p">)</span>  <span class="c1"># is it a problem if it&#39;s double??</span>
-        <span class="n">im_norm</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">isnan</span><span class="p">(</span><span class="n">im</span><span class="o">.</span><span class="n">imvec</span><span class="p">)]</span> <span class="o">=</span> <span class="mi">0</span>  <span class="c1"># mask nans to 0</span>
-        <span class="n">im</span><span class="o">.</span><span class="n">imvec</span> <span class="o">=</span> <span class="n">im_norm</span>
-
-        <span class="c1"># detect edges</span>
-        <span class="k">if</span> <span class="n">edgetype</span> <span class="o">==</span> <span class="s1">&#39;canny&#39;</span><span class="p">:</span>
-            <span class="n">imarr</span> <span class="o">=</span> <span class="n">im</span><span class="o">.</span><span class="n">imvec</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ydim</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">xdim</span><span class="p">)</span>
-            <span class="n">edges</span> <span class="o">=</span> <span class="n">canny</span><span class="p">(</span><span class="n">imarr</span><span class="p">,</span> <span class="n">sigma</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">high_threshold</span><span class="o">=</span><span class="n">thresh</span><span class="p">,</span> <span class="n">low_threshold</span><span class="o">=</span><span class="mf">0.01</span><span class="p">)</span>
-            <span class="n">im_edges</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
-            <span class="n">im_edges</span><span class="o">.</span><span class="n">imvec</span> <span class="o">=</span> <span class="n">edges</span><span class="o">.</span><span class="n">flatten</span><span class="p">()</span>
-
-        <span class="k">elif</span> <span class="n">edgetype</span> <span class="o">==</span> <span class="s1">&#39;grad&#39;</span><span class="p">:</span>
-            <span class="n">im_edges</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">grad</span><span class="p">()</span>
-            <span class="k">if</span> <span class="ow">not</span> <span class="p">(</span><span class="n">thresh</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">):</span>
-                <span class="n">thresh_val</span> <span class="o">=</span> <span class="n">thresh</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">im_edges</span><span class="o">.</span><span class="n">imvec</span><span class="p">)</span>
-                <span class="n">mask</span> <span class="o">=</span> <span class="n">im_edges</span><span class="o">.</span><span class="n">imvec</span> <span class="o">&gt;</span> <span class="n">thresh_val</span>
-                <span class="c1"># im_edges.imvec[mask] = 1</span>
-                <span class="n">im_edges</span><span class="o">.</span><span class="n">imvec</span><span class="p">[</span><span class="o">~</span><span class="n">mask</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span>
-                <span class="n">edges</span> <span class="o">=</span> <span class="n">im_edges</span><span class="o">.</span><span class="n">imvec</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ydim</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">xdim</span><span class="p">)</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="n">im_edges</span> <span class="o">=</span> <span class="n">im</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
-            <span class="k">if</span> <span class="ow">not</span> <span class="p">(</span><span class="n">thresh</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">):</span>
-                <span class="n">thresh_val</span> <span class="o">=</span> <span class="n">thresh</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">im_edges</span><span class="o">.</span><span class="n">imvec</span><span class="p">)</span>
-                <span class="n">mask</span> <span class="o">=</span> <span class="n">im_edges</span><span class="o">.</span><span class="n">imvec</span> <span class="o">&gt;</span> <span class="n">thresh_val</span>
-                <span class="c1"># im_edges.imvec[mask] = 1f</span>
-                <span class="n">im_edges</span><span class="o">.</span><span class="n">imvec</span><span class="p">[</span><span class="o">~</span><span class="n">mask</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span>
-                <span class="n">edges</span> <span class="o">=</span> <span class="n">im_edges</span><span class="o">.</span><span class="n">imvec</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ydim</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">xdim</span><span class="p">)</span>
-
-        <span class="c1"># define radius range for Hough transform search</span>
-        <span class="k">if</span> <span class="n">radius_range</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="n">hough_radii</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="mi">10</span> <span class="o">*</span> <span class="n">ehc</span><span class="o">.</span><span class="n">RADPERUAS</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">psize</span><span class="p">),</span>
-                                    <span class="nb">int</span><span class="p">(</span><span class="mi">50</span> <span class="o">*</span> <span class="n">ehc</span><span class="o">.</span><span class="n">RADPERUAS</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">psize</span><span class="p">))</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="n">hough_radii</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span>
-                <span class="n">radius_range</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">/</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">psize</span><span class="p">,</span>
-                <span class="n">radius_range</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">/</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">psize</span><span class="p">,</span>
-                <span class="mi">25</span><span class="p">)</span>
-
-        <span class="c1"># perform the hough transform and select the most prominent circles</span>
-        <span class="n">hough_res</span> <span class="o">=</span> <span class="n">hough_circle</span><span class="p">(</span><span class="n">edges</span><span class="p">,</span> <span class="n">hough_radii</span><span class="p">)</span>
-        <span class="n">accums</span><span class="p">,</span> <span class="n">cy</span><span class="p">,</span> <span class="n">cx</span><span class="p">,</span> <span class="n">radii</span> <span class="o">=</span> <span class="n">hough_circle_peaks</span><span class="p">(</span><span class="n">hough_res</span><span class="p">,</span> <span class="n">hough_radii</span><span class="p">,</span>
-                                                   <span class="n">total_num_peaks</span><span class="o">=</span><span class="n">num_circles</span><span class="p">)</span>
-        <span class="n">accum_tot</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">accums</span><span class="p">)</span>
-
-        <span class="c1"># print results, plot circles, and return</span>
-        <span class="n">outlist</span> <span class="o">=</span> <span class="p">[]</span>
-        <span class="k">if</span> <span class="n">display_results</span><span class="p">:</span>
-            <span class="n">plt</span><span class="o">.</span><span class="n">ion</span><span class="p">()</span>
-            <span class="n">fig</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">display</span><span class="p">()</span>
-            <span class="n">ax</span> <span class="o">=</span> <span class="n">fig</span><span class="o">.</span><span class="n">gca</span><span class="p">()</span>
-
-        <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span>
-        <span class="n">colors</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;b&#39;</span><span class="p">,</span> <span class="s1">&#39;r&#39;</span><span class="p">,</span> <span class="s1">&#39;w&#39;</span><span class="p">,</span> <span class="s1">&#39;lime&#39;</span><span class="p">,</span> <span class="s1">&#39;magenta&#39;</span><span class="p">,</span> <span class="s1">&#39;aqua&#39;</span><span class="p">]</span>
-        <span class="k">for</span> <span class="n">accum</span><span class="p">,</span> <span class="n">center_y</span><span class="p">,</span> <span class="n">center_x</span><span class="p">,</span> <span class="n">radius</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">accums</span><span class="p">,</span> <span class="n">cy</span><span class="p">,</span> <span class="n">cx</span><span class="p">,</span> <span class="n">radii</span><span class="p">):</span>
-            <span class="n">accum_frac</span> <span class="o">=</span> <span class="n">accum</span> <span class="o">/</span> <span class="n">accum_tot</span>
-            <span class="k">if</span> <span class="n">return_type</span> <span class="o">==</span> <span class="s1">&#39;rad&#39;</span><span class="p">:</span>
-                <span class="n">x_rad</span> <span class="o">=</span> <span class="n">xlist</span><span class="p">[</span><span class="nb">int</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">round</span><span class="p">(</span><span class="n">center_x</span><span class="p">))]</span>
-                <span class="n">y_rad</span> <span class="o">=</span> <span class="n">ylist</span><span class="p">[</span><span class="nb">int</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">round</span><span class="p">(</span><span class="n">center_y</span><span class="p">))]</span>
-                <span class="n">r_rad</span> <span class="o">=</span> <span class="n">radius</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">psize</span>
-                <span class="n">outlist</span><span class="o">.</span><span class="n">append</span><span class="p">([</span><span class="n">x_rad</span><span class="p">,</span> <span class="n">y_rad</span><span class="p">,</span> <span class="n">r_rad</span><span class="p">,</span> <span class="n">accum_frac</span><span class="p">])</span>
-            <span class="k">else</span><span class="p">:</span>
-                <span class="n">outlist</span><span class="o">.</span><span class="n">append</span><span class="p">([</span><span class="n">center_x</span><span class="p">,</span> <span class="n">center_y</span><span class="p">,</span> <span class="n">radius</span><span class="p">,</span> <span class="n">accum_frac</span><span class="p">])</span>
-            <span class="nb">print</span><span class="p">(</span><span class="n">accum_frac</span><span class="p">)</span>
-            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">%i</span><span class="s2"> ring diameter: </span><span class="si">%0.1f</span><span class="s2"> microarcsec&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">radius</span> <span class="o">*</span> <span class="n">pdim</span> <span class="o">/</span> <span class="n">ehc</span><span class="o">.</span><span class="n">RADPERUAS</span><span class="p">))</span>
-            <span class="k">if</span> <span class="n">display_results</span><span class="p">:</span>
-                <span class="k">if</span> <span class="n">i</span> <span class="o">&gt;</span> <span class="nb">len</span><span class="p">(</span><span class="n">colors</span><span class="p">):</span>
-                    <span class="n">color</span> <span class="o">=</span> <span class="n">colors</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
-                <span class="k">else</span><span class="p">:</span>
-                    <span class="n">color</span> <span class="o">=</span> <span class="n">colors</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
-                <span class="n">circ</span> <span class="o">=</span> <span class="n">mpl</span><span class="o">.</span><span class="n">patches</span><span class="o">.</span><span class="n">Circle</span><span class="p">((</span><span class="n">center_y</span><span class="p">,</span> <span class="n">center_x</span><span class="p">),</span> <span class="n">radius</span><span class="p">,</span> <span class="n">fill</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="n">color</span><span class="p">)</span>
-                <span class="n">ax</span><span class="o">.</span><span class="n">add_patch</span><span class="p">(</span><span class="n">circ</span><span class="p">)</span>
-            <span class="n">i</span> <span class="o">+=</span> <span class="mi">1</span>
-
-        <span class="k">return</span> <span class="n">outlist</span></div>
-
 <div class="viewcode-block" id="Image.fit_gauss"><a class="viewcode-back" href="../../image.html#ehtim.image.Image.fit_gauss">[docs]</a>    <span class="k">def</span> <span class="nf">fit_gauss</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">units</span><span class="o">=</span><span class="s1">&#39;rad&#39;</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Determine the Gaussian parameters that short baselines would measure for the source</span>
 <span class="sd">           by diagonalizing the image covariance matrix.</span>
@@ -4378,8 +4198,6 @@
     <span class="n">reffreq</span> <span class="o">=</span> <span class="n">im</span><span class="o">.</span><span class="n">rf</span>
 
     <span class="c1"># remove any zeros in the images</span>
-
-           
     <span class="n">imlist</span> <span class="o">=</span> <span class="p">[</span><span class="n">im</span><span class="o">.</span><span class="n">get_image_mf</span><span class="p">(</span><span class="n">rf</span><span class="p">)</span><span class="o">.</span><span class="n">blur_circ</span><span class="p">(</span><span class="n">kernel</span><span class="p">)</span> <span class="k">for</span> <span class="n">rf</span> <span class="ow">in</span> <span class="n">freqs</span><span class="p">]</span>
     <span class="k">for</span> <span class="n">image</span> <span class="ow">in</span> <span class="n">imlist</span><span class="p">:</span>
         <span class="n">image</span><span class="o">.</span><span class="n">imvec</span><span class="p">[</span><span class="n">image</span><span class="o">.</span><span class="n">imvec</span><span class="o">&lt;=</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">min</span><span class="p">(</span><span class="n">image</span><span class="o">.</span><span class="n">imvec</span><span class="p">[</span><span class="n">image</span><span class="o">.</span><span class="n">imvec</span><span class="o">!=</span><span class="mi">0</span><span class="p">])</span>

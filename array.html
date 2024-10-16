@@ -101,7 +101,7 @@
 <dd><p>A dictionary of rows in the tarr for each site name</p>
 <dl class="field-list simple">
 <dt class="field-odd">Type</dt>
-<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.12)">dict</a></p>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.13)">dict</a></p>
 </dd>
 </dl>
 </dd></dl>
@@ -113,14 +113,14 @@
 Space antennas have x=y=z=0 in the tarr</p>
 <dl class="field-list simple">
 <dt class="field-odd">Type</dt>
-<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.12)">dict</a></p>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.13)">dict</a></p>
 </dd>
 </dl>
 </dd></dl>
 
 <dl class="py method">
 <dt id="ehtim.array.Array.add_satellite_elements">
-<code class="sig-name descname">add_satellite_elements</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">satname</span></em>, <em class="sig-param"><span class="n">perigee_mjd</span><span class="o">=</span><span class="default_value">60486.07153225953</span></em>, <em class="sig-param"><span class="n">period_days</span><span class="o">=</span><span class="default_value">1.0</span></em>, <em class="sig-param"><span class="n">eccentricity</span><span class="o">=</span><span class="default_value">0.0</span></em>, <em class="sig-param"><span class="n">inclination</span><span class="o">=</span><span class="default_value">0.0</span></em>, <em class="sig-param"><span class="n">arg_perigee</span><span class="o">=</span><span class="default_value">0.0</span></em>, <em class="sig-param"><span class="n">long_ascending</span><span class="o">=</span><span class="default_value">0.0</span></em>, <em class="sig-param"><span class="n">sefd</span><span class="o">=</span><span class="default_value">10000</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/array.html#Array.add_satellite_elements"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.array.Array.add_satellite_elements" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">add_satellite_elements</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">satname</span></em>, <em class="sig-param"><span class="n">perigee_mjd</span><span class="o">=</span><span class="default_value">60599.71722275946</span></em>, <em class="sig-param"><span class="n">period_days</span><span class="o">=</span><span class="default_value">1.0</span></em>, <em class="sig-param"><span class="n">eccentricity</span><span class="o">=</span><span class="default_value">0.0</span></em>, <em class="sig-param"><span class="n">inclination</span><span class="o">=</span><span class="default_value">0.0</span></em>, <em class="sig-param"><span class="n">arg_perigee</span><span class="o">=</span><span class="default_value">0.0</span></em>, <em class="sig-param"><span class="n">long_ascending</span><span class="o">=</span><span class="default_value">0.0</span></em>, <em class="sig-param"><span class="n">sefd</span><span class="o">=</span><span class="default_value">10000</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/array.html#Array.add_satellite_elements"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.array.Array.add_satellite_elements" title="Permalink to this definition">¶</a></dt>
 <dd><p>Add an earth-orbiting satellite to the array from simple keplerian elements
 perfect keplerian orbit is assumed, no derivatives</p>
 <dl class="field-list simple">
@@ -141,8 +141,8 @@ perfect keplerian orbit is assumed, no derivatives</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>tlearr</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.12)"><em>str</em></a>) – 3 element list with [name, tle line 1, tle line 2] as strings</p></li>
-<li><p><strong>sefd</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.12)"><em>float</em></a>) – assumed sefd for the array file (assumes sefdl = sefdr)</p></li>
+<li><p><strong>tlearr</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><em>str</em></a>) – 3 element list with [name, tle line 1, tle line 2] as strings</p></li>
+<li><p><strong>sefd</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.13)"><em>float</em></a>) – assumed sefd for the array file (assumes sefdl = sefdr)</p></li>
 </ul>
 </dd>
 </dl>
@@ -184,7 +184,7 @@ perfect keplerian orbit is assumed, no derivatives</p>
 <dd><p>Make a subarray from the Array object array that only includes the sites listed.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><p><strong>sites</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.12)"><em>list</em></a>) – list of sites in the subarray</p>
+<dd class="field-odd"><p><strong>sites</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.13)"><em>list</em></a>) – list of sites in the subarray</p>
 </dd>
 <dt class="field-even">Returns</dt>
 <dd class="field-even"><p>an Array object with specified sites and metadata</p>
@@ -202,20 +202,20 @@ perfect keplerian orbit is assumed, no derivatives</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>ra</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.12)"><em>float</em></a>) – the source right ascension in fractional hours</p></li>
-<li><p><strong>dec</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.12)"><em>float</em></a>) – the source declination in fractional degrees</p></li>
-<li><p><strong>tint</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.12)"><em>float</em></a>) – the scan integration time in seconds</p></li>
-<li><p><strong>tadv</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.12)"><em>float</em></a>) – the uniform cadence between scans in seconds</p></li>
-<li><p><strong>tstart</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.12)"><em>float</em></a>) – the start time of the observation in hours</p></li>
-<li><p><strong>tstop</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.12)"><em>float</em></a>) – the end time of the observation in hours</p></li>
-<li><p><strong>mjd</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.12)"><em>int</em></a>) – the mjd of the observation</p></li>
-<li><p><strong>timetype</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.12)"><em>str</em></a>) – how to interpret tstart and tstop; either ‘GMST’ or ‘UTC’</p></li>
-<li><p><strong>polrep</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.12)"><em>str</em></a>) – polarization representation, either ‘stokes’ or ‘circ’</p></li>
-<li><p><strong>elevmin</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.12)"><em>float</em></a>) – station minimum elevation in degrees</p></li>
-<li><p><strong>elevmax</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.12)"><em>float</em></a>) – station maximum elevation in degrees</p></li>
-<li><p><strong>no_elevcut_space</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.12)"><em>bool</em></a>) – if True, do not apply elevation cut to orbiters</p></li>
-<li><p><strong>tau</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.12)"><em>float</em></a>) – the base opacity at all sites, or a dict giving one opacity per site</p></li>
-<li><p><strong>fix_theta_GMST</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.12)"><em>bool</em></a>) – if True, stops earth rotation to sample fixed u,v points</p></li>
+<li><p><strong>ra</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.13)"><em>float</em></a>) – the source right ascension in fractional hours</p></li>
+<li><p><strong>dec</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.13)"><em>float</em></a>) – the source declination in fractional degrees</p></li>
+<li><p><strong>tint</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.13)"><em>float</em></a>) – the scan integration time in seconds</p></li>
+<li><p><strong>tadv</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.13)"><em>float</em></a>) – the uniform cadence between scans in seconds</p></li>
+<li><p><strong>tstart</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.13)"><em>float</em></a>) – the start time of the observation in hours</p></li>
+<li><p><strong>tstop</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.13)"><em>float</em></a>) – the end time of the observation in hours</p></li>
+<li><p><strong>mjd</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.13)"><em>int</em></a>) – the mjd of the observation</p></li>
+<li><p><strong>timetype</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><em>str</em></a>) – how to interpret tstart and tstop; either ‘GMST’ or ‘UTC’</p></li>
+<li><p><strong>polrep</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><em>str</em></a>) – polarization representation, either ‘stokes’ or ‘circ’</p></li>
+<li><p><strong>elevmin</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.13)"><em>float</em></a>) – station minimum elevation in degrees</p></li>
+<li><p><strong>elevmax</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.13)"><em>float</em></a>) – station maximum elevation in degrees</p></li>
+<li><p><strong>no_elevcut_space</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.13)"><em>bool</em></a>) – if True, do not apply elevation cut to orbiters</p></li>
+<li><p><strong>tau</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.13)"><em>float</em></a>) – the base opacity at all sites, or a dict giving one opacity per site</p></li>
+<li><p><strong>fix_theta_GMST</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.13)"><em>bool</em></a>) – if True, stops earth rotation to sample fixed u,v points</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns</dt>
@@ -234,16 +234,16 @@ perfect keplerian orbit is assumed, no derivatives</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>sites</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.12)"><em>list</em></a>) – list of sites to plot</p></li>
-<li><p><strong>label</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.12)"><em>str</em></a>) – title for plot</p></li>
-<li><p><strong>legend</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.12)"><em>bool</em></a>) – add telescope legend or not</p></li>
-<li><p><strong>clist</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.12)"><em>list</em></a>) – list of colors for different stations</p></li>
-<li><p><strong>rangex</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.12)"><em>list</em></a>) – lower and upper x-axis limits</p></li>
-<li><p><strong>rangey</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.12)"><em>list</em></a>) – lower and upper y-axis limits</p></li>
-<li><p><strong>markersize</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.12)"><em>float</em></a>) – marker size</p></li>
-<li><p><strong>show</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.12)"><em>bool</em></a>) – display the plot or not</p></li>
-<li><p><strong>grid</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.12)"><em>bool</em></a>) – add a grid to the plot or not</p></li>
-<li><p><strong>export_pdf</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.12)"><em>str</em></a>) – save a pdf file to this path</p></li>
+<li><p><strong>sites</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.13)"><em>list</em></a>) – list of sites to plot</p></li>
+<li><p><strong>label</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><em>str</em></a>) – title for plot</p></li>
+<li><p><strong>legend</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.13)"><em>bool</em></a>) – add telescope legend or not</p></li>
+<li><p><strong>clist</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.13)"><em>list</em></a>) – list of colors for different stations</p></li>
+<li><p><strong>rangex</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.13)"><em>list</em></a>) – lower and upper x-axis limits</p></li>
+<li><p><strong>rangey</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.13)"><em>list</em></a>) – lower and upper y-axis limits</p></li>
+<li><p><strong>markersize</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.13)"><em>float</em></a>) – marker size</p></li>
+<li><p><strong>show</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.13)"><em>bool</em></a>) – display the plot or not</p></li>
+<li><p><strong>grid</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.13)"><em>bool</em></a>) – add a grid to the plot or not</p></li>
+<li><p><strong>export_pdf</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><em>str</em></a>) – save a pdf file to this path</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns</dt>
@@ -264,7 +264,7 @@ perfect keplerian orbit is assumed, no derivatives</p>
 <dd><p>Save the array data in a text file.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><p><strong>fname</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.12)"><em>str</em></a>) – path to output array file</p>
+<dd class="field-odd"><p><strong>fname</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><em>str</em></a>) – path to output array file</p>
 </dd>
 </dl>
 </dd></dl>
@@ -279,8 +279,8 @@ Sites with x=y=z=0 are spacecraft, TLE ephemerides read from ephemdir.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>fname</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.12)"><em>str</em></a>) – path to input array file</p></li>
-<li><p><strong>ephemdir</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.12)"><em>str</em></a>) – path to directory with TLE ephemerides for spacecraft</p></li>
+<li><p><strong>fname</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><em>str</em></a>) – path to input array file</p></li>
+<li><p><strong>ephemdir</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><em>str</em></a>) – path to directory with TLE ephemerides for spacecraft</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns</dt>

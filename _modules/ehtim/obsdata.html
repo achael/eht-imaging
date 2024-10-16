@@ -283,7 +283,7 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">tkey</span> <span class="o">=</span> <span class="p">{</span><span class="n">tarr</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="s1">&#39;site&#39;</span><span class="p">]:</span> <span class="n">i</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">tarr</span><span class="p">))}</span>
         
 <div class="viewcode-block" id="Obsdata.obsdata_args"><a class="viewcode-back" href="../../obsdata.html#ehtim.obsdata.Obsdata.obsdata_args">[docs]</a>    <span class="k">def</span> <span class="nf">obsdata_args</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;&quot;Copy arguments for making a  new Obsdata into a list and dictonary</span>
+        <span class="sd">&quot;&quot;&quot;&quot;Copy arguments for making a new Obsdata into a list and dictonary</span>
 <span class="sd">        &quot;&quot;&quot;</span>
 
         <span class="n">arglist</span> <span class="o">=</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">ra</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">dec</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">rf</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">bw</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">tarr</span><span class="p">]</span>
@@ -4073,8 +4073,9 @@
 
 <div class="viewcode-block" id="Obsdata.plotall"><a class="viewcode-back" href="../../obsdata.html#ehtim.obsdata.Obsdata.plotall">[docs]</a>    <span class="k">def</span> <span class="nf">plotall</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">field1</span><span class="p">,</span> <span class="n">field2</span><span class="p">,</span>
                 <span class="n">conj</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">debias</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">tag_bl</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">ang_unit</span><span class="o">=</span><span class="s1">&#39;deg&#39;</span><span class="p">,</span> <span class="n">timetype</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
-                <span class="n">axis</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">rangex</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">rangey</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">snrcut</span><span class="o">=</span><span class="mf">0.</span><span class="p">,</span>
+                <span class="n">axis</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">rangex</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">rangey</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">xscale</span><span class="o">=</span><span class="s1">&#39;linear&#39;</span><span class="p">,</span> <span class="n">yscale</span><span class="o">=</span><span class="s1">&#39;linear&#39;</span><span class="p">,</span>
                 <span class="n">color</span><span class="o">=</span><span class="n">ehc</span><span class="o">.</span><span class="n">SCOLORS</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">marker</span><span class="o">=</span><span class="s1">&#39;o&#39;</span><span class="p">,</span> <span class="n">markersize</span><span class="o">=</span><span class="n">ehc</span><span class="o">.</span><span class="n">MARKERSIZE</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                <span class="n">snrcut</span><span class="o">=</span><span class="mf">0.</span><span class="p">,</span>
                 <span class="n">grid</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">ebar</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">axislabels</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">legend</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
                 <span class="n">show</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">export_pdf</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Plot two fields against each other.</span>
@@ -4090,6 +4091,9 @@
 <span class="sd">               timetype (str): &#39;GMST&#39; or &#39;UTC&#39;</span>
 
 <span class="sd">               axis (matplotlib.axes.Axes): add plot to this axis</span>
+<span class="sd">               xscale (str): &#39;linear&#39; or &#39;log&#39; y-axis scale               </span>
+<span class="sd">               yscale (str): &#39;linear&#39; or &#39;log&#39; y-axis scale</span>
+<span class="sd">               </span>
 <span class="sd">               rangex (list): [xmin, xmax] x-axis limits</span>
 <span class="sd">               rangey (list): [ymin, ymax] y-axis limits</span>
 
@@ -4257,6 +4261,10 @@
                 <span class="n">x</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="n">field1</span><span class="p">],</span> <span class="n">data</span><span class="p">[</span><span class="n">field2</span><span class="p">],</span> <span class="n">marker</span><span class="p">,</span> <span class="n">markersize</span><span class="o">=</span><span class="n">markersize</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="n">color</span><span class="p">,</span>
                        <span class="n">label</span><span class="o">=</span><span class="n">labelstr</span><span class="p">,</span> <span class="n">picker</span><span class="o">=</span><span class="n">tolerance</span><span class="p">)</span>
 
+        <span class="c1"># axis scales</span>
+        <span class="n">x</span><span class="o">.</span><span class="n">set_xscale</span><span class="p">(</span><span class="n">xscale</span><span class="p">)</span>
+        <span class="n">x</span><span class="o">.</span><span class="n">set_yscale</span><span class="p">(</span><span class="n">yscale</span><span class="p">)</span>
+        
         <span class="c1"># Data ranges</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="n">rangex</span><span class="p">:</span>
             <span class="n">rangex</span> <span class="o">=</span> <span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">min</span><span class="p">(</span><span class="n">xmins</span><span class="p">)</span> <span class="o">-</span> <span class="mf">0.2</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">min</span><span class="p">(</span><span class="n">xmins</span><span class="p">)),</span>
@@ -4274,6 +4282,7 @@
 
         <span class="n">x</span><span class="o">.</span><span class="n">set_xlim</span><span class="p">(</span><span class="n">rangex</span><span class="p">)</span>
         <span class="n">x</span><span class="o">.</span><span class="n">set_ylim</span><span class="p">(</span><span class="n">rangey</span><span class="p">)</span>
+
 
         <span class="c1"># label and save</span>
         <span class="k">if</span> <span class="n">axislabels</span><span class="p">:</span>
