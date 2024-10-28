@@ -55,7 +55,7 @@ warnings.filterwarnings("ignore", message="divide by zero encountered in double_
 
 def compute_uv_coordinates(array, site1, site2, time, mjd, ra, dec, rf, timetype='UTC',
                            elevmin=ehc.ELEV_LOW,  elevmax=ehc.ELEV_HIGH, no_elevcut_space=False,
-                           fix_theta_GMST=False):
+                           fix_theta_GMST=False, earthshadow_space=True):
                            
     """Compute u,v coordinates for an array at a given time for a source at a given ra,dec,rf
     """
@@ -73,6 +73,11 @@ def compute_uv_coordinates(array, site1, site2, time, mjd, ra, dec, rf, timetype
     elif not (len(site1) == len(site2) == len(time)):
         raise Exception("site1, site2, and time not the same dimension in compute_uv_coordinates!")
 
+    if ra>24 or ra<0:
+        raise Exception('RA %.2f in compute_uv_coordinates should be in frac hours from 0 to 24!'%ra)
+    if dec>180 or dec<-180:
+        raise Exception('DEC %.2f in compute_uv_coordinates should be in frac degrees from -180 to 180!'%dec)
+                
     # Source vector
     sourcevec = np.array([np.cos(dec*ehc.DEGREE), 0, np.sin(dec*ehc.DEGREE)])
     projU = np.cross(np.array([0, 0, 1]), sourcevec)
@@ -106,7 +111,9 @@ def compute_uv_coordinates(array, site1, site2, time, mjd, ra, dec, rf, timetype
     # Satellites: new method
     spacemask1 = [np.all(coord == (0., 0., 0.)) for coord in coord1]
     spacemask2 = [np.all(coord == (0., 0., 0.)) for coord in coord2]
-        
+    shadowmask1 = spacemask1.copy()
+    shadowmask2 = spacemask2.copy()
+
     satnames = array.ephem.keys()
     satdict = {satname: sat_skyfield_from_ephementry(satname, array.ephem, mjd) for satname in satnames}
     for satname in satnames:
@@ -115,11 +122,10 @@ def compute_uv_coordinates(array, site1, site2, time, mjd, ra, dec, rf, timetype
         mask1 = (site1==satname)    
         c1 = orbit_skyfield(sat, fracmjd[mask1], whichout='itrs')          
         coord1[mask1] = c1.T
-
         mask2 = (site2==satname)    
         c2 = orbit_skyfield(sat, fracmjd[mask2], whichout='itrs')
         coord2[mask2] = c2.T
-    
+         
     # Satellites: old method
     """
     if np.any(spacemask1):
@@ -198,10 +204,21 @@ def compute_uv_coordinates(array, site1, site2, time, mjd, ra, dec, rf, timetype
     if no_elevcut_space:    
         mask_elev_1[spacemask1] = 1
         mask_elev_2[spacemask2] = 1
-        
+    
+
+
     # apply elevation mask
     mask = mask_elev_1 * mask_elev_2
-           
+    
+    if earthshadow_space:
+        spacevecs1 = coord1[spacemask1]
+        spacevecs2 = coord2[spacemask2]
+
+        shadowmask1 = earthshadow_mask(spacevecs1, sourcevec)
+        shadowmask2 = earthshadow_mask(spacevecs2, sourcevec)
+        mask[spacemask1] = mask[spacemask1]*shadowmask1
+        mask[spacemask2] = mask[spacemask2]*shadowmask2
+
     time = time[mask]
     u = u[mask]
     v = v[mask]
@@ -1020,6 +1037,23 @@ def earthrot(vecs, thetas):
         raise Exception("Unequal numbers of vectors and angles in earthrot(vecs, thetas)!")
 
     return rotvec
+
+
+def earthshadow_mask(obsvecs, sourcevec):
+    """Return a mask corresponding to obsvecs which are not Earth-shadowed
+       along the line of sight to sourcevec.
+       obsvec can be an array of vectors but sourcevec can ONLY be a single vector
+
+    """
+
+    if len(obsvecs.shape) == 1:
+        obsvecs = np.array([obsvecs])
+    LOS_projection = np.array([np.dot(obsvec,sourcevec) for obsvec in obsvecs])
+    norms = np.array([np.linalg.norm(obsvec) for obsvec in obsvecs])
+    projected_radii = np.sqrt(norms**2-LOS_projection**2)
+    #Earth-shadowed points must have projected radii < earth radius and a negative LOS projection
+    bad_mask = (LOS_projection<0) * (projected_radii < 6.371e6)
+    return ~bad_mask
 
 
 def elev(obsvecs, sourcevec):
