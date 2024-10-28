@@ -74,9 +74,9 @@ def compute_uv_coordinates(array, site1, site2, time, mjd, ra, dec, rf, timetype
         raise Exception("site1, site2, and time not the same dimension in compute_uv_coordinates!")
 
     if ra>24 or ra<0:
-        raise Exception('RA %.2f in compute_uv_coordinates should be in frac hours from 0 to 24!'%ra)
+        raise Exception('RA %.2f in compute_uv_coordinates should be in decimal hours from 0 to 24!'%ra)
     if dec>180 or dec<-180:
-        raise Exception('DEC %.2f in compute_uv_coordinates should be in frac degrees from -180 to 180!'%dec)
+        raise Exception('DEC %.2f in compute_uv_coordinates should be in decimal degrees from -180 to 180!'%dec)
                 
     # Source vector
     sourcevec = np.array([np.cos(dec*ehc.DEGREE), 0, np.sin(dec*ehc.DEGREE)])
