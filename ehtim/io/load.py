@@ -194,12 +194,13 @@ def load_im_hdf5(filename):
     ra = ehc.RA_DEFAULT
     dec = ehc.DEC_DEFAULT
     if src == "SgrA":
-        ra = 17.76112247
-        dec = -28.992189444
+        ra = ehc.RA_SGRA
+        dec = ehc.DEC_SGRA
     elif src == "M87":
-        ra = 187.70593075
-        dec = 12.391123306
-
+        ra = ehc.RA_M87
+        dec = ehc.DEC_M87
+    print("   assuming source %s: ra %.3f hr: dec %.3f deg"%(src,ra,dec))
+    
     # Process image to set proper dimensions
     fovmuas = DX / dsource * lunit * 2.06265e11
     psize_x = ehc.RADPERUAS * fovmuas / nx
