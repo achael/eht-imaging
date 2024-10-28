@@ -258,6 +258,7 @@ def load_im_fits(filename, aipscc=False, pulse=ehc.PULSE_DEFAULT,
     ydim_p = header['NAXIS2']
     psize_y = np.abs(header['CDELT2']) * pscl
 
+    # load right ascenscion (fractional hr)
     if 'OBSRA' in list(header.keys()):
         ra = header['OBSRA'] * 12 / 180.
     elif 'CRVAL1' in list(header.keys()):
@@ -265,6 +266,18 @@ def load_im_fits(filename, aipscc=False, pulse=ehc.PULSE_DEFAULT,
     else:
         ra = 0.
 
+    # catch bug if RA is in fractional degrees and > 24
+    if ra>24 and ra>=0:
+        ranew = ra*12/180.
+        if ranew<24:
+            print(' Warning! file RA>24, interpreting as frac deg. : %.3f deg -> %.3f hr'%(ra,ranew))
+            ra = ranew
+        else:
+            raise Exception('Cannot interpret fits file RA %.23!'%ra)
+    elif ra<0:
+        raise Exception('fits file RA %.3f<0!'%ra)
+        
+    # load declination (fractional deg)      
     if 'OBSDEC' in list(header.keys()):
         dec = header['OBSDEC']
     elif 'CRVAL2' in list(header.keys()):
@@ -1084,6 +1097,17 @@ def load_obs_uvfits(filename, polrep='stokes', flipbl=False,
         else:
             raise Exception('Cannot find DEC!')
 
+    # catch bug if RA is in fractional degrees and > 24
+    if ra>24 and ra>=0:
+        ranew = ra*12/180.
+        if ranew<24:
+            print(' Warning! file RA>24, interpreting as frac deg. : %.3f deg -> %.3f hr'%(ra,ranew))
+            ra = ranew
+        else:
+            raise Exception('Cannot interpret fits file RA %.23!'%ra)
+    elif ra<0:
+        raise Exception('fits file RA %.3f<0!'%ra)
+        
     src = header['OBJECT']
     rf = hdulist['AIPS AN'].header['FREQ']
 
