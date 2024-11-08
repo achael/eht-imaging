@@ -37,7 +37,7 @@ if __name__ == "__main__":
                    "scripts/imgsum.py"],
 
           install_requires=["numpy>=1.24,<2.0",
-                            "scipy>=1.9.3",
+                            "scipy>=1.9.3,<1.14",
                             "astropy>=5.0.4",
                             "matplotlib>=3.7.3",
                             "skyfield",
