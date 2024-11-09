@@ -1070,8 +1070,16 @@ class Image(object):
             if np.any(np.imag(imvec) != 0):
                 return interp_imvec(np.real(imvec)) + 1j * interp_imvec(np.imag(imvec))
 
-            interpfunc = scipy.interpolate.interp2d(y, x, np.reshape(imvec, (self.ydim, self.xdim)),
-                                                    kind=interp)
+
+            # interpfunc = scipy.interpolate.interp2d(y, x, np.reshape(imvec, (self.ydim, self.xdim)),
+                                                    # kind=interp) ## DEPRECATED. commented out for legacy
+
+            ## new code to be compatible with scipy 1.14+
+            interp_order = {"linear": 1, "quadratic": 2, "cubic": 3}.get(interp, 1)
+            grid_z = np.reshape(imvec, (self.ydim, self.xdim))
+            interpfunc = scipy.interpolate.RectBivariateSpline(y, x, grid_z, kx=interp_order, ky=interp_order)
+
+
             tmpimg = interpfunc(ytarget, xtarget)
             tmpimg[np.abs(xtarget) > fov_x / 2., :] = 0.0
             tmpimg[:, np.abs(ytarget) > fov_y / 2.] = 0.0
