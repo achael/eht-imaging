@@ -1436,7 +1436,7 @@ def load_obs_uvfits(filename, polrep='stokes', flipbl=False,
                              ((
                                  times[i], tints[i],
                                  t1[i], t2[i], tau1[i], tau2[i],
-                                 u[i], v[i],
+                                 u[i], v[i], 0,
                                  rr[i], ll[i], rl[i], lr[i],
                                  rrsig[i], llsig[i], rlsig[i], lrsig[i]
                              ), dtype=dtpol_out
