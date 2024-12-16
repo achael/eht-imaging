@@ -146,7 +146,6 @@ Let us know if you use ehtim in your publication and we'll list it here!
 
 - Evolution, speed, and precession of the parsec-scale jet in the 3C 84 radio galaxy, `Foschi et al. 2024 <https://arxiv.org/pdf/2412.09215>`_
 
-- 
 oifits Documentation
 --------------------
 
