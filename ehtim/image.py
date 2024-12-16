@@ -36,13 +36,6 @@ import scipy.ndimage.filters as filt
 import scipy.interpolate
 from scipy import ndimage as ndi
 
-
-try:
-    from skimage.feature import canny
-    from skimage.transform import hough_circle, hough_circle_peaks
-except ImportError:
-    print("Warning: scikit-image not installed! Cannot use hough transform")
-
 import ehtim.observing.obs_simulate as simobs
 import ehtim.observing.pulses as pulses
 import ehtim.io.save
@@ -143,8 +136,8 @@ class Image(object):
         # multifrequency spectral index, curvature arrays
         # TODO -- higher orders?
         # TODO -- don't initialize to zero?
-        avec = np.array([])  # np.zeros(imvec.shape)
-        bvec = np.array([])  # np.zeros(imvec.shape)
+        avec = np.array([]) 
+        bvec = np.array([])
         self._mflist = [avec, bvec]
 
         # Save the image dimension data
@@ -208,9 +201,6 @@ class Image(object):
 
     @property
     def ivec(self):
-#        if self.polrep != 'stokes':
-#            raise Exception("ivec is not defined unless self.polrep=='stokes'")
-
         ivec = np.array([])
         if self.polrep == 'stokes':
             ivec = self._imdict['I']
@@ -231,9 +221,6 @@ class Image(object):
 
     @property
     def qvec(self):
-#        if self.polrep != 'stokes':
-#            raise Exception("qvec is not defined unless self.polrep=='stokes'")
-
         qvec = np.array([])
         if self.polrep == 'stokes':
             qvec = self._imdict['Q']
@@ -254,9 +241,6 @@ class Image(object):
 
     @property
     def uvec(self):
-#        if self.polrep != 'stokes':
-#            raise Exception("qvec is not defined unless self.polrep=='stokes'")
-
         uvec = np.array([])
         if self.polrep == 'stokes':
             uvec = self._imdict['U']
@@ -277,9 +261,6 @@ class Image(object):
 
     @property
     def vvec(self):
-#        if self.polrep != 'stokes':
-#            raise Exception("vvec is not defined unless self.polrep=='stokes'")
-
         vvec = np.array([])
         if self.polrep == 'stokes':
             vvec = self._imdict['V']
@@ -300,9 +281,6 @@ class Image(object):
 
     @property
     def rrvec(self):
-#        if self.polrep != 'circ':
-#            raise Exception("rrvec is not defined unless self.polrep=='circ'")
-
         rrvec = np.array([])
         if self.polrep == 'circ':
             rrvec = self._imdict['RR']
@@ -323,9 +301,6 @@ class Image(object):
 
     @property
     def llvec(self):
-#        if self.polrep != 'circ':
-#            raise Exception("llvec is not defined unless self.polrep=='circ'")
-
         llvec = np.array([])
         if self.polrep == 'circ':
             llvec = self._imdict['LL']
@@ -346,9 +321,6 @@ class Image(object):
 
     @property
     def rlvec(self):
-#        if self.polrep != 'circ':
-#            raise Exception("rlvec is not defined unless self.polrep=='circ'")
-
         rlvec = np.array([])
         if self.polrep == 'circ':
             rlvec = self._imdict['RL']
@@ -370,9 +342,6 @@ class Image(object):
     @property
     def lrvec(self):
         """Return the imvec of LR"""
-#        if self.polrep != 'circ':
-#            raise Exception("lrvec is not defined unless self.polrep=='circ'")
-
         lrvec = np.array([])
         if self.polrep == 'circ':
             lrvec = self._imdict['LR']
@@ -753,16 +722,14 @@ class Image(object):
             im.qvec *= -1
             im.uvec *= -1
         elif im.polrep == 'circ':
-            im.lrvec *= -1# np.conjugate(im.rlvec)
-            im.rlvec *= -1#np.conjugate(im.rlvec)
-            #im.lrvec = np.conjugate(im.rlvec)
-            #im.rlvec = np.conjugate(im.rlvec)
+            im.lrvec *= -1
+            im.rlvec *= -1
 
         return im
 
     def get_image_mf(self, nu):
         """Get image at a given frequency given the spectral information in self._mflist
-
+        
            Args:
                nu (float): frequency in Hz
 
@@ -812,28 +779,6 @@ class Image(object):
         else:
             imarr = np.array([])
         return  imarr
-
-#        imarr = np.array([])
-#        if self.polrep == 'stokes':
-#            if pol == "I" and len(self.ivec):
-#                imarr = self.ivec.reshape(self.ydim, self.xdim)
-#            elif pol == "Q" and len(self.qvec):
-#                imarr = self.qvec.reshape(self.ydim, self.xdim)
-#            elif pol == "U" and len(self.uvec):
-#                imarr = self.uvec.reshape(self.ydim, self.xdim)
-#            elif pol == "V" and len(self.vvec):
-#                imarr = self.vvec.reshape(self.ydim, self.xdim)
-#        elif self.polrep == 'circ':
-#            if pol == "RR" and len(self.rrvec):
-#                imarr = self.rrvec.reshape(self.ydim, self.xdim)
-#            elif pol == "LL" and len(self.llvec):
-#                imarr = self.llvec.reshape(self.ydim, self.xdim)
-#            elif pol == "RL" and len(self.rlvec):
-#                imarr = self.rlvec.reshape(self.ydim, self.xdim)
-#            elif pol == "LR" and len(self.lrvec):
-#                imarr = self.lrvec.reshape(self.ydim, self.xdim)
-
-        return imarr
 
     def sourcevec(self):
         """Return the source position vector in geocentric coordinates at 0h GMST.
@@ -956,11 +901,6 @@ class Image(object):
             pol = self.pol_prim
         imvec = self.get_polvec(pol)
         pdim = self.psize
-
-#        if not (pol in list(self._imdict.keys())):
-#            raise Exception("for polrep==%s, pol must be in " %
-#                            self.polrep + ",".join(list(self._imdict.keys())))
-#        imvec = self._imdict[pol]
 
         if len(imvec):
             xlist = np.arange(0, -self.xdim, -1) * pdim + (pdim * self.xdim) / 2.0 - pdim / 2.0
@@ -1130,8 +1070,16 @@ class Image(object):
             if np.any(np.imag(imvec) != 0):
                 return interp_imvec(np.real(imvec)) + 1j * interp_imvec(np.imag(imvec))
 
-            interpfunc = scipy.interpolate.interp2d(y, x, np.reshape(imvec, (self.ydim, self.xdim)),
-                                                    kind=interp)
+
+            # interpfunc = scipy.interpolate.interp2d(y, x, np.reshape(imvec, (self.ydim, self.xdim)),
+                                                    # kind=interp) ## DEPRECATED. commented out for legacy
+
+            ## new code to be compatible with scipy 1.14+
+            interp_order = {"linear": 1, "quadratic": 2, "cubic": 3}.get(interp, 1)
+            grid_z = np.reshape(imvec, (self.ydim, self.xdim))
+            interpfunc = scipy.interpolate.RectBivariateSpline(y, x, grid_z, kx=interp_order, ky=interp_order)
+
+
             tmpimg = interpfunc(ytarget, xtarget)
             tmpimg[np.abs(xtarget) > fov_x / 2., :] = 0.0
             tmpimg[:, np.abs(ytarget) > fov_y / 2.] = 0.0
@@ -1443,13 +1391,6 @@ class Image(object):
             
         def blur_butter(imarr, size):
 
-            #bfilt  = scipy.signal.butter(2,freq,btype='low',output='sos')
-            #if np.any(np.imag(imarr) != 0):
-            #    return blur(np.real(imarr), sigma) + 1j * blur(np.imag(imarr), sigma)
-                
-            #imarr_blur = scipy.signal.sosfilt(bfilt, imarr, axis=0)
-            #imarr_blur = scipy.signal.sosfilt(bfilt, imarr_blur, axis=1)            
-
             if size==0:
                 return imarr
             
@@ -1458,7 +1399,6 @@ class Image(object):
             Ny = self.ydim
 
             s, t = np.meshgrid(np.fft.fftfreq(Nx, d=1.0 ), np.fft.fftfreq(Ny, d=1.0 ))
-            #s, t = np.meshgrid(np.fft.fftfreq(Nx, d=1.0 / Nx), np.fft.fftfreq(Ny, d=1.0 / Ny))
             r = np.sqrt(s**2 + t**2)
             
             bfilt = 1./np.sqrt(1 + (r/cutoff)**4)
@@ -1503,7 +1443,6 @@ class Image(object):
             if len(polvec):
                 polarr = polvec.reshape(self.ydim, self.xdim)
                 if fwhm_pol:
-                    #print("Blurring polarization")
                     polarr = blur(polarr, fwhmp_pol)
                 outim.add_pol_image(polarr, pol)
 
@@ -1571,8 +1510,6 @@ class Image(object):
 
             imarr = imvec.reshape(self.ydim, self.xdim)
 
-            #sx = ndi.sobel(imarr, axis=0, mode='constant')
-            #sy = ndi.sobel(imarr, axis=1, mode='constant')
             sx = ndi.sobel(imarr, axis=0, mode='nearest')
             sy = ndi.sobel(imarr, axis=1, mode='nearest')
 
@@ -1661,11 +1598,10 @@ class Image(object):
                 continue
             mask.add_pol_image(maskarr, pol)
 
-        # No spectral index information in mask
+        # TODO: No spectral index information in mask
 
         return mask
 
-    # TODO make this work with a mask image of different dimensions & fov
     def apply_mask(self, mask_im, fill_val=0.):
         """Apply a mask to the image
 
@@ -2998,114 +2934,6 @@ class Image(object):
 
         return [idx, xcorr, im1_pad, im2_pad]
 
-    def hough_ring(self, edgetype='canny', thresh=0.2, num_circles=3, radius_range=None,
-                   return_type='rad', display_results=True):
-        """Use a circular hough transform to find a circle in the image
-           Returns metrics only for the primary polarization imvec!
-
-           Args:
-               num_circles (int) : number of circles to return
-               radius_range (tuple): range of radii to search in Hough transform, in radian
-               edgetype (str): edge detection type, 'gradient' or 'canny'
-               thresh(float): fractional threshold for the gradient image
-               display_results (bool): True to display results of the fit
-               return_type (str): 'rad' to return in radian, 'pixel' to return in pixel units
-
-           Returns:
-               list : a list of fitted circles (xpos, ypos, radius, objFunc), in radian
-        """
-
-        if 'skimage' not in sys.modules:
-            raise Exception("scikit-image not installed: cannot use hough_ring!")
-
-        # coordinate values
-        pdim = self.psize
-        xlist = np.arange(0, -self.xdim, -1) * pdim + (pdim * self.xdim) / 2.0 - pdim / 2.0
-        ylist = np.arange(0, -self.ydim, -1) * pdim + (pdim * self.ydim) / 2.0 - pdim / 2.0
-
-        # normalize to range 0, 1
-        im = self.copy()
-        maxval = np.max(im.imvec)
-        meanval = np.mean(im.imvec)
-
-        im_norm = im.imvec / (maxval + .01 * meanval)
-        im_norm = im_norm.astype('float')  # is it a problem if it's double??
-        im_norm[np.isnan(im.imvec)] = 0  # mask nans to 0
-        im.imvec = im_norm
-
-        # detect edges
-        if edgetype == 'canny':
-            imarr = im.imvec.reshape(self.ydim, self.xdim)
-            edges = canny(imarr, sigma=0, high_threshold=thresh, low_threshold=0.01)
-            im_edges = self.copy()
-            im_edges.imvec = edges.flatten()
-
-        elif edgetype == 'grad':
-            im_edges = self.grad()
-            if not (thresh is None):
-                thresh_val = thresh * np.max(im_edges.imvec)
-                mask = im_edges.imvec > thresh_val
-                # im_edges.imvec[mask] = 1
-                im_edges.imvec[~mask] = 0
-                edges = im_edges.imvec.reshape(self.ydim, self.xdim)
-        else:
-            im_edges = im.copy()
-            if not (thresh is None):
-                thresh_val = thresh * np.max(im_edges.imvec)
-                mask = im_edges.imvec > thresh_val
-                # im_edges.imvec[mask] = 1f
-                im_edges.imvec[~mask] = 0
-                edges = im_edges.imvec.reshape(self.ydim, self.xdim)
-
-        # define radius range for Hough transform search
-        if radius_range is None:
-            hough_radii = np.arange(int(10 * ehc.RADPERUAS / self.psize),
-                                    int(50 * ehc.RADPERUAS / self.psize))
-        else:
-            hough_radii = np.linspace(
-                radius_range[0] /
-                self.psize,
-                radius_range[0] /
-                self.psize,
-                25)
-
-        # perform the hough transform and select the most prominent circles
-        hough_res = hough_circle(edges, hough_radii)
-        accums, cy, cx, radii = hough_circle_peaks(hough_res, hough_radii,
-                                                   total_num_peaks=num_circles)
-        accum_tot = np.sum(accums)
-
-        # print results, plot circles, and return
-        outlist = []
-        if display_results:
-            plt.ion()
-            fig = self.display()
-            ax = fig.gca()
-
-        i = 0
-        colors = ['b', 'r', 'w', 'lime', 'magenta', 'aqua']
-        for accum, center_y, center_x, radius in zip(accums, cy, cx, radii):
-            accum_frac = accum / accum_tot
-            if return_type == 'rad':
-                x_rad = xlist[int(np.round(center_x))]
-                y_rad = ylist[int(np.round(center_y))]
-                r_rad = radius * self.psize
-                outlist.append([x_rad, y_rad, r_rad, accum_frac])
-            else:
-                outlist.append([center_x, center_y, radius, accum_frac])
-            print(accum_frac)
-            print("%i ring diameter: %0.1f microarcsec" % (i, 2 * radius * pdim / ehc.RADPERUAS))
-            if display_results:
-                if i > len(colors):
-                    color = colors[-1]
-                else:
-                    color = colors[i]
-                circ = mpl.patches.Circle((center_y, center_x), radius, fill=False, color=color)
-                ax.add_patch(circ)
-            i += 1
-
-        return outlist
-
     def fit_gauss(self, units='rad'):
         """Determine the Gaussian parameters that short baselines would measure for the source
            by diagonalizing the image covariance matrix.
@@ -3335,7 +3163,7 @@ class Image(object):
     def display(self, pol=None, cfun=False, interp='gaussian',
                 scale='lin', gamma=0.5, dynamic_range=1.e3,
                 plotp=False, plot_stokes=False, nvec=20,
-                vec_cfun=None,
+                vec_cfun=None,vec_cbar_lims=(),
                 scut=0, pcut=0.1, mcut=0.01, scale_ticks=False,
                 log_offset=False,
                 label_type='ticks', has_title=True, alpha=1,
@@ -3364,11 +3192,14 @@ class Image(object):
                plot_stokes (bool): True to plot stokes subplots along with plotp
                nvec (int): number of polarimetric vectors to plot
                vec_cfun (str): color function for vectors colored by lin pol frac
-
-               scut (float): minimum stokes I value for displaying spectral index
-               pcut (float): minimum stokes I value for displaying polarimetric vectors
-                             (fraction of maximum Stokes I)
+               vec_cbar_lims (tuple): lower and upper limit of the fractional polarization colormap
+               
+               scut (float): minimum fractional stokes I value for displaying spectral index
+               pcut (float): minimum fractional stokes I value for displaying polarimetric vectors
                mcut (float): minimum fractional polarization value for displaying vectors
+               scale_ticks (bool): if True, scale polarization ticks by linear polarization magnitude
+               
+               
                label_type (string): specifies the type of axes labeling: 'ticks', 'scale', 'none'
                has_title (bool): True if you want a title on the plot
                has_cbar (bool): True if you want a colorbar on the plot
@@ -3492,7 +3323,8 @@ class Image(object):
         else:
             raise ValueError('cbar_unit ' + cbar_unit[1] + ' is not a possible option')
 
-        if not plotp:  # Plot a single polarization image
+        # Plot a single polarization image
+        if not plotp:  
             cbar_lims_p = ()
 
             if pol.lower() == 'spec':
@@ -3640,7 +3472,8 @@ class Image(object):
                     cb.formatter.set_powerlimits((0, 0))
                     cb.update_ticks()
 
-        else:  # plot polarization with ticks!
+        # plot polarization with ticks!
+        else:  
 
             im_stokes = self.switch_polrep(polrep_out='stokes')
             imvec = np.array(im_stokes.imvec).reshape(-1) / (10**power)
@@ -3874,6 +3707,14 @@ class Image(object):
                            width=.007 * self.xdim, units='x', pivot='mid', angles='uv',
                            scale=1.1 / thin)
 
+                if not vec_cbar_lims:
+                    vec_cbar_lims = (0,1)
+                    
+                plt.clim(vec_cbar_lims[0],vec_cbar_lims[1])                
+                mcbar = plt.colorbar(pad=0.04,fraction=0.046, orientation="horizontal") 
+                mcbar.set_label(r'Fractional Linear Polarization $|m|$', fontsize=cbar_fontsize)
+                mcbar.ax.tick_params(labelsize=cbar_fontsize) 
+                            
             if not(beamparams is None or beamparams is False):
                 beamparams = [beamparams[0], beamparams[1], beamparams[2],
                               -.35 * self.fovx(), -.35 * self.fovy()]
@@ -4286,8 +4127,6 @@ def blur_mf(im,freqs,kernel,fit_order=2):
     reffreq = im.rf
 
     # remove any zeros in the images
-
-           
     imlist = [im.get_image_mf(rf).blur_circ(kernel) for rf in freqs]
     for image in imlist:
         image.imvec[image.imvec<=0] = np.min(image.imvec[image.imvec!=0])

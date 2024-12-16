@@ -10,7 +10,7 @@ The package contains several primary classes for loading, simulating, and manipu
 Installation
 ------------
 
-The latest stable version (`1.2.8 <https://github.com/achael/eht-imaging/releases/tag/v1.2.7>`_) is available on `PyPi <https://pypi.org/project/ehtim/>`_. Simply install pip and run
+The latest stable version (`1.2.9 <https://github.com/achael/eht-imaging/releases/tag/v1.2.9>`_) is available on `PyPi <https://pypi.org/project/ehtim/>`_. Simply install pip and run
 
 .. code-block:: bash
 
@@ -64,9 +64,9 @@ Let us know if you use ehtim in your publication and we'll list it here!
 
 - High-Resolution Linear Polarimetric Imaging for the Event Horizon Telescope, `Chael et al. 2016 <https://arxiv.org/abs/1605.06156>`_ 
 
-- Computational  Imaging for VLBI Image Reconstruction, `Bouman et al. 2016 <http://www.cv-foundation.org/openaccess/content_cvpr_2016/html/Bouman_Computational_Imaging_for_CVPR_2016_paper.html>`_ 
+- Computational Imaging for VLBI Image Reconstruction, `Bouman et al. 2016 <http://www.cv-foundation.org/openaccess/content_cvpr_2016/html/Bouman_Computational_Imaging_for_CVPR_2016_paper.html>`_ 
 
-- Stochastic Optics: A Scattering Mitigation  Framework for Radio Interferometric Imaging, `Johnson 2016 <https://arxiv.org/abs/1610.05326>`_ 
+- Stochastic Optics: A Scattering Mitigation Framework for Radio Interferometric Imaging, `Johnson 2016 <https://arxiv.org/abs/1610.05326>`_ 
 
 - Reconstructing Video from Interferometric Measurements of Time-Varying Sources, `Bouman et al. 2017 <https://arxiv.org/abs/1711.01357>`_  
 
@@ -131,6 +131,20 @@ Let us know if you use ehtim in your publication and we'll list it here!
 - The persistent shadow of the supermassive black hole of M 87. I. Observations, calibration, imaging, and analysis, `EHTC 2023 <https://www.aanda.org/articles/aa/pdf/2024/01/aa47932-23.pdf>`_
 
 - Parsec-scale evolution of the gigahertz-peaked spectrum quasar PKS 0858-279, `Kosogorov et al. 2024 <https://arxiv.org/pdf/2401.03603.pdf>`_
+
+- Atmospheric Limitations for High-frequency Ground-based Very Long Baseline Interferometry, `Pesce et a. 2024 <https://arxiv.org/abs/2404.01482>`_
+
+- Evidence of a toroidal magnetic field in the core of 3C 84, `Paraschos et al. 2024 <https://arxiv.org/abs/2405.00097>`_
+
+- First Sagittarius A* Event Horizon Telescope Results. VII. Polarization of the Ring, `EHTC et al. 2024 <https://iopscience.iop.org/article/10.3847/2041-8213/ad2df0>`_
+
+- Towards an astronomical use of new-generation geodetic observations. I. From the correlator to full-polarization images, `Perez-Diez et al. 2024, <https://arxiv.org/abs/2406.12509>`_
+
+- Discovery of Limb Brightening in the Parsec-scale Jet of NGC 315 through Global Very Long Baseline Interferometry Observations and Its Implications for Jet Models, `Park et al. 2024 <https://arxiv.org/abs/2408.09069>`_
+
+- Kilogauss magnetic field and jet dynamics in the quasar NRAO 530, `Lisakov et al. 2024 <https://arxiv.org/abs/2411.03446>`_
+
+- Evolution, speed, and precession of the parsec-scale jet in the 3C 84 radio galaxy, `Foschi et al. 2024 <https://arxiv.org/pdf/2412.09215>`_
 
 oifits Documentation
 --------------------

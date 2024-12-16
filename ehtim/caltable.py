@@ -133,12 +133,15 @@ class Caltable(object):
                matplotlib.axes
         """
         # sites
-        if sites in ['all' or 'All'] or sites == []:
+        if (isinstance(sites,str) and sites.lower() == 'all'):
             sites = list(self.data.keys())
 
-        if not isinstance(sites, list):
+        if isinstance(sites,str):
             sites = [sites]
-
+            
+        if len(sites)==0:
+            sites = list(self.data.keys())
+                  
         keys = [self.tkey[site] for site in sites]
 
         axes = plot_tarr_dterms(self.tarr, keys=keys, label=label, legend=legend, clist=clist,
@@ -201,11 +204,14 @@ class Caltable(object):
             x = fig.add_subplot(1, 1, 1)
 
         # sites
-        if sites in ['all' or 'All'] or sites == []:
+        if (isinstance(sites,str) and sites.lower() == 'all'):
             sites = sorted(list(self.data.keys()))
 
-        if not isinstance(sites, list):
+        if isinstance(sites,str):
             sites = [sites]
+
+        if len(sites)==0:
+            sites = sorted(list(self.data.keys()))       
 
         if len(markersize) == 1:
             markersize = markersize * np.ones(len(sites))
@@ -936,12 +942,15 @@ def plot_compare_gains(caltab1, caltab2, obs, sites='all', pol='R', gain_type='a
         caltab2 = caltab2.scan_avg(obs, incoherent=True)
 
     # sites
-    if sites in ['all' or 'All'] or sites == []:
+    if (isinstance(sites,str) and sites.lower() == 'all'):
         sites = list(set(caltab1.data.keys()).intersection(caltab2.data.keys()))
 
-    if not isinstance(sites, list):
+    if isinstance(sites,str):
         sites = [sites]
 
+    if len(sites)==0:
+        sites = list(set(caltab1.data.keys()).intersection(caltab2.data.keys()))
+        
     if site_name_dict is None:
         print('hi')
         site_name_dict = {}

@@ -7,7 +7,7 @@ def read(fname):
 if __name__ == "__main__":
     setup(name="ehtim",
 
-          version = "1.2.8",
+          version = "1.2.9",
 
           author = "Andrew Chael",
           author_email = "achael@princeton.edu",
@@ -16,7 +16,7 @@ if __name__ == "__main__":
           license = "GPLv3",
           keywords = "imaging astronomy EHT polarimetry",
           url = "https://github.com/achael/eht-imaging",
-          download_url = "https://github.com/achael/eht-imaging/archive/v1.2.7.tar.gz",
+          download_url = "https://github.com/achael/eht-imaging/archive/v1.2.9.tar.gz",
           packages = ["ehtim",
                       "scripts",
                       "ehtim.calibrating",
@@ -34,25 +34,21 @@ if __name__ == "__main__":
                    "scripts/cli_blur_comp.py",
                    "scripts/gendata.py",
                    "scripts/imaging.py",
-                   "scripts/imgsum.py",
-                   "scripts/verify_gradients.py"],
+                   "scripts/imgsum.py"],
 
-          install_requires=["numpy",
-                            "scipy",
-                            "astropy",
-                            "matplotlib",
+          install_requires=["numpy>=1.24,<2.0",
+                            "scipy>=1.9.3,<1.14",
+                            "astropy>=5.0.4",
+                            "matplotlib>=3.7.3",
                             "skyfield",
                             "h5py",
                             "pandas",
-                            "paramsurvey",
                             "requests",
-                            "future"
-                          # optional (but recommended) libraries required for some features
-                          # ,"pynfft",   # optional (but highly recommended)
-                          # "networkx", # optional, only needed if using image_agreements()
-                          # "requests", # optional; only needed if using dynamical imaging
-                          # "scikit-image", #optional; only needed for certain image analysis functions  
-                          ],
+                            "future",
+                            "networkx", 
+                            "pynfft",
+                            "paramsurvey"
+                           ],
           classifiers=[
             'Development Status :: 3 - Alpha',     
             'Intended Audience :: Developers',    

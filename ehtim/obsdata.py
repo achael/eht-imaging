@@ -204,7 +204,7 @@ class Obsdata(object):
         self.tkey = {tarr[i]['site']: i for i in range(len(tarr))}
         
     def obsdata_args(self):
-        """"Copy arguments for making a  new Obsdata into a list and dictonary
+        """"Copy arguments for making a new Obsdata into a list and dictonary
         """
 
         arglist = [self.ra, self.dec, self.rf, self.bw, self.data, self.tarr]
@@ -1634,7 +1634,7 @@ class Obsdata(object):
 
         return
 
-    def add_scans(self, info='self', filepath='', dt=0.0165, margin=0.0001):
+    def add_scans(self, info='self', filepath='', dt=0.0165, margin=0.0001,split_subarray=False):
         """Compute scans and add self.scans to Obsdata object.
 
             Args:
@@ -1680,6 +1680,23 @@ class Obsdata(object):
         else:
             print("Parameter 'info' can only assume values 'self', 'txt' or 'vex'! ")
             scanlist = None
+
+        #Split scan in 2 wherever the array changed
+        if split_subarray:
+            timelist=self.tlist()
+            prev_array=[]
+            for cou in range(len(timelist)):
+                current_array=np.unique([timelist[cou]['t1'],timelist[cou]['t2']])
+                if set(current_array)==set(prev_array):
+                    continue
+                split_time=timelist[cou]['time'][0]
+                prev_array=current_array
+                if split_time-margin in scanlist[:,0]:
+                    continue
+                index=np.where(split_time>=scanlist.T[0])[0][-1]
+                scanlist=np.insert(scanlist,index,scanlist[index],axis=0)
+                scanlist[index,1]=split_time-margin
+                scanlist[index+1,0]=split_time+margin
 
         self.scans = scanlist
 
@@ -3994,8 +4011,9 @@ class Obsdata(object):
 
     def plotall(self, field1, field2,
                 conj=False, debias=False, tag_bl=False, ang_unit='deg', timetype=False,
-                axis=False, rangex=False, rangey=False, snrcut=0.,
+                axis=False, rangex=False, rangey=False, xscale='linear', yscale='linear',
                 color=ehc.SCOLORS[0], marker='o', markersize=ehc.MARKERSIZE, label=None,
+                snrcut=0.,
                 grid=True, ebar=True, axislabels=True, legend=False,
                 show=True, export_pdf=""):
         """Plot two fields against each other.
@@ -4011,6 +4029,9 @@ class Obsdata(object):
                timetype (str): 'GMST' or 'UTC'
 
                axis (matplotlib.axes.Axes): add plot to this axis
+               xscale (str): 'linear' or 'log' y-axis scale               
+               yscale (str): 'linear' or 'log' y-axis scale
+               
                rangex (list): [xmin, xmax] x-axis limits
                rangey (list): [ymin, ymax] y-axis limits
 
@@ -4178,6 +4199,10 @@ class Obsdata(object):
                 x.plot(data[field1], data[field2], marker, markersize=markersize, color=color,
                        label=labelstr, picker=tolerance)
 
+        # axis scales
+        x.set_xscale(xscale)
+        x.set_yscale(yscale)
+        
         # Data ranges
         if not rangex:
             rangex = [np.min(xmins) - 0.2 * np.abs(np.min(xmins)),
@@ -4195,6 +4220,7 @@ class Obsdata(object):
 
         x.set_xlim(rangex)
         x.set_ylim(rangey)
+
 
         # label and save
         if axislabels:
@@ -4730,7 +4756,7 @@ def merge_obs(obs_List, force_merge=False):
     for obs in obs_List:
         mjd_offset = obs.mjd - mjd_ref
         obs.data['time'] += mjd_offset * 24
-        if not(obs.scans is None or obs.scans == []):
+        if not(obs.scans is None or len(obs.scans)==0):
             obs.scans += mjd_offset * 24
 
     # merge the data
@@ -4739,14 +4765,14 @@ def merge_obs(obs_List, force_merge=False):
     # merge the scan list
     scan_merge = None
     for obs in obs_List:
-        if (obs.scans is None or obs.scans == []):
+        if (obs.scans is None or len(obs.scans)==0):
             continue
-        if (scan_merge is None or scan_merge == []):
+        if (scan_merge is None or len(scan_merge)==0):
             scan_merge = [obs.scans]
         else:
             scan_merge.append(obs.scans)
 
-    if not (scan_merge is None or scan_merge == []):
+    if not (scan_merge is None or len(scan_merge) == 0):
         scan_merge = np.vstack(scan_merge)
         _idxsort = np.argsort(scan_merge[:, 0])
         scan_merge = scan_merge[_idxsort]
