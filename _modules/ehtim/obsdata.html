@@ -1234,7 +1234,7 @@
 
         <span class="k">return</span> <span class="n">chisq</span></div>
 
-<div class="viewcode-block" id="Obsdata.polchisq"><a class="viewcode-back" href="../../obsdata.html#ehtim.obsdata.Obsdata.polchisq">[docs]</a>    <span class="k">def</span> <span class="nf">polchisq</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">im</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="s1">&#39;pvis&#39;</span><span class="p">,</span> <span class="n">ttype</span><span class="o">=</span><span class="s1">&#39;nfft&#39;</span><span class="p">,</span> <span class="n">mask</span><span class="o">=</span><span class="p">[],</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+<div class="viewcode-block" id="Obsdata.polchisq"><a class="viewcode-back" href="../../obsdata.html#ehtim.obsdata.Obsdata.polchisq">[docs]</a>    <span class="k">def</span> <span class="nf">polchisq</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">im</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="s1">&#39;pvis&#39;</span><span class="p">,</span> <span class="n">ttype</span><span class="o">=</span><span class="s1">&#39;nfft&#39;</span><span class="p">,</span> <span class="n">pol_trans</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">mask</span><span class="o">=</span><span class="p">[],</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Give the reduced chi^2 for the specified image and polarimetric datatype.</span>
 
 <span class="sd">           Args:</span>
@@ -1243,7 +1243,7 @@
 <span class="sd">                pol (str): polarization type (&#39;I&#39;, &#39;Q&#39;, &#39;U&#39;, &#39;V&#39;, &#39;LL&#39;, &#39;RR&#39;, &#39;LR&#39;, or &#39;RL&#39;</span>
 <span class="sd">                mask (arr): mask of same dimension as im.imvec</span>
 <span class="sd">                ttype (str): if &quot;fast&quot; or &quot;nfft&quot; or &quot;direct&quot;</span>
-
+<span class="sd">                pol_trans (bool): True for I,m,chi, False for IQU</span>
 <span class="sd">                fft_pad_factor (float): zero pad the image to (fft_pad_factor * image size) in FFT</span>
 <span class="sd">                conv_func (&#39;str&#39;):  The convolving function for gridding; &#39;gaussian&#39;, &#39;pill&#39;,&#39;cubic&#39;</span>
 <span class="sd">                p_rad (int): The pixel radius for the convolving function</span>
@@ -1273,22 +1273,33 @@
 
         <span class="c1"># Pack the comparison image in the proper format</span>
         <span class="n">imstokes</span> <span class="o">=</span> <span class="n">im</span><span class="o">.</span><span class="n">switch_polrep</span><span class="p">(</span><span class="n">polrep_out</span><span class="o">=</span><span class="s1">&#39;stokes&#39;</span><span class="p">,</span> <span class="n">pol_prim_out</span><span class="o">=</span><span class="s1">&#39;I&#39;</span><span class="p">)</span>
-
-        <span class="n">ivec</span> <span class="o">=</span> <span class="n">imstokes</span><span class="o">.</span><span class="n">imvec</span>
-        <span class="n">rhovec</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">imstokes</span><span class="o">.</span><span class="n">qvec</span><span class="o">**</span><span class="mi">2</span> <span class="o">+</span> <span class="n">imstokes</span><span class="o">.</span><span class="n">uvec</span><span class="o">**</span><span class="mi">2</span> <span class="o">+</span> <span class="n">imstokes</span><span class="o">.</span><span class="n">vvec</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span> <span class="o">/</span> <span class="n">ivec</span>
-        <span class="n">phivec</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">angle</span><span class="p">(</span><span class="n">imstokes</span><span class="o">.</span><span class="n">qvec</span> <span class="o">+</span> <span class="mi">1</span><span class="n">j</span> <span class="o">*</span> <span class="n">imstokes</span><span class="o">.</span><span class="n">uvec</span><span class="p">)</span> 
-        <span class="n">psivec</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arcsin</span><span class="p">(</span><span class="n">vvec</span><span class="o">/</span><span class="n">ivec</span><span class="p">)</span>
-        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">mask</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="ow">and</span> <span class="n">np</span><span class="o">.</span><span class="n">any</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">invert</span><span class="p">(</span><span class="n">mask</span><span class="p">)):</span>
-            <span class="n">ivec</span> <span class="o">=</span> <span class="n">ivec</span><span class="p">[</span><span class="n">mask</span><span class="p">]</span>
-            <span class="n">rhovec</span> <span class="o">=</span> <span class="n">rhovec</span><span class="p">[</span><span class="n">mask</span><span class="p">]</span>
-            <span class="n">phivec</span> <span class="o">=</span> <span class="n">phivec</span><span class="p">[</span><span class="n">mask</span><span class="p">]</span>
-            <span class="n">psivec</span> <span class="o">=</span> <span class="n">psivec</span><span class="p">[</span><span class="n">mask</span><span class="p">]</span>
-        <span class="n">imarr</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">((</span><span class="n">ivec</span><span class="p">,</span> <span class="n">rhovec</span><span class="p">,</span> <span class="n">phivec</span><span class="p">,</span> <span class="n">psivec</span><span class="p">))</span>
+        <span class="k">if</span> <span class="n">pol_trans</span><span class="p">:</span>
+            <span class="n">ivec</span> <span class="o">=</span> <span class="n">imstokes</span><span class="o">.</span><span class="n">imvec</span>
+            <span class="n">mvec</span> <span class="o">=</span> <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">imstokes</span><span class="o">.</span><span class="n">qvec</span> <span class="o">+</span> <span class="mi">1</span><span class="n">j</span> <span class="o">*</span> <span class="n">imstokes</span><span class="o">.</span><span class="n">uvec</span><span class="p">)</span> <span class="o">/</span> <span class="n">ivec</span><span class="p">)</span>
+            <span class="n">chivec</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">angle</span><span class="p">(</span><span class="n">imstokes</span><span class="o">.</span><span class="n">qvec</span> <span class="o">+</span> <span class="mi">1</span><span class="n">j</span> <span class="o">*</span> <span class="n">imstokes</span><span class="o">.</span><span class="n">uvec</span><span class="p">)</span> <span class="o">/</span> <span class="mi">2</span>
+            <span class="n">vvec</span> <span class="o">=</span> <span class="n">imstokes</span><span class="o">.</span><span class="n">vvec</span><span class="o">/</span><span class="n">ivec</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">mask</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="ow">and</span> <span class="n">np</span><span class="o">.</span><span class="n">any</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">invert</span><span class="p">(</span><span class="n">mask</span><span class="p">)):</span>
+                <span class="n">ivec</span> <span class="o">=</span> <span class="n">ivec</span><span class="p">[</span><span class="n">mask</span><span class="p">]</span>
+                <span class="n">mvec</span> <span class="o">=</span> <span class="n">mvec</span><span class="p">[</span><span class="n">mask</span><span class="p">]</span>
+                <span class="n">chivec</span> <span class="o">=</span> <span class="n">chivec</span><span class="p">[</span><span class="n">mask</span><span class="p">]</span>
+                <span class="n">vvec</span> <span class="o">=</span> <span class="n">vvec</span><span class="p">[</span><span class="n">mask</span><span class="p">]</span>
+            <span class="n">imtuple</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">((</span><span class="n">ivec</span><span class="p">,</span> <span class="n">mvec</span><span class="p">,</span> <span class="n">chivec</span><span class="p">,</span><span class="n">vvec</span><span class="p">))</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">ivec</span> <span class="o">=</span> <span class="n">imstokes</span><span class="o">.</span><span class="n">imvec</span>
+            <span class="n">qvec</span> <span class="o">=</span> <span class="n">imstokes</span><span class="o">.</span><span class="n">qvec</span>
+            <span class="n">uvec</span> <span class="o">=</span> <span class="n">imstokes</span><span class="o">.</span><span class="n">uvec</span>
+            <span class="n">vvec</span> <span class="o">=</span> <span class="n">imstokes</span><span class="o">.</span><span class="n">vvec</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">mask</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="ow">and</span> <span class="n">np</span><span class="o">.</span><span class="n">any</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">invert</span><span class="p">(</span><span class="n">mask</span><span class="p">)):</span>
+                <span class="n">ivec</span> <span class="o">=</span> <span class="n">ivec</span><span class="p">[</span><span class="n">mask</span><span class="p">]</span>
+                <span class="n">qvec</span> <span class="o">=</span> <span class="n">qvec</span><span class="p">[</span><span class="n">mask</span><span class="p">]</span>
+                <span class="n">uvec</span> <span class="o">=</span> <span class="n">uvec</span><span class="p">[</span><span class="n">mask</span><span class="p">]</span>
+                <span class="n">vvec</span> <span class="o">=</span> <span class="n">vvec</span><span class="p">[</span><span class="n">mask</span><span class="p">]</span>
+            <span class="n">imtuple</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">((</span><span class="n">ivec</span><span class="p">,</span> <span class="n">qvec</span><span class="p">,</span> <span class="n">uvec</span><span class="p">,</span><span class="n">vvec</span><span class="p">))</span>
 
 
         <span class="c1"># Calculate the chi^2</span>
-        <span class="n">chisq</span> <span class="o">=</span> <span class="n">piu</span><span class="o">.</span><span class="n">polchisq</span><span class="p">(</span><span class="n">imarr</span><span class="p">,</span> <span class="n">A</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">sigma</span><span class="p">,</span> <span class="n">dtype</span><span class="p">,</span>
-                             <span class="n">ttype</span><span class="o">=</span><span class="n">ttype</span><span class="p">,</span> <span class="n">mask</span><span class="o">=</span><span class="n">mask</span><span class="p">)</span>
+        <span class="n">chisq</span> <span class="o">=</span> <span class="n">piu</span><span class="o">.</span><span class="n">polchisq</span><span class="p">(</span><span class="n">imtuple</span><span class="p">,</span> <span class="n">A</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">sigma</span><span class="p">,</span> <span class="n">dtype</span><span class="p">,</span>
+                             <span class="n">ttype</span><span class="o">=</span><span class="n">ttype</span><span class="p">,</span> <span class="n">mask</span><span class="o">=</span><span class="n">mask</span><span class="p">,</span> <span class="n">pol_trans</span><span class="o">=</span><span class="n">pol_trans</span><span class="p">)</span>
 
         <span class="k">return</span> <span class="n">chisq</span></div>
 
@@ -1702,7 +1713,7 @@
 
         <span class="k">return</span></div>
 
-<div class="viewcode-block" id="Obsdata.add_scans"><a class="viewcode-back" href="../../obsdata.html#ehtim.obsdata.Obsdata.add_scans">[docs]</a>    <span class="k">def</span> <span class="nf">add_scans</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">info</span><span class="o">=</span><span class="s1">&#39;self&#39;</span><span class="p">,</span> <span class="n">filepath</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">,</span> <span class="n">dt</span><span class="o">=</span><span class="mf">0.0165</span><span class="p">,</span> <span class="n">margin</span><span class="o">=</span><span class="mf">0.0001</span><span class="p">):</span>
+<div class="viewcode-block" id="Obsdata.add_scans"><a class="viewcode-back" href="../../obsdata.html#ehtim.obsdata.Obsdata.add_scans">[docs]</a>    <span class="k">def</span> <span class="nf">add_scans</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">info</span><span class="o">=</span><span class="s1">&#39;self&#39;</span><span class="p">,</span> <span class="n">filepath</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">,</span> <span class="n">dt</span><span class="o">=</span><span class="mf">0.0165</span><span class="p">,</span> <span class="n">margin</span><span class="o">=</span><span class="mf">0.0001</span><span class="p">,</span><span class="n">split_subarray</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Compute scans and add self.scans to Obsdata object.</span>
 
 <span class="sd">            Args:</span>
@@ -1748,6 +1759,23 @@
         <span class="k">else</span><span class="p">:</span>
             <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Parameter &#39;info&#39; can only assume values &#39;self&#39;, &#39;txt&#39; or &#39;vex&#39;! &quot;</span><span class="p">)</span>
             <span class="n">scanlist</span> <span class="o">=</span> <span class="kc">None</span>
+
+        <span class="c1">#Split scan in 2 wherever the array changed</span>
+        <span class="k">if</span> <span class="n">split_subarray</span><span class="p">:</span>
+            <span class="n">timelist</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">tlist</span><span class="p">()</span>
+            <span class="n">prev_array</span><span class="o">=</span><span class="p">[]</span>
+            <span class="k">for</span> <span class="n">cou</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">timelist</span><span class="p">)):</span>
+                <span class="n">current_array</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">unique</span><span class="p">([</span><span class="n">timelist</span><span class="p">[</span><span class="n">cou</span><span class="p">][</span><span class="s1">&#39;t1&#39;</span><span class="p">],</span><span class="n">timelist</span><span class="p">[</span><span class="n">cou</span><span class="p">][</span><span class="s1">&#39;t2&#39;</span><span class="p">]])</span>
+                <span class="k">if</span> <span class="nb">set</span><span class="p">(</span><span class="n">current_array</span><span class="p">)</span><span class="o">==</span><span class="nb">set</span><span class="p">(</span><span class="n">prev_array</span><span class="p">):</span>
+                    <span class="k">continue</span>
+                <span class="n">split_time</span><span class="o">=</span><span class="n">timelist</span><span class="p">[</span><span class="n">cou</span><span class="p">][</span><span class="s1">&#39;time&#39;</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+                <span class="n">prev_array</span><span class="o">=</span><span class="n">current_array</span>
+                <span class="k">if</span> <span class="n">split_time</span><span class="o">-</span><span class="n">margin</span> <span class="ow">in</span> <span class="n">scanlist</span><span class="p">[:,</span><span class="mi">0</span><span class="p">]:</span>
+                    <span class="k">continue</span>
+                <span class="n">index</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">split_time</span><span class="o">&gt;=</span><span class="n">scanlist</span><span class="o">.</span><span class="n">T</span><span class="p">[</span><span class="mi">0</span><span class="p">])[</span><span class="mi">0</span><span class="p">][</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+                <span class="n">scanlist</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">insert</span><span class="p">(</span><span class="n">scanlist</span><span class="p">,</span><span class="n">index</span><span class="p">,</span><span class="n">scanlist</span><span class="p">[</span><span class="n">index</span><span class="p">],</span><span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+                <span class="n">scanlist</span><span class="p">[</span><span class="n">index</span><span class="p">,</span><span class="mi">1</span><span class="p">]</span><span class="o">=</span><span class="n">split_time</span><span class="o">-</span><span class="n">margin</span>
+                <span class="n">scanlist</span><span class="p">[</span><span class="n">index</span><span class="o">+</span><span class="mi">1</span><span class="p">,</span><span class="mi">0</span><span class="p">]</span><span class="o">=</span><span class="n">split_time</span><span class="o">+</span><span class="n">margin</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">scans</span> <span class="o">=</span> <span class="n">scanlist</span>
 

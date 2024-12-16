@@ -277,14 +277,18 @@
         <li><a href="movie.html#ehtim.movie.Movie.blur_circ">(ehtim.movie.Movie method)</a>
 </li>
       </ul></li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="model.html#ehtim.model.blur_circ_1model">blur_circ_1model() (in module ehtim.model)</a>
 </li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="image.html#ehtim.image.Image.blur_gauss">blur_gauss() (ehtim.image.Image method)</a>
 </li>
       <li><a href="image.html#ehtim.image.Image.blur_mf">blur_mf() (ehtim.image.Image method)</a>
+
+      <ul>
+        <li><a href="image.html#ehtim.image.blur_mf">(in module ehtim.image)</a>
 </li>
+      </ul></li>
       <li><a href="statistics.html#ehtim.statistics.stats.bootstrap">bootstrap() (in module ehtim.statistics.stats)</a>
 </li>
       <li><a href="movie.html#ehtim.movie.Movie.bounds_error">bounds_error (ehtim.movie.Movie attribute)</a>
@@ -346,10 +350,10 @@
 </li>
       <li><a href="movie.html#ehtim.movie.Movie.circ_polfrac_curve">circ_polfrac_curve() (ehtim.movie.Movie method)</a>
 </li>
-      <li><a href="statistics.html#ehtim.statistics.stats.circular_mean">circular_mean() (in module ehtim.statistics.stats)</a>
-</li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="statistics.html#ehtim.statistics.stats.circular_mean">circular_mean() (in module ehtim.statistics.stats)</a>
+</li>
       <li><a href="statistics.html#ehtim.statistics.stats.circular_std">circular_std() (in module ehtim.statistics.stats)</a>
 </li>
       <li><a href="statistics.html#ehtim.statistics.stats.circular_std_of_mean">circular_std_of_mean() (in module ehtim.statistics.stats)</a>
@@ -379,8 +383,6 @@
 </li>
       </ul></li>
       <li><a href="image.html#ehtim.image.Image.copy_pol_images">copy_pol_images() (ehtim.image.Image method)</a>
-</li>
-      <li><a href="imager.html#ehtim.imager.Imager.cp_uv_min_last">cp_uv_min_last() (ehtim.imager.Imager method)</a>
 </li>
       <li><a href="obsdata.html#ehtim.obsdata.Obsdata.cphase">cphase (ehtim.obsdata.Obsdata attribute)</a>
 </li>
@@ -560,8 +562,6 @@
         <li><a href="vex.html#module-ehtim.vex">module</a>
 </li>
       </ul></li>
-      <li><a href="imager.html#ehtim.imager.embed_imarr">embed_imarr() (in module ehtim.imager)</a>
-</li>
       <li><a href="calibration.html#ehtim.caltable.Caltable.enforce_positive">enforce_positive() (ehtim.caltable.Caltable method)</a>
 </li>
       <li><a href="scattering.html#ehtim.scattering.stochastic_optics.ScatteringModel.Ensemble_Average_Blur">Ensemble_Average_Blur() (ehtim.scattering.stochastic_optics.ScatteringModel method)</a>
@@ -616,10 +616,10 @@
 </li>
       <li><a href="obsdata.html#ehtim.obsdata.Obsdata.flag_elev">flag_elev() (ehtim.obsdata.Obsdata method)</a>
 </li>
-      <li><a href="obsdata.html#ehtim.obsdata.Obsdata.flag_high_sigma">flag_high_sigma() (ehtim.obsdata.Obsdata method)</a>
-</li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="obsdata.html#ehtim.obsdata.Obsdata.flag_high_sigma">flag_high_sigma() (ehtim.obsdata.Obsdata method)</a>
+</li>
       <li><a href="obsdata.html#ehtim.obsdata.Obsdata.flag_large_fractional_pol">flag_large_fractional_pol() (ehtim.obsdata.Obsdata method)</a>
 </li>
       <li><a href="obsdata.html#ehtim.obsdata.Obsdata.flag_low_snr">flag_low_snr() (ehtim.obsdata.Obsdata method)</a>
@@ -633,8 +633,6 @@
       <li><a href="obsdata.html#ehtim.obsdata.Obsdata.flags_from_file">flags_from_file() (ehtim.obsdata.Obsdata method)</a>
 </li>
       <li><a href="imager.html#ehtim.imager.Imager.flux_last">flux_last() (ehtim.imager.Imager method)</a>
-</li>
-      <li><a href="imager.html#ehtim.imager.Imager.format_outim">format_outim() (ehtim.imager.Imager method)</a>
 </li>
       <li><a href="image.html#ehtim.image.Image.fovx">fovx() (ehtim.image.Image method)</a>
 
@@ -718,6 +716,8 @@
   <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="imager.html#ehtim.imager.Imager">Imager (class in ehtim.imager)</a>
 </li>
+      <li><a href="imager.html#ehtim.imaging.imager_utils.imager_func">imager_func() (in module ehtim.imaging.imager_utils)</a>
+</li>
       <li><a href="image.html#ehtim.image.Image.imarr">imarr() (ehtim.image.Image method)</a>
 </li>
       <li><a href="plotting.html#ehtim.plotting.summary_plots.imgsum">imgsum() (in module ehtim.plotting.summary_plots)</a>
@@ -725,6 +725,8 @@
       <li><a href="plotting.html#ehtim.plotting.summary_plots.imgsum_pol">imgsum_pol() (in module ehtim.plotting.summary_plots)</a>
 </li>
       <li><a href="imager.html#ehtim.imager.Imager.init_imager">init_imager() (ehtim.imager.Imager method)</a>
+</li>
+      <li><a href="imager.html#ehtim.imager.Imager.init_imager_scattering">init_imager_scattering() (ehtim.imager.Imager method)</a>
 </li>
       <li><a href="survey.html#ehtim.survey.ParameterSet.init_img">init_img() (ehtim.survey.ParameterSet method)</a>
 </li>
@@ -814,6 +816,8 @@
       </ul></li>
       <li><a href="imager.html#ehtim.imager.Imager.make_image_I">make_image_I() (ehtim.imager.Imager method)</a>
 </li>
+      <li><a href="imager.html#ehtim.imager.Imager.make_image_I_stochastic_optics">make_image_I_stochastic_optics() (ehtim.imager.Imager method)</a>
+</li>
       <li><a href="imager.html#ehtim.imager.Imager.make_image_IP">make_image_IP() (ehtim.imager.Imager method)</a>
 </li>
       <li><a href="imager.html#ehtim.imager.Imager.make_image_IV">make_image_IV() (ehtim.imager.Imager method)</a>
@@ -823,8 +827,6 @@
       <li><a href="imager.html#ehtim.imager.Imager.make_image_V">make_image_V() (ehtim.imager.Imager method)</a>
 </li>
       <li><a href="survey.html#ehtim.survey.ParameterSet.make_img">make_img() (ehtim.survey.ParameterSet method)</a>
-</li>
-      <li><a href="imager.html#ehtim.imager.make_initarr">make_initarr() (in module ehtim.imager)</a>
 </li>
       <li><a href="imager.html#ehtim.imager.Imager.make_reg_dict">make_reg_dict() (ehtim.imager.Imager method)</a>
 </li>
@@ -842,8 +844,6 @@
 </li>
       <li><a href="imager.html#ehtim.imager.Imager.maxit_last">maxit_last() (ehtim.imager.Imager method)</a>
 </li>
-      <li><a href="imager.html#ehtim.imager.Imager.maxset_last">maxset_last() (ehtim.imager.Imager method)</a>
-</li>
       <li><a href="statistics.html#ehtim.statistics.stats.mean_incoh_amp">mean_incoh_amp() (in module ehtim.statistics.stats)</a>
 </li>
       <li><a href="statistics.html#ehtim.statistics.stats.mean_incoh_amp_from_vis">mean_incoh_amp_from_vis() (in module ehtim.statistics.stats)</a>
@@ -856,16 +856,6 @@
 </li>
       <li><a href="vex.html#ehtim.vex.Vex.metalist">metalist (ehtim.vex.Vex attribute)</a>
 </li>
-      <li><a href="imager.html#ehtim.imager.Imager.mf_cm_last">mf_cm_last() (ehtim.imager.Imager method)</a>
-</li>
-      <li><a href="imager.html#ehtim.imager.Imager.mf_last">mf_last() (ehtim.imager.Imager method)</a>
-</li>
-      <li><a href="imager.html#ehtim.imager.Imager.mf_order_last">mf_order_last() (ehtim.imager.Imager method)</a>
-</li>
-      <li><a href="imager.html#ehtim.imager.Imager.mf_order_pol_last">mf_order_pol_last() (ehtim.imager.Imager method)</a>
-</li>
-      <li><a href="imager.html#ehtim.imager.Imager.mf_rm_last">mf_rm_last() (ehtim.imager.Imager method)</a>
-</li>
       <li><a href="calibration.html#ehtim.caltable.Caltable.mjd">mjd (ehtim.caltable.Caltable attribute)</a>
 
       <ul>
@@ -876,8 +866,6 @@
         <li><a href="obsdata.html#ehtim.obsdata.Obsdata.mjd">(ehtim.obsdata.Obsdata attribute)</a>
 </li>
       </ul></li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
       <li>
     model
 
@@ -887,6 +875,8 @@
       </ul></li>
       <li><a href="model.html#ehtim.model.Model">Model (class in ehtim.model)</a>
 </li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="scattering.html#ehtim.scattering.stochastic_optics.ScatteringModel.model">model (ehtim.scattering.stochastic_optics.ScatteringModel attribute)</a>
 </li>
       <li><a href="model.html#ehtim.model.model_params">model_params() (in module ehtim.model)</a>
@@ -987,7 +977,11 @@
   <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="imager.html#ehtim.imager.Imager.objfunc">objfunc() (ehtim.imager.Imager method)</a>
 </li>
+      <li><a href="imager.html#ehtim.imager.Imager.objfunc_scattering">objfunc_scattering() (ehtim.imager.Imager method)</a>
+</li>
       <li><a href="imager.html#ehtim.imager.Imager.objgrad">objgrad() (ehtim.imager.Imager method)</a>
+</li>
+      <li><a href="imager.html#ehtim.imager.Imager.objgrad_scattering">objgrad_scattering() (ehtim.imager.Imager method)</a>
 </li>
       <li><a href="survey.html#ehtim.survey.ParameterSet.obs">obs (ehtim.survey.ParameterSet attribute)</a>
 </li>
@@ -1060,7 +1054,11 @@
         <li><a href="movie.html#ehtim.movie.Movie.orth_chi">(ehtim.movie.Movie method)</a>
 </li>
       </ul></li>
+      <li><a href="imager.html#ehtim.imager.Imager.out_epsilon_last">out_epsilon_last() (ehtim.imager.Imager method)</a>
+</li>
       <li><a href="imager.html#ehtim.imager.Imager.out_last">out_last() (ehtim.imager.Imager method)</a>
+</li>
+      <li><a href="imager.html#ehtim.imager.Imager.out_scattered_last">out_scattered_last() (ehtim.imager.Imager method)</a>
 </li>
       <li><a href="survey.html#ehtim.survey.ParameterSet.outfile">outfile (ehtim.survey.ParameterSet attribute)</a>
 </li>
@@ -1074,8 +1072,6 @@
 <h2 id="P">P</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="imager.html#ehtim.imager.pack_imarr">pack_imarr() (in module ehtim.imager)</a>
-</li>
       <li><a href="image.html#ehtim.image.Image.pad">pad() (ehtim.image.Image method)</a>
 </li>
       <li><a href="calibration.html#ehtim.caltable.Caltable.pad_scans">pad_scans() (ehtim.caltable.Caltable method)</a>
@@ -1089,8 +1085,6 @@
       <li><a href="imager.html#ehtim.imager.Imager.pflux_last">pflux_last() (ehtim.imager.Imager method)</a>
 </li>
       <li><a href="obsdata.html#ehtim.obsdata.Obsdata.phasecal">phasecal (ehtim.obsdata.Obsdata attribute)</a>
-</li>
-      <li><a href="image.html#ehtim.image.Image.phivec">phivec() (ehtim.image.Image property)</a>
 </li>
       <li><a href="obsdata.html#ehtim.obsdata.Obsdata.plot_bl">plot_bl() (ehtim.obsdata.Obsdata method)</a>
 </li>
@@ -1124,10 +1118,10 @@
       </ul></li>
       <li><a href="calibration.html#ehtim.caltable.Caltable.plot_gains">plot_gains() (ehtim.caltable.Caltable method)</a>
 </li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="obsdata.html#ehtim.obsdata.Obsdata.plotall">plotall() (ehtim.obsdata.Obsdata method)</a>
 </li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="plotting.html#ehtim.plotting.comp_plots.plotall_compare">plotall_compare() (in module ehtim.plotting.comp_plots)</a>
 </li>
       <li><a href="plotting.html#ehtim.plotting.comp_plots.plotall_obs_compare">plotall_obs_compare() (in module ehtim.plotting.comp_plots)</a>
@@ -1137,6 +1131,8 @@
       <li><a href="plotting.html#ehtim.plotting.comp_plots.plotall_obs_im_cphases">plotall_obs_im_cphases() (in module ehtim.plotting.comp_plots)</a>
 </li>
       <li><a href="imager.html#ehtim.imager.Imager.plotcur">plotcur() (ehtim.imager.Imager method)</a>
+</li>
+      <li><a href="imager.html#ehtim.imager.Imager.plotcur_scattering">plotcur_scattering() (ehtim.imager.Imager method)</a>
 </li>
       <li>
     plotting
@@ -1170,8 +1166,6 @@
       <li><a href="plotting.html#ehtim.plotting.comp_plots.prep_plot_lists">prep_plot_lists() (in module ehtim.plotting.comp_plots)</a>
 </li>
       <li><a href="imager.html#ehtim.imager.Imager.prior_last">prior_last() (ehtim.imager.Imager method)</a>
-</li>
-      <li><a href="image.html#ehtim.image.Image.psivec">psivec() (ehtim.image.Image property)</a>
 </li>
       <li><a href="image.html#ehtim.image.Image.psize">psize (ehtim.image.Image attribute)</a>
 
@@ -1216,8 +1210,6 @@
 </li>
       </ul></li>
       <li><a href="obsdata.html#ehtim.obsdata.Obsdata.recompute_uv">recompute_uv() (ehtim.obsdata.Obsdata method)</a>
-</li>
-      <li><a href="imager.html#ehtim.imager.Imager.reffreq_last">reffreq_last() (ehtim.imager.Imager method)</a>
 </li>
       <li><a href="imager.html#ehtim.imager.Imager.reg_terms_last">reg_terms_last() (ehtim.imager.Imager method)</a>
 </li>
@@ -1264,8 +1256,6 @@
       <li><a href="scattering.html#ehtim.scattering.stochastic_optics.ScatteringModel.rF">rF (ehtim.scattering.stochastic_optics.ScatteringModel attribute)</a>
 </li>
       <li><a href="scattering.html#id0">rF() (ehtim.scattering.stochastic_optics.ScatteringModel method)</a>
-</li>
-      <li><a href="image.html#ehtim.image.Image.rhovec">rhovec() (ehtim.image.Image property)</a>
 </li>
       <li><a href="image.html#ehtim.image.Image.rotate">rotate() (ehtim.image.Image method)</a>
 </li>
@@ -1466,12 +1456,6 @@
         <li><a href="model.html#ehtim.model.Model.total_flux">(ehtim.model.Model method)</a>
 </li>
       </ul></li>
-      <li><a href="imager.html#ehtim.imager.transform_gradients">transform_gradients() (in module ehtim.imager)</a>
-</li>
-      <li><a href="imager.html#ehtim.imager.transform_imarr">transform_imarr() (in module ehtim.imager)</a>
-</li>
-      <li><a href="imager.html#ehtim.imager.transform_imarr_inverse">transform_imarr_inverse() (in module ehtim.imager)</a>
-</li>
       <li><a href="imager.html#ehtim.imager.Imager.transform_last">transform_last() (ehtim.imager.Imager method)</a>
 </li>
       <li><a href="obsdata.html#ehtim.obsdata.Obsdata.tstart">tstart (ehtim.obsdata.Obsdata attribute)</a>
@@ -1486,13 +1470,11 @@
   <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="obsdata.html#ehtim.obsdata.Obsdata.unpack">unpack() (ehtim.obsdata.Obsdata method)</a>
 </li>
-      <li><a href="obsdata.html#ehtim.obsdata.Obsdata.unpack_bl">unpack_bl() (ehtim.obsdata.Obsdata method)</a>
-</li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="obsdata.html#ehtim.obsdata.Obsdata.unpack_dat">unpack_dat() (ehtim.obsdata.Obsdata method)</a>
+      <li><a href="obsdata.html#ehtim.obsdata.Obsdata.unpack_bl">unpack_bl() (ehtim.obsdata.Obsdata method)</a>
 </li>
-      <li><a href="imager.html#ehtim.imager.unpack_imarr">unpack_imarr() (in module ehtim.imager)</a>
+      <li><a href="obsdata.html#ehtim.obsdata.Obsdata.unpack_dat">unpack_dat() (ehtim.obsdata.Obsdata method)</a>
 </li>
   </ul></td>
 </tr></table>

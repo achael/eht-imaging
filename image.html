@@ -230,7 +230,7 @@
 <dl class="py attribute">
 <dt id="ehtim.image.Image._mflist">
 <code class="sig-name descname">_mflist</code><a class="headerlink" href="#ehtim.image.Image._mflist" title="Permalink to this definition">¶</a></dt>
-<dd><p>List of spectral index images (and higher order/polarization terms)</p>
+<dd><p>List of spectral index images (and higher order terms)</p>
 <dl class="field-list simple">
 <dt class="field-odd">Type</dt>
 <dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.13)">list</a></p>
@@ -240,17 +240,13 @@
 
 <dl class="py method">
 <dt id="ehtim.image.Image.add_const_mf">
-<code class="sig-name descname">add_const_mf</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">alpha</span></em>, <em class="sig-param"><span class="n">beta</span><span class="o">=</span><span class="default_value">0.0</span></em>, <em class="sig-param"><span class="n">alpha_pol</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">beta_pol</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">rm</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">cm</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/image.html#Image.add_const_mf"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.image.Image.add_const_mf" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">add_const_mf</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">alpha</span></em>, <em class="sig-param"><span class="n">beta</span><span class="o">=</span><span class="default_value">0.0</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/image.html#Image.add_const_mf"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.image.Image.add_const_mf" title="Permalink to this definition">¶</a></dt>
 <dd><p>Add a constant spectral index and curvature term</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>alpha</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.13)"><em>float</em></a>) – spectral index (with no - sign)</p></li>
 <li><p><strong>beta</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.13)"><em>float</em></a>) – curvature</p></li>
-<li><p><strong>alpha_pol</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.13)"><em>float</em></a>) – polarization fraction spectral index</p></li>
-<li><p><strong>beta_pol</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.13)"><em>float</em></a>) – polarization fraction spectral curvature</p></li>
-<li><p><strong>rm</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.13)"><em>float</em></a>) – rotation measure (dimensionless at reference freq)</p></li>
-<li><p><strong>cm</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.13)"><em>float</em></a>) – conversion measure (not yet implemented)</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns</dt>
@@ -580,9 +576,9 @@ If False it is the largestinput image fov</p></li>
 
 <dl class="py method">
 <dt id="ehtim.image.Image.blur_mf">
-<code class="sig-name descname">blur_mf</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">freqs</span></em>, <em class="sig-param"><span class="n">fwhm</span></em>, <em class="sig-param"><span class="n">fit_order</span><span class="o">=</span><span class="default_value">1</span></em>, <em class="sig-param"><span class="n">fit_order_pol</span><span class="o">=</span><span class="default_value">1</span></em>, <em class="sig-param"><span class="n">filttype</span><span class="o">=</span><span class="default_value">'gauss'</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/image.html#Image.blur_mf"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.image.Image.blur_mf" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">blur_mf</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">freqs</span></em>, <em class="sig-param"><span class="n">fwhm</span></em>, <em class="sig-param"><span class="n">fit_order</span><span class="o">=</span><span class="default_value">1</span></em>, <em class="sig-param"><span class="n">filttype</span><span class="o">=</span><span class="default_value">'gauss'</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/image.html#Image.blur_mf"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.image.Image.blur_mf" title="Permalink to this definition">¶</a></dt>
 <dd><p>Blur image correctly across multiple frequencies
-NOTE: unlike blur_circ, it blurs polarization automatically</p>
+WARNING: does not currently do polarization correctly!</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
@@ -645,7 +641,7 @@ A non-integer shift is used, which wraps the image when rotating.</p>
 <dl class="py method">
 <dt id="ehtim.image.Image.chivec">
 <em class="property">property </em><code class="sig-name descname">chivec</code><a class="headerlink" href="#ehtim.image.Image.chivec" title="Permalink to this definition">¶</a></dt>
-<dd><p>Return the linear polarization angle for each pixel</p>
+<dd><p>Return the fractional polarization angle for each pixel</p>
 </dd></dl>
 
 <dl class="py method">
@@ -943,8 +939,7 @@ Returns parameters only for the primary polarization!</p>
 <dl class="py method">
 <dt id="ehtim.image.Image.get_image_mf">
 <code class="sig-name descname">get_image_mf</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">nu</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/image.html#Image.get_image_mf"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.image.Image.get_image_mf" title="Permalink to this definition">¶</a></dt>
-<dd><p>Get image at a given frequency given the spectral information in self._mflist
-NOTE: Only to 2nd order at the moment!!</p>
+<dd><p>Get image at a given frequency given the spectral information in self._mflist</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><p><strong>nu</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.13)"><em>float</em></a>) – frequency in Hz</p>
@@ -1050,7 +1045,7 @@ Works off the primary image</p>
 <dl class="py method">
 <dt id="ehtim.image.Image.mvec">
 <em class="property">property </em><code class="sig-name descname">mvec</code><a class="headerlink" href="#ehtim.image.Image.mvec" title="Permalink to this definition">¶</a></dt>
-<dd><p>Return the fractional linear polarization for each pixel</p>
+<dd><p>Return the fractional polarization for each pixel</p>
 </dd></dl>
 
 <dl class="py method">
@@ -1349,21 +1344,9 @@ If False it is the largestinput image fov</p></li>
 </dd></dl>
 
 <dl class="py method">
-<dt id="ehtim.image.Image.phivec">
-<em class="property">property </em><code class="sig-name descname">phivec</code><a class="headerlink" href="#ehtim.image.Image.phivec" title="Permalink to this definition">¶</a></dt>
-<dd><p>Return the linear Poincare angle, twice the EVPA</p>
-</dd></dl>
-
-<dl class="py method">
-<dt id="ehtim.image.Image.psivec">
-<em class="property">property </em><code class="sig-name descname">psivec</code><a class="headerlink" href="#ehtim.image.Image.psivec" title="Permalink to this definition">¶</a></dt>
-<dd><p>Return the circular Poincare angle</p>
-</dd></dl>
-
-<dl class="py method">
 <dt id="ehtim.image.Image.pvec">
 <em class="property">property </em><code class="sig-name descname">pvec</code><a class="headerlink" href="#ehtim.image.Image.pvec" title="Permalink to this definition">¶</a></dt>
-<dd><p>Return the linear polarization magnitude for each pixel</p>
+<dd><p>Return the polarization magnitude for each pixel</p>
 </dd></dl>
 
 <dl class="py method">
@@ -1405,12 +1388,6 @@ If False it is the largestinput image fov</p></li>
 <dd class="field-odd"><p>im_resampled (<a class="reference internal" href="#ehtim.image.Image" title="ehtim.image.Image">Image</a>)</p>
 </dd>
 </dl>
-</dd></dl>
-
-<dl class="py method">
-<dt id="ehtim.image.Image.rhovec">
-<em class="property">property </em><code class="sig-name descname">rhovec</code><a class="headerlink" href="#ehtim.image.Image.rhovec" title="Permalink to this definition">¶</a></dt>
-<dd><p>Return the total polarization fraction for each pixel</p>
 </dd></dl>
 
 <dl class="py method">
@@ -1610,6 +1587,12 @@ If fill_val==None, they are set to the min unmasked value</p></li>
 <dd class="field-odd"><p>(<a class="reference internal" href="#ehtim.image.Image" title="ehtim.image.Image">Image</a>)</p>
 </dd>
 </dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="ehtim.image.blur_mf">
+<code class="sig-prename descclassname">ehtim.image.</code><code class="sig-name descname">blur_mf</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">im</span></em>, <em class="sig-param"><span class="n">freqs</span></em>, <em class="sig-param"><span class="n">kernel</span></em>, <em class="sig-param"><span class="n">fit_order</span><span class="o">=</span><span class="default_value">2</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/image.html#blur_mf"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.image.blur_mf" title="Permalink to this definition">¶</a></dt>
+<dd><p>blur multifrequncy images with the same beam</p>
 </dd></dl>
 
 <dl class="py function">
