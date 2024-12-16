@@ -810,7 +810,7 @@ def objgrad(params):
                                               globdict['leakage_prior'], globdict['fit_leakage'])])
     else:
         priterm  = 0.0
-    fluxterm = globdict['alpha_flux'] * flux_constraint_grad(params, globdict['alpha_flux'], globdict['flux'], params, globdict['param_map'])
+    fluxterm = globdict['alpha_flux'] * flux_constraint_grad(globdict['trial_model'], globdict['alpha_flux'], globdict['flux'], params, globdict['param_map'])
 
     grad = datterm - priterm + fluxterm
 
