@@ -46,7 +46,7 @@ if __name__ == "__main__":
                             "requests",
                             "future",
                             "networkx", 
-                            "pynfft",
+                            "pynfft; platform_system!='Darwin' or platform_machine!='arm64'",
                             "paramsurvey"
                            ],
           classifiers=[
