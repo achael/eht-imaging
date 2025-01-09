@@ -3,16 +3,18 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>ehtim.caltable &mdash; ehtim 1.2.6 documentation</title><link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
-    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+  <title>ehtim.caltable &mdash; ehtim 1.2.6 documentation</title>
+      <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
   <!--[if lt IE 9]>
     <script src="../../_static/js/html5shiv.min.js"></script>
   <![endif]-->
-  <script id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
+  
+        <script data-url_root="../../" id="documentation_options" src="../../_static/documentation_options.js"></script>
         <script src="../../_static/jquery.js"></script>
         <script src="../../_static/underscore.js"></script>
+        <script src="../../_static/_sphinx_javascript_frameworks_compat.js"></script>
         <script src="../../_static/doctools.js"></script>
-        <script src="../../_static/language_data.js"></script>
     <script src="../../_static/js/theme.js"></script>
     <link rel="index" title="Index" href="../../genindex.html" />
     <link rel="search" title="Search" href="../../search.html" /> 
@@ -36,7 +38,7 @@
   </form>
 </div>
         </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
-              <p class="caption"><span class="caption-text">Contents:</span></p>
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="../../image.html">Image</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../array.html">Array</a></li>
@@ -121,7 +123,7 @@
 
 
 <div class="viewcode-block" id="Caltable"><a class="viewcode-back" href="../../calibration.html#ehtim.caltable.Caltable">[docs]</a><span class="k">class</span> <span class="nc">Caltable</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">       Attributes:</span>
 <span class="sd">           source (str): The source name</span>
 <span class="sd">           ra (float): The source Right Ascension in fractional hours</span>
@@ -140,7 +142,7 @@
 
     <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ra</span><span class="p">,</span> <span class="n">dec</span><span class="p">,</span> <span class="n">rf</span><span class="p">,</span> <span class="n">bw</span><span class="p">,</span> <span class="n">datadict</span><span class="p">,</span> <span class="n">tarr</span><span class="p">,</span>
                  <span class="n">source</span><span class="o">=</span><span class="n">ehc</span><span class="o">.</span><span class="n">SOURCE_DEFAULT</span><span class="p">,</span> <span class="n">mjd</span><span class="o">=</span><span class="n">ehc</span><span class="o">.</span><span class="n">MJD_DEFAULT</span><span class="p">,</span> <span class="n">timetype</span><span class="o">=</span><span class="s1">&#39;UTC&#39;</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;A Calibration Table.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;A Calibration Table.</span>
 
 <span class="sd">           Args:</span>
 <span class="sd">               ra (float): The source Right Ascension in fractional hours</span>
@@ -180,7 +182,7 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">data</span> <span class="o">=</span> <span class="n">datadict</span>
 
 <div class="viewcode-block" id="Caltable.copy"><a class="viewcode-back" href="../../calibration.html#ehtim.caltable.Caltable.copy">[docs]</a>    <span class="k">def</span> <span class="nf">copy</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Copy the observation object.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Copy the observation object.</span>
 
 <span class="sd">           Args:</span>
 
@@ -194,7 +196,7 @@
 <div class="viewcode-block" id="Caltable.plot_dterms"><a class="viewcode-back" href="../../calibration.html#ehtim.caltable.Caltable.plot_dterms">[docs]</a>    <span class="k">def</span> <span class="nf">plot_dterms</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">sites</span><span class="o">=</span><span class="s1">&#39;all&#39;</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">legend</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">clist</span><span class="o">=</span><span class="n">ehc</span><span class="o">.</span><span class="n">SCOLORS</span><span class="p">,</span>
                     <span class="n">rangex</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">rangey</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">markersize</span><span class="o">=</span><span class="mi">2</span> <span class="o">*</span> <span class="n">ehc</span><span class="o">.</span><span class="n">MARKERSIZE</span><span class="p">,</span>
                     <span class="n">show</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">grid</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">export_pdf</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Make a plot of the D-terms.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Make a plot of the D-terms.</span>
 
 <span class="sd">           Args:</span>
 <span class="sd">               sites (list) : list of sites to plot</span>
@@ -233,7 +235,7 @@
                    <span class="n">ang_unit</span><span class="o">=</span><span class="s1">&#39;deg&#39;</span><span class="p">,</span> <span class="n">timetype</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">yscale</span><span class="o">=</span><span class="s1">&#39;log&#39;</span><span class="p">,</span> <span class="n">legend</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
                    <span class="n">clist</span><span class="o">=</span><span class="n">ehc</span><span class="o">.</span><span class="n">SCOLORS</span><span class="p">,</span> <span class="n">rangex</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">rangey</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">markersize</span><span class="o">=</span><span class="p">[</span><span class="n">ehc</span><span class="o">.</span><span class="n">MARKERSIZE</span><span class="p">],</span>
                    <span class="n">show</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">grid</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">axislabels</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">export_pdf</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Plot gains on multiple sites vs time.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Plot gains on multiple sites vs time.</span>
 <span class="sd">           Args:</span>
 <span class="sd">               sites (list): a list of site names for which to plot gains. Empty list is all sites.</span>
 <span class="sd">               gain_type (str): &#39;amp&#39; or &#39;phase&#39;</span>
@@ -372,7 +374,7 @@
         <span class="k">return</span> <span class="n">x</span></div>
 
 <div class="viewcode-block" id="Caltable.enforce_positive"><a class="viewcode-back" href="../../calibration.html#ehtim.caltable.Caltable.enforce_positive">[docs]</a>    <span class="k">def</span> <span class="nf">enforce_positive</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">method</span><span class="o">=</span><span class="s1">&#39;median&#39;</span><span class="p">,</span> <span class="n">min_gain</span><span class="o">=</span><span class="mf">0.9</span><span class="p">,</span> <span class="n">sites</span><span class="o">=</span><span class="p">[],</span> <span class="n">verbose</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Enforce that caltable gains are not low</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Enforce that caltable gains are not low</span>
 <span class="sd">           (e.g., that sites are not significantly more sensitive than estimated).</span>
 <span class="sd">           By rescaling the entire gain curve to enforce a specified minimum site gain.</span>
 
@@ -423,7 +425,7 @@
 
     <span class="c1"># TODO default extrapolation?</span>
 <div class="viewcode-block" id="Caltable.pad_scans"><a class="viewcode-back" href="../../calibration.html#ehtim.caltable.Caltable.pad_scans">[docs]</a>    <span class="k">def</span> <span class="nf">pad_scans</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">maxdiff</span><span class="o">=</span><span class="mi">60</span><span class="p">,</span> <span class="n">padtype</span><span class="o">=</span><span class="s1">&#39;median&#39;</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Pad data points around scans.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Pad data points around scans.</span>
 
 <span class="sd">           Args:</span>
 <span class="sd">               maxdiff (float): &quot;scan&quot; separation length (seconds)</span>
@@ -509,7 +511,7 @@
 
 <div class="viewcode-block" id="Caltable.applycal"><a class="viewcode-back" href="../../calibration.html#ehtim.caltable.Caltable.applycal">[docs]</a>    <span class="k">def</span> <span class="nf">applycal</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">obs</span><span class="p">,</span> <span class="n">interp</span><span class="o">=</span><span class="s1">&#39;linear&#39;</span><span class="p">,</span> <span class="n">extrapolate</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
                  <span class="n">force_singlepol</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">copy_closure_tables</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Apply the calibration table to an observation.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Apply the calibration table to an observation.</span>
 
 <span class="sd">           Args:</span>
 <span class="sd">               obs (Obsdata): The observation  with data to be calibrated</span>
@@ -614,7 +616,7 @@
         <span class="k">return</span> <span class="n">calobs</span></div>
 
 <div class="viewcode-block" id="Caltable.merge"><a class="viewcode-back" href="../../calibration.html#ehtim.caltable.Caltable.merge">[docs]</a>    <span class="k">def</span> <span class="nf">merge</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">caltablelist</span><span class="p">,</span> <span class="n">interp</span><span class="o">=</span><span class="s1">&#39;linear&#39;</span><span class="p">,</span> <span class="n">extrapolate</span><span class="o">=</span><span class="mi">1</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Merge the calibration table with a list of other calibration tables</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Merge the calibration table with a list of other calibration tables</span>
 
 <span class="sd">           Args:</span>
 <span class="sd">               caltablelist (list): The list of caltables to be merged</span>
@@ -695,7 +697,7 @@
         <span class="k">return</span> <span class="n">new_caltable</span></div>
 
 <div class="viewcode-block" id="Caltable.save_txt"><a class="viewcode-back" href="../../calibration.html#ehtim.caltable.Caltable.save_txt">[docs]</a>    <span class="k">def</span> <span class="nf">save_txt</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">obs</span><span class="p">,</span> <span class="n">datadir</span><span class="o">=</span><span class="s1">&#39;.&#39;</span><span class="p">,</span> <span class="n">sqrt_gains</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Saves a Caltable object to text files in the given directory</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Saves a Caltable object to text files in the given directory</span>
 <span class="sd">           Args:</span>
 <span class="sd">               obs (Obsdata): The observation object associated with the Caltable</span>
 <span class="sd">               datadir (str): directory to save caltable in</span>
@@ -707,7 +709,7 @@
         <span class="k">return</span> <span class="n">save_caltable</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">obs</span><span class="p">,</span> <span class="n">datadir</span><span class="o">=</span><span class="n">datadir</span><span class="p">,</span> <span class="n">sqrt_gains</span><span class="o">=</span><span class="n">sqrt_gains</span><span class="p">)</span></div>
 
 <div class="viewcode-block" id="Caltable.scan_avg"><a class="viewcode-back" href="../../calibration.html#ehtim.caltable.Caltable.scan_avg">[docs]</a>    <span class="k">def</span> <span class="nf">scan_avg</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">obs</span><span class="p">,</span> <span class="n">incoherent</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;average the gains across scans.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;average the gains across scans.</span>
 
 <span class="sd">           Args:</span>
 <span class="sd">               obs (ehtim.Obsdata) : input observation</span>
@@ -776,7 +778,7 @@
 
 
 <div class="viewcode-block" id="load_caltable"><a class="viewcode-back" href="../../calibration.html#ehtim.caltable.load_caltable">[docs]</a><span class="k">def</span> <span class="nf">load_caltable</span><span class="p">(</span><span class="n">obs</span><span class="p">,</span> <span class="n">datadir</span><span class="p">,</span> <span class="n">sqrt_gains</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Load apriori Caltable object from text files in the given directory</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Load apriori Caltable object from text files in the given directory</span>
 <span class="sd">       Args:</span>
 <span class="sd">           obs (Obsdata): The observation object associated with the Caltable</span>
 <span class="sd">           datadir (str): directory to save caltable in</span>
@@ -821,8 +823,8 @@
             <span class="k">else</span><span class="p">:</span>
                 <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;cannot load caltable -- format unknown!&quot;</span><span class="p">)</span>
             <span class="k">if</span> <span class="n">sqrt_gains</span><span class="p">:</span>
-                <span class="n">rscale</span> <span class="o">=</span> <span class="n">rscale</span><span class="o">**.</span><span class="mi">5</span>
-                <span class="n">lscale</span> <span class="o">=</span> <span class="n">lscale</span><span class="o">**.</span><span class="mi">5</span>
+                <span class="n">rscale</span> <span class="o">=</span> <span class="n">rscale</span><span class="o">**</span><span class="mf">.5</span>
+                <span class="n">lscale</span> <span class="o">=</span> <span class="n">lscale</span><span class="o">**</span><span class="mf">.5</span>
             <span class="n">datatable</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">((</span><span class="n">time</span><span class="p">,</span> <span class="n">rscale</span><span class="p">,</span> <span class="n">lscale</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">ehc</span><span class="o">.</span><span class="n">DTCAL</span><span class="p">))</span>
 
         <span class="n">datatables</span><span class="p">[</span><span class="n">site</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">datatable</span><span class="p">)</span>
@@ -836,7 +838,7 @@
 
 
 <div class="viewcode-block" id="save_caltable"><a class="viewcode-back" href="../../calibration.html#ehtim.caltable.save_caltable">[docs]</a><span class="k">def</span> <span class="nf">save_caltable</span><span class="p">(</span><span class="n">caltable</span><span class="p">,</span> <span class="n">obs</span><span class="p">,</span> <span class="n">datadir</span><span class="o">=</span><span class="s1">&#39;.&#39;</span><span class="p">,</span> <span class="n">sqrt_gains</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Saves a Caltable object to text files in the given directory</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Saves a Caltable object to text files in the given directory</span>
 <span class="sd">       Args:</span>
 <span class="sd">           obs (Obsdata): The observation object associated with the Caltable</span>
 <span class="sd">           datadir (str): directory to save caltable in</span>
@@ -885,7 +887,7 @@
 
 
 <div class="viewcode-block" id="make_caltable"><a class="viewcode-back" href="../../calibration.html#ehtim.caltable.make_caltable">[docs]</a><span class="k">def</span> <span class="nf">make_caltable</span><span class="p">(</span><span class="n">obs</span><span class="p">,</span> <span class="n">gains</span><span class="p">,</span> <span class="n">sites</span><span class="p">,</span> <span class="n">times</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Create a Caltable object for an observation</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Create a Caltable object for an observation</span>
 <span class="sd">       Args:</span>
 <span class="sd">           obs (Obsdata): The observation object associated with the Caltable</span>
 <span class="sd">           gains (list): list of gains (?? format ??)</span>

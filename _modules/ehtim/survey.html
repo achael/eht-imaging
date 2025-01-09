@@ -3,16 +3,18 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>ehtim.survey &mdash; ehtim 1.2.6 documentation</title><link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
-    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+  <title>ehtim.survey &mdash; ehtim 1.2.6 documentation</title>
+      <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
   <!--[if lt IE 9]>
     <script src="../../_static/js/html5shiv.min.js"></script>
   <![endif]-->
-  <script id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
+  
+        <script data-url_root="../../" id="documentation_options" src="../../_static/documentation_options.js"></script>
         <script src="../../_static/jquery.js"></script>
         <script src="../../_static/underscore.js"></script>
+        <script src="../../_static/_sphinx_javascript_frameworks_compat.js"></script>
         <script src="../../_static/doctools.js"></script>
-        <script src="../../_static/language_data.js"></script>
     <script src="../../_static/js/theme.js"></script>
     <link rel="index" title="Index" href="../../genindex.html" />
     <link rel="search" title="Search" href="../../search.html" /> 
@@ -36,7 +38,7 @@
   </form>
 </div>
         </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
-              <p class="caption"><span class="caption-text">Contents:</span></p>
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="../../image.html">Image</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../array.html">Array</a></li>
@@ -105,7 +107,7 @@
 <span class="kn">import</span> <span class="nn">paramsurvey.params</span>
 
 <span class="kn">import</span> <span class="nn">warnings</span>
-<span class="n">warnings</span><span class="o">.</span><span class="n">filterwarnings</span><span class="p">(</span><span class="s2">&quot;ignore&quot;</span><span class="p">,</span> <span class="n">category</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">VisibleDeprecationWarning</span><span class="p">)</span>
+<span class="c1">#warnings.filterwarnings(&quot;ignore&quot;, category=np.VisibleDeprecationWarning)</span>
 
 
 <span class="c1">##################################################################################################</span>
@@ -114,7 +116,7 @@
 
 <div class="viewcode-block" id="ParameterSet"><a class="viewcode-back" href="../../survey.html#ehtim.survey.ParameterSet">[docs]</a><span class="k">class</span> <span class="nc">ParameterSet</span><span class="p">:</span>
 
-    <span class="sd">&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">       Attributes:</span>
 <span class="sd">           paramset (dict): dict containing single parameter set. Each key in dict becomes its own attribute</span>
 <span class="sd">           params_fixed (dict): dict containing non-varying parameters. Each key in dict becomes its own attribute</span>
@@ -133,7 +135,7 @@
 
     <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">paramset</span><span class="p">,</span> <span class="n">params_fixed</span><span class="o">=</span><span class="p">{}):</span>
 
-        <span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        An object for one parameter set</span>
 
 <span class="sd">           Args:</span>
@@ -162,7 +164,7 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">prior_fwhm</span> <span class="o">*=</span> <span class="n">eh</span><span class="o">.</span><span class="n">RADPERUAS</span>
 
 <div class="viewcode-block" id="ParameterSet.load_data"><a class="viewcode-back" href="../../survey.html#ehtim.survey.ParameterSet.load_data">[docs]</a>    <span class="k">def</span> <span class="nf">load_data</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Loads in uvfits file from self.infile into eht-imaging obs object and averages using self.avg_time</span>
 <span class="sd">        Creates self.obs</span>
 
@@ -186,7 +188,7 @@
 
 <div class="viewcode-block" id="ParameterSet.preimcal"><a class="viewcode-back" href="../../survey.html#ehtim.survey.ParameterSet.preimcal">[docs]</a>    <span class="k">def</span> <span class="nf">preimcal</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
 
-        <span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Applies pre-imaging calibration to self.obs. This includes flagging sites with no measurements, rescaling</span>
 <span class="sd">        short baselines so only compact flux is being imaged, applying a u-v taper, and adding extra sys noise. Creates</span>
 <span class="sd">        self.obs_sc which will have self-cal applied in future steps and self.obs_sc_init which is a copy of the initial</span>
@@ -247,7 +249,7 @@
 
 <div class="viewcode-block" id="ParameterSet.init_img"><a class="viewcode-back" href="../../survey.html#ehtim.survey.ParameterSet.init_img">[docs]</a>    <span class="k">def</span> <span class="nf">init_img</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
 
-        <span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Creates initial/prior image. Only gaussian prior option at present, but creates prior attritubute self.initimg</span>
 <span class="sd">        using self.zbl and self.prior_fwhm</span>
 
@@ -267,7 +269,7 @@
 
 <div class="viewcode-block" id="ParameterSet.make_img"><a class="viewcode-back" href="../../survey.html#ehtim.survey.ParameterSet.make_img">[docs]</a>    <span class="k">def</span> <span class="nf">make_img</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
 
-        <span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Reconstructs image with specified parameters (data weights, amount of self-cal, etc) described in paramset dict</span>
 <span class="sd">        Creates attributes self.im_out containing the final image and self.caltab containing a corresponding calibration</span>
 <span class="sd">        table object for the final image</span>
@@ -398,7 +400,7 @@
 
 <div class="viewcode-block" id="ParameterSet.output_results"><a class="viewcode-back" href="../../survey.html#ehtim.survey.ParameterSet.output_results">[docs]</a>    <span class="k">def</span> <span class="nf">output_results</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
 
-        <span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Outputs all requested files pertaining to final image</span>
 
 <span class="sd">            Args:</span>
@@ -446,7 +448,7 @@
 
 <div class="viewcode-block" id="ParameterSet.save_statistics"><a class="viewcode-back" href="../../survey.html#ehtim.survey.ParameterSet.save_statistics">[docs]</a>    <span class="k">def</span> <span class="nf">save_statistics</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
 
-        <span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Saves a csv file with the following statistics:</span>
 <span class="sd">        chi^2 closure phase, logcamp, vis wrt the original observation</span>
 <span class="sd">        chi^2 vis wrt to original observation with self-cal to final image applied</span>
@@ -526,7 +528,7 @@
         <span class="n">df</span><span class="o">.</span><span class="n">to_csv</span><span class="p">(</span><span class="n">outstats</span><span class="p">)</span></div>
 
 <div class="viewcode-block" id="ParameterSet.save_params"><a class="viewcode-back" href="../../survey.html#ehtim.survey.ParameterSet.save_params">[docs]</a>    <span class="k">def</span> <span class="nf">save_params</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Saves a csv file with parameter set details</span>
 
 <span class="sd">            Args:</span>
@@ -544,7 +546,7 @@
 
 <div class="viewcode-block" id="ParameterSet.run"><a class="viewcode-back" href="../../survey.html#ehtim.survey.ParameterSet.run">[docs]</a>    <span class="k">def</span> <span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
 
-        <span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Run imaging pipeline for one parameter set.</span>
 
 <span class="sd">            Args:</span>
@@ -586,7 +588,7 @@
 
 
 <div class="viewcode-block" id="run_pset"><a class="viewcode-back" href="../../survey.html#ehtim.survey.run_pset">[docs]</a><span class="k">def</span> <span class="nf">run_pset</span><span class="p">(</span><span class="n">pset</span><span class="p">,</span> <span class="n">system_kwargs</span><span class="p">,</span> <span class="n">params_fixed</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Run imaging for one parameter set. Not to be used individually, but called in map function for run_survey</span>
 
 <span class="sd">        Args:</span>
@@ -601,7 +603,7 @@
     <span class="n">PSet</span><span class="o">.</span><span class="n">run</span><span class="p">()</span></div>
 
 <div class="viewcode-block" id="run_survey"><a class="viewcode-back" href="../../survey.html#ehtim.survey.run_survey">[docs]</a><span class="k">def</span> <span class="nf">run_survey</span><span class="p">(</span><span class="n">psets</span><span class="p">,</span> <span class="n">params_fixed</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Run survey for all parameter sets using paramsurvey</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Run survey for all parameter sets using paramsurvey</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            psets (DataFrame): A pandas DataFrame containing all parameter sets</span>
@@ -621,7 +623,7 @@
                         <span class="n">selfcal</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">gaintol</span><span class="o">=</span><span class="p">[</span><span class="mf">0.02</span><span class="p">,</span><span class="mf">0.2</span><span class="p">],</span> <span class="n">niter_static</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span> <span class="n">blurfrac</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
                         <span class="n">maxit</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span> <span class="n">stop</span><span class="o">=</span><span class="mf">1e-4</span><span class="p">,</span> <span class="n">fov</span><span class="o">=</span><span class="mi">128</span><span class="p">,</span> <span class="n">npixels</span><span class="o">=</span><span class="mi">64</span><span class="p">,</span> <span class="n">reverse_taper_uas</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span> <span class="n">uv_zblcut</span><span class="o">=</span><span class="mf">0.1e9</span><span class="p">,</span>
                         <span class="n">SEFD_error_budget</span><span class="o">=</span><span class="p">{</span><span class="s1">&#39;AA&#39;</span><span class="p">:</span><span class="mf">0.1</span><span class="p">,</span><span class="s1">&#39;AX&#39;</span><span class="p">:</span><span class="mf">0.1</span><span class="p">,</span><span class="s1">&#39;GL&#39;</span><span class="p">:</span><span class="mf">0.1</span><span class="p">,</span><span class="s1">&#39;LM&#39;</span><span class="p">:</span><span class="mf">0.1</span><span class="p">,</span><span class="s1">&#39;MG&#39;</span><span class="p">:</span><span class="mf">0.1</span><span class="p">,</span><span class="s1">&#39;MM&#39;</span><span class="p">:</span><span class="mf">0.1</span><span class="p">,</span><span class="s1">&#39;PV&#39;</span><span class="p">:</span><span class="mf">0.1</span><span class="p">,</span><span class="s1">&#39;SW&#39;</span><span class="p">:</span><span class="mf">0.1</span><span class="p">}):</span>
-    <span class="sd">&quot;&quot;&quot;Create a dict for all non-varying survery parameters</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Create a dict for all non-varying survery parameters</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            infile (str): path to input uvfits observation file</span>
@@ -665,7 +667,7 @@
 <div class="viewcode-block" id="create_survey_psets"><a class="viewcode-back" href="../../survey.html#ehtim.survey.create_survey_psets">[docs]</a><span class="k">def</span> <span class="nf">create_survey_psets</span><span class="p">(</span><span class="n">zbl</span><span class="o">=</span><span class="p">[</span><span class="mf">0.6</span><span class="p">],</span> <span class="n">sys_noise</span><span class="o">=</span><span class="p">[</span><span class="mf">0.02</span><span class="p">],</span> <span class="n">avg_time</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;scan&#39;</span><span class="p">],</span> <span class="n">prior_fwhm</span><span class="o">=</span><span class="p">[</span><span class="mi">40</span><span class="p">],</span>
                      <span class="n">sc_phase</span><span class="o">=</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">xdw_phase</span><span class="o">=</span><span class="p">[</span><span class="mi">10</span><span class="p">],</span> <span class="n">sc_ap</span><span class="o">=</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">xdw_ap</span><span class="o">=</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">amp</span><span class="o">=</span><span class="p">[</span><span class="mf">0.2</span><span class="p">],</span> <span class="n">cphase</span><span class="o">=</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">logcamp</span><span class="o">=</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span>
                      <span class="n">simple</span><span class="o">=</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">l1</span><span class="o">=</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">tv</span><span class="o">=</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">tv2</span><span class="o">=</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">flux</span><span class="o">=</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">epsilon_tv</span><span class="o">=</span><span class="p">[</span><span class="mf">1e-10</span><span class="p">]):</span>
-    <span class="sd">&quot;&quot;&quot;Create a dataframe given all survey parameters. Default values will create an example dataframe but these values should be adjusted for each specific observation</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Create a dataframe given all survey parameters. Default values will create an example dataframe but these values should be adjusted for each specific observation</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            zbl (array): compact flux value (Jy)</span>

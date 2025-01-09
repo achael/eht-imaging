@@ -1,18 +1,21 @@
 <!DOCTYPE html>
 <html class="writer-html5" lang="en" >
 <head>
-  <meta charset="utf-8" />
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
+
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Scattering &mdash; ehtim 1.2.6 documentation</title><link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
-    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+  <title>Scattering &mdash; ehtim 1.2.6 documentation</title>
+      <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
   <!--[if lt IE 9]>
     <script src="_static/js/html5shiv.min.js"></script>
   <![endif]-->
-  <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+  
+        <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
         <script src="_static/jquery.js"></script>
         <script src="_static/underscore.js"></script>
+        <script src="_static/_sphinx_javascript_frameworks_compat.js"></script>
         <script src="_static/doctools.js"></script>
-        <script src="_static/language_data.js"></script>
     <script src="_static/js/theme.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
@@ -38,7 +41,7 @@
   </form>
 </div>
         </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
-              <p class="caption"><span class="caption-text">Contents:</span></p>
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
 <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="image.html">Image</a></li>
 <li class="toctree-l1"><a class="reference internal" href="array.html">Array</a></li>
@@ -78,32 +81,32 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
              
-  <span class="target" id="module-scattering"></span><div class="section" id="scattering">
-<span id="id1"></span><h1>Scattering<a class="headerlink" href="#scattering" title="Permalink to this headline">¶</a></h1>
+  <span class="target" id="module-scattering"></span><section id="scattering">
+<span id="id1"></span><h1>Scattering<a class="headerlink" href="#scattering" title="Permalink to this heading"></a></h1>
 <span class="target" id="module-ehtim.scattering.stochastic_optics"></span><dl class="py function">
-<dt id="ehtim.scattering.stochastic_optics.MakeEpsilonScreen">
-<code class="sig-prename descclassname">ehtim.scattering.stochastic_optics.</code><code class="sig-name descname">MakeEpsilonScreen</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">Nx</span></em>, <em class="sig-param"><span class="n">Ny</span></em>, <em class="sig-param"><span class="n">rngseed</span><span class="o">=</span><span class="default_value">0</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/scattering/stochastic_optics.html#MakeEpsilonScreen"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.scattering.stochastic_optics.MakeEpsilonScreen" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="ehtim.scattering.stochastic_optics.MakeEpsilonScreen">
+<span class="sig-prename descclassname"><span class="pre">ehtim.scattering.stochastic_optics.</span></span><span class="sig-name descname"><span class="pre">MakeEpsilonScreen</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">Nx</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">Ny</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rngseed</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/scattering/stochastic_optics.html#MakeEpsilonScreen"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ehtim.scattering.stochastic_optics.MakeEpsilonScreen" title="Permalink to this definition"></a></dt>
 <dd><p>Create a standardized Fourier representation of a scattering screen</p>
 <dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>Nx</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.13)"><em>int</em></a>) – Number of pixels in the x direction</p></li>
 <li><p><strong>Ny</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.13)"><em>int</em></a>) – Number of pixels in the y direction</p></li>
 <li><p><strong>rngseed</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.13)"><em>int</em></a>) – Seed for the random number generator</p></li>
 </ul>
 </dd>
-<dt class="field-even">Returns</dt>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
 <dd class="field-even"><p>A 2D numpy ndarray.</p>
 </dd>
-<dt class="field-odd">Return type</dt>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
 <dd class="field-odd"><p>epsilon</p>
 </dd>
 </dl>
 </dd></dl>
 
 <dl class="py class">
-<dt id="ehtim.scattering.stochastic_optics.ScatteringModel">
-<em class="property">class </em><code class="sig-prename descclassname">ehtim.scattering.stochastic_optics.</code><code class="sig-name descname">ScatteringModel</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">model</span><span class="o">=</span><span class="default_value">'dipole'</span></em>, <em class="sig-param"><span class="n">scatt_alpha</span><span class="o">=</span><span class="default_value">1.38</span></em>, <em class="sig-param"><span class="n">observer_screen_distance</span><span class="o">=</span><span class="default_value">8.702519999999999e+21</span></em>, <em class="sig-param"><span class="n">source_screen_distance</span><span class="o">=</span><span class="default_value">1.706558e+22</span></em>, <em class="sig-param"><span class="n">theta_maj_mas_ref</span><span class="o">=</span><span class="default_value">1.38</span></em>, <em class="sig-param"><span class="n">theta_min_mas_ref</span><span class="o">=</span><span class="default_value">0.703</span></em>, <em class="sig-param"><span class="n">POS_ANG</span><span class="o">=</span><span class="default_value">81.9</span></em>, <em class="sig-param"><span class="n">wavelength_reference_cm</span><span class="o">=</span><span class="default_value">1.0</span></em>, <em class="sig-param"><span class="n">r_in</span><span class="o">=</span><span class="default_value">80000000.0</span></em>, <em class="sig-param"><span class="n">r_out</span><span class="o">=</span><span class="default_value">1e+20</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/scattering/stochastic_optics.html#ScatteringModel"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.scattering.stochastic_optics.ScatteringModel" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="ehtim.scattering.stochastic_optics.ScatteringModel">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">ehtim.scattering.stochastic_optics.</span></span><span class="sig-name descname"><span class="pre">ScatteringModel</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'dipole'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">scatt_alpha</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.38</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">observer_screen_distance</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">8.702519999999999e+21</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">source_screen_distance</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.706558e+22</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">theta_maj_mas_ref</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.38</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">theta_min_mas_ref</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.703</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">POS_ANG</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">81.9</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">wavelength_reference_cm</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">r_in</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">80000000.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">r_out</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1e+20</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/scattering/stochastic_optics.html#ScatteringModel"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ehtim.scattering.stochastic_optics.ScatteringModel" title="Permalink to this definition"></a></dt>
 <dd><p>A scattering model based on a thin-screen approximation.</p>
 <dl class="simple">
 <dt>Models include:</dt><dd><dl class="simple">
@@ -122,228 +125,228 @@ The ensemble-average image size is proportional to wavelength^(1+2/scatt_alpha) 
 </dd>
 </dl>
 <dl class="py attribute">
-<dt id="ehtim.scattering.stochastic_optics.ScatteringModel.model">
-<code class="sig-name descname">model</code><a class="headerlink" href="#ehtim.scattering.stochastic_optics.ScatteringModel.model" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="ehtim.scattering.stochastic_optics.ScatteringModel.model">
+<span class="sig-name descname"><span class="pre">model</span></span><a class="headerlink" href="#ehtim.scattering.stochastic_optics.ScatteringModel.model" title="Permalink to this definition"></a></dt>
 <dd><p>The type of scattering model (determined by the power spectrum of phase fluctuations).</p>
 <dl class="field-list simple">
-<dt class="field-odd">Type</dt>
+<dt class="field-odd">Type<span class="colon">:</span></dt>
 <dd class="field-odd"><p>string</p>
 </dd>
 </dl>
 </dd></dl>
 
 <dl class="py attribute">
-<dt id="ehtim.scattering.stochastic_optics.ScatteringModel.scatt_alpha">
-<code class="sig-name descname">scatt_alpha</code><a class="headerlink" href="#ehtim.scattering.stochastic_optics.ScatteringModel.scatt_alpha" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="ehtim.scattering.stochastic_optics.ScatteringModel.scatt_alpha">
+<span class="sig-name descname"><span class="pre">scatt_alpha</span></span><a class="headerlink" href="#ehtim.scattering.stochastic_optics.ScatteringModel.scatt_alpha" title="Permalink to this definition"></a></dt>
 <dd><p>The power-law index of the phase fluctuations (Kolmogorov is 5/3).</p>
 <dl class="field-list simple">
-<dt class="field-odd">Type</dt>
+<dt class="field-odd">Type<span class="colon">:</span></dt>
 <dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.13)">float</a></p>
 </dd>
 </dl>
 </dd></dl>
 
 <dl class="py attribute">
-<dt id="ehtim.scattering.stochastic_optics.ScatteringModel.observer_screen_distance">
-<code class="sig-name descname">observer_screen_distance</code><a class="headerlink" href="#ehtim.scattering.stochastic_optics.ScatteringModel.observer_screen_distance" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="ehtim.scattering.stochastic_optics.ScatteringModel.observer_screen_distance">
+<span class="sig-name descname"><span class="pre">observer_screen_distance</span></span><a class="headerlink" href="#ehtim.scattering.stochastic_optics.ScatteringModel.observer_screen_distance" title="Permalink to this definition"></a></dt>
 <dd><p>The distance from the observer to the scattering screen in cm.</p>
 <dl class="field-list simple">
-<dt class="field-odd">Type</dt>
+<dt class="field-odd">Type<span class="colon">:</span></dt>
 <dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.13)">float</a></p>
 </dd>
 </dl>
 </dd></dl>
 
 <dl class="py attribute">
-<dt id="ehtim.scattering.stochastic_optics.ScatteringModel.source_screen_distance">
-<code class="sig-name descname">source_screen_distance</code><a class="headerlink" href="#ehtim.scattering.stochastic_optics.ScatteringModel.source_screen_distance" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="ehtim.scattering.stochastic_optics.ScatteringModel.source_screen_distance">
+<span class="sig-name descname"><span class="pre">source_screen_distance</span></span><a class="headerlink" href="#ehtim.scattering.stochastic_optics.ScatteringModel.source_screen_distance" title="Permalink to this definition"></a></dt>
 <dd><p>The distance from the source to the scattering screen in cm.</p>
 <dl class="field-list simple">
-<dt class="field-odd">Type</dt>
+<dt class="field-odd">Type<span class="colon">:</span></dt>
 <dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.13)">float</a></p>
 </dd>
 </dl>
 </dd></dl>
 
 <dl class="py attribute">
-<dt id="ehtim.scattering.stochastic_optics.ScatteringModel.theta_maj_mas_ref">
-<code class="sig-name descname">theta_maj_mas_ref</code><a class="headerlink" href="#ehtim.scattering.stochastic_optics.ScatteringModel.theta_maj_mas_ref" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="ehtim.scattering.stochastic_optics.ScatteringModel.theta_maj_mas_ref">
+<span class="sig-name descname"><span class="pre">theta_maj_mas_ref</span></span><a class="headerlink" href="#ehtim.scattering.stochastic_optics.ScatteringModel.theta_maj_mas_ref" title="Permalink to this definition"></a></dt>
 <dd><p>FWHM in mas of the major axis angular broadening at the specified reference wavelength.</p>
 <dl class="field-list simple">
-<dt class="field-odd">Type</dt>
+<dt class="field-odd">Type<span class="colon">:</span></dt>
 <dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.13)">float</a></p>
 </dd>
 </dl>
 </dd></dl>
 
 <dl class="py attribute">
-<dt id="ehtim.scattering.stochastic_optics.ScatteringModel.theta_min_mas_ref">
-<code class="sig-name descname">theta_min_mas_ref</code><a class="headerlink" href="#ehtim.scattering.stochastic_optics.ScatteringModel.theta_min_mas_ref" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="ehtim.scattering.stochastic_optics.ScatteringModel.theta_min_mas_ref">
+<span class="sig-name descname"><span class="pre">theta_min_mas_ref</span></span><a class="headerlink" href="#ehtim.scattering.stochastic_optics.ScatteringModel.theta_min_mas_ref" title="Permalink to this definition"></a></dt>
 <dd><p>FWHM in mas of the minor axis angular broadening at the specified reference wavelength.</p>
 <dl class="field-list simple">
-<dt class="field-odd">Type</dt>
+<dt class="field-odd">Type<span class="colon">:</span></dt>
 <dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.13)">float</a></p>
 </dd>
 </dl>
 </dd></dl>
 
 <dl class="py attribute">
-<dt id="ehtim.scattering.stochastic_optics.ScatteringModel.POS_ANG">
-<code class="sig-name descname">POS_ANG</code><a class="headerlink" href="#ehtim.scattering.stochastic_optics.ScatteringModel.POS_ANG" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="ehtim.scattering.stochastic_optics.ScatteringModel.POS_ANG">
+<span class="sig-name descname"><span class="pre">POS_ANG</span></span><a class="headerlink" href="#ehtim.scattering.stochastic_optics.ScatteringModel.POS_ANG" title="Permalink to this definition"></a></dt>
 <dd><p>The position angle of the major axis of the scattering.</p>
 <dl class="field-list simple">
-<dt class="field-odd">Type</dt>
+<dt class="field-odd">Type<span class="colon">:</span></dt>
 <dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.13)">float</a></p>
 </dd>
 </dl>
 </dd></dl>
 
 <dl class="py attribute">
-<dt id="ehtim.scattering.stochastic_optics.ScatteringModel.wavelength_reference_cm">
-<code class="sig-name descname">wavelength_reference_cm</code><a class="headerlink" href="#ehtim.scattering.stochastic_optics.ScatteringModel.wavelength_reference_cm" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="ehtim.scattering.stochastic_optics.ScatteringModel.wavelength_reference_cm">
+<span class="sig-name descname"><span class="pre">wavelength_reference_cm</span></span><a class="headerlink" href="#ehtim.scattering.stochastic_optics.ScatteringModel.wavelength_reference_cm" title="Permalink to this definition"></a></dt>
 <dd><p>The reference wavelength for the scattering model in cm.</p>
 <dl class="field-list simple">
-<dt class="field-odd">Type</dt>
+<dt class="field-odd">Type<span class="colon">:</span></dt>
 <dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.13)">float</a></p>
 </dd>
 </dl>
 </dd></dl>
 
 <dl class="py attribute">
-<dt id="ehtim.scattering.stochastic_optics.ScatteringModel.r_in">
-<code class="sig-name descname">r_in</code><a class="headerlink" href="#ehtim.scattering.stochastic_optics.ScatteringModel.r_in" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="ehtim.scattering.stochastic_optics.ScatteringModel.r_in">
+<span class="sig-name descname"><span class="pre">r_in</span></span><a class="headerlink" href="#ehtim.scattering.stochastic_optics.ScatteringModel.r_in" title="Permalink to this definition"></a></dt>
 <dd><p>The inner scale of the scattering screen in cm.</p>
 <dl class="field-list simple">
-<dt class="field-odd">Type</dt>
+<dt class="field-odd">Type<span class="colon">:</span></dt>
 <dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.13)">float</a></p>
 </dd>
 </dl>
 </dd></dl>
 
 <dl class="py attribute">
-<dt id="ehtim.scattering.stochastic_optics.ScatteringModel.r_out">
-<code class="sig-name descname">r_out</code><a class="headerlink" href="#ehtim.scattering.stochastic_optics.ScatteringModel.r_out" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="ehtim.scattering.stochastic_optics.ScatteringModel.r_out">
+<span class="sig-name descname"><span class="pre">r_out</span></span><a class="headerlink" href="#ehtim.scattering.stochastic_optics.ScatteringModel.r_out" title="Permalink to this definition"></a></dt>
 <dd><p>The outer scale of the scattering screen in cm.</p>
 <dl class="field-list simple">
-<dt class="field-odd">Type</dt>
+<dt class="field-odd">Type<span class="colon">:</span></dt>
 <dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.13)">float</a></p>
 </dd>
 </dl>
 </dd></dl>
 
 <dl class="py attribute">
-<dt id="ehtim.scattering.stochastic_optics.ScatteringModel.rF">
-<code class="sig-name descname">rF</code><a class="reference internal" href="_modules/ehtim/scattering/stochastic_optics.html#ScatteringModel.rF"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.scattering.stochastic_optics.ScatteringModel.rF" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="ehtim.scattering.stochastic_optics.ScatteringModel.rF">
+<span class="sig-name descname"><span class="pre">rF</span></span><a class="reference internal" href="_modules/ehtim/scattering/stochastic_optics.html#ScatteringModel.rF"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ehtim.scattering.stochastic_optics.ScatteringModel.rF" title="Permalink to this definition"></a></dt>
 <dd><p>The Fresnel scale of the scattering screen at the specific wavelength.</p>
 <dl class="field-list simple">
-<dt class="field-odd">Type</dt>
+<dt class="field-odd">Type<span class="colon">:</span></dt>
 <dd class="field-odd"><p>function</p>
 </dd>
 </dl>
 </dd></dl>
 
 <dl class="py method">
-<dt id="ehtim.scattering.stochastic_optics.ScatteringModel.Deblur_obs">
-<code class="sig-name descname">Deblur_obs</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">obs</span></em>, <em class="sig-param"><span class="n">use_approximate_form</span><span class="o">=</span><span class="default_value">True</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/scattering/stochastic_optics.html#ScatteringModel.Deblur_obs"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.scattering.stochastic_optics.ScatteringModel.Deblur_obs" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="ehtim.scattering.stochastic_optics.ScatteringModel.Deblur_obs">
+<span class="sig-name descname"><span class="pre">Deblur_obs</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">obs</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">use_approximate_form</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/scattering/stochastic_optics.html#ScatteringModel.Deblur_obs"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ehtim.scattering.stochastic_optics.ScatteringModel.Deblur_obs" title="Permalink to this definition"></a></dt>
 <dd><p>Deblurs the observation obs by dividing visibilities by the ensemble-average scattering kernel. See Fish et al. (2014): arXiv:1409.4690.</p>
 <dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><p><strong>obs</strong> (<a class="reference internal" href="obsdata.html#ehtim.obsdata.Obsdata" title="ehtim.obsdata.Obsdata"><em>Obsdata</em></a>) – The observervation data (including scattering).</p>
 </dd>
-<dt class="field-even">Returns</dt>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
 <dd class="field-even"><p>The deblurred observation.</p>
 </dd>
-<dt class="field-odd">Return type</dt>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
 <dd class="field-odd"><p>obsdeblur (<a class="reference internal" href="obsdata.html#ehtim.obsdata.Obsdata" title="ehtim.obsdata.Obsdata">Obsdata</a>)</p>
 </dd>
 </dl>
 </dd></dl>
 
 <dl class="py method">
-<dt id="ehtim.scattering.stochastic_optics.ScatteringModel.Ensemble_Average_Blur">
-<code class="sig-name descname">Ensemble_Average_Blur</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">im</span></em>, <em class="sig-param"><span class="n">wavelength_cm</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">ker</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">use_approximate_form</span><span class="o">=</span><span class="default_value">True</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/scattering/stochastic_optics.html#ScatteringModel.Ensemble_Average_Blur"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.scattering.stochastic_optics.ScatteringModel.Ensemble_Average_Blur" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="ehtim.scattering.stochastic_optics.ScatteringModel.Ensemble_Average_Blur">
+<span class="sig-name descname"><span class="pre">Ensemble_Average_Blur</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">im</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">wavelength_cm</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ker</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">use_approximate_form</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/scattering/stochastic_optics.html#ScatteringModel.Ensemble_Average_Blur"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ehtim.scattering.stochastic_optics.ScatteringModel.Ensemble_Average_Blur" title="Permalink to this definition"></a></dt>
 <dd><p>Blurs an input Image with the ensemble-average scattering kernel.</p>
 <dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>im</strong> (<a class="reference internal" href="image.html#ehtim.image.Image" title="ehtim.image.Image"><em>Image</em></a>) – The unscattered image.</p></li>
 <li><p><strong>wavelength_cm</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.13)"><em>float</em></a>) – The observing wavelength for the scattering kernel in cm. If unspecified, this will default to the wavelength of the input image.</p></li>
 <li><p><strong>ker</strong> (<em>2D ndarray</em>) – The user can optionally pass a pre-computed ensemble-average blurring kernel.</p></li>
 </ul>
 </dd>
-<dt class="field-even">Returns</dt>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
 <dd class="field-even"><p>The ensemble-average scattered image.</p>
 </dd>
-<dt class="field-odd">Return type</dt>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
 <dd class="field-odd"><p>out (<a class="reference internal" href="image.html#ehtim.image.Image" title="ehtim.image.Image">Image</a>)</p>
 </dd>
 </dl>
 </dd></dl>
 
 <dl class="py method">
-<dt id="ehtim.scattering.stochastic_optics.ScatteringModel.Ensemble_Average_Kernel">
-<code class="sig-name descname">Ensemble_Average_Kernel</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">Reference_Image</span></em>, <em class="sig-param"><span class="n">wavelength_cm</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">use_approximate_form</span><span class="o">=</span><span class="default_value">True</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/scattering/stochastic_optics.html#ScatteringModel.Ensemble_Average_Kernel"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.scattering.stochastic_optics.ScatteringModel.Ensemble_Average_Kernel" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="ehtim.scattering.stochastic_optics.ScatteringModel.Ensemble_Average_Kernel">
+<span class="sig-name descname"><span class="pre">Ensemble_Average_Kernel</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">Reference_Image</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">wavelength_cm</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">use_approximate_form</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/scattering/stochastic_optics.html#ScatteringModel.Ensemble_Average_Kernel"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ehtim.scattering.stochastic_optics.ScatteringModel.Ensemble_Average_Kernel" title="Permalink to this definition"></a></dt>
 <dd><p>The ensemble-average convolution kernel for images; returns a 2D array corresponding to the image dimensions of the reference image</p>
 <dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>Reference_Image</strong> (<a class="reference internal" href="image.html#ehtim.image.Image" title="ehtim.image.Image"><em>Image</em></a>) – Reference image to determine image and pixel dimensions and wavelength.</p></li>
 <li><p><strong>wavelength_cm</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.13)"><em>float</em></a>) – The observing wavelength for the scattering kernel in cm. If unspecified, this will default to the wavelength of the Reference image.</p></li>
 </ul>
 </dd>
-<dt class="field-even">Returns</dt>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
 <dd class="field-even"><p>The ensemble-average scattering kernel in the image domain.</p>
 </dd>
-<dt class="field-odd">Return type</dt>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
 <dd class="field-odd"><p>ker (2D ndarray)</p>
 </dd>
 </dl>
 </dd></dl>
 
 <dl class="py method">
-<dt id="ehtim.scattering.stochastic_optics.ScatteringModel.Ensemble_Average_Kernel_Visibility">
-<code class="sig-name descname">Ensemble_Average_Kernel_Visibility</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">u</span></em>, <em class="sig-param"><span class="n">v</span></em>, <em class="sig-param"><span class="n">wavelength_cm</span></em>, <em class="sig-param"><span class="n">use_approximate_form</span><span class="o">=</span><span class="default_value">True</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/scattering/stochastic_optics.html#ScatteringModel.Ensemble_Average_Kernel_Visibility"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.scattering.stochastic_optics.ScatteringModel.Ensemble_Average_Kernel_Visibility" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="ehtim.scattering.stochastic_optics.ScatteringModel.Ensemble_Average_Kernel_Visibility">
+<span class="sig-name descname"><span class="pre">Ensemble_Average_Kernel_Visibility</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">u</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">v</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">wavelength_cm</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">use_approximate_form</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/scattering/stochastic_optics.html#ScatteringModel.Ensemble_Average_Kernel_Visibility"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ehtim.scattering.stochastic_optics.ScatteringModel.Ensemble_Average_Kernel_Visibility" title="Permalink to this definition"></a></dt>
 <dd><p>The ensemble-average multiplicative scattering kernel for visibilities at a particular {u,v} coordinate</p>
 <dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>u</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.13)"><em>float</em></a>) – u baseline coordinate (dimensionless)</p></li>
 <li><p><strong>v</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.13)"><em>float</em></a>) – v baseline coordinate (dimensionless)</p></li>
 <li><p><strong>wavelength_cm</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.13)"><em>float</em></a>) – The observing wavelength for the scattering kernel in cm.</p></li>
 </ul>
 </dd>
-<dt class="field-even">Returns</dt>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
 <dd class="field-even"><p>The ensemble-average kernel at the specified {u,v} point and observing wavelength.</p>
 </dd>
-<dt class="field-odd">Return type</dt>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
 <dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.13)">float</a></p>
 </dd>
 </dl>
 </dd></dl>
 
 <dl class="py method">
-<dt id="ehtim.scattering.stochastic_optics.ScatteringModel.Mag">
-<code class="sig-name descname">Mag</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/scattering/stochastic_optics.html#ScatteringModel.Mag"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.scattering.stochastic_optics.ScatteringModel.Mag" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="ehtim.scattering.stochastic_optics.ScatteringModel.Mag">
+<span class="sig-name descname"><span class="pre">Mag</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/scattering/stochastic_optics.html#ScatteringModel.Mag"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ehtim.scattering.stochastic_optics.ScatteringModel.Mag" title="Permalink to this definition"></a></dt>
 <dd><p>Returns the effective magnification the scattering screen: (observer-screen distance)/(source-screen distance).</p>
 <dl class="field-list simple">
-<dt class="field-odd">Returns</dt>
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
 <dd class="field-odd"><p>The effective magnification of the scattering screen.</p>
 </dd>
-<dt class="field-even">Return type</dt>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
 <dd class="field-even"><p>M (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.13)">float</a>)</p>
 </dd>
 </dl>
 </dd></dl>
 
 <dl class="py method">
-<dt id="ehtim.scattering.stochastic_optics.ScatteringModel.MakePhaseScreen">
-<code class="sig-name descname">MakePhaseScreen</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">EpsilonScreen</span></em>, <em class="sig-param"><span class="n">Reference_Image</span></em>, <em class="sig-param"><span class="n">obs_frequency_Hz</span><span class="o">=</span><span class="default_value">0.0</span></em>, <em class="sig-param"><span class="n">Vx_km_per_s</span><span class="o">=</span><span class="default_value">50.0</span></em>, <em class="sig-param"><span class="n">Vy_km_per_s</span><span class="o">=</span><span class="default_value">0.0</span></em>, <em class="sig-param"><span class="n">t_hr</span><span class="o">=</span><span class="default_value">0.0</span></em>, <em class="sig-param"><span class="n">sqrtQ_init</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/scattering/stochastic_optics.html#ScatteringModel.MakePhaseScreen"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.scattering.stochastic_optics.ScatteringModel.MakePhaseScreen" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="ehtim.scattering.stochastic_optics.ScatteringModel.MakePhaseScreen">
+<span class="sig-name descname"><span class="pre">MakePhaseScreen</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">EpsilonScreen</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">Reference_Image</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">obs_frequency_Hz</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">Vx_km_per_s</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">50.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">Vy_km_per_s</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">t_hr</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sqrtQ_init</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/scattering/stochastic_optics.html#ScatteringModel.MakePhaseScreen"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ehtim.scattering.stochastic_optics.ScatteringModel.MakePhaseScreen" title="Permalink to this definition"></a></dt>
 <dd><p>Create a refractive phase screen from standardized Fourier components (the EpsilonScreen).
 All lengths should be specified in centimeters
 If the observing frequency (obs_frequency_Hz) is not specified, then it will be taken to be equal to the frequency of the Reference_Image
 Note: an odd image dimension is required!</p>
 <dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>EpsilonScreen</strong> (<em>2D ndarray</em>) – Optionally, the scattering screen can be specified. If none is given, a random one will be generated.</p></li>
 <li><p><strong>Reference_Image</strong> (<a class="reference internal" href="image.html#ehtim.image.Image" title="ehtim.image.Image"><em>Image</em></a>) – The reference image.</p></li>
@@ -355,46 +358,46 @@ Note: an odd image dimension is required!</p>
 <li><p><strong>sqrtQ_init</strong> (<em>2D ndarray</em>) – The used can optionally pass a precomputed array of the square root of the power spectrum.</p></li>
 </ul>
 </dd>
-<dt class="field-even">Returns</dt>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
 <dd class="field-even"><p>The phase screen.</p>
 </dd>
-<dt class="field-odd">Return type</dt>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
 <dd class="field-odd"><p>phi_Image (<a class="reference internal" href="image.html#ehtim.image.Image" title="ehtim.image.Image">Image</a>)</p>
 </dd>
 </dl>
 </dd></dl>
 
 <dl class="py method">
-<dt id="ehtim.scattering.stochastic_optics.ScatteringModel.Q">
-<code class="sig-name descname">Q</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">qx</span></em>, <em class="sig-param"><span class="n">qy</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/scattering/stochastic_optics.html#ScatteringModel.Q"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.scattering.stochastic_optics.ScatteringModel.Q" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="ehtim.scattering.stochastic_optics.ScatteringModel.Q">
+<span class="sig-name descname"><span class="pre">Q</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">qx</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">qy</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/scattering/stochastic_optics.html#ScatteringModel.Q"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ehtim.scattering.stochastic_optics.ScatteringModel.Q" title="Permalink to this definition"></a></dt>
 <dd><p>Computes the power spectrum of the scattering model at a wavenumber {qx,qy} (in 1/cm).
 The power spectrum is part of what defines the scattering model (along with Dphi).
 Q(qx,qy) is independent of the observing wavelength.</p>
 <dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>qx</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.13)"><em>float</em></a>) – x coordinate of the wavenumber in 1/cm.</p></li>
 <li><p><strong>qy</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.13)"><em>float</em></a>) – y coordinate of the wavenumber in 1/cm.</p></li>
 </ul>
 </dd>
-<dt class="field-even">Returns</dt>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
 <dd class="field-even"><p>The power spectrum Q(qx,qy)</p>
 </dd>
-<dt class="field-odd">Return type</dt>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
 <dd class="field-odd"><p>(<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.13)">float</a>)</p>
 </dd>
 </dl>
 </dd></dl>
 
 <dl class="py method">
-<dt id="ehtim.scattering.stochastic_optics.ScatteringModel.Scatter">
-<code class="sig-name descname">Scatter</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">Unscattered_Image</span></em>, <em class="sig-param"><span class="n">Epsilon_Screen</span><span class="o">=</span><span class="default_value">array([], dtype=float64)</span></em>, <em class="sig-param"><span class="n">obs_frequency_Hz</span><span class="o">=</span><span class="default_value">0.0</span></em>, <em class="sig-param"><span class="n">Vx_km_per_s</span><span class="o">=</span><span class="default_value">50.0</span></em>, <em class="sig-param"><span class="n">Vy_km_per_s</span><span class="o">=</span><span class="default_value">0.0</span></em>, <em class="sig-param"><span class="n">t_hr</span><span class="o">=</span><span class="default_value">0.0</span></em>, <em class="sig-param"><span class="n">ea_ker</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">sqrtQ</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">Linearized_Approximation</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">DisplayImage</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">Force_Positivity</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">use_approximate_form</span><span class="o">=</span><span class="default_value">True</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/scattering/stochastic_optics.html#ScatteringModel.Scatter"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.scattering.stochastic_optics.ScatteringModel.Scatter" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="ehtim.scattering.stochastic_optics.ScatteringModel.Scatter">
+<span class="sig-name descname"><span class="pre">Scatter</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">Unscattered_Image</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">Epsilon_Screen</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">array([],</span> <span class="pre">dtype=float64)</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">obs_frequency_Hz</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">Vx_km_per_s</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">50.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">Vy_km_per_s</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">t_hr</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ea_ker</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sqrtQ</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">Linearized_Approximation</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">DisplayImage</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">Force_Positivity</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">use_approximate_form</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/scattering/stochastic_optics.html#ScatteringModel.Scatter"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ehtim.scattering.stochastic_optics.ScatteringModel.Scatter" title="Permalink to this definition"></a></dt>
 <dd><p>Scatter an image using the specified epsilon screen.
 All lengths should be specified in centimeters
 If the observing frequency (obs_frequency_Hz) is not specified, then it will be taken to be equal to the frequency of the Unscattered_Image
 Note: an odd image dimension is required!</p>
 <dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>Unscattered_Image</strong> (<a class="reference internal" href="image.html#ehtim.image.Image" title="ehtim.image.Image"><em>Image</em></a>) – The unscattered image.</p></li>
 <li><p><strong>Epsilon_Screen</strong> (<em>2D ndarray</em>) – Optionally, the scattering screen can be specified. If none is given, a random one will be generated.</p></li>
@@ -410,24 +413,24 @@ Note: an odd image dimension is required!</p>
 <li><p><strong>Return_Image_List</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.13)"><em>bool</em></a>) – If True, returns a list of the scattered frames. If False, returns a movie object.</p></li>
 </ul>
 </dd>
-<dt class="field-even">Returns</dt>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
 <dd class="field-even"><p>The scattered image.</p>
 </dd>
-<dt class="field-odd">Return type</dt>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
 <dd class="field-odd"><p>AI_Image (<a class="reference internal" href="image.html#ehtim.image.Image" title="ehtim.image.Image">Image</a>)</p>
 </dd>
 </dl>
 </dd></dl>
 
 <dl class="py method">
-<dt id="ehtim.scattering.stochastic_optics.ScatteringModel.Scatter2">
-<code class="sig-name descname">Scatter2</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">args</span></em>, <em class="sig-param"><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/scattering/stochastic_optics.html#ScatteringModel.Scatter2"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.scattering.stochastic_optics.ScatteringModel.Scatter2" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="ehtim.scattering.stochastic_optics.ScatteringModel.Scatter2">
+<span class="sig-name descname"><span class="pre">Scatter2</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/scattering/stochastic_optics.html#ScatteringModel.Scatter2"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ehtim.scattering.stochastic_optics.ScatteringModel.Scatter2" title="Permalink to this definition"></a></dt>
 <dd><p>Call self.Scatter with expanded args and kwargs.</p>
 </dd></dl>
 
 <dl class="py method">
-<dt id="ehtim.scattering.stochastic_optics.ScatteringModel.Scatter_Movie">
-<code class="sig-name descname">Scatter_Movie</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">Unscattered_Movie</span></em>, <em class="sig-param"><span class="n">Epsilon_Screen</span><span class="o">=</span><span class="default_value">array([], dtype=float64)</span></em>, <em class="sig-param"><span class="n">obs_frequency_Hz</span><span class="o">=</span><span class="default_value">0.0</span></em>, <em class="sig-param"><span class="n">Vx_km_per_s</span><span class="o">=</span><span class="default_value">50.0</span></em>, <em class="sig-param"><span class="n">Vy_km_per_s</span><span class="o">=</span><span class="default_value">0.0</span></em>, <em class="sig-param"><span class="n">framedur_sec</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">N_frames</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">ea_ker</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">sqrtQ</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">Linearized_Approximation</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">Force_Positivity</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">Return_Image_List</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">processes</span><span class="o">=</span><span class="default_value">0</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/scattering/stochastic_optics.html#ScatteringModel.Scatter_Movie"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.scattering.stochastic_optics.ScatteringModel.Scatter_Movie" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="ehtim.scattering.stochastic_optics.ScatteringModel.Scatter_Movie">
+<span class="sig-name descname"><span class="pre">Scatter_Movie</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">Unscattered_Movie</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">Epsilon_Screen</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">array([],</span> <span class="pre">dtype=float64)</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">obs_frequency_Hz</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">Vx_km_per_s</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">50.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">Vy_km_per_s</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">framedur_sec</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">N_frames</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ea_ker</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sqrtQ</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">Linearized_Approximation</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">Force_Positivity</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">Return_Image_List</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">processes</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/scattering/stochastic_optics.html#ScatteringModel.Scatter_Movie"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ehtim.scattering.stochastic_optics.ScatteringModel.Scatter_Movie" title="Permalink to this definition"></a></dt>
 <dd><p>Scatter a movie using the specified epsilon screen. The movie can either be a movie object, an image list, or a static image
 If scattering a list of images or static image, the frame duration in seconds (framedur_sec) must be specified
 If scattering a static image, the total number of frames must be specified (N_frames)
@@ -435,7 +438,7 @@ All lengths should be specified in centimeters
 If the observing frequency (obs_frequency_Hz) is not specified, then it will be taken to be equal to the frequency of the Unscattered_Movie
 Note: an odd image dimension is required!</p>
 <dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>Unscattered_Movie</strong> – This can be a movie object, an image list, or a static image</p></li>
 <li><p><strong>Epsilon_Screen</strong> (<em>2D ndarray</em>) – Optionally, the scattering screen can be specified. If none is given, a random one will be generated.</p></li>
@@ -452,44 +455,44 @@ Note: an odd image dimension is required!</p>
 <li><p><strong>processes</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.13)"><em>int</em></a>) – Number of cores to use in multiprocessing. Default value (0) means no multiprocessing. Uses all available cores if processes &lt; 0.</p></li>
 </ul>
 </dd>
-<dt class="field-even">Returns</dt>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
 <dd class="field-even"><p>Either a movie object or a list of images, depending on the flag Return_Image_List.</p>
 </dd>
-<dt class="field-odd">Return type</dt>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
 <dd class="field-odd"><p>Scattered_Movie</p>
 </dd>
 </dl>
 </dd></dl>
 
 <dl class="py method">
-<dt id="ehtim.scattering.stochastic_optics.ScatteringModel.dDphi_dz">
-<code class="sig-name descname">dDphi_dz</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">r</span></em>, <em class="sig-param"><span class="n">phi</span></em>, <em class="sig-param"><span class="n">phi_q</span></em>, <em class="sig-param"><span class="n">wavelength</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/scattering/stochastic_optics.html#ScatteringModel.dDphi_dz"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.scattering.stochastic_optics.ScatteringModel.dDphi_dz" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="ehtim.scattering.stochastic_optics.ScatteringModel.dDphi_dz">
+<span class="sig-name descname"><span class="pre">dDphi_dz</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">r</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">phi</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">phi_q</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">wavelength</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/scattering/stochastic_optics.html#ScatteringModel.dDphi_dz"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ehtim.scattering.stochastic_optics.ScatteringModel.dDphi_dz" title="Permalink to this definition"></a></dt>
 <dd><p>differential contribution to the phase structure function</p>
 </dd></dl>
 
 <dl class="py method">
-<dt id="id0">
-<code class="sig-name descname">rF</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">wavelength</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/scattering/stochastic_optics.html#ScatteringModel.rF"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#id0" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="id0">
+<span class="sig-name descname"><span class="pre">rF</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">wavelength</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/scattering/stochastic_optics.html#ScatteringModel.rF"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#id0" title="Permalink to this definition"></a></dt>
 <dd><p>Returns the Fresnel scale [cm] of the scattering screen at the specified wavelength [cm].</p>
 <dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><p><strong>wavelength</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.13)"><em>float</em></a>) – The desired wavelength [cm]</p>
 </dd>
-<dt class="field-even">Returns</dt>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
 <dd class="field-even"><p>The Fresnel scale [cm]</p>
 </dd>
-<dt class="field-odd">Return type</dt>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
 <dd class="field-odd"><p>rF (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.13)">float</a>)</p>
 </dd>
 </dl>
 </dd></dl>
 
 <dl class="py method">
-<dt id="ehtim.scattering.stochastic_optics.ScatteringModel.sqrtQ_Matrix">
-<code class="sig-name descname">sqrtQ_Matrix</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">Reference_Image</span></em>, <em class="sig-param"><span class="n">Vx_km_per_s</span><span class="o">=</span><span class="default_value">50.0</span></em>, <em class="sig-param"><span class="n">Vy_km_per_s</span><span class="o">=</span><span class="default_value">0.0</span></em>, <em class="sig-param"><span class="n">t_hr</span><span class="o">=</span><span class="default_value">0.0</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/scattering/stochastic_optics.html#ScatteringModel.sqrtQ_Matrix"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.scattering.stochastic_optics.ScatteringModel.sqrtQ_Matrix" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="ehtim.scattering.stochastic_optics.ScatteringModel.sqrtQ_Matrix">
+<span class="sig-name descname"><span class="pre">sqrtQ_Matrix</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">Reference_Image</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">Vx_km_per_s</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">50.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">Vy_km_per_s</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">t_hr</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/scattering/stochastic_optics.html#ScatteringModel.sqrtQ_Matrix"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ehtim.scattering.stochastic_optics.ScatteringModel.sqrtQ_Matrix" title="Permalink to this definition"></a></dt>
 <dd><p>Computes the square root of the power spectrum on a discrete grid. Because translation of the screen is done most conveniently in Fourier space, a screen translation can also be included.</p>
 <dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>Reference_Image</strong> (<a class="reference internal" href="image.html#ehtim.image.Image" title="ehtim.image.Image"><em>Image</em></a>) – Reference image to determine image and pixel dimensions and wavelength.</p></li>
 <li><p><strong>Vx_km_per_s</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.13)"><em>float</em></a>) – Velocity of the scattering screen in the x direction (toward East) in km/s.</p></li>
@@ -497,10 +500,10 @@ Note: an odd image dimension is required!</p>
 <li><p><strong>t_hr</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.13)"><em>float</em></a>) – The current time of the scattering in hours.</p></li>
 </ul>
 </dd>
-<dt class="field-even">Returns</dt>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
 <dd class="field-even"><p>The square root of the power spectrum of the screen with an additional phase for rotation of the screen.</p>
 </dd>
-<dt class="field-odd">Return type</dt>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
 <dd class="field-odd"><p>sqrtQ (2D complex ndarray)</p>
 </dd>
 </dl>
@@ -508,7 +511,7 @@ Note: an odd image dimension is required!</p>
 
 </dd></dl>
 
-</div>
+</section>
 
 
            </div>

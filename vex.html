@@ -1,18 +1,21 @@
 <!DOCTYPE html>
 <html class="writer-html5" lang="en" >
 <head>
-  <meta charset="utf-8" />
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
+
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Vex &mdash; ehtim 1.2.6 documentation</title><link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
-    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+  <title>Vex &mdash; ehtim 1.2.6 documentation</title>
+      <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
   <!--[if lt IE 9]>
     <script src="_static/js/html5shiv.min.js"></script>
   <![endif]-->
-  <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+  
+        <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
         <script src="_static/jquery.js"></script>
         <script src="_static/underscore.js"></script>
+        <script src="_static/_sphinx_javascript_frameworks_compat.js"></script>
         <script src="_static/doctools.js"></script>
-        <script src="_static/language_data.js"></script>
     <script src="_static/js/theme.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
@@ -37,7 +40,7 @@
   </form>
 </div>
         </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
-              <p class="caption"><span class="caption-text">Contents:</span></p>
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
 <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="image.html">Image</a></li>
 <li class="toctree-l1"><a class="reference internal" href="array.html">Array</a></li>
@@ -77,108 +80,108 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
              
-  <span class="target" id="module-vex"></span><div class="section" id="vex">
-<span id="id1"></span><h1>Vex<a class="headerlink" href="#vex" title="Permalink to this headline">¶</a></h1>
+  <span class="target" id="module-vex"></span><section id="vex">
+<span id="id1"></span><h1>Vex<a class="headerlink" href="#vex" title="Permalink to this heading"></a></h1>
 <span class="target" id="module-ehtim.vex"></span><dl class="py class">
-<dt id="ehtim.vex.Vex">
-<em class="property">class </em><code class="sig-prename descclassname">ehtim.vex.</code><code class="sig-name descname">Vex</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">filename</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/vex.html#Vex"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.vex.Vex" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="ehtim.vex.Vex">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">ehtim.vex.</span></span><span class="sig-name descname"><span class="pre">Vex</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">filename</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/vex.html#Vex"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ehtim.vex.Vex" title="Permalink to this definition"></a></dt>
 <dd><p>Read in observing schedule data from .vex files.
 Assumes there is only 1 MODE in vex file</p>
 <dl class="py attribute">
-<dt id="ehtim.vex.Vex.filename">
-<code class="sig-name descname">filename</code><a class="headerlink" href="#ehtim.vex.Vex.filename" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="ehtim.vex.Vex.filename">
+<span class="sig-name descname"><span class="pre">filename</span></span><a class="headerlink" href="#ehtim.vex.Vex.filename" title="Permalink to this definition"></a></dt>
 <dd><p>The .vex filename.</p>
 <dl class="field-list simple">
-<dt class="field-odd">Type</dt>
+<dt class="field-odd">Type<span class="colon">:</span></dt>
 <dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)">str</a></p>
 </dd>
 </dl>
 </dd></dl>
 
 <dl class="py attribute">
-<dt id="ehtim.vex.Vex.source">
-<code class="sig-name descname">source</code><a class="headerlink" href="#ehtim.vex.Vex.source" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="ehtim.vex.Vex.source">
+<span class="sig-name descname"><span class="pre">source</span></span><a class="headerlink" href="#ehtim.vex.Vex.source" title="Permalink to this definition"></a></dt>
 <dd><p>The source name.</p>
 <dl class="field-list simple">
-<dt class="field-odd">Type</dt>
+<dt class="field-odd">Type<span class="colon">:</span></dt>
 <dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)">str</a></p>
 </dd>
 </dl>
 </dd></dl>
 
 <dl class="py attribute">
-<dt id="ehtim.vex.Vex.metalist">
-<code class="sig-name descname">metalist</code><a class="headerlink" href="#ehtim.vex.Vex.metalist" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="ehtim.vex.Vex.metalist">
+<span class="sig-name descname"><span class="pre">metalist</span></span><a class="headerlink" href="#ehtim.vex.Vex.metalist" title="Permalink to this definition"></a></dt>
 <dd><p>The observation information.</p>
 <dl class="field-list simple">
-<dt class="field-odd">Type</dt>
+<dt class="field-odd">Type<span class="colon">:</span></dt>
 <dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.13)">list</a></p>
 </dd>
 </dl>
 </dd></dl>
 
 <dl class="py attribute">
-<dt id="ehtim.vex.Vex.sched">
-<code class="sig-name descname">sched</code><a class="headerlink" href="#ehtim.vex.Vex.sched" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="ehtim.vex.Vex.sched">
+<span class="sig-name descname"><span class="pre">sched</span></span><a class="headerlink" href="#ehtim.vex.Vex.sched" title="Permalink to this definition"></a></dt>
 <dd><p>The schedule information.</p>
 <dl class="field-list simple">
-<dt class="field-odd">Type</dt>
+<dt class="field-odd">Type<span class="colon">:</span></dt>
 <dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.13)">list</a></p>
 </dd>
 </dl>
 </dd></dl>
 
 <dl class="py attribute">
-<dt id="ehtim.vex.Vex.array">
-<code class="sig-name descname">array</code><a class="headerlink" href="#ehtim.vex.Vex.array" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="ehtim.vex.Vex.array">
+<span class="sig-name descname"><span class="pre">array</span></span><a class="headerlink" href="#ehtim.vex.Vex.array" title="Permalink to this definition"></a></dt>
 <dd><p>an Array object of sites.</p>
 <dl class="field-list simple">
-<dt class="field-odd">Type</dt>
+<dt class="field-odd">Type<span class="colon">:</span></dt>
 <dd class="field-odd"><p><a class="reference internal" href="array.html#ehtim.array.Array" title="ehtim.array.Array">Array</a></p>
 </dd>
 </dl>
 </dd></dl>
 
 <dl class="py method">
-<dt id="ehtim.vex.Vex.find_variable">
-<code class="sig-name descname">find_variable</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">vname</span></em>, <em class="sig-param"><span class="n">line</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/vex.html#Vex.find_variable"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.vex.Vex.find_variable" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="ehtim.vex.Vex.find_variable">
+<span class="sig-name descname"><span class="pre">find_variable</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">vname</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">line</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/vex.html#Vex.find_variable"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ehtim.vex.Vex.find_variable" title="Permalink to this definition"></a></dt>
 <dd><p>Function to find a variable ‘vname’ in a line.</p>
 </dd></dl>
 
 <dl class="py method">
-<dt id="ehtim.vex.Vex.get_SEFD">
-<code class="sig-name descname">get_SEFD</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">station</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/vex.html#Vex.get_SEFD"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.vex.Vex.get_SEFD" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="ehtim.vex.Vex.get_SEFD">
+<span class="sig-name descname"><span class="pre">get_SEFD</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">station</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/vex.html#Vex.get_SEFD"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ehtim.vex.Vex.get_SEFD" title="Permalink to this definition"></a></dt>
 <dd><p>Find SEFD for a given station.</p>
 </dd></dl>
 
 <dl class="py method">
-<dt id="ehtim.vex.Vex.get_obs_timerange">
-<code class="sig-name descname">get_obs_timerange</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">source</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/vex.html#Vex.get_obs_timerange"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.vex.Vex.get_obs_timerange" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="ehtim.vex.Vex.get_obs_timerange">
+<span class="sig-name descname"><span class="pre">get_obs_timerange</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">source</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/vex.html#Vex.get_obs_timerange"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ehtim.vex.Vex.get_obs_timerange" title="Permalink to this definition"></a></dt>
 <dd><p>Find the time that any station starts observing the source in MJD,
 and the time that the last station stops observing the source.</p>
 </dd></dl>
 
 <dl class="py method">
-<dt id="ehtim.vex.Vex.get_sector">
-<code class="sig-name descname">get_sector</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">sname</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/vex.html#Vex.get_sector"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.vex.Vex.get_sector" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="ehtim.vex.Vex.get_sector">
+<span class="sig-name descname"><span class="pre">get_sector</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">sname</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/vex.html#Vex.get_sector"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ehtim.vex.Vex.get_sector" title="Permalink to this definition"></a></dt>
 <dd><p>Obtain a desired sector from ‘metalist’.</p>
 </dd></dl>
 
 <dl class="py method">
-<dt id="ehtim.vex.Vex.get_variable">
-<code class="sig-name descname">get_variable</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">vname</span></em>, <em class="sig-param"><span class="n">line</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/vex.html#Vex.get_variable"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.vex.Vex.get_variable" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="ehtim.vex.Vex.get_variable">
+<span class="sig-name descname"><span class="pre">get_variable</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">vname</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">line</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/vex.html#Vex.get_variable"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ehtim.vex.Vex.get_variable" title="Permalink to this definition"></a></dt>
 <dd><p>Function to get a value of ‘vname’ in a line.</p>
 </dd></dl>
 
 </dd></dl>
 
 <dl class="py function">
-<dt id="ehtim.vex.vexdate_to_MJD_hr">
-<code class="sig-prename descclassname">ehtim.vex.</code><code class="sig-name descname">vexdate_to_MJD_hr</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">vexdate</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/vex.html#vexdate_to_MJD_hr"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.vex.vexdate_to_MJD_hr" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="ehtim.vex.vexdate_to_MJD_hr">
+<span class="sig-prename descclassname"><span class="pre">ehtim.vex.</span></span><span class="sig-name descname"><span class="pre">vexdate_to_MJD_hr</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">vexdate</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/vex.html#vexdate_to_MJD_hr"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ehtim.vex.vexdate_to_MJD_hr" title="Permalink to this definition"></a></dt>
 <dd><p>Find the integer MJD and UT hour from vex format date.</p>
 </dd></dl>
 
-</div>
+</section>
 
 
            </div>

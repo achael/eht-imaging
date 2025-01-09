@@ -1,18 +1,21 @@
 <!DOCTYPE html>
 <html class="writer-html5" lang="en" >
 <head>
-  <meta charset="utf-8" />
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
+
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Movie &mdash; ehtim 1.2.6 documentation</title><link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
-    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+  <title>Movie &mdash; ehtim 1.2.6 documentation</title>
+      <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
   <!--[if lt IE 9]>
     <script src="_static/js/html5shiv.min.js"></script>
   <![endif]-->
-  <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+  
+        <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
         <script src="_static/jquery.js"></script>
         <script src="_static/underscore.js"></script>
+        <script src="_static/_sphinx_javascript_frameworks_compat.js"></script>
         <script src="_static/doctools.js"></script>
-        <script src="_static/language_data.js"></script>
     <script src="_static/js/theme.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
@@ -38,7 +41,7 @@
   </form>
 </div>
         </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
-              <p class="caption"><span class="caption-text">Contents:</span></p>
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
 <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="image.html">Image</a></li>
 <li class="toctree-l1"><a class="reference internal" href="array.html">Array</a></li>
@@ -78,184 +81,184 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
              
-  <span class="target" id="module-movie"></span><div class="section" id="movie">
-<span id="id1"></span><h1>Movie<a class="headerlink" href="#movie" title="Permalink to this headline">¶</a></h1>
+  <span class="target" id="module-movie"></span><section id="movie">
+<span id="id1"></span><h1>Movie<a class="headerlink" href="#movie" title="Permalink to this heading"></a></h1>
 <span class="target" id="module-ehtim.movie"></span><dl class="py class">
-<dt id="ehtim.movie.Movie">
-<em class="property">class </em><code class="sig-prename descclassname">ehtim.movie.</code><code class="sig-name descname">Movie</code><span class="sig-paren">(</span><em class="sig-param">frames</em>, <em class="sig-param">times</em>, <em class="sig-param">psize</em>, <em class="sig-param">ra</em>, <em class="sig-param">dec</em>, <em class="sig-param">rf=230000000000.0</em>, <em class="sig-param">polrep='stokes'</em>, <em class="sig-param">pol_prim=None</em>, <em class="sig-param">pulse=&lt;function trianglePulse2D&gt;</em>, <em class="sig-param">source='SgrA'</em>, <em class="sig-param">mjd=51544</em>, <em class="sig-param">bounds_error=True</em>, <em class="sig-param">interp='linear'</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/movie.html#Movie"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.movie.Movie" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="ehtim.movie.Movie">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">ehtim.movie.</span></span><span class="sig-name descname"><span class="pre">Movie</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">frames</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">times</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">psize</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ra</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dec</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rf=230000000000.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">polrep='stokes'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pol_prim=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pulse=&lt;function</span> <span class="pre">trianglePulse2D&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">source='SgrA'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mjd=51544</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">bounds_error=True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">interp='linear'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/movie.html#Movie"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ehtim.movie.Movie" title="Permalink to this definition"></a></dt>
 <dd><p>A polarimetric movie (in units of Jy/pixel).</p>
 <dl class="py attribute">
-<dt id="ehtim.movie.Movie.pulse">
-<code class="sig-name descname">pulse</code><a class="headerlink" href="#ehtim.movie.Movie.pulse" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="ehtim.movie.Movie.pulse">
+<span class="sig-name descname"><span class="pre">pulse</span></span><a class="headerlink" href="#ehtim.movie.Movie.pulse" title="Permalink to this definition"></a></dt>
 <dd><p>The function convolved with the pixel values for continuous image</p>
 <dl class="field-list simple">
-<dt class="field-odd">Type</dt>
+<dt class="field-odd">Type<span class="colon">:</span></dt>
 <dd class="field-odd"><p>function</p>
 </dd>
 </dl>
 </dd></dl>
 
 <dl class="py attribute">
-<dt id="ehtim.movie.Movie.psize">
-<code class="sig-name descname">psize</code><a class="headerlink" href="#ehtim.movie.Movie.psize" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="ehtim.movie.Movie.psize">
+<span class="sig-name descname"><span class="pre">psize</span></span><a class="headerlink" href="#ehtim.movie.Movie.psize" title="Permalink to this definition"></a></dt>
 <dd><p>The pixel dimension in radians</p>
 <dl class="field-list simple">
-<dt class="field-odd">Type</dt>
+<dt class="field-odd">Type<span class="colon">:</span></dt>
 <dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.13)">float</a></p>
 </dd>
 </dl>
 </dd></dl>
 
 <dl class="py attribute">
-<dt id="ehtim.movie.Movie.xdim">
-<code class="sig-name descname">xdim</code><a class="headerlink" href="#ehtim.movie.Movie.xdim" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="ehtim.movie.Movie.xdim">
+<span class="sig-name descname"><span class="pre">xdim</span></span><a class="headerlink" href="#ehtim.movie.Movie.xdim" title="Permalink to this definition"></a></dt>
 <dd><p>The number of pixels along the x dimension</p>
 <dl class="field-list simple">
-<dt class="field-odd">Type</dt>
+<dt class="field-odd">Type<span class="colon">:</span></dt>
 <dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.13)">int</a></p>
 </dd>
 </dl>
 </dd></dl>
 
 <dl class="py attribute">
-<dt id="ehtim.movie.Movie.ydim">
-<code class="sig-name descname">ydim</code><a class="headerlink" href="#ehtim.movie.Movie.ydim" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="ehtim.movie.Movie.ydim">
+<span class="sig-name descname"><span class="pre">ydim</span></span><a class="headerlink" href="#ehtim.movie.Movie.ydim" title="Permalink to this definition"></a></dt>
 <dd><p>The number of pixels along the y dimension</p>
 <dl class="field-list simple">
-<dt class="field-odd">Type</dt>
+<dt class="field-odd">Type<span class="colon">:</span></dt>
 <dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.13)">int</a></p>
 </dd>
 </dl>
 </dd></dl>
 
 <dl class="py attribute">
-<dt id="ehtim.movie.Movie.mjd">
-<code class="sig-name descname">mjd</code><a class="headerlink" href="#ehtim.movie.Movie.mjd" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="ehtim.movie.Movie.mjd">
+<span class="sig-name descname"><span class="pre">mjd</span></span><a class="headerlink" href="#ehtim.movie.Movie.mjd" title="Permalink to this definition"></a></dt>
 <dd><p>The integer MJD of the image</p>
 <dl class="field-list simple">
-<dt class="field-odd">Type</dt>
+<dt class="field-odd">Type<span class="colon">:</span></dt>
 <dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.13)">int</a></p>
 </dd>
 </dl>
 </dd></dl>
 
 <dl class="py attribute">
-<dt id="ehtim.movie.Movie.source">
-<code class="sig-name descname">source</code><a class="headerlink" href="#ehtim.movie.Movie.source" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="ehtim.movie.Movie.source">
+<span class="sig-name descname"><span class="pre">source</span></span><a class="headerlink" href="#ehtim.movie.Movie.source" title="Permalink to this definition"></a></dt>
 <dd><p>The astrophysical source name</p>
 <dl class="field-list simple">
-<dt class="field-odd">Type</dt>
+<dt class="field-odd">Type<span class="colon">:</span></dt>
 <dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)">str</a></p>
 </dd>
 </dl>
 </dd></dl>
 
 <dl class="py attribute">
-<dt id="ehtim.movie.Movie.ra">
-<code class="sig-name descname">ra</code><a class="headerlink" href="#ehtim.movie.Movie.ra" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="ehtim.movie.Movie.ra">
+<span class="sig-name descname"><span class="pre">ra</span></span><a class="headerlink" href="#ehtim.movie.Movie.ra" title="Permalink to this definition"></a></dt>
 <dd><p>The source Right Ascension in fractional hours</p>
 <dl class="field-list simple">
-<dt class="field-odd">Type</dt>
+<dt class="field-odd">Type<span class="colon">:</span></dt>
 <dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.13)">float</a></p>
 </dd>
 </dl>
 </dd></dl>
 
 <dl class="py attribute">
-<dt id="ehtim.movie.Movie.dec">
-<code class="sig-name descname">dec</code><a class="headerlink" href="#ehtim.movie.Movie.dec" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="ehtim.movie.Movie.dec">
+<span class="sig-name descname"><span class="pre">dec</span></span><a class="headerlink" href="#ehtim.movie.Movie.dec" title="Permalink to this definition"></a></dt>
 <dd><p>The source declination in fractional degrees</p>
 <dl class="field-list simple">
-<dt class="field-odd">Type</dt>
+<dt class="field-odd">Type<span class="colon">:</span></dt>
 <dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.13)">float</a></p>
 </dd>
 </dl>
 </dd></dl>
 
 <dl class="py attribute">
-<dt id="ehtim.movie.Movie.rf">
-<code class="sig-name descname">rf</code><a class="headerlink" href="#ehtim.movie.Movie.rf" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="ehtim.movie.Movie.rf">
+<span class="sig-name descname"><span class="pre">rf</span></span><a class="headerlink" href="#ehtim.movie.Movie.rf" title="Permalink to this definition"></a></dt>
 <dd><p>The image frequency in Hz</p>
 <dl class="field-list simple">
-<dt class="field-odd">Type</dt>
+<dt class="field-odd">Type<span class="colon">:</span></dt>
 <dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.13)">float</a></p>
 </dd>
 </dl>
 </dd></dl>
 
 <dl class="py attribute">
-<dt id="ehtim.movie.Movie.polrep">
-<code class="sig-name descname">polrep</code><a class="headerlink" href="#ehtim.movie.Movie.polrep" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="ehtim.movie.Movie.polrep">
+<span class="sig-name descname"><span class="pre">polrep</span></span><a class="headerlink" href="#ehtim.movie.Movie.polrep" title="Permalink to this definition"></a></dt>
 <dd><p>polarization representation, either ‘stokes’ or ‘circ’</p>
 <dl class="field-list simple">
-<dt class="field-odd">Type</dt>
+<dt class="field-odd">Type<span class="colon">:</span></dt>
 <dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)">str</a></p>
 </dd>
 </dl>
 </dd></dl>
 
 <dl class="py attribute">
-<dt id="ehtim.movie.Movie.pol_prim">
-<code class="sig-name descname">pol_prim</code><a class="headerlink" href="#ehtim.movie.Movie.pol_prim" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="ehtim.movie.Movie.pol_prim">
+<span class="sig-name descname"><span class="pre">pol_prim</span></span><a class="headerlink" href="#ehtim.movie.Movie.pol_prim" title="Permalink to this definition"></a></dt>
 <dd><p>The default image: I,Q,U or V for Stokes, or RR,LL,LR,RL for Circular</p>
 <dl class="field-list simple">
-<dt class="field-odd">Type</dt>
+<dt class="field-odd">Type<span class="colon">:</span></dt>
 <dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)">str</a></p>
 </dd>
 </dl>
 </dd></dl>
 
 <dl class="py attribute">
-<dt id="ehtim.movie.Movie.interp">
-<code class="sig-name descname">interp</code><a class="headerlink" href="#ehtim.movie.Movie.interp" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="ehtim.movie.Movie.interp">
+<span class="sig-name descname"><span class="pre">interp</span></span><a class="headerlink" href="#ehtim.movie.Movie.interp" title="Permalink to this definition"></a></dt>
 <dd><p>Interpolation method, for scipy.interpolate.interp1d ‘kind’ keyword
 (e.g. ‘linear’, ‘nearest’, ‘quadratic’, ‘cubic’, ‘previous’, ‘next’…)</p>
 <dl class="field-list simple">
-<dt class="field-odd">Type</dt>
+<dt class="field-odd">Type<span class="colon">:</span></dt>
 <dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)">str</a></p>
 </dd>
 </dl>
 </dd></dl>
 
 <dl class="py attribute">
-<dt id="ehtim.movie.Movie.bounds_error">
-<code class="sig-name descname">bounds_error</code><a class="headerlink" href="#ehtim.movie.Movie.bounds_error" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="ehtim.movie.Movie.bounds_error">
+<span class="sig-name descname"><span class="pre">bounds_error</span></span><a class="headerlink" href="#ehtim.movie.Movie.bounds_error" title="Permalink to this definition"></a></dt>
 <dd><p>if False, return nearest frame when outside [start_hr, stop_hr]</p>
 <dl class="field-list simple">
-<dt class="field-odd">Type</dt>
+<dt class="field-odd">Type<span class="colon">:</span></dt>
 <dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.13)">bool</a></p>
 </dd>
 </dl>
 </dd></dl>
 
 <dl class="py attribute">
-<dt id="ehtim.movie.Movie.times">
-<code class="sig-name descname">times</code><a class="headerlink" href="#ehtim.movie.Movie.times" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="ehtim.movie.Movie.times">
+<span class="sig-name descname"><span class="pre">times</span></span><a class="headerlink" href="#ehtim.movie.Movie.times" title="Permalink to this definition"></a></dt>
 <dd><p>The list of frame time stamps in hours</p>
 <dl class="field-list simple">
-<dt class="field-odd">Type</dt>
+<dt class="field-odd">Type<span class="colon">:</span></dt>
 <dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.13)">list</a></p>
 </dd>
 </dl>
 </dd></dl>
 
 <dl class="py attribute">
-<dt id="ehtim.movie.Movie._movdict">
-<code class="sig-name descname">_movdict</code><a class="headerlink" href="#ehtim.movie.Movie._movdict" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="ehtim.movie.Movie._movdict">
+<span class="sig-name descname"><span class="pre">_movdict</span></span><a class="headerlink" href="#ehtim.movie.Movie._movdict" title="Permalink to this definition"></a></dt>
 <dd><p>The dictionary with the lists of frames</p>
 <dl class="field-list simple">
-<dt class="field-odd">Type</dt>
+<dt class="field-odd">Type<span class="colon">:</span></dt>
 <dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.13)">dict</a></p>
 </dd>
 </dl>
 </dd></dl>
 
 <dl class="py method">
-<dt id="ehtim.movie.Movie.add_pol_movie">
-<code class="sig-name descname">add_pol_movie</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">movie</span></em>, <em class="sig-param"><span class="n">pol</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/movie.html#Movie.add_pol_movie"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.movie.Movie.add_pol_movie" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="ehtim.movie.Movie.add_pol_movie">
+<span class="sig-name descname"><span class="pre">add_pol_movie</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">movie</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pol</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/movie.html#Movie.add_pol_movie"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ehtim.movie.Movie.add_pol_movie" title="Permalink to this definition"></a></dt>
 <dd><p>Add another movie polarization.</p>
 <dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>movie</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.13)"><em>list</em></a>) – list of 2D frames (possibly complex) in a Jy/pixel array</p></li>
 <li><p><strong>pol</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><em>str</em></a>) – The image type: ‘I’,’Q’,’U’,’V’ for stokes, ‘RR’,’LL’,’RL’,’LR’ for circ</p></li>
@@ -265,11 +268,11 @@
 </dd></dl>
 
 <dl class="py method">
-<dt id="ehtim.movie.Movie.add_qu">
-<code class="sig-name descname">add_qu</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">qmovie</span></em>, <em class="sig-param"><span class="n">umovie</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/movie.html#Movie.add_qu"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.movie.Movie.add_qu" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="ehtim.movie.Movie.add_qu">
+<span class="sig-name descname"><span class="pre">add_qu</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">qmovie</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">umovie</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/movie.html#Movie.add_qu"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ehtim.movie.Movie.add_qu" title="Permalink to this definition"></a></dt>
 <dd><p>Add Stokes Q and U movies. self.polrep must be ‘stokes’</p>
 <dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>qmovie</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.13)"><em>list</em></a>) – list of 2D Stokes Q frames in Jy/pixel array</p></li>
 <li><p><strong>umovie</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.13)"><em>list</em></a>) – list of 2D Stokes U frames in Jy/pixel array</p></li>
@@ -280,11 +283,11 @@
 </dd></dl>
 
 <dl class="py method">
-<dt id="ehtim.movie.Movie.add_v">
-<code class="sig-name descname">add_v</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">vmovie</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/movie.html#Movie.add_v"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.movie.Movie.add_v" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="ehtim.movie.Movie.add_v">
+<span class="sig-name descname"><span class="pre">add_v</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">vmovie</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/movie.html#Movie.add_v"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ehtim.movie.Movie.add_v" title="Permalink to this definition"></a></dt>
 <dd><p>Add Stokes V movie. self.polrep must be ‘stokes’</p>
 <dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><p><strong>vmovie</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.13)"><em>list</em></a>) – list of 2D Stokes Q frames in Jy/pixel array</p>
 </dd>
 </dl>
@@ -292,197 +295,197 @@
 </dd></dl>
 
 <dl class="py method">
-<dt id="ehtim.movie.Movie.avg_frame">
-<code class="sig-name descname">avg_frame</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/movie.html#Movie.avg_frame"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.movie.Movie.avg_frame" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="ehtim.movie.Movie.avg_frame">
+<span class="sig-name descname"><span class="pre">avg_frame</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/movie.html#Movie.avg_frame"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ehtim.movie.Movie.avg_frame" title="Permalink to this definition"></a></dt>
 <dd><p>Coherently Average the movie frames into a single image.</p>
 <dl class="field-list simple">
-<dt class="field-odd">Returns</dt>
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
 <dd class="field-odd"><p>averaged image of all frames</p>
 </dd>
-<dt class="field-even">Return type</dt>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
 <dd class="field-even"><p>(<a class="reference internal" href="image.html#ehtim.image.Image" title="ehtim.image.Image">Image</a>)</p>
 </dd>
 </dl>
 </dd></dl>
 
 <dl class="py method">
-<dt id="ehtim.movie.Movie.blur_circ">
-<code class="sig-name descname">blur_circ</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">fwhm_x</span></em>, <em class="sig-param"><span class="n">fwhm_t</span></em>, <em class="sig-param"><span class="n">fwhm_x_pol</span><span class="o">=</span><span class="default_value">0</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/movie.html#Movie.blur_circ"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.movie.Movie.blur_circ" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="ehtim.movie.Movie.blur_circ">
+<span class="sig-name descname"><span class="pre">blur_circ</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">fwhm_x</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fwhm_t</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fwhm_x_pol</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/movie.html#Movie.blur_circ"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ehtim.movie.Movie.blur_circ" title="Permalink to this definition"></a></dt>
 <dd><p>Apply a Gaussian filter to a list of images.</p>
 <dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>fwhm_x</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.13)"><em>float</em></a>) – circular beam size for spatial blurring in radians</p></li>
 <li><p><strong>fwhm_t</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.13)"><em>float</em></a>) – temporal blurring in frames</p></li>
 <li><p><strong>fwhm_x_pol</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.13)"><em>float</em></a>) – circular beam size for Stokes Q,U,V spatial blurring in radians</p></li>
 </ul>
 </dd>
-<dt class="field-even">Returns</dt>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
 <dd class="field-even"><p>output image list</p>
 </dd>
-<dt class="field-odd">Return type</dt>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
 <dd class="field-odd"><p>(<a class="reference internal" href="image.html#ehtim.image.Image" title="ehtim.image.Image">Image</a>)</p>
 </dd>
 </dl>
 </dd></dl>
 
 <dl class="py method">
-<dt id="ehtim.movie.Movie.circ_polfrac_curve">
-<code class="sig-name descname">circ_polfrac_curve</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/movie.html#Movie.circ_polfrac_curve"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.movie.Movie.circ_polfrac_curve" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="ehtim.movie.Movie.circ_polfrac_curve">
+<span class="sig-name descname"><span class="pre">circ_polfrac_curve</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/movie.html#Movie.circ_polfrac_curve"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ehtim.movie.Movie.circ_polfrac_curve" title="Permalink to this definition"></a></dt>
 <dd><p>Return the (signed) total fractional circular polarized flux over time</p>
 <p>Args:</p>
 <dl class="field-list simple">
-<dt class="field-odd">Returns</dt>
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
 <dd class="field-odd"><p>image fractional circular polarized flux per frame</p>
 </dd>
-<dt class="field-even">Return type</dt>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
 <dd class="field-even"><p>(numpy.ndarray)</p>
 </dd>
 </dl>
 </dd></dl>
 
 <dl class="py method">
-<dt id="ehtim.movie.Movie.copy">
-<code class="sig-name descname">copy</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/movie.html#Movie.copy"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.movie.Movie.copy" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="ehtim.movie.Movie.copy">
+<span class="sig-name descname"><span class="pre">copy</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/movie.html#Movie.copy"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ehtim.movie.Movie.copy" title="Permalink to this definition"></a></dt>
 <dd><p>Return a copy of the Movie object.</p>
 <p>Args:</p>
 <dl class="field-list simple">
-<dt class="field-odd">Returns</dt>
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
 <dd class="field-odd"><p>copy of the Image.</p>
 </dd>
-<dt class="field-even">Return type</dt>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
 <dd class="field-even"><p>(<a class="reference internal" href="#ehtim.movie.Movie" title="ehtim.movie.Movie">Movie</a>)</p>
 </dd>
 </dl>
 </dd></dl>
 
 <dl class="py method">
-<dt id="ehtim.movie.Movie.export_mp4">
-<code class="sig-name descname">export_mp4</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">out</span><span class="o">=</span><span class="default_value">'movie.mp4'</span></em>, <em class="sig-param"><span class="n">fps</span><span class="o">=</span><span class="default_value">10</span></em>, <em class="sig-param"><span class="n">dpi</span><span class="o">=</span><span class="default_value">120</span></em>, <em class="sig-param"><span class="n">interp</span><span class="o">=</span><span class="default_value">'gaussian'</span></em>, <em class="sig-param"><span class="n">scale</span><span class="o">=</span><span class="default_value">'lin'</span></em>, <em class="sig-param"><span class="n">dynamic_range</span><span class="o">=</span><span class="default_value">1000.0</span></em>, <em class="sig-param"><span class="n">cfun</span><span class="o">=</span><span class="default_value">'afmhot'</span></em>, <em class="sig-param"><span class="n">nvec</span><span class="o">=</span><span class="default_value">20</span></em>, <em class="sig-param"><span class="n">pcut</span><span class="o">=</span><span class="default_value">0.01</span></em>, <em class="sig-param"><span class="n">plotp</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">gamma</span><span class="o">=</span><span class="default_value">0.5</span></em>, <em class="sig-param"><span class="n">frame_pad_factor</span><span class="o">=</span><span class="default_value">1</span></em>, <em class="sig-param"><span class="n">label_time</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">verbose</span><span class="o">=</span><span class="default_value">False</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/movie.html#Movie.export_mp4"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.movie.Movie.export_mp4" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="ehtim.movie.Movie.export_mp4">
+<span class="sig-name descname"><span class="pre">export_mp4</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">out</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'movie.mp4'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fps</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">10</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dpi</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">120</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">interp</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'gaussian'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">scale</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'lin'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dynamic_range</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1000.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cfun</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'afmhot'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">nvec</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">20</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pcut</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.01</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">plotp</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">gamma</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.5</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">frame_pad_factor</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">label_time</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbose</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/movie.html#Movie.export_mp4"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ehtim.movie.Movie.export_mp4" title="Permalink to this definition"></a></dt>
 <dd><p>Save the Movie to an mp4 file</p>
 </dd></dl>
 
 <dl class="py method">
-<dt id="ehtim.movie.Movie.fovx">
-<code class="sig-name descname">fovx</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/movie.html#Movie.fovx"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.movie.Movie.fovx" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="ehtim.movie.Movie.fovx">
+<span class="sig-name descname"><span class="pre">fovx</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/movie.html#Movie.fovx"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ehtim.movie.Movie.fovx" title="Permalink to this definition"></a></dt>
 <dd><p>Return the movie fov in x direction in radians.</p>
 <p>Args:</p>
 <dl class="field-list simple">
-<dt class="field-odd">Returns</dt>
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
 <dd class="field-odd"><p>movie fov in x direction (radian)</p>
 </dd>
-<dt class="field-even">Return type</dt>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
 <dd class="field-even"><p>(<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.13)">float</a>)</p>
 </dd>
 </dl>
 </dd></dl>
 
 <dl class="py method">
-<dt id="ehtim.movie.Movie.fovy">
-<code class="sig-name descname">fovy</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/movie.html#Movie.fovy"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.movie.Movie.fovy" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="ehtim.movie.Movie.fovy">
+<span class="sig-name descname"><span class="pre">fovy</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/movie.html#Movie.fovy"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ehtim.movie.Movie.fovy" title="Permalink to this definition"></a></dt>
 <dd><p>Returns the movie fov in y direction in radians.</p>
 <p>Args:</p>
 <dl class="field-list simple">
-<dt class="field-odd">Returns</dt>
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
 <dd class="field-odd"><p>movie fov in y direction (radian)</p>
 </dd>
-<dt class="field-even">Return type</dt>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
 <dd class="field-even"><p>(<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.13)">float</a>)</p>
 </dd>
 </dl>
 </dd></dl>
 
 <dl class="py method">
-<dt id="ehtim.movie.Movie.get_frame">
-<code class="sig-name descname">get_frame</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">n</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/movie.html#Movie.get_frame"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.movie.Movie.get_frame" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="ehtim.movie.Movie.get_frame">
+<span class="sig-name descname"><span class="pre">get_frame</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">n</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/movie.html#Movie.get_frame"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ehtim.movie.Movie.get_frame" title="Permalink to this definition"></a></dt>
 <dd><p>Return an Image of the nth frame</p>
 <dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><p><strong>n</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.13)"><em>int</em></a>) – the frame number</p>
 </dd>
-<dt class="field-even">Returns</dt>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
 <dd class="field-even"><p>the Image object of the nth frame</p>
 </dd>
-<dt class="field-odd">Return type</dt>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
 <dd class="field-odd"><p>(<a class="reference internal" href="image.html#ehtim.image.Image" title="ehtim.image.Image">Image</a>)</p>
 </dd>
 </dl>
 </dd></dl>
 
 <dl class="py method">
-<dt id="ehtim.movie.Movie.get_image">
-<code class="sig-name descname">get_image</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">time</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/movie.html#Movie.get_image"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.movie.Movie.get_image" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="ehtim.movie.Movie.get_image">
+<span class="sig-name descname"><span class="pre">get_image</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">time</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/movie.html#Movie.get_image"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ehtim.movie.Movie.get_image" title="Permalink to this definition"></a></dt>
 <dd><p>Return an Image at time</p>
 <dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><p><strong>time</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.13)"><em>float</em></a>) – the time  in hours</p>
 </dd>
-<dt class="field-even">Returns</dt>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
 <dd class="field-even"><p>the Image object at the given time</p>
 </dd>
-<dt class="field-odd">Return type</dt>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
 <dd class="field-odd"><p>(<a class="reference internal" href="image.html#ehtim.image.Image" title="ehtim.image.Image">Image</a>)</p>
 </dd>
 </dl>
 </dd></dl>
 
 <dl class="py method">
-<dt id="ehtim.movie.Movie.im_list">
-<code class="sig-name descname">im_list</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/movie.html#Movie.im_list"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.movie.Movie.im_list" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="ehtim.movie.Movie.im_list">
+<span class="sig-name descname"><span class="pre">im_list</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/movie.html#Movie.im_list"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ehtim.movie.Movie.im_list" title="Permalink to this definition"></a></dt>
 <dd><p>Return a list of the movie frames</p>
 <p>Args:</p>
 <dl class="field-list simple">
-<dt class="field-odd">Returns</dt>
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
 <dd class="field-odd"><p>list of Image objects</p>
 </dd>
-<dt class="field-even">Return type</dt>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
 <dd class="field-even"><p>(<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.13)">list</a>)</p>
 </dd>
 </dl>
 </dd></dl>
 
-<dl class="py method">
-<dt id="ehtim.movie.Movie.lightcurve">
-<em class="property">property </em><code class="sig-name descname">lightcurve</code><a class="headerlink" href="#ehtim.movie.Movie.lightcurve" title="Permalink to this definition">¶</a></dt>
+<dl class="py property">
+<dt class="sig sig-object py" id="ehtim.movie.Movie.lightcurve">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">lightcurve</span></span><a class="headerlink" href="#ehtim.movie.Movie.lightcurve" title="Permalink to this definition"></a></dt>
 <dd><p>Return the total flux over time of the image in Jy.</p>
 <p>Args:</p>
 <dl class="field-list simple">
-<dt class="field-odd">Returns</dt>
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
 <dd class="field-odd"><p>image total flux (Jy) over time</p>
 </dd>
-<dt class="field-even">Return type</dt>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
 <dd class="field-even"><p>(numpy.Array)</p>
 </dd>
 </dl>
 </dd></dl>
 
 <dl class="py method">
-<dt id="ehtim.movie.Movie.lin_polfrac_curve">
-<code class="sig-name descname">lin_polfrac_curve</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/movie.html#Movie.lin_polfrac_curve"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.movie.Movie.lin_polfrac_curve" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="ehtim.movie.Movie.lin_polfrac_curve">
+<span class="sig-name descname"><span class="pre">lin_polfrac_curve</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/movie.html#Movie.lin_polfrac_curve"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ehtim.movie.Movie.lin_polfrac_curve" title="Permalink to this definition"></a></dt>
 <dd><p>Return the total fractional linear polarized flux over time</p>
 <p>Args:</p>
 <dl class="field-list simple">
-<dt class="field-odd">Returns</dt>
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
 <dd class="field-odd"><p>image fractional linear polarized flux per frame</p>
 </dd>
-<dt class="field-even">Return type</dt>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
 <dd class="field-even"><p>(numpy.ndarray)</p>
 </dd>
 </dl>
 </dd></dl>
 
 <dl class="py method">
-<dt id="ehtim.movie.Movie.movie_args">
-<code class="sig-name descname">movie_args</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/movie.html#Movie.movie_args"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.movie.Movie.movie_args" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="ehtim.movie.Movie.movie_args">
+<span class="sig-name descname"><span class="pre">movie_args</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/movie.html#Movie.movie_args"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ehtim.movie.Movie.movie_args" title="Permalink to this definition"></a></dt>
 <dd><p>“Copy arguments for making a  new Movie into a list and dictonary</p>
 </dd></dl>
 
 <dl class="py method">
-<dt id="ehtim.movie.Movie.observe">
-<code class="sig-name descname">observe</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">array</span></em>, <em class="sig-param"><span class="n">tint</span></em>, <em class="sig-param"><span class="n">tadv</span></em>, <em class="sig-param"><span class="n">tstart</span></em>, <em class="sig-param"><span class="n">tstop</span></em>, <em class="sig-param"><span class="n">bw</span></em>, <em class="sig-param"><span class="n">repeat</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">mjd</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">timetype</span><span class="o">=</span><span class="default_value">'UTC'</span></em>, <em class="sig-param"><span class="n">polrep_obs</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">elevmin</span><span class="o">=</span><span class="default_value">10.0</span></em>, <em class="sig-param"><span class="n">elevmax</span><span class="o">=</span><span class="default_value">85.0</span></em>, <em class="sig-param"><span class="n">no_elevcut_space</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">ttype</span><span class="o">=</span><span class="default_value">'nfft'</span></em>, <em class="sig-param"><span class="n">fft_pad_factor</span><span class="o">=</span><span class="default_value">2</span></em>, <em class="sig-param"><span class="n">fix_theta_GMST</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">sgrscat</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">add_th_noise</span><span class="o">=</span><span class="default_value">True</span></em>, <em class="sig-param"><span class="n">jones</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">inv_jones</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">opacitycal</span><span class="o">=</span><span class="default_value">True</span></em>, <em class="sig-param"><span class="n">ampcal</span><span class="o">=</span><span class="default_value">True</span></em>, <em class="sig-param"><span class="n">phasecal</span><span class="o">=</span><span class="default_value">True</span></em>, <em class="sig-param"><span class="n">frcal</span><span class="o">=</span><span class="default_value">True</span></em>, <em class="sig-param"><span class="n">dcal</span><span class="o">=</span><span class="default_value">True</span></em>, <em class="sig-param"><span class="n">rlgaincal</span><span class="o">=</span><span class="default_value">True</span></em>, <em class="sig-param"><span class="n">stabilize_scan_phase</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">stabilize_scan_amp</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">neggains</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">tau</span><span class="o">=</span><span class="default_value">0.1</span></em>, <em class="sig-param"><span class="n">taup</span><span class="o">=</span><span class="default_value">0.1</span></em>, <em class="sig-param"><span class="n">gain_offset</span><span class="o">=</span><span class="default_value">0.1</span></em>, <em class="sig-param"><span class="n">gainp</span><span class="o">=</span><span class="default_value">0.1</span></em>, <em class="sig-param"><span class="n">dterm_offset</span><span class="o">=</span><span class="default_value">0.05</span></em>, <em class="sig-param"><span class="n">rlratio_std</span><span class="o">=</span><span class="default_value">0.0</span></em>, <em class="sig-param"><span class="n">rlphase_std</span><span class="o">=</span><span class="default_value">0.0</span></em>, <em class="sig-param"><span class="n">caltable_path</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">seed</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">sigmat</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">verbose</span><span class="o">=</span><span class="default_value">True</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/movie.html#Movie.observe"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.movie.Movie.observe" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="ehtim.movie.Movie.observe">
+<span class="sig-name descname"><span class="pre">observe</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">array</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tint</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tadv</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tstart</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tstop</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">bw</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">repeat</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mjd</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">timetype</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'UTC'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">polrep_obs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">elevmin</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">10.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">elevmax</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">85.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">no_elevcut_space</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ttype</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'nfft'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fft_pad_factor</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">2</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fix_theta_GMST</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sgrscat</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">add_th_noise</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">jones</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">inv_jones</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">opacitycal</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ampcal</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">phasecal</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">frcal</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dcal</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rlgaincal</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">stabilize_scan_phase</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">stabilize_scan_amp</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">neggains</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tau</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">taup</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">gain_offset</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">gainp</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dterm_offset</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.05</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rlratio_std</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rlphase_std</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">caltable_path</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">seed</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sigmat</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbose</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/movie.html#Movie.observe"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ehtim.movie.Movie.observe" title="Permalink to this definition"></a></dt>
 <dd><p>Generate baselines from an array object and observe the movie.</p>
 <dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>array</strong> (<a class="reference internal" href="array.html#ehtim.array.Array" title="ehtim.array.Array"><em>Array</em></a>) – an array object containing sites with which to generate baselines</p></li>
 <li><p><strong>tint</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.13)"><em>float</em></a>) – the scan integration time in seconds</p></li>
@@ -535,21 +538,21 @@ if sigmat=None then an iid gain noise is applied.</p></li>
 <li><p><strong>verbose</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.13)"><em>bool</em></a>) – print updates and warnings</p></li>
 </ul>
 </dd>
-<dt class="field-even">Returns</dt>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
 <dd class="field-even"><p>an observation object</p>
 </dd>
-<dt class="field-odd">Return type</dt>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
 <dd class="field-odd"><p>(<a class="reference internal" href="obsdata.html#ehtim.obsdata.Obsdata" title="ehtim.obsdata.Obsdata">Obsdata</a>)</p>
 </dd>
 </dl>
 </dd></dl>
 
 <dl class="py method">
-<dt id="ehtim.movie.Movie.observe_same">
-<code class="sig-name descname">observe_same</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">obs_in</span></em>, <em class="sig-param"><span class="n">repeat</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">ttype</span><span class="o">=</span><span class="default_value">'nfft'</span></em>, <em class="sig-param"><span class="n">fft_pad_factor</span><span class="o">=</span><span class="default_value">2</span></em>, <em class="sig-param"><span class="n">sgrscat</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">add_th_noise</span><span class="o">=</span><span class="default_value">True</span></em>, <em class="sig-param"><span class="n">jones</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">inv_jones</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">opacitycal</span><span class="o">=</span><span class="default_value">True</span></em>, <em class="sig-param"><span class="n">ampcal</span><span class="o">=</span><span class="default_value">True</span></em>, <em class="sig-param"><span class="n">phasecal</span><span class="o">=</span><span class="default_value">True</span></em>, <em class="sig-param"><span class="n">frcal</span><span class="o">=</span><span class="default_value">True</span></em>, <em class="sig-param"><span class="n">dcal</span><span class="o">=</span><span class="default_value">True</span></em>, <em class="sig-param"><span class="n">rlgaincal</span><span class="o">=</span><span class="default_value">True</span></em>, <em class="sig-param"><span class="n">stabilize_scan_phase</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">stabilize_scan_amp</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">neggains</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">taup</span><span class="o">=</span><span class="default_value">0.1</span></em>, <em class="sig-param"><span class="n">gain_offset</span><span class="o">=</span><span class="default_value">0.1</span></em>, <em class="sig-param"><span class="n">gainp</span><span class="o">=</span><span class="default_value">0.1</span></em>, <em class="sig-param"><span class="n">dterm_offset</span><span class="o">=</span><span class="default_value">0.05</span></em>, <em class="sig-param"><span class="n">rlratio_std</span><span class="o">=</span><span class="default_value">0.0</span></em>, <em class="sig-param"><span class="n">rlphase_std</span><span class="o">=</span><span class="default_value">0.0</span></em>, <em class="sig-param"><span class="n">caltable_path</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">seed</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">sigmat</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">verbose</span><span class="o">=</span><span class="default_value">True</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/movie.html#Movie.observe_same"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.movie.Movie.observe_same" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="ehtim.movie.Movie.observe_same">
+<span class="sig-name descname"><span class="pre">observe_same</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">obs_in</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">repeat</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ttype</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'nfft'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fft_pad_factor</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">2</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sgrscat</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">add_th_noise</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">jones</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">inv_jones</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">opacitycal</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ampcal</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">phasecal</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">frcal</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dcal</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rlgaincal</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">stabilize_scan_phase</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">stabilize_scan_amp</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">neggains</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">taup</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">gain_offset</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">gainp</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dterm_offset</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.05</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rlratio_std</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rlphase_std</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">caltable_path</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">seed</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sigmat</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbose</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/movie.html#Movie.observe_same"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ehtim.movie.Movie.observe_same" title="Permalink to this definition"></a></dt>
 <dd><p>Observe the image on the same baselines as an existing observation object and add noise.</p>
 <dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>obs_in</strong> (<a class="reference internal" href="obsdata.html#ehtim.obsdata.Obsdata" title="ehtim.obsdata.Obsdata"><em>Obsdata</em></a>) – existing observation with baselines where the FT will be sampled</p></li>
 <li><p><strong>repeat</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.13)"><em>bool</em></a>) – if True, repeat the movie to fill up the observation interval</p></li>
@@ -592,12 +595,12 @@ if sigmat=None then an iid gain noise is applied.</p></li>
 </dd></dl>
 
 <dl class="py method">
-<dt id="ehtim.movie.Movie.observe_same_nonoise">
-<code class="sig-name descname">observe_same_nonoise</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">obs</span></em>, <em class="sig-param"><span class="n">repeat</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">sgrscat</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">ttype</span><span class="o">=</span><span class="default_value">'nfft'</span></em>, <em class="sig-param"><span class="n">fft_pad_factor</span><span class="o">=</span><span class="default_value">2</span></em>, <em class="sig-param"><span class="n">zero_empty_pol</span><span class="o">=</span><span class="default_value">True</span></em>, <em class="sig-param"><span class="n">verbose</span><span class="o">=</span><span class="default_value">True</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/movie.html#Movie.observe_same_nonoise"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.movie.Movie.observe_same_nonoise" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="ehtim.movie.Movie.observe_same_nonoise">
+<span class="sig-name descname"><span class="pre">observe_same_nonoise</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">obs</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">repeat</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sgrscat</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ttype</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'nfft'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fft_pad_factor</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">2</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">zero_empty_pol</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbose</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/movie.html#Movie.observe_same_nonoise"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ehtim.movie.Movie.observe_same_nonoise" title="Permalink to this definition"></a></dt>
 <dd><p>Observe the movie on the same baselines as an existing observation
 without adding noise.</p>
 <dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>obs</strong> (<a class="reference internal" href="obsdata.html#ehtim.obsdata.Obsdata" title="ehtim.obsdata.Obsdata"><em>Obsdata</em></a>) – existing observation with baselines where the FT will be sampled</p></li>
 <li><p><strong>repeat</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.13)"><em>bool</em></a>) – if True, repeat the movie to fill up the observation interval</p></li>
@@ -609,21 +612,21 @@ Otherwise return None</p></li>
 <li><p><strong>verbose</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.13)"><em>bool</em></a>) – Boolean value controls output prints.</p></li>
 </ul>
 </dd>
-<dt class="field-even">Returns</dt>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
 <dd class="field-even"><p>an observation object</p>
 </dd>
-<dt class="field-odd">Return type</dt>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
 <dd class="field-odd"><p>(<a class="reference internal" href="obsdata.html#ehtim.obsdata.Obsdata" title="ehtim.obsdata.Obsdata">Obsdata</a>)</p>
 </dd>
 </dl>
 </dd></dl>
 
 <dl class="py method">
-<dt id="ehtim.movie.Movie.observe_vex">
-<code class="sig-name descname">observe_vex</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">vex</span></em>, <em class="sig-param"><span class="n">source</span></em>, <em class="sig-param"><span class="n">synchronize_start</span><span class="o">=</span><span class="default_value">True</span></em>, <em class="sig-param"><span class="n">t_int</span><span class="o">=</span><span class="default_value">0.0</span></em>, <em class="sig-param"><span class="n">polrep_obs</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">ttype</span><span class="o">=</span><span class="default_value">'nfft'</span></em>, <em class="sig-param"><span class="n">fft_pad_factor</span><span class="o">=</span><span class="default_value">2</span></em>, <em class="sig-param"><span class="n">fix_theta_GMST</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">sgrscat</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">add_th_noise</span><span class="o">=</span><span class="default_value">True</span></em>, <em class="sig-param"><span class="n">jones</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">inv_jones</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">opacitycal</span><span class="o">=</span><span class="default_value">True</span></em>, <em class="sig-param"><span class="n">ampcal</span><span class="o">=</span><span class="default_value">True</span></em>, <em class="sig-param"><span class="n">phasecal</span><span class="o">=</span><span class="default_value">True</span></em>, <em class="sig-param"><span class="n">frcal</span><span class="o">=</span><span class="default_value">True</span></em>, <em class="sig-param"><span class="n">dcal</span><span class="o">=</span><span class="default_value">True</span></em>, <em class="sig-param"><span class="n">rlgaincal</span><span class="o">=</span><span class="default_value">True</span></em>, <em class="sig-param"><span class="n">stabilize_scan_phase</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">stabilize_scan_amp</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">neggains</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">tau</span><span class="o">=</span><span class="default_value">0.1</span></em>, <em class="sig-param"><span class="n">taup</span><span class="o">=</span><span class="default_value">0.1</span></em>, <em class="sig-param"><span class="n">gain_offset</span><span class="o">=</span><span class="default_value">0.1</span></em>, <em class="sig-param"><span class="n">gainp</span><span class="o">=</span><span class="default_value">0.1</span></em>, <em class="sig-param"><span class="n">dterm_offset</span><span class="o">=</span><span class="default_value">0.05</span></em>, <em class="sig-param"><span class="n">caltable_path</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">seed</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">sigmat</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">verbose</span><span class="o">=</span><span class="default_value">True</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/movie.html#Movie.observe_vex"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.movie.Movie.observe_vex" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="ehtim.movie.Movie.observe_vex">
+<span class="sig-name descname"><span class="pre">observe_vex</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">vex</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">source</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">synchronize_start</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">t_int</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">polrep_obs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ttype</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'nfft'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fft_pad_factor</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">2</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fix_theta_GMST</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sgrscat</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">add_th_noise</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">jones</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">inv_jones</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">opacitycal</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ampcal</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">phasecal</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">frcal</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dcal</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rlgaincal</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">stabilize_scan_phase</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">stabilize_scan_amp</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">neggains</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tau</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">taup</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">gain_offset</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">gainp</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dterm_offset</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.05</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">caltable_path</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">seed</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sigmat</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbose</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/movie.html#Movie.observe_vex"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ehtim.movie.Movie.observe_vex" title="Permalink to this definition"></a></dt>
 <dd><p>Generate baselines from a vex file and observe the movie.</p>
 <dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>vex</strong> (<a class="reference internal" href="vex.html#ehtim.vex.Vex" title="ehtim.vex.Vex"><em>Vex</em></a>) – an vex object containing sites and scan information</p></li>
 <li><p><strong>source</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><em>str</em></a>) – the source to observe</p></li>
@@ -664,21 +667,21 @@ if sigmat=None then an iid gain noise is applied.</p></li>
 <li><p><strong>verbose</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.13)"><em>bool</em></a>) – print updates and warnings</p></li>
 </ul>
 </dd>
-<dt class="field-even">Returns</dt>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
 <dd class="field-even"><p>an observation object</p>
 </dd>
-<dt class="field-odd">Return type</dt>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
 <dd class="field-odd"><p>(<a class="reference internal" href="obsdata.html#ehtim.obsdata.Obsdata" title="ehtim.obsdata.Obsdata">Obsdata</a>)</p>
 </dd>
 </dl>
 </dd></dl>
 
 <dl class="py method">
-<dt id="ehtim.movie.Movie.offset_time">
-<code class="sig-name descname">offset_time</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">t_offset</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/movie.html#Movie.offset_time"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.movie.Movie.offset_time" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="ehtim.movie.Movie.offset_time">
+<span class="sig-name descname"><span class="pre">offset_time</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">t_offset</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/movie.html#Movie.offset_time"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ehtim.movie.Movie.offset_time" title="Permalink to this definition"></a></dt>
 <dd><p>Offset the movie in time by t_offset</p>
 <dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><p><strong>t_offset</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.13)"><em>float</em></a>) – offset time in hours</p>
 </dd>
 </dl>
@@ -686,26 +689,26 @@ if sigmat=None then an iid gain noise is applied.</p></li>
 </dd></dl>
 
 <dl class="py method">
-<dt id="ehtim.movie.Movie.orth_chi">
-<code class="sig-name descname">orth_chi</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/movie.html#Movie.orth_chi"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.movie.Movie.orth_chi" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="ehtim.movie.Movie.orth_chi">
+<span class="sig-name descname"><span class="pre">orth_chi</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/movie.html#Movie.orth_chi"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ehtim.movie.Movie.orth_chi" title="Permalink to this definition"></a></dt>
 <dd><p>Rotate the EVPA 90 degrees</p>
 <p>Args:</p>
 <dl class="field-list simple">
-<dt class="field-odd">Returns</dt>
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
 <dd class="field-odd"><p>movie with rotated EVPA</p>
 </dd>
-<dt class="field-even">Return type</dt>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
 <dd class="field-even"><p>(<a class="reference internal" href="image.html#ehtim.image.Image" title="ehtim.image.Image">Image</a>)</p>
 </dd>
 </dl>
 </dd></dl>
 
 <dl class="py method">
-<dt id="ehtim.movie.Movie.reset_interp">
-<code class="sig-name descname">reset_interp</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">interp</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">bounds_error</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/movie.html#Movie.reset_interp"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.movie.Movie.reset_interp" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="ehtim.movie.Movie.reset_interp">
+<span class="sig-name descname"><span class="pre">reset_interp</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">interp</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">bounds_error</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/movie.html#Movie.reset_interp"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ehtim.movie.Movie.reset_interp" title="Permalink to this definition"></a></dt>
 <dd><p>Reset the movie interpolation function to change the interp. type or change the frames</p>
 <dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>interp</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><em>str</em></a>) – Interpolation method, input to scipy.interpolate.interp1d kind keyword</p></li>
 <li><p><strong>bounds_error</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.13)"><em>bool</em></a>) – if False, return nearest frame outside [start_hr, stop_hr]</p></li>
@@ -715,11 +718,11 @@ if sigmat=None then an iid gain noise is applied.</p></li>
 </dd></dl>
 
 <dl class="py method">
-<dt id="ehtim.movie.Movie.save_fits">
-<code class="sig-name descname">save_fits</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">fname</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/movie.html#Movie.save_fits"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.movie.Movie.save_fits" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="ehtim.movie.Movie.save_fits">
+<span class="sig-name descname"><span class="pre">save_fits</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">fname</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/movie.html#Movie.save_fits"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ehtim.movie.Movie.save_fits" title="Permalink to this definition"></a></dt>
 <dd><p>Save the Movie data to individual fits files with filenames basename + 00001, etc.</p>
 <dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><p><strong>fname</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><em>str</em></a>) – basename of output files</p>
 </dd>
 </dl>
@@ -727,11 +730,11 @@ if sigmat=None then an iid gain noise is applied.</p></li>
 </dd></dl>
 
 <dl class="py method">
-<dt id="ehtim.movie.Movie.save_hdf5">
-<code class="sig-name descname">save_hdf5</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">fname</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/movie.html#Movie.save_hdf5"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.movie.Movie.save_hdf5" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="ehtim.movie.Movie.save_hdf5">
+<span class="sig-name descname"><span class="pre">save_hdf5</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">fname</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/movie.html#Movie.save_hdf5"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ehtim.movie.Movie.save_hdf5" title="Permalink to this definition"></a></dt>
 <dd><p>Save the Movie data to a single hdf5 file.</p>
 <dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><p><strong>fname</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><em>str</em></a>) – output file name</p>
 </dd>
 </dl>
@@ -739,11 +742,11 @@ if sigmat=None then an iid gain noise is applied.</p></li>
 </dd></dl>
 
 <dl class="py method">
-<dt id="ehtim.movie.Movie.save_txt">
-<code class="sig-name descname">save_txt</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">fname</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/movie.html#Movie.save_txt"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.movie.Movie.save_txt" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="ehtim.movie.Movie.save_txt">
+<span class="sig-name descname"><span class="pre">save_txt</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">fname</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/movie.html#Movie.save_txt"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ehtim.movie.Movie.save_txt" title="Permalink to this definition"></a></dt>
 <dd><p>Save the Movie data to individual text files with filenames basename + 00001, etc.</p>
 <dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><p><strong>fname</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><em>str</em></a>) – basename of output files</p>
 </dd>
 </dl>
@@ -751,21 +754,21 @@ if sigmat=None then an iid gain noise is applied.</p></li>
 </dd></dl>
 
 <dl class="py method">
-<dt id="ehtim.movie.Movie.switch_polrep">
-<code class="sig-name descname">switch_polrep</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">polrep_out</span><span class="o">=</span><span class="default_value">'stokes'</span></em>, <em class="sig-param"><span class="n">pol_prim_out</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/movie.html#Movie.switch_polrep"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.movie.Movie.switch_polrep" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="ehtim.movie.Movie.switch_polrep">
+<span class="sig-name descname"><span class="pre">switch_polrep</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">polrep_out</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'stokes'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pol_prim_out</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/movie.html#Movie.switch_polrep"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ehtim.movie.Movie.switch_polrep" title="Permalink to this definition"></a></dt>
 <dd><p>Return a new movie with the polarization representation changed</p>
 <dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>polrep_out</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><em>str</em></a>) – the polrep of the output data</p></li>
 <li><p><strong>pol_prim_out</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><em>str</em></a>) – The default movie: I,Q,U or V for Stokes,
 RR,LL,LR,RL for Circular</p></li>
 </ul>
 </dd>
-<dt class="field-even">Returns</dt>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
 <dd class="field-even"><p>new movie object with potentially different polrep</p>
 </dd>
-<dt class="field-odd">Return type</dt>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
 <dd class="field-odd"><p>(<a class="reference internal" href="#ehtim.movie.Movie" title="ehtim.movie.Movie">Movie</a>)</p>
 </dd>
 </dl>
@@ -774,11 +777,11 @@ RR,LL,LR,RL for Circular</p></li>
 </dd></dl>
 
 <dl class="py function">
-<dt id="ehtim.movie.export_multipanel_mp4">
-<code class="sig-prename descclassname">ehtim.movie.</code><code class="sig-name descname">export_multipanel_mp4</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">input_list</span></em>, <em class="sig-param"><span class="n">out</span><span class="o">=</span><span class="default_value">'movie.mp4'</span></em>, <em class="sig-param"><span class="n">start_hr</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">stop_hr</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">nframes</span><span class="o">=</span><span class="default_value">100</span></em>, <em class="sig-param"><span class="n">fov</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">npix</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">nrows</span><span class="o">=</span><span class="default_value">1</span></em>, <em class="sig-param"><span class="n">fps</span><span class="o">=</span><span class="default_value">10</span></em>, <em class="sig-param"><span class="n">dpi</span><span class="o">=</span><span class="default_value">120</span></em>, <em class="sig-param"><span class="n">verbose</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">titles</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">panel_size</span><span class="o">=</span><span class="default_value">4.0</span></em>, <em class="sig-param"><span class="n">common_scale</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">scale</span><span class="o">=</span><span class="default_value">'linear'</span></em>, <em class="sig-param"><span class="n">label_type</span><span class="o">=</span><span class="default_value">'scale'</span></em>, <em class="sig-param"><span class="n">has_cbar</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/movie.html#export_multipanel_mp4"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.movie.export_multipanel_mp4" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="ehtim.movie.export_multipanel_mp4">
+<span class="sig-prename descclassname"><span class="pre">ehtim.movie.</span></span><span class="sig-name descname"><span class="pre">export_multipanel_mp4</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">input_list</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">out</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'movie.mp4'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">start_hr</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">stop_hr</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">nframes</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">100</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fov</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">npix</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">nrows</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fps</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">10</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dpi</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">120</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbose</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">titles</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">panel_size</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">4.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">common_scale</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">scale</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'linear'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">label_type</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'scale'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">has_cbar</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/movie.html#export_multipanel_mp4"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ehtim.movie.export_multipanel_mp4" title="Permalink to this definition"></a></dt>
 <dd><p>Export a movie comparing multiple movies in a grid.</p>
 <dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>input_list</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.13)"><em>list</em></a>) – The  list of  input Movies or Images</p></li>
 <li><p><strong>out</strong> (<em>string</em>) – The output filename</p></li>
@@ -797,11 +800,11 @@ RR,LL,LR,RL for Circular</p></li>
 </dd></dl>
 
 <dl class="py function">
-<dt id="ehtim.movie.load_fits">
-<code class="sig-prename descclassname">ehtim.movie.</code><code class="sig-name descname">load_fits</code><span class="sig-paren">(</span><em class="sig-param">basename</em>, <em class="sig-param">nframes</em>, <em class="sig-param">framedur=-1</em>, <em class="sig-param">pulse=&lt;function trianglePulse2D&gt;</em>, <em class="sig-param">polrep='stokes'</em>, <em class="sig-param">pol_prim=None</em>, <em class="sig-param">zero_pol=True</em>, <em class="sig-param">interp='linear'</em>, <em class="sig-param">bounds_error=True</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/movie.html#load_fits"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.movie.load_fits" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="ehtim.movie.load_fits">
+<span class="sig-prename descclassname"><span class="pre">ehtim.movie.</span></span><span class="sig-name descname"><span class="pre">load_fits</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">basename</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">nframes</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">framedur=-1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pulse=&lt;function</span> <span class="pre">trianglePulse2D&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">polrep='stokes'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pol_prim=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">zero_pol=True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">interp='linear'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">bounds_error=True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/movie.html#load_fits"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ehtim.movie.load_fits" title="Permalink to this definition"></a></dt>
 <dd><p>Read in a movie from fits files and create a Movie object.</p>
 <dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>basename</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><em>str</em></a>) – The base name of individual movie frames.
 Files should have names basename + 00001, etc.</p></li>
@@ -816,21 +819,21 @@ if famedur==-1, frame duration taken from file headers</p></li>
 <li><p><strong>bounds_error</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.13)"><em>bool</em></a>) – if False, return nearest frame outside interval [start_hr, stop_hr]</p></li>
 </ul>
 </dd>
-<dt class="field-even">Returns</dt>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
 <dd class="field-even"><p>a Movie object</p>
 </dd>
-<dt class="field-odd">Return type</dt>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
 <dd class="field-odd"><p><a class="reference internal" href="#ehtim.movie.Movie" title="ehtim.movie.Movie">Movie</a></p>
 </dd>
 </dl>
 </dd></dl>
 
 <dl class="py function">
-<dt id="ehtim.movie.load_hdf5">
-<code class="sig-prename descclassname">ehtim.movie.</code><code class="sig-name descname">load_hdf5</code><span class="sig-paren">(</span><em class="sig-param">file_name</em>, <em class="sig-param">pulse=&lt;function trianglePulse2D&gt;</em>, <em class="sig-param">interp='linear'</em>, <em class="sig-param">bounds_error=True</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/movie.html#load_hdf5"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.movie.load_hdf5" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="ehtim.movie.load_hdf5">
+<span class="sig-prename descclassname"><span class="pre">ehtim.movie.</span></span><span class="sig-name descname"><span class="pre">load_hdf5</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">file_name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pulse=&lt;function</span> <span class="pre">trianglePulse2D&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">interp='linear'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">bounds_error=True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/movie.html#load_hdf5"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ehtim.movie.load_hdf5" title="Permalink to this definition"></a></dt>
 <dd><p>Read in a movie from an hdf5 file and create a Movie object.</p>
 <dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>file_name</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><em>str</em></a>) – The name of the hdf5 file.</p></li>
 <li><p><strong>pulse</strong> (<em>function</em>) – The function convolved with the pixel values for continuous image</p></li>
@@ -838,21 +841,21 @@ if famedur==-1, frame duration taken from file headers</p></li>
 <li><p><strong>bounds_error</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.13)"><em>bool</em></a>) – if False, return nearest frame outside interval [start_hr, stop_hr]</p></li>
 </ul>
 </dd>
-<dt class="field-even">Returns</dt>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
 <dd class="field-even"><p>a Movie object</p>
 </dd>
-<dt class="field-odd">Return type</dt>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
 <dd class="field-odd"><p><a class="reference internal" href="#ehtim.movie.Movie" title="ehtim.movie.Movie">Movie</a></p>
 </dd>
 </dl>
 </dd></dl>
 
 <dl class="py function">
-<dt id="ehtim.movie.load_txt">
-<code class="sig-prename descclassname">ehtim.movie.</code><code class="sig-name descname">load_txt</code><span class="sig-paren">(</span><em class="sig-param">basename</em>, <em class="sig-param">nframes</em>, <em class="sig-param">framedur=-1</em>, <em class="sig-param">pulse=&lt;function trianglePulse2D&gt;</em>, <em class="sig-param">polrep='stokes'</em>, <em class="sig-param">pol_prim=None</em>, <em class="sig-param">zero_pol=True</em>, <em class="sig-param">interp='linear'</em>, <em class="sig-param">bounds_error=True</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/movie.html#load_txt"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.movie.load_txt" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="ehtim.movie.load_txt">
+<span class="sig-prename descclassname"><span class="pre">ehtim.movie.</span></span><span class="sig-name descname"><span class="pre">load_txt</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">basename</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">nframes</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">framedur=-1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pulse=&lt;function</span> <span class="pre">trianglePulse2D&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">polrep='stokes'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pol_prim=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">zero_pol=True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">interp='linear'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">bounds_error=True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/movie.html#load_txt"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ehtim.movie.load_txt" title="Permalink to this definition"></a></dt>
 <dd><p>Read in a movie from text files and create a Movie object.</p>
 <dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>basename</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><em>str</em></a>) – The base name of individual movie frames.
 Files should have names basename + 00001, etc.</p></li>
@@ -867,21 +870,21 @@ if famedur==-1, frame duration taken from file headers</p></li>
 <li><p><strong>bounds_error</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.13)"><em>bool</em></a>) – if False, return nearest frame outside interval [start_hr, stop_hr]</p></li>
 </ul>
 </dd>
-<dt class="field-even">Returns</dt>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
 <dd class="field-even"><p>a Movie object</p>
 </dd>
-<dt class="field-odd">Return type</dt>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
 <dd class="field-odd"><p><a class="reference internal" href="#ehtim.movie.Movie" title="ehtim.movie.Movie">Movie</a></p>
 </dd>
 </dl>
 </dd></dl>
 
 <dl class="py function">
-<dt id="ehtim.movie.merge_im_list">
-<code class="sig-prename descclassname">ehtim.movie.</code><code class="sig-name descname">merge_im_list</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">imlist</span></em>, <em class="sig-param"><span class="n">framedur</span><span class="o">=</span><span class="default_value">- 1</span></em>, <em class="sig-param"><span class="n">interp</span><span class="o">=</span><span class="default_value">'linear'</span></em>, <em class="sig-param"><span class="n">bounds_error</span><span class="o">=</span><span class="default_value">True</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/movie.html#merge_im_list"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.movie.merge_im_list" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="ehtim.movie.merge_im_list">
+<span class="sig-prename descclassname"><span class="pre">ehtim.movie.</span></span><span class="sig-name descname"><span class="pre">merge_im_list</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">imlist</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">framedur</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">-</span> <span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">interp</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'linear'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">bounds_error</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/movie.html#merge_im_list"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ehtim.movie.merge_im_list" title="Permalink to this definition"></a></dt>
 <dd><p>Merge a list of image objects into a movie object.</p>
 <dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>imlist</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.13)"><em>list</em></a>) – list of Image objects</p></li>
 <li><p><strong>framedur</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.13)"><em>float</em></a>) – duration of a movie frame in seconds
@@ -893,7 +896,7 @@ use to override times in the individual movies</p></li>
 </dl>
 </dd></dl>
 
-</div>
+</section>
 
 
            </div>

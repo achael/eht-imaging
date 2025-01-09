@@ -1,18 +1,21 @@
 <!DOCTYPE html>
 <html class="writer-html5" lang="en" >
 <head>
-  <meta charset="utf-8" />
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
+
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Array &mdash; ehtim 1.2.6 documentation</title><link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
-    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+  <title>Array &mdash; ehtim 1.2.6 documentation</title>
+      <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
   <!--[if lt IE 9]>
     <script src="_static/js/html5shiv.min.js"></script>
   <![endif]-->
-  <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+  
+        <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
         <script src="_static/jquery.js"></script>
         <script src="_static/underscore.js"></script>
+        <script src="_static/_sphinx_javascript_frameworks_compat.js"></script>
         <script src="_static/doctools.js"></script>
-        <script src="_static/language_data.js"></script>
     <script src="_static/js/theme.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
@@ -38,7 +41,7 @@
   </form>
 </div>
         </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
-              <p class="caption"><span class="caption-text">Contents:</span></p>
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
 <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="image.html">Image</a></li>
 <li class="toctree-l1 current"><a class="current reference internal" href="#">Array</a></li>
@@ -78,68 +81,70 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
              
-  <span class="target" id="module-array"></span><div class="section" id="array">
-<span id="id1"></span><h1>Array<a class="headerlink" href="#array" title="Permalink to this headline">¶</a></h1>
+  <span class="target" id="module-array"></span><section id="array">
+<span id="id1"></span><h1>Array<a class="headerlink" href="#array" title="Permalink to this heading"></a></h1>
 <span class="target" id="module-ehtim.array"></span><dl class="py class">
-<dt id="ehtim.array.Array">
-<em class="property">class </em><code class="sig-prename descclassname">ehtim.array.</code><code class="sig-name descname">Array</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">tarr</span></em>, <em class="sig-param"><span class="n">ephem</span><span class="o">=</span><span class="default_value">{}</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/array.html#Array"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.array.Array" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="ehtim.array.Array">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">ehtim.array.</span></span><span class="sig-name descname"><span class="pre">Array</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">tarr</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ephem</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">{}</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/array.html#Array"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ehtim.array.Array" title="Permalink to this definition"></a></dt>
 <dd><p>A VLBI array of telescopes with site locations, SEFDs, and other data.</p>
 <dl class="py attribute">
-<dt id="ehtim.array.Array.tarr">
-<code class="sig-name descname">tarr</code><a class="headerlink" href="#ehtim.array.Array.tarr" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="ehtim.array.Array.tarr">
+<span class="sig-name descname"><span class="pre">tarr</span></span><a class="headerlink" href="#ehtim.array.Array.tarr" title="Permalink to this definition"></a></dt>
 <dd><p>The array of telescope data with datatype DTARR</p>
 <dl class="field-list simple">
-<dt class="field-odd">Type</dt>
+<dt class="field-odd">Type<span class="colon">:</span></dt>
 <dd class="field-odd"><p>numpy.recarray</p>
 </dd>
 </dl>
 </dd></dl>
 
 <dl class="py attribute">
-<dt id="ehtim.array.Array.tkey">
-<code class="sig-name descname">tkey</code><a class="headerlink" href="#ehtim.array.Array.tkey" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="ehtim.array.Array.tkey">
+<span class="sig-name descname"><span class="pre">tkey</span></span><a class="headerlink" href="#ehtim.array.Array.tkey" title="Permalink to this definition"></a></dt>
 <dd><p>A dictionary of rows in the tarr for each site name</p>
 <dl class="field-list simple">
-<dt class="field-odd">Type</dt>
+<dt class="field-odd">Type<span class="colon">:</span></dt>
 <dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.13)">dict</a></p>
 </dd>
 </dl>
 </dd></dl>
 
 <dl class="py attribute">
-<dt id="ehtim.array.Array.ephem">
-<code class="sig-name descname">ephem</code><a class="headerlink" href="#ehtim.array.Array.ephem" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="ehtim.array.Array.ephem">
+<span class="sig-name descname"><span class="pre">ephem</span></span><a class="headerlink" href="#ehtim.array.Array.ephem" title="Permalink to this definition"></a></dt>
 <dd><p>A dictionary of TLEs for each space antenna,
 Space antennas have x=y=z=0 in the tarr</p>
 <dl class="field-list simple">
-<dt class="field-odd">Type</dt>
+<dt class="field-odd">Type<span class="colon">:</span></dt>
 <dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.13)">dict</a></p>
 </dd>
 </dl>
 </dd></dl>
 
 <dl class="py method">
-<dt id="ehtim.array.Array.add_satellite_elements">
-<code class="sig-name descname">add_satellite_elements</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">satname</span></em>, <em class="sig-param"><span class="n">perigee_mjd</span><span class="o">=</span><span class="default_value">60660.91922969088</span></em>, <em class="sig-param"><span class="n">period_days</span><span class="o">=</span><span class="default_value">1.0</span></em>, <em class="sig-param"><span class="n">eccentricity</span><span class="o">=</span><span class="default_value">0.0</span></em>, <em class="sig-param"><span class="n">inclination</span><span class="o">=</span><span class="default_value">0.0</span></em>, <em class="sig-param"><span class="n">arg_perigee</span><span class="o">=</span><span class="default_value">0.0</span></em>, <em class="sig-param"><span class="n">long_ascending</span><span class="o">=</span><span class="default_value">0.0</span></em>, <em class="sig-param"><span class="n">sefd</span><span class="o">=</span><span class="default_value">10000</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/array.html#Array.add_satellite_elements"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.array.Array.add_satellite_elements" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="ehtim.array.Array.add_satellite_elements">
+<span class="sig-name descname"><span class="pre">add_satellite_elements</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">satname</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">perigee_mjd</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">60684.958211218574</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">period_days</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">eccentricity</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">inclination</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">arg_perigee</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">long_ascending</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sefd</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">10000</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/array.html#Array.add_satellite_elements"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ehtim.array.Array.add_satellite_elements" title="Permalink to this definition"></a></dt>
 <dd><p>Add an earth-orbiting satellite to the array from simple keplerian elements
 perfect keplerian orbit is assumed, no derivatives</p>
 <dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>time given in mjd</strong> (<em>perigee</em>) – </p></li>
-<li><p><strong>given in days</strong> (<em>period</em>) – </p></li>
-<li><p><strong>arg_perigee</strong><strong>, </strong><strong>long_ascending given in degrees</strong> (<em>inclination</em><em>,</em>) – </p></li>
+<li><p><strong>mjd</strong> (<em>perigee time given in</em>) – </p></li>
+<li><p><strong>days</strong> (<em>period given in</em>) – </p></li>
+<li><p><strong>inclination</strong> – </p></li>
+<li><p><strong>arg_perigee</strong> – </p></li>
+<li><p><strong>degrees</strong> (<em>long_ascending given in</em>) – </p></li>
 </ul>
 </dd>
 </dl>
 </dd></dl>
 
 <dl class="py method">
-<dt id="ehtim.array.Array.add_satellite_tle">
-<code class="sig-name descname">add_satellite_tle</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">tlelist</span></em>, <em class="sig-param"><span class="n">sefd</span><span class="o">=</span><span class="default_value">10000</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/array.html#Array.add_satellite_tle"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.array.Array.add_satellite_tle" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="ehtim.array.Array.add_satellite_tle">
+<span class="sig-name descname"><span class="pre">add_satellite_tle</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">tlelist</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sefd</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">10000</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/array.html#Array.add_satellite_tle"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ehtim.array.Array.add_satellite_tle" title="Permalink to this definition"></a></dt>
 <dd><p>Add an earth-orbiting satellite to the array from a TLE</p>
 <dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>tlearr</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><em>str</em></a>) – 3 element list with [name, tle line 1, tle line 2] as strings</p></li>
 <li><p><strong>sefd</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.13)"><em>float</em></a>) – assumed sefd for the array file (assumes sefdl = sefdr)</p></li>
@@ -149,29 +154,29 @@ perfect keplerian orbit is assumed, no derivatives</p>
 </dd></dl>
 
 <dl class="py method">
-<dt id="ehtim.array.Array.add_site">
-<code class="sig-name descname">add_site</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">site</span></em>, <em class="sig-param"><span class="n">coords</span></em>, <em class="sig-param"><span class="n">sefd</span><span class="o">=</span><span class="default_value">10000</span></em>, <em class="sig-param"><span class="n">fr_par</span><span class="o">=</span><span class="default_value">0</span></em>, <em class="sig-param"><span class="n">fr_elev</span><span class="o">=</span><span class="default_value">0</span></em>, <em class="sig-param"><span class="n">fr_off</span><span class="o">=</span><span class="default_value">0</span></em>, <em class="sig-param"><span class="n">dr</span><span class="o">=</span><span class="default_value">0j</span></em>, <em class="sig-param"><span class="n">dl</span><span class="o">=</span><span class="default_value">0j</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/array.html#Array.add_site"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.array.Array.add_site" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="ehtim.array.Array.add_site">
+<span class="sig-name descname"><span class="pre">add_site</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">site</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">coords</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sefd</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">10000</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fr_par</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fr_elev</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fr_off</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dr</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0j</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dl</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0j</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/array.html#Array.add_site"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ehtim.array.Array.add_site" title="Permalink to this definition"></a></dt>
 <dd><p>Add a ground station to the array</p>
 </dd></dl>
 
 <dl class="py method">
-<dt id="ehtim.array.Array.copy">
-<code class="sig-name descname">copy</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/array.html#Array.copy"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.array.Array.copy" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="ehtim.array.Array.copy">
+<span class="sig-name descname"><span class="pre">copy</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/array.html#Array.copy"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ehtim.array.Array.copy" title="Permalink to this definition"></a></dt>
 <dd><p>Copy the array object.</p>
 <p>Args:</p>
 <dl class="field-list simple">
-<dt class="field-odd">Returns</dt>
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
 <dd class="field-odd"><p>a copy of the Array object.</p>
 </dd>
-<dt class="field-even">Return type</dt>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
 <dd class="field-even"><p>(<a class="reference internal" href="#ehtim.array.Array" title="ehtim.array.Array">Array</a>)</p>
 </dd>
 </dl>
 </dd></dl>
 
 <dl class="py method">
-<dt id="ehtim.array.Array.listbls">
-<code class="sig-name descname">listbls</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/array.html#Array.listbls"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.array.Array.listbls" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="ehtim.array.Array.listbls">
+<span class="sig-name descname"><span class="pre">listbls</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/array.html#Array.listbls"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ehtim.array.Array.listbls" title="Permalink to this definition"></a></dt>
 <dd><p>List all baselines.</p>
 <p>Args:
 :returns: array of baselines
@@ -179,28 +184,28 @@ perfect keplerian orbit is assumed, no derivatives</p>
 </dd></dl>
 
 <dl class="py method">
-<dt id="ehtim.array.Array.make_subarray">
-<code class="sig-name descname">make_subarray</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">sites</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/array.html#Array.make_subarray"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.array.Array.make_subarray" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="ehtim.array.Array.make_subarray">
+<span class="sig-name descname"><span class="pre">make_subarray</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">sites</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/array.html#Array.make_subarray"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ehtim.array.Array.make_subarray" title="Permalink to this definition"></a></dt>
 <dd><p>Make a subarray from the Array object array that only includes the sites listed.</p>
 <dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><p><strong>sites</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.13)"><em>list</em></a>) – list of sites in the subarray</p>
 </dd>
-<dt class="field-even">Returns</dt>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
 <dd class="field-even"><p>an Array object with specified sites and metadata</p>
 </dd>
-<dt class="field-odd">Return type</dt>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
 <dd class="field-odd"><p><a class="reference internal" href="#ehtim.array.Array" title="ehtim.array.Array">Array</a></p>
 </dd>
 </dl>
 </dd></dl>
 
 <dl class="py method">
-<dt id="ehtim.array.Array.obsdata">
-<code class="sig-name descname">obsdata</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">ra</span></em>, <em class="sig-param"><span class="n">dec</span></em>, <em class="sig-param"><span class="n">rf</span></em>, <em class="sig-param"><span class="n">bw</span></em>, <em class="sig-param"><span class="n">tint</span></em>, <em class="sig-param"><span class="n">tadv</span></em>, <em class="sig-param"><span class="n">tstart</span></em>, <em class="sig-param"><span class="n">tstop</span></em>, <em class="sig-param"><span class="n">mjd</span><span class="o">=</span><span class="default_value">51544</span></em>, <em class="sig-param"><span class="n">timetype</span><span class="o">=</span><span class="default_value">'UTC'</span></em>, <em class="sig-param"><span class="n">polrep</span><span class="o">=</span><span class="default_value">'stokes'</span></em>, <em class="sig-param"><span class="n">elevmin</span><span class="o">=</span><span class="default_value">10.0</span></em>, <em class="sig-param"><span class="n">elevmax</span><span class="o">=</span><span class="default_value">85.0</span></em>, <em class="sig-param"><span class="n">no_elevcut_space</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">tau</span><span class="o">=</span><span class="default_value">0.1</span></em>, <em class="sig-param"><span class="n">fix_theta_GMST</span><span class="o">=</span><span class="default_value">False</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/array.html#Array.obsdata"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.array.Array.obsdata" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="ehtim.array.Array.obsdata">
+<span class="sig-name descname"><span class="pre">obsdata</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ra</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dec</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rf</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">bw</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tint</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tadv</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tstart</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tstop</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mjd</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">51544</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">timetype</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'UTC'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">polrep</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'stokes'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">elevmin</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">10.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">elevmax</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">85.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">no_elevcut_space</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tau</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fix_theta_GMST</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/array.html#Array.obsdata"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ehtim.array.Array.obsdata" title="Permalink to this definition"></a></dt>
 <dd><p>Generate u,v points and baseline uncertainties.</p>
 <dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>ra</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.13)"><em>float</em></a>) – the source right ascension in fractional hours</p></li>
 <li><p><strong>dec</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.13)"><em>float</em></a>) – the source declination in fractional degrees</p></li>
@@ -218,21 +223,21 @@ perfect keplerian orbit is assumed, no derivatives</p>
 <li><p><strong>fix_theta_GMST</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.13)"><em>bool</em></a>) – if True, stops earth rotation to sample fixed u,v points</p></li>
 </ul>
 </dd>
-<dt class="field-even">Returns</dt>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
 <dd class="field-even"><p>an observation object with no data</p>
 </dd>
-<dt class="field-odd">Return type</dt>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
 <dd class="field-odd"><p><a class="reference internal" href="obsdata.html#ehtim.obsdata.Obsdata" title="ehtim.obsdata.Obsdata">Obsdata</a></p>
 </dd>
 </dl>
 </dd></dl>
 
 <dl class="py method">
-<dt id="ehtim.array.Array.plot_dterms">
-<code class="sig-name descname">plot_dterms</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">sites</span><span class="o">=</span><span class="default_value">'all'</span></em>, <em class="sig-param"><span class="n">label</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">legend</span><span class="o">=</span><span class="default_value">True</span></em>, <em class="sig-param"><span class="n">clist</span><span class="o">=</span><span class="default_value">[0.11764705882352941, 0.5647058823529412, 1.0, 1.0, 0.38823529411764707, 0.2784313725490196, 0.5411764705882353, 0.16862745098039217, 0.8862745098039215, 0.4196078431372549, 0.5568627450980392, 0.13725490196078433, 1.0, 0.6470588235294118, 0.0, 0.5450980392156862, 0.27058823529411763, 0.07450980392156863, 0.0, 0.0, 0.803921568627451, 1.0, 0.0, 0.0, 0.0, 1.0, 1.0, 1.0, 0.0, 1.0, 0.0, 0.39215686274509803, 0.0, 0.8235294117647058, 0.7058823529411765, 0.5490196078431373, 0.0, 0.0, 0.0]</span></em>, <em class="sig-param"><span class="n">rangex</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">rangey</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">markersize</span><span class="o">=</span><span class="default_value">6</span></em>, <em class="sig-param"><span class="n">show</span><span class="o">=</span><span class="default_value">True</span></em>, <em class="sig-param"><span class="n">grid</span><span class="o">=</span><span class="default_value">True</span></em>, <em class="sig-param"><span class="n">export_pdf</span><span class="o">=</span><span class="default_value">''</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/array.html#Array.plot_dterms"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.array.Array.plot_dterms" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="ehtim.array.Array.plot_dterms">
+<span class="sig-name descname"><span class="pre">plot_dterms</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">sites</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'all'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">label</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">legend</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">clist</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[(0.11764705882352941,</span> <span class="pre">0.5647058823529412,</span> <span class="pre">1.0),</span> <span class="pre">(1.0,</span> <span class="pre">0.38823529411764707,</span> <span class="pre">0.2784313725490196),</span> <span class="pre">(0.5411764705882353,</span> <span class="pre">0.16862745098039217,</span> <span class="pre">0.8862745098039215),</span> <span class="pre">(0.4196078431372549,</span> <span class="pre">0.5568627450980392,</span> <span class="pre">0.13725490196078433),</span> <span class="pre">(1.0,</span> <span class="pre">0.6470588235294118,</span> <span class="pre">0.0),</span> <span class="pre">(0.5450980392156862,</span> <span class="pre">0.27058823529411763,</span> <span class="pre">0.07450980392156863),</span> <span class="pre">(0.0,</span> <span class="pre">0.0,</span> <span class="pre">0.803921568627451),</span> <span class="pre">(1.0,</span> <span class="pre">0.0,</span> <span class="pre">0.0),</span> <span class="pre">(0.0,</span> <span class="pre">1.0,</span> <span class="pre">1.0),</span> <span class="pre">(1.0,</span> <span class="pre">0.0,</span> <span class="pre">1.0),</span> <span class="pre">(0.0,</span> <span class="pre">0.39215686274509803,</span> <span class="pre">0.0),</span> <span class="pre">(0.8235294117647058,</span> <span class="pre">0.7058823529411765,</span> <span class="pre">0.5490196078431373),</span> <span class="pre">(0.0,</span> <span class="pre">0.0,</span> <span class="pre">0.0)]</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rangex</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rangey</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">markersize</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">6</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">show</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">grid</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">export_pdf</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">''</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/array.html#Array.plot_dterms"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ehtim.array.Array.plot_dterms" title="Permalink to this definition"></a></dt>
 <dd><p>Make a plot of the D-terms.</p>
 <dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>sites</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.13)"><em>list</em></a>) – list of sites to plot</p></li>
 <li><p><strong>label</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><em>str</em></a>) – title for plot</p></li>
@@ -246,24 +251,24 @@ perfect keplerian orbit is assumed, no derivatives</p>
 <li><p><strong>export_pdf</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><em>str</em></a>) – save a pdf file to this path</p></li>
 </ul>
 </dd>
-<dt class="field-even">Returns</dt>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
 <dd class="field-even"><p>matplotlib.axes</p>
 </dd>
 </dl>
 </dd></dl>
 
 <dl class="py method">
-<dt id="ehtim.array.Array.remove_site">
-<code class="sig-name descname">remove_site</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">site</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/array.html#Array.remove_site"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.array.Array.remove_site" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="ehtim.array.Array.remove_site">
+<span class="sig-name descname"><span class="pre">remove_site</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">site</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/array.html#Array.remove_site"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ehtim.array.Array.remove_site" title="Permalink to this definition"></a></dt>
 <dd><p>Remove a site from the array</p>
 </dd></dl>
 
 <dl class="py method">
-<dt id="ehtim.array.Array.save_txt">
-<code class="sig-name descname">save_txt</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">fname</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/array.html#Array.save_txt"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.array.Array.save_txt" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="ehtim.array.Array.save_txt">
+<span class="sig-name descname"><span class="pre">save_txt</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">fname</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/array.html#Array.save_txt"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ehtim.array.Array.save_txt" title="Permalink to this definition"></a></dt>
 <dd><p>Save the array data in a text file.</p>
 <dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><p><strong>fname</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><em>str</em></a>) – path to output array file</p>
 </dd>
 </dl>
@@ -272,27 +277,27 @@ perfect keplerian orbit is assumed, no derivatives</p>
 </dd></dl>
 
 <dl class="py function">
-<dt id="ehtim.array.load_txt">
-<code class="sig-prename descclassname">ehtim.array.</code><code class="sig-name descname">load_txt</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">fname</span></em>, <em class="sig-param"><span class="n">ephemdir</span><span class="o">=</span><span class="default_value">'ephemeris'</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/array.html#load_txt"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.array.load_txt" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="ehtim.array.load_txt">
+<span class="sig-prename descclassname"><span class="pre">ehtim.array.</span></span><span class="sig-name descname"><span class="pre">load_txt</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">fname</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ephemdir</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'ephemeris'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/array.html#load_txt"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ehtim.array.load_txt" title="Permalink to this definition"></a></dt>
 <dd><p>Read an array from a text file.
 Sites with x=y=z=0 are spacecraft, TLE ephemerides read from ephemdir.</p>
 <dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>fname</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><em>str</em></a>) – path to input array file</p></li>
 <li><p><strong>ephemdir</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><em>str</em></a>) – path to directory with TLE ephemerides for spacecraft</p></li>
 </ul>
 </dd>
-<dt class="field-even">Returns</dt>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
 <dd class="field-even"><p>an Array object loaded from file</p>
 </dd>
-<dt class="field-odd">Return type</dt>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
 <dd class="field-odd"><p><a class="reference internal" href="#ehtim.array.Array" title="ehtim.array.Array">Array</a></p>
 </dd>
 </dl>
 </dd></dl>
 
-</div>
+</section>
 
 
            </div>

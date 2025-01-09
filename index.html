@@ -1,18 +1,21 @@
 <!DOCTYPE html>
 <html class="writer-html5" lang="en" >
 <head>
-  <meta charset="utf-8" />
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
+
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>ehtim (eht-imaging) &mdash; ehtim 1.2.6 documentation</title><link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
-    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+  <title>ehtim (eht-imaging) &mdash; ehtim 1.2.6 documentation</title>
+      <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
   <!--[if lt IE 9]>
     <script src="_static/js/html5shiv.min.js"></script>
   <![endif]-->
-  <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+  
+        <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
         <script src="_static/jquery.js"></script>
         <script src="_static/underscore.js"></script>
+        <script src="_static/_sphinx_javascript_frameworks_compat.js"></script>
         <script src="_static/doctools.js"></script>
-        <script src="_static/language_data.js"></script>
     <script src="_static/js/theme.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
@@ -37,7 +40,7 @@
   </form>
 </div>
         </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
-              <p class="caption"><span class="caption-text">Contents:</span></p>
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="image.html">Image</a></li>
 <li class="toctree-l1"><a class="reference internal" href="array.html">Array</a></li>
@@ -77,8 +80,8 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
              
-  <div class="section" id="ehtim-eht-imaging">
-<h1>ehtim (eht-imaging)<a class="headerlink" href="#ehtim-eht-imaging" title="Permalink to this headline">¶</a></h1>
+  <section id="ehtim-eht-imaging">
+<h1>ehtim (eht-imaging)<a class="headerlink" href="#ehtim-eht-imaging" title="Permalink to this heading"></a></h1>
 <a class="reference external image-reference" href="https://zenodo.org/badge/latestdoi/42943499"><img alt="https://zenodo.org/badge/42943499.svg" src="https://zenodo.org/badge/42943499.svg" /></a>
 <p>Python modules for simulating and manipulating VLBI data and producing images with regularized maximum likelihood methods. This version is an early release so please raise an issue, submit a pull request, or email <a class="reference external" href="mailto:achael&#37;&#52;&#48;princeton&#46;edu">achael<span>&#64;</span>princeton<span>&#46;</span>edu</a> if you have trouble or need help for your application.</p>
 <p>The package contains several primary classes for loading, simulating, and manipulating VLBI data. The main classes are the <code class="xref py py-class docutils literal notranslate"><span class="pre">Image</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Array</span></code>, and <code class="xref py py-class docutils literal notranslate"><span class="pre">Obsdata</span></code>, which provide tools for manipulating images, simulating interferometric data from images, and plotting and analyzing these data. <code class="xref py py-class docutils literal notranslate"><span class="pre">Movie</span></code> and <code class="xref py py-class docutils literal notranslate"><span class="pre">Vex</span></code> provide tools for producing time-variable simulated data and observing with real VLBI tracks from .vex files. <a class="reference internal" href="imager.html#module-imager" title="imager"><code class="xref py py-class docutils literal notranslate"><span class="pre">imager</span></code></a> is a generic imager class that can produce images from data sets in various polarizations using various data terms and regularizers.</p>
@@ -86,24 +89,24 @@
 <p class="admonition-title">Note</p>
 <p>This is a pre-release of ehtim. If you have a problem please submit a pull request on the git repository and/or email <a class="reference external" href="mailto:achael&#37;&#52;&#48;princeton&#46;edu&#46;edu">achael<span>&#64;</span>princeton<span>&#46;</span>edu<span>&#46;</span>edu</a></p>
 </div>
-<p>The latest stable version (<a class="reference external" href="https://github.com/achael/eht-imaging/releases/tag/v1.2.6">1.2.6</a>) is available on <a class="reference external" href="https://pypi.org/project/ehtim/">PyPi</a>. Simply install pip and run</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>pip install ehtim
+<p>The latest stable version (<a class="reference external" href="https://github.com/achael/eht-imaging/releases/tag/v1.2.10">1.2.10</a>) is available on <a class="reference external" href="https://pypi.org/project/ehtim/">PyPi</a>. Simply install pip and run</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>pip<span class="w"> </span>install<span class="w"> </span>ehtim
 </pre></div>
 </div>
 <p>Incremental updates are developed on the <a class="reference external" href="https://github.com/achael/eht-imaging/tree/dev">dev branch</a>. To use the very latest (unstable) code, checkout the dev branch, change to the main eht-imaging directory, and run:</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>pip install .
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>pip<span class="w"> </span>install<span class="w"> </span>.
 </pre></div>
 </div>
 <p>Installing with pip will update most of the required libraries automatically (<a class="reference external" href="http://www.numpy.org/">numpy</a>, <a class="reference external" href="http://www.scipy.org/">scipy</a>, <a class="reference external" href="http://www.matplotlib.org/">matplotlib</a>, <a class="reference external" href="http://www.astropy.org/">astropy</a>, <a class="reference external" href="http://pypi.python.org/pypi/pyephem/">ephem</a>, <a class="reference external" href="http://pypi.python.org/pypi/future">future</a>, <a class="reference external" href="http://www.h5py.org/">h5py</a>, and <a class="reference external" href="http://www.pandas.pydata.org/">pandas</a>).</p>
-<p><strong>If you want to use fast fourier transforms, you will also need to separately install</strong> <a class="reference external" href="https://github.com/NFFT/nfft">NFFT</a> <strong>and its</strong> <a class="reference external" href="https://github.com/ghisvail/pyNFFT/">pynfft wrapper</a>. The simplest way is to use <a class="reference external" href="https://anaconda.org/conda-forge/pynfft/">conda</a> to install both:</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>conda install -c conda-forge pynfft
+<p><strong>If you want to use fast fourier transforms, you will also need to separately install</strong> <a class="reference external" href="https://github.com/NFFT/nfft">NFFT</a> <strong>and its</strong> <a class="reference external" href="https://github.com/ghisvail/pyNFFT/">pyNFFT wrapper</a>. <strong>Note that pyNFFT is only supported for python versions 3.11 or lower.</strong></p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>conda<span class="w"> </span>install<span class="w"> </span>-c<span class="w"> </span>conda-forge<span class="w"> </span>pynfft
 </pre></div>
 </div>
 <p>Alternatively, first install NFFT manually following the instructions on the <a class="reference external" href="https://github.com/NFFT/nfft">readme</a>, making sure to use the <code class="docutils literal notranslate"><span class="pre">--enable-openmp</span></code> flag in compilation. Then install <a class="reference external" href="https://github.com/ghisvail/pyNFFT/">pynfft</a>, with pip, following the readme instructions to link the installation to where you installed NFFT. Finally, reinstall ehtim.</p>
 <p><strong>For M1 Macs (OS &gt;= v12.0)</strong>, install the M1 Mac version of <a class="reference external" href="https://github.com/rohandahale/pyNFFT.git">pynfft</a> and follow the instructions on the <a class="reference external" href="https://github.com/rohandahale/pyNFFT.git">readme</a>. It has the instructions to install <a class="reference external" href="http://www.fftw.org">fftw</a>, <a class="reference external" href="https://github.com/NFFT/nfft">nfft</a> and then <a class="reference external" href="https://github.com/rohandahale/pyNFFT.git">pynfft</a>.</p>
 <p><strong>Certain eht-imaging functions require other external packages that are not automatically installed.</strong> In addition to pynfft, these include  <a class="reference external" href="https://networkx.github.io/">networkx</a> (for image comparison functions), <a class="reference external" href="http://docs.python-requests.org/en/master/">requests</a> (for dynamical imaging), and <a class="reference external" href="https://scikit-image.org/">scikit-image</a> (for a few image analysis functions). However, the vast majority of the code will work without these dependencies.</p>
-<div class="section" id="documentation-and-tutorials">
-<h2>Documentation and Tutorials<a class="headerlink" href="#documentation-and-tutorials" title="Permalink to this headline">¶</a></h2>
+<section id="documentation-and-tutorials">
+<h2>Documentation and Tutorials<a class="headerlink" href="#documentation-and-tutorials" title="Permalink to this heading"></a></h2>
 <p>Documentation is  <a class="reference external" href="https://achael.github.io/eht-imaging">here</a>.</p>
 <p>A intro to imaging tutorial jupyter notebook can be found in the repo at <a class="reference external" href="https://github.com/achael/eht-imaging/blob/main/tutorials/ehtim_tutorial.ipynb">tutorials/ehtim_tutorial.ipynb</a></p>
 <p><a class="reference external" href="https://docs.google.com/presentation/d/1A0y9omYI2ueSUa6_t5reylBhw6eiLwjqDzw-HUOk8Ac/edit?usp=sharing">Slides</a> for the included tutorial walk through the basic steps of reconstructing EHT images with the code</p>
@@ -112,11 +115,11 @@
 <li><p>Start with the script examples/example.py, which contains a series of sample commands to load an image and array, generate data, and produce an image with various imaging algorithms.</p></li>
 <li><p>Older <a class="reference external" href="https://www.dropbox.com/s/7533ucj8bt54yh7/Bouman_Chael.pdf?dl=0">Slides</a> from the EHT2016 data generation and imaging workshop contain a tutorial on generating data with the VLBI imaging <a class="reference external" href="http://vlbiimaging.csail.mit.edu">website</a>, loading into the library, and producing an image.</p></li>
 </ul>
-</div>
-<div class="section" id="documentation">
-<h2>Documentation<a class="headerlink" href="#documentation" title="Permalink to this headline">¶</a></h2>
+</section>
+<section id="documentation">
+<h2>Documentation<a class="headerlink" href="#documentation" title="Permalink to this heading"></a></h2>
 <div class="toctree-wrapper compound">
-<p class="caption"><span class="caption-text">Contents:</span></p>
+<p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="image.html">Image</a></li>
 <li class="toctree-l1"><a class="reference internal" href="array.html">Array</a></li>
@@ -132,25 +135,25 @@
 <li class="toctree-l1"><a class="reference internal" href="vex.html">Vex</a></li>
 </ul>
 </div>
-</div>
-<div class="section" id="acknowledgements">
-<h2>Acknowledgements<a class="headerlink" href="#acknowledgements" title="Permalink to this headline">¶</a></h2>
+</section>
+<section id="acknowledgements">
+<h2>Acknowledgements<a class="headerlink" href="#acknowledgements" title="Permalink to this heading"></a></h2>
 <p>The <code class="code docutils literal notranslate"><span class="pre">oifits_new</span></code> code used for reading/writing .oifits files is a slightly modified version of Paul Boley’s package at <a class="reference external" href="http://astro.ins.urfu.ru/pages/~pboley/oifits">http://astro.ins.urfu.ru/pages/~pboley/oifits</a>. The oifits read/write functionality is still being tested and may not work with all versions of python.</p>
 <p>This documentation is styled after <a class="reference external" href="https://github.com/dfm">dfm’s projects</a> and the documentation for <a class="reference external" href="https://github.com/krosenfeld/scatterbrane">scatterbrane</a></p>
-</div>
-<div class="section" id="license">
-<h2>License<a class="headerlink" href="#license" title="Permalink to this headline">¶</a></h2>
+</section>
+<section id="license">
+<h2>License<a class="headerlink" href="#license" title="Permalink to this heading"></a></h2>
 <p>ehtim is licensed under GPLv3. See LICENSE.txt for more details.</p>
-</div>
-<div class="section" id="indices-and-tables">
-<h2>Indices and tables<a class="headerlink" href="#indices-and-tables" title="Permalink to this headline">¶</a></h2>
+</section>
+<section id="indices-and-tables">
+<h2>Indices and tables<a class="headerlink" href="#indices-and-tables" title="Permalink to this heading"></a></h2>
 <ul class="simple">
 <li><p><a class="reference internal" href="genindex.html"><span class="std std-ref">Index</span></a></p></li>
 <li><p><a class="reference internal" href="py-modindex.html"><span class="std std-ref">Module Index</span></a></p></li>
 <li><p><a class="reference internal" href="search.html"><span class="std std-ref">Search Page</span></a></p></li>
 </ul>
-</div>
-</div>
+</section>
+</section>
 
 
            </div>

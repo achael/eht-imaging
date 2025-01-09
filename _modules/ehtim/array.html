@@ -3,16 +3,18 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>ehtim.array &mdash; ehtim 1.2.6 documentation</title><link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
-    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+  <title>ehtim.array &mdash; ehtim 1.2.6 documentation</title>
+      <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
   <!--[if lt IE 9]>
     <script src="../../_static/js/html5shiv.min.js"></script>
   <![endif]-->
-  <script id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
+  
+        <script data-url_root="../../" id="documentation_options" src="../../_static/documentation_options.js"></script>
         <script src="../../_static/jquery.js"></script>
         <script src="../../_static/underscore.js"></script>
+        <script src="../../_static/_sphinx_javascript_frameworks_compat.js"></script>
         <script src="../../_static/doctools.js"></script>
-        <script src="../../_static/language_data.js"></script>
     <script src="../../_static/js/theme.js"></script>
     <link rel="index" title="Index" href="../../genindex.html" />
     <link rel="search" title="Search" href="../../search.html" /> 
@@ -36,7 +38,7 @@
   </form>
 </div>
         </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
-              <p class="caption"><span class="caption-text">Contents:</span></p>
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="../../image.html">Image</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../array.html">Array</a></li>
@@ -122,7 +124,7 @@
 
 <div class="viewcode-block" id="Array"><a class="viewcode-back" href="../../array.html#ehtim.array.Array">[docs]</a><span class="k">class</span> <span class="nc">Array</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
 
-    <span class="sd">&quot;&quot;&quot;A VLBI array of telescopes with site locations, SEFDs, and other data.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;A VLBI array of telescopes with site locations, SEFDs, and other data.</span>
 
 <span class="sd">       Attributes:</span>
 <span class="sd">           tarr (numpy.recarray): The array of telescope data with datatype DTARR</span>
@@ -159,7 +161,7 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">tkey</span> <span class="o">=</span> <span class="p">{</span><span class="n">tarr</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="s1">&#39;site&#39;</span><span class="p">]:</span> <span class="n">i</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">tarr</span><span class="p">))}</span>
 
 <div class="viewcode-block" id="Array.copy"><a class="viewcode-back" href="../../array.html#ehtim.array.Array.copy">[docs]</a>    <span class="k">def</span> <span class="nf">copy</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Copy the array object.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Copy the array object.</span>
 
 <span class="sd">           Args:</span>
 
@@ -172,7 +174,7 @@
 
        
 <div class="viewcode-block" id="Array.listbls"><a class="viewcode-back" href="../../array.html#ehtim.array.Array.listbls">[docs]</a>    <span class="k">def</span> <span class="nf">listbls</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;List all baselines.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;List all baselines.</span>
 
 <span class="sd">           Args:</span>
 <span class="sd">           Returns:</span>
@@ -193,7 +195,7 @@
                 <span class="n">elevmin</span><span class="o">=</span><span class="n">ehc</span><span class="o">.</span><span class="n">ELEV_LOW</span><span class="p">,</span> <span class="n">elevmax</span><span class="o">=</span><span class="n">ehc</span><span class="o">.</span><span class="n">ELEV_HIGH</span><span class="p">,</span>
                 <span class="n">no_elevcut_space</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
                 <span class="n">tau</span><span class="o">=</span><span class="n">ehc</span><span class="o">.</span><span class="n">TAUDEF</span><span class="p">,</span> <span class="n">fix_theta_GMST</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Generate u,v points and baseline uncertainties.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Generate u,v points and baseline uncertainties.</span>
 
 <span class="sd">           Args:</span>
 <span class="sd">               ra (float): the source right ascension in fractional hours</span>
@@ -235,7 +237,7 @@
         <span class="k">return</span> <span class="n">obs</span></div>
 
 <div class="viewcode-block" id="Array.make_subarray"><a class="viewcode-back" href="../../array.html#ehtim.array.Array.make_subarray">[docs]</a>    <span class="k">def</span> <span class="nf">make_subarray</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">sites</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Make a subarray from the Array object array that only includes the sites listed.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Make a subarray from the Array object array that only includes the sites listed.</span>
 
 <span class="sd">           Args:</span>
 <span class="sd">               sites (list) : list of sites in the subarray</span>
@@ -248,7 +250,7 @@
         <span class="k">return</span> <span class="n">subarr</span></div>
 
 <div class="viewcode-block" id="Array.save_txt"><a class="viewcode-back" href="../../array.html#ehtim.array.Array.save_txt">[docs]</a>    <span class="k">def</span> <span class="nf">save_txt</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">fname</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Save the array data in a text file.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Save the array data in a text file.</span>
 
 <span class="sd">           Args:</span>
 <span class="sd">               fname (str) : path to output array file</span>
@@ -259,7 +261,7 @@
 <div class="viewcode-block" id="Array.plot_dterms"><a class="viewcode-back" href="../../array.html#ehtim.array.Array.plot_dterms">[docs]</a>    <span class="k">def</span> <span class="nf">plot_dterms</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">sites</span><span class="o">=</span><span class="s1">&#39;all&#39;</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">legend</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">clist</span><span class="o">=</span><span class="n">ehc</span><span class="o">.</span><span class="n">SCOLORS</span><span class="p">,</span>
                     <span class="n">rangex</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">rangey</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">markersize</span><span class="o">=</span><span class="mi">2</span> <span class="o">*</span> <span class="n">ehc</span><span class="o">.</span><span class="n">MARKERSIZE</span><span class="p">,</span>
                     <span class="n">show</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">grid</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">export_pdf</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Make a plot of the D-terms.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Make a plot of the D-terms.</span>
 
 <span class="sd">           Args:</span>
 <span class="sd">               sites (list) : list of sites to plot</span>
@@ -297,8 +299,8 @@
 <div class="viewcode-block" id="Array.add_site"><a class="viewcode-back" href="../../array.html#ehtim.array.Array.add_site">[docs]</a>    <span class="k">def</span> <span class="nf">add_site</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">site</span><span class="p">,</span> <span class="n">coords</span><span class="p">,</span> <span class="n">sefd</span><span class="o">=</span><span class="mi">10000</span><span class="p">,</span> 
                  <span class="n">fr_par</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">fr_elev</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">fr_off</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> 
                  <span class="n">dr</span><span class="o">=</span><span class="mf">0.</span><span class="o">+</span><span class="mf">0.</span><span class="n">j</span><span class="p">,</span> <span class="n">dl</span><span class="o">=</span><span class="mf">0.</span><span class="o">+</span><span class="mf">0.</span><span class="n">j</span><span class="p">):</span>
-    
-        <span class="sd">&quot;&quot;&quot;Add a ground station to the array</span>
+<span class="w">    </span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Add a ground station to the array</span>
 <span class="sd">             </span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">tarr_old</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">tarr</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
@@ -315,7 +317,7 @@
         <span class="k">return</span> <span class="n">arr_out</span></div>
             
 <div class="viewcode-block" id="Array.remove_site"><a class="viewcode-back" href="../../array.html#ehtim.array.Array.remove_site">[docs]</a>    <span class="k">def</span> <span class="nf">remove_site</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">site</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Remove a site from the array</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Remove a site from the array</span>
 <span class="sd">           </span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">tarr_old</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">tarr</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
@@ -333,8 +335,8 @@
         <span class="k">return</span> <span class="n">arr_out</span></div>
 
 <div class="viewcode-block" id="Array.add_satellite_tle"><a class="viewcode-back" href="../../array.html#ehtim.array.Array.add_satellite_tle">[docs]</a>    <span class="k">def</span> <span class="nf">add_satellite_tle</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">tlelist</span><span class="p">,</span> <span class="n">sefd</span><span class="o">=</span><span class="mi">10000</span><span class="p">):</span>
-    
-        <span class="sd">&quot;&quot;&quot;Add an earth-orbiting satellite to the array from a TLE</span>
+<span class="w">    </span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Add an earth-orbiting satellite to the array from a TLE</span>
 <span class="sd">        </span>
 <span class="sd">           Args: </span>
 <span class="sd">             tlearr (str) : 3 element list with [name, tle line 1, tle line 2] as strings</span>
@@ -358,7 +360,7 @@
                                <span class="n">period_days</span><span class="o">=</span><span class="mf">1.</span><span class="p">,</span> <span class="n">eccentricity</span><span class="o">=</span><span class="mf">0.</span><span class="p">,</span>
                                <span class="n">inclination</span><span class="o">=</span><span class="mf">0.</span><span class="p">,</span> <span class="n">arg_perigee</span><span class="o">=</span><span class="mf">0.</span><span class="p">,</span> <span class="n">long_ascending</span><span class="o">=</span><span class="mf">0.</span><span class="p">,</span> 
                                <span class="n">sefd</span><span class="o">=</span><span class="mi">10000</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Add an earth-orbiting satellite to the array from simple keplerian elements</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Add an earth-orbiting satellite to the array from simple keplerian elements</span>
 <span class="sd">           perfect keplerian orbit is assumed, no derivatives</span>
 <span class="sd">                   </span>
 <span class="sd">           Args: </span>
@@ -456,7 +458,7 @@
 
 
 <div class="viewcode-block" id="load_txt"><a class="viewcode-back" href="../../array.html#ehtim.array.load_txt">[docs]</a><span class="k">def</span> <span class="nf">load_txt</span><span class="p">(</span><span class="n">fname</span><span class="p">,</span> <span class="n">ephemdir</span><span class="o">=</span><span class="s1">&#39;ephemeris&#39;</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Read an array from a text file.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Read an array from a text file.</span>
 <span class="sd">       Sites with x=y=z=0 are spacecraft, TLE ephemerides read from ephemdir.</span>
 
 <span class="sd">       Args:</span>

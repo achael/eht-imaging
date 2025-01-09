@@ -3,16 +3,18 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>ehtim.scattering.stochastic_optics &mdash; ehtim 1.2.6 documentation</title><link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
-    <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+  <title>ehtim.scattering.stochastic_optics &mdash; ehtim 1.2.6 documentation</title>
+      <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
   <!--[if lt IE 9]>
     <script src="../../../_static/js/html5shiv.min.js"></script>
   <![endif]-->
-  <script id="documentation_options" data-url_root="../../../" src="../../../_static/documentation_options.js"></script>
+  
+        <script data-url_root="../../../" id="documentation_options" src="../../../_static/documentation_options.js"></script>
         <script src="../../../_static/jquery.js"></script>
         <script src="../../../_static/underscore.js"></script>
+        <script src="../../../_static/_sphinx_javascript_frameworks_compat.js"></script>
         <script src="../../../_static/doctools.js"></script>
-        <script src="../../../_static/language_data.js"></script>
     <script src="../../../_static/js/theme.js"></script>
     <link rel="index" title="Index" href="../../../genindex.html" />
     <link rel="search" title="Search" href="../../../search.html" /> 
@@ -36,7 +38,7 @@
   </form>
 </div>
         </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
-              <p class="caption"><span class="caption-text">Contents:</span></p>
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="../../../image.html">Image</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../array.html">Array</a></li>
@@ -108,7 +110,7 @@
 <span class="c1">################################################################################</span>
 
 <div class="viewcode-block" id="ScatteringModel"><a class="viewcode-back" href="../../../scattering.html#ehtim.scattering.stochastic_optics.ScatteringModel">[docs]</a><span class="k">class</span> <span class="nc">ScatteringModel</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;A scattering model based on a thin-screen approximation.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;A scattering model based on a thin-screen approximation.</span>
 
 <span class="sd">       Models include:</span>
 <span class="sd">           (&#39;von_Mises&#39;, &#39;boxcar&#39;, &#39;dipole&#39;): These scattering models are motivated by observations of Sgr A*.</span>
@@ -138,7 +140,7 @@
 <span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model</span> <span class="o">=</span> <span class="s1">&#39;dipole&#39;</span><span class="p">,</span> <span class="n">scatt_alpha</span> <span class="o">=</span> <span class="mf">1.38</span><span class="p">,</span> <span class="n">observer_screen_distance</span> <span class="o">=</span> <span class="mf">2.82</span> <span class="o">*</span> <span class="mf">3.086e21</span><span class="p">,</span> <span class="n">source_screen_distance</span> <span class="o">=</span> <span class="mf">5.53</span> <span class="o">*</span> <span class="mf">3.086e21</span><span class="p">,</span> <span class="n">theta_maj_mas_ref</span> <span class="o">=</span> <span class="mf">1.380</span><span class="p">,</span> <span class="n">theta_min_mas_ref</span> <span class="o">=</span> <span class="mf">0.703</span><span class="p">,</span> <span class="n">POS_ANG</span> <span class="o">=</span> <span class="mf">81.9</span><span class="p">,</span> <span class="n">wavelength_reference_cm</span> <span class="o">=</span> <span class="mf">1.0</span><span class="p">,</span> <span class="n">r_in</span> <span class="o">=</span> <span class="mf">800e5</span><span class="p">,</span> <span class="n">r_out</span> <span class="o">=</span> <span class="mf">1e20</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;To initialize the scattering model, specify:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;To initialize the scattering model, specify:</span>
 
 <span class="sd">           Attributes:</span>
 <span class="sd">                model (string): The type of scattering model (determined by the power spectrum of phase fluctuations). Options are &#39;von_Mises&#39;, &#39;boxcar&#39;, &#39;dipole&#39;, and &#39;power-law&#39;</span>
@@ -217,7 +219,7 @@
             <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">P_phi_prefac</span> <span class="o">*</span> <span class="p">(</span><span class="mf">1.0</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">kzeta</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">phi</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">phi0</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span><span class="o">**</span><span class="p">(</span><span class="o">-</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">scatt_alpha</span> <span class="o">+</span> <span class="mf">2.0</span><span class="p">)</span><span class="o">/</span><span class="mf">2.0</span><span class="p">)</span>
 
 <div class="viewcode-block" id="ScatteringModel.rF"><a class="viewcode-back" href="../../../scattering.html#ehtim.scattering.stochastic_optics.ScatteringModel.rF">[docs]</a>    <span class="k">def</span> <span class="nf">rF</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">wavelength</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Returns the Fresnel scale [cm] of the scattering screen at the specified wavelength [cm].</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns the Fresnel scale [cm] of the scattering screen at the specified wavelength [cm].</span>
 
 <span class="sd">           Args:</span>
 <span class="sd">               wavelength (float): The desired wavelength [cm]</span>
@@ -228,7 +230,7 @@
         <span class="k">return</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">source_screen_distance</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">observer_screen_distance</span><span class="o">/</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">source_screen_distance</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">observer_screen_distance</span><span class="p">)</span><span class="o">*</span><span class="n">wavelength</span><span class="o">/</span><span class="p">(</span><span class="mf">2.0</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="p">))</span><span class="o">**</span><span class="mf">0.5</span></div>
 
 <div class="viewcode-block" id="ScatteringModel.Mag"><a class="viewcode-back" href="../../../scattering.html#ehtim.scattering.stochastic_optics.ScatteringModel.Mag">[docs]</a>    <span class="k">def</span> <span class="nf">Mag</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Returns the effective magnification the scattering screen: (observer-screen distance)/(source-screen distance).</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns the effective magnification the scattering screen: (observer-screen distance)/(source-screen distance).</span>
 
 <span class="sd">           Returns:</span>
 <span class="sd">               M (float): The effective magnification of the scattering screen.</span>
@@ -236,7 +238,7 @@
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">observer_screen_distance</span><span class="o">/</span><span class="bp">self</span><span class="o">.</span><span class="n">source_screen_distance</span></div>
 
 <div class="viewcode-block" id="ScatteringModel.dDphi_dz"><a class="viewcode-back" href="../../../scattering.html#ehtim.scattering.stochastic_optics.ScatteringModel.dDphi_dz">[docs]</a>    <span class="k">def</span> <span class="nf">dDphi_dz</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">r</span><span class="p">,</span> <span class="n">phi</span><span class="p">,</span> <span class="n">phi_q</span><span class="p">,</span> <span class="n">wavelength</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;differential contribution to the phase structure function</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;differential contribution to the phase structure function</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="mf">4.0</span> <span class="o">*</span> <span class="p">(</span><span class="n">wavelength</span><span class="o">/</span><span class="bp">self</span><span class="o">.</span><span class="n">wavelength_reference</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">C_scatt_0</span><span class="o">/</span><span class="bp">self</span><span class="o">.</span><span class="n">scatt_alpha</span> <span class="o">*</span> <span class="p">(</span><span class="n">sps</span><span class="o">.</span><span class="n">hyp1f1</span><span class="p">(</span><span class="o">-</span><span class="bp">self</span><span class="o">.</span><span class="n">scatt_alpha</span><span class="o">/</span><span class="mf">2.0</span><span class="p">,</span> <span class="mf">0.5</span><span class="p">,</span> <span class="o">-</span><span class="n">r</span><span class="o">**</span><span class="mi">2</span><span class="o">/</span><span class="p">(</span><span class="mf">4.0</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">r_in</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">phi</span> <span class="o">-</span> <span class="n">phi_q</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span> <span class="o">-</span> <span class="mf">1.0</span><span class="p">)</span></div>
 
@@ -262,7 +264,7 @@
         <span class="k">return</span> <span class="p">(</span><span class="n">Dmaj_eval</span> <span class="o">+</span> <span class="n">Dmin_eval</span><span class="p">)</span><span class="o">/</span><span class="mf">2.0</span> <span class="o">+</span> <span class="p">(</span><span class="n">Dmaj_eval</span> <span class="o">-</span> <span class="n">Dmin_eval</span><span class="p">)</span><span class="o">/</span><span class="mf">2.0</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="mf">2.0</span><span class="o">*</span><span class="p">(</span><span class="n">phi</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">phi0</span><span class="p">))</span>
 
 <div class="viewcode-block" id="ScatteringModel.Q"><a class="viewcode-back" href="../../../scattering.html#ehtim.scattering.stochastic_optics.ScatteringModel.Q">[docs]</a>    <span class="k">def</span> <span class="nf">Q</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">qx</span><span class="p">,</span> <span class="n">qy</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Computes the power spectrum of the scattering model at a wavenumber {qx,qy} (in 1/cm).</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Computes the power spectrum of the scattering model at a wavenumber {qx,qy} (in 1/cm).</span>
 <span class="sd">        The power spectrum is part of what defines the scattering model (along with Dphi).</span>
 <span class="sd">        Q(qx,qy) is independent of the observing wavelength.</span>
 
@@ -280,7 +282,7 @@
 
 
 <div class="viewcode-block" id="ScatteringModel.sqrtQ_Matrix"><a class="viewcode-back" href="../../../scattering.html#ehtim.scattering.stochastic_optics.ScatteringModel.sqrtQ_Matrix">[docs]</a>    <span class="k">def</span> <span class="nf">sqrtQ_Matrix</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">Reference_Image</span><span class="p">,</span> <span class="n">Vx_km_per_s</span><span class="o">=</span><span class="mf">50.0</span><span class="p">,</span> <span class="n">Vy_km_per_s</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">t_hr</span><span class="o">=</span><span class="mf">0.0</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Computes the square root of the power spectrum on a discrete grid. Because translation of the screen is done most conveniently in Fourier space, a screen translation can also be included.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Computes the square root of the power spectrum on a discrete grid. Because translation of the screen is done most conveniently in Fourier space, a screen translation can also be included.</span>
 
 <span class="sd">           Args:</span>
 <span class="sd">                Reference_Image (Image): Reference image to determine image and pixel dimensions and wavelength.</span>
@@ -306,7 +308,7 @@
         <span class="k">return</span> <span class="n">sqrtQ</span></div>
 
 <div class="viewcode-block" id="ScatteringModel.Ensemble_Average_Kernel"><a class="viewcode-back" href="../../../scattering.html#ehtim.scattering.stochastic_optics.ScatteringModel.Ensemble_Average_Kernel">[docs]</a>    <span class="k">def</span> <span class="nf">Ensemble_Average_Kernel</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">Reference_Image</span><span class="p">,</span> <span class="n">wavelength_cm</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">use_approximate_form</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;The ensemble-average convolution kernel for images; returns a 2D array corresponding to the image dimensions of the reference image</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;The ensemble-average convolution kernel for images; returns a 2D array corresponding to the image dimensions of the reference image</span>
 
 <span class="sd">           Args:</span>
 <span class="sd">                Reference_Image (Image): Reference image to determine image and pixel dimensions and wavelength.</span>
@@ -331,7 +333,7 @@
         <span class="k">return</span> <span class="n">ker</span></div>
 
 <div class="viewcode-block" id="ScatteringModel.Ensemble_Average_Kernel_Visibility"><a class="viewcode-back" href="../../../scattering.html#ehtim.scattering.stochastic_optics.ScatteringModel.Ensemble_Average_Kernel_Visibility">[docs]</a>    <span class="k">def</span> <span class="nf">Ensemble_Average_Kernel_Visibility</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">u</span><span class="p">,</span> <span class="n">v</span><span class="p">,</span> <span class="n">wavelength_cm</span><span class="p">,</span> <span class="n">use_approximate_form</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;The ensemble-average multiplicative scattering kernel for visibilities at a particular {u,v} coordinate</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;The ensemble-average multiplicative scattering kernel for visibilities at a particular {u,v} coordinate</span>
 
 <span class="sd">           Args:</span>
 <span class="sd">                u (float): u baseline coordinate (dimensionless)</span>
@@ -347,7 +349,7 @@
             <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="o">-</span><span class="mf">0.5</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">Dphi_exact</span><span class="p">(</span><span class="n">u</span><span class="o">*</span><span class="n">wavelength_cm</span><span class="o">/</span><span class="p">(</span><span class="mf">1.0</span><span class="o">+</span><span class="bp">self</span><span class="o">.</span><span class="n">Mag</span><span class="p">()),</span> <span class="n">v</span><span class="o">*</span><span class="n">wavelength_cm</span><span class="o">/</span><span class="p">(</span><span class="mf">1.0</span><span class="o">+</span><span class="bp">self</span><span class="o">.</span><span class="n">Mag</span><span class="p">()),</span> <span class="n">wavelength_cm</span><span class="p">))</span></div>
 
 <div class="viewcode-block" id="ScatteringModel.Ensemble_Average_Blur"><a class="viewcode-back" href="../../../scattering.html#ehtim.scattering.stochastic_optics.ScatteringModel.Ensemble_Average_Blur">[docs]</a>    <span class="k">def</span> <span class="nf">Ensemble_Average_Blur</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">im</span><span class="p">,</span> <span class="n">wavelength_cm</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">ker</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">use_approximate_form</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Blurs an input Image with the ensemble-average scattering kernel.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Blurs an input Image with the ensemble-average scattering kernel.</span>
 
 <span class="sd">           Args:</span>
 <span class="sd">                im (Image): The unscattered image.</span>
@@ -380,7 +382,7 @@
         <span class="k">return</span> <span class="n">out</span></div>
 
 <div class="viewcode-block" id="ScatteringModel.Deblur_obs"><a class="viewcode-back" href="../../../scattering.html#ehtim.scattering.stochastic_optics.ScatteringModel.Deblur_obs">[docs]</a>    <span class="k">def</span> <span class="nf">Deblur_obs</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">obs</span><span class="p">,</span> <span class="n">use_approximate_form</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Deblurs the observation obs by dividing visibilities by the ensemble-average scattering kernel. See Fish et al. (2014): arXiv:1409.4690.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Deblurs the observation obs by dividing visibilities by the ensemble-average scattering kernel. See Fish et al. (2014): arXiv:1409.4690.</span>
 
 <span class="sd">           Args:</span>
 <span class="sd">                obs (Obsdata): The observervation data (including scattering).</span>
@@ -429,7 +431,7 @@
         <span class="k">return</span> <span class="n">obsdeblur</span></div>
 
 <div class="viewcode-block" id="ScatteringModel.MakePhaseScreen"><a class="viewcode-back" href="../../../scattering.html#ehtim.scattering.stochastic_optics.ScatteringModel.MakePhaseScreen">[docs]</a>    <span class="k">def</span> <span class="nf">MakePhaseScreen</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">EpsilonScreen</span><span class="p">,</span> <span class="n">Reference_Image</span><span class="p">,</span> <span class="n">obs_frequency_Hz</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">Vx_km_per_s</span><span class="o">=</span><span class="mf">50.0</span><span class="p">,</span> <span class="n">Vy_km_per_s</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">t_hr</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">sqrtQ_init</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Create a refractive phase screen from standardized Fourier components (the EpsilonScreen).</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Create a refractive phase screen from standardized Fourier components (the EpsilonScreen).</span>
 <span class="sd">           All lengths should be specified in centimeters</span>
 <span class="sd">           If the observing frequency (obs_frequency_Hz) is not specified, then it will be taken to be equal to the frequency of the Reference_Image</span>
 <span class="sd">           Note: an odd image dimension is required!</span>
@@ -487,11 +489,11 @@
         <span class="k">return</span> <span class="n">phi_Image</span></div>
 
 <div class="viewcode-block" id="ScatteringModel.Scatter2"><a class="viewcode-back" href="../../../scattering.html#ehtim.scattering.stochastic_optics.ScatteringModel.Scatter2">[docs]</a>    <span class="k">def</span> <span class="nf">Scatter2</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">args</span><span class="p">,</span> <span class="n">kwargs</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Call self.Scatter with expanded args and kwargs.&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Call self.Scatter with expanded args and kwargs.&quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">Scatter</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></div>
 
 <div class="viewcode-block" id="ScatteringModel.Scatter"><a class="viewcode-back" href="../../../scattering.html#ehtim.scattering.stochastic_optics.ScatteringModel.Scatter">[docs]</a>    <span class="k">def</span> <span class="nf">Scatter</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">Unscattered_Image</span><span class="p">,</span> <span class="n">Epsilon_Screen</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([]),</span> <span class="n">obs_frequency_Hz</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">Vx_km_per_s</span><span class="o">=</span><span class="mf">50.0</span><span class="p">,</span> <span class="n">Vy_km_per_s</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">t_hr</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">ea_ker</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">sqrtQ</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">Linearized_Approximation</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">DisplayImage</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">Force_Positivity</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">use_approximate_form</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Scatter an image using the specified epsilon screen.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Scatter an image using the specified epsilon screen.</span>
 <span class="sd">           All lengths should be specified in centimeters</span>
 <span class="sd">           If the observing frequency (obs_frequency_Hz) is not specified, then it will be taken to be equal to the frequency of the Unscattered_Image</span>
 <span class="sd">           Note: an odd image dimension is required!</span>
@@ -609,7 +611,7 @@
         <span class="k">return</span> <span class="n">AI_Image</span></div>
 
 <div class="viewcode-block" id="ScatteringModel.Scatter_Movie"><a class="viewcode-back" href="../../../scattering.html#ehtim.scattering.stochastic_optics.ScatteringModel.Scatter_Movie">[docs]</a>    <span class="k">def</span> <span class="nf">Scatter_Movie</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">Unscattered_Movie</span><span class="p">,</span> <span class="n">Epsilon_Screen</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([]),</span> <span class="n">obs_frequency_Hz</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">Vx_km_per_s</span><span class="o">=</span><span class="mf">50.0</span><span class="p">,</span> <span class="n">Vy_km_per_s</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">framedur_sec</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">N_frames</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">ea_ker</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">sqrtQ</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">Linearized_Approximation</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">Force_Positivity</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">Return_Image_List</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">processes</span><span class="o">=</span><span class="mi">0</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Scatter a movie using the specified epsilon screen. The movie can either be a movie object, an image list, or a static image</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Scatter a movie using the specified epsilon screen. The movie can either be a movie object, an image list, or a static image</span>
 <span class="sd">           If scattering a list of images or static image, the frame duration in seconds (framedur_sec) must be specified</span>
 <span class="sd">           If scattering a static image, the total number of frames must be specified (N_frames)</span>
 <span class="sd">           All lengths should be specified in centimeters</span>
@@ -792,7 +794,7 @@
     <span class="k">return</span> <span class="n">epsilon</span>
 
 <div class="viewcode-block" id="MakeEpsilonScreen"><a class="viewcode-back" href="../../../scattering.html#ehtim.scattering.stochastic_optics.MakeEpsilonScreen">[docs]</a><span class="k">def</span> <span class="nf">MakeEpsilonScreen</span><span class="p">(</span><span class="n">Nx</span><span class="p">,</span> <span class="n">Ny</span><span class="p">,</span> <span class="n">rngseed</span> <span class="o">=</span> <span class="mi">0</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Create a standardized Fourier representation of a scattering screen</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Create a standardized Fourier representation of a scattering screen</span>
 
 <span class="sd">       Args:</span>
 <span class="sd">           Nx (int): Number of pixels in the x direction</span>

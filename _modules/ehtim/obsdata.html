@@ -3,16 +3,18 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>ehtim.obsdata &mdash; ehtim 1.2.6 documentation</title><link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
-    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+  <title>ehtim.obsdata &mdash; ehtim 1.2.6 documentation</title>
+      <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
   <!--[if lt IE 9]>
     <script src="../../_static/js/html5shiv.min.js"></script>
   <![endif]-->
-  <script id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
+  
+        <script data-url_root="../../" id="documentation_options" src="../../_static/documentation_options.js"></script>
         <script src="../../_static/jquery.js"></script>
         <script src="../../_static/underscore.js"></script>
+        <script src="../../_static/_sphinx_javascript_frameworks_compat.js"></script>
         <script src="../../_static/doctools.js"></script>
-        <script src="../../_static/language_data.js"></script>
     <script src="../../_static/js/theme.js"></script>
     <link rel="index" title="Index" href="../../genindex.html" />
     <link rel="search" title="Search" href="../../search.html" /> 
@@ -36,7 +38,7 @@
   </form>
 </div>
         </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
-              <p class="caption"><span class="caption-text">Contents:</span></p>
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="../../image.html">Image</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../array.html">Array</a></li>
@@ -145,7 +147,7 @@
 
 <div class="viewcode-block" id="Obsdata"><a class="viewcode-back" href="../../obsdata.html#ehtim.obsdata.Obsdata">[docs]</a><span class="k">class</span> <span class="nc">Obsdata</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
 
-    <span class="sd">&quot;&quot;&quot;A polarimetric VLBI observation of visibility amplitudes and phases (in Jy).</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;A polarimetric VLBI observation of visibility amplitudes and phases (in Jy).</span>
 
 <span class="sd">       Attributes:</span>
 <span class="sd">           source (str): The source name</span>
@@ -183,7 +185,7 @@
                  <span class="n">polrep</span><span class="o">=</span><span class="s1">&#39;stokes&#39;</span><span class="p">,</span> <span class="n">source</span><span class="o">=</span><span class="n">ehc</span><span class="o">.</span><span class="n">SOURCE_DEFAULT</span><span class="p">,</span> <span class="n">mjd</span><span class="o">=</span><span class="n">ehc</span><span class="o">.</span><span class="n">MJD_DEFAULT</span><span class="p">,</span> <span class="n">timetype</span><span class="o">=</span><span class="s1">&#39;UTC&#39;</span><span class="p">,</span>
                  <span class="n">ampcal</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">phasecal</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">opacitycal</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">dcal</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">frcal</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
                  <span class="n">trial_speedups</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;A polarimetric VLBI observation of visibility amplitudes and phases (in Jy).</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;A polarimetric VLBI observation of visibility amplitudes and phases (in Jy).</span>
 
 <span class="sd">           Args:</span>
 <span class="sd">               ra (float): The source Right Ascension in fractional hours</span>
@@ -283,7 +285,7 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">tkey</span> <span class="o">=</span> <span class="p">{</span><span class="n">tarr</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="s1">&#39;site&#39;</span><span class="p">]:</span> <span class="n">i</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">tarr</span><span class="p">))}</span>
         
 <div class="viewcode-block" id="Obsdata.obsdata_args"><a class="viewcode-back" href="../../obsdata.html#ehtim.obsdata.Obsdata.obsdata_args">[docs]</a>    <span class="k">def</span> <span class="nf">obsdata_args</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;&quot;Copy arguments for making a new Obsdata into a list and dictonary</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;&quot;Copy arguments for making a new Obsdata into a list and dictonary</span>
 <span class="sd">        &quot;&quot;&quot;</span>
 
         <span class="n">arglist</span> <span class="o">=</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">ra</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">dec</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">rf</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">bw</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">tarr</span><span class="p">]</span>
@@ -294,7 +296,7 @@
         <span class="k">return</span> <span class="p">(</span><span class="n">arglist</span><span class="p">,</span> <span class="n">argdict</span><span class="p">)</span></div>
 
 <div class="viewcode-block" id="Obsdata.copy"><a class="viewcode-back" href="../../obsdata.html#ehtim.obsdata.Obsdata.copy">[docs]</a>    <span class="k">def</span> <span class="nf">copy</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Copy the observation object.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Copy the observation object.</span>
 
 <span class="sd">           Args:</span>
 
@@ -308,7 +310,7 @@
         <span class="k">return</span> <span class="n">newobs</span></div>
 
 <div class="viewcode-block" id="Obsdata.switch_timetype"><a class="viewcode-back" href="../../obsdata.html#ehtim.obsdata.Obsdata.switch_timetype">[docs]</a>    <span class="k">def</span> <span class="nf">switch_timetype</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">timetype_out</span><span class="o">=</span><span class="s1">&#39;UTC&#39;</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Return a new observation with the time type switched</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Return a new observation with the time type switched</span>
 
 <span class="sd">           Args:</span>
 <span class="sd">               timetype (str): &quot;UTC&quot; or &quot;GMST&quot;</span>
@@ -333,7 +335,7 @@
         <span class="k">return</span> <span class="n">out</span></div>
 
 <div class="viewcode-block" id="Obsdata.switch_polrep"><a class="viewcode-back" href="../../obsdata.html#ehtim.obsdata.Obsdata.switch_polrep">[docs]</a>    <span class="k">def</span> <span class="nf">switch_polrep</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">polrep_out</span><span class="o">=</span><span class="s1">&#39;stokes&#39;</span><span class="p">,</span> <span class="n">allow_singlepol</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">singlepol_hand</span><span class="o">=</span><span class="s1">&#39;R&#39;</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Return a new observation with the polarization representation changed</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Return a new observation with the polarization representation changed</span>
 
 <span class="sd">           Args:</span>
 <span class="sd">               polrep_out (str):  the polrep of the output data</span>
@@ -419,7 +421,7 @@
         <span class="k">return</span> <span class="n">newobs</span></div>
 
 <div class="viewcode-block" id="Obsdata.reorder_baselines"><a class="viewcode-back" href="../../obsdata.html#ehtim.obsdata.Obsdata.reorder_baselines">[docs]</a>    <span class="k">def</span> <span class="nf">reorder_baselines</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">trial_speedups</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Reorder baselines to match uvfits convention, based on the telescope array ordering</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Reorder baselines to match uvfits convention, based on the telescope array ordering</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="n">trial_speedups</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">reorder_baselines_trial_speedups</span><span class="p">()</span>
@@ -487,7 +489,7 @@
         <span class="k">return</span></div>
 
 <div class="viewcode-block" id="Obsdata.reorder_baselines_trial_speedups"><a class="viewcode-back" href="../../obsdata.html#ehtim.obsdata.Obsdata.reorder_baselines_trial_speedups">[docs]</a>    <span class="k">def</span> <span class="nf">reorder_baselines_trial_speedups</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Reorder baselines to match uvfits convention, based on the telescope array ordering</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Reorder baselines to match uvfits convention, based on the telescope array ordering</span>
 <span class="sd">        &quot;&quot;&quot;</span>
 
         <span class="n">dat</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
@@ -562,7 +564,7 @@
         <span class="k">return</span></div>
 
 <div class="viewcode-block" id="Obsdata.reorder_tarr_sefd"><a class="viewcode-back" href="../../obsdata.html#ehtim.obsdata.Obsdata.reorder_tarr_sefd">[docs]</a>    <span class="k">def</span> <span class="nf">reorder_tarr_sefd</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">reorder_baselines</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Reorder the telescope array by SEFD minimal to maximum.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Reorder the telescope array by SEFD minimal to maximum.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
 
         <span class="n">sorted_list</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">tarr</span><span class="p">,</span> <span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">x</span><span class="p">[</span><span class="s1">&#39;sefdr&#39;</span><span class="p">]</span><span class="o">**</span><span class="mi">2</span> <span class="o">+</span> <span class="n">x</span><span class="p">[</span><span class="s1">&#39;sefdl&#39;</span><span class="p">]</span><span class="o">**</span><span class="mi">2</span><span class="p">))</span>
@@ -574,7 +576,7 @@
         <span class="k">return</span></div>
 
 <div class="viewcode-block" id="Obsdata.reorder_tarr_snr"><a class="viewcode-back" href="../../obsdata.html#ehtim.obsdata.Obsdata.reorder_tarr_snr">[docs]</a>    <span class="k">def</span> <span class="nf">reorder_tarr_snr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">reorder_baselines</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Reorder the telescope array by median SNR maximal to minimal.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Reorder the telescope array by median SNR maximal to minimal.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
 
         <span class="n">snr</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">unpack</span><span class="p">([</span><span class="s1">&#39;t1&#39;</span><span class="p">,</span> <span class="s1">&#39;t2&#39;</span><span class="p">,</span> <span class="s1">&#39;snr&#39;</span><span class="p">])</span>
@@ -589,7 +591,7 @@
         <span class="k">return</span></div>
 
 <div class="viewcode-block" id="Obsdata.reorder_tarr_random"><a class="viewcode-back" href="../../obsdata.html#ehtim.obsdata.Obsdata.reorder_tarr_random">[docs]</a>    <span class="k">def</span> <span class="nf">reorder_tarr_random</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">reorder_baselines</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Randomly reorder the telescope array.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Randomly reorder the telescope array.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
 
         <span class="n">idx</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">tarr</span><span class="p">))</span>
@@ -602,7 +604,7 @@
         <span class="k">return</span></div>
 
 <div class="viewcode-block" id="Obsdata.data_conj"><a class="viewcode-back" href="../../obsdata.html#ehtim.obsdata.Obsdata.data_conj">[docs]</a>    <span class="k">def</span> <span class="nf">data_conj</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Make a data array including all conjugate baselines.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Make a data array including all conjugate baselines.</span>
 
 <span class="sd">           Args:</span>
 
@@ -655,7 +657,7 @@
         <span class="k">return</span> <span class="n">data</span></div>
 
 <div class="viewcode-block" id="Obsdata.tlist"><a class="viewcode-back" href="../../obsdata.html#ehtim.obsdata.Obsdata.tlist">[docs]</a>    <span class="k">def</span> <span class="nf">tlist</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">conj</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">t_gather</span><span class="o">=</span><span class="mf">0.</span><span class="p">,</span> <span class="n">scan_gather</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Group the data in a list of equal time observation datatables.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Group the data in a list of equal time observation datatables.</span>
 
 <span class="sd">           Args:</span>
 <span class="sd">                conj (bool): True if tlist_out includes conjugate baselines.</span>
@@ -698,7 +700,7 @@
 
 
 <div class="viewcode-block" id="Obsdata.split_obs"><a class="viewcode-back" href="../../obsdata.html#ehtim.obsdata.Obsdata.split_obs">[docs]</a>    <span class="k">def</span> <span class="nf">split_obs</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">t_gather</span><span class="o">=</span><span class="mf">0.</span><span class="p">,</span> <span class="n">scan_gather</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Split single observation into multiple observation files, one per scan..</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Split single observation into multiple observation files, one per scan..</span>
 
 <span class="sd">           Args:</span>
 <span class="sd">                t_gather (float): Grouping timescale (in seconds). 0.0 indicates no grouping.</span>
@@ -724,7 +726,7 @@
 
 
 <div class="viewcode-block" id="Obsdata.getClosestScan"><a class="viewcode-back" href="../../obsdata.html#ehtim.obsdata.Obsdata.getClosestScan">[docs]</a>    <span class="k">def</span> <span class="nf">getClosestScan</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">time</span><span class="p">,</span> <span class="n">splitObs</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Split observation by scan and grab scan closest to timestamp</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Split observation by scan and grab scan closest to timestamp</span>
 
 <span class="sd">           Args:</span>
 <span class="sd">                time (float): Time (GMST) you want to find the scan closest to</span>
@@ -753,7 +755,7 @@
 
 
 <div class="viewcode-block" id="Obsdata.bllist"><a class="viewcode-back" href="../../obsdata.html#ehtim.obsdata.Obsdata.bllist">[docs]</a>    <span class="k">def</span> <span class="nf">bllist</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">conj</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Group the data in a list of same baseline datatables.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Group the data in a list of same baseline datatables.</span>
 
 <span class="sd">           Args:</span>
 <span class="sd">                conj (bool): True if tlist_out includes conjugate baselines.</span>
@@ -776,7 +778,7 @@
         <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">datalist</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">object</span><span class="p">)</span></div>
         
 <div class="viewcode-block" id="Obsdata.unpack_bl"><a class="viewcode-back" href="../../obsdata.html#ehtim.obsdata.Obsdata.unpack_bl">[docs]</a>    <span class="k">def</span> <span class="nf">unpack_bl</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">site1</span><span class="p">,</span> <span class="n">site2</span><span class="p">,</span> <span class="n">fields</span><span class="p">,</span> <span class="n">ang_unit</span><span class="o">=</span><span class="s1">&#39;deg&#39;</span><span class="p">,</span> <span class="n">debias</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">timetype</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Unpack the data over time on the selected baseline site1-site2.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Unpack the data over time on the selected baseline site1-site2.</span>
 
 <span class="sd">           Args:</span>
 <span class="sd">                site1 (str): First site name</span>
@@ -819,7 +821,7 @@
         <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">allout</span><span class="p">)</span></div>
         
 <div class="viewcode-block" id="Obsdata.unpack"><a class="viewcode-back" href="../../obsdata.html#ehtim.obsdata.Obsdata.unpack">[docs]</a>    <span class="k">def</span> <span class="nf">unpack</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">fields</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s1">&#39;all&#39;</span><span class="p">,</span> <span class="n">ang_unit</span><span class="o">=</span><span class="s1">&#39;deg&#39;</span><span class="p">,</span> <span class="n">debias</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">conj</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">timetype</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Unpack the data for the whole observation .</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Unpack the data for the whole observation .</span>
 
 <span class="sd">           Args:</span>
 <span class="sd">                fields (list): list of unpacked quantities from availalbe quantities in FIELDS</span>
@@ -869,7 +871,7 @@
         <span class="k">return</span> <span class="n">allout</span></div>
 
 <div class="viewcode-block" id="Obsdata.unpack_dat"><a class="viewcode-back" href="../../obsdata.html#ehtim.obsdata.Obsdata.unpack_dat">[docs]</a>    <span class="k">def</span> <span class="nf">unpack_dat</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">fields</span><span class="p">,</span> <span class="n">conj</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">ang_unit</span><span class="o">=</span><span class="s1">&#39;deg&#39;</span><span class="p">,</span> <span class="n">debias</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">timetype</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Unpack the data in a passed data recarray.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Unpack the data in a passed data recarray.</span>
 
 <span class="sd">           Args:</span>
 <span class="sd">                data (numpy.recarray): data recarray of format DTPOL_STOKES or DTPOL_CIRC</span>
@@ -1121,7 +1123,7 @@
         <span class="k">return</span> <span class="n">allout</span></div>
 
 <div class="viewcode-block" id="Obsdata.sourcevec"><a class="viewcode-back" href="../../obsdata.html#ehtim.obsdata.Obsdata.sourcevec">[docs]</a>    <span class="k">def</span> <span class="nf">sourcevec</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Return the source position vector in geocentric coordinates at 0h GMST.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Return the source position vector in geocentric coordinates at 0h GMST.</span>
 
 <span class="sd">           Args:</span>
 
@@ -1134,7 +1136,7 @@
         <span class="k">return</span> <span class="n">sourcevec</span></div>
 
 <div class="viewcode-block" id="Obsdata.res"><a class="viewcode-back" href="../../obsdata.html#ehtim.obsdata.Obsdata.res">[docs]</a>    <span class="k">def</span> <span class="nf">res</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Return the nominal resolution (1/longest baseline) of the observation in radians.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Return the nominal resolution (1/longest baseline) of the observation in radians.</span>
 
 <span class="sd">           Args:</span>
 
@@ -1148,7 +1150,7 @@
 
 
 <div class="viewcode-block" id="Obsdata.chisq"><a class="viewcode-back" href="../../obsdata.html#ehtim.obsdata.Obsdata.chisq">[docs]</a>    <span class="k">def</span> <span class="nf">chisq</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">im_or_mov</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="s1">&#39;vis&#39;</span><span class="p">,</span> <span class="n">pol</span><span class="o">=</span><span class="s1">&#39;I&#39;</span><span class="p">,</span> <span class="n">ttype</span><span class="o">=</span><span class="s1">&#39;nfft&#39;</span><span class="p">,</span> <span class="n">mask</span><span class="o">=</span><span class="p">[],</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Give the reduced chi^2 of the observation for the specified image and datatype.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Give the reduced chi^2 of the observation for the specified image and datatype.</span>
 
 <span class="sd">           Args:</span>
 <span class="sd">                im_or_mov (Image or Movie): image or movie object on which to test chi^2</span>
@@ -1235,7 +1237,7 @@
         <span class="k">return</span> <span class="n">chisq</span></div>
 
 <div class="viewcode-block" id="Obsdata.polchisq"><a class="viewcode-back" href="../../obsdata.html#ehtim.obsdata.Obsdata.polchisq">[docs]</a>    <span class="k">def</span> <span class="nf">polchisq</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">im</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="s1">&#39;pvis&#39;</span><span class="p">,</span> <span class="n">ttype</span><span class="o">=</span><span class="s1">&#39;nfft&#39;</span><span class="p">,</span> <span class="n">pol_trans</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">mask</span><span class="o">=</span><span class="p">[],</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Give the reduced chi^2 for the specified image and polarimetric datatype.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Give the reduced chi^2 for the specified image and polarimetric datatype.</span>
 
 <span class="sd">           Args:</span>
 <span class="sd">                im (Image): image to test polarimetric chi^2</span>
@@ -1304,7 +1306,7 @@
         <span class="k">return</span> <span class="n">chisq</span></div>
 
 <div class="viewcode-block" id="Obsdata.recompute_uv"><a class="viewcode-back" href="../../obsdata.html#ehtim.obsdata.Obsdata.recompute_uv">[docs]</a>    <span class="k">def</span> <span class="nf">recompute_uv</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Recompute u,v points using observation times and metadata</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Recompute u,v points using observation times and metadata</span>
 
 <span class="sd">           Args:</span>
 
@@ -1339,7 +1341,7 @@
         <span class="k">return</span> <span class="n">out</span></div>
 
 <div class="viewcode-block" id="Obsdata.avg_coherent"><a class="viewcode-back" href="../../obsdata.html#ehtim.obsdata.Obsdata.avg_coherent">[docs]</a>    <span class="k">def</span> <span class="nf">avg_coherent</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">inttime</span><span class="p">,</span> <span class="n">scan_avg</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">moving</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Coherently average data along u,v tracks in chunks of length inttime (sec)</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Coherently average data along u,v tracks in chunks of length inttime (sec)</span>
 
 <span class="sd">           Args:</span>
 <span class="sd">                inttime (float): coherent integration time in seconds</span>
@@ -1370,7 +1372,7 @@
         <span class="k">return</span> <span class="n">out</span></div>
 
 <div class="viewcode-block" id="Obsdata.avg_incoherent"><a class="viewcode-back" href="../../obsdata.html#ehtim.obsdata.Obsdata.avg_incoherent">[docs]</a>    <span class="k">def</span> <span class="nf">avg_incoherent</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">inttime</span><span class="p">,</span> <span class="n">scan_avg</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">debias</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">err_type</span><span class="o">=</span><span class="s1">&#39;predicted&#39;</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Incoherently average data along u,v tracks in chunks of length inttime (sec)</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Incoherently average data along u,v tracks in chunks of length inttime (sec)</span>
 
 <span class="sd">           Args:</span>
 <span class="sd">                inttime (float): incoherent integration time in seconds</span>
@@ -1393,7 +1395,7 @@
 
 <div class="viewcode-block" id="Obsdata.add_amp"><a class="viewcode-back" href="../../obsdata.html#ehtim.obsdata.Obsdata.add_amp">[docs]</a>    <span class="k">def</span> <span class="nf">add_amp</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">avg_time</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">scan_avg</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">debias</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">err_type</span><span class="o">=</span><span class="s1">&#39;predicted&#39;</span><span class="p">,</span>
                 <span class="n">return_type</span><span class="o">=</span><span class="s1">&#39;rec&#39;</span><span class="p">,</span> <span class="n">round_s</span><span class="o">=</span><span class="mf">0.1</span><span class="p">,</span> <span class="n">snrcut</span><span class="o">=</span><span class="mf">0.</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Adds attribute self.amp: aan amplitude table with incoherently averaged amplitudes</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Adds attribute self.amp: aan amplitude table with incoherently averaged amplitudes</span>
 
 <span class="sd">           Args:</span>
 <span class="sd">               avg_time (float): incoherent integration time in seconds</span>
@@ -1431,7 +1433,7 @@
 
 <div class="viewcode-block" id="Obsdata.add_bispec"><a class="viewcode-back" href="../../obsdata.html#ehtim.obsdata.Obsdata.add_bispec">[docs]</a>    <span class="k">def</span> <span class="nf">add_bispec</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">avg_time</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">return_type</span><span class="o">=</span><span class="s1">&#39;rec&#39;</span><span class="p">,</span> <span class="n">count</span><span class="o">=</span><span class="s1">&#39;max&#39;</span><span class="p">,</span> <span class="n">snrcut</span><span class="o">=</span><span class="mf">0.</span><span class="p">,</span>
                    <span class="n">err_type</span><span class="o">=</span><span class="s1">&#39;predicted&#39;</span><span class="p">,</span> <span class="n">num_samples</span><span class="o">=</span><span class="mi">1000</span><span class="p">,</span> <span class="n">round_s</span><span class="o">=</span><span class="mf">0.1</span><span class="p">,</span> <span class="n">uv_min</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Adds attribute self.bispec: bispectra table with bispectra averaged for dt</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Adds attribute self.bispec: bispectra table with bispectra averaged for dt</span>
 
 <span class="sd">           Args:</span>
 <span class="sd">               avg_time (float): bispectrum averaging timescale</span>
@@ -1471,7 +1473,7 @@
 
 <div class="viewcode-block" id="Obsdata.add_cphase"><a class="viewcode-back" href="../../obsdata.html#ehtim.obsdata.Obsdata.add_cphase">[docs]</a>    <span class="k">def</span> <span class="nf">add_cphase</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">avg_time</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">return_type</span><span class="o">=</span><span class="s1">&#39;rec&#39;</span><span class="p">,</span> <span class="n">count</span><span class="o">=</span><span class="s1">&#39;max&#39;</span><span class="p">,</span> <span class="n">snrcut</span><span class="o">=</span><span class="mf">0.</span><span class="p">,</span>
                    <span class="n">err_type</span><span class="o">=</span><span class="s1">&#39;predicted&#39;</span><span class="p">,</span> <span class="n">num_samples</span><span class="o">=</span><span class="mi">1000</span><span class="p">,</span> <span class="n">round_s</span><span class="o">=</span><span class="mf">0.1</span><span class="p">,</span> <span class="n">uv_min</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Adds attribute self.cphase: cphase table averaged for dt</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Adds attribute self.cphase: cphase table averaged for dt</span>
 
 <span class="sd">           Args:</span>
 <span class="sd">               avg_time (float): closure phase averaging timescale</span>
@@ -1511,7 +1513,7 @@
 
 <div class="viewcode-block" id="Obsdata.add_cphase_diag"><a class="viewcode-back" href="../../obsdata.html#ehtim.obsdata.Obsdata.add_cphase_diag">[docs]</a>    <span class="k">def</span> <span class="nf">add_cphase_diag</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">avg_time</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">return_type</span><span class="o">=</span><span class="s1">&#39;rec&#39;</span><span class="p">,</span> <span class="n">vtype</span><span class="o">=</span><span class="s1">&#39;vis&#39;</span><span class="p">,</span> <span class="n">count</span><span class="o">=</span><span class="s1">&#39;min&#39;</span><span class="p">,</span> <span class="n">snrcut</span><span class="o">=</span><span class="mf">0.</span><span class="p">,</span>
                         <span class="n">err_type</span><span class="o">=</span><span class="s1">&#39;predicted&#39;</span><span class="p">,</span> <span class="n">num_samples</span><span class="o">=</span><span class="mi">1000</span><span class="p">,</span> <span class="n">round_s</span><span class="o">=</span><span class="mf">0.1</span><span class="p">,</span> <span class="n">uv_min</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Adds attribute self.cphase_diag: cphase_diag table averaged for dt</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Adds attribute self.cphase_diag: cphase_diag table averaged for dt</span>
 
 <span class="sd">           Args:</span>
 <span class="sd">               avg_time (float): closure phase averaging timescale</span>
@@ -1555,7 +1557,7 @@
 <div class="viewcode-block" id="Obsdata.add_camp"><a class="viewcode-back" href="../../obsdata.html#ehtim.obsdata.Obsdata.add_camp">[docs]</a>    <span class="k">def</span> <span class="nf">add_camp</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">avg_time</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">return_type</span><span class="o">=</span><span class="s1">&#39;rec&#39;</span><span class="p">,</span> <span class="n">ctype</span><span class="o">=</span><span class="s1">&#39;camp&#39;</span><span class="p">,</span>
                  <span class="n">count</span><span class="o">=</span><span class="s1">&#39;max&#39;</span><span class="p">,</span> <span class="n">debias</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">snrcut</span><span class="o">=</span><span class="mf">0.</span><span class="p">,</span>
                  <span class="n">err_type</span><span class="o">=</span><span class="s1">&#39;predicted&#39;</span><span class="p">,</span> <span class="n">num_samples</span><span class="o">=</span><span class="mi">1000</span><span class="p">,</span> <span class="n">round_s</span><span class="o">=</span><span class="mf">0.1</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Adds attribute self.camp or self.logcamp: closure amplitudes table</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Adds attribute self.camp or self.logcamp: closure amplitudes table</span>
 
 <span class="sd">           Args:</span>
 <span class="sd">               avg_time (float): closure amplitude averaging timescale</span>
@@ -1604,7 +1606,7 @@
 <div class="viewcode-block" id="Obsdata.add_logcamp"><a class="viewcode-back" href="../../obsdata.html#ehtim.obsdata.Obsdata.add_logcamp">[docs]</a>    <span class="k">def</span> <span class="nf">add_logcamp</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">avg_time</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">return_type</span><span class="o">=</span><span class="s1">&#39;rec&#39;</span><span class="p">,</span> <span class="n">ctype</span><span class="o">=</span><span class="s1">&#39;camp&#39;</span><span class="p">,</span>
                     <span class="n">count</span><span class="o">=</span><span class="s1">&#39;max&#39;</span><span class="p">,</span> <span class="n">debias</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">snrcut</span><span class="o">=</span><span class="mf">0.</span><span class="p">,</span>
                     <span class="n">err_type</span><span class="o">=</span><span class="s1">&#39;predicted&#39;</span><span class="p">,</span> <span class="n">num_samples</span><span class="o">=</span><span class="mi">1000</span><span class="p">,</span> <span class="n">round_s</span><span class="o">=</span><span class="mf">0.1</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Adds attribute self.logcamp: closure amplitudes table</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Adds attribute self.logcamp: closure amplitudes table</span>
 
 <span class="sd">           Args:</span>
 <span class="sd">               avg_time (float): closure amplitude averaging timescale</span>
@@ -1629,7 +1631,7 @@
 
 <div class="viewcode-block" id="Obsdata.add_logcamp_diag"><a class="viewcode-back" href="../../obsdata.html#ehtim.obsdata.Obsdata.add_logcamp_diag">[docs]</a>    <span class="k">def</span> <span class="nf">add_logcamp_diag</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">avg_time</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">return_type</span><span class="o">=</span><span class="s1">&#39;rec&#39;</span><span class="p">,</span> <span class="n">count</span><span class="o">=</span><span class="s1">&#39;min&#39;</span><span class="p">,</span> <span class="n">snrcut</span><span class="o">=</span><span class="mf">0.</span><span class="p">,</span>
                          <span class="n">debias</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">err_type</span><span class="o">=</span><span class="s1">&#39;predicted&#39;</span><span class="p">,</span> <span class="n">num_samples</span><span class="o">=</span><span class="mi">1000</span><span class="p">,</span> <span class="n">round_s</span><span class="o">=</span><span class="mf">0.1</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Adds attribute self.logcamp_diag: logcamp_diag table averaged for dt</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Adds attribute self.logcamp_diag: logcamp_diag table averaged for dt</span>
 
 <span class="sd">           Args:</span>
 <span class="sd">               avg_time (float): diagonal log closure amplitude averaging timescale</span>
@@ -1672,7 +1674,7 @@
 <div class="viewcode-block" id="Obsdata.add_all"><a class="viewcode-back" href="../../obsdata.html#ehtim.obsdata.Obsdata.add_all">[docs]</a>    <span class="k">def</span> <span class="nf">add_all</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">avg_time</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">return_type</span><span class="o">=</span><span class="s1">&#39;rec&#39;</span><span class="p">,</span>
                 <span class="n">count</span><span class="o">=</span><span class="s1">&#39;max&#39;</span><span class="p">,</span> <span class="n">debias</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">snrcut</span><span class="o">=</span><span class="mf">0.</span><span class="p">,</span>
                 <span class="n">err_type</span><span class="o">=</span><span class="s1">&#39;predicted&#39;</span><span class="p">,</span> <span class="n">num_samples</span><span class="o">=</span><span class="mi">1000</span><span class="p">,</span> <span class="n">round_s</span><span class="o">=</span><span class="mf">0.1</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Adds tables of all all averaged derived quantities</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Adds tables of all all averaged derived quantities</span>
 <span class="sd">           self.amp,self.bispec,self.cphase,self.camp,self.logcamp</span>
 
 <span class="sd">           Args:</span>
@@ -1714,7 +1716,7 @@
         <span class="k">return</span></div>
 
 <div class="viewcode-block" id="Obsdata.add_scans"><a class="viewcode-back" href="../../obsdata.html#ehtim.obsdata.Obsdata.add_scans">[docs]</a>    <span class="k">def</span> <span class="nf">add_scans</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">info</span><span class="o">=</span><span class="s1">&#39;self&#39;</span><span class="p">,</span> <span class="n">filepath</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">,</span> <span class="n">dt</span><span class="o">=</span><span class="mf">0.0165</span><span class="p">,</span> <span class="n">margin</span><span class="o">=</span><span class="mf">0.0001</span><span class="p">,</span><span class="n">split_subarray</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Compute scans and add self.scans to Obsdata object.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Compute scans and add self.scans to Obsdata object.</span>
 
 <span class="sd">            Args:</span>
 <span class="sd">                info (str): &#39;self&#39; to infer from data, &#39;txt&#39; for text file,</span>
@@ -1782,7 +1784,7 @@
         <span class="k">return</span></div>
 
 <div class="viewcode-block" id="Obsdata.cleanbeam"><a class="viewcode-back" href="../../obsdata.html#ehtim.obsdata.Obsdata.cleanbeam">[docs]</a>    <span class="k">def</span> <span class="nf">cleanbeam</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">npix</span><span class="p">,</span> <span class="n">fov</span><span class="p">,</span> <span class="n">pulse</span><span class="o">=</span><span class="n">ehc</span><span class="o">.</span><span class="n">PULSE_DEFAULT</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Make an image of the observation clean beam.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Make an image of the observation clean beam.</span>
 
 <span class="sd">           Args:</span>
 <span class="sd">               npix (int): The pixel size of the square output image.</span>
@@ -1800,7 +1802,7 @@
         <span class="k">return</span> <span class="n">im</span></div>
 
 <div class="viewcode-block" id="Obsdata.fit_beam"><a class="viewcode-back" href="../../obsdata.html#ehtim.obsdata.Obsdata.fit_beam">[docs]</a>    <span class="k">def</span> <span class="nf">fit_beam</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">weighting</span><span class="o">=</span><span class="s1">&#39;uniform&#39;</span><span class="p">,</span> <span class="n">units</span><span class="o">=</span><span class="s1">&#39;rad&#39;</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Fit a Gaussian to the dirty beam and return the parameters (fwhm_maj, fwhm_min, theta).</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Fit a Gaussian to the dirty beam and return the parameters (fwhm_maj, fwhm_min, theta).</span>
 
 <span class="sd">           Args:</span>
 <span class="sd">               weighting (str): &#39;uniform&#39; or &#39;natural&#39;.</span>
@@ -1865,7 +1867,7 @@
         <span class="k">return</span> <span class="n">gparams</span></div>
 
 <div class="viewcode-block" id="Obsdata.dirtybeam"><a class="viewcode-back" href="../../obsdata.html#ehtim.obsdata.Obsdata.dirtybeam">[docs]</a>    <span class="k">def</span> <span class="nf">dirtybeam</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">npix</span><span class="p">,</span> <span class="n">fov</span><span class="p">,</span> <span class="n">pulse</span><span class="o">=</span><span class="n">ehc</span><span class="o">.</span><span class="n">PULSE_DEFAULT</span><span class="p">,</span> <span class="n">weighting</span><span class="o">=</span><span class="s1">&#39;uniform&#39;</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Make an image of the observation dirty beam.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Make an image of the observation dirty beam.</span>
 
 <span class="sd">           Args:</span>
 <span class="sd">               npix (int): The pixel size of the square output image.</span>
@@ -1903,7 +1905,7 @@
         <span class="k">return</span> <span class="n">outim</span></div>
 
 <div class="viewcode-block" id="Obsdata.dirtyimage"><a class="viewcode-back" href="../../obsdata.html#ehtim.obsdata.Obsdata.dirtyimage">[docs]</a>    <span class="k">def</span> <span class="nf">dirtyimage</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">npix</span><span class="p">,</span> <span class="n">fov</span><span class="p">,</span> <span class="n">pulse</span><span class="o">=</span><span class="n">ehc</span><span class="o">.</span><span class="n">PULSE_DEFAULT</span><span class="p">,</span> <span class="n">weighting</span><span class="o">=</span><span class="s1">&#39;uniform&#39;</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Make the observation dirty image (direct Fourier transform).</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Make the observation dirty image (direct Fourier transform).</span>
 
 <span class="sd">           Args:</span>
 <span class="sd">               npix (int): The pixel size of the square output image.</span>
@@ -1955,7 +1957,7 @@
         <span class="k">return</span> <span class="n">out</span></div>
 
 <div class="viewcode-block" id="Obsdata.rescale_zbl"><a class="viewcode-back" href="../../obsdata.html#ehtim.obsdata.Obsdata.rescale_zbl">[docs]</a>    <span class="k">def</span> <span class="nf">rescale_zbl</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">totflux</span><span class="p">,</span> <span class="n">uv_max</span><span class="p">,</span> <span class="n">debias</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Rescale the short baselines to a new level of total flux.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Rescale the short baselines to a new level of total flux.</span>
 
 <span class="sd">           Args:</span>
 <span class="sd">               totflux (float): new total flux to rescale to</span>
@@ -1992,7 +1994,7 @@
         <span class="k">return</span> <span class="n">obs</span></div>
 
 <div class="viewcode-block" id="Obsdata.add_leakage_noise"><a class="viewcode-back" href="../../obsdata.html#ehtim.obsdata.Obsdata.add_leakage_noise">[docs]</a>    <span class="k">def</span> <span class="nf">add_leakage_noise</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">Dterm_amp</span><span class="o">=</span><span class="mf">0.1</span><span class="p">,</span> <span class="n">min_noise</span><span class="o">=</span><span class="mf">0.01</span><span class="p">,</span> <span class="n">debias</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Add estimated systematic noise from leakage at quadrature to thermal noise.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Add estimated systematic noise from leakage at quadrature to thermal noise.</span>
 <span class="sd">           Requires cross-hand visibilities.</span>
 <span class="sd">           !! this operation is not currently tracked and should be applied with extreme caution!!</span>
 
@@ -2025,7 +2027,7 @@
         <span class="k">return</span> <span class="n">out</span></div>
 
 <div class="viewcode-block" id="Obsdata.add_fractional_noise"><a class="viewcode-back" href="../../obsdata.html#ehtim.obsdata.Obsdata.add_fractional_noise">[docs]</a>    <span class="k">def</span> <span class="nf">add_fractional_noise</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">frac_noise</span><span class="p">,</span> <span class="n">debias</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Add a constant fraction of amplitude at quadrature to thermal noise.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Add a constant fraction of amplitude at quadrature to thermal noise.</span>
 <span class="sd">           Effectively imposes a maximal signal-to-noise ratio.</span>
 <span class="sd">           !! this operation is not currently tracked and should be applied with extreme caution!!</span>
 
@@ -2053,7 +2055,7 @@
 
 <div class="viewcode-block" id="Obsdata.find_amt_fractional_noise"><a class="viewcode-back" href="../../obsdata.html#ehtim.obsdata.Obsdata.find_amt_fractional_noise">[docs]</a>    <span class="k">def</span> <span class="nf">find_amt_fractional_noise</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">im</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="s1">&#39;vis&#39;</span><span class="p">,</span> <span class="n">target</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span> <span class="n">debias</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
                                   <span class="n">maxiter</span><span class="o">=</span><span class="mi">200</span><span class="p">,</span> <span class="n">ftol</span><span class="o">=</span><span class="mf">1e-20</span><span class="p">,</span> <span class="n">gtol</span><span class="o">=</span><span class="mf">1e-20</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Returns the amount of fractional sys error necessary</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns the amount of fractional sys error necessary</span>
 <span class="sd">           to make the image have a chisq close to the targeted value (1.0)</span>
 <span class="sd">        &quot;&quot;&quot;</span>
 
@@ -2070,7 +2072,7 @@
         <span class="k">return</span> <span class="n">res</span><span class="o">.</span><span class="n">x</span></div>
 
 <div class="viewcode-block" id="Obsdata.rescale_noise"><a class="viewcode-back" href="../../obsdata.html#ehtim.obsdata.Obsdata.rescale_noise">[docs]</a>    <span class="k">def</span> <span class="nf">rescale_noise</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">noise_rescale_factor</span><span class="o">=</span><span class="mf">1.0</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Rescale the thermal noise on all Stokes parameters by a constant factor.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Rescale the thermal noise on all Stokes parameters by a constant factor.</span>
 <span class="sd">           This is useful for AIPS data, which has a missing factor relating &#39;weights&#39; to noise.</span>
 
 <span class="sd">           Args:</span>
@@ -2096,7 +2098,7 @@
 
 <div class="viewcode-block" id="Obsdata.estimate_noise_rescale_factor"><a class="viewcode-back" href="../../obsdata.html#ehtim.obsdata.Obsdata.estimate_noise_rescale_factor">[docs]</a>    <span class="k">def</span> <span class="nf">estimate_noise_rescale_factor</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">max_diff_sec</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">min_num</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span> <span class="n">median_snr_cut</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
                                       <span class="n">count</span><span class="o">=</span><span class="s1">&#39;max&#39;</span><span class="p">,</span> <span class="n">vtype</span><span class="o">=</span><span class="s1">&#39;vis&#39;</span><span class="p">,</span> <span class="n">print_std</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Estimate a constant noise rescaling factor on all baselines, times, and polarizations.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Estimate a constant noise rescaling factor on all baselines, times, and polarizations.</span>
 <span class="sd">           Uses pairwise differences of closure phases relative to the expected scatter.</span>
 <span class="sd">           This is useful for AIPS data, which has a missing factor relating &#39;weights&#39; to noise.</span>
 
@@ -2184,7 +2186,7 @@
         <span class="k">return</span> <span class="n">median</span></div>
 
 <div class="viewcode-block" id="Obsdata.flag_elev"><a class="viewcode-back" href="../../obsdata.html#ehtim.obsdata.Obsdata.flag_elev">[docs]</a>    <span class="k">def</span> <span class="nf">flag_elev</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">elev_min</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">elev_max</span><span class="o">=</span><span class="mi">90</span><span class="p">,</span> <span class="n">output</span><span class="o">=</span><span class="s1">&#39;kept&#39;</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Flag visibilities for which either station is outside a stated elevation range</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Flag visibilities for which either station is outside a stated elevation range</span>
 
 <span class="sd">           Args:</span>
 <span class="sd">               elev_min (float): Minimum elevation (deg)</span>
@@ -2219,7 +2221,7 @@
             <span class="k">return</span> <span class="n">obs_kept</span></div>
 
 <div class="viewcode-block" id="Obsdata.flag_large_fractional_pol"><a class="viewcode-back" href="../../obsdata.html#ehtim.obsdata.Obsdata.flag_large_fractional_pol">[docs]</a>    <span class="k">def</span> <span class="nf">flag_large_fractional_pol</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">max_fractional_pol</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span> <span class="n">output</span><span class="o">=</span><span class="s1">&#39;kept&#39;</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Flag visibilities for which the fractional polarization is above a specified threshold</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Flag visibilities for which the fractional polarization is above a specified threshold</span>
 
 <span class="sd">           Args:</span>
 <span class="sd">               max_fractional_pol (float): Maximum fractional polarization</span>
@@ -2252,7 +2254,7 @@
             <span class="k">return</span> <span class="n">obs_kept</span></div>
 
 <div class="viewcode-block" id="Obsdata.flag_uvdist"><a class="viewcode-back" href="../../obsdata.html#ehtim.obsdata.Obsdata.flag_uvdist">[docs]</a>    <span class="k">def</span> <span class="nf">flag_uvdist</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">uv_min</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">uv_max</span><span class="o">=</span><span class="mf">1e12</span><span class="p">,</span> <span class="n">output</span><span class="o">=</span><span class="s1">&#39;kept&#39;</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Flag data points outside a given uv range</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Flag data points outside a given uv range</span>
 
 <span class="sd">           Args:</span>
 <span class="sd">               uv_min (float): remove points with uvdist less than  this</span>
@@ -2285,7 +2287,7 @@
             <span class="k">return</span> <span class="n">obs_kept</span></div>
 
 <div class="viewcode-block" id="Obsdata.flag_sites"><a class="viewcode-back" href="../../obsdata.html#ehtim.obsdata.Obsdata.flag_sites">[docs]</a>    <span class="k">def</span> <span class="nf">flag_sites</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">sites</span><span class="p">,</span> <span class="n">output</span><span class="o">=</span><span class="s1">&#39;kept&#39;</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Flag data points that include the specified sites</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Flag data points that include the specified sites</span>
 
 <span class="sd">           Args:</span>
 <span class="sd">               sites (list): list of sites to remove from the data</span>
@@ -2322,7 +2324,7 @@
             <span class="k">return</span> <span class="n">obs_kept</span></div>
 
 <div class="viewcode-block" id="Obsdata.flag_bl"><a class="viewcode-back" href="../../obsdata.html#ehtim.obsdata.Obsdata.flag_bl">[docs]</a>    <span class="k">def</span> <span class="nf">flag_bl</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">sites</span><span class="p">,</span> <span class="n">output</span><span class="o">=</span><span class="s1">&#39;kept&#39;</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Flag data points that include the specified baseline</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Flag data points that include the specified baseline</span>
 
 <span class="sd">           Args:</span>
 <span class="sd">               sites (list): baseline to remove from the data</span>
@@ -2359,7 +2361,7 @@
             <span class="k">return</span> <span class="n">obs_kept</span></div>
 
 <div class="viewcode-block" id="Obsdata.flag_low_snr"><a class="viewcode-back" href="../../obsdata.html#ehtim.obsdata.Obsdata.flag_low_snr">[docs]</a>    <span class="k">def</span> <span class="nf">flag_low_snr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">snr_cut</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span> <span class="n">output</span><span class="o">=</span><span class="s1">&#39;kept&#39;</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Flag low snr data points</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Flag low snr data points</span>
 
 <span class="sd">           Args:</span>
 <span class="sd">               snr_cut (float): remove points with snr lower than  this</span>
@@ -2390,8 +2392,8 @@
         <span class="k">else</span><span class="p">:</span>
             <span class="k">return</span> <span class="n">obs_kept</span></div>
 
-<div class="viewcode-block" id="Obsdata.flag_high_sigma"><a class="viewcode-back" href="../../obsdata.html#ehtim.obsdata.Obsdata.flag_high_sigma">[docs]</a>    <span class="k">def</span> <span class="nf">flag_high_sigma</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">sigma_cut</span><span class="o">=.</span><span class="mi">005</span><span class="p">,</span> <span class="n">sigma_type</span><span class="o">=</span><span class="s1">&#39;sigma&#39;</span><span class="p">,</span> <span class="n">output</span><span class="o">=</span><span class="s1">&#39;kept&#39;</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Flag high sigma (thermal noise on Stoke I) data points</span>
+<div class="viewcode-block" id="Obsdata.flag_high_sigma"><a class="viewcode-back" href="../../obsdata.html#ehtim.obsdata.Obsdata.flag_high_sigma">[docs]</a>    <span class="k">def</span> <span class="nf">flag_high_sigma</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">sigma_cut</span><span class="o">=</span><span class="mf">.005</span><span class="p">,</span> <span class="n">sigma_type</span><span class="o">=</span><span class="s1">&#39;sigma&#39;</span><span class="p">,</span> <span class="n">output</span><span class="o">=</span><span class="s1">&#39;kept&#39;</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Flag high sigma (thermal noise on Stoke I) data points</span>
 
 <span class="sd">           Args:</span>
 <span class="sd">               sigma_cut (float): remove points with sigma higher than  this</span>
@@ -2425,7 +2427,7 @@
 
 <div class="viewcode-block" id="Obsdata.flag_UT_range"><a class="viewcode-back" href="../../obsdata.html#ehtim.obsdata.Obsdata.flag_UT_range">[docs]</a>    <span class="k">def</span> <span class="nf">flag_UT_range</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">UT_start_hour</span><span class="o">=</span><span class="mf">0.</span><span class="p">,</span> <span class="n">UT_stop_hour</span><span class="o">=</span><span class="mf">0.</span><span class="p">,</span>
                       <span class="n">flag_type</span><span class="o">=</span><span class="s1">&#39;all&#39;</span><span class="p">,</span> <span class="n">flag_what</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">,</span> <span class="n">output</span><span class="o">=</span><span class="s1">&#39;kept&#39;</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Flag data points within a certain UT range</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Flag data points within a certain UT range</span>
 
 <span class="sd">           Args:</span>
 <span class="sd">               UT_start_hour (float): start of  time window</span>
@@ -2479,7 +2481,7 @@
             <span class="k">return</span> <span class="n">obs_kept</span></div>
 
 <div class="viewcode-block" id="Obsdata.flags_from_file"><a class="viewcode-back" href="../../obsdata.html#ehtim.obsdata.Obsdata.flags_from_file">[docs]</a>    <span class="k">def</span> <span class="nf">flags_from_file</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">flagfile</span><span class="p">,</span> <span class="n">flag_type</span><span class="o">=</span><span class="s1">&#39;station&#39;</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Flagging data based on csv file</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Flagging data based on csv file</span>
 
 <span class="sd">            Args:</span>
 <span class="sd">                flagfile (str): path to csv file with mjds of flagging start / stop time,</span>
@@ -2510,7 +2512,7 @@
         <span class="k">return</span> <span class="n">obs</span></div>
 
 <div class="viewcode-block" id="Obsdata.flag_anomalous"><a class="viewcode-back" href="../../obsdata.html#ehtim.obsdata.Obsdata.flag_anomalous">[docs]</a>    <span class="k">def</span> <span class="nf">flag_anomalous</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">field</span><span class="o">=</span><span class="s1">&#39;snr&#39;</span><span class="p">,</span> <span class="n">max_diff_seconds</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span> <span class="n">robust_nsigma_cut</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span> <span class="n">output</span><span class="o">=</span><span class="s1">&#39;kept&#39;</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Flag anomalous data points</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Flag anomalous data points</span>
 
 <span class="sd">           Args:</span>
 <span class="sd">               field (str): The quantity to test for</span>
@@ -2568,7 +2570,7 @@
             <span class="k">return</span> <span class="n">obs_kept</span></div>
 
 <div class="viewcode-block" id="Obsdata.filter_subscan_dropouts"><a class="viewcode-back" href="../../obsdata.html#ehtim.obsdata.Obsdata.filter_subscan_dropouts">[docs]</a>    <span class="k">def</span> <span class="nf">filter_subscan_dropouts</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">perc</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">return_type</span><span class="o">=</span><span class="s1">&#39;rec&#39;</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Filtration to drop data and ensure that we only average parts with same timestamp.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Filtration to drop data and ensure that we only average parts with same timestamp.</span>
 <span class="sd">           Potentially this could reduce risk of non-closing errors.</span>
 
 <span class="sd">           Args:</span>
@@ -2643,7 +2645,7 @@
             <span class="k">return</span> <span class="n">out</span></div>
 
 <div class="viewcode-block" id="Obsdata.reverse_taper"><a class="viewcode-back" href="../../obsdata.html#ehtim.obsdata.Obsdata.reverse_taper">[docs]</a>    <span class="k">def</span> <span class="nf">reverse_taper</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">fwhm</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Reverse taper the observation with a circular Gaussian kernel</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Reverse taper the observation with a circular Gaussian kernel</span>
 
 <span class="sd">           Args:</span>
 <span class="sd">               fwhm (float): real space fwhm size of convolution kernel in radian</span>
@@ -2682,7 +2684,7 @@
         <span class="k">return</span> <span class="n">obstaper</span></div>
 
 <div class="viewcode-block" id="Obsdata.taper"><a class="viewcode-back" href="../../obsdata.html#ehtim.obsdata.Obsdata.taper">[docs]</a>    <span class="k">def</span> <span class="nf">taper</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">fwhm</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Taper the observation with a circular Gaussian kernel</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Taper the observation with a circular Gaussian kernel</span>
 
 <span class="sd">           Args:</span>
 <span class="sd">               fwhm (float): real space fwhm size of convolution kernel in radian</span>
@@ -2722,7 +2724,7 @@
         <span class="k">return</span> <span class="n">obstaper</span></div>
 
 <div class="viewcode-block" id="Obsdata.deblur"><a class="viewcode-back" href="../../obsdata.html#ehtim.obsdata.Obsdata.deblur">[docs]</a>    <span class="k">def</span> <span class="nf">deblur</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Deblur the observation obs by dividing by the Sgr A* scattering kernel.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Deblur the observation obs by dividing by the Sgr A* scattering kernel.</span>
 
 <span class="sd">           Args:</span>
 
@@ -2772,7 +2774,7 @@
         <span class="k">return</span> <span class="n">obsdeblur</span></div>
 
 <div class="viewcode-block" id="Obsdata.reweight"><a class="viewcode-back" href="../../obsdata.html#ehtim.obsdata.Obsdata.reweight">[docs]</a>    <span class="k">def</span> <span class="nf">reweight</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">uv_radius</span><span class="p">,</span> <span class="n">weightdist</span><span class="o">=</span><span class="mf">1.0</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Reweight the sigmas based on the local  density of uv points</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Reweight the sigmas based on the local  density of uv points</span>
 
 <span class="sd">           Args:</span>
 <span class="sd">               uv_radius (float): radius in uv-plane to look for nearby points</span>
@@ -2810,7 +2812,7 @@
 
 <div class="viewcode-block" id="Obsdata.fit_gauss"><a class="viewcode-back" href="../../obsdata.html#ehtim.obsdata.Obsdata.fit_gauss">[docs]</a>    <span class="k">def</span> <span class="nf">fit_gauss</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">flux</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span> <span class="n">fittype</span><span class="o">=</span><span class="s1">&#39;amp&#39;</span><span class="p">,</span> <span class="n">paramguess</span><span class="o">=</span><span class="p">(</span>
             <span class="mi">100</span> <span class="o">*</span> <span class="n">ehc</span><span class="o">.</span><span class="n">RADPERUAS</span><span class="p">,</span> <span class="mi">100</span> <span class="o">*</span> <span class="n">ehc</span><span class="o">.</span><span class="n">RADPERUAS</span><span class="p">,</span> <span class="mf">0.</span><span class="p">)):</span>
-        <span class="sd">&quot;&quot;&quot;Fit a gaussian to either Stokes I complex visibilities or Stokes I visibility amplitudes.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Fit a gaussian to either Stokes I complex visibilities or Stokes I visibility amplitudes.</span>
 
 <span class="sd">           Args:</span>
 <span class="sd">                flux (float): total flux in the fitted gaussian</span>
@@ -2847,7 +2849,7 @@
 
 <div class="viewcode-block" id="Obsdata.bispectra"><a class="viewcode-back" href="../../obsdata.html#ehtim.obsdata.Obsdata.bispectra">[docs]</a>    <span class="k">def</span> <span class="nf">bispectra</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">vtype</span><span class="o">=</span><span class="s1">&#39;vis&#39;</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s1">&#39;all&#39;</span><span class="p">,</span> <span class="n">count</span><span class="o">=</span><span class="s1">&#39;min&#39;</span><span class="p">,</span>
                   <span class="n">timetype</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">uv_min</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">snrcut</span><span class="o">=</span><span class="mf">0.</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Return a recarray of the equal time bispectra.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Return a recarray of the equal time bispectra.</span>
 
 <span class="sd">           Args:</span>
 <span class="sd">               vtype (str): The visibilty type from which to assemble bispectra</span>
@@ -2988,7 +2990,7 @@
 
 <div class="viewcode-block" id="Obsdata.c_phases"><a class="viewcode-back" href="../../obsdata.html#ehtim.obsdata.Obsdata.c_phases">[docs]</a>    <span class="k">def</span> <span class="nf">c_phases</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">vtype</span><span class="o">=</span><span class="s1">&#39;vis&#39;</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s1">&#39;all&#39;</span><span class="p">,</span> <span class="n">count</span><span class="o">=</span><span class="s1">&#39;min&#39;</span><span class="p">,</span> <span class="n">ang_unit</span><span class="o">=</span><span class="s1">&#39;deg&#39;</span><span class="p">,</span>
                  <span class="n">timetype</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">uv_min</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">snrcut</span><span class="o">=</span><span class="mf">0.</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Return a recarray of the equal time closure phases.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Return a recarray of the equal time closure phases.</span>
 
 <span class="sd">           Args:</span>
 <span class="sd">               vtype (str): The visibilty type from which to assemble closure phases</span>
@@ -3053,7 +3055,7 @@
 
 <div class="viewcode-block" id="Obsdata.c_phases_diag"><a class="viewcode-back" href="../../obsdata.html#ehtim.obsdata.Obsdata.c_phases_diag">[docs]</a>    <span class="k">def</span> <span class="nf">c_phases_diag</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">vtype</span><span class="o">=</span><span class="s1">&#39;vis&#39;</span><span class="p">,</span> <span class="n">count</span><span class="o">=</span><span class="s1">&#39;min&#39;</span><span class="p">,</span> <span class="n">ang_unit</span><span class="o">=</span><span class="s1">&#39;deg&#39;</span><span class="p">,</span>
                       <span class="n">timetype</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">uv_min</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">snrcut</span><span class="o">=</span><span class="mf">0.</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Return a recarray of the equal time diagonalized closure phases.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Return a recarray of the equal time diagonalized closure phases.</span>
 
 <span class="sd">           Args:</span>
 <span class="sd">               vtype (str): The visibilty type (&#39;vis&#39;,&#39;qvis&#39;,&#39;uvis&#39;,&#39;vvis&#39;,&#39;pvis&#39;)</span>
@@ -3207,7 +3209,7 @@
                       <span class="n">vtype</span><span class="o">=</span><span class="s1">&#39;vis&#39;</span><span class="p">,</span> <span class="n">timetype</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">snrcut</span><span class="o">=</span><span class="mf">0.</span><span class="p">,</span> <span class="n">method</span><span class="o">=</span><span class="s1">&#39;from_maxset&#39;</span><span class="p">,</span> 
                       <span class="n">bs</span><span class="o">=</span><span class="p">[],</span> <span class="n">force_recompute</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
 
-        <span class="sd">&quot;&quot;&quot;Return complex bispectrum  over time on a triangle (1-2-3).</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Return complex bispectrum  over time on a triangle (1-2-3).</span>
 
 <span class="sd">           Args:</span>
 <span class="sd">               site1 (str): station 1 name</span>
@@ -3382,7 +3384,7 @@
 <div class="viewcode-block" id="Obsdata.cphase_tri"><a class="viewcode-back" href="../../obsdata.html#ehtim.obsdata.Obsdata.cphase_tri">[docs]</a>    <span class="k">def</span> <span class="nf">cphase_tri</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">site1</span><span class="p">,</span> <span class="n">site2</span><span class="p">,</span> <span class="n">site3</span><span class="p">,</span> <span class="n">vtype</span><span class="o">=</span><span class="s1">&#39;vis&#39;</span><span class="p">,</span> <span class="n">ang_unit</span><span class="o">=</span><span class="s1">&#39;deg&#39;</span><span class="p">,</span>
                    <span class="n">timetype</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">snrcut</span><span class="o">=</span><span class="mf">0.</span><span class="p">,</span> <span class="n">method</span><span class="o">=</span><span class="s1">&#39;from_maxset&#39;</span><span class="p">,</span> 
                    <span class="n">cphases</span><span class="o">=</span><span class="p">[],</span> <span class="n">force_recompute</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Return closure phase  over time on a triangle (1-2-3).</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Return closure phase  over time on a triangle (1-2-3).</span>
 
 <span class="sd">           Args:</span>
 <span class="sd">               site1 (str): station 1 name</span>
@@ -3562,7 +3564,7 @@
 
 <div class="viewcode-block" id="Obsdata.c_amplitudes"><a class="viewcode-back" href="../../obsdata.html#ehtim.obsdata.Obsdata.c_amplitudes">[docs]</a>    <span class="k">def</span> <span class="nf">c_amplitudes</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">vtype</span><span class="o">=</span><span class="s1">&#39;vis&#39;</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s1">&#39;all&#39;</span><span class="p">,</span> <span class="n">count</span><span class="o">=</span><span class="s1">&#39;min&#39;</span><span class="p">,</span> <span class="n">ctype</span><span class="o">=</span><span class="s1">&#39;camp&#39;</span><span class="p">,</span> <span class="n">debias</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
                      <span class="n">timetype</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">snrcut</span><span class="o">=</span><span class="mf">0.</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Return a recarray of the equal time closure amplitudes.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Return a recarray of the equal time closure amplitudes.</span>
 
 <span class="sd">           Args:</span>
 <span class="sd">               vtype (str): The visibilty type from which to assemble closure amplitudes</span>
@@ -3685,7 +3687,7 @@
 
 <div class="viewcode-block" id="Obsdata.c_log_amplitudes_diag"><a class="viewcode-back" href="../../obsdata.html#ehtim.obsdata.Obsdata.c_log_amplitudes_diag">[docs]</a>    <span class="k">def</span> <span class="nf">c_log_amplitudes_diag</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">vtype</span><span class="o">=</span><span class="s1">&#39;vis&#39;</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s1">&#39;all&#39;</span><span class="p">,</span> <span class="n">count</span><span class="o">=</span><span class="s1">&#39;min&#39;</span><span class="p">,</span>
                               <span class="n">debias</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">timetype</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">snrcut</span><span class="o">=</span><span class="mf">0.</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Return a recarray of the equal time diagonalized log closure amplitudes.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Return a recarray of the equal time diagonalized log closure amplitudes.</span>
 
 <span class="sd">           Args:</span>
 <span class="sd">               vtype (str): The visibilty type (&#39;vis&#39;,&#39;qvis&#39;,&#39;uvis&#39;,&#39;vvis&#39;,&#39;pvis&#39;)</span>
@@ -3841,7 +3843,7 @@
                   <span class="n">vtype</span><span class="o">=</span><span class="s1">&#39;vis&#39;</span><span class="p">,</span> <span class="n">ctype</span><span class="o">=</span><span class="s1">&#39;camp&#39;</span><span class="p">,</span> <span class="n">debias</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">timetype</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">snrcut</span><span class="o">=</span><span class="mf">0.</span><span class="p">,</span>
                   <span class="n">method</span><span class="o">=</span><span class="s1">&#39;from_maxset&#39;</span><span class="p">,</span>
                   <span class="n">camps</span><span class="o">=</span><span class="p">[],</span> <span class="n">force_recompute</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Return closure phase over time on a quadrange (1-2)(3-4)/(1-4)(2-3).</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Return closure phase over time on a quadrange (1-2)(3-4)/(1-4)(2-3).</span>
 
 <span class="sd">           Args:</span>
 <span class="sd">               site1 (str): station 1 name</span>
@@ -4095,7 +4097,7 @@
                 <span class="n">snrcut</span><span class="o">=</span><span class="mf">0.</span><span class="p">,</span>
                 <span class="n">grid</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">ebar</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">axislabels</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">legend</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
                 <span class="n">show</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">export_pdf</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Plot two fields against each other.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Plot two fields against each other.</span>
 
 <span class="sd">           Args:</span>
 <span class="sd">               field1 (str): x-axis field (from FIELDS)</span>
@@ -4332,7 +4334,7 @@
                 <span class="n">color</span><span class="o">=</span><span class="n">ehc</span><span class="o">.</span><span class="n">SCOLORS</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">marker</span><span class="o">=</span><span class="s1">&#39;o&#39;</span><span class="p">,</span> <span class="n">markersize</span><span class="o">=</span><span class="n">ehc</span><span class="o">.</span><span class="n">MARKERSIZE</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
                 <span class="n">grid</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">ebar</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">axislabels</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">legend</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
                 <span class="n">show</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">export_pdf</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Plot a field over time on a baseline site1-site2.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Plot a field over time on a baseline site1-site2.</span>
 
 <span class="sd">           Args:</span>
 <span class="sd">               site1 (str): station 1 name</span>
@@ -4468,7 +4470,7 @@
                     <span class="n">color</span><span class="o">=</span><span class="n">ehc</span><span class="o">.</span><span class="n">SCOLORS</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">marker</span><span class="o">=</span><span class="s1">&#39;o&#39;</span><span class="p">,</span> <span class="n">markersize</span><span class="o">=</span><span class="n">ehc</span><span class="o">.</span><span class="n">MARKERSIZE</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
                     <span class="n">grid</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">ebar</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">axislabels</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">legend</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
                     <span class="n">show</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">export_pdf</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Plot a closure phase over time on a triangle site1-site2-site3.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Plot a closure phase over time on a triangle site1-site2-site3.</span>
 
 <span class="sd">           Args:</span>
 <span class="sd">               site1 (str): station 1 name</span>
@@ -4594,7 +4596,7 @@
                   <span class="n">color</span><span class="o">=</span><span class="n">ehc</span><span class="o">.</span><span class="n">SCOLORS</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">marker</span><span class="o">=</span><span class="s1">&#39;o&#39;</span><span class="p">,</span> <span class="n">markersize</span><span class="o">=</span><span class="n">ehc</span><span class="o">.</span><span class="n">MARKERSIZE</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
                         <span class="n">grid</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">ebar</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">axislabels</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">legend</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
                         <span class="n">show</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">export_pdf</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Plot closure amplitude over time on a quadrangle (1-2)(3-4)/(1-4)(2-3).</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Plot closure amplitude over time on a quadrangle (1-2)(3-4)/(1-4)(2-3).</span>
 
 <span class="sd">           Args:</span>
 <span class="sd">               site1 (str): station 1 name</span>
@@ -4728,7 +4730,7 @@
             <span class="k">return</span> <span class="n">x</span></div>
 
 <div class="viewcode-block" id="Obsdata.save_txt"><a class="viewcode-back" href="../../obsdata.html#ehtim.obsdata.Obsdata.save_txt">[docs]</a>    <span class="k">def</span> <span class="nf">save_txt</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">fname</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Save visibility data to a text file.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Save visibility data to a text file.</span>
 
 <span class="sd">           Args:</span>
 <span class="sd">                fname (str): path to output text file</span>
@@ -4739,7 +4741,7 @@
         <span class="k">return</span></div>
 
 <div class="viewcode-block" id="Obsdata.save_uvfits"><a class="viewcode-back" href="../../obsdata.html#ehtim.obsdata.Obsdata.save_uvfits">[docs]</a>    <span class="k">def</span> <span class="nf">save_uvfits</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">fname</span><span class="p">,</span> <span class="n">force_singlepol</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">polrep_out</span><span class="o">=</span><span class="s1">&#39;circ&#39;</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Save visibility data to uvfits file.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Save visibility data to uvfits file.</span>
 <span class="sd">           Args:</span>
 <span class="sd">                fname (str): path to output uvfits file.</span>
 <span class="sd">                force_singlepol (str): if &#39;R&#39; or &#39;L&#39;, will interpret stokes I field as &#39;RR&#39; or &#39;LL&#39;</span>
@@ -4756,7 +4758,7 @@
         <span class="k">return</span></div>
 
 <div class="viewcode-block" id="Obsdata.make_hdulist"><a class="viewcode-back" href="../../obsdata.html#ehtim.obsdata.Obsdata.make_hdulist">[docs]</a>    <span class="k">def</span> <span class="nf">make_hdulist</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">force_singlepol</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">polrep_out</span><span class="o">=</span><span class="s1">&#39;circ&#39;</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Returns an hdulist in the same format as in a saved .uvfits file.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns an hdulist in the same format as in a saved .uvfits file.</span>
 <span class="sd">           Args:</span>
 <span class="sd">                force_singlepol (str): if &#39;R&#39; or &#39;L&#39;, will interpret stokes I field as &#39;RR&#39; or &#39;LL&#39;</span>
 <span class="sd">                polrep_out (str): &#39;circ&#39; or &#39;stokes&#39;: how data should be stored in the uvfits file</span>
@@ -4774,7 +4776,7 @@
 
 
 <div class="viewcode-block" id="Obsdata.save_oifits"><a class="viewcode-back" href="../../obsdata.html#ehtim.obsdata.Obsdata.save_oifits">[docs]</a>    <span class="k">def</span> <span class="nf">save_oifits</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">fname</span><span class="p">,</span> <span class="n">flux</span><span class="o">=</span><span class="mf">1.0</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot; Save visibility data to oifits. Polarization data is NOT saved.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot; Save visibility data to oifits. Polarization data is NOT saved.</span>
 
 <span class="sd">            Args:</span>
 <span class="sd">                fname (str): path to output text file</span>
@@ -4796,7 +4798,7 @@
 
 
 <div class="viewcode-block" id="merge_obs"><a class="viewcode-back" href="../../obsdata.html#ehtim.obsdata.merge_obs">[docs]</a><span class="k">def</span> <span class="nf">merge_obs</span><span class="p">(</span><span class="n">obs_List</span><span class="p">,</span> <span class="n">force_merge</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Merge a list of observations into a single observation file.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Merge a list of observations into a single observation file.</span>
 
 <span class="sd">       Args:</span>
 <span class="sd">           obs_List (list): list of split observation Obsdata objects.</span>
@@ -4869,7 +4871,7 @@
 
 
 <div class="viewcode-block" id="load_txt"><a class="viewcode-back" href="../../obsdata.html#ehtim.obsdata.load_txt">[docs]</a><span class="k">def</span> <span class="nf">load_txt</span><span class="p">(</span><span class="n">fname</span><span class="p">,</span> <span class="n">polrep</span><span class="o">=</span><span class="s1">&#39;stokes&#39;</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Read an observation from a text file.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Read an observation from a text file.</span>
 
 <span class="sd">       Args:</span>
 <span class="sd">           fname (str): path to input text file</span>
@@ -4886,7 +4888,7 @@
                 <span class="n">channel</span><span class="o">=</span><span class="nb">all</span><span class="p">,</span> <span class="n">IF</span><span class="o">=</span><span class="nb">all</span><span class="p">,</span> <span class="n">polrep</span><span class="o">=</span><span class="s1">&#39;stokes&#39;</span><span class="p">,</span> <span class="n">allow_singlepol</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
                 <span class="n">ignore_pzero_date</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
                 <span class="n">trial_speedups</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Load observation data from a uvfits file.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Load observation data from a uvfits file.</span>
 
 <span class="sd">       Args:</span>
 <span class="sd">           fname (str or HDUList): path to input text file or HDUList object</span>
@@ -4912,7 +4914,7 @@
 
 
 <div class="viewcode-block" id="load_oifits"><a class="viewcode-back" href="../../obsdata.html#ehtim.obsdata.load_oifits">[docs]</a><span class="k">def</span> <span class="nf">load_oifits</span><span class="p">(</span><span class="n">fname</span><span class="p">,</span> <span class="n">flux</span><span class="o">=</span><span class="mf">1.0</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Load data from an oifits file. Does NOT currently support polarization.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Load data from an oifits file. Does NOT currently support polarization.</span>
 
 <span class="sd">       Args:</span>
 <span class="sd">           fname (str): path to input text file</span>
@@ -4927,7 +4929,7 @@
 
 <div class="viewcode-block" id="load_maps"><a class="viewcode-back" href="../../obsdata.html#ehtim.obsdata.load_maps">[docs]</a><span class="k">def</span> <span class="nf">load_maps</span><span class="p">(</span><span class="n">arrfile</span><span class="p">,</span> <span class="n">obsspec</span><span class="p">,</span> <span class="n">ifile</span><span class="p">,</span> <span class="n">qfile</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">ufile</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">vfile</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
               <span class="n">src</span><span class="o">=</span><span class="n">ehc</span><span class="o">.</span><span class="n">SOURCE_DEFAULT</span><span class="p">,</span> <span class="n">mjd</span><span class="o">=</span><span class="n">ehc</span><span class="o">.</span><span class="n">MJD_DEFAULT</span><span class="p">,</span> <span class="n">ampcal</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">phasecal</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Read an observation from a maps text file and return an Obsdata object.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Read an observation from a maps text file and return an Obsdata object.</span>
 
 <span class="sd">       Args:</span>
 <span class="sd">           arrfile (str): path to input array file</span>
@@ -4969,7 +4971,7 @@
                 <span class="n">ampcal</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> 
                 <span class="n">phasecal</span><span class="o">=</span><span class="kc">False</span>
     <span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Smart obs read-in, detects file type and loads appropriately.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Smart obs read-in, detects file type and loads appropriately.</span>
 
 <span class="sd">       Args:</span>
 <span class="sd">           fname (str): path to input text file</span>

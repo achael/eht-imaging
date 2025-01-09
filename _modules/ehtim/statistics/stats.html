@@ -3,16 +3,18 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>ehtim.statistics.stats &mdash; ehtim 1.2.6 documentation</title><link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
-    <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+  <title>ehtim.statistics.stats &mdash; ehtim 1.2.6 documentation</title>
+      <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
   <!--[if lt IE 9]>
     <script src="../../../_static/js/html5shiv.min.js"></script>
   <![endif]-->
-  <script id="documentation_options" data-url_root="../../../" src="../../../_static/documentation_options.js"></script>
+  
+        <script data-url_root="../../../" id="documentation_options" src="../../../_static/documentation_options.js"></script>
         <script src="../../../_static/jquery.js"></script>
         <script src="../../../_static/underscore.js"></script>
+        <script src="../../../_static/_sphinx_javascript_frameworks_compat.js"></script>
         <script src="../../../_static/doctools.js"></script>
-        <script src="../../../_static/language_data.js"></script>
     <script src="../../../_static/js/theme.js"></script>
     <link rel="index" title="Index" href="../../../genindex.html" />
     <link rel="search" title="Search" href="../../../search.html" /> 
@@ -36,7 +38,7 @@
   </form>
 </div>
         </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
-              <p class="caption"><span class="caption-text">Contents:</span></p>
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="../../../image.html">Image</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../array.html">Array</a></li>
@@ -108,7 +110,7 @@
 <span class="kn">from</span> <span class="nn">ehtim.const_def</span> <span class="kn">import</span> <span class="o">*</span>
 
 <div class="viewcode-block" id="circular_mean"><a class="viewcode-back" href="../../../statistics.html#ehtim.statistics.stats.circular_mean">[docs]</a><span class="k">def</span> <span class="nf">circular_mean</span><span class="p">(</span><span class="n">theta</span><span class="p">,</span> <span class="n">unit</span><span class="o">=</span><span class="s1">&#39;deg&#39;</span><span class="p">):</span>
-    <span class="sd">&#39;&#39;&#39;circular mean for averaging angular quantities</span>
+<span class="w">    </span><span class="sd">&#39;&#39;&#39;circular mean for averaging angular quantities</span>
 <span class="sd">    Args:</span>
 <span class="sd">        theta: list/vector of angles to average</span>
 <span class="sd">        unit: degrees (&#39;deg&#39;) or radians (any other string)</span>
@@ -134,7 +136,7 @@
             <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">mod</span><span class="p">(</span><span class="n">circ_mean</span><span class="o">+</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="p">,</span><span class="mf">2.</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="p">)</span><span class="o">-</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span></div>
 
 <div class="viewcode-block" id="circular_std"><a class="viewcode-back" href="../../../statistics.html#ehtim.statistics.stats.circular_std">[docs]</a><span class="k">def</span> <span class="nf">circular_std</span><span class="p">(</span><span class="n">theta</span><span class="p">,</span><span class="n">unit</span><span class="o">=</span><span class="s1">&#39;deg&#39;</span><span class="p">):</span>
-    <span class="sd">&#39;&#39;&#39;standard deviation of a circular distribution</span>
+<span class="w">    </span><span class="sd">&#39;&#39;&#39;standard deviation of a circular distribution</span>
 <span class="sd">    Args:</span>
 <span class="sd">        theta: list/vector of angles</span>
 <span class="sd">        unit: degrees (&#39;deg&#39;) or radians (any other string)</span>
@@ -158,7 +160,7 @@
         <span class="k">return</span> <span class="n">circ_std</span></div>
 
 <div class="viewcode-block" id="circular_std_of_mean"><a class="viewcode-back" href="../../../statistics.html#ehtim.statistics.stats.circular_std_of_mean">[docs]</a><span class="k">def</span> <span class="nf">circular_std_of_mean</span><span class="p">(</span><span class="n">theta</span><span class="p">,</span><span class="n">unit</span><span class="o">=</span><span class="s1">&#39;deg&#39;</span><span class="p">):</span>
-    <span class="sd">&#39;&#39;&#39;standard deviation of mean for a circular distribution</span>
+<span class="w">    </span><span class="sd">&#39;&#39;&#39;standard deviation of mean for a circular distribution</span>
 <span class="sd">    Args:</span>
 <span class="sd">        theta: list/vector of angles</span>
 <span class="sd">        unit: degrees (&#39;deg&#39;) or radians (any other string)</span>
@@ -172,7 +174,7 @@
     <span class="k">return</span> <span class="n">circular_std</span><span class="p">(</span><span class="n">theta</span><span class="p">,</span><span class="n">unit</span><span class="p">)</span><span class="o">/</span><span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">theta</span><span class="p">))</span></div>
 
 <div class="viewcode-block" id="mean_incoh_amp"><a class="viewcode-back" href="../../../statistics.html#ehtim.statistics.stats.mean_incoh_amp">[docs]</a><span class="k">def</span> <span class="nf">mean_incoh_amp</span><span class="p">(</span><span class="n">amp</span><span class="p">,</span><span class="n">sigma</span><span class="p">,</span><span class="n">debias</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span><span class="n">err_type</span><span class="o">=</span><span class="s1">&#39;predicted&#39;</span><span class="p">,</span><span class="n">num_samples</span><span class="o">=</span><span class="nb">int</span><span class="p">(</span><span class="mf">1e3</span><span class="p">)):</span>
-    <span class="sd">&quot;&quot;&quot;amplitude from ensemble of Rice-distributed measurements with debiasing</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;amplitude from ensemble of Rice-distributed measurements with debiasing</span>
 <span class="sd">    Args:</span>
 <span class="sd">        amp: vector of (biased) amplitudes</span>
 <span class="sd">        sigma: vector of errors</span>
@@ -211,7 +213,7 @@
         <span class="k">return</span> <span class="n">amp0</span><span class="p">,</span><span class="n">sigma0</span></div>
 
 <div class="viewcode-block" id="mean_incoh_amp_from_vis"><a class="viewcode-back" href="../../../statistics.html#ehtim.statistics.stats.mean_incoh_amp_from_vis">[docs]</a><span class="k">def</span> <span class="nf">mean_incoh_amp_from_vis</span><span class="p">(</span><span class="n">vis</span><span class="p">,</span><span class="n">sigma</span><span class="p">,</span><span class="n">debias</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span><span class="n">err_type</span><span class="o">=</span><span class="s1">&#39;predicted&#39;</span><span class="p">,</span><span class="n">num_samples</span><span class="o">=</span><span class="nb">int</span><span class="p">(</span><span class="mf">1e3</span><span class="p">)):</span>
-    <span class="sd">&quot;&quot;&quot;Amplitude from ensemble of visibility measurements with debiasing</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Amplitude from ensemble of visibility measurements with debiasing</span>
 <span class="sd">        Args:</span>
 <span class="sd">            amp: vector of (biased) amplitudes</span>
 <span class="sd">            sigma: vector of errors</span>
@@ -263,7 +265,7 @@
             <span class="k">return</span> <span class="n">amp0</span><span class="p">,</span><span class="n">sigma0</span></div>
 
 <div class="viewcode-block" id="bootstrap"><a class="viewcode-back" href="../../../statistics.html#ehtim.statistics.stats.bootstrap">[docs]</a><span class="k">def</span> <span class="nf">bootstrap</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">statistic</span><span class="p">,</span> <span class="n">num_samples</span><span class="o">=</span><span class="nb">int</span><span class="p">(</span><span class="mf">1e3</span><span class="p">),</span> <span class="n">alpha</span><span class="o">=</span><span class="s1">&#39;1sig&#39;</span><span class="p">,</span><span class="n">wrapping_variable</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;bootstrap estimate of 100.0*(1-alpha) confidence interval for a given statistic</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;bootstrap estimate of 100.0*(1-alpha) confidence interval for a given statistic</span>
 <span class="sd">        Args:</span>
 <span class="sd">            data: vector of data to estimate bootstrap statistic on</span>
 <span class="sd">            statistic: function representing the statistic to be evaluated</span>
@@ -353,7 +355,7 @@
 
 
 <div class="viewcode-block" id="dicts_TV_report"><a class="viewcode-back" href="../../../statistics.html#ehtim.statistics.stats.dicts_TV_report">[docs]</a><span class="k">def</span> <span class="nf">dicts_TV_report</span><span class="p">(</span><span class="n">obs</span><span class="p">,</span><span class="n">snr_cut</span><span class="o">=</span><span class="mf">2.</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Computes mean total variation reports</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Computes mean total variation reports</span>
 <span class="sd">        Args:</span>
 <span class="sd">            obs: ObsData object</span>
 <span class="sd">            snr_cut: threshold for data  snr</span>
@@ -384,7 +386,7 @@
     <span class="k">return</span> <span class="n">amptv</span><span class="p">,</span> <span class="n">cptv</span><span class="p">,</span> <span class="n">lcatv</span></div>
 
 <div class="viewcode-block" id="compare_TV"><a class="viewcode-back" href="../../../statistics.html#ehtim.statistics.stats.compare_TV">[docs]</a><span class="k">def</span> <span class="nf">compare_TV</span><span class="p">(</span><span class="n">obs</span><span class="p">,</span><span class="n">obsref</span><span class="p">,</span><span class="n">snr_cut</span><span class="o">=</span><span class="mf">2.</span><span class="p">,</span><span class="n">output</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Computes mean total variation reports</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Computes mean total variation reports</span>
 <span class="sd">        Args:</span>
 <span class="sd">            obs: ObsData object</span>
 <span class="sd">            obref: ObsData object to use as a reference</span>

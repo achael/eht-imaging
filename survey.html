@@ -1,18 +1,21 @@
 <!DOCTYPE html>
 <html class="writer-html5" lang="en" >
 <head>
-  <meta charset="utf-8" />
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
+
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Survey &mdash; ehtim 1.2.6 documentation</title><link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
-    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+  <title>Survey &mdash; ehtim 1.2.6 documentation</title>
+      <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
   <!--[if lt IE 9]>
     <script src="_static/js/html5shiv.min.js"></script>
   <![endif]-->
-  <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+  
+        <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
         <script src="_static/jquery.js"></script>
         <script src="_static/underscore.js"></script>
+        <script src="_static/_sphinx_javascript_frameworks_compat.js"></script>
         <script src="_static/doctools.js"></script>
-        <script src="_static/language_data.js"></script>
     <script src="_static/js/theme.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
@@ -38,7 +41,7 @@
   </form>
 </div>
         </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
-              <p class="caption"><span class="caption-text">Contents:</span></p>
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
 <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="image.html">Image</a></li>
 <li class="toctree-l1"><a class="reference internal" href="array.html">Array</a></li>
@@ -78,146 +81,146 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
              
-  <span class="target" id="module-survey"></span><div class="section" id="survey">
-<span id="id1"></span><h1>Survey<a class="headerlink" href="#survey" title="Permalink to this headline">¶</a></h1>
+  <span class="target" id="module-survey"></span><section id="survey">
+<span id="id1"></span><h1>Survey<a class="headerlink" href="#survey" title="Permalink to this heading"></a></h1>
 <span class="target" id="module-ehtim.survey"></span><dl class="py class">
-<dt id="ehtim.survey.ParameterSet">
-<em class="property">class </em><code class="sig-prename descclassname">ehtim.survey.</code><code class="sig-name descname">ParameterSet</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">paramset</span></em>, <em class="sig-param"><span class="n">params_fixed</span><span class="o">=</span><span class="default_value">{}</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/survey.html#ParameterSet"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.survey.ParameterSet" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="ehtim.survey.ParameterSet">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">ehtim.survey.</span></span><span class="sig-name descname"><span class="pre">ParameterSet</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">paramset</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">params_fixed</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">{}</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/survey.html#ParameterSet"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ehtim.survey.ParameterSet" title="Permalink to this definition"></a></dt>
 <dd><dl class="py attribute">
-<dt id="ehtim.survey.ParameterSet.paramset">
-<code class="sig-name descname">paramset</code><a class="headerlink" href="#ehtim.survey.ParameterSet.paramset" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="ehtim.survey.ParameterSet.paramset">
+<span class="sig-name descname"><span class="pre">paramset</span></span><a class="headerlink" href="#ehtim.survey.ParameterSet.paramset" title="Permalink to this definition"></a></dt>
 <dd><p>dict containing single parameter set. Each key in dict becomes its own attribute</p>
 <dl class="field-list simple">
-<dt class="field-odd">Type</dt>
+<dt class="field-odd">Type<span class="colon">:</span></dt>
 <dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.13)">dict</a></p>
 </dd>
 </dl>
 </dd></dl>
 
 <dl class="py attribute">
-<dt id="ehtim.survey.ParameterSet.params_fixed">
-<code class="sig-name descname">params_fixed</code><a class="headerlink" href="#ehtim.survey.ParameterSet.params_fixed" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="ehtim.survey.ParameterSet.params_fixed">
+<span class="sig-name descname"><span class="pre">params_fixed</span></span><a class="headerlink" href="#ehtim.survey.ParameterSet.params_fixed" title="Permalink to this definition"></a></dt>
 <dd><p>dict containing non-varying parameters. Each key in dict becomes its own attribute</p>
 <dl class="field-list simple">
-<dt class="field-odd">Type</dt>
+<dt class="field-odd">Type<span class="colon">:</span></dt>
 <dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.13)">dict</a></p>
 </dd>
 </dl>
 </dd></dl>
 
 <dl class="py attribute">
-<dt id="ehtim.survey.ParameterSet.outfile">
-<code class="sig-name descname">outfile</code><a class="headerlink" href="#ehtim.survey.ParameterSet.outfile" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="ehtim.survey.ParameterSet.outfile">
+<span class="sig-name descname"><span class="pre">outfile</span></span><a class="headerlink" href="#ehtim.survey.ParameterSet.outfile" title="Permalink to this definition"></a></dt>
 <dd><p>base of outfile with 7 digit index of pset added to it</p>
 <dl class="field-list simple">
-<dt class="field-odd">Type</dt>
+<dt class="field-odd">Type<span class="colon">:</span></dt>
 <dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)">str</a></p>
 </dd>
 </dl>
 </dd></dl>
 
 <dl class="py attribute">
-<dt id="ehtim.survey.ParameterSet.obs">
-<code class="sig-name descname">obs</code><a class="headerlink" href="#ehtim.survey.ParameterSet.obs" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="ehtim.survey.ParameterSet.obs">
+<span class="sig-name descname"><span class="pre">obs</span></span><a class="headerlink" href="#ehtim.survey.ParameterSet.obs" title="Permalink to this definition"></a></dt>
 <dd><p>observation object from input uvfits file, generated by load_data()</p>
 <dl class="field-list simple">
-<dt class="field-odd">Type</dt>
+<dt class="field-odd">Type<span class="colon">:</span></dt>
 <dd class="field-odd"><p><a class="reference internal" href="obsdata.html#ehtim.obsdata.Obsdata" title="ehtim.obsdata.Obsdata">Obsdata</a></p>
 </dd>
 </dl>
 </dd></dl>
 
 <dl class="py attribute">
-<dt id="ehtim.survey.ParameterSet.zbl_tot">
-<code class="sig-name descname">zbl_tot</code><a class="headerlink" href="#ehtim.survey.ParameterSet.zbl_tot" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="ehtim.survey.ParameterSet.zbl_tot">
+<span class="sig-name descname"><span class="pre">zbl_tot</span></span><a class="headerlink" href="#ehtim.survey.ParameterSet.zbl_tot" title="Permalink to this definition"></a></dt>
 <dd><p>flux on ALMA-APEX baseline, generated in preimcal()</p>
 <dl class="field-list simple">
-<dt class="field-odd">Type</dt>
+<dt class="field-odd">Type<span class="colon">:</span></dt>
 <dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.13)">float</a></p>
 </dd>
 </dl>
 </dd></dl>
 
 <dl class="py attribute">
-<dt id="ehtim.survey.ParameterSet.obs_sc_init">
-<code class="sig-name descname">obs_sc_init</code><a class="headerlink" href="#ehtim.survey.ParameterSet.obs_sc_init" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="ehtim.survey.ParameterSet.obs_sc_init">
+<span class="sig-name descname"><span class="pre">obs_sc_init</span></span><a class="headerlink" href="#ehtim.survey.ParameterSet.obs_sc_init" title="Permalink to this definition"></a></dt>
 <dd><p>original observation with systematic noise added, reverse taper applied, and extended flux removed</p>
 <dl class="field-list simple">
-<dt class="field-odd">Type</dt>
+<dt class="field-odd">Type<span class="colon">:</span></dt>
 <dd class="field-odd"><p><a class="reference internal" href="obsdata.html#ehtim.obsdata.Obsdata" title="ehtim.obsdata.Obsdata">Obsdata</a></p>
 </dd>
 </dl>
 </dd></dl>
 
 <dl class="py attribute">
-<dt id="ehtim.survey.ParameterSet.obs_sc">
-<code class="sig-name descname">obs_sc</code><a class="headerlink" href="#ehtim.survey.ParameterSet.obs_sc" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="ehtim.survey.ParameterSet.obs_sc">
+<span class="sig-name descname"><span class="pre">obs_sc</span></span><a class="headerlink" href="#ehtim.survey.ParameterSet.obs_sc" title="Permalink to this definition"></a></dt>
 <dd><p>obs_sc_init after all rounds of self-calibration</p>
 <dl class="field-list simple">
-<dt class="field-odd">Type</dt>
+<dt class="field-odd">Type<span class="colon">:</span></dt>
 <dd class="field-odd"><p><a class="reference internal" href="obsdata.html#ehtim.obsdata.Obsdata" title="ehtim.obsdata.Obsdata">Obsdata</a></p>
 </dd>
 </dl>
 </dd></dl>
 
 <dl class="py attribute">
-<dt id="ehtim.survey.ParameterSet.initimg">
-<code class="sig-name descname">initimg</code><a class="headerlink" href="#ehtim.survey.ParameterSet.initimg" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="ehtim.survey.ParameterSet.initimg">
+<span class="sig-name descname"><span class="pre">initimg</span></span><a class="headerlink" href="#ehtim.survey.ParameterSet.initimg" title="Permalink to this definition"></a></dt>
 <dd><p>prior/initial image</p>
 <dl class="field-list simple">
-<dt class="field-odd">Type</dt>
+<dt class="field-odd">Type<span class="colon">:</span></dt>
 <dd class="field-odd"><p><a class="reference internal" href="image.html#ehtim.image.Image" title="ehtim.image.Image">Image</a></p>
 </dd>
 </dl>
 </dd></dl>
 
 <dl class="py attribute">
-<dt id="ehtim.survey.ParameterSet.im_out">
-<code class="sig-name descname">im_out</code><a class="headerlink" href="#ehtim.survey.ParameterSet.im_out" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="ehtim.survey.ParameterSet.im_out">
+<span class="sig-name descname"><span class="pre">im_out</span></span><a class="headerlink" href="#ehtim.survey.ParameterSet.im_out" title="Permalink to this definition"></a></dt>
 <dd><p>final reconstructed image</p>
 <dl class="field-list simple">
-<dt class="field-odd">Type</dt>
+<dt class="field-odd">Type<span class="colon">:</span></dt>
 <dd class="field-odd"><p><a class="reference internal" href="image.html#ehtim.image.Image" title="ehtim.image.Image">Image</a></p>
 </dd>
 </dl>
 </dd></dl>
 
 <dl class="py attribute">
-<dt id="ehtim.survey.ParameterSet.im_addcmp">
-<code class="sig-name descname">im_addcmp</code><a class="headerlink" href="#ehtim.survey.ParameterSet.im_addcmp" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="ehtim.survey.ParameterSet.im_addcmp">
+<span class="sig-name descname"><span class="pre">im_addcmp</span></span><a class="headerlink" href="#ehtim.survey.ParameterSet.im_addcmp" title="Permalink to this definition"></a></dt>
 <dd><p>final reconstructed image with extended flux added back in</p>
 <dl class="field-list simple">
-<dt class="field-odd">Type</dt>
+<dt class="field-odd">Type<span class="colon">:</span></dt>
 <dd class="field-odd"><p><a class="reference internal" href="image.html#ehtim.image.Image" title="ehtim.image.Image">Image</a></p>
 </dd>
 </dl>
 </dd></dl>
 
 <dl class="py attribute">
-<dt id="ehtim.survey.ParameterSet.obs_sc_addcmp">
-<code class="sig-name descname">obs_sc_addcmp</code><a class="headerlink" href="#ehtim.survey.ParameterSet.obs_sc_addcmp" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="ehtim.survey.ParameterSet.obs_sc_addcmp">
+<span class="sig-name descname"><span class="pre">obs_sc_addcmp</span></span><a class="headerlink" href="#ehtim.survey.ParameterSet.obs_sc_addcmp" title="Permalink to this definition"></a></dt>
 <dd><p>original observation self-calibrated with im_addcmp</p>
 <dl class="field-list simple">
-<dt class="field-odd">Type</dt>
+<dt class="field-odd">Type<span class="colon">:</span></dt>
 <dd class="field-odd"><p><a class="reference internal" href="obsdata.html#ehtim.obsdata.Obsdata" title="ehtim.obsdata.Obsdata">Obsdata</a></p>
 </dd>
 </dl>
 </dd></dl>
 
 <dl class="py attribute">
-<dt id="ehtim.survey.ParameterSet.caltab">
-<code class="sig-name descname">caltab</code><a class="headerlink" href="#ehtim.survey.ParameterSet.caltab" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="ehtim.survey.ParameterSet.caltab">
+<span class="sig-name descname"><span class="pre">caltab</span></span><a class="headerlink" href="#ehtim.survey.ParameterSet.caltab" title="Permalink to this definition"></a></dt>
 <dd><p>final calibration table associated with im_out</p>
 <dl class="field-list simple">
-<dt class="field-odd">Type</dt>
+<dt class="field-odd">Type<span class="colon">:</span></dt>
 <dd class="field-odd"><p><a class="reference internal" href="calibration.html#ehtim.caltable.Caltable" title="ehtim.caltable.Caltable">Caltable</a></p>
 </dd>
 </dl>
 </dd></dl>
 
 <dl class="py method">
-<dt id="ehtim.survey.ParameterSet.init_img">
-<code class="sig-name descname">init_img</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/survey.html#ParameterSet.init_img"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.survey.ParameterSet.init_img" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="ehtim.survey.ParameterSet.init_img">
+<span class="sig-name descname"><span class="pre">init_img</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/survey.html#ParameterSet.init_img"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ehtim.survey.ParameterSet.init_img" title="Permalink to this definition"></a></dt>
 <dd><p>Creates initial/prior image. Only gaussian prior option at present, but creates prior attritubute self.initimg
 using self.zbl and self.prior_fwhm</p>
 <blockquote>
@@ -227,8 +230,8 @@ using self.zbl and self.prior_fwhm</p>
 </dd></dl>
 
 <dl class="py method">
-<dt id="ehtim.survey.ParameterSet.load_data">
-<code class="sig-name descname">load_data</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/survey.html#ParameterSet.load_data"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.survey.ParameterSet.load_data" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="ehtim.survey.ParameterSet.load_data">
+<span class="sig-name descname"><span class="pre">load_data</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/survey.html#ParameterSet.load_data"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ehtim.survey.ParameterSet.load_data" title="Permalink to this definition"></a></dt>
 <dd><p>Loads in uvfits file from self.infile into eht-imaging obs object and averages using self.avg_time
 Creates self.obs</p>
 <blockquote>
@@ -238,8 +241,8 @@ Creates self.obs</p>
 </dd></dl>
 
 <dl class="py method">
-<dt id="ehtim.survey.ParameterSet.make_img">
-<code class="sig-name descname">make_img</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/survey.html#ParameterSet.make_img"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.survey.ParameterSet.make_img" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="ehtim.survey.ParameterSet.make_img">
+<span class="sig-name descname"><span class="pre">make_img</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/survey.html#ParameterSet.make_img"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ehtim.survey.ParameterSet.make_img" title="Permalink to this definition"></a></dt>
 <dd><p>Reconstructs image with specified parameters (data weights, amount of self-cal, etc) described in paramset dict
 Creates attributes self.im_out containing the final image and self.caltab containing a corresponding calibration
 table object for the final image</p>
@@ -250,8 +253,8 @@ table object for the final image</p>
 </dd></dl>
 
 <dl class="py method">
-<dt id="ehtim.survey.ParameterSet.output_results">
-<code class="sig-name descname">output_results</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/survey.html#ParameterSet.output_results"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.survey.ParameterSet.output_results" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="ehtim.survey.ParameterSet.output_results">
+<span class="sig-name descname"><span class="pre">output_results</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/survey.html#ParameterSet.output_results"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ehtim.survey.ParameterSet.output_results" title="Permalink to this definition"></a></dt>
 <dd><p>Outputs all requested files pertaining to final image</p>
 <blockquote>
 <div><p>Args:</p>
@@ -260,8 +263,8 @@ table object for the final image</p>
 </dd></dl>
 
 <dl class="py method">
-<dt id="ehtim.survey.ParameterSet.preimcal">
-<code class="sig-name descname">preimcal</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/survey.html#ParameterSet.preimcal"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.survey.ParameterSet.preimcal" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="ehtim.survey.ParameterSet.preimcal">
+<span class="sig-name descname"><span class="pre">preimcal</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/survey.html#ParameterSet.preimcal"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ehtim.survey.ParameterSet.preimcal" title="Permalink to this definition"></a></dt>
 <dd><p>Applies pre-imaging calibration to self.obs. This includes flagging sites with no measurements, rescaling
 short baselines so only compact flux is being imaged, applying a u-v taper, and adding extra sys noise. Creates
 self.obs_sc which will have self-cal applied in future steps and self.obs_sc_init which is a copy of the initial
@@ -273,8 +276,8 @@ preimcal observation</p>
 </dd></dl>
 
 <dl class="py method">
-<dt id="ehtim.survey.ParameterSet.run">
-<code class="sig-name descname">run</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/survey.html#ParameterSet.run"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.survey.ParameterSet.run" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="ehtim.survey.ParameterSet.run">
+<span class="sig-name descname"><span class="pre">run</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/survey.html#ParameterSet.run"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ehtim.survey.ParameterSet.run" title="Permalink to this definition"></a></dt>
 <dd><p>Run imaging pipeline for one parameter set.</p>
 <blockquote>
 <div><p>Args:</p>
@@ -283,8 +286,8 @@ preimcal observation</p>
 </dd></dl>
 
 <dl class="py method">
-<dt id="ehtim.survey.ParameterSet.save_params">
-<code class="sig-name descname">save_params</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/survey.html#ParameterSet.save_params"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.survey.ParameterSet.save_params" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="ehtim.survey.ParameterSet.save_params">
+<span class="sig-name descname"><span class="pre">save_params</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/survey.html#ParameterSet.save_params"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ehtim.survey.ParameterSet.save_params" title="Permalink to this definition"></a></dt>
 <dd><p>Saves a csv file with parameter set details</p>
 <blockquote>
 <div><p>Args:</p>
@@ -293,8 +296,8 @@ preimcal observation</p>
 </dd></dl>
 
 <dl class="py method">
-<dt id="ehtim.survey.ParameterSet.save_statistics">
-<code class="sig-name descname">save_statistics</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/survey.html#ParameterSet.save_statistics"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.survey.ParameterSet.save_statistics" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="ehtim.survey.ParameterSet.save_statistics">
+<span class="sig-name descname"><span class="pre">save_statistics</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/survey.html#ParameterSet.save_statistics"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ehtim.survey.ParameterSet.save_statistics" title="Permalink to this definition"></a></dt>
 <dd><p>Saves a csv file with the following statistics:
 chi^2 closure phase, logcamp, vis wrt the original observation
 chi^2 vis wrt to original observation with self-cal to final image applied
@@ -308,11 +311,11 @@ chi^2 closure phase, logcamp, vis wrt the original observation with sys noise an
 </dd></dl>
 
 <dl class="py function">
-<dt id="ehtim.survey.create_params_fixed">
-<code class="sig-prename descclassname">ehtim.survey.</code><code class="sig-name descname">create_params_fixed</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">infile</span></em>, <em class="sig-param"><span class="n">outfile_base</span></em>, <em class="sig-param"><span class="n">outpath</span></em>, <em class="sig-param"><span class="n">ground_truth_img</span><span class="o">=</span><span class="default_value">'None'</span></em>, <em class="sig-param"><span class="n">save_imgsums</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">save_uvfits</span><span class="o">=</span><span class="default_value">True</span></em>, <em class="sig-param"><span class="n">save_pdf</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">save_stats</span><span class="o">=</span><span class="default_value">True</span></em>, <em class="sig-param"><span class="n">save_caltab</span><span class="o">=</span><span class="default_value">True</span></em>, <em class="sig-param"><span class="n">nproc</span><span class="o">=</span><span class="default_value">1</span></em>, <em class="sig-param"><span class="n">backend</span><span class="o">=</span><span class="default_value">'multiprocessing'</span></em>, <em class="sig-param"><span class="n">ttype</span><span class="o">=</span><span class="default_value">'nfft'</span></em>, <em class="sig-param"><span class="n">overwrite</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">selfcal</span><span class="o">=</span><span class="default_value">True</span></em>, <em class="sig-param"><span class="n">gaintol</span><span class="o">=</span><span class="default_value">[0.02, 0.2]</span></em>, <em class="sig-param"><span class="n">niter_static</span><span class="o">=</span><span class="default_value">3</span></em>, <em class="sig-param"><span class="n">blurfrac</span><span class="o">=</span><span class="default_value">1</span></em>, <em class="sig-param"><span class="n">maxit</span><span class="o">=</span><span class="default_value">100</span></em>, <em class="sig-param"><span class="n">stop</span><span class="o">=</span><span class="default_value">0.0001</span></em>, <em class="sig-param"><span class="n">fov</span><span class="o">=</span><span class="default_value">128</span></em>, <em class="sig-param"><span class="n">npixels</span><span class="o">=</span><span class="default_value">64</span></em>, <em class="sig-param"><span class="n">reverse_taper_uas</span><span class="o">=</span><span class="default_value">5</span></em>, <em class="sig-param"><span class="n">uv_zblcut</span><span class="o">=</span><span class="default_value">100000000.0</span></em>, <em class="sig-param"><span class="n">SEFD_error_budget</span><span class="o">=</span><span class="default_value">{'AA': 0.1, 'AX': 0.1, 'GL': 0.1, 'LM': 0.1, 'MG': 0.1, 'MM': 0.1, 'PV': 0.1, 'SW': 0.1}</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/survey.html#create_params_fixed"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.survey.create_params_fixed" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="ehtim.survey.create_params_fixed">
+<span class="sig-prename descclassname"><span class="pre">ehtim.survey.</span></span><span class="sig-name descname"><span class="pre">create_params_fixed</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">infile</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">outfile_base</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">outpath</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ground_truth_img</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'None'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">save_imgsums</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">save_uvfits</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">save_pdf</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">save_stats</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">save_caltab</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">nproc</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">backend</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'multiprocessing'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ttype</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'nfft'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">overwrite</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">selfcal</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">gaintol</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[0.02,</span> <span class="pre">0.2]</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">niter_static</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">3</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">blurfrac</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">maxit</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">100</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">stop</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0001</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fov</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">128</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">npixels</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">64</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">reverse_taper_uas</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">5</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">uv_zblcut</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">100000000.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">SEFD_error_budget</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">{'AA':</span> <span class="pre">0.1,</span> <span class="pre">'AX':</span> <span class="pre">0.1,</span> <span class="pre">'GL':</span> <span class="pre">0.1,</span> <span class="pre">'LM':</span> <span class="pre">0.1,</span> <span class="pre">'MG':</span> <span class="pre">0.1,</span> <span class="pre">'MM':</span> <span class="pre">0.1,</span> <span class="pre">'PV':</span> <span class="pre">0.1,</span> <span class="pre">'SW':</span> <span class="pre">0.1}</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/survey.html#create_params_fixed"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ehtim.survey.create_params_fixed" title="Permalink to this definition"></a></dt>
 <dd><p>Create a dict for all non-varying survery parameters</p>
 <dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>infile</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><em>str</em></a>) – path to input uvfits observation file</p></li>
 <li><p><strong>outfile_base</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><em>str</em></a>) – name of base filename for all outputs</p></li>
@@ -340,21 +343,21 @@ chi^2 closure phase, logcamp, vis wrt the original observation with sys noise an
 <li><p><strong>SEFD_error_budget</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.13)"><em>dict</em></a>) – SEFD percentage error for each station</p></li>
 </ul>
 </dd>
-<dt class="field-even">Returns</dt>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
 <dd class="field-even"><p>dict containing all non-varying survery parameters</p>
 </dd>
-<dt class="field-odd">Return type</dt>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
 <dd class="field-odd"><p>(<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.13)">dict</a>)</p>
 </dd>
 </dl>
 </dd></dl>
 
 <dl class="py function">
-<dt id="ehtim.survey.create_survey_psets">
-<code class="sig-prename descclassname">ehtim.survey.</code><code class="sig-name descname">create_survey_psets</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">zbl</span><span class="o">=</span><span class="default_value">[0.6]</span></em>, <em class="sig-param"><span class="n">sys_noise</span><span class="o">=</span><span class="default_value">[0.02]</span></em>, <em class="sig-param"><span class="n">avg_time</span><span class="o">=</span><span class="default_value">['scan']</span></em>, <em class="sig-param"><span class="n">prior_fwhm</span><span class="o">=</span><span class="default_value">[40]</span></em>, <em class="sig-param"><span class="n">sc_phase</span><span class="o">=</span><span class="default_value">[0]</span></em>, <em class="sig-param"><span class="n">xdw_phase</span><span class="o">=</span><span class="default_value">[10]</span></em>, <em class="sig-param"><span class="n">sc_ap</span><span class="o">=</span><span class="default_value">[0]</span></em>, <em class="sig-param"><span class="n">xdw_ap</span><span class="o">=</span><span class="default_value">[1]</span></em>, <em class="sig-param"><span class="n">amp</span><span class="o">=</span><span class="default_value">[0.2]</span></em>, <em class="sig-param"><span class="n">cphase</span><span class="o">=</span><span class="default_value">[1]</span></em>, <em class="sig-param"><span class="n">logcamp</span><span class="o">=</span><span class="default_value">[1]</span></em>, <em class="sig-param"><span class="n">simple</span><span class="o">=</span><span class="default_value">[1]</span></em>, <em class="sig-param"><span class="n">l1</span><span class="o">=</span><span class="default_value">[1]</span></em>, <em class="sig-param"><span class="n">tv</span><span class="o">=</span><span class="default_value">[1]</span></em>, <em class="sig-param"><span class="n">tv2</span><span class="o">=</span><span class="default_value">[1]</span></em>, <em class="sig-param"><span class="n">flux</span><span class="o">=</span><span class="default_value">[1]</span></em>, <em class="sig-param"><span class="n">epsilon_tv</span><span class="o">=</span><span class="default_value">[1e-10]</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/survey.html#create_survey_psets"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.survey.create_survey_psets" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="ehtim.survey.create_survey_psets">
+<span class="sig-prename descclassname"><span class="pre">ehtim.survey.</span></span><span class="sig-name descname"><span class="pre">create_survey_psets</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">zbl</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[0.6]</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sys_noise</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[0.02]</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">avg_time</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">['scan']</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">prior_fwhm</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[40]</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sc_phase</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[0]</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">xdw_phase</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[10]</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sc_ap</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[0]</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">xdw_ap</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[1]</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">amp</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[0.2]</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cphase</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[1]</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">logcamp</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[1]</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">simple</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[1]</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">l1</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[1]</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tv</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[1]</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tv2</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[1]</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">flux</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[1]</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">epsilon_tv</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[1e-10]</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/survey.html#create_survey_psets"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ehtim.survey.create_survey_psets" title="Permalink to this definition"></a></dt>
 <dd><p>Create a dataframe given all survey parameters. Default values will create an example dataframe but these values should be adjusted for each specific observation</p>
 <dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>zbl</strong> (<em>array</em>) – compact flux value (Jy)</p></li>
 <li><p><strong>sys_noise</strong> (<em>array</em>) – percent addition of systematic noise</p></li>
@@ -375,18 +378,18 @@ chi^2 closure phase, logcamp, vis wrt the original observation with sys noise an
 <li><p><strong>epsilon_tv</strong> (<em>array</em>) – epsilon value used in definition of total variation - rarely need to change this</p></li>
 </ul>
 </dd>
-<dt class="field-even">Returns</dt>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
 <dd class="field-even"><p>pandas DataFrame containing all combination of parameter sets along with index values</p>
 </dd>
-<dt class="field-odd">Return type</dt>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
 <dd class="field-odd"><p>(DataFrame)</p>
 </dd>
 </dl>
 </dd></dl>
 
 <dl class="py function">
-<dt id="ehtim.survey.run_pset">
-<code class="sig-prename descclassname">ehtim.survey.</code><code class="sig-name descname">run_pset</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">pset</span></em>, <em class="sig-param"><span class="n">system_kwargs</span></em>, <em class="sig-param"><span class="n">params_fixed</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/survey.html#run_pset"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.survey.run_pset" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="ehtim.survey.run_pset">
+<span class="sig-prename descclassname"><span class="pre">ehtim.survey.</span></span><span class="sig-name descname"><span class="pre">run_pset</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">pset</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">system_kwargs</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">params_fixed</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/survey.html#run_pset"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ehtim.survey.run_pset" title="Permalink to this definition"></a></dt>
 <dd><p>Run imaging for one parameter set. Not to be used individually, but called in map function for run_survey</p>
 <blockquote>
 <div><dl class="simple">
@@ -399,11 +402,11 @@ params_fixed (dict): A dict containing non-varying parameters</p>
 </dd></dl>
 
 <dl class="py function">
-<dt id="ehtim.survey.run_survey">
-<code class="sig-prename descclassname">ehtim.survey.</code><code class="sig-name descname">run_survey</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">psets</span></em>, <em class="sig-param"><span class="n">params_fixed</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/survey.html#run_survey"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.survey.run_survey" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="ehtim.survey.run_survey">
+<span class="sig-prename descclassname"><span class="pre">ehtim.survey.</span></span><span class="sig-name descname"><span class="pre">run_survey</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">psets</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">params_fixed</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/survey.html#run_survey"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ehtim.survey.run_survey" title="Permalink to this definition"></a></dt>
 <dd><p>Run survey for all parameter sets using paramsurvey</p>
 <dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>psets</strong> (<em>DataFrame</em>) – A pandas DataFrame containing all parameter sets</p></li>
 <li><p><strong>params_fixed</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.13)"><em>dict</em></a>) – A dict containing non-varying parameters</p></li>
@@ -413,7 +416,7 @@ params_fixed (dict): A dict containing non-varying parameters</p>
 <p>Returns:</p>
 </dd></dl>
 
-</div>
+</section>
 
 
            </div>

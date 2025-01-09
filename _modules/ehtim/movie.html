@@ -3,16 +3,18 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>ehtim.movie &mdash; ehtim 1.2.6 documentation</title><link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
-    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+  <title>ehtim.movie &mdash; ehtim 1.2.6 documentation</title>
+      <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
   <!--[if lt IE 9]>
     <script src="../../_static/js/html5shiv.min.js"></script>
   <![endif]-->
-  <script id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
+  
+        <script data-url_root="../../" id="documentation_options" src="../../_static/documentation_options.js"></script>
         <script src="../../_static/jquery.js"></script>
         <script src="../../_static/underscore.js"></script>
+        <script src="../../_static/_sphinx_javascript_frameworks_compat.js"></script>
         <script src="../../_static/doctools.js"></script>
-        <script src="../../_static/language_data.js"></script>
     <script src="../../_static/js/theme.js"></script>
     <link rel="index" title="Index" href="../../genindex.html" />
     <link rel="search" title="Search" href="../../search.html" /> 
@@ -36,7 +38,7 @@
   </form>
 </div>
         </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
-              <p class="caption"><span class="caption-text">Contents:</span></p>
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="../../image.html">Image</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../array.html">Array</a></li>
@@ -125,7 +127,7 @@
 
 <div class="viewcode-block" id="Movie"><a class="viewcode-back" href="../../movie.html#ehtim.movie.Movie">[docs]</a><span class="k">class</span> <span class="nc">Movie</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
 
-    <span class="sd">&quot;&quot;&quot;A polarimetric movie (in units of Jy/pixel).</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;A polarimetric movie (in units of Jy/pixel).</span>
 
 <span class="sd">       Attributes:</span>
 <span class="sd">           pulse (function): The function convolved with the pixel values for continuous image</span>
@@ -155,7 +157,7 @@
                  <span class="n">pulse</span><span class="o">=</span><span class="n">ehc</span><span class="o">.</span><span class="n">PULSE_DEFAULT</span><span class="p">,</span> <span class="n">source</span><span class="o">=</span><span class="n">ehc</span><span class="o">.</span><span class="n">SOURCE_DEFAULT</span><span class="p">,</span>
                  <span class="n">mjd</span><span class="o">=</span><span class="n">ehc</span><span class="o">.</span><span class="n">MJD_DEFAULT</span><span class="p">,</span>
                  <span class="n">bounds_error</span><span class="o">=</span><span class="n">ehc</span><span class="o">.</span><span class="n">BOUNDS_ERROR</span><span class="p">,</span> <span class="n">interp</span><span class="o">=</span><span class="n">ehc</span><span class="o">.</span><span class="n">INTERP_DEFAULT</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;A polarimetric image (in units of Jy/pixel).</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;A polarimetric image (in units of Jy/pixel).</span>
 
 <span class="sd">           Args:</span>
 <span class="sd">               frames (list): The list of 2D frames; each is a Jy/pixel array</span>
@@ -471,7 +473,7 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">_fundict</span><span class="p">[</span><span class="s1">&#39;LR&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">fun</span>
 
 <div class="viewcode-block" id="Movie.movie_args"><a class="viewcode-back" href="../../movie.html#ehtim.movie.Movie.movie_args">[docs]</a>    <span class="k">def</span> <span class="nf">movie_args</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;&quot;Copy arguments for making a  new Movie into a list and dictonary</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;&quot;Copy arguments for making a  new Movie into a list and dictonary</span>
 <span class="sd">        &quot;&quot;&quot;</span>
 
         <span class="n">frames2D</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">frames</span><span class="o">.</span><span class="n">reshape</span><span class="p">((</span><span class="bp">self</span><span class="o">.</span><span class="n">nframes</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">ydim</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">xdim</span><span class="p">))</span>
@@ -484,7 +486,7 @@
         <span class="k">return</span> <span class="p">(</span><span class="n">arglist</span><span class="p">,</span> <span class="n">argdict</span><span class="p">)</span></div>
 
 <div class="viewcode-block" id="Movie.copy"><a class="viewcode-back" href="../../movie.html#ehtim.movie.Movie.copy">[docs]</a>    <span class="k">def</span> <span class="nf">copy</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Return a copy of the Movie object.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Return a copy of the Movie object.</span>
 
 <span class="sd">           Args:</span>
 
@@ -509,7 +511,7 @@
         <span class="k">return</span> <span class="n">newmov</span></div>
 
 <div class="viewcode-block" id="Movie.reset_interp"><a class="viewcode-back" href="../../movie.html#ehtim.movie.Movie.reset_interp">[docs]</a>    <span class="k">def</span> <span class="nf">reset_interp</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">interp</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">bounds_error</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Reset the movie interpolation function to change the interp. type or change the frames</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Reset the movie interpolation function to change the interp. type or change the frames</span>
 
 <span class="sd">           Args:</span>
 <span class="sd">              interp (str): Interpolation method, input to scipy.interpolate.interp1d kind keyword</span>
@@ -537,7 +539,7 @@
         <span class="k">return</span></div>
 
 <div class="viewcode-block" id="Movie.offset_time"><a class="viewcode-back" href="../../movie.html#ehtim.movie.Movie.offset_time">[docs]</a>    <span class="k">def</span> <span class="nf">offset_time</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">t_offset</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Offset the movie in time by t_offset</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Offset the movie in time by t_offset</span>
 
 <span class="sd">           Args:</span>
 <span class="sd">               t_offset (float): offset time in hours</span>
@@ -552,7 +554,7 @@
         <span class="k">return</span> <span class="n">mov</span></div>
 
 <div class="viewcode-block" id="Movie.add_pol_movie"><a class="viewcode-back" href="../../movie.html#ehtim.movie.Movie.add_pol_movie">[docs]</a>    <span class="k">def</span> <span class="nf">add_pol_movie</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">movie</span><span class="p">,</span> <span class="n">pol</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Add another movie polarization. </span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Add another movie polarization. </span>
 
 <span class="sd">           Args:</span>
 <span class="sd">               movie (list): list of 2D frames (possibly complex) in a Jy/pixel array</span>
@@ -658,7 +660,7 @@
 
     <span class="c1"># TODO deprecated -- replace with generic add_pol_movie</span>
 <div class="viewcode-block" id="Movie.add_qu"><a class="viewcode-back" href="../../movie.html#ehtim.movie.Movie.add_qu">[docs]</a>    <span class="k">def</span> <span class="nf">add_qu</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">qmovie</span><span class="p">,</span> <span class="n">umovie</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Add Stokes Q and U movies. self.polrep must be &#39;stokes&#39;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Add Stokes Q and U movies. self.polrep must be &#39;stokes&#39;</span>
 
 <span class="sd">           Args:</span>
 <span class="sd">               qmovie (list): list of 2D Stokes Q frames in Jy/pixel array</span>
@@ -676,7 +678,7 @@
 
     <span class="c1"># TODO deprecated -- replace with generic add_pol_movie</span>
 <div class="viewcode-block" id="Movie.add_v"><a class="viewcode-back" href="../../movie.html#ehtim.movie.Movie.add_v">[docs]</a>    <span class="k">def</span> <span class="nf">add_v</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">vmovie</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Add Stokes V movie. self.polrep must be &#39;stokes&#39;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Add Stokes V movie. self.polrep must be &#39;stokes&#39;</span>
 
 <span class="sd">           Args:</span>
 <span class="sd">               vmovie (list): list of 2D Stokes Q frames in Jy/pixel array</span>
@@ -691,7 +693,7 @@
         <span class="k">return</span></div>
 
 <div class="viewcode-block" id="Movie.switch_polrep"><a class="viewcode-back" href="../../movie.html#ehtim.movie.Movie.switch_polrep">[docs]</a>    <span class="k">def</span> <span class="nf">switch_polrep</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">polrep_out</span><span class="o">=</span><span class="s1">&#39;stokes&#39;</span><span class="p">,</span> <span class="n">pol_prim_out</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Return a new movie with the polarization representation changed</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Return a new movie with the polarization representation changed</span>
 
 <span class="sd">           Args:</span>
 <span class="sd">               polrep_out (str):  the polrep of the output data</span>
@@ -788,7 +790,7 @@
         <span class="k">return</span> <span class="n">newmov</span></div>
 
 <div class="viewcode-block" id="Movie.orth_chi"><a class="viewcode-back" href="../../movie.html#ehtim.movie.Movie.orth_chi">[docs]</a>    <span class="k">def</span> <span class="nf">orth_chi</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Rotate the EVPA 90 degrees</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Rotate the EVPA 90 degrees</span>
 
 <span class="sd">           Args:</span>
 
@@ -806,7 +808,7 @@
         <span class="k">return</span> <span class="n">mov</span></div>
 
 <div class="viewcode-block" id="Movie.fovx"><a class="viewcode-back" href="../../movie.html#ehtim.movie.Movie.fovx">[docs]</a>    <span class="k">def</span> <span class="nf">fovx</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Return the movie fov in x direction in radians.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Return the movie fov in x direction in radians.</span>
 
 <span class="sd">           Args:</span>
 
@@ -817,7 +819,7 @@
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">psize</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">xdim</span></div>
 
 <div class="viewcode-block" id="Movie.fovy"><a class="viewcode-back" href="../../movie.html#ehtim.movie.Movie.fovy">[docs]</a>    <span class="k">def</span> <span class="nf">fovy</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Returns the movie fov in y direction in radians.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns the movie fov in y direction in radians.</span>
 
 <span class="sd">           Args:</span>
 
@@ -829,7 +831,7 @@
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">lightcurve</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Return the total flux over time of the image in Jy.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Return the total flux over time of the image in Jy.</span>
 
 <span class="sd">           Args:</span>
 
@@ -845,7 +847,7 @@
         <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">flux</span><span class="p">)</span>
 
 <div class="viewcode-block" id="Movie.lin_polfrac_curve"><a class="viewcode-back" href="../../movie.html#ehtim.movie.Movie.lin_polfrac_curve">[docs]</a>    <span class="k">def</span> <span class="nf">lin_polfrac_curve</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Return the total fractional linear polarized flux over time</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Return the total fractional linear polarized flux over time</span>
 
 <span class="sd">           Args:</span>
 
@@ -863,7 +865,7 @@
         <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">frac</span><span class="p">)</span></div>
 
 <div class="viewcode-block" id="Movie.circ_polfrac_curve"><a class="viewcode-back" href="../../movie.html#ehtim.movie.Movie.circ_polfrac_curve">[docs]</a>    <span class="k">def</span> <span class="nf">circ_polfrac_curve</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Return the (signed) total fractional circular polarized flux over time</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Return the (signed) total fractional circular polarized flux over time</span>
 
 <span class="sd">           Args:</span>
 
@@ -881,7 +883,7 @@
         <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">frac</span><span class="p">)</span></div>
 
 <div class="viewcode-block" id="Movie.get_image"><a class="viewcode-back" href="../../movie.html#ehtim.movie.Movie.get_image">[docs]</a>    <span class="k">def</span> <span class="nf">get_image</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">time</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Return an Image at time</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Return an Image at time</span>
 
 <span class="sd">           Args:</span>
 <span class="sd">               time (float): the time  in hours</span>
@@ -930,7 +932,7 @@
         <span class="k">return</span> <span class="n">outim</span></div>
 
 <div class="viewcode-block" id="Movie.get_frame"><a class="viewcode-back" href="../../movie.html#ehtim.movie.Movie.get_frame">[docs]</a>    <span class="k">def</span> <span class="nf">get_frame</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">n</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Return an Image of the nth frame</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Return an Image of the nth frame</span>
 
 <span class="sd">           Args:</span>
 <span class="sd">               n (int): the frame number</span>
@@ -963,7 +965,7 @@
         <span class="k">return</span> <span class="n">outim</span></div>
 
 <div class="viewcode-block" id="Movie.im_list"><a class="viewcode-back" href="../../movie.html#ehtim.movie.Movie.im_list">[docs]</a>    <span class="k">def</span> <span class="nf">im_list</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Return a list of the movie frames</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Return a list of the movie frames</span>
 
 <span class="sd">           Args:</span>
 
@@ -974,7 +976,7 @@
         <span class="k">return</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">get_frame</span><span class="p">(</span><span class="n">j</span><span class="p">)</span> <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">nframes</span><span class="p">)]</span></div>
 
 <div class="viewcode-block" id="Movie.avg_frame"><a class="viewcode-back" href="../../movie.html#ehtim.movie.Movie.avg_frame">[docs]</a>    <span class="k">def</span> <span class="nf">avg_frame</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Coherently Average the movie frames into a single image.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Coherently Average the movie frames into a single image.</span>
 
 <span class="sd">           Returns:</span>
 <span class="sd">                (Image) : averaged image of all frames</span>
@@ -1000,7 +1002,7 @@
         <span class="k">return</span> <span class="n">outim</span></div>
 
 <div class="viewcode-block" id="Movie.blur_circ"><a class="viewcode-back" href="../../movie.html#ehtim.movie.Movie.blur_circ">[docs]</a>    <span class="k">def</span> <span class="nf">blur_circ</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">fwhm_x</span><span class="p">,</span> <span class="n">fwhm_t</span><span class="p">,</span> <span class="n">fwhm_x_pol</span><span class="o">=</span><span class="mi">0</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Apply a Gaussian filter to a list of images.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Apply a Gaussian filter to a list of images.</span>
 
 <span class="sd">           Args:</span>
 <span class="sd">               fwhm_x (float): circular beam size for spatial blurring in radians</span>
@@ -1042,7 +1044,7 @@
 <div class="viewcode-block" id="Movie.observe_same_nonoise"><a class="viewcode-back" href="../../movie.html#ehtim.movie.Movie.observe_same_nonoise">[docs]</a>    <span class="k">def</span> <span class="nf">observe_same_nonoise</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">obs</span><span class="p">,</span> <span class="n">repeat</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">sgrscat</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> 
                              <span class="n">ttype</span><span class="o">=</span><span class="s2">&quot;nfft&quot;</span><span class="p">,</span> <span class="n">fft_pad_factor</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> 
                              <span class="n">zero_empty_pol</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Observe the movie on the same baselines as an existing observation</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Observe the movie on the same baselines as an existing observation</span>
 <span class="sd">           without adding noise.</span>
 
 <span class="sd">           Args:</span>
@@ -1172,7 +1174,7 @@
                      <span class="n">dterm_offset</span><span class="o">=</span><span class="n">ehc</span><span class="o">.</span><span class="n">DTERMPDEF</span><span class="p">,</span>
                      <span class="n">rlratio_std</span><span class="o">=</span><span class="mf">0.</span><span class="p">,</span><span class="n">rlphase_std</span><span class="o">=</span><span class="mf">0.</span><span class="p">,</span>
                      <span class="n">caltable_path</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">seed</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">sigmat</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Observe the image on the same baselines as an existing observation object and add noise.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Observe the image on the same baselines as an existing observation object and add noise.</span>
 
 <span class="sd">           Args:</span>
 <span class="sd">               obs_in (Obsdata): existing observation with baselines where the FT will be sampled</span>
@@ -1303,7 +1305,7 @@
                 <span class="n">dterm_offset</span><span class="o">=</span><span class="n">ehc</span><span class="o">.</span><span class="n">DTERMPDEF</span><span class="p">,</span>
                 <span class="n">rlratio_std</span><span class="o">=</span><span class="mf">0.</span><span class="p">,</span><span class="n">rlphase_std</span><span class="o">=</span><span class="mf">0.</span><span class="p">,</span>
                 <span class="n">caltable_path</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">seed</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">sigmat</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Generate baselines from an array object and observe the movie.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Generate baselines from an array object and observe the movie.</span>
 
 <span class="sd">           Args:</span>
 <span class="sd">               array (Array): an array object containing sites with which to generate baselines</span>
@@ -1419,7 +1421,7 @@
                     <span class="n">gain_offset</span><span class="o">=</span><span class="n">ehc</span><span class="o">.</span><span class="n">GAINPDEF</span><span class="p">,</span> <span class="n">gainp</span><span class="o">=</span><span class="n">ehc</span><span class="o">.</span><span class="n">GAINPDEF</span><span class="p">,</span> 
                     <span class="n">dterm_offset</span><span class="o">=</span><span class="n">ehc</span><span class="o">.</span><span class="n">DTERMPDEF</span><span class="p">,</span>
                     <span class="n">caltable_path</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">seed</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">sigmat</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Generate baselines from a vex file and observe the movie.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Generate baselines from a vex file and observe the movie.</span>
 
 <span class="sd">           Args:</span>
 <span class="sd">               vex (Vex): an vex object containing sites and scan information</span>
@@ -1519,7 +1521,7 @@
             <span class="n">obs</span> <span class="o">=</span> <span class="n">subarray</span><span class="o">.</span><span class="n">obsdata</span><span class="p">(</span><span class="n">movie</span><span class="o">.</span><span class="n">ra</span><span class="p">,</span> <span class="n">movie</span><span class="o">.</span><span class="n">dec</span><span class="p">,</span> <span class="n">movie</span><span class="o">.</span><span class="n">rf</span><span class="p">,</span> <span class="n">vex</span><span class="o">.</span><span class="n">bw_hz</span><span class="p">,</span>
                                    <span class="n">t_int</span><span class="p">,</span> <span class="n">t_int</span><span class="p">,</span> <span class="n">t_start</span><span class="p">,</span> <span class="n">t_stop</span><span class="p">,</span>
                                    <span class="n">mjd</span><span class="o">=</span><span class="n">mjd</span><span class="p">,</span> <span class="n">polrep</span><span class="o">=</span><span class="n">polrep_obs</span><span class="p">,</span> <span class="n">tau</span><span class="o">=</span><span class="n">tau</span><span class="p">,</span>
-                                   <span class="n">elevmin</span><span class="o">=.</span><span class="mi">01</span><span class="p">,</span> <span class="n">elevmax</span><span class="o">=</span><span class="mf">89.99</span><span class="p">,</span> <span class="n">timetype</span><span class="o">=</span><span class="s1">&#39;UTC&#39;</span><span class="p">,</span>
+                                   <span class="n">elevmin</span><span class="o">=</span><span class="mf">.01</span><span class="p">,</span> <span class="n">elevmax</span><span class="o">=</span><span class="mf">89.99</span><span class="p">,</span> <span class="n">timetype</span><span class="o">=</span><span class="s1">&#39;UTC&#39;</span><span class="p">,</span>
                                    <span class="n">fix_theta_GMST</span><span class="o">=</span><span class="n">fix_theta_GMST</span><span class="p">)</span>
             <span class="n">obs_List</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">obs</span><span class="p">)</span>
 
@@ -1546,7 +1548,7 @@
         <span class="k">return</span> <span class="n">obsout</span></div>
 
 <div class="viewcode-block" id="Movie.save_txt"><a class="viewcode-back" href="../../movie.html#ehtim.movie.Movie.save_txt">[docs]</a>    <span class="k">def</span> <span class="nf">save_txt</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">fname</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Save the Movie data to individual text files with filenames basename + 00001, etc.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Save the Movie data to individual text files with filenames basename + 00001, etc.</span>
 
 <span class="sd">           Args:</span>
 <span class="sd">              fname (str): basename of output files</span>
@@ -1559,7 +1561,7 @@
         <span class="k">return</span></div>
 
 <div class="viewcode-block" id="Movie.save_fits"><a class="viewcode-back" href="../../movie.html#ehtim.movie.Movie.save_fits">[docs]</a>    <span class="k">def</span> <span class="nf">save_fits</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">fname</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Save the Movie data to individual fits files with filenames basename + 00001, etc.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Save the Movie data to individual fits files with filenames basename + 00001, etc.</span>
 
 <span class="sd">           Args:</span>
 <span class="sd">              fname (str): basename of output files</span>
@@ -1571,7 +1573,7 @@
         <span class="k">return</span></div>
 
 <div class="viewcode-block" id="Movie.save_hdf5"><a class="viewcode-back" href="../../movie.html#ehtim.movie.Movie.save_hdf5">[docs]</a>    <span class="k">def</span> <span class="nf">save_hdf5</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">fname</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Save the Movie data to a single hdf5 file.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Save the Movie data to a single hdf5 file.</span>
 
 <span class="sd">           Args:</span>
 <span class="sd">              fname (str): output file name</span>
@@ -1586,7 +1588,7 @@
                    <span class="n">interp</span><span class="o">=</span><span class="s1">&#39;gaussian&#39;</span><span class="p">,</span> <span class="n">scale</span><span class="o">=</span><span class="s1">&#39;lin&#39;</span><span class="p">,</span> <span class="n">dynamic_range</span><span class="o">=</span><span class="mf">1000.0</span><span class="p">,</span> <span class="n">cfun</span><span class="o">=</span><span class="s1">&#39;afmhot&#39;</span><span class="p">,</span>
                    <span class="n">nvec</span><span class="o">=</span><span class="mi">20</span><span class="p">,</span> <span class="n">pcut</span><span class="o">=</span><span class="mf">0.01</span><span class="p">,</span> <span class="n">plotp</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">gamma</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span> <span class="n">frame_pad_factor</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
                    <span class="n">label_time</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Save the Movie to an mp4 file</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Save the Movie to an mp4 file</span>
 <span class="sd">        &quot;&quot;&quot;</span>
 
         <span class="kn">import</span> <span class="nn">matplotlib</span>
@@ -1632,12 +1634,12 @@
             <span class="n">m</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">logical_not</span><span class="p">(</span><span class="n">mask</span><span class="p">)]</span> <span class="o">=</span> <span class="mi">0</span>
 
             <span class="n">Q1</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">quiver</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">,</span>
-                            <span class="n">headaxislength</span><span class="o">=</span><span class="mi">20</span><span class="p">,</span> <span class="n">headwidth</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">headlength</span><span class="o">=.</span><span class="mi">01</span><span class="p">,</span> <span class="n">minlength</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">minshaft</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
-                            <span class="n">width</span><span class="o">=.</span><span class="mi">01</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">xdim</span><span class="p">,</span> <span class="n">units</span><span class="o">=</span><span class="s1">&#39;x&#39;</span><span class="p">,</span> <span class="n">pivot</span><span class="o">=</span><span class="s1">&#39;mid&#39;</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s1">&#39;k&#39;</span><span class="p">,</span>
+                            <span class="n">headaxislength</span><span class="o">=</span><span class="mi">20</span><span class="p">,</span> <span class="n">headwidth</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">headlength</span><span class="o">=</span><span class="mf">.01</span><span class="p">,</span> <span class="n">minlength</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">minshaft</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+                            <span class="n">width</span><span class="o">=</span><span class="mf">.01</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">xdim</span><span class="p">,</span> <span class="n">units</span><span class="o">=</span><span class="s1">&#39;x&#39;</span><span class="p">,</span> <span class="n">pivot</span><span class="o">=</span><span class="s1">&#39;mid&#39;</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s1">&#39;k&#39;</span><span class="p">,</span>
                             <span class="n">angles</span><span class="o">=</span><span class="s1">&#39;uv&#39;</span><span class="p">,</span> <span class="n">scale</span><span class="o">=</span><span class="mf">1.0</span><span class="o">/</span><span class="n">thin</span><span class="p">)</span>
             <span class="n">Q2</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">quiver</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">,</span>
-                            <span class="n">headaxislength</span><span class="o">=</span><span class="mi">20</span><span class="p">,</span> <span class="n">headwidth</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">headlength</span><span class="o">=.</span><span class="mi">01</span><span class="p">,</span> <span class="n">minlength</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">minshaft</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
-                            <span class="n">width</span><span class="o">=.</span><span class="mi">005</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">xdim</span><span class="p">,</span> <span class="n">units</span><span class="o">=</span><span class="s1">&#39;x&#39;</span><span class="p">,</span> <span class="n">pivot</span><span class="o">=</span><span class="s1">&#39;mid&#39;</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s1">&#39;w&#39;</span><span class="p">,</span>
+                            <span class="n">headaxislength</span><span class="o">=</span><span class="mi">20</span><span class="p">,</span> <span class="n">headwidth</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">headlength</span><span class="o">=</span><span class="mf">.01</span><span class="p">,</span> <span class="n">minlength</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">minshaft</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+                            <span class="n">width</span><span class="o">=</span><span class="mf">.005</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">xdim</span><span class="p">,</span> <span class="n">units</span><span class="o">=</span><span class="s1">&#39;x&#39;</span><span class="p">,</span> <span class="n">pivot</span><span class="o">=</span><span class="s1">&#39;mid&#39;</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s1">&#39;w&#39;</span><span class="p">,</span>
                             <span class="n">angles</span><span class="o">=</span><span class="s1">&#39;uv&#39;</span><span class="p">,</span> <span class="n">scale</span><span class="o">=</span><span class="mf">1.1</span><span class="o">/</span><span class="n">thin</span><span class="p">)</span>
 
         <span class="k">def</span> <span class="nf">im_data</span><span class="p">(</span><span class="n">n</span><span class="p">):</span>
@@ -1707,7 +1709,7 @@
                           <span class="n">nrows</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">fps</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span> <span class="n">dpi</span><span class="o">=</span><span class="mi">120</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">titles</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
                           <span class="n">panel_size</span><span class="o">=</span><span class="mf">4.0</span><span class="p">,</span> <span class="n">common_scale</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">scale</span><span class="o">=</span><span class="s1">&#39;linear&#39;</span><span class="p">,</span> <span class="n">label_type</span><span class="o">=</span><span class="s1">&#39;scale&#39;</span><span class="p">,</span>
                           <span class="n">has_cbar</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Export a movie comparing multiple movies in a grid.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Export a movie comparing multiple movies in a grid.</span>
 
 <span class="sd">       Args:</span>
 <span class="sd">            input_list (list): The  list of  input Movies or Images</span>
@@ -1747,9 +1749,9 @@
     <span class="n">w</span> <span class="o">=</span> <span class="n">panel_size</span><span class="o">*</span><span class="n">ncols</span>
     <span class="n">h</span> <span class="o">=</span> <span class="n">panel_size</span><span class="o">*</span><span class="n">nrows</span> <span class="o">+</span> <span class="n">suptitle_space</span>
     <span class="n">tgap</span> <span class="o">=</span> <span class="n">suptitle_space</span> <span class="o">/</span> <span class="n">h</span>
-    <span class="n">bgap</span> <span class="o">=</span> <span class="o">.</span><span class="mi">1</span>
-    <span class="n">rgap</span> <span class="o">=</span> <span class="o">.</span><span class="mi">1</span>
-    <span class="n">lgap</span> <span class="o">=</span> <span class="o">.</span><span class="mi">1</span>
+    <span class="n">bgap</span> <span class="o">=</span> <span class="mf">.1</span>
+    <span class="n">rgap</span> <span class="o">=</span> <span class="mf">.1</span>
+    <span class="n">lgap</span> <span class="o">=</span> <span class="mf">.1</span>
     <span class="n">subw</span> <span class="o">=</span> <span class="p">(</span><span class="mi">1</span><span class="o">-</span><span class="n">lgap</span><span class="o">-</span><span class="n">rgap</span><span class="p">)</span><span class="o">/</span><span class="n">ncols</span>
     <span class="n">subh</span> <span class="o">=</span> <span class="p">(</span><span class="mi">1</span><span class="o">-</span><span class="n">tgap</span><span class="o">-</span><span class="n">bgap</span><span class="p">)</span><span class="o">/</span><span class="n">nrows</span>
     <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Rows: &quot;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">nrows</span><span class="p">))</span>
@@ -1838,7 +1840,7 @@
 
 
 <div class="viewcode-block" id="merge_im_list"><a class="viewcode-back" href="../../movie.html#ehtim.movie.merge_im_list">[docs]</a><span class="k">def</span> <span class="nf">merge_im_list</span><span class="p">(</span><span class="n">imlist</span><span class="p">,</span> <span class="n">framedur</span><span class="o">=-</span><span class="mi">1</span><span class="p">,</span> <span class="n">interp</span><span class="o">=</span><span class="n">ehc</span><span class="o">.</span><span class="n">INTERP_DEFAULT</span><span class="p">,</span> <span class="n">bounds_error</span><span class="o">=</span><span class="n">ehc</span><span class="o">.</span><span class="n">BOUNDS_ERROR</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Merge a list of image objects into a movie object.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Merge a list of image objects into a movie object.</span>
 
 <span class="sd">       Args:</span>
 <span class="sd">           imlist (list): list of Image objects</span>
@@ -1942,7 +1944,7 @@
 
 <div class="viewcode-block" id="load_hdf5"><a class="viewcode-back" href="../../movie.html#ehtim.movie.load_hdf5">[docs]</a><span class="k">def</span> <span class="nf">load_hdf5</span><span class="p">(</span><span class="n">file_name</span><span class="p">,</span>
               <span class="n">pulse</span><span class="o">=</span><span class="n">ehc</span><span class="o">.</span><span class="n">PULSE_DEFAULT</span><span class="p">,</span> <span class="n">interp</span><span class="o">=</span><span class="n">ehc</span><span class="o">.</span><span class="n">INTERP_DEFAULT</span><span class="p">,</span> <span class="n">bounds_error</span><span class="o">=</span><span class="n">ehc</span><span class="o">.</span><span class="n">BOUNDS_ERROR</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Read in a movie from an hdf5 file and create a Movie object.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Read in a movie from an hdf5 file and create a Movie object.</span>
 
 <span class="sd">       Args:</span>
 <span class="sd">           file_name (str): The name of the hdf5 file.</span>
@@ -1962,7 +1964,7 @@
              <span class="n">framedur</span><span class="o">=-</span><span class="mi">1</span><span class="p">,</span> <span class="n">pulse</span><span class="o">=</span><span class="n">ehc</span><span class="o">.</span><span class="n">PULSE_DEFAULT</span><span class="p">,</span>
              <span class="n">polrep</span><span class="o">=</span><span class="s1">&#39;stokes&#39;</span><span class="p">,</span> <span class="n">pol_prim</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>  <span class="n">zero_pol</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
              <span class="n">interp</span><span class="o">=</span><span class="n">ehc</span><span class="o">.</span><span class="n">INTERP_DEFAULT</span><span class="p">,</span> <span class="n">bounds_error</span><span class="o">=</span><span class="n">ehc</span><span class="o">.</span><span class="n">BOUNDS_ERROR</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Read in a movie from text files and create a Movie object.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Read in a movie from text files and create a Movie object.</span>
 
 <span class="sd">       Args:</span>
 <span class="sd">           basename (str): The base name of individual movie frames.</span>
@@ -1990,7 +1992,7 @@
               <span class="n">framedur</span><span class="o">=-</span><span class="mi">1</span><span class="p">,</span> <span class="n">pulse</span><span class="o">=</span><span class="n">ehc</span><span class="o">.</span><span class="n">PULSE_DEFAULT</span><span class="p">,</span>
               <span class="n">polrep</span><span class="o">=</span><span class="s1">&#39;stokes&#39;</span><span class="p">,</span> <span class="n">pol_prim</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>  <span class="n">zero_pol</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
               <span class="n">interp</span><span class="o">=</span><span class="n">ehc</span><span class="o">.</span><span class="n">INTERP_DEFAULT</span><span class="p">,</span> <span class="n">bounds_error</span><span class="o">=</span><span class="n">ehc</span><span class="o">.</span><span class="n">BOUNDS_ERROR</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Read in a movie from fits files and create a Movie object.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Read in a movie from fits files and create a Movie object.</span>
 
 <span class="sd">       Args:</span>
 <span class="sd">           basename (str): The base name of individual movie frames.</span>

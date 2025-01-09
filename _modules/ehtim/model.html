@@ -3,16 +3,18 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>ehtim.model &mdash; ehtim 1.2.6 documentation</title><link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
-    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+  <title>ehtim.model &mdash; ehtim 1.2.6 documentation</title>
+      <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
   <!--[if lt IE 9]>
     <script src="../../_static/js/html5shiv.min.js"></script>
   <![endif]-->
-  <script id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
+  
+        <script data-url_root="../../" id="documentation_options" src="../../_static/documentation_options.js"></script>
         <script src="../../_static/jquery.js"></script>
         <script src="../../_static/underscore.js"></script>
+        <script src="../../_static/_sphinx_javascript_frameworks_compat.js"></script>
         <script src="../../_static/doctools.js"></script>
-        <script src="../../_static/language_data.js"></script>
     <script src="../../_static/js/theme.js"></script>
     <link rel="index" title="Index" href="../../genindex.html" />
     <link rel="search" title="Search" href="../../search.html" /> 
@@ -36,7 +38,7 @@
   </form>
 </div>
         </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
-              <p class="caption"><span class="caption-text">Contents:</span></p>
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="../../image.html">Image</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../array.html">Array</a></li>
@@ -113,7 +115,7 @@
 <span class="c1">###########################################################################################################################################</span>
 
 <div class="viewcode-block" id="model_params"><a class="viewcode-back" href="../../model.html#ehtim.model.model_params">[docs]</a><span class="k">def</span> <span class="nf">model_params</span><span class="p">(</span><span class="n">model_type</span><span class="p">,</span> <span class="n">model_params</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">fit_pol</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">fit_cpol</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Return the ordered list of model parameters for a specified model type. This order must match that of the gradient function, sample_1model_grad_uv.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Return the ordered list of model parameters for a specified model type. This order must match that of the gradient function, sample_1model_grad_uv.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="k">if</span> <span class="n">COMPLEX_BASIS</span> <span class="o">==</span> <span class="s1">&#39;re-im&#39;</span><span class="p">:</span>
@@ -235,7 +237,7 @@
     <span class="k">return</span> <span class="n">params</span></div>
 
 <div class="viewcode-block" id="default_prior"><a class="viewcode-back" href="../../model.html#ehtim.model.default_prior">[docs]</a><span class="k">def</span> <span class="nf">default_prior</span><span class="p">(</span><span class="n">model_type</span><span class="p">,</span><span class="n">model_params</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span><span class="n">fit_pol</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span><span class="n">fit_cpol</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Return the default model prior and transformation for a specified model type</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Return the default model prior and transformation for a specified model type</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="k">if</span> <span class="n">COMPLEX_BASIS</span> <span class="o">==</span> <span class="s1">&#39;re-im&#39;</span><span class="p">:</span>
@@ -1495,7 +1497,7 @@
         <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">([</span><span class="n">grad</span><span class="p">,</span> <span class="n">grad_leakage</span><span class="p">])</span>
 
 <div class="viewcode-block" id="blur_circ_1model"><a class="viewcode-back" href="../../model.html#ehtim.model.blur_circ_1model">[docs]</a><span class="k">def</span> <span class="nf">blur_circ_1model</span><span class="p">(</span><span class="n">model_type</span><span class="p">,</span> <span class="n">params</span><span class="p">,</span> <span class="n">fwhm</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Blur a single model, returning new model type and associated parameters</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Blur a single model, returning new model type and associated parameters</span>
 
 <span class="sd">       Args:</span>
 <span class="sd">            fwhm (float) : Full width at half maximum of the kernel (radians)</span>
@@ -1535,7 +1537,7 @@
     <span class="k">return</span> <span class="p">{</span><span class="s1">&#39;model_type&#39;</span><span class="p">:</span><span class="n">model_type_blur</span><span class="p">,</span> <span class="s1">&#39;params&#39;</span><span class="p">:</span><span class="n">params_blur</span><span class="p">}</span></div>
 
 <div class="viewcode-block" id="Model"><a class="viewcode-back" href="../../model.html#ehtim.model.Model">[docs]</a><span class="k">class</span> <span class="nc">Model</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;A model with analytic representations in the image and visibility domains.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;A model with analytic representations in the image and visibility domains.</span>
 
 <span class="sd">       Attributes:</span>
 <span class="sd">    &quot;&quot;&quot;</span>
@@ -1545,7 +1547,7 @@
                        <span class="n">rf</span><span class="o">=</span><span class="n">RF_DEFAULT</span><span class="p">,</span> <span class="n">source</span><span class="o">=</span><span class="n">SOURCE_DEFAULT</span><span class="p">,</span>
                        <span class="n">mjd</span><span class="o">=</span><span class="n">MJD_DEFAULT</span><span class="p">,</span> <span class="n">time</span><span class="o">=</span><span class="mf">0.</span><span class="p">):</span>
 
-        <span class="sd">&quot;&quot;&quot;A model with analytic representations in the image and visibility domains.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;A model with analytic representations in the image and visibility domains.</span>
 
 <span class="sd">           Args:</span>
 
@@ -1587,7 +1589,7 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">_imdict</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">pol_prim</span><span class="p">][</span><span class="s1">&#39;params&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">param_list</span>
 
 <div class="viewcode-block" id="Model.copy"><a class="viewcode-back" href="../../model.html#ehtim.model.Model.copy">[docs]</a>    <span class="k">def</span> <span class="nf">copy</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Return a copy of the Model object.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Return a copy of the Model object.</span>
 
 <span class="sd">           Args:</span>
 
@@ -1601,7 +1603,7 @@
 
 <div class="viewcode-block" id="Model.switch_polrep"><a class="viewcode-back" href="../../model.html#ehtim.model.Model.switch_polrep">[docs]</a>    <span class="k">def</span> <span class="nf">switch_polrep</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">polrep_out</span><span class="o">=</span><span class="s1">&#39;stokes&#39;</span><span class="p">,</span> <span class="n">pol_prim_out</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
 
-        <span class="sd">&quot;&quot;&quot;Return a new model with the polarization representation changed</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Return a new model with the polarization representation changed</span>
 <span class="sd">           Args:</span>
 <span class="sd">               polrep_out (str):  the polrep of the output data</span>
 <span class="sd">               pol_prim_out (str): The default image: I,Q,U or V for Stokes, RR,LL,LR,RL for circ</span>
@@ -1620,7 +1622,7 @@
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span></div>
 
 <div class="viewcode-block" id="Model.N_models"><a class="viewcode-back" href="../../model.html#ehtim.model.Model.N_models">[docs]</a>    <span class="k">def</span> <span class="nf">N_models</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Return the number of model components</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Return the number of model components</span>
 
 <span class="sd">           Args:</span>
 
@@ -1630,7 +1632,7 @@
         <span class="k">return</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">models</span><span class="p">)</span></div>
 
 <div class="viewcode-block" id="Model.total_flux"><a class="viewcode-back" href="../../model.html#ehtim.model.Model.total_flux">[docs]</a>    <span class="k">def</span> <span class="nf">total_flux</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Return the total flux of the model in Jy.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Return the total flux of the model in Jy.</span>
 
 <span class="sd">           Args:</span>
 
@@ -1640,7 +1642,7 @@
         <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">real</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">sample_uv</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">))</span></div>
 
 <div class="viewcode-block" id="Model.blur_circ"><a class="viewcode-back" href="../../model.html#ehtim.model.Model.blur_circ">[docs]</a>    <span class="k">def</span> <span class="nf">blur_circ</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">fwhm</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Return a new model, equal to the current one convolved with a circular Gaussian kernel</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Return a new model, equal to the current one convolved with a circular Gaussian kernel</span>
 
 <span class="sd">           Args:</span>
 <span class="sd">                fwhm (float) : Full width at half maximum of the kernel (radians)</span>
@@ -1659,7 +1661,7 @@
         <span class="k">return</span> <span class="n">out</span></div>
 
 <div class="viewcode-block" id="Model.add_point"><a class="viewcode-back" href="../../model.html#ehtim.model.Model.add_point">[docs]</a>    <span class="k">def</span> <span class="nf">add_point</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">F0</span> <span class="o">=</span> <span class="mf">1.0</span><span class="p">,</span> <span class="n">x0</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">,</span> <span class="n">y0</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">,</span> <span class="n">pol_frac</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">,</span> <span class="n">pol_evpa</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">,</span> <span class="n">cpol_frac</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Add a point source model.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Add a point source model.</span>
 
 <span class="sd">           Args:</span>
 <span class="sd">               F0 (float): The total flux of the point source (Jy)</span>
@@ -1676,7 +1678,7 @@
         <span class="k">return</span> <span class="n">out</span></div>
 
 <div class="viewcode-block" id="Model.add_circ_gauss"><a class="viewcode-back" href="../../model.html#ehtim.model.Model.add_circ_gauss">[docs]</a>    <span class="k">def</span> <span class="nf">add_circ_gauss</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">F0</span> <span class="o">=</span> <span class="mf">1.0</span><span class="p">,</span> <span class="n">FWHM</span> <span class="o">=</span> <span class="mf">50.</span><span class="o">*</span><span class="n">RADPERUAS</span><span class="p">,</span> <span class="n">x0</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">,</span> <span class="n">y0</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">,</span> <span class="n">pol_frac</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">,</span> <span class="n">pol_evpa</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">,</span> <span class="n">cpol_frac</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Add a circular Gaussian model.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Add a circular Gaussian model.</span>
 
 <span class="sd">           Args:</span>
 <span class="sd">               F0 (float): The total flux of the Gaussian (Jy)</span>
@@ -1693,7 +1695,7 @@
         <span class="k">return</span> <span class="n">out</span></div>
 
 <div class="viewcode-block" id="Model.add_gauss"><a class="viewcode-back" href="../../model.html#ehtim.model.Model.add_gauss">[docs]</a>    <span class="k">def</span> <span class="nf">add_gauss</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">F0</span> <span class="o">=</span> <span class="mf">1.0</span><span class="p">,</span> <span class="n">FWHM_maj</span> <span class="o">=</span> <span class="mf">50.</span><span class="o">*</span><span class="n">RADPERUAS</span><span class="p">,</span> <span class="n">FWHM_min</span> <span class="o">=</span> <span class="mf">50.</span><span class="o">*</span><span class="n">RADPERUAS</span><span class="p">,</span> <span class="n">PA</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">,</span> <span class="n">x0</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">,</span> <span class="n">y0</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">,</span> <span class="n">pol_frac</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">,</span> <span class="n">pol_evpa</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">,</span> <span class="n">cpol_frac</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Add an anisotropic Gaussian model.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Add an anisotropic Gaussian model.</span>
 
 <span class="sd">           Args:</span>
 <span class="sd">               F0 (float): The total flux of the Gaussian (Jy)</span>
@@ -1712,7 +1714,7 @@
         <span class="k">return</span> <span class="n">out</span></div>
 
 <div class="viewcode-block" id="Model.add_disk"><a class="viewcode-back" href="../../model.html#ehtim.model.Model.add_disk">[docs]</a>    <span class="k">def</span> <span class="nf">add_disk</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">F0</span> <span class="o">=</span> <span class="mf">1.0</span><span class="p">,</span> <span class="n">d</span> <span class="o">=</span> <span class="mf">50.</span><span class="o">*</span><span class="n">RADPERUAS</span><span class="p">,</span> <span class="n">x0</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">,</span> <span class="n">y0</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">,</span> <span class="n">pol_frac</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">,</span> <span class="n">pol_evpa</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">,</span> <span class="n">cpol_frac</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Add a circular disk model.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Add a circular disk model.</span>
 
 <span class="sd">           Args:</span>
 <span class="sd">               F0 (float): The total flux of the disk (Jy)</span>
@@ -1729,7 +1731,7 @@
         <span class="k">return</span> <span class="n">out</span></div>
 
 <div class="viewcode-block" id="Model.add_blurred_disk"><a class="viewcode-back" href="../../model.html#ehtim.model.Model.add_blurred_disk">[docs]</a>    <span class="k">def</span> <span class="nf">add_blurred_disk</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">F0</span> <span class="o">=</span> <span class="mf">1.0</span><span class="p">,</span> <span class="n">d</span> <span class="o">=</span> <span class="mf">50.</span><span class="o">*</span><span class="n">RADPERUAS</span><span class="p">,</span> <span class="n">alpha</span> <span class="o">=</span> <span class="mf">10.</span><span class="o">*</span><span class="n">RADPERUAS</span><span class="p">,</span> <span class="n">x0</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">,</span> <span class="n">y0</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">,</span> <span class="n">pol_frac</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">,</span> <span class="n">pol_evpa</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">,</span> <span class="n">cpol_frac</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Add a circular disk model that is blurred with a circular Gaussian kernel.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Add a circular disk model that is blurred with a circular Gaussian kernel.</span>
 
 <span class="sd">           Args:</span>
 <span class="sd">               F0 (float): The total flux of the disk (Jy)</span>
@@ -1747,7 +1749,7 @@
         <span class="k">return</span> <span class="n">out</span></div>
 
 <div class="viewcode-block" id="Model.add_crescent"><a class="viewcode-back" href="../../model.html#ehtim.model.Model.add_crescent">[docs]</a>    <span class="k">def</span> <span class="nf">add_crescent</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">F0</span> <span class="o">=</span> <span class="mf">1.0</span><span class="p">,</span> <span class="n">d</span> <span class="o">=</span> <span class="mf">50.</span><span class="o">*</span><span class="n">RADPERUAS</span><span class="p">,</span> <span class="n">fr</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">,</span> <span class="n">fo</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">,</span> <span class="n">ff</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">,</span> <span class="n">phi</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">,</span> <span class="n">x0</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">,</span> <span class="n">y0</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">,</span> <span class="n">pol_frac</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">,</span> <span class="n">pol_evpa</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">,</span> <span class="n">cpol_frac</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Add a crescent model.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Add a crescent model.</span>
 
 <span class="sd">           Args:</span>
 <span class="sd">               F0 (float): The total flux of the disk (Jy)</span>
@@ -1769,7 +1771,7 @@
 
 <div class="viewcode-block" id="Model.add_blurred_crescent"><a class="viewcode-back" href="../../model.html#ehtim.model.Model.add_blurred_crescent">[docs]</a>    <span class="k">def</span> <span class="nf">add_blurred_crescent</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">F0</span> <span class="o">=</span> <span class="mf">1.0</span><span class="p">,</span> <span class="n">d</span> <span class="o">=</span> <span class="mf">50.</span><span class="o">*</span><span class="n">RADPERUAS</span><span class="p">,</span> <span class="n">alpha</span> <span class="o">=</span> <span class="mf">10.</span><span class="o">*</span><span class="n">RADPERUAS</span><span class="p">,</span> <span class="n">fr</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">,</span> <span class="n">fo</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">,</span> <span class="n">ff</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">,</span> <span class="n">phi</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">,</span> <span class="n">x0</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">,</span> <span class="n">y0</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">,</span> <span class="n">pol_frac</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">,</span> <span class="n">pol_evpa</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">,</span> <span class="n">cpol_frac</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">):</span>
 
-        <span class="sd">&quot;&quot;&quot;Add a circular disk model that is blurred with a circular Gaussian kernel.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Add a circular disk model that is blurred with a circular Gaussian kernel.</span>
 
 <span class="sd">           Args:</span>
 <span class="sd">               F0 (float): The total flux of the disk (Jy)</span>
@@ -1791,7 +1793,7 @@
         <span class="k">return</span> <span class="n">out</span></div>
 
 <div class="viewcode-block" id="Model.add_ring"><a class="viewcode-back" href="../../model.html#ehtim.model.Model.add_ring">[docs]</a>    <span class="k">def</span> <span class="nf">add_ring</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">F0</span> <span class="o">=</span> <span class="mf">1.0</span><span class="p">,</span> <span class="n">d</span> <span class="o">=</span> <span class="mf">50.</span><span class="o">*</span><span class="n">RADPERUAS</span><span class="p">,</span> <span class="n">x0</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">,</span> <span class="n">y0</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">,</span> <span class="n">pol_frac</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">,</span> <span class="n">pol_evpa</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">,</span> <span class="n">cpol_frac</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Add a ring model with infinitesimal thickness.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Add a ring model with infinitesimal thickness.</span>
 
 <span class="sd">           Args:</span>
 <span class="sd">               F0 (float): The total flux of the ring (Jy)</span>
@@ -1808,7 +1810,7 @@
         <span class="k">return</span> <span class="n">out</span></div>
 
 <div class="viewcode-block" id="Model.add_stretched_ring"><a class="viewcode-back" href="../../model.html#ehtim.model.Model.add_stretched_ring">[docs]</a>    <span class="k">def</span> <span class="nf">add_stretched_ring</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">F0</span> <span class="o">=</span> <span class="mf">1.0</span><span class="p">,</span> <span class="n">d</span> <span class="o">=</span> <span class="mf">50.</span><span class="o">*</span><span class="n">RADPERUAS</span><span class="p">,</span> <span class="n">x0</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">,</span> <span class="n">y0</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">,</span> <span class="n">stretch</span> <span class="o">=</span> <span class="mf">1.0</span><span class="p">,</span> <span class="n">stretch_PA</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">,</span> <span class="n">pol_frac</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">,</span> <span class="n">pol_evpa</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">,</span> <span class="n">cpol_frac</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Add a stretched ring model with infinitesimal thickness.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Add a stretched ring model with infinitesimal thickness.</span>
 
 <span class="sd">           Args:</span>
 <span class="sd">               F0 (float): The total flux of the ring (Jy)</span>
@@ -1827,7 +1829,7 @@
         <span class="k">return</span> <span class="n">out</span></div>
 
 <div class="viewcode-block" id="Model.add_thick_ring"><a class="viewcode-back" href="../../model.html#ehtim.model.Model.add_thick_ring">[docs]</a>    <span class="k">def</span> <span class="nf">add_thick_ring</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">F0</span> <span class="o">=</span> <span class="mf">1.0</span><span class="p">,</span> <span class="n">d</span> <span class="o">=</span> <span class="mf">50.</span><span class="o">*</span><span class="n">RADPERUAS</span><span class="p">,</span> <span class="n">alpha</span> <span class="o">=</span> <span class="mf">10.</span><span class="o">*</span><span class="n">RADPERUAS</span><span class="p">,</span> <span class="n">x0</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">,</span> <span class="n">y0</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">,</span> <span class="n">pol_frac</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">,</span> <span class="n">pol_evpa</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">,</span> <span class="n">cpol_frac</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Add a ring model with finite thickness, determined by circular Gaussian convolution of a thin ring.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Add a ring model with finite thickness, determined by circular Gaussian convolution of a thin ring.</span>
 <span class="sd">           For details, see Appendix G of https://iopscience.iop.org/article/10.3847/2041-8213/ab0e85/pdf</span>
 
 <span class="sd">           Args:</span>
@@ -1846,7 +1848,7 @@
         <span class="k">return</span> <span class="n">out</span></div>
 
 <div class="viewcode-block" id="Model.add_stretched_thick_ring"><a class="viewcode-back" href="../../model.html#ehtim.model.Model.add_stretched_thick_ring">[docs]</a>    <span class="k">def</span> <span class="nf">add_stretched_thick_ring</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">F0</span> <span class="o">=</span> <span class="mf">1.0</span><span class="p">,</span> <span class="n">d</span> <span class="o">=</span> <span class="mf">50.</span><span class="o">*</span><span class="n">RADPERUAS</span><span class="p">,</span> <span class="n">alpha</span> <span class="o">=</span> <span class="mf">10.</span><span class="o">*</span><span class="n">RADPERUAS</span><span class="p">,</span> <span class="n">x0</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">,</span> <span class="n">y0</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">,</span> <span class="n">stretch</span> <span class="o">=</span> <span class="mf">1.0</span><span class="p">,</span> <span class="n">stretch_PA</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">,</span> <span class="n">pol_frac</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">,</span> <span class="n">pol_evpa</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">,</span> <span class="n">cpol_frac</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Add a ring model with finite thickness, determined by circular Gaussian convolution of a thin ring.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Add a ring model with finite thickness, determined by circular Gaussian convolution of a thin ring.</span>
 <span class="sd">           For details, see Appendix G of https://iopscience.iop.org/article/10.3847/2041-8213/ab0e85/pdf</span>
 
 <span class="sd">           Args:</span>
@@ -1867,7 +1869,7 @@
         <span class="k">return</span> <span class="n">out</span></div>
 
 <div class="viewcode-block" id="Model.add_mring"><a class="viewcode-back" href="../../model.html#ehtim.model.Model.add_mring">[docs]</a>    <span class="k">def</span> <span class="nf">add_mring</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">F0</span> <span class="o">=</span> <span class="mf">1.0</span><span class="p">,</span> <span class="n">d</span> <span class="o">=</span> <span class="mf">50.</span><span class="o">*</span><span class="n">RADPERUAS</span><span class="p">,</span> <span class="n">x0</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">,</span> <span class="n">y0</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">,</span> <span class="n">beta_list</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">beta_list_pol</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">beta_list_cpol</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Add a ring model with azimuthal brightness variations determined by a Fourier mode expansion.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Add a ring model with azimuthal brightness variations determined by a Fourier mode expansion.</span>
 <span class="sd">           For details, see Eq. 18-20 of https://arxiv.org/abs/1907.04329</span>
 
 <span class="sd">           Args:</span>
@@ -1893,7 +1895,7 @@
         <span class="k">return</span> <span class="n">out</span></div>
 
 <div class="viewcode-block" id="Model.add_stretched_mring"><a class="viewcode-back" href="../../model.html#ehtim.model.Model.add_stretched_mring">[docs]</a>    <span class="k">def</span> <span class="nf">add_stretched_mring</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">F0</span> <span class="o">=</span> <span class="mf">1.0</span><span class="p">,</span> <span class="n">d</span> <span class="o">=</span> <span class="mf">50.</span><span class="o">*</span><span class="n">RADPERUAS</span><span class="p">,</span> <span class="n">x0</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">,</span> <span class="n">y0</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">,</span> <span class="n">beta_list</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">beta_list_pol</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">beta_list_cpol</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">stretch</span> <span class="o">=</span> <span class="mf">1.0</span><span class="p">,</span> <span class="n">stretch_PA</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Add a stretched ring model with azimuthal brightness variations determined by a Fourier mode expansion.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Add a stretched ring model with azimuthal brightness variations determined by a Fourier mode expansion.</span>
 <span class="sd">           For details, see Eq. 18-20 of https://arxiv.org/abs/1907.04329</span>
 
 <span class="sd">           Args:</span>
@@ -1921,7 +1923,7 @@
         <span class="k">return</span> <span class="n">out</span></div>
 
 <div class="viewcode-block" id="Model.add_thick_mring"><a class="viewcode-back" href="../../model.html#ehtim.model.Model.add_thick_mring">[docs]</a>    <span class="k">def</span> <span class="nf">add_thick_mring</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">F0</span> <span class="o">=</span> <span class="mf">1.0</span><span class="p">,</span> <span class="n">d</span> <span class="o">=</span> <span class="mf">50.</span><span class="o">*</span><span class="n">RADPERUAS</span><span class="p">,</span> <span class="n">alpha</span> <span class="o">=</span> <span class="mf">10.</span><span class="o">*</span><span class="n">RADPERUAS</span><span class="p">,</span> <span class="n">x0</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">,</span> <span class="n">y0</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">,</span> <span class="n">beta_list</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">beta_list_pol</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">beta_list_cpol</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Add a ring model with azimuthal brightness variations determined by a Fourier mode expansion and thickness determined by circular Gaussian convolution.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Add a ring model with azimuthal brightness variations determined by a Fourier mode expansion and thickness determined by circular Gaussian convolution.</span>
 <span class="sd">           For details, see Eq. 18-20 of https://arxiv.org/abs/1907.04329</span>
 <span class="sd">           The Gaussian convolution calculation is a trivial generalization of Appendix G of https://iopscience.iop.org/article/10.3847/2041-8213/ab0e85/pdf</span>
 
@@ -1949,7 +1951,7 @@
         <span class="k">return</span> <span class="n">out</span></div>
 
 <div class="viewcode-block" id="Model.add_thick_mring_floor"><a class="viewcode-back" href="../../model.html#ehtim.model.Model.add_thick_mring_floor">[docs]</a>    <span class="k">def</span> <span class="nf">add_thick_mring_floor</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">F0</span> <span class="o">=</span> <span class="mf">1.0</span><span class="p">,</span> <span class="n">d</span> <span class="o">=</span> <span class="mf">50.</span><span class="o">*</span><span class="n">RADPERUAS</span><span class="p">,</span> <span class="n">alpha</span> <span class="o">=</span> <span class="mf">10.</span><span class="o">*</span><span class="n">RADPERUAS</span><span class="p">,</span> <span class="n">ff</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">x0</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">,</span> <span class="n">y0</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">,</span> <span class="n">beta_list</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">beta_list_pol</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">beta_list_cpol</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Add a ring model with azimuthal brightness variations determined by a Fourier mode expansion, thickness determined by circular Gaussian convolution, and a floor</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Add a ring model with azimuthal brightness variations determined by a Fourier mode expansion, thickness determined by circular Gaussian convolution, and a floor</span>
 <span class="sd">           The floor is a blurred disk, with diameter d and blurred FWHM alpha</span>
 <span class="sd">           For details, see Eq. 18-20 of https://arxiv.org/abs/1907.04329</span>
 <span class="sd">           The Gaussian convolution calculation is a trivial generalization of Appendix G of https://iopscience.iop.org/article/10.3847/2041-8213/ab0e85/pdf</span>
@@ -1979,7 +1981,7 @@
         <span class="k">return</span> <span class="n">out</span></div>
 
 <div class="viewcode-block" id="Model.add_thick_mring_Gfloor"><a class="viewcode-back" href="../../model.html#ehtim.model.Model.add_thick_mring_Gfloor">[docs]</a>    <span class="k">def</span> <span class="nf">add_thick_mring_Gfloor</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">F0</span> <span class="o">=</span> <span class="mf">1.0</span><span class="p">,</span> <span class="n">d</span> <span class="o">=</span> <span class="mf">50.</span><span class="o">*</span><span class="n">RADPERUAS</span><span class="p">,</span> <span class="n">alpha</span> <span class="o">=</span> <span class="mf">10.</span><span class="o">*</span><span class="n">RADPERUAS</span><span class="p">,</span> <span class="n">ff</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">FWHM</span> <span class="o">=</span> <span class="mf">50.</span><span class="o">*</span><span class="n">RADPERUAS</span><span class="p">,</span> <span class="n">x0</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">,</span> <span class="n">y0</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">,</span> <span class="n">beta_list</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">beta_list_pol</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">beta_list_cpol</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Add a ring model with azimuthal brightness variations determined by a Fourier mode expansion, thickness determined by circular Gaussian convolution, and a floor</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Add a ring model with azimuthal brightness variations determined by a Fourier mode expansion, thickness determined by circular Gaussian convolution, and a floor</span>
 <span class="sd">           The floor is a circular Gaussian, with size FWHM</span>
 <span class="sd">           For details, see Eq. 18-20 of https://arxiv.org/abs/1907.04329</span>
 <span class="sd">           The Gaussian convolution calculation is a trivial generalization of Appendix G of https://iopscience.iop.org/article/10.3847/2041-8213/ab0e85/pdf</span>
@@ -2010,7 +2012,7 @@
         <span class="k">return</span> <span class="n">out</span></div>
 
 <div class="viewcode-block" id="Model.add_stretched_thick_mring"><a class="viewcode-back" href="../../model.html#ehtim.model.Model.add_stretched_thick_mring">[docs]</a>    <span class="k">def</span> <span class="nf">add_stretched_thick_mring</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">F0</span> <span class="o">=</span> <span class="mf">1.0</span><span class="p">,</span> <span class="n">d</span> <span class="o">=</span> <span class="mf">50.</span><span class="o">*</span><span class="n">RADPERUAS</span><span class="p">,</span> <span class="n">alpha</span> <span class="o">=</span> <span class="mf">10.</span><span class="o">*</span><span class="n">RADPERUAS</span><span class="p">,</span> <span class="n">x0</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">,</span> <span class="n">y0</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">,</span> <span class="n">beta_list</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">beta_list_pol</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">beta_list_cpol</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">stretch</span> <span class="o">=</span> <span class="mf">1.0</span><span class="p">,</span> <span class="n">stretch_PA</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Add a ring model with azimuthal brightness variations determined by a Fourier mode expansion and thickness determined by circular Gaussian convolution.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Add a ring model with azimuthal brightness variations determined by a Fourier mode expansion and thickness determined by circular Gaussian convolution.</span>
 <span class="sd">           For details, see Eq. 18-20 of https://arxiv.org/abs/1907.04329</span>
 <span class="sd">           The Gaussian convolution calculation is a trivial generalization of Appendix G of https://iopscience.iop.org/article/10.3847/2041-8213/ab0e85/pdf</span>
 
@@ -2040,7 +2042,7 @@
         <span class="k">return</span> <span class="n">out</span></div>
 
 <div class="viewcode-block" id="Model.add_stretched_thick_mring_floor"><a class="viewcode-back" href="../../model.html#ehtim.model.Model.add_stretched_thick_mring_floor">[docs]</a>    <span class="k">def</span> <span class="nf">add_stretched_thick_mring_floor</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">F0</span> <span class="o">=</span> <span class="mf">1.0</span><span class="p">,</span> <span class="n">d</span> <span class="o">=</span> <span class="mf">50.</span><span class="o">*</span><span class="n">RADPERUAS</span><span class="p">,</span> <span class="n">alpha</span> <span class="o">=</span> <span class="mf">10.</span><span class="o">*</span><span class="n">RADPERUAS</span><span class="p">,</span> <span class="n">ff</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">x0</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">,</span> <span class="n">y0</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">,</span> <span class="n">beta_list</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">beta_list_pol</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">beta_list_cpol</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">stretch</span> <span class="o">=</span> <span class="mf">1.0</span><span class="p">,</span> <span class="n">stretch_PA</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Add a ring model with azimuthal brightness variations determined by a Fourier mode expansion and thickness determined by circular Gaussian convolution.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Add a ring model with azimuthal brightness variations determined by a Fourier mode expansion and thickness determined by circular Gaussian convolution.</span>
 <span class="sd">           For details, see Eq. 18-20 of https://arxiv.org/abs/1907.04329</span>
 <span class="sd">           The Gaussian convolution calculation is a trivial generalization of Appendix G of https://iopscience.iop.org/article/10.3847/2041-8213/ab0e85/pdf</span>
 
@@ -2070,7 +2072,7 @@
         <span class="k">return</span> <span class="n">out</span></div>
 
 <div class="viewcode-block" id="Model.sample_xy"><a class="viewcode-back" href="../../model.html#ehtim.model.Model.sample_xy">[docs]</a>    <span class="k">def</span> <span class="nf">sample_xy</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">psize</span><span class="o">=</span><span class="mf">1.</span><span class="o">*</span><span class="n">RADPERUAS</span><span class="p">,</span> <span class="n">pol</span><span class="o">=</span><span class="s1">&#39;I&#39;</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Sample model image on the specified x and y coordinates</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Sample model image on the specified x and y coordinates</span>
 
 <span class="sd">           Args:</span>
 <span class="sd">               x (float): x coordinate (dimensionless)</span>
@@ -2082,7 +2084,7 @@
         <span class="k">return</span> <span class="n">sample_model_xy</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">models</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">params</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">psize</span><span class="o">=</span><span class="n">psize</span><span class="p">,</span> <span class="n">pol</span><span class="o">=</span><span class="n">pol</span><span class="p">)</span></div>
 
 <div class="viewcode-block" id="Model.sample_uv"><a class="viewcode-back" href="../../model.html#ehtim.model.Model.sample_uv">[docs]</a>    <span class="k">def</span> <span class="nf">sample_uv</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">u</span><span class="p">,</span> <span class="n">v</span><span class="p">,</span> <span class="n">polrep_obs</span><span class="o">=</span><span class="s1">&#39;Stokes&#39;</span><span class="p">,</span> <span class="n">pol</span><span class="o">=</span><span class="s1">&#39;I&#39;</span><span class="p">,</span> <span class="n">jonesdict</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Sample model visibility on the specified u and v coordinates</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Sample model visibility on the specified u and v coordinates</span>
 
 <span class="sd">           Args:</span>
 <span class="sd">               u (float): u coordinate (dimensionless)</span>
@@ -2094,7 +2096,7 @@
         <span class="k">return</span> <span class="n">sample_model_uv</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">models</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">params</span><span class="p">,</span> <span class="n">u</span><span class="p">,</span> <span class="n">v</span><span class="p">,</span> <span class="n">pol</span><span class="o">=</span><span class="n">pol</span><span class="p">,</span> <span class="n">jonesdict</span><span class="o">=</span><span class="n">jonesdict</span><span class="p">)</span></div>
 
 <div class="viewcode-block" id="Model.sample_graduv_uv"><a class="viewcode-back" href="../../model.html#ehtim.model.Model.sample_graduv_uv">[docs]</a>    <span class="k">def</span> <span class="nf">sample_graduv_uv</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">u</span><span class="p">,</span> <span class="n">v</span><span class="p">,</span> <span class="n">pol</span><span class="o">=</span><span class="s1">&#39;I&#39;</span><span class="p">,</span> <span class="n">jonesdict</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Sample model visibility gradient on the specified u and v coordinates wrt (u,v)</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Sample model visibility gradient on the specified u and v coordinates wrt (u,v)</span>
 
 <span class="sd">           Args:</span>
 <span class="sd">               u (float): u coordinate (dimensionless)</span>
@@ -2106,7 +2108,7 @@
         <span class="k">return</span> <span class="n">sample_model_graduv_uv</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">models</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">params</span><span class="p">,</span> <span class="n">u</span><span class="p">,</span> <span class="n">v</span><span class="p">,</span> <span class="n">pol</span><span class="o">=</span><span class="n">pol</span><span class="p">,</span> <span class="n">jonesdict</span><span class="o">=</span><span class="n">jonesdict</span><span class="p">)</span></div>
 
 <div class="viewcode-block" id="Model.sample_grad_uv"><a class="viewcode-back" href="../../model.html#ehtim.model.Model.sample_grad_uv">[docs]</a>    <span class="k">def</span> <span class="nf">sample_grad_uv</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">u</span><span class="p">,</span> <span class="n">v</span><span class="p">,</span> <span class="n">pol</span><span class="o">=</span><span class="s1">&#39;I&#39;</span><span class="p">,</span> <span class="n">fit_pol</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">fit_cpol</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">fit_leakage</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">jonesdict</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Sample model visibility gradient on the specified u and v coordinates wrt all model parameters</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Sample model visibility gradient on the specified u and v coordinates wrt all model parameters</span>
 
 <span class="sd">           Args:</span>
 <span class="sd">               u (float): u coordinate (dimensionless)</span>
@@ -2118,7 +2120,7 @@
         <span class="k">return</span> <span class="n">sample_model_grad_uv</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">models</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">params</span><span class="p">,</span> <span class="n">u</span><span class="p">,</span> <span class="n">v</span><span class="p">,</span> <span class="n">pol</span><span class="o">=</span><span class="n">pol</span><span class="p">,</span> <span class="n">fit_pol</span><span class="o">=</span><span class="n">fit_pol</span><span class="p">,</span> <span class="n">fit_cpol</span><span class="o">=</span><span class="n">fit_cpol</span><span class="p">,</span> <span class="n">fit_leakage</span><span class="o">=</span><span class="n">fit_leakage</span><span class="p">,</span> <span class="n">jonesdict</span><span class="o">=</span><span class="n">jonesdict</span><span class="p">)</span></div>
 
 <div class="viewcode-block" id="Model.centroid"><a class="viewcode-back" href="../../model.html#ehtim.model.Model.centroid">[docs]</a>    <span class="k">def</span> <span class="nf">centroid</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pol</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Compute the location of the image centroid (corresponding to the polarization pol)</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Compute the location of the image centroid (corresponding to the polarization pol)</span>
 <span class="sd">           Note: This quantity is only well defined for total intensity</span>
 
 <span class="sd">           Args:</span>
@@ -2142,7 +2144,7 @@
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">make_image</span><span class="p">(</span><span class="n">fov</span><span class="p">,</span> <span class="n">npix</span><span class="p">,</span> <span class="n">polrep</span><span class="p">,</span> <span class="n">pol_prim</span><span class="p">,</span> <span class="n">pulse</span><span class="p">,</span> <span class="n">time</span><span class="p">)</span><span class="o">.</span><span class="n">display</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
 
 <div class="viewcode-block" id="Model.make_image"><a class="viewcode-back" href="../../model.html#ehtim.model.Model.make_image">[docs]</a>    <span class="k">def</span> <span class="nf">make_image</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">fov</span><span class="p">,</span> <span class="n">npix</span><span class="p">,</span> <span class="n">polrep</span><span class="o">=</span><span class="s1">&#39;stokes&#39;</span><span class="p">,</span> <span class="n">pol_prim</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">pulse</span><span class="o">=</span><span class="n">PULSE_DEFAULT</span><span class="p">,</span> <span class="n">time</span><span class="o">=</span><span class="mf">0.</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Sample the model onto a square image.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Sample the model onto a square image.</span>
 
 <span class="sd">           Args:</span>
 <span class="sd">               fov (float): the field of view of each axis in radians</span>
@@ -2173,7 +2175,7 @@
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">image_same</span><span class="p">(</span><span class="n">outim</span><span class="p">)</span></div>
 
 <div class="viewcode-block" id="Model.image_same"><a class="viewcode-back" href="../../model.html#ehtim.model.Model.image_same">[docs]</a>    <span class="k">def</span> <span class="nf">image_same</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">im</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Create an image of the model with parameters equal to a reference image.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Create an image of the model with parameters equal to a reference image.</span>
 
 <span class="sd">           Args:</span>
 <span class="sd">               im (Image): the reference image</span>
@@ -2196,7 +2198,7 @@
         <span class="k">return</span> <span class="n">out</span></div>
 
 <div class="viewcode-block" id="Model.observe_same_nonoise"><a class="viewcode-back" href="../../model.html#ehtim.model.Model.observe_same_nonoise">[docs]</a>    <span class="k">def</span> <span class="nf">observe_same_nonoise</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">obs</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Observe the model on the same baselines as an existing observation, without noise.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Observe the model on the same baselines as an existing observation, without noise.</span>
 
 <span class="sd">           Args:</span>
 <span class="sd">               obs (Obsdata): the existing observation </span>
@@ -2242,7 +2244,7 @@
                            <span class="n">rlratio_std</span><span class="o">=</span><span class="mf">0.</span><span class="p">,</span><span class="n">rlphase_std</span><span class="o">=</span><span class="mf">0.</span><span class="p">,</span>
                            <span class="n">caltable_path</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">seed</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
 
-        <span class="sd">&quot;&quot;&quot;Observe the image on the same baselines as an existing observation object and add noise.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Observe the image on the same baselines as an existing observation object and add noise.</span>
 
 <span class="sd">           Args:</span>
 <span class="sd">               obs_in (Obsdata): the existing observation </span>
@@ -2363,7 +2365,7 @@
                       <span class="n">dterm_offset</span><span class="o">=</span><span class="n">DTERMPDEF</span><span class="p">,</span> <span class="n">rlratio_std</span><span class="o">=</span><span class="mf">0.</span><span class="p">,</span><span class="n">rlphase_std</span><span class="o">=</span><span class="mf">0.</span><span class="p">,</span>
                       <span class="n">seed</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
 
-        <span class="sd">&quot;&quot;&quot;Generate baselines from an array object and observe the image.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Generate baselines from an array object and observe the image.</span>
 
 <span class="sd">           Args:</span>
 <span class="sd">               array (Array): an array object containing sites with which to generate baselines</span>

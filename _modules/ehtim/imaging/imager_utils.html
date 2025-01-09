@@ -3,16 +3,18 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>ehtim.imaging.imager_utils &mdash; ehtim 1.2.6 documentation</title><link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
-    <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+  <title>ehtim.imaging.imager_utils &mdash; ehtim 1.2.6 documentation</title>
+      <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
   <!--[if lt IE 9]>
     <script src="../../../_static/js/html5shiv.min.js"></script>
   <![endif]-->
-  <script id="documentation_options" data-url_root="../../../" src="../../../_static/documentation_options.js"></script>
+  
+        <script data-url_root="../../../" id="documentation_options" src="../../../_static/documentation_options.js"></script>
         <script src="../../../_static/jquery.js"></script>
         <script src="../../../_static/underscore.js"></script>
+        <script src="../../../_static/_sphinx_javascript_frameworks_compat.js"></script>
         <script src="../../../_static/doctools.js"></script>
-        <script src="../../../_static/language_data.js"></script>
     <script src="../../../_static/js/theme.js"></script>
     <link rel="index" title="Index" href="../../../genindex.html" />
     <link rel="search" title="Search" href="../../../search.html" /> 
@@ -36,7 +38,7 @@
   </form>
 </div>
         </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
-              <p class="caption"><span class="caption-text">Contents:</span></p>
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="../../../image.html">Image</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../array.html">Array</a></li>
@@ -142,7 +144,7 @@
                 <span class="n">alpha_s1</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">alpha_s2</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">alpha_s3</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
                    <span class="n">alpha_flux</span><span class="o">=</span><span class="mi">500</span><span class="p">,</span> <span class="n">alpha_cm</span><span class="o">=</span><span class="mi">500</span><span class="p">,</span>
                 <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Run a general interferometric imager. Only works directly on the image&#39;s primary polarization.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Run a general interferometric imager. Only works directly on the image&#39;s primary polarization.</span>
 
 <span class="sd">       Args:</span>
 <span class="sd">           Obsdata (Obsdata): The Obsdata object with VLBI data</span>
@@ -249,7 +251,7 @@
         <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Warning! Field of View is smaller than largest nonzero spatial wavelength!&quot;</span><span class="p">)</span>
     <span class="k">if</span> <span class="n">flux</span> <span class="o">&gt;</span> <span class="mf">1.2</span><span class="o">*</span><span class="n">maxamp</span><span class="p">:</span>
         <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Warning! Specified flux is &gt; 120</span><span class="si">% o</span><span class="s2">f maximum visibility amplitude!&quot;</span><span class="p">)</span>
-    <span class="k">if</span> <span class="n">flux</span> <span class="o">&lt;</span> <span class="o">.</span><span class="mi">8</span><span class="o">*</span><span class="n">maxamp</span><span class="p">:</span>
+    <span class="k">if</span> <span class="n">flux</span> <span class="o">&lt;</span> <span class="mf">.8</span><span class="o">*</span><span class="n">maxamp</span><span class="p">:</span>
         <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Warning! Specified flux is &lt; 80</span><span class="si">% o</span><span class="s2">f maximum visibility amplitude!&quot;</span><span class="p">)</span>
 
     <span class="c1"># Define embedding mask</span>
@@ -446,7 +448,7 @@
 
 
 <span class="k">def</span> <span class="nf">chisq</span><span class="p">(</span><span class="n">imvec</span><span class="p">,</span> <span class="n">A</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">sigma</span><span class="p">,</span> <span class="n">dtype</span><span class="p">,</span> <span class="n">ttype</span><span class="o">=</span><span class="s1">&#39;direct&#39;</span><span class="p">,</span> <span class="n">mask</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;return the chi^2 for the appropriate dtype</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;return the chi^2 for the appropriate dtype</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="k">if</span> <span class="n">mask</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
@@ -531,7 +533,7 @@
 
 
 <span class="k">def</span> <span class="nf">chisqgrad</span><span class="p">(</span><span class="n">imvec</span><span class="p">,</span> <span class="n">A</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">sigma</span><span class="p">,</span> <span class="n">dtype</span><span class="p">,</span> <span class="n">ttype</span><span class="o">=</span><span class="s1">&#39;direct&#39;</span><span class="p">,</span> <span class="n">mask</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;return the chi^2 gradient for the appropriate dtype</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;return the chi^2 gradient for the appropriate dtype</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="k">if</span> <span class="n">mask</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
@@ -622,7 +624,7 @@
 
 
 <span class="k">def</span> <span class="nf">regularizer</span><span class="p">(</span><span class="n">imvec</span><span class="p">,</span> <span class="n">nprior</span><span class="p">,</span> <span class="n">mask</span><span class="p">,</span> <span class="n">flux</span><span class="p">,</span> <span class="n">xdim</span><span class="p">,</span> <span class="n">ydim</span><span class="p">,</span> <span class="n">psize</span><span class="p">,</span> <span class="n">stype</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;return the regularizer value</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;return the regularizer value</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="n">norm_reg</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;norm_reg&#39;</span><span class="p">,</span> <span class="n">NORM_REGULARIZER</span><span class="p">)</span>
@@ -692,7 +694,7 @@
 
 
 <span class="k">def</span> <span class="nf">regularizergrad</span><span class="p">(</span><span class="n">imvec</span><span class="p">,</span> <span class="n">nprior</span><span class="p">,</span> <span class="n">mask</span><span class="p">,</span> <span class="n">flux</span><span class="p">,</span> <span class="n">xdim</span><span class="p">,</span> <span class="n">ydim</span><span class="p">,</span> <span class="n">psize</span><span class="p">,</span> <span class="n">stype</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;return the regularizer gradient</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;return the regularizer gradient</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="n">norm_reg</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;norm_reg&#39;</span><span class="p">,</span> <span class="n">NORM_REGULARIZER</span><span class="p">)</span>
@@ -772,7 +774,7 @@
 
 
 <span class="k">def</span> <span class="nf">chisqdata</span><span class="p">(</span><span class="n">Obsdata</span><span class="p">,</span> <span class="n">Prior</span><span class="p">,</span> <span class="n">mask</span><span class="p">,</span> <span class="n">dtype</span><span class="p">,</span> <span class="n">pol</span><span class="o">=</span><span class="s1">&#39;I&#39;</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Return the data, sigma, and matrices for the appropriate dtype</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Return the data, sigma, and matrices for the appropriate dtype</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="n">ttype</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;ttype&#39;</span><span class="p">,</span> <span class="s1">&#39;direct&#39;</span><span class="p">)</span>
@@ -842,14 +844,14 @@
 <span class="c1">##################################################################################################</span>
 
 <span class="k">def</span> <span class="nf">chisq_vis</span><span class="p">(</span><span class="n">imvec</span><span class="p">,</span> <span class="n">Amatrix</span><span class="p">,</span> <span class="n">vis</span><span class="p">,</span> <span class="n">sigma</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Visibility chi-squared&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Visibility chi-squared&quot;&quot;&quot;</span>
 
     <span class="n">samples</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">Amatrix</span><span class="p">,</span> <span class="n">imvec</span><span class="p">)</span>
     <span class="n">chisq</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">((</span><span class="n">samples</span><span class="o">-</span><span class="n">vis</span><span class="p">)</span><span class="o">/</span><span class="n">sigma</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span><span class="o">/</span><span class="p">(</span><span class="mi">2</span><span class="o">*</span><span class="nb">len</span><span class="p">(</span><span class="n">vis</span><span class="p">))</span>
     <span class="k">return</span> <span class="n">chisq</span>
 
 <span class="k">def</span> <span class="nf">chisqgrad_vis</span><span class="p">(</span><span class="n">imvec</span><span class="p">,</span> <span class="n">Amatrix</span><span class="p">,</span> <span class="n">vis</span><span class="p">,</span> <span class="n">sigma</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;The gradient of the visibility chi-squared&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;The gradient of the visibility chi-squared&quot;&quot;&quot;</span>
 
     <span class="n">samples</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">Amatrix</span><span class="p">,</span> <span class="n">imvec</span><span class="p">)</span>
     <span class="n">wdiff</span> <span class="o">=</span> <span class="p">(</span><span class="n">vis</span> <span class="o">-</span> <span class="n">samples</span><span class="p">)</span><span class="o">/</span><span class="p">(</span><span class="n">sigma</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span>
@@ -859,14 +861,14 @@
 
 
 <span class="k">def</span> <span class="nf">chisq_amp</span><span class="p">(</span><span class="n">imvec</span><span class="p">,</span> <span class="n">A</span><span class="p">,</span> <span class="n">amp</span><span class="p">,</span> <span class="n">sigma</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Visibility Amplitudes (normalized) chi-squared&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Visibility Amplitudes (normalized) chi-squared&quot;&quot;&quot;</span>
 
     <span class="n">amp_samples</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">A</span><span class="p">,</span> <span class="n">imvec</span><span class="p">))</span>
     <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">((</span><span class="n">amp</span> <span class="o">-</span> <span class="n">amp_samples</span><span class="p">)</span><span class="o">/</span><span class="n">sigma</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span><span class="o">/</span><span class="nb">len</span><span class="p">(</span><span class="n">amp</span><span class="p">)</span>
 
 
 <span class="k">def</span> <span class="nf">chisqgrad_amp</span><span class="p">(</span><span class="n">imvec</span><span class="p">,</span> <span class="n">A</span><span class="p">,</span> <span class="n">amp</span><span class="p">,</span> <span class="n">sigma</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;The gradient of the amplitude chi-squared&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;The gradient of the amplitude chi-squared&quot;&quot;&quot;</span>
 
     <span class="n">i1</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">A</span><span class="p">,</span> <span class="n">imvec</span><span class="p">)</span>
     <span class="n">amp_samples</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">i1</span><span class="p">)</span>
@@ -877,7 +879,7 @@
 
 
 <span class="k">def</span> <span class="nf">chisq_bs</span><span class="p">(</span><span class="n">imvec</span><span class="p">,</span> <span class="n">Amatrices</span><span class="p">,</span> <span class="n">bis</span><span class="p">,</span> <span class="n">sigma</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Bispectrum chi-squared&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Bispectrum chi-squared&quot;&quot;&quot;</span>
 
     <span class="n">bisamples</span> <span class="o">=</span> <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">Amatrices</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">imvec</span><span class="p">)</span> <span class="o">*</span>
                  <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">Amatrices</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">imvec</span><span class="p">)</span> <span class="o">*</span>
@@ -887,7 +889,7 @@
 
 
 <span class="k">def</span> <span class="nf">chisqgrad_bs</span><span class="p">(</span><span class="n">imvec</span><span class="p">,</span> <span class="n">Amatrices</span><span class="p">,</span> <span class="n">bis</span><span class="p">,</span> <span class="n">sigma</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;The gradient of the bispectrum chi-squared&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;The gradient of the bispectrum chi-squared&quot;&quot;&quot;</span>
 
     <span class="n">bisamples</span> <span class="o">=</span> <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">Amatrices</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">imvec</span><span class="p">)</span> <span class="o">*</span>
                  <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">Amatrices</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">imvec</span><span class="p">)</span> <span class="o">*</span>
@@ -906,7 +908,7 @@
 
 
 <span class="k">def</span> <span class="nf">chisq_cphase</span><span class="p">(</span><span class="n">imvec</span><span class="p">,</span> <span class="n">Amatrices</span><span class="p">,</span> <span class="n">clphase</span><span class="p">,</span> <span class="n">sigma</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Closure Phases (normalized) chi-squared&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Closure Phases (normalized) chi-squared&quot;&quot;&quot;</span>
     <span class="n">clphase</span> <span class="o">=</span> <span class="n">clphase</span> <span class="o">*</span> <span class="n">ehc</span><span class="o">.</span><span class="n">DEGREE</span>
     <span class="n">sigma</span> <span class="o">=</span> <span class="n">sigma</span> <span class="o">*</span> <span class="n">ehc</span><span class="o">.</span><span class="n">DEGREE</span>
 
@@ -920,7 +922,7 @@
 
 
 <span class="k">def</span> <span class="nf">chisqgrad_cphase</span><span class="p">(</span><span class="n">imvec</span><span class="p">,</span> <span class="n">Amatrices</span><span class="p">,</span> <span class="n">clphase</span><span class="p">,</span> <span class="n">sigma</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;The gradient of the closure phase chi-squared&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;The gradient of the closure phase chi-squared&quot;&quot;&quot;</span>
     <span class="n">clphase</span> <span class="o">=</span> <span class="n">clphase</span> <span class="o">*</span> <span class="n">ehc</span><span class="o">.</span><span class="n">DEGREE</span>
     <span class="n">sigma</span> <span class="o">=</span> <span class="n">sigma</span> <span class="o">*</span> <span class="n">ehc</span><span class="o">.</span><span class="n">DEGREE</span>
 
@@ -939,7 +941,7 @@
 
 
 <span class="k">def</span> <span class="nf">chisq_cphase_diag</span><span class="p">(</span><span class="n">imvec</span><span class="p">,</span> <span class="n">Amatrices</span><span class="p">,</span> <span class="n">clphase_diag</span><span class="p">,</span> <span class="n">sigma</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Diagonalized closure phases (normalized) chi-squared&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Diagonalized closure phases (normalized) chi-squared&quot;&quot;&quot;</span>
     <span class="n">clphase_diag</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">(</span><span class="n">clphase_diag</span><span class="p">)</span> <span class="o">*</span> <span class="n">ehc</span><span class="o">.</span><span class="n">DEGREE</span>
     <span class="n">sigma</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">(</span><span class="n">sigma</span><span class="p">)</span> <span class="o">*</span> <span class="n">ehc</span><span class="o">.</span><span class="n">DEGREE</span>
 
@@ -960,7 +962,7 @@
 
 
 <span class="k">def</span> <span class="nf">chisqgrad_cphase_diag</span><span class="p">(</span><span class="n">imvec</span><span class="p">,</span> <span class="n">Amatrices</span><span class="p">,</span> <span class="n">clphase_diag</span><span class="p">,</span> <span class="n">sigma</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;The gradient of the diagonalized closure phase chi-squared&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;The gradient of the diagonalized closure phase chi-squared&quot;&quot;&quot;</span>
     <span class="n">clphase_diag</span> <span class="o">=</span> <span class="n">clphase_diag</span> <span class="o">*</span> <span class="n">ehc</span><span class="o">.</span><span class="n">DEGREE</span>
     <span class="n">sigma</span> <span class="o">=</span> <span class="n">sigma</span> <span class="o">*</span> <span class="n">ehc</span><span class="o">.</span><span class="n">DEGREE</span>
 
@@ -993,7 +995,7 @@
 
 
 <span class="k">def</span> <span class="nf">chisq_camp</span><span class="p">(</span><span class="n">imvec</span><span class="p">,</span> <span class="n">Amatrices</span><span class="p">,</span> <span class="n">clamp</span><span class="p">,</span> <span class="n">sigma</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Closure Amplitudes (normalized) chi-squared&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Closure Amplitudes (normalized) chi-squared&quot;&quot;&quot;</span>
 
     <span class="n">i1</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">Amatrices</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">imvec</span><span class="p">)</span>
     <span class="n">i2</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">Amatrices</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">imvec</span><span class="p">)</span>
@@ -1006,7 +1008,7 @@
 
 
 <span class="k">def</span> <span class="nf">chisqgrad_camp</span><span class="p">(</span><span class="n">imvec</span><span class="p">,</span> <span class="n">Amatrices</span><span class="p">,</span> <span class="n">clamp</span><span class="p">,</span> <span class="n">sigma</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;The gradient of the closure amplitude chi-squared&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;The gradient of the closure amplitude chi-squared&quot;&quot;&quot;</span>
 
     <span class="n">i1</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">Amatrices</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">imvec</span><span class="p">)</span>
     <span class="n">i2</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">Amatrices</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">imvec</span><span class="p">)</span>
@@ -1028,7 +1030,7 @@
 
 
 <span class="k">def</span> <span class="nf">chisq_logcamp</span><span class="p">(</span><span class="n">imvec</span><span class="p">,</span> <span class="n">Amatrices</span><span class="p">,</span> <span class="n">log_clamp</span><span class="p">,</span> <span class="n">sigma</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Log Closure Amplitudes (normalized) chi-squared&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Log Closure Amplitudes (normalized) chi-squared&quot;&quot;&quot;</span>
 
     <span class="n">a1</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">Amatrices</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">imvec</span><span class="p">))</span>
     <span class="n">a2</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">Amatrices</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">imvec</span><span class="p">))</span>
@@ -1041,7 +1043,7 @@
 
 
 <span class="k">def</span> <span class="nf">chisqgrad_logcamp</span><span class="p">(</span><span class="n">imvec</span><span class="p">,</span> <span class="n">Amatrices</span><span class="p">,</span> <span class="n">log_clamp</span><span class="p">,</span> <span class="n">sigma</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;The gradient of the Log closure amplitude chi-squared&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;The gradient of the Log closure amplitude chi-squared&quot;&quot;&quot;</span>
 
     <span class="n">i1</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">Amatrices</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">imvec</span><span class="p">)</span>
     <span class="n">i2</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">Amatrices</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">imvec</span><span class="p">)</span>
@@ -1066,7 +1068,7 @@
 
 
 <span class="k">def</span> <span class="nf">chisq_logcamp_diag</span><span class="p">(</span><span class="n">imvec</span><span class="p">,</span> <span class="n">Amatrices</span><span class="p">,</span> <span class="n">log_clamp_diag</span><span class="p">,</span> <span class="n">sigma</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Diagonalized log closure amplitudes (normalized) chi-squared&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Diagonalized log closure amplitudes (normalized) chi-squared&quot;&quot;&quot;</span>
 
     <span class="n">log_clamp_diag</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">(</span><span class="n">log_clamp_diag</span><span class="p">)</span>
     <span class="n">sigma</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">(</span><span class="n">sigma</span><span class="p">)</span>
@@ -1094,7 +1096,7 @@
 
 
 <span class="k">def</span> <span class="nf">chisqgrad_logcamp_diag</span><span class="p">(</span><span class="n">imvec</span><span class="p">,</span> <span class="n">Amatrices</span><span class="p">,</span> <span class="n">log_clamp_diag</span><span class="p">,</span> <span class="n">sigma</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;The gradient of the diagonalized log closure amplitude chi-squared&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;The gradient of the diagonalized log closure amplitude chi-squared&quot;&quot;&quot;</span>
 
     <span class="n">A4_diag</span> <span class="o">=</span> <span class="n">Amatrices</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
     <span class="n">tform_mats</span> <span class="o">=</span> <span class="n">Amatrices</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
@@ -1129,7 +1131,7 @@
 
 
 <span class="k">def</span> <span class="nf">chisq_logamp</span><span class="p">(</span><span class="n">imvec</span><span class="p">,</span> <span class="n">A</span><span class="p">,</span> <span class="n">amp</span><span class="p">,</span> <span class="n">sigma</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Log Visibility Amplitudes (normalized) chi-squared&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Log Visibility Amplitudes (normalized) chi-squared&quot;&quot;&quot;</span>
 
     <span class="c1"># to lowest order the variance on the logarithm of a quantity x is</span>
     <span class="c1"># sigma^2_log(x) = sigma^2/x^2</span>
@@ -1140,7 +1142,7 @@
     <span class="k">return</span> <span class="n">chisq</span>
 
 <span class="k">def</span> <span class="nf">chisqgrad_logamp</span><span class="p">(</span><span class="n">imvec</span><span class="p">,</span> <span class="n">A</span><span class="p">,</span> <span class="n">amp</span><span class="p">,</span> <span class="n">sigma</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;The gradient of the Log amplitude chi-squared&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;The gradient of the Log amplitude chi-squared&quot;&quot;&quot;</span>
 
     <span class="c1"># to lowest order the variance on the logarithm of a quantity x is</span>
     <span class="c1"># sigma^2_log(x) = sigma^2/x^2</span>
@@ -1159,7 +1161,7 @@
 
 
 <span class="k">def</span> <span class="nf">chisq_vis_fft</span><span class="p">(</span><span class="n">vis_arr</span><span class="p">,</span> <span class="n">A</span><span class="p">,</span> <span class="n">vis</span><span class="p">,</span> <span class="n">sigma</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Visibility chi-squared from fft</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Visibility chi-squared from fft</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="n">im_info</span><span class="p">,</span> <span class="n">sampler_info_list</span><span class="p">,</span> <span class="n">gridder_info_list</span> <span class="o">=</span> <span class="n">A</span>
@@ -1171,7 +1173,7 @@
 
 
 <span class="k">def</span> <span class="nf">chisqgrad_vis_fft</span><span class="p">(</span><span class="n">vis_arr</span><span class="p">,</span> <span class="n">A</span><span class="p">,</span> <span class="n">vis</span><span class="p">,</span> <span class="n">sigma</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;The gradient of the visibility chi-squared from fft</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;The gradient of the visibility chi-squared from fft</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="n">im_info</span><span class="p">,</span> <span class="n">sampler_info_list</span><span class="p">,</span> <span class="n">gridder_info_list</span> <span class="o">=</span> <span class="n">A</span>
@@ -1195,7 +1197,7 @@
 
 
 <span class="k">def</span> <span class="nf">chisq_amp_fft</span><span class="p">(</span><span class="n">vis_arr</span><span class="p">,</span> <span class="n">A</span><span class="p">,</span> <span class="n">amp</span><span class="p">,</span> <span class="n">sigma</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Visibility amplitude chi-squared from fft</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Visibility amplitude chi-squared from fft</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="n">im_info</span><span class="p">,</span> <span class="n">sampler_info_list</span><span class="p">,</span> <span class="n">gridder_info_list</span> <span class="o">=</span> <span class="n">A</span>
@@ -1205,7 +1207,7 @@
 
 
 <span class="k">def</span> <span class="nf">chisqgrad_amp_fft</span><span class="p">(</span><span class="n">vis_arr</span><span class="p">,</span> <span class="n">A</span><span class="p">,</span> <span class="n">amp</span><span class="p">,</span> <span class="n">sigma</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;The gradient of the amplitude chi-kernesquared</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;The gradient of the amplitude chi-kernesquared</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="n">im_info</span><span class="p">,</span> <span class="n">sampler_info_list</span><span class="p">,</span> <span class="n">gridder_info_list</span> <span class="o">=</span> <span class="n">A</span>
@@ -1233,7 +1235,7 @@
 
 
 <span class="k">def</span> <span class="nf">chisq_bs_fft</span><span class="p">(</span><span class="n">vis_arr</span><span class="p">,</span> <span class="n">A</span><span class="p">,</span> <span class="n">bis</span><span class="p">,</span> <span class="n">sigma</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Bispectrum chi-squared from fft&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Bispectrum chi-squared from fft&quot;&quot;&quot;</span>
 
     <span class="n">im_info</span><span class="p">,</span> <span class="n">sampler_info_list</span><span class="p">,</span> <span class="n">gridder_info_list</span> <span class="o">=</span> <span class="n">A</span>
     <span class="n">bisamples</span> <span class="o">=</span> <span class="n">obsh</span><span class="o">.</span><span class="n">sampler</span><span class="p">(</span><span class="n">vis_arr</span><span class="p">,</span> <span class="n">sampler_info_list</span><span class="p">,</span> <span class="n">sample_type</span><span class="o">=</span><span class="s2">&quot;bs&quot;</span><span class="p">)</span>
@@ -1242,7 +1244,7 @@
 
 
 <span class="k">def</span> <span class="nf">chisqgrad_bs_fft</span><span class="p">(</span><span class="n">vis_arr</span><span class="p">,</span> <span class="n">A</span><span class="p">,</span> <span class="n">bis</span><span class="p">,</span> <span class="n">sigma</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;The gradient of the amplitude chi-squared</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;The gradient of the amplitude chi-squared</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">im_info</span><span class="p">,</span> <span class="n">sampler_info_list</span><span class="p">,</span> <span class="n">gridder_info_list</span> <span class="o">=</span> <span class="n">A</span>
 
@@ -1270,7 +1272,7 @@
 
 
 <span class="k">def</span> <span class="nf">chisq_cphase_fft</span><span class="p">(</span><span class="n">vis_arr</span><span class="p">,</span> <span class="n">A</span><span class="p">,</span> <span class="n">clphase</span><span class="p">,</span> <span class="n">sigma</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Closure Phases (normalized) chi-squared from fft</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Closure Phases (normalized) chi-squared from fft</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="n">clphase</span> <span class="o">=</span> <span class="n">clphase</span> <span class="o">*</span> <span class="n">ehc</span><span class="o">.</span><span class="n">DEGREE</span>
@@ -1284,7 +1286,7 @@
 
 
 <span class="k">def</span> <span class="nf">chisqgrad_cphase_fft</span><span class="p">(</span><span class="n">vis_arr</span><span class="p">,</span> <span class="n">A</span><span class="p">,</span> <span class="n">clphase</span><span class="p">,</span> <span class="n">sigma</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;The gradient of the closure phase chi-squared from fft&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;The gradient of the closure phase chi-squared from fft&quot;&quot;&quot;</span>
 
     <span class="n">clphase</span> <span class="o">=</span> <span class="n">clphase</span> <span class="o">*</span> <span class="n">ehc</span><span class="o">.</span><span class="n">DEGREE</span>
     <span class="n">sigma</span> <span class="o">=</span> <span class="n">sigma</span> <span class="o">*</span> <span class="n">ehc</span><span class="o">.</span><span class="n">DEGREE</span>
@@ -1315,7 +1317,7 @@
 
 
 <span class="k">def</span> <span class="nf">chisq_cphase_diag_fft</span><span class="p">(</span><span class="n">imvec</span><span class="p">,</span> <span class="n">A</span><span class="p">,</span> <span class="n">clphase_diag</span><span class="p">,</span> <span class="n">sigma</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Diagonalized closure phases (normalized) chi-squared from fft</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Diagonalized closure phases (normalized) chi-squared from fft</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="n">clphase_diag</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">(</span><span class="n">clphase_diag</span><span class="p">)</span> <span class="o">*</span> <span class="n">ehc</span><span class="o">.</span><span class="n">DEGREE</span>
@@ -1343,7 +1345,7 @@
 
 
 <span class="k">def</span> <span class="nf">chisqgrad_cphase_diag_fft</span><span class="p">(</span><span class="n">imvec</span><span class="p">,</span> <span class="n">A</span><span class="p">,</span> <span class="n">clphase_diag</span><span class="p">,</span> <span class="n">sigma</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;The gradient of the closure phase chi-squared from fft&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;The gradient of the closure phase chi-squared from fft&quot;&quot;&quot;</span>
 
     <span class="n">clphase_diag</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">(</span><span class="n">clphase_diag</span><span class="p">)</span> <span class="o">*</span> <span class="n">ehc</span><span class="o">.</span><span class="n">DEGREE</span>
     <span class="n">sigma</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">(</span><span class="n">sigma</span><span class="p">)</span> <span class="o">*</span> <span class="n">ehc</span><span class="o">.</span><span class="n">DEGREE</span>
@@ -1393,7 +1395,7 @@
 
 
 <span class="k">def</span> <span class="nf">chisq_camp_fft</span><span class="p">(</span><span class="n">vis_arr</span><span class="p">,</span> <span class="n">A</span><span class="p">,</span> <span class="n">clamp</span><span class="p">,</span> <span class="n">sigma</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Closure Amplitudes (normalized) chi-squared from fft</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Closure Amplitudes (normalized) chi-squared from fft</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="n">im_info</span><span class="p">,</span> <span class="n">sampler_info_list</span><span class="p">,</span> <span class="n">gridder_info_list</span> <span class="o">=</span> <span class="n">A</span>
@@ -1403,7 +1405,7 @@
 
 
 <span class="k">def</span> <span class="nf">chisqgrad_camp_fft</span><span class="p">(</span><span class="n">vis_arr</span><span class="p">,</span> <span class="n">A</span><span class="p">,</span> <span class="n">clamp</span><span class="p">,</span> <span class="n">sigma</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;The gradient of the closure amplitude chi-squared from fft</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;The gradient of the closure amplitude chi-squared from fft</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="n">im_info</span><span class="p">,</span> <span class="n">sampler_info_list</span><span class="p">,</span> <span class="n">gridder_info_list</span> <span class="o">=</span> <span class="n">A</span>
@@ -1436,7 +1438,7 @@
 
 
 <span class="k">def</span> <span class="nf">chisq_logcamp_fft</span><span class="p">(</span><span class="n">vis_arr</span><span class="p">,</span> <span class="n">A</span><span class="p">,</span> <span class="n">log_clamp</span><span class="p">,</span> <span class="n">sigma</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Closure Amplitudes (normalized) chi-squared from fft</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Closure Amplitudes (normalized) chi-squared from fft</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="n">im_info</span><span class="p">,</span> <span class="n">sampler_info_list</span><span class="p">,</span> <span class="n">gridder_info_list</span> <span class="o">=</span> <span class="n">A</span>
@@ -1448,7 +1450,7 @@
 
 
 <span class="k">def</span> <span class="nf">chisqgrad_logcamp_fft</span><span class="p">(</span><span class="n">vis_arr</span><span class="p">,</span> <span class="n">A</span><span class="p">,</span> <span class="n">log_clamp</span><span class="p">,</span> <span class="n">sigma</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;The gradient of the closure amplitude chi-squared from fft</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;The gradient of the closure amplitude chi-squared from fft</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="n">im_info</span><span class="p">,</span> <span class="n">sampler_info_list</span><span class="p">,</span> <span class="n">gridder_info_list</span> <span class="o">=</span> <span class="n">A</span>
@@ -1482,7 +1484,7 @@
 
 
 <span class="k">def</span> <span class="nf">chisq_logcamp_diag_fft</span><span class="p">(</span><span class="n">imvec</span><span class="p">,</span> <span class="n">A</span><span class="p">,</span> <span class="n">log_clamp_diag</span><span class="p">,</span> <span class="n">sigma</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Diagonalized log closure amplitudes (normalized) chi-squared from fft</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Diagonalized log closure amplitudes (normalized) chi-squared from fft</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="n">log_clamp_diag</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">(</span><span class="n">log_clamp_diag</span><span class="p">)</span>
@@ -1509,7 +1511,7 @@
 
 
 <span class="k">def</span> <span class="nf">chisqgrad_logcamp_diag_fft</span><span class="p">(</span><span class="n">imvec</span><span class="p">,</span> <span class="n">A</span><span class="p">,</span> <span class="n">log_clamp_diag</span><span class="p">,</span> <span class="n">sigma</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;The gradient of the diagonalized log closure amplitude chi-squared from fft</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;The gradient of the diagonalized log closure amplitude chi-squared from fft</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="n">log_clamp_diag</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">(</span><span class="n">log_clamp_diag</span><span class="p">)</span>
@@ -1563,7 +1565,7 @@
 
 
 <span class="k">def</span> <span class="nf">chisq_logamp_fft</span><span class="p">(</span><span class="n">vis_arr</span><span class="p">,</span> <span class="n">A</span><span class="p">,</span> <span class="n">amp</span><span class="p">,</span> <span class="n">sigma</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Visibility amplitude chi-squared from fft</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Visibility amplitude chi-squared from fft</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="c1"># to lowest order the variance on the logarithm of a quantity x is</span>
@@ -1577,7 +1579,7 @@
 
 
 <span class="k">def</span> <span class="nf">chisqgrad_logamp_fft</span><span class="p">(</span><span class="n">vis_arr</span><span class="p">,</span> <span class="n">A</span><span class="p">,</span> <span class="n">amp</span><span class="p">,</span> <span class="n">sigma</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;The gradient of the amplitude chi-kernesquared</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;The gradient of the amplitude chi-kernesquared</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="n">im_info</span><span class="p">,</span> <span class="n">sampler_info_list</span><span class="p">,</span> <span class="n">gridder_info_list</span> <span class="o">=</span> <span class="n">A</span>
@@ -1610,7 +1612,7 @@
 
 
 <span class="k">def</span> <span class="nf">chisq_vis_nfft</span><span class="p">(</span><span class="n">imvec</span><span class="p">,</span> <span class="n">A</span><span class="p">,</span> <span class="n">vis</span><span class="p">,</span> <span class="n">sigma</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Visibility chi-squared from nfft</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Visibility chi-squared from nfft</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="c1"># get nfft object</span>
@@ -1630,7 +1632,7 @@
 
 
 <span class="k">def</span> <span class="nf">chisqgrad_vis_nfft</span><span class="p">(</span><span class="n">imvec</span><span class="p">,</span> <span class="n">A</span><span class="p">,</span> <span class="n">vis</span><span class="p">,</span> <span class="n">sigma</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;The gradient of the visibility chi-squared from nfft</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;The gradient of the visibility chi-squared from nfft</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="c1"># get nfft object</span>
@@ -1653,7 +1655,7 @@
 
 
 <span class="k">def</span> <span class="nf">chisq_amp_nfft</span><span class="p">(</span><span class="n">imvec</span><span class="p">,</span> <span class="n">A</span><span class="p">,</span> <span class="n">amp</span><span class="p">,</span> <span class="n">sigma</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Visibility amplitude chi-squared from nfft</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Visibility amplitude chi-squared from nfft</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="c1"># get nfft object</span>
     <span class="n">nfft_info</span> <span class="o">=</span> <span class="n">A</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
@@ -1673,7 +1675,7 @@
 
 
 <span class="k">def</span> <span class="nf">chisqgrad_amp_nfft</span><span class="p">(</span><span class="n">imvec</span><span class="p">,</span> <span class="n">A</span><span class="p">,</span> <span class="n">amp</span><span class="p">,</span> <span class="n">sigma</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;The gradient of the amplitude chi-squared from nfft</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;The gradient of the amplitude chi-squared from nfft</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="c1"># get nfft object</span>
@@ -1698,7 +1700,7 @@
 
 
 <span class="k">def</span> <span class="nf">chisq_bs_nfft</span><span class="p">(</span><span class="n">imvec</span><span class="p">,</span> <span class="n">A</span><span class="p">,</span> <span class="n">bis</span><span class="p">,</span> <span class="n">sigma</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Bispectrum chi-squared from fft&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Bispectrum chi-squared from fft&quot;&quot;&quot;</span>
 
     <span class="c1"># get nfft objects</span>
     <span class="n">nfft_info1</span> <span class="o">=</span> <span class="n">A</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
@@ -1733,7 +1735,7 @@
 
 
 <span class="k">def</span> <span class="nf">chisqgrad_bs_nfft</span><span class="p">(</span><span class="n">imvec</span><span class="p">,</span> <span class="n">A</span><span class="p">,</span> <span class="n">bis</span><span class="p">,</span> <span class="n">sigma</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;The gradient of the amplitude chi-squared from the nfft</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;The gradient of the amplitude chi-squared from the nfft</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="c1"># get nfft objects</span>
     <span class="n">nfft_info1</span> <span class="o">=</span> <span class="n">A</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
@@ -1786,7 +1788,7 @@
 
 
 <span class="k">def</span> <span class="nf">chisq_cphase_nfft</span><span class="p">(</span><span class="n">imvec</span><span class="p">,</span> <span class="n">A</span><span class="p">,</span> <span class="n">clphase</span><span class="p">,</span> <span class="n">sigma</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Closure Phases (normalized) chi-squared from nfft</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Closure Phases (normalized) chi-squared from nfft</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="n">clphase</span> <span class="o">=</span> <span class="n">clphase</span> <span class="o">*</span> <span class="n">ehc</span><span class="o">.</span><span class="n">DEGREE</span>
@@ -1826,7 +1828,7 @@
 
 
 <span class="k">def</span> <span class="nf">chisqgrad_cphase_nfft</span><span class="p">(</span><span class="n">imvec</span><span class="p">,</span> <span class="n">A</span><span class="p">,</span> <span class="n">clphase</span><span class="p">,</span> <span class="n">sigma</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;The gradient of the closure phase chi-squared from nfft&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;The gradient of the closure phase chi-squared from nfft&quot;&quot;&quot;</span>
 
     <span class="n">clphase</span> <span class="o">=</span> <span class="n">clphase</span> <span class="o">*</span> <span class="n">ehc</span><span class="o">.</span><span class="n">DEGREE</span>
     <span class="n">sigma</span> <span class="o">=</span> <span class="n">sigma</span> <span class="o">*</span> <span class="n">ehc</span><span class="o">.</span><span class="n">DEGREE</span>
@@ -1882,7 +1884,7 @@
 
 
 <span class="k">def</span> <span class="nf">chisq_cphase_diag_nfft</span><span class="p">(</span><span class="n">imvec</span><span class="p">,</span> <span class="n">A</span><span class="p">,</span> <span class="n">clphase_diag</span><span class="p">,</span> <span class="n">sigma</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Diagonalized closure phases (normalized) chi-squared from nfft</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Diagonalized closure phases (normalized) chi-squared from nfft</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="n">clphase_diag</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">(</span><span class="n">clphase_diag</span><span class="p">)</span> <span class="o">*</span> <span class="n">ehc</span><span class="o">.</span><span class="n">DEGREE</span>
@@ -1936,7 +1938,7 @@
 
 
 <span class="k">def</span> <span class="nf">chisqgrad_cphase_diag_nfft</span><span class="p">(</span><span class="n">imvec</span><span class="p">,</span> <span class="n">A</span><span class="p">,</span> <span class="n">clphase_diag</span><span class="p">,</span> <span class="n">sigma</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;The gradient of the diagonalized closure phase chi-squared from nfft&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;The gradient of the diagonalized closure phase chi-squared from nfft&quot;&quot;&quot;</span>
 
     <span class="n">clphase_diag</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">(</span><span class="n">clphase_diag</span><span class="p">)</span> <span class="o">*</span> <span class="n">ehc</span><span class="o">.</span><span class="n">DEGREE</span>
     <span class="n">sigma</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">(</span><span class="n">sigma</span><span class="p">)</span> <span class="o">*</span> <span class="n">ehc</span><span class="o">.</span><span class="n">DEGREE</span>
@@ -2011,7 +2013,7 @@
 
 
 <span class="k">def</span> <span class="nf">chisq_camp_nfft</span><span class="p">(</span><span class="n">imvec</span><span class="p">,</span> <span class="n">A</span><span class="p">,</span> <span class="n">clamp</span><span class="p">,</span> <span class="n">sigma</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Closure Amplitudes (normalized) chi-squared from fft</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Closure Amplitudes (normalized) chi-squared from fft</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="c1"># get nfft objects</span>
@@ -2055,7 +2057,7 @@
 
 
 <span class="k">def</span> <span class="nf">chisqgrad_camp_nfft</span><span class="p">(</span><span class="n">imvec</span><span class="p">,</span> <span class="n">A</span><span class="p">,</span> <span class="n">clamp</span><span class="p">,</span> <span class="n">sigma</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;The gradient of the closure amplitude chi-squared from fft</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;The gradient of the closure amplitude chi-squared from fft</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="c1"># get nfft objects</span>
@@ -2123,7 +2125,7 @@
 
 
 <span class="k">def</span> <span class="nf">chisq_logcamp_nfft</span><span class="p">(</span><span class="n">imvec</span><span class="p">,</span> <span class="n">A</span><span class="p">,</span> <span class="n">log_clamp</span><span class="p">,</span> <span class="n">sigma</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Log Closure Amplitudes (normalized) chi-squared from fft</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Log Closure Amplitudes (normalized) chi-squared from fft</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="c1"># get nfft objects</span>
@@ -2168,7 +2170,7 @@
 
 
 <span class="k">def</span> <span class="nf">chisqgrad_logcamp_nfft</span><span class="p">(</span><span class="n">imvec</span><span class="p">,</span> <span class="n">A</span><span class="p">,</span> <span class="n">log_clamp</span><span class="p">,</span> <span class="n">sigma</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;The gradient of the log closure amplitude chi-squared from fft</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;The gradient of the log closure amplitude chi-squared from fft</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="c1"># get nfft objects</span>
@@ -2236,7 +2238,7 @@
 
 
 <span class="k">def</span> <span class="nf">chisq_logcamp_diag_nfft</span><span class="p">(</span><span class="n">imvec</span><span class="p">,</span> <span class="n">A</span><span class="p">,</span> <span class="n">log_clamp_diag</span><span class="p">,</span> <span class="n">sigma</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Diagonalized log closure amplitudes (normalized) chi-squared from nfft</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Diagonalized log closure amplitudes (normalized) chi-squared from nfft</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="n">log_clamp_diag</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">(</span><span class="n">log_clamp_diag</span><span class="p">)</span>
@@ -2299,7 +2301,7 @@
 
 
 <span class="k">def</span> <span class="nf">chisqgrad_logcamp_diag_nfft</span><span class="p">(</span><span class="n">imvec</span><span class="p">,</span> <span class="n">A</span><span class="p">,</span> <span class="n">log_clamp_diag</span><span class="p">,</span> <span class="n">sigma</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;The gradient of the diagonalized log closure amplitude chi-squared from fft</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;The gradient of the diagonalized log closure amplitude chi-squared from fft</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="n">log_clamp_diag</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">(</span><span class="n">log_clamp_diag</span><span class="p">)</span>
@@ -2389,7 +2391,7 @@
 
 
 <span class="k">def</span> <span class="nf">chisq_logamp_nfft</span><span class="p">(</span><span class="n">imvec</span><span class="p">,</span> <span class="n">A</span><span class="p">,</span> <span class="n">amp</span><span class="p">,</span> <span class="n">sigma</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Visibility log amplitude chi-squared from nfft</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Visibility log amplitude chi-squared from nfft</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="c1"># get nfft object</span>
@@ -2414,7 +2416,7 @@
 
 
 <span class="k">def</span> <span class="nf">chisqgrad_logamp_nfft</span><span class="p">(</span><span class="n">imvec</span><span class="p">,</span> <span class="n">A</span><span class="p">,</span> <span class="n">amp</span><span class="p">,</span> <span class="n">sigma</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;The gradient of the log amplitude chi-squared from nfft</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;The gradient of the log amplitude chi-squared from nfft</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="c1"># get nfft object</span>
@@ -2444,7 +2446,7 @@
 <span class="c1">##################################################################################################</span>
 
 <span class="k">def</span> <span class="nf">sflux</span><span class="p">(</span><span class="n">imvec</span><span class="p">,</span> <span class="n">priorvec</span><span class="p">,</span> <span class="n">flux</span><span class="p">,</span> <span class="n">norm_reg</span><span class="o">=</span><span class="n">NORM_REGULARIZER</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Total flux constraint</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Total flux constraint</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">if</span> <span class="n">norm_reg</span><span class="p">:</span>
         <span class="n">norm</span> <span class="o">=</span> <span class="n">flux</span><span class="o">**</span><span class="mi">2</span>
@@ -2456,7 +2458,7 @@
 
 
 <span class="k">def</span> <span class="nf">sfluxgrad</span><span class="p">(</span><span class="n">imvec</span><span class="p">,</span> <span class="n">priorvec</span><span class="p">,</span> <span class="n">flux</span><span class="p">,</span> <span class="n">norm_reg</span><span class="o">=</span><span class="n">NORM_REGULARIZER</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Total flux constraint gradient</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Total flux constraint gradient</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">if</span> <span class="n">norm_reg</span><span class="p">:</span>
         <span class="n">norm</span> <span class="o">=</span> <span class="n">flux</span><span class="o">**</span><span class="mi">2</span>
@@ -2468,7 +2470,7 @@
 
 
 <span class="k">def</span> <span class="nf">scm</span><span class="p">(</span><span class="n">imvec</span><span class="p">,</span> <span class="n">nx</span><span class="p">,</span> <span class="n">ny</span><span class="p">,</span> <span class="n">psize</span><span class="p">,</span> <span class="n">flux</span><span class="p">,</span> <span class="n">embed_mask</span><span class="p">,</span> <span class="n">norm_reg</span><span class="o">=</span><span class="n">NORM_REGULARIZER</span><span class="p">,</span> <span class="n">beam_size</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Center-of-mass constraint</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Center-of-mass constraint</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">if</span> <span class="n">beam_size</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
         <span class="n">beam_size</span> <span class="o">=</span> <span class="n">psize</span>
@@ -2486,7 +2488,7 @@
 
 
 <span class="k">def</span> <span class="nf">scmgrad</span><span class="p">(</span><span class="n">imvec</span><span class="p">,</span> <span class="n">nx</span><span class="p">,</span> <span class="n">ny</span><span class="p">,</span> <span class="n">psize</span><span class="p">,</span> <span class="n">flux</span><span class="p">,</span> <span class="n">embed_mask</span><span class="p">,</span> <span class="n">norm_reg</span><span class="o">=</span><span class="n">NORM_REGULARIZER</span><span class="p">,</span> <span class="n">beam_size</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Center-of-mass constraint gradient</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Center-of-mass constraint gradient</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">if</span> <span class="n">beam_size</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
         <span class="n">beam_size</span> <span class="o">=</span> <span class="n">psize</span>
@@ -2504,7 +2506,7 @@
 
 
 <span class="k">def</span> <span class="nf">ssimple</span><span class="p">(</span><span class="n">imvec</span><span class="p">,</span> <span class="n">priorvec</span><span class="p">,</span> <span class="n">flux</span><span class="p">,</span> <span class="n">norm_reg</span><span class="o">=</span><span class="n">NORM_REGULARIZER</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Simple entropy</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Simple entropy</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">if</span> <span class="n">norm_reg</span><span class="p">:</span>
         <span class="n">norm</span> <span class="o">=</span> <span class="n">flux</span>
@@ -2516,7 +2518,7 @@
 
 
 <span class="k">def</span> <span class="nf">ssimplegrad</span><span class="p">(</span><span class="n">imvec</span><span class="p">,</span> <span class="n">priorvec</span><span class="p">,</span> <span class="n">flux</span><span class="p">,</span> <span class="n">norm_reg</span><span class="o">=</span><span class="n">NORM_REGULARIZER</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Simple entropy gradient</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Simple entropy gradient</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">if</span> <span class="n">norm_reg</span><span class="p">:</span>
         <span class="n">norm</span> <span class="o">=</span> <span class="n">flux</span>
@@ -2528,7 +2530,7 @@
 
 
 <span class="k">def</span> <span class="nf">sl1</span><span class="p">(</span><span class="n">imvec</span><span class="p">,</span> <span class="n">priorvec</span><span class="p">,</span> <span class="n">flux</span><span class="p">,</span> <span class="n">norm_reg</span><span class="o">=</span><span class="n">NORM_REGULARIZER</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;L1 norm regularizer</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;L1 norm regularizer</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">if</span> <span class="n">norm_reg</span><span class="p">:</span>
         <span class="n">norm</span> <span class="o">=</span> <span class="n">flux</span>
@@ -2541,7 +2543,7 @@
 
 
 <span class="k">def</span> <span class="nf">sl1grad</span><span class="p">(</span><span class="n">imvec</span><span class="p">,</span> <span class="n">priorvec</span><span class="p">,</span> <span class="n">flux</span><span class="p">,</span> <span class="n">norm_reg</span><span class="o">=</span><span class="n">NORM_REGULARIZER</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;L1 norm gradient</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;L1 norm gradient</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">if</span> <span class="n">norm_reg</span><span class="p">:</span>
         <span class="n">norm</span> <span class="o">=</span> <span class="n">flux</span>
@@ -2554,7 +2556,7 @@
 
 
 <span class="k">def</span> <span class="nf">sl1w</span><span class="p">(</span><span class="n">imvec</span><span class="p">,</span> <span class="n">priorvec</span><span class="p">,</span> <span class="n">flux</span><span class="p">,</span> <span class="n">norm_reg</span><span class="o">=</span><span class="n">NORM_REGULARIZER</span><span class="p">,</span> <span class="n">epsilon</span><span class="o">=</span><span class="n">ehc</span><span class="o">.</span><span class="n">EP</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Weighted L1 norm regularizer a la SMILI</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Weighted L1 norm regularizer a la SMILI</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="k">if</span> <span class="n">norm_reg</span><span class="p">:</span>
@@ -2572,7 +2574,7 @@
 
 
 <span class="k">def</span> <span class="nf">sl1wgrad</span><span class="p">(</span><span class="n">imvec</span><span class="p">,</span> <span class="n">priorvec</span><span class="p">,</span> <span class="n">flux</span><span class="p">,</span> <span class="n">norm_reg</span><span class="o">=</span><span class="n">NORM_REGULARIZER</span><span class="p">,</span> <span class="n">epsilon</span><span class="o">=</span><span class="n">ehc</span><span class="o">.</span><span class="n">EP</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Weighted L1 norm gradient</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Weighted L1 norm gradient</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">if</span> <span class="n">norm_reg</span><span class="p">:</span>
         <span class="n">norm</span> <span class="o">=</span> <span class="mi">1</span>  <span class="c1"># should be ok?</span>
@@ -2589,21 +2591,21 @@
 
 
 <span class="k">def</span> <span class="nf">fA</span><span class="p">(</span><span class="n">imvec</span><span class="p">,</span> <span class="n">I_ref</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span> <span class="n">alpha_A</span><span class="o">=</span><span class="mf">1.0</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Function to take imvec to itself in the limit alpha_A -&gt; 0</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Function to take imvec to itself in the limit alpha_A -&gt; 0</span>
 <span class="sd">       and to a binary representation in the limit alpha_A -&gt; infinity</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">return</span> <span class="mf">2.0</span><span class="o">/</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span> <span class="o">*</span> <span class="p">(</span><span class="mf">1.0</span> <span class="o">+</span> <span class="n">alpha_A</span><span class="p">)</span><span class="o">/</span><span class="n">alpha_A</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">arctan</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="o">*</span><span class="n">alpha_A</span><span class="o">/</span><span class="mf">2.0</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">imvec</span><span class="p">)</span><span class="o">/</span><span class="n">I_ref</span><span class="p">)</span>
 
 
 <span class="k">def</span> <span class="nf">fAgrad</span><span class="p">(</span><span class="n">imvec</span><span class="p">,</span> <span class="n">I_ref</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span> <span class="n">alpha_A</span><span class="o">=</span><span class="mf">1.0</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Function to take imvec to itself in the limit alpha_A -&gt; 0</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Function to take imvec to itself in the limit alpha_A -&gt; 0</span>
 <span class="sd">       and to a binary representation in the limit alpha_A -&gt; infinity</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">return</span> <span class="p">(</span><span class="mf">1.0</span> <span class="o">+</span> <span class="n">alpha_A</span><span class="p">)</span> <span class="o">/</span> <span class="p">(</span><span class="n">I_ref</span> <span class="o">*</span> <span class="p">(</span><span class="mf">1.0</span> <span class="o">+</span> <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="o">*</span><span class="n">alpha_A</span><span class="o">/</span><span class="mf">2.0</span><span class="o">*</span><span class="n">imvec</span><span class="o">/</span><span class="n">I_ref</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span><span class="p">))</span>
 
 
 <span class="k">def</span> <span class="nf">slA</span><span class="p">(</span><span class="n">imvec</span><span class="p">,</span> <span class="n">priorvec</span><span class="p">,</span> <span class="n">psize</span><span class="p">,</span> <span class="n">flux</span><span class="p">,</span> <span class="n">beam_size</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">alpha_A</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span> <span class="n">norm_reg</span><span class="o">=</span><span class="n">NORM_REGULARIZER</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;l_A regularizer</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;l_A regularizer</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="c1"># The appropriate I_ref is something like the total flux divided by the # of pixels per beam</span>
@@ -2624,7 +2626,7 @@
 
 
 <span class="k">def</span> <span class="nf">slAgrad</span><span class="p">(</span><span class="n">imvec</span><span class="p">,</span> <span class="n">priorvec</span><span class="p">,</span> <span class="n">psize</span><span class="p">,</span> <span class="n">flux</span><span class="p">,</span> <span class="n">beam_size</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">alpha_A</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span> <span class="n">norm_reg</span><span class="o">=</span><span class="n">NORM_REGULARIZER</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;l_A gradient</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;l_A gradient</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="c1"># The appropriate I_ref is something like the total flux divided by the # of pixels per beam</span>
@@ -2645,7 +2647,7 @@
 
 
 <span class="k">def</span> <span class="nf">sgs</span><span class="p">(</span><span class="n">imvec</span><span class="p">,</span> <span class="n">priorvec</span><span class="p">,</span> <span class="n">flux</span><span class="p">,</span> <span class="n">norm_reg</span><span class="o">=</span><span class="n">NORM_REGULARIZER</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Gull-skilling entropy</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Gull-skilling entropy</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">if</span> <span class="n">norm_reg</span><span class="p">:</span>
         <span class="n">norm</span> <span class="o">=</span> <span class="n">flux</span>
@@ -2657,7 +2659,7 @@
 
 
 <span class="k">def</span> <span class="nf">sgsgrad</span><span class="p">(</span><span class="n">imvec</span><span class="p">,</span> <span class="n">priorvec</span><span class="p">,</span> <span class="n">flux</span><span class="p">,</span> <span class="n">norm_reg</span><span class="o">=</span><span class="n">NORM_REGULARIZER</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Gull-Skilling gradient</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Gull-Skilling gradient</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">if</span> <span class="n">norm_reg</span><span class="p">:</span>
         <span class="n">norm</span> <span class="o">=</span> <span class="n">flux</span>
@@ -2669,7 +2671,7 @@
 
 <span class="c1"># TODO: epsilon is 0 by default for backwards compatibilitys</span>
 <span class="k">def</span> <span class="nf">stv</span><span class="p">(</span><span class="n">imvec</span><span class="p">,</span> <span class="n">nx</span><span class="p">,</span> <span class="n">ny</span><span class="p">,</span> <span class="n">psize</span><span class="p">,</span> <span class="n">flux</span><span class="p">,</span> <span class="n">norm_reg</span><span class="o">=</span><span class="n">NORM_REGULARIZER</span><span class="p">,</span> <span class="n">beam_size</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">epsilon</span><span class="o">=</span><span class="mf">0.</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Total variation regularizer</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Total variation regularizer</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">if</span> <span class="n">beam_size</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
         <span class="n">beam_size</span> <span class="o">=</span> <span class="n">psize</span>
@@ -2687,7 +2689,7 @@
 
 <span class="c1"># TODO: epsilon is 0 by default for backwards compatibility</span>
 <span class="k">def</span> <span class="nf">stvgrad</span><span class="p">(</span><span class="n">imvec</span><span class="p">,</span> <span class="n">nx</span><span class="p">,</span> <span class="n">ny</span><span class="p">,</span> <span class="n">psize</span><span class="p">,</span> <span class="n">flux</span><span class="p">,</span> <span class="n">norm_reg</span><span class="o">=</span><span class="n">NORM_REGULARIZER</span><span class="p">,</span> <span class="n">beam_size</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">epsilon</span><span class="o">=</span><span class="mf">0.</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Total variation gradient</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Total variation gradient</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">if</span> <span class="n">beam_size</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
         <span class="n">beam_size</span> <span class="o">=</span> <span class="n">psize</span>
@@ -2726,7 +2728,7 @@
 
 
 <span class="k">def</span> <span class="nf">stv2</span><span class="p">(</span><span class="n">imvec</span><span class="p">,</span> <span class="n">nx</span><span class="p">,</span> <span class="n">ny</span><span class="p">,</span> <span class="n">psize</span><span class="p">,</span> <span class="n">flux</span><span class="p">,</span> <span class="n">norm_reg</span><span class="o">=</span><span class="n">NORM_REGULARIZER</span><span class="p">,</span> <span class="n">beam_size</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Squared Total variation regularizer</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Squared Total variation regularizer</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">if</span> <span class="n">beam_size</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
         <span class="n">beam_size</span> <span class="o">=</span> <span class="n">psize</span>
@@ -2744,7 +2746,7 @@
 
 
 <span class="k">def</span> <span class="nf">stv2grad</span><span class="p">(</span><span class="n">imvec</span><span class="p">,</span> <span class="n">nx</span><span class="p">,</span> <span class="n">ny</span><span class="p">,</span> <span class="n">psize</span><span class="p">,</span> <span class="n">flux</span><span class="p">,</span> <span class="n">norm_reg</span><span class="o">=</span><span class="n">NORM_REGULARIZER</span><span class="p">,</span> <span class="n">beam_size</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Squared Total variation gradient</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Squared Total variation gradient</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">if</span> <span class="n">beam_size</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
         <span class="n">beam_size</span> <span class="o">=</span> <span class="n">psize</span>
@@ -2778,7 +2780,7 @@
 
 
 <span class="k">def</span> <span class="nf">spatch</span><span class="p">(</span><span class="n">imvec</span><span class="p">,</span> <span class="n">priorvec</span><span class="p">,</span> <span class="n">flux</span><span class="p">,</span> <span class="n">norm_reg</span><span class="o">=</span><span class="n">NORM_REGULARIZER</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Patch prior regularizer</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Patch prior regularizer</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">if</span> <span class="n">norm_reg</span><span class="p">:</span>
         <span class="n">norm</span> <span class="o">=</span> <span class="n">flux</span><span class="o">**</span><span class="mi">2</span>
@@ -2790,7 +2792,7 @@
 
 
 <span class="k">def</span> <span class="nf">spatchgrad</span><span class="p">(</span><span class="n">imvec</span><span class="p">,</span> <span class="n">priorvec</span><span class="p">,</span> <span class="n">flux</span><span class="p">,</span> <span class="n">norm_reg</span><span class="o">=</span><span class="n">NORM_REGULARIZER</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Patch prior gradient</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Patch prior gradient</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">if</span> <span class="n">norm_reg</span><span class="p">:</span>
         <span class="n">norm</span> <span class="o">=</span> <span class="n">flux</span><span class="o">**</span><span class="mi">2</span>
@@ -2804,7 +2806,7 @@
 
 
 <span class="k">def</span> <span class="nf">scompact</span><span class="p">(</span><span class="n">imvec</span><span class="p">,</span> <span class="n">nx</span><span class="p">,</span> <span class="n">ny</span><span class="p">,</span> <span class="n">psize</span><span class="p">,</span> <span class="n">flux</span><span class="p">,</span> <span class="n">norm_reg</span><span class="o">=</span><span class="n">NORM_REGULARIZER</span><span class="p">,</span> <span class="n">beam_size</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;I r^2 source size regularizer</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;I r^2 source size regularizer</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="k">if</span> <span class="n">beam_size</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
@@ -2830,7 +2832,7 @@
 
 
 <span class="k">def</span> <span class="nf">scompactgrad</span><span class="p">(</span><span class="n">imvec</span><span class="p">,</span> <span class="n">nx</span><span class="p">,</span> <span class="n">ny</span><span class="p">,</span> <span class="n">psize</span><span class="p">,</span> <span class="n">flux</span><span class="p">,</span> <span class="n">norm_reg</span><span class="o">=</span><span class="n">NORM_REGULARIZER</span><span class="p">,</span> <span class="n">beam_size</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Gradient for I r^2 source size regularizer</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Gradient for I r^2 source size regularizer</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="k">if</span> <span class="n">beam_size</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
@@ -2860,7 +2862,7 @@
 
 
 <span class="k">def</span> <span class="nf">scompact2</span><span class="p">(</span><span class="n">imvec</span><span class="p">,</span> <span class="n">nx</span><span class="p">,</span> <span class="n">ny</span><span class="p">,</span> <span class="n">psize</span><span class="p">,</span> <span class="n">flux</span><span class="p">,</span> <span class="n">norm_reg</span><span class="o">=</span><span class="n">NORM_REGULARIZER</span><span class="p">,</span> <span class="n">beam_size</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;I^2r^2 source size regularizer</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;I^2r^2 source size regularizer</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="k">if</span> <span class="n">beam_size</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
@@ -2883,7 +2885,7 @@
 
 
 <span class="k">def</span> <span class="nf">scompact2grad</span><span class="p">(</span><span class="n">imvec</span><span class="p">,</span> <span class="n">nx</span><span class="p">,</span> <span class="n">ny</span><span class="p">,</span> <span class="n">psize</span><span class="p">,</span> <span class="n">flux</span><span class="p">,</span> <span class="n">norm_reg</span><span class="o">=</span><span class="n">NORM_REGULARIZER</span><span class="p">,</span> <span class="n">beam_size</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Gradient for I^2r^2 source size regularizer</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Gradient for I^2r^2 source size regularizer</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="k">if</span> <span class="n">beam_size</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
@@ -2907,7 +2909,7 @@
 
 
 <span class="k">def</span> <span class="nf">sgauss</span><span class="p">(</span><span class="n">imvec</span><span class="p">,</span> <span class="n">xdim</span><span class="p">,</span> <span class="n">ydim</span><span class="p">,</span> <span class="n">psize</span><span class="p">,</span> <span class="n">major</span><span class="p">,</span> <span class="n">minor</span><span class="p">,</span> <span class="n">PA</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Gaussian source size regularizer</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Gaussian source size regularizer</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="c1"># major, minor and PA are all in radians</span>
@@ -2948,7 +2950,7 @@
 
 
 <span class="k">def</span> <span class="nf">sgauss_grad</span><span class="p">(</span><span class="n">imvec</span><span class="p">,</span> <span class="n">xdim</span><span class="p">,</span> <span class="n">ydim</span><span class="p">,</span> <span class="n">psize</span><span class="p">,</span> <span class="n">major</span><span class="p">,</span> <span class="n">minor</span><span class="p">,</span> <span class="n">PA</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Gradient for Gaussian source size regularizer</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Gradient for Gaussian source size regularizer</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="c1"># major, minor and PA are all in radians</span>
@@ -3009,7 +3011,7 @@
 <span class="c1"># Chi^2 Data functions</span>
 <span class="c1">##################################################################################################</span>
 <span class="k">def</span> <span class="nf">apply_systematic_noise_snrcut</span><span class="p">(</span><span class="n">data_arr</span><span class="p">,</span> <span class="n">systematic_noise</span><span class="p">,</span> <span class="n">snrcut</span><span class="p">,</span> <span class="n">pol</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;apply systematic noise to VISIBILITIES or AMPLITUDES</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;apply systematic noise to VISIBILITIES or AMPLITUDES</span>
 <span class="sd">       data_arr should have fields &#39;t1&#39;,&#39;t2&#39;,&#39;u&#39;,&#39;v&#39;,&#39;vis&#39;,&#39;amp&#39;,&#39;sigma&#39;</span>
 
 <span class="sd">       returns: (uv, vis, amp, sigma)</span>
@@ -3061,7 +3063,7 @@
 
 
 <span class="k">def</span> <span class="nf">chisqdata_vis</span><span class="p">(</span><span class="n">Obsdata</span><span class="p">,</span> <span class="n">Prior</span><span class="p">,</span> <span class="n">mask</span><span class="p">,</span> <span class="n">pol</span><span class="o">=</span><span class="s1">&#39;I&#39;</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Return the data, sigmas, and fourier matrix for visibilities</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Return the data, sigmas, and fourier matrix for visibilities</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="c1"># unpack keyword args</span>
@@ -3088,7 +3090,7 @@
 
 
 <span class="k">def</span> <span class="nf">chisqdata_amp</span><span class="p">(</span><span class="n">Obsdata</span><span class="p">,</span> <span class="n">Prior</span><span class="p">,</span> <span class="n">mask</span><span class="p">,</span> <span class="n">pol</span><span class="o">=</span><span class="s1">&#39;I&#39;</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Return the data, sigmas, and fourier matrix for visibility amplitudes</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Return the data, sigmas, and fourier matrix for visibility amplitudes</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="c1"># unpack keyword args</span>
@@ -3125,7 +3127,7 @@
 
 
 <span class="k">def</span> <span class="nf">chisqdata_bs</span><span class="p">(</span><span class="n">Obsdata</span><span class="p">,</span> <span class="n">Prior</span><span class="p">,</span> <span class="n">mask</span><span class="p">,</span> <span class="n">pol</span><span class="o">=</span><span class="s1">&#39;I&#39;</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;return the data, sigmas, and fourier matrices for bispectra</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;return the data, sigmas, and fourier matrices for bispectra</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="c1"># unpack keyword args</span>
@@ -3176,7 +3178,7 @@
 
 
 <span class="k">def</span> <span class="nf">chisqdata_cphase</span><span class="p">(</span><span class="n">Obsdata</span><span class="p">,</span> <span class="n">Prior</span><span class="p">,</span> <span class="n">mask</span><span class="p">,</span> <span class="n">pol</span><span class="o">=</span><span class="s1">&#39;I&#39;</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Return the data, sigmas, and fourier matrices for closure phases</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Return the data, sigmas, and fourier matrices for closure phases</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="c1"># unpack keyword args</span>
@@ -3227,7 +3229,7 @@
 
 
 <span class="k">def</span> <span class="nf">chisqdata_cphase_diag</span><span class="p">(</span><span class="n">Obsdata</span><span class="p">,</span> <span class="n">Prior</span><span class="p">,</span> <span class="n">mask</span><span class="p">,</span> <span class="n">pol</span><span class="o">=</span><span class="s1">&#39;I&#39;</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Return the data, sigmas, and fourier matrices for diagonalized closure phases</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Return the data, sigmas, and fourier matrices for diagonalized closure phases</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="c1"># unpack keyword args</span>
@@ -3285,7 +3287,7 @@
 
 
 <span class="k">def</span> <span class="nf">chisqdata_camp</span><span class="p">(</span><span class="n">Obsdata</span><span class="p">,</span> <span class="n">Prior</span><span class="p">,</span> <span class="n">mask</span><span class="p">,</span> <span class="n">pol</span><span class="o">=</span><span class="s1">&#39;I&#39;</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Return the data, sigmas, and fourier matrices for closure amplitudes</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Return the data, sigmas, and fourier matrices for closure amplitudes</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="c1"># unpack keyword args</span>
     <span class="n">maxset</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;maxset&#39;</span><span class="p">,</span> <span class="kc">False</span><span class="p">)</span>
@@ -3334,7 +3336,7 @@
 
 
 <span class="k">def</span> <span class="nf">chisqdata_logcamp</span><span class="p">(</span><span class="n">Obsdata</span><span class="p">,</span> <span class="n">Prior</span><span class="p">,</span> <span class="n">mask</span><span class="p">,</span> <span class="n">pol</span><span class="o">=</span><span class="s1">&#39;I&#39;</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Return the data, sigmas, and fourier matrices for log closure amplitudes</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Return the data, sigmas, and fourier matrices for log closure amplitudes</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="c1"># unpack keyword args</span>
     <span class="n">maxset</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;maxset&#39;</span><span class="p">,</span> <span class="kc">False</span><span class="p">)</span>
@@ -3383,7 +3385,7 @@
 
 
 <span class="k">def</span> <span class="nf">chisqdata_logcamp_diag</span><span class="p">(</span><span class="n">Obsdata</span><span class="p">,</span> <span class="n">Prior</span><span class="p">,</span> <span class="n">mask</span><span class="p">,</span> <span class="n">pol</span><span class="o">=</span><span class="s1">&#39;I&#39;</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Return the data, sigmas, and fourier matrices for diagonalized log closure amplitudes</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Return the data, sigmas, and fourier matrices for diagonalized log closure amplitudes</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="c1"># unpack keyword args</span>
     <span class="n">maxset</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;maxset&#39;</span><span class="p">,</span> <span class="kc">False</span><span class="p">)</span>
@@ -3449,7 +3451,7 @@
 
 
 <span class="k">def</span> <span class="nf">chisqdata_vis_fft</span><span class="p">(</span><span class="n">Obsdata</span><span class="p">,</span> <span class="n">Prior</span><span class="p">,</span> <span class="n">pol</span><span class="o">=</span><span class="s1">&#39;I&#39;</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Return the data, sigmas, uv points, and FFT info for visibilities</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Return the data, sigmas, uv points, and FFT info for visibilities</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="c1"># unpack keyword args</span>
@@ -3487,7 +3489,7 @@
 
 
 <span class="k">def</span> <span class="nf">chisqdata_amp_fft</span><span class="p">(</span><span class="n">Obsdata</span><span class="p">,</span> <span class="n">Prior</span><span class="p">,</span> <span class="n">pol</span><span class="o">=</span><span class="s1">&#39;I&#39;</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Return the data, sigmas, uv points, and FFT info for visibility amplitudes</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Return the data, sigmas, uv points, and FFT info for visibility amplitudes</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="c1"># unpack keyword args</span>
@@ -3533,7 +3535,7 @@
 
 
 <span class="k">def</span> <span class="nf">chisqdata_bs_fft</span><span class="p">(</span><span class="n">Obsdata</span><span class="p">,</span> <span class="n">Prior</span><span class="p">,</span> <span class="n">pol</span><span class="o">=</span><span class="s1">&#39;I&#39;</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Return the data, sigmas, uv points, and FFT info for bispectra</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Return the data, sigmas, uv points, and FFT info for bispectra</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="c1"># unpack keyword args</span>
@@ -3595,7 +3597,7 @@
 
 
 <span class="k">def</span> <span class="nf">chisqdata_cphase_fft</span><span class="p">(</span><span class="n">Obsdata</span><span class="p">,</span> <span class="n">Prior</span><span class="p">,</span> <span class="n">pol</span><span class="o">=</span><span class="s1">&#39;I&#39;</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Return the data, sigmas, uv points, and FFT info for closure phases</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Return the data, sigmas, uv points, and FFT info for closure phases</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="c1"># unpack keyword args</span>
     <span class="n">maxset</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;maxset&#39;</span><span class="p">,</span> <span class="kc">False</span><span class="p">)</span>
@@ -3658,7 +3660,7 @@
 
 
 <span class="k">def</span> <span class="nf">chisqdata_cphase_diag_fft</span><span class="p">(</span><span class="n">Obsdata</span><span class="p">,</span> <span class="n">Prior</span><span class="p">,</span> <span class="n">pol</span><span class="o">=</span><span class="s1">&#39;I&#39;</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Return the data, sigmas, uv points, and FFT info for diagonalized closure phases</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Return the data, sigmas, uv points, and FFT info for diagonalized closure phases</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="c1"># unpack keyword args</span>
     <span class="n">maxset</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;maxset&#39;</span><span class="p">,</span> <span class="kc">False</span><span class="p">)</span>
@@ -3739,7 +3741,7 @@
 
 
 <span class="k">def</span> <span class="nf">chisqdata_camp_fft</span><span class="p">(</span><span class="n">Obsdata</span><span class="p">,</span> <span class="n">Prior</span><span class="p">,</span> <span class="n">pol</span><span class="o">=</span><span class="s1">&#39;I&#39;</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Return the data, sigmas, uv points, and FFT info for closure amplitudes</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Return the data, sigmas, uv points, and FFT info for closure amplitudes</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="c1"># unpack keyword args</span>
@@ -3802,7 +3804,7 @@
 
 
 <span class="k">def</span> <span class="nf">chisqdata_logcamp_fft</span><span class="p">(</span><span class="n">Obsdata</span><span class="p">,</span> <span class="n">Prior</span><span class="p">,</span> <span class="n">pol</span><span class="o">=</span><span class="s1">&#39;I&#39;</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Return the data, sigmas, uv points, and FFT info for log closure amplitudes</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Return the data, sigmas, uv points, and FFT info for log closure amplitudes</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="c1"># unpack keyword args</span>
     <span class="n">maxset</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;maxset&#39;</span><span class="p">,</span> <span class="kc">False</span><span class="p">)</span>
@@ -3864,7 +3866,7 @@
 
 
 <span class="k">def</span> <span class="nf">chisqdata_logcamp_diag_fft</span><span class="p">(</span><span class="n">Obsdata</span><span class="p">,</span> <span class="n">Prior</span><span class="p">,</span> <span class="n">pol</span><span class="o">=</span><span class="s1">&#39;I&#39;</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Return the data, sigmas, uv points, and FFT info for diagonalized log closure amplitudes</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Return the data, sigmas, uv points, and FFT info for diagonalized log closure amplitudes</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="c1"># unpack keyword args</span>
     <span class="n">maxset</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;maxset&#39;</span><span class="p">,</span> <span class="kc">False</span><span class="p">)</span>
@@ -3959,7 +3961,7 @@
 
 
 <span class="k">def</span> <span class="nf">chisqdata_vis_nfft</span><span class="p">(</span><span class="n">Obsdata</span><span class="p">,</span> <span class="n">Prior</span><span class="p">,</span> <span class="n">pol</span><span class="o">=</span><span class="s1">&#39;I&#39;</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Return the visibilities, sigmas, uv points, and nfft info</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Return the visibilities, sigmas, uv points, and nfft info</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">if</span> <span class="p">(</span><span class="n">Prior</span><span class="o">.</span><span class="n">xdim</span> <span class="o">%</span> <span class="mi">2</span> <span class="ow">or</span> <span class="n">Prior</span><span class="o">.</span><span class="n">ydim</span> <span class="o">%</span> <span class="mi">2</span><span class="p">):</span>
         <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;NFFT doesn&#39;t work with odd image dimensions!&quot;</span><span class="p">)</span>
@@ -3992,7 +3994,7 @@
 
 
 <span class="k">def</span> <span class="nf">chisqdata_amp_nfft</span><span class="p">(</span><span class="n">Obsdata</span><span class="p">,</span> <span class="n">Prior</span><span class="p">,</span> <span class="n">pol</span><span class="o">=</span><span class="s1">&#39;I&#39;</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Return the amplitudes, sigmas, uv points, and nfft info</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Return the amplitudes, sigmas, uv points, and nfft info</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">if</span> <span class="p">(</span><span class="n">Prior</span><span class="o">.</span><span class="n">xdim</span> <span class="o">%</span> <span class="mi">2</span> <span class="ow">or</span> <span class="n">Prior</span><span class="o">.</span><span class="n">ydim</span> <span class="o">%</span> <span class="mi">2</span><span class="p">):</span>
         <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;NFFT doesn&#39;t work with odd image dimensions!&quot;</span><span class="p">)</span>
@@ -4033,7 +4035,7 @@
 
 
 <span class="k">def</span> <span class="nf">chisqdata_bs_nfft</span><span class="p">(</span><span class="n">Obsdata</span><span class="p">,</span> <span class="n">Prior</span><span class="p">,</span> <span class="n">pol</span><span class="o">=</span><span class="s1">&#39;I&#39;</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Return the bispectra, sigmas, uv points, and nfft info</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Return the bispectra, sigmas, uv points, and nfft info</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">if</span> <span class="p">(</span><span class="n">Prior</span><span class="o">.</span><span class="n">xdim</span> <span class="o">%</span> <span class="mi">2</span> <span class="ow">or</span> <span class="n">Prior</span><span class="o">.</span><span class="n">ydim</span> <span class="o">%</span> <span class="mi">2</span><span class="p">):</span>
         <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;NFFT doesn&#39;t work with odd image dimensions!&quot;</span><span class="p">)</span>
@@ -4088,7 +4090,7 @@
 
 
 <span class="k">def</span> <span class="nf">chisqdata_cphase_nfft</span><span class="p">(</span><span class="n">Obsdata</span><span class="p">,</span> <span class="n">Prior</span><span class="p">,</span> <span class="n">pol</span><span class="o">=</span><span class="s1">&#39;I&#39;</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Return the closure phases, sigmas, uv points, and nfft info</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Return the closure phases, sigmas, uv points, and nfft info</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">if</span> <span class="p">(</span><span class="n">Prior</span><span class="o">.</span><span class="n">xdim</span> <span class="o">%</span> <span class="mi">2</span> <span class="ow">or</span> <span class="n">Prior</span><span class="o">.</span><span class="n">ydim</span> <span class="o">%</span> <span class="mi">2</span><span class="p">):</span>
         <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;NFFT doesn&#39;t work with odd image dimensions!&quot;</span><span class="p">)</span>
@@ -4145,7 +4147,7 @@
 
 
 <span class="k">def</span> <span class="nf">chisqdata_cphase_diag_nfft</span><span class="p">(</span><span class="n">Obsdata</span><span class="p">,</span> <span class="n">Prior</span><span class="p">,</span> <span class="n">pol</span><span class="o">=</span><span class="s1">&#39;I&#39;</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Return the diagonalized closure phases, sigmas, uv points, and nfft info</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Return the diagonalized closure phases, sigmas, uv points, and nfft info</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">if</span> <span class="p">(</span><span class="n">Prior</span><span class="o">.</span><span class="n">xdim</span> <span class="o">%</span> <span class="mi">2</span> <span class="ow">or</span> <span class="n">Prior</span><span class="o">.</span><span class="n">ydim</span> <span class="o">%</span> <span class="mi">2</span><span class="p">):</span>
         <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;NFFT doesn&#39;t work with odd image dimensions!&quot;</span><span class="p">)</span>
@@ -4220,7 +4222,7 @@
 
 
 <span class="k">def</span> <span class="nf">chisqdata_camp_nfft</span><span class="p">(</span><span class="n">Obsdata</span><span class="p">,</span> <span class="n">Prior</span><span class="p">,</span> <span class="n">pol</span><span class="o">=</span><span class="s1">&#39;I&#39;</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Return the closure amplitudes, sigmas, uv points, and nfft info</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Return the closure amplitudes, sigmas, uv points, and nfft info</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">if</span> <span class="p">(</span><span class="n">Prior</span><span class="o">.</span><span class="n">xdim</span> <span class="o">%</span> <span class="mi">2</span> <span class="ow">or</span> <span class="n">Prior</span><span class="o">.</span><span class="n">ydim</span> <span class="o">%</span> <span class="mi">2</span><span class="p">):</span>
         <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;NFFT doesn&#39;t work with odd image dimensions!&quot;</span><span class="p">)</span>
@@ -4275,7 +4277,7 @@
 
 
 <span class="k">def</span> <span class="nf">chisqdata_logcamp_nfft</span><span class="p">(</span><span class="n">Obsdata</span><span class="p">,</span> <span class="n">Prior</span><span class="p">,</span> <span class="n">pol</span><span class="o">=</span><span class="s1">&#39;I&#39;</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Return the log closure amplitudes, sigmas, uv points, and nfft info</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Return the log closure amplitudes, sigmas, uv points, and nfft info</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">if</span> <span class="p">(</span><span class="n">Prior</span><span class="o">.</span><span class="n">xdim</span> <span class="o">%</span> <span class="mi">2</span> <span class="ow">or</span> <span class="n">Prior</span><span class="o">.</span><span class="n">ydim</span> <span class="o">%</span> <span class="mi">2</span><span class="p">):</span>
         <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;NFFT doesn&#39;t work with odd image dimensions!&quot;</span><span class="p">)</span>
@@ -4330,7 +4332,7 @@
 
 
 <span class="k">def</span> <span class="nf">chisqdata_logcamp_diag_nfft</span><span class="p">(</span><span class="n">Obsdata</span><span class="p">,</span> <span class="n">Prior</span><span class="p">,</span> <span class="n">pol</span><span class="o">=</span><span class="s1">&#39;I&#39;</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Return the diagonalized log closure amplitudes, sigmas, uv points, and nfft info</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Return the diagonalized log closure amplitudes, sigmas, uv points, and nfft info</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">if</span> <span class="p">(</span><span class="n">Prior</span><span class="o">.</span><span class="n">xdim</span> <span class="o">%</span> <span class="mi">2</span> <span class="ow">or</span> <span class="n">Prior</span><span class="o">.</span><span class="n">ydim</span> <span class="o">%</span> <span class="mi">2</span><span class="p">):</span>
         <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;NFFT doesn&#39;t work with odd image dimensions!&quot;</span><span class="p">)</span>
@@ -4417,14 +4419,14 @@
 
 
 <span class="k">def</span> <span class="nf">plot_i</span><span class="p">(</span><span class="n">im</span><span class="p">,</span> <span class="n">Prior</span><span class="p">,</span> <span class="n">nit</span><span class="p">,</span> <span class="n">chi2_dict</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Plot the total intensity image at each iteration</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Plot the total intensity image at each iteration</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">cmap</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;cmap&#39;</span><span class="p">,</span> <span class="s1">&#39;afmhot&#39;</span><span class="p">)</span>
     <span class="n">interpolation</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;interpolation&#39;</span><span class="p">,</span> <span class="s1">&#39;gaussian&#39;</span><span class="p">)</span>
     <span class="n">pol</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;pol&#39;</span><span class="p">,</span> <span class="s1">&#39;&#39;</span><span class="p">)</span>
     <span class="n">scale</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;scale&#39;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
     <span class="n">dynamic_range</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;dynamic_range&#39;</span><span class="p">,</span> <span class="mf">1.e5</span><span class="p">)</span>
-    <span class="n">gamma</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;dynamic_range&#39;</span><span class="p">,</span> <span class="o">.</span><span class="mi">5</span><span class="p">)</span>
+    <span class="n">gamma</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;dynamic_range&#39;</span><span class="p">,</span> <span class="mf">.5</span><span class="p">)</span>
 
     <span class="n">plt</span><span class="o">.</span><span class="n">ion</span><span class="p">()</span>
     <span class="n">plt</span><span class="o">.</span><span class="n">pause</span><span class="p">(</span><span class="mf">1.e-6</span><span class="p">)</span>
@@ -4458,7 +4460,7 @@
 
 
 <span class="k">def</span> <span class="nf">embed</span><span class="p">(</span><span class="n">im</span><span class="p">,</span> <span class="n">mask</span><span class="p">,</span> <span class="n">clipfloor</span><span class="o">=</span><span class="mf">0.</span><span class="p">,</span> <span class="n">randomfloor</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Embeds a 1d image array into the size of boolean embed mask</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Embeds a 1d image array into the size of boolean embed mask</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="n">out</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">mask</span><span class="p">))</span>

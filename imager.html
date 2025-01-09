@@ -1,18 +1,21 @@
 <!DOCTYPE html>
 <html class="writer-html5" lang="en" >
 <head>
-  <meta charset="utf-8" />
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
+
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Imager &mdash; ehtim 1.2.6 documentation</title><link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
-    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+  <title>Imager &mdash; ehtim 1.2.6 documentation</title>
+      <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
   <!--[if lt IE 9]>
     <script src="_static/js/html5shiv.min.js"></script>
   <![endif]-->
-  <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+  
+        <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
         <script src="_static/jquery.js"></script>
         <script src="_static/underscore.js"></script>
+        <script src="_static/_sphinx_javascript_frameworks_compat.js"></script>
         <script src="_static/doctools.js"></script>
-        <script src="_static/language_data.js"></script>
     <script src="_static/js/theme.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
@@ -38,7 +41,7 @@
   </form>
 </div>
         </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
-              <p class="caption"><span class="caption-text">Contents:</span></p>
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
 <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="image.html">Image</a></li>
 <li class="toctree-l1"><a class="reference internal" href="array.html">Array</a></li>
@@ -78,14 +81,14 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
              
-  <span class="target" id="module-imager"></span><div class="section" id="imager">
-<span id="id1"></span><h1>Imager<a class="headerlink" href="#imager" title="Permalink to this headline">¶</a></h1>
+  <span class="target" id="module-imager"></span><section id="imager">
+<span id="id1"></span><h1>Imager<a class="headerlink" href="#imager" title="Permalink to this heading"></a></h1>
 <dl class="py function">
-<dt id="ehtim.imaging.imager_utils.imager_func">
-<code class="sig-prename descclassname">ehtim.imaging.imager_utils.</code><code class="sig-name descname">imager_func</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">Obsdata</span></em>, <em class="sig-param"><span class="n">InitIm</span></em>, <em class="sig-param"><span class="n">Prior</span></em>, <em class="sig-param"><span class="n">flux</span></em>, <em class="sig-param"><span class="n">d1</span><span class="o">=</span><span class="default_value">'vis'</span></em>, <em class="sig-param"><span class="n">d2</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">d3</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">alpha_d1</span><span class="o">=</span><span class="default_value">100</span></em>, <em class="sig-param"><span class="n">alpha_d2</span><span class="o">=</span><span class="default_value">100</span></em>, <em class="sig-param"><span class="n">alpha_d3</span><span class="o">=</span><span class="default_value">100</span></em>, <em class="sig-param"><span class="n">s1</span><span class="o">=</span><span class="default_value">'simple'</span></em>, <em class="sig-param"><span class="n">s2</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">s3</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">alpha_s1</span><span class="o">=</span><span class="default_value">1</span></em>, <em class="sig-param"><span class="n">alpha_s2</span><span class="o">=</span><span class="default_value">1</span></em>, <em class="sig-param"><span class="n">alpha_s3</span><span class="o">=</span><span class="default_value">1</span></em>, <em class="sig-param"><span class="n">alpha_flux</span><span class="o">=</span><span class="default_value">500</span></em>, <em class="sig-param"><span class="n">alpha_cm</span><span class="o">=</span><span class="default_value">500</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/imaging/imager_utils.html#imager_func"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.imaging.imager_utils.imager_func" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="ehtim.imaging.imager_utils.imager_func">
+<span class="sig-prename descclassname"><span class="pre">ehtim.imaging.imager_utils.</span></span><span class="sig-name descname"><span class="pre">imager_func</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">Obsdata</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">InitIm</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">Prior</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">flux</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">d1</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'vis'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">d2</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">d3</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">alpha_d1</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">100</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">alpha_d2</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">100</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">alpha_d3</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">100</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">s1</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'simple'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">s2</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">s3</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">alpha_s1</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">alpha_s2</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">alpha_s3</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">alpha_flux</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">500</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">alpha_cm</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">500</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/imaging/imager_utils.html#imager_func"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ehtim.imaging.imager_utils.imager_func" title="Permalink to this definition"></a></dt>
 <dd><p>Run a general interferometric imager. Only works directly on the image’s primary polarization.</p>
 <dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>Obsdata</strong> (<a class="reference internal" href="obsdata.html#ehtim.obsdata.Obsdata" title="ehtim.obsdata.Obsdata"><em>Obsdata</em></a>) – The Obsdata object with VLBI data</p></li>
 <li><p><strong>InitIm</strong> (<a class="reference internal" href="image.html#ehtim.image.Image" title="ehtim.image.Image"><em>Image</em></a>) – The Image object with the initial image for the minimization</p></li>
@@ -128,327 +131,327 @@
 <li><p><strong>p_rad</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.13)"><em>int</em></a>) – The pixel radius for the convolving function in gridding for FFTs</p></li>
 </ul>
 </dd>
-<dt class="field-even">Returns</dt>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
 <dd class="field-even"><p>Image object with result</p>
 </dd>
-<dt class="field-odd">Return type</dt>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
 <dd class="field-odd"><p><a class="reference internal" href="image.html#ehtim.image.Image" title="ehtim.image.Image">Image</a></p>
 </dd>
 </dl>
 </dd></dl>
 
 <span class="target" id="module-ehtim.imager"></span><dl class="py class">
-<dt id="ehtim.imager.Imager">
-<em class="property">class </em><code class="sig-prename descclassname">ehtim.imager.</code><code class="sig-name descname">Imager</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">obs_in</span></em>, <em class="sig-param"><span class="n">init_im</span></em>, <em class="sig-param"><span class="n">prior_im</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">flux</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">data_term</span><span class="o">=</span><span class="default_value">{'vis': 100}</span></em>, <em class="sig-param"><span class="n">reg_term</span><span class="o">=</span><span class="default_value">{'simple': 1}</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/imager.html#Imager"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.imager.Imager" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="ehtim.imager.Imager">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">ehtim.imager.</span></span><span class="sig-name descname"><span class="pre">Imager</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">obs_in</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">init_im</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">prior_im</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">flux</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">data_term</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">{'vis':</span> <span class="pre">100}</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">reg_term</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">{'simple':</span> <span class="pre">1}</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/imager.html#Imager"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ehtim.imager.Imager" title="Permalink to this definition"></a></dt>
 <dd><p>A general interferometric imager.</p>
 <dl class="py method">
-<dt id="ehtim.imager.Imager.check_limits">
-<code class="sig-name descname">check_limits</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/imager.html#Imager.check_limits"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.imager.Imager.check_limits" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="ehtim.imager.Imager.check_limits">
+<span class="sig-name descname"><span class="pre">check_limits</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/imager.html#Imager.check_limits"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ehtim.imager.Imager.check_limits" title="Permalink to this definition"></a></dt>
 <dd><p>Check image parameter consistency with observation.</p>
 </dd></dl>
 
 <dl class="py method">
-<dt id="ehtim.imager.Imager.check_params">
-<code class="sig-name descname">check_params</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/imager.html#Imager.check_params"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.imager.Imager.check_params" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="ehtim.imager.Imager.check_params">
+<span class="sig-name descname"><span class="pre">check_params</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/imager.html#Imager.check_params"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ehtim.imager.Imager.check_params" title="Permalink to this definition"></a></dt>
 <dd><p>Check parameter consistency.</p>
 </dd></dl>
 
 <dl class="py method">
-<dt id="ehtim.imager.Imager.clipfloor_last">
-<code class="sig-name descname">clipfloor_last</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/imager.html#Imager.clipfloor_last"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.imager.Imager.clipfloor_last" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="ehtim.imager.Imager.clipfloor_last">
+<span class="sig-name descname"><span class="pre">clipfloor_last</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/imager.html#Imager.clipfloor_last"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ehtim.imager.Imager.clipfloor_last" title="Permalink to this definition"></a></dt>
 <dd><p>Return last clip floor.</p>
 </dd></dl>
 
 <dl class="py method">
-<dt id="ehtim.imager.Imager.dat_terms_last">
-<code class="sig-name descname">dat_terms_last</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/imager.html#Imager.dat_terms_last"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.imager.Imager.dat_terms_last" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="ehtim.imager.Imager.dat_terms_last">
+<span class="sig-name descname"><span class="pre">dat_terms_last</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/imager.html#Imager.dat_terms_last"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ehtim.imager.Imager.dat_terms_last" title="Permalink to this definition"></a></dt>
 <dd><p>Return last used data terms.</p>
 </dd></dl>
 
 <dl class="py method">
-<dt id="ehtim.imager.Imager.debias_last">
-<code class="sig-name descname">debias_last</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/imager.html#Imager.debias_last"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.imager.Imager.debias_last" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="ehtim.imager.Imager.debias_last">
+<span class="sig-name descname"><span class="pre">debias_last</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/imager.html#Imager.debias_last"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ehtim.imager.Imager.debias_last" title="Permalink to this definition"></a></dt>
 <dd><p>Return last debias value.</p>
 </dd></dl>
 
 <dl class="py method">
-<dt id="ehtim.imager.Imager.flux_last">
-<code class="sig-name descname">flux_last</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/imager.html#Imager.flux_last"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.imager.Imager.flux_last" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="ehtim.imager.Imager.flux_last">
+<span class="sig-name descname"><span class="pre">flux_last</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/imager.html#Imager.flux_last"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ehtim.imager.Imager.flux_last" title="Permalink to this definition"></a></dt>
 <dd><p>Return last total flux constraint.</p>
 </dd></dl>
 
 <dl class="py method">
-<dt id="ehtim.imager.Imager.init_imager">
-<code class="sig-name descname">init_imager</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/imager.html#Imager.init_imager"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.imager.Imager.init_imager" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="ehtim.imager.Imager.init_imager">
+<span class="sig-name descname"><span class="pre">init_imager</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/imager.html#Imager.init_imager"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ehtim.imager.Imager.init_imager" title="Permalink to this definition"></a></dt>
 <dd><p>Set up Stokes I imager.</p>
 </dd></dl>
 
 <dl class="py method">
-<dt id="ehtim.imager.Imager.init_imager_scattering">
-<code class="sig-name descname">init_imager_scattering</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/imager.html#Imager.init_imager_scattering"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.imager.Imager.init_imager_scattering" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="ehtim.imager.Imager.init_imager_scattering">
+<span class="sig-name descname"><span class="pre">init_imager_scattering</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/imager.html#Imager.init_imager_scattering"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ehtim.imager.Imager.init_imager_scattering" title="Permalink to this definition"></a></dt>
 <dd><p>Set up scattering imager.</p>
 </dd></dl>
 
 <dl class="py method">
-<dt id="ehtim.imager.Imager.init_last">
-<code class="sig-name descname">init_last</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/imager.html#Imager.init_last"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.imager.Imager.init_last" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="ehtim.imager.Imager.init_last">
+<span class="sig-name descname"><span class="pre">init_last</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/imager.html#Imager.init_last"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ehtim.imager.Imager.init_last" title="Permalink to this definition"></a></dt>
 <dd><p>Return last initial image.</p>
 </dd></dl>
 
 <dl class="py method">
-<dt id="ehtim.imager.Imager.make_chisq_dict">
-<code class="sig-name descname">make_chisq_dict</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">imcur</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/imager.html#Imager.make_chisq_dict"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.imager.Imager.make_chisq_dict" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="ehtim.imager.Imager.make_chisq_dict">
+<span class="sig-name descname"><span class="pre">make_chisq_dict</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">imcur</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/imager.html#Imager.make_chisq_dict"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ehtim.imager.Imager.make_chisq_dict" title="Permalink to this definition"></a></dt>
 <dd><p>Make a dictionary of current chi^2 term values
 i indexes the observation number in self.obslist_next</p>
 </dd></dl>
 
 <dl class="py method">
-<dt id="ehtim.imager.Imager.make_chisqgrad_dict">
-<code class="sig-name descname">make_chisqgrad_dict</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">imcur</span></em>, <em class="sig-param"><span class="n">i</span><span class="o">=</span><span class="default_value">0</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/imager.html#Imager.make_chisqgrad_dict"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.imager.Imager.make_chisqgrad_dict" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="ehtim.imager.Imager.make_chisqgrad_dict">
+<span class="sig-name descname"><span class="pre">make_chisqgrad_dict</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">imcur</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">i</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/imager.html#Imager.make_chisqgrad_dict"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ehtim.imager.Imager.make_chisqgrad_dict" title="Permalink to this definition"></a></dt>
 <dd><p>Make a dictionary of current chi^2 term gradient values
 i indexes the observation number in self.obslist_next</p>
 </dd></dl>
 
 <dl class="py method">
-<dt id="ehtim.imager.Imager.make_image">
-<code class="sig-name descname">make_image</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">pol</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">grads</span><span class="o">=</span><span class="default_value">True</span></em>, <em class="sig-param"><span class="n">mf</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/imager.html#Imager.make_image"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.imager.Imager.make_image" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="ehtim.imager.Imager.make_image">
+<span class="sig-name descname"><span class="pre">make_image</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">pol</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">grads</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mf</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/imager.html#Imager.make_image"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ehtim.imager.Imager.make_image" title="Permalink to this definition"></a></dt>
 <dd><p>Make an image using current imager settings.</p>
 <dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>pol</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><em>str</em></a>) – which polarization to image</p></li>
 <li><p><strong>grads</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.13)"><em>bool</em></a>) – whether or not to use image gradients</p></li>
 <li><p><strong>mf</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.13)"><em>bool</em></a>) – whether or not to do multifrequency (spectral index only for now)</p></li>
 </ul>
 </dd>
-<dt class="field-even">Returns</dt>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
 <dd class="field-even"><p>output image</p>
 </dd>
-<dt class="field-odd">Return type</dt>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
 <dd class="field-odd"><p>(<a class="reference internal" href="image.html#ehtim.image.Image" title="ehtim.image.Image">Image</a>)</p>
 </dd>
 </dl>
 </dd></dl>
 
 <dl class="py method">
-<dt id="ehtim.imager.Imager.make_image_I">
-<code class="sig-name descname">make_image_I</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">grads</span><span class="o">=</span><span class="default_value">True</span></em>, <em class="sig-param"><span class="n">niter</span><span class="o">=</span><span class="default_value">1</span></em>, <em class="sig-param"><span class="n">blur_frac</span><span class="o">=</span><span class="default_value">1</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/imager.html#Imager.make_image_I"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.imager.Imager.make_image_I" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="ehtim.imager.Imager.make_image_I">
+<span class="sig-name descname"><span class="pre">make_image_I</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">grads</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">niter</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">blur_frac</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/imager.html#Imager.make_image_I"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ehtim.imager.Imager.make_image_I" title="Permalink to this definition"></a></dt>
 <dd><p>Make Stokes I image using current imager settings.</p>
 </dd></dl>
 
 <dl class="py method">
-<dt id="ehtim.imager.Imager.make_image_IP">
-<code class="sig-name descname">make_image_IP</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">grads</span><span class="o">=</span><span class="default_value">True</span></em>, <em class="sig-param"><span class="n">niter</span><span class="o">=</span><span class="default_value">1</span></em>, <em class="sig-param"><span class="n">blur_frac</span><span class="o">=</span><span class="default_value">1</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/imager.html#Imager.make_image_IP"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.imager.Imager.make_image_IP" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="ehtim.imager.Imager.make_image_IP">
+<span class="sig-name descname"><span class="pre">make_image_IP</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">grads</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">niter</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">blur_frac</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/imager.html#Imager.make_image_IP"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ehtim.imager.Imager.make_image_IP" title="Permalink to this definition"></a></dt>
 <dd><p>Make Stokes I and P polarimetric image simultaneously using current imager settings.</p>
 </dd></dl>
 
 <dl class="py method">
-<dt id="ehtim.imager.Imager.make_image_IV">
-<code class="sig-name descname">make_image_IV</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">grads</span><span class="o">=</span><span class="default_value">True</span></em>, <em class="sig-param"><span class="n">niter</span><span class="o">=</span><span class="default_value">1</span></em>, <em class="sig-param"><span class="n">blur_frac</span><span class="o">=</span><span class="default_value">1</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/imager.html#Imager.make_image_IV"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.imager.Imager.make_image_IV" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="ehtim.imager.Imager.make_image_IV">
+<span class="sig-name descname"><span class="pre">make_image_IV</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">grads</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">niter</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">blur_frac</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/imager.html#Imager.make_image_IV"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ehtim.imager.Imager.make_image_IV" title="Permalink to this definition"></a></dt>
 <dd><p>Make Stokes I image using current imager settings.</p>
 </dd></dl>
 
 <dl class="py method">
-<dt id="ehtim.imager.Imager.make_image_I_stochastic_optics">
-<code class="sig-name descname">make_image_I_stochastic_optics</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">grads</span><span class="o">=</span><span class="default_value">True</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/imager.html#Imager.make_image_I_stochastic_optics"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.imager.Imager.make_image_I_stochastic_optics" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="ehtim.imager.Imager.make_image_I_stochastic_optics">
+<span class="sig-name descname"><span class="pre">make_image_I_stochastic_optics</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">grads</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/imager.html#Imager.make_image_I_stochastic_optics"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ehtim.imager.Imager.make_image_I_stochastic_optics" title="Permalink to this definition"></a></dt>
 <dd><p>Reconstructs an image of total flux density
 using the stochastic optics scattering mitigation technique.</p>
 <p>Uses the scattering model in Imager.scattering_model.
 If none has been specified, defaults to standard model for Sgr A*.
 Returns the estimated unscattered image.</p>
 <dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>grads</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.13)"><em>bool</em></a>) – Flag for whether or not to use analytic gradients.</p></li>
 <li><p><strong>show_updates</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.13)"><em>bool</em></a>) – Flag for whether or not to show updates</p></li>
 </ul>
 </dd>
-<dt class="field-even">Returns</dt>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
 <dd class="field-even"><p>The estimated <em>unscattered</em> image.</p>
 </dd>
-<dt class="field-odd">Return type</dt>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
 <dd class="field-odd"><p>out (<a class="reference internal" href="image.html#ehtim.image.Image" title="ehtim.image.Image">Image</a>)</p>
 </dd>
 </dl>
 </dd></dl>
 
 <dl class="py method">
-<dt id="ehtim.imager.Imager.make_image_P">
-<code class="sig-name descname">make_image_P</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">grads</span><span class="o">=</span><span class="default_value">True</span></em>, <em class="sig-param"><span class="n">niter</span><span class="o">=</span><span class="default_value">1</span></em>, <em class="sig-param"><span class="n">blur_frac</span><span class="o">=</span><span class="default_value">1</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/imager.html#Imager.make_image_P"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.imager.Imager.make_image_P" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="ehtim.imager.Imager.make_image_P">
+<span class="sig-name descname"><span class="pre">make_image_P</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">grads</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">niter</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">blur_frac</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/imager.html#Imager.make_image_P"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ehtim.imager.Imager.make_image_P" title="Permalink to this definition"></a></dt>
 <dd><p>Make Stokes P polarimetric image using current imager settings.</p>
 </dd></dl>
 
 <dl class="py method">
-<dt id="ehtim.imager.Imager.make_image_V">
-<code class="sig-name descname">make_image_V</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">grads</span><span class="o">=</span><span class="default_value">True</span></em>, <em class="sig-param"><span class="n">niter</span><span class="o">=</span><span class="default_value">1</span></em>, <em class="sig-param"><span class="n">blur_frac</span><span class="o">=</span><span class="default_value">1</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/imager.html#Imager.make_image_V"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.imager.Imager.make_image_V" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="ehtim.imager.Imager.make_image_V">
+<span class="sig-name descname"><span class="pre">make_image_V</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">grads</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">niter</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">blur_frac</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/imager.html#Imager.make_image_V"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ehtim.imager.Imager.make_image_V" title="Permalink to this definition"></a></dt>
 <dd><p>Make Stokes I image using current imager settings.</p>
 </dd></dl>
 
 <dl class="py method">
-<dt id="ehtim.imager.Imager.make_reg_dict">
-<code class="sig-name descname">make_reg_dict</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">imcur</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/imager.html#Imager.make_reg_dict"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.imager.Imager.make_reg_dict" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="ehtim.imager.Imager.make_reg_dict">
+<span class="sig-name descname"><span class="pre">make_reg_dict</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">imcur</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/imager.html#Imager.make_reg_dict"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ehtim.imager.Imager.make_reg_dict" title="Permalink to this definition"></a></dt>
 <dd><p>Make a dictionary of current regularizer values</p>
 </dd></dl>
 
 <dl class="py method">
-<dt id="ehtim.imager.Imager.make_reggrad_dict">
-<code class="sig-name descname">make_reggrad_dict</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">imcur</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/imager.html#Imager.make_reggrad_dict"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.imager.Imager.make_reggrad_dict" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="ehtim.imager.Imager.make_reggrad_dict">
+<span class="sig-name descname"><span class="pre">make_reggrad_dict</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">imcur</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/imager.html#Imager.make_reggrad_dict"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ehtim.imager.Imager.make_reggrad_dict" title="Permalink to this definition"></a></dt>
 <dd><p>Make a dictionary of current regularizer gradient values</p>
 </dd></dl>
 
 <dl class="py method">
-<dt id="ehtim.imager.Imager.maxit_last">
-<code class="sig-name descname">maxit_last</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/imager.html#Imager.maxit_last"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.imager.Imager.maxit_last" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="ehtim.imager.Imager.maxit_last">
+<span class="sig-name descname"><span class="pre">maxit_last</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/imager.html#Imager.maxit_last"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ehtim.imager.Imager.maxit_last" title="Permalink to this definition"></a></dt>
 <dd><p>Return last max_iterations value.</p>
 </dd></dl>
 
 <dl class="py method">
-<dt id="ehtim.imager.Imager.objfunc">
-<code class="sig-name descname">objfunc</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">imvec</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/imager.html#Imager.objfunc"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.imager.Imager.objfunc" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="ehtim.imager.Imager.objfunc">
+<span class="sig-name descname"><span class="pre">objfunc</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">imvec</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/imager.html#Imager.objfunc"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ehtim.imager.Imager.objfunc" title="Permalink to this definition"></a></dt>
 <dd><p>Current objective function.</p>
 </dd></dl>
 
 <dl class="py method">
-<dt id="ehtim.imager.Imager.objfunc_scattering">
-<code class="sig-name descname">objfunc_scattering</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">minvec</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/imager.html#Imager.objfunc_scattering"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.imager.Imager.objfunc_scattering" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="ehtim.imager.Imager.objfunc_scattering">
+<span class="sig-name descname"><span class="pre">objfunc_scattering</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">minvec</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/imager.html#Imager.objfunc_scattering"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ehtim.imager.Imager.objfunc_scattering" title="Permalink to this definition"></a></dt>
 <dd><p>Current stochastic optics objective function.</p>
 </dd></dl>
 
 <dl class="py method">
-<dt id="ehtim.imager.Imager.objgrad">
-<code class="sig-name descname">objgrad</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">imvec</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/imager.html#Imager.objgrad"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.imager.Imager.objgrad" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="ehtim.imager.Imager.objgrad">
+<span class="sig-name descname"><span class="pre">objgrad</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">imvec</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/imager.html#Imager.objgrad"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ehtim.imager.Imager.objgrad" title="Permalink to this definition"></a></dt>
 <dd><p>Current objective function gradient.</p>
 </dd></dl>
 
 <dl class="py method">
-<dt id="ehtim.imager.Imager.objgrad_scattering">
-<code class="sig-name descname">objgrad_scattering</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">minvec</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/imager.html#Imager.objgrad_scattering"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.imager.Imager.objgrad_scattering" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="ehtim.imager.Imager.objgrad_scattering">
+<span class="sig-name descname"><span class="pre">objgrad_scattering</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">minvec</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/imager.html#Imager.objgrad_scattering"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ehtim.imager.Imager.objgrad_scattering" title="Permalink to this definition"></a></dt>
 <dd><p>Current stochastic optics objective function gradient</p>
 </dd></dl>
 
 <dl class="py method">
-<dt id="ehtim.imager.Imager.obs_last">
-<code class="sig-name descname">obs_last</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/imager.html#Imager.obs_last"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.imager.Imager.obs_last" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="ehtim.imager.Imager.obs_last">
+<span class="sig-name descname"><span class="pre">obs_last</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/imager.html#Imager.obs_last"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ehtim.imager.Imager.obs_last" title="Permalink to this definition"></a></dt>
 <dd><p>Return last used observation.</p>
 </dd></dl>
 
-<dl class="py method">
-<dt id="ehtim.imager.Imager.obs_next">
-<em class="property">property </em><code class="sig-name descname">obs_next</code><a class="headerlink" href="#ehtim.imager.Imager.obs_next" title="Permalink to this definition">¶</a></dt>
+<dl class="py property">
+<dt class="sig sig-object py" id="ehtim.imager.Imager.obs_next">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">obs_next</span></span><a class="headerlink" href="#ehtim.imager.Imager.obs_next" title="Permalink to this definition"></a></dt>
 <dd><p>the next Obsdata to be used in imaging</p>
 </dd></dl>
 
 <dl class="py method">
-<dt id="ehtim.imager.Imager.obslist_last">
-<code class="sig-name descname">obslist_last</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/imager.html#Imager.obslist_last"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.imager.Imager.obslist_last" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="ehtim.imager.Imager.obslist_last">
+<span class="sig-name descname"><span class="pre">obslist_last</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/imager.html#Imager.obslist_last"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ehtim.imager.Imager.obslist_last" title="Permalink to this definition"></a></dt>
 <dd><p>Return last used observation.</p>
 </dd></dl>
 
 <dl class="py method">
-<dt id="ehtim.imager.Imager.out_epsilon_last">
-<code class="sig-name descname">out_epsilon_last</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/imager.html#Imager.out_epsilon_last"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.imager.Imager.out_epsilon_last" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="ehtim.imager.Imager.out_epsilon_last">
+<span class="sig-name descname"><span class="pre">out_epsilon_last</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/imager.html#Imager.out_epsilon_last"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ehtim.imager.Imager.out_epsilon_last" title="Permalink to this definition"></a></dt>
 <dd><p>Return last result with scattering.</p>
 </dd></dl>
 
 <dl class="py method">
-<dt id="ehtim.imager.Imager.out_last">
-<code class="sig-name descname">out_last</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/imager.html#Imager.out_last"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.imager.Imager.out_last" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="ehtim.imager.Imager.out_last">
+<span class="sig-name descname"><span class="pre">out_last</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/imager.html#Imager.out_last"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ehtim.imager.Imager.out_last" title="Permalink to this definition"></a></dt>
 <dd><p>Return last result.</p>
 </dd></dl>
 
 <dl class="py method">
-<dt id="ehtim.imager.Imager.out_scattered_last">
-<code class="sig-name descname">out_scattered_last</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/imager.html#Imager.out_scattered_last"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.imager.Imager.out_scattered_last" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="ehtim.imager.Imager.out_scattered_last">
+<span class="sig-name descname"><span class="pre">out_scattered_last</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/imager.html#Imager.out_scattered_last"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ehtim.imager.Imager.out_scattered_last" title="Permalink to this definition"></a></dt>
 <dd><p>Return last result with scattering.</p>
 </dd></dl>
 
 <dl class="py method">
-<dt id="ehtim.imager.Imager.pflux_last">
-<code class="sig-name descname">pflux_last</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/imager.html#Imager.pflux_last"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.imager.Imager.pflux_last" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="ehtim.imager.Imager.pflux_last">
+<span class="sig-name descname"><span class="pre">pflux_last</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/imager.html#Imager.pflux_last"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ehtim.imager.Imager.pflux_last" title="Permalink to this definition"></a></dt>
 <dd><p>Return last total linear polarimetric flux constraint.</p>
 </dd></dl>
 
 <dl class="py method">
-<dt id="ehtim.imager.Imager.plotcur">
-<code class="sig-name descname">plotcur</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">imvec</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/imager.html#Imager.plotcur"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.imager.Imager.plotcur" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="ehtim.imager.Imager.plotcur">
+<span class="sig-name descname"><span class="pre">plotcur</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">imvec</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/imager.html#Imager.plotcur"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ehtim.imager.Imager.plotcur" title="Permalink to this definition"></a></dt>
 <dd><p>Plot current image.</p>
 </dd></dl>
 
 <dl class="py method">
-<dt id="ehtim.imager.Imager.plotcur_scattering">
-<code class="sig-name descname">plotcur_scattering</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">minvec</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/imager.html#Imager.plotcur_scattering"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.imager.Imager.plotcur_scattering" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="ehtim.imager.Imager.plotcur_scattering">
+<span class="sig-name descname"><span class="pre">plotcur_scattering</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">minvec</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/imager.html#Imager.plotcur_scattering"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ehtim.imager.Imager.plotcur_scattering" title="Permalink to this definition"></a></dt>
 <dd><p>Plot current stochastic optics image/screen</p>
 </dd></dl>
 
 <dl class="py method">
-<dt id="ehtim.imager.Imager.pol_last">
-<code class="sig-name descname">pol_last</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/imager.html#Imager.pol_last"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.imager.Imager.pol_last" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="ehtim.imager.Imager.pol_last">
+<span class="sig-name descname"><span class="pre">pol_last</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/imager.html#Imager.pol_last"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ehtim.imager.Imager.pol_last" title="Permalink to this definition"></a></dt>
 <dd><p>Return last polarization imaged.</p>
 </dd></dl>
 
 <dl class="py method">
-<dt id="ehtim.imager.Imager.prior_last">
-<code class="sig-name descname">prior_last</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/imager.html#Imager.prior_last"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.imager.Imager.prior_last" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="ehtim.imager.Imager.prior_last">
+<span class="sig-name descname"><span class="pre">prior_last</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/imager.html#Imager.prior_last"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ehtim.imager.Imager.prior_last" title="Permalink to this definition"></a></dt>
 <dd><p>Return last used prior image.</p>
 </dd></dl>
 
 <dl class="py method">
-<dt id="ehtim.imager.Imager.reg_terms_last">
-<code class="sig-name descname">reg_terms_last</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/imager.html#Imager.reg_terms_last"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.imager.Imager.reg_terms_last" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="ehtim.imager.Imager.reg_terms_last">
+<span class="sig-name descname"><span class="pre">reg_terms_last</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/imager.html#Imager.reg_terms_last"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ehtim.imager.Imager.reg_terms_last" title="Permalink to this definition"></a></dt>
 <dd><p>Return last used regularizer terms.</p>
 </dd></dl>
 
 <dl class="py method">
-<dt id="ehtim.imager.Imager.set_embed">
-<code class="sig-name descname">set_embed</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/imager.html#Imager.set_embed"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.imager.Imager.set_embed" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="ehtim.imager.Imager.set_embed">
+<span class="sig-name descname"><span class="pre">set_embed</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/imager.html#Imager.set_embed"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ehtim.imager.Imager.set_embed" title="Permalink to this definition"></a></dt>
 <dd><p>Set embedding matrix.</p>
 </dd></dl>
 
 <dl class="py method">
-<dt id="ehtim.imager.Imager.snrcut_last">
-<code class="sig-name descname">snrcut_last</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/imager.html#Imager.snrcut_last"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.imager.Imager.snrcut_last" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="ehtim.imager.Imager.snrcut_last">
+<span class="sig-name descname"><span class="pre">snrcut_last</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/imager.html#Imager.snrcut_last"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ehtim.imager.Imager.snrcut_last" title="Permalink to this definition"></a></dt>
 <dd><p>Return last snrcut value.</p>
 </dd></dl>
 
 <dl class="py method">
-<dt id="ehtim.imager.Imager.stop_last">
-<code class="sig-name descname">stop_last</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/imager.html#Imager.stop_last"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.imager.Imager.stop_last" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="ehtim.imager.Imager.stop_last">
+<span class="sig-name descname"><span class="pre">stop_last</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/imager.html#Imager.stop_last"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ehtim.imager.Imager.stop_last" title="Permalink to this definition"></a></dt>
 <dd><p>Return last convergence value.</p>
 </dd></dl>
 
 <dl class="py method">
-<dt id="ehtim.imager.Imager.systematic_cphase_noise_last">
-<code class="sig-name descname">systematic_cphase_noise_last</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/imager.html#Imager.systematic_cphase_noise_last"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.imager.Imager.systematic_cphase_noise_last" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="ehtim.imager.Imager.systematic_cphase_noise_last">
+<span class="sig-name descname"><span class="pre">systematic_cphase_noise_last</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/imager.html#Imager.systematic_cphase_noise_last"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ehtim.imager.Imager.systematic_cphase_noise_last" title="Permalink to this definition"></a></dt>
 <dd><p>Return last closure phase systematic noise value (in degree).</p>
 </dd></dl>
 
 <dl class="py method">
-<dt id="ehtim.imager.Imager.systematic_noise_last">
-<code class="sig-name descname">systematic_noise_last</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/imager.html#Imager.systematic_noise_last"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.imager.Imager.systematic_noise_last" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="ehtim.imager.Imager.systematic_noise_last">
+<span class="sig-name descname"><span class="pre">systematic_noise_last</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/imager.html#Imager.systematic_noise_last"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ehtim.imager.Imager.systematic_noise_last" title="Permalink to this definition"></a></dt>
 <dd><p>Return last systematic_noise value.</p>
 </dd></dl>
 
 <dl class="py method">
-<dt id="ehtim.imager.Imager.transform_last">
-<code class="sig-name descname">transform_last</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/imager.html#Imager.transform_last"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.imager.Imager.transform_last" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="ehtim.imager.Imager.transform_last">
+<span class="sig-name descname"><span class="pre">transform_last</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/imager.html#Imager.transform_last"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ehtim.imager.Imager.transform_last" title="Permalink to this definition"></a></dt>
 <dd><p>Return last image transform used.</p>
 </dd></dl>
 
 <dl class="py method">
-<dt id="ehtim.imager.Imager.vflux_last">
-<code class="sig-name descname">vflux_last</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/imager.html#Imager.vflux_last"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.imager.Imager.vflux_last" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="ehtim.imager.Imager.vflux_last">
+<span class="sig-name descname"><span class="pre">vflux_last</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/imager.html#Imager.vflux_last"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ehtim.imager.Imager.vflux_last" title="Permalink to this definition"></a></dt>
 <dd><p>Return last total circular polarimetric flux constraint.</p>
 </dd></dl>
 
 <dl class="py method">
-<dt id="ehtim.imager.Imager.weighting_last">
-<code class="sig-name descname">weighting_last</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/imager.html#Imager.weighting_last"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.imager.Imager.weighting_last" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="ehtim.imager.Imager.weighting_last">
+<span class="sig-name descname"><span class="pre">weighting_last</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/imager.html#Imager.weighting_last"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ehtim.imager.Imager.weighting_last" title="Permalink to this definition"></a></dt>
 <dd><p>Return last weighting value.</p>
 </dd></dl>
 
 </dd></dl>
 
-</div>
+</section>
 
 
            </div>

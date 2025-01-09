@@ -1,18 +1,21 @@
 <!DOCTYPE html>
 <html class="writer-html5" lang="en" >
 <head>
-  <meta charset="utf-8" />
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
+
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Model &mdash; ehtim 1.2.6 documentation</title><link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
-    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+  <title>Model &mdash; ehtim 1.2.6 documentation</title>
+      <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
   <!--[if lt IE 9]>
     <script src="_static/js/html5shiv.min.js"></script>
   <![endif]-->
-  <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+  
+        <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
         <script src="_static/jquery.js"></script>
         <script src="_static/underscore.js"></script>
+        <script src="_static/_sphinx_javascript_frameworks_compat.js"></script>
         <script src="_static/doctools.js"></script>
-        <script src="_static/language_data.js"></script>
     <script src="_static/js/theme.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
@@ -38,7 +41,7 @@
   </form>
 </div>
         </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
-              <p class="caption"><span class="caption-text">Contents:</span></p>
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
 <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="image.html">Image</a></li>
 <li class="toctree-l1"><a class="reference internal" href="array.html">Array</a></li>
@@ -78,34 +81,34 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
              
-  <span class="target" id="module-model"></span><div class="section" id="model">
-<span id="id1"></span><h1>Model<a class="headerlink" href="#model" title="Permalink to this headline">¶</a></h1>
+  <span class="target" id="module-model"></span><section id="model">
+<span id="id1"></span><h1>Model<a class="headerlink" href="#model" title="Permalink to this heading"></a></h1>
 <span class="target" id="module-ehtim.model"></span><dl class="py class">
-<dt id="ehtim.model.Model">
-<em class="property">class </em><code class="sig-prename descclassname">ehtim.model.</code><code class="sig-name descname">Model</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">ra</span><span class="o">=</span><span class="default_value">17.761122472222223</span></em>, <em class="sig-param"><span class="n">dec</span><span class="o">=</span><span class="default_value">- 28.992189444444445</span></em>, <em class="sig-param"><span class="n">pa</span><span class="o">=</span><span class="default_value">0.0</span></em>, <em class="sig-param"><span class="n">polrep</span><span class="o">=</span><span class="default_value">'stokes'</span></em>, <em class="sig-param"><span class="n">pol_prim</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">rf</span><span class="o">=</span><span class="default_value">230000000000.0</span></em>, <em class="sig-param"><span class="n">source</span><span class="o">=</span><span class="default_value">'SgrA'</span></em>, <em class="sig-param"><span class="n">mjd</span><span class="o">=</span><span class="default_value">51544</span></em>, <em class="sig-param"><span class="n">time</span><span class="o">=</span><span class="default_value">0.0</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/model.html#Model"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.model.Model" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="ehtim.model.Model">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">ehtim.model.</span></span><span class="sig-name descname"><span class="pre">Model</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ra</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">17.761122472222223</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dec</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">-</span> <span class="pre">28.992189444444445</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pa</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">polrep</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'stokes'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pol_prim</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rf</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">230000000000.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">source</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'SgrA'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mjd</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">51544</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">time</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/model.html#Model"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ehtim.model.Model" title="Permalink to this definition"></a></dt>
 <dd><p>A model with analytic representations in the image and visibility domains.</p>
 <p>Attributes:</p>
 <dl class="py method">
-<dt id="ehtim.model.Model.N_models">
-<code class="sig-name descname">N_models</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/model.html#Model.N_models"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.model.Model.N_models" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="ehtim.model.Model.N_models">
+<span class="sig-name descname"><span class="pre">N_models</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/model.html#Model.N_models"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ehtim.model.Model.N_models" title="Permalink to this definition"></a></dt>
 <dd><p>Return the number of model components</p>
 <p>Args:</p>
 <dl class="field-list simple">
-<dt class="field-odd">Returns</dt>
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
 <dd class="field-odd"><p>number of model components</p>
 </dd>
-<dt class="field-even">Return type</dt>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
 <dd class="field-even"><p>(<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.13)">int</a>)</p>
 </dd>
 </dl>
 </dd></dl>
 
 <dl class="py method">
-<dt id="ehtim.model.Model.add_blurred_crescent">
-<code class="sig-name descname">add_blurred_crescent</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">F0</span><span class="o">=</span><span class="default_value">1.0</span></em>, <em class="sig-param"><span class="n">d</span><span class="o">=</span><span class="default_value">2.424068405547068e-10</span></em>, <em class="sig-param"><span class="n">alpha</span><span class="o">=</span><span class="default_value">4.848136811094136e-11</span></em>, <em class="sig-param"><span class="n">fr</span><span class="o">=</span><span class="default_value">0.0</span></em>, <em class="sig-param"><span class="n">fo</span><span class="o">=</span><span class="default_value">0.0</span></em>, <em class="sig-param"><span class="n">ff</span><span class="o">=</span><span class="default_value">0.0</span></em>, <em class="sig-param"><span class="n">phi</span><span class="o">=</span><span class="default_value">0.0</span></em>, <em class="sig-param"><span class="n">x0</span><span class="o">=</span><span class="default_value">0.0</span></em>, <em class="sig-param"><span class="n">y0</span><span class="o">=</span><span class="default_value">0.0</span></em>, <em class="sig-param"><span class="n">pol_frac</span><span class="o">=</span><span class="default_value">0.0</span></em>, <em class="sig-param"><span class="n">pol_evpa</span><span class="o">=</span><span class="default_value">0.0</span></em>, <em class="sig-param"><span class="n">cpol_frac</span><span class="o">=</span><span class="default_value">0.0</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/model.html#Model.add_blurred_crescent"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.model.Model.add_blurred_crescent" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="ehtim.model.Model.add_blurred_crescent">
+<span class="sig-name descname"><span class="pre">add_blurred_crescent</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">F0</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">d</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">2.424068405547068e-10</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">alpha</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">4.848136811094136e-11</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fr</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fo</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ff</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">phi</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">x0</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y0</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pol_frac</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pol_evpa</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cpol_frac</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/model.html#Model.add_blurred_crescent"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ehtim.model.Model.add_blurred_crescent" title="Permalink to this definition"></a></dt>
 <dd><p>Add a circular disk model that is blurred with a circular Gaussian kernel.</p>
 <dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>F0</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.13)"><em>float</em></a>) – The total flux of the disk (Jy)</p></li>
 <li><p><strong>d</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.13)"><em>float</em></a>) – The diameter (radians)</p></li>
@@ -118,21 +121,21 @@
 <li><p><strong>y0</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.13)"><em>float</em></a>) – The y-coordinate (radians)</p></li>
 </ul>
 </dd>
-<dt class="field-even">Returns</dt>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
 <dd class="field-even"><p>Updated Model</p>
 </dd>
-<dt class="field-odd">Return type</dt>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
 <dd class="field-odd"><p>(<a class="reference internal" href="#ehtim.model.Model" title="ehtim.model.Model">Model</a>)</p>
 </dd>
 </dl>
 </dd></dl>
 
 <dl class="py method">
-<dt id="ehtim.model.Model.add_blurred_disk">
-<code class="sig-name descname">add_blurred_disk</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">F0</span><span class="o">=</span><span class="default_value">1.0</span></em>, <em class="sig-param"><span class="n">d</span><span class="o">=</span><span class="default_value">2.424068405547068e-10</span></em>, <em class="sig-param"><span class="n">alpha</span><span class="o">=</span><span class="default_value">4.848136811094136e-11</span></em>, <em class="sig-param"><span class="n">x0</span><span class="o">=</span><span class="default_value">0.0</span></em>, <em class="sig-param"><span class="n">y0</span><span class="o">=</span><span class="default_value">0.0</span></em>, <em class="sig-param"><span class="n">pol_frac</span><span class="o">=</span><span class="default_value">0.0</span></em>, <em class="sig-param"><span class="n">pol_evpa</span><span class="o">=</span><span class="default_value">0.0</span></em>, <em class="sig-param"><span class="n">cpol_frac</span><span class="o">=</span><span class="default_value">0.0</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/model.html#Model.add_blurred_disk"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.model.Model.add_blurred_disk" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="ehtim.model.Model.add_blurred_disk">
+<span class="sig-name descname"><span class="pre">add_blurred_disk</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">F0</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">d</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">2.424068405547068e-10</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">alpha</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">4.848136811094136e-11</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">x0</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y0</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pol_frac</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pol_evpa</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cpol_frac</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/model.html#Model.add_blurred_disk"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ehtim.model.Model.add_blurred_disk" title="Permalink to this definition"></a></dt>
 <dd><p>Add a circular disk model that is blurred with a circular Gaussian kernel.</p>
 <dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>F0</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.13)"><em>float</em></a>) – The total flux of the disk (Jy)</p></li>
 <li><p><strong>d</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.13)"><em>float</em></a>) – The diameter (radians)</p></li>
@@ -141,21 +144,21 @@
 <li><p><strong>y0</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.13)"><em>float</em></a>) – The y-coordinate (radians)</p></li>
 </ul>
 </dd>
-<dt class="field-even">Returns</dt>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
 <dd class="field-even"><p>Updated Model</p>
 </dd>
-<dt class="field-odd">Return type</dt>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
 <dd class="field-odd"><p>(<a class="reference internal" href="#ehtim.model.Model" title="ehtim.model.Model">Model</a>)</p>
 </dd>
 </dl>
 </dd></dl>
 
 <dl class="py method">
-<dt id="ehtim.model.Model.add_circ_gauss">
-<code class="sig-name descname">add_circ_gauss</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">F0</span><span class="o">=</span><span class="default_value">1.0</span></em>, <em class="sig-param"><span class="n">FWHM</span><span class="o">=</span><span class="default_value">2.424068405547068e-10</span></em>, <em class="sig-param"><span class="n">x0</span><span class="o">=</span><span class="default_value">0.0</span></em>, <em class="sig-param"><span class="n">y0</span><span class="o">=</span><span class="default_value">0.0</span></em>, <em class="sig-param"><span class="n">pol_frac</span><span class="o">=</span><span class="default_value">0.0</span></em>, <em class="sig-param"><span class="n">pol_evpa</span><span class="o">=</span><span class="default_value">0.0</span></em>, <em class="sig-param"><span class="n">cpol_frac</span><span class="o">=</span><span class="default_value">0.0</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/model.html#Model.add_circ_gauss"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.model.Model.add_circ_gauss" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="ehtim.model.Model.add_circ_gauss">
+<span class="sig-name descname"><span class="pre">add_circ_gauss</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">F0</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">FWHM</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">2.424068405547068e-10</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">x0</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y0</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pol_frac</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pol_evpa</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cpol_frac</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/model.html#Model.add_circ_gauss"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ehtim.model.Model.add_circ_gauss" title="Permalink to this definition"></a></dt>
 <dd><p>Add a circular Gaussian model.</p>
 <dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>F0</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.13)"><em>float</em></a>) – The total flux of the Gaussian (Jy)</p></li>
 <li><p><strong>FWHM</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.13)"><em>float</em></a>) – The FWHM of the Gaussian (radians)</p></li>
@@ -163,21 +166,21 @@
 <li><p><strong>y0</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.13)"><em>float</em></a>) – The y-coordinate (radians)</p></li>
 </ul>
 </dd>
-<dt class="field-even">Returns</dt>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
 <dd class="field-even"><p>Updated Model</p>
 </dd>
-<dt class="field-odd">Return type</dt>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
 <dd class="field-odd"><p>(<a class="reference internal" href="#ehtim.model.Model" title="ehtim.model.Model">Model</a>)</p>
 </dd>
 </dl>
 </dd></dl>
 
 <dl class="py method">
-<dt id="ehtim.model.Model.add_crescent">
-<code class="sig-name descname">add_crescent</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">F0</span><span class="o">=</span><span class="default_value">1.0</span></em>, <em class="sig-param"><span class="n">d</span><span class="o">=</span><span class="default_value">2.424068405547068e-10</span></em>, <em class="sig-param"><span class="n">fr</span><span class="o">=</span><span class="default_value">0.0</span></em>, <em class="sig-param"><span class="n">fo</span><span class="o">=</span><span class="default_value">0.0</span></em>, <em class="sig-param"><span class="n">ff</span><span class="o">=</span><span class="default_value">0.0</span></em>, <em class="sig-param"><span class="n">phi</span><span class="o">=</span><span class="default_value">0.0</span></em>, <em class="sig-param"><span class="n">x0</span><span class="o">=</span><span class="default_value">0.0</span></em>, <em class="sig-param"><span class="n">y0</span><span class="o">=</span><span class="default_value">0.0</span></em>, <em class="sig-param"><span class="n">pol_frac</span><span class="o">=</span><span class="default_value">0.0</span></em>, <em class="sig-param"><span class="n">pol_evpa</span><span class="o">=</span><span class="default_value">0.0</span></em>, <em class="sig-param"><span class="n">cpol_frac</span><span class="o">=</span><span class="default_value">0.0</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/model.html#Model.add_crescent"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.model.Model.add_crescent" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="ehtim.model.Model.add_crescent">
+<span class="sig-name descname"><span class="pre">add_crescent</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">F0</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">d</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">2.424068405547068e-10</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fr</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fo</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ff</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">phi</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">x0</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y0</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pol_frac</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pol_evpa</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cpol_frac</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/model.html#Model.add_crescent"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ehtim.model.Model.add_crescent" title="Permalink to this definition"></a></dt>
 <dd><p>Add a crescent model.</p>
 <dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>F0</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.13)"><em>float</em></a>) – The total flux of the disk (Jy)</p></li>
 <li><p><strong>d</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.13)"><em>float</em></a>) – The diameter (radians)</p></li>
@@ -189,21 +192,21 @@
 <li><p><strong>y0</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.13)"><em>float</em></a>) – The y-coordinate (radians)</p></li>
 </ul>
 </dd>
-<dt class="field-even">Returns</dt>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
 <dd class="field-even"><p>Updated Model</p>
 </dd>
-<dt class="field-odd">Return type</dt>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
 <dd class="field-odd"><p>(<a class="reference internal" href="#ehtim.model.Model" title="ehtim.model.Model">Model</a>)</p>
 </dd>
 </dl>
 </dd></dl>
 
 <dl class="py method">
-<dt id="ehtim.model.Model.add_disk">
-<code class="sig-name descname">add_disk</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">F0</span><span class="o">=</span><span class="default_value">1.0</span></em>, <em class="sig-param"><span class="n">d</span><span class="o">=</span><span class="default_value">2.424068405547068e-10</span></em>, <em class="sig-param"><span class="n">x0</span><span class="o">=</span><span class="default_value">0.0</span></em>, <em class="sig-param"><span class="n">y0</span><span class="o">=</span><span class="default_value">0.0</span></em>, <em class="sig-param"><span class="n">pol_frac</span><span class="o">=</span><span class="default_value">0.0</span></em>, <em class="sig-param"><span class="n">pol_evpa</span><span class="o">=</span><span class="default_value">0.0</span></em>, <em class="sig-param"><span class="n">cpol_frac</span><span class="o">=</span><span class="default_value">0.0</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/model.html#Model.add_disk"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.model.Model.add_disk" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="ehtim.model.Model.add_disk">
+<span class="sig-name descname"><span class="pre">add_disk</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">F0</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">d</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">2.424068405547068e-10</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">x0</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y0</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pol_frac</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pol_evpa</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cpol_frac</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/model.html#Model.add_disk"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ehtim.model.Model.add_disk" title="Permalink to this definition"></a></dt>
 <dd><p>Add a circular disk model.</p>
 <dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>F0</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.13)"><em>float</em></a>) – The total flux of the disk (Jy)</p></li>
 <li><p><strong>d</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.13)"><em>float</em></a>) – The diameter (radians)</p></li>
@@ -211,21 +214,21 @@
 <li><p><strong>y0</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.13)"><em>float</em></a>) – The y-coordinate (radians)</p></li>
 </ul>
 </dd>
-<dt class="field-even">Returns</dt>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
 <dd class="field-even"><p>Updated Model</p>
 </dd>
-<dt class="field-odd">Return type</dt>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
 <dd class="field-odd"><p>(<a class="reference internal" href="#ehtim.model.Model" title="ehtim.model.Model">Model</a>)</p>
 </dd>
 </dl>
 </dd></dl>
 
 <dl class="py method">
-<dt id="ehtim.model.Model.add_gauss">
-<code class="sig-name descname">add_gauss</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">F0</span><span class="o">=</span><span class="default_value">1.0</span></em>, <em class="sig-param"><span class="n">FWHM_maj</span><span class="o">=</span><span class="default_value">2.424068405547068e-10</span></em>, <em class="sig-param"><span class="n">FWHM_min</span><span class="o">=</span><span class="default_value">2.424068405547068e-10</span></em>, <em class="sig-param"><span class="n">PA</span><span class="o">=</span><span class="default_value">0.0</span></em>, <em class="sig-param"><span class="n">x0</span><span class="o">=</span><span class="default_value">0.0</span></em>, <em class="sig-param"><span class="n">y0</span><span class="o">=</span><span class="default_value">0.0</span></em>, <em class="sig-param"><span class="n">pol_frac</span><span class="o">=</span><span class="default_value">0.0</span></em>, <em class="sig-param"><span class="n">pol_evpa</span><span class="o">=</span><span class="default_value">0.0</span></em>, <em class="sig-param"><span class="n">cpol_frac</span><span class="o">=</span><span class="default_value">0.0</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/model.html#Model.add_gauss"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.model.Model.add_gauss" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="ehtim.model.Model.add_gauss">
+<span class="sig-name descname"><span class="pre">add_gauss</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">F0</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">FWHM_maj</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">2.424068405547068e-10</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">FWHM_min</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">2.424068405547068e-10</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">PA</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">x0</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y0</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pol_frac</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pol_evpa</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cpol_frac</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/model.html#Model.add_gauss"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ehtim.model.Model.add_gauss" title="Permalink to this definition"></a></dt>
 <dd><p>Add an anisotropic Gaussian model.</p>
 <dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>F0</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.13)"><em>float</em></a>) – The total flux of the Gaussian (Jy)</p></li>
 <li><p><strong>FWHM_maj</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.13)"><em>float</em></a>) – The FWHM of the Gaussian major axis (radians)</p></li>
@@ -235,22 +238,22 @@
 <li><p><strong>y0</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.13)"><em>float</em></a>) – The y-coordinate (radians)</p></li>
 </ul>
 </dd>
-<dt class="field-even">Returns</dt>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
 <dd class="field-even"><p>Updated Model</p>
 </dd>
-<dt class="field-odd">Return type</dt>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
 <dd class="field-odd"><p>(<a class="reference internal" href="#ehtim.model.Model" title="ehtim.model.Model">Model</a>)</p>
 </dd>
 </dl>
 </dd></dl>
 
 <dl class="py method">
-<dt id="ehtim.model.Model.add_mring">
-<code class="sig-name descname">add_mring</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">F0</span><span class="o">=</span><span class="default_value">1.0</span></em>, <em class="sig-param"><span class="n">d</span><span class="o">=</span><span class="default_value">2.424068405547068e-10</span></em>, <em class="sig-param"><span class="n">x0</span><span class="o">=</span><span class="default_value">0.0</span></em>, <em class="sig-param"><span class="n">y0</span><span class="o">=</span><span class="default_value">0.0</span></em>, <em class="sig-param"><span class="n">beta_list</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">beta_list_pol</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">beta_list_cpol</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/model.html#Model.add_mring"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.model.Model.add_mring" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="ehtim.model.Model.add_mring">
+<span class="sig-name descname"><span class="pre">add_mring</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">F0</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">d</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">2.424068405547068e-10</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">x0</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y0</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">beta_list</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">beta_list_pol</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">beta_list_cpol</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/model.html#Model.add_mring"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ehtim.model.Model.add_mring" title="Permalink to this definition"></a></dt>
 <dd><p>Add a ring model with azimuthal brightness variations determined by a Fourier mode expansion.
 For details, see Eq. 18-20 of <a class="reference external" href="https://arxiv.org/abs/1907.04329">https://arxiv.org/abs/1907.04329</a></p>
 <dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>F0</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.13)"><em>float</em></a>) – The total flux of the ring (Jy), which is also beta_0.</p></li>
 <li><p><strong>d</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.13)"><em>float</em></a>) – The diameter (radians)</p></li>
@@ -261,42 +264,42 @@ Negative indices are determined by the condition beta_{-m} = beta_m*.
 Indices are all scaled by F0 = beta_0, so they are dimensionless.</p></li>
 </ul>
 </dd>
-<dt class="field-even">Returns</dt>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
 <dd class="field-even"><p>Updated Model</p>
 </dd>
-<dt class="field-odd">Return type</dt>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
 <dd class="field-odd"><p>(<a class="reference internal" href="#ehtim.model.Model" title="ehtim.model.Model">Model</a>)</p>
 </dd>
 </dl>
 </dd></dl>
 
 <dl class="py method">
-<dt id="ehtim.model.Model.add_point">
-<code class="sig-name descname">add_point</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">F0</span><span class="o">=</span><span class="default_value">1.0</span></em>, <em class="sig-param"><span class="n">x0</span><span class="o">=</span><span class="default_value">0.0</span></em>, <em class="sig-param"><span class="n">y0</span><span class="o">=</span><span class="default_value">0.0</span></em>, <em class="sig-param"><span class="n">pol_frac</span><span class="o">=</span><span class="default_value">0.0</span></em>, <em class="sig-param"><span class="n">pol_evpa</span><span class="o">=</span><span class="default_value">0.0</span></em>, <em class="sig-param"><span class="n">cpol_frac</span><span class="o">=</span><span class="default_value">0.0</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/model.html#Model.add_point"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.model.Model.add_point" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="ehtim.model.Model.add_point">
+<span class="sig-name descname"><span class="pre">add_point</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">F0</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">x0</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y0</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pol_frac</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pol_evpa</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cpol_frac</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/model.html#Model.add_point"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ehtim.model.Model.add_point" title="Permalink to this definition"></a></dt>
 <dd><p>Add a point source model.</p>
 <dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>F0</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.13)"><em>float</em></a>) – The total flux of the point source (Jy)</p></li>
 <li><p><strong>x0</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.13)"><em>float</em></a>) – The x-coordinate (radians)</p></li>
 <li><p><strong>y0</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.13)"><em>float</em></a>) – The y-coordinate (radians)</p></li>
 </ul>
 </dd>
-<dt class="field-even">Returns</dt>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
 <dd class="field-even"><p>Updated Model</p>
 </dd>
-<dt class="field-odd">Return type</dt>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
 <dd class="field-odd"><p>(<a class="reference internal" href="#ehtim.model.Model" title="ehtim.model.Model">Model</a>)</p>
 </dd>
 </dl>
 </dd></dl>
 
 <dl class="py method">
-<dt id="ehtim.model.Model.add_ring">
-<code class="sig-name descname">add_ring</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">F0</span><span class="o">=</span><span class="default_value">1.0</span></em>, <em class="sig-param"><span class="n">d</span><span class="o">=</span><span class="default_value">2.424068405547068e-10</span></em>, <em class="sig-param"><span class="n">x0</span><span class="o">=</span><span class="default_value">0.0</span></em>, <em class="sig-param"><span class="n">y0</span><span class="o">=</span><span class="default_value">0.0</span></em>, <em class="sig-param"><span class="n">pol_frac</span><span class="o">=</span><span class="default_value">0.0</span></em>, <em class="sig-param"><span class="n">pol_evpa</span><span class="o">=</span><span class="default_value">0.0</span></em>, <em class="sig-param"><span class="n">cpol_frac</span><span class="o">=</span><span class="default_value">0.0</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/model.html#Model.add_ring"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.model.Model.add_ring" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="ehtim.model.Model.add_ring">
+<span class="sig-name descname"><span class="pre">add_ring</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">F0</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">d</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">2.424068405547068e-10</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">x0</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y0</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pol_frac</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pol_evpa</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cpol_frac</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/model.html#Model.add_ring"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ehtim.model.Model.add_ring" title="Permalink to this definition"></a></dt>
 <dd><p>Add a ring model with infinitesimal thickness.</p>
 <dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>F0</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.13)"><em>float</em></a>) – The total flux of the ring (Jy)</p></li>
 <li><p><strong>d</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.13)"><em>float</em></a>) – The diameter (radians)</p></li>
@@ -304,22 +307,22 @@ Indices are all scaled by F0 = beta_0, so they are dimensionless.</p></li>
 <li><p><strong>y0</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.13)"><em>float</em></a>) – The y-coordinate (radians)</p></li>
 </ul>
 </dd>
-<dt class="field-even">Returns</dt>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
 <dd class="field-even"><p>Updated Model</p>
 </dd>
-<dt class="field-odd">Return type</dt>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
 <dd class="field-odd"><p>(<a class="reference internal" href="#ehtim.model.Model" title="ehtim.model.Model">Model</a>)</p>
 </dd>
 </dl>
 </dd></dl>
 
 <dl class="py method">
-<dt id="ehtim.model.Model.add_stretched_mring">
-<code class="sig-name descname">add_stretched_mring</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">F0</span><span class="o">=</span><span class="default_value">1.0</span></em>, <em class="sig-param"><span class="n">d</span><span class="o">=</span><span class="default_value">2.424068405547068e-10</span></em>, <em class="sig-param"><span class="n">x0</span><span class="o">=</span><span class="default_value">0.0</span></em>, <em class="sig-param"><span class="n">y0</span><span class="o">=</span><span class="default_value">0.0</span></em>, <em class="sig-param"><span class="n">beta_list</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">beta_list_pol</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">beta_list_cpol</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">stretch</span><span class="o">=</span><span class="default_value">1.0</span></em>, <em class="sig-param"><span class="n">stretch_PA</span><span class="o">=</span><span class="default_value">0.0</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/model.html#Model.add_stretched_mring"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.model.Model.add_stretched_mring" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="ehtim.model.Model.add_stretched_mring">
+<span class="sig-name descname"><span class="pre">add_stretched_mring</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">F0</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">d</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">2.424068405547068e-10</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">x0</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y0</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">beta_list</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">beta_list_pol</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">beta_list_cpol</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">stretch</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">stretch_PA</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/model.html#Model.add_stretched_mring"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ehtim.model.Model.add_stretched_mring" title="Permalink to this definition"></a></dt>
 <dd><p>Add a stretched ring model with azimuthal brightness variations determined by a Fourier mode expansion.
 For details, see Eq. 18-20 of <a class="reference external" href="https://arxiv.org/abs/1907.04329">https://arxiv.org/abs/1907.04329</a></p>
 <dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>F0</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.13)"><em>float</em></a>) – The total flux of the ring (Jy), which is also beta_0.</p></li>
 <li><p><strong>d</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.13)"><em>float</em></a>) – The diameter (radians)</p></li>
@@ -332,21 +335,21 @@ Indices are all scaled by F0 = beta_0, so they are dimensionless.</p></li>
 <li><p><strong>stretch_PA</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.13)"><em>float</em></a>) – Position angle of the stretch, east of north (radians)</p></li>
 </ul>
 </dd>
-<dt class="field-even">Returns</dt>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
 <dd class="field-even"><p>Updated Model</p>
 </dd>
-<dt class="field-odd">Return type</dt>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
 <dd class="field-odd"><p>(<a class="reference internal" href="#ehtim.model.Model" title="ehtim.model.Model">Model</a>)</p>
 </dd>
 </dl>
 </dd></dl>
 
 <dl class="py method">
-<dt id="ehtim.model.Model.add_stretched_ring">
-<code class="sig-name descname">add_stretched_ring</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">F0</span><span class="o">=</span><span class="default_value">1.0</span></em>, <em class="sig-param"><span class="n">d</span><span class="o">=</span><span class="default_value">2.424068405547068e-10</span></em>, <em class="sig-param"><span class="n">x0</span><span class="o">=</span><span class="default_value">0.0</span></em>, <em class="sig-param"><span class="n">y0</span><span class="o">=</span><span class="default_value">0.0</span></em>, <em class="sig-param"><span class="n">stretch</span><span class="o">=</span><span class="default_value">1.0</span></em>, <em class="sig-param"><span class="n">stretch_PA</span><span class="o">=</span><span class="default_value">0.0</span></em>, <em class="sig-param"><span class="n">pol_frac</span><span class="o">=</span><span class="default_value">0.0</span></em>, <em class="sig-param"><span class="n">pol_evpa</span><span class="o">=</span><span class="default_value">0.0</span></em>, <em class="sig-param"><span class="n">cpol_frac</span><span class="o">=</span><span class="default_value">0.0</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/model.html#Model.add_stretched_ring"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.model.Model.add_stretched_ring" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="ehtim.model.Model.add_stretched_ring">
+<span class="sig-name descname"><span class="pre">add_stretched_ring</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">F0</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">d</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">2.424068405547068e-10</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">x0</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y0</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">stretch</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">stretch_PA</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pol_frac</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pol_evpa</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cpol_frac</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/model.html#Model.add_stretched_ring"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ehtim.model.Model.add_stretched_ring" title="Permalink to this definition"></a></dt>
 <dd><p>Add a stretched ring model with infinitesimal thickness.</p>
 <dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>F0</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.13)"><em>float</em></a>) – The total flux of the ring (Jy)</p></li>
 <li><p><strong>d</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.13)"><em>float</em></a>) – The diameter (radians)</p></li>
@@ -356,23 +359,23 @@ Indices are all scaled by F0 = beta_0, so they are dimensionless.</p></li>
 <li><p><strong>stretch_PA</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.13)"><em>float</em></a>) – Position angle of the stretch, east of north (radians)</p></li>
 </ul>
 </dd>
-<dt class="field-even">Returns</dt>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
 <dd class="field-even"><p>Updated Model</p>
 </dd>
-<dt class="field-odd">Return type</dt>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
 <dd class="field-odd"><p>(<a class="reference internal" href="#ehtim.model.Model" title="ehtim.model.Model">Model</a>)</p>
 </dd>
 </dl>
 </dd></dl>
 
 <dl class="py method">
-<dt id="ehtim.model.Model.add_stretched_thick_mring">
-<code class="sig-name descname">add_stretched_thick_mring</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">F0</span><span class="o">=</span><span class="default_value">1.0</span></em>, <em class="sig-param"><span class="n">d</span><span class="o">=</span><span class="default_value">2.424068405547068e-10</span></em>, <em class="sig-param"><span class="n">alpha</span><span class="o">=</span><span class="default_value">4.848136811094136e-11</span></em>, <em class="sig-param"><span class="n">x0</span><span class="o">=</span><span class="default_value">0.0</span></em>, <em class="sig-param"><span class="n">y0</span><span class="o">=</span><span class="default_value">0.0</span></em>, <em class="sig-param"><span class="n">beta_list</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">beta_list_pol</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">beta_list_cpol</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">stretch</span><span class="o">=</span><span class="default_value">1.0</span></em>, <em class="sig-param"><span class="n">stretch_PA</span><span class="o">=</span><span class="default_value">0.0</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/model.html#Model.add_stretched_thick_mring"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.model.Model.add_stretched_thick_mring" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="ehtim.model.Model.add_stretched_thick_mring">
+<span class="sig-name descname"><span class="pre">add_stretched_thick_mring</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">F0</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">d</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">2.424068405547068e-10</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">alpha</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">4.848136811094136e-11</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">x0</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y0</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">beta_list</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">beta_list_pol</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">beta_list_cpol</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">stretch</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">stretch_PA</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/model.html#Model.add_stretched_thick_mring"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ehtim.model.Model.add_stretched_thick_mring" title="Permalink to this definition"></a></dt>
 <dd><p>Add a ring model with azimuthal brightness variations determined by a Fourier mode expansion and thickness determined by circular Gaussian convolution.
 For details, see Eq. 18-20 of <a class="reference external" href="https://arxiv.org/abs/1907.04329">https://arxiv.org/abs/1907.04329</a>
 The Gaussian convolution calculation is a trivial generalization of Appendix G of <a class="reference external" href="https://iopscience.iop.org/article/10.3847/2041-8213/ab0e85/pdf">https://iopscience.iop.org/article/10.3847/2041-8213/ab0e85/pdf</a></p>
 <dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>F0</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.13)"><em>float</em></a>) – The total flux of the ring (Jy), which is also beta_0.</p></li>
 <li><p><strong>d</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.13)"><em>float</em></a>) – The ring diameter (radians)</p></li>
@@ -386,23 +389,23 @@ Indices are all scaled by F0 = beta_0, so they are dimensionless.</p></li>
 <li><p><strong>stretch_PA</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.13)"><em>float</em></a>) – Position angle of the stretch, east of north (radians)</p></li>
 </ul>
 </dd>
-<dt class="field-even">Returns</dt>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
 <dd class="field-even"><p>Updated Model</p>
 </dd>
-<dt class="field-odd">Return type</dt>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
 <dd class="field-odd"><p>(<a class="reference internal" href="#ehtim.model.Model" title="ehtim.model.Model">Model</a>)</p>
 </dd>
 </dl>
 </dd></dl>
 
 <dl class="py method">
-<dt id="ehtim.model.Model.add_stretched_thick_mring_floor">
-<code class="sig-name descname">add_stretched_thick_mring_floor</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">F0</span><span class="o">=</span><span class="default_value">1.0</span></em>, <em class="sig-param"><span class="n">d</span><span class="o">=</span><span class="default_value">2.424068405547068e-10</span></em>, <em class="sig-param"><span class="n">alpha</span><span class="o">=</span><span class="default_value">4.848136811094136e-11</span></em>, <em class="sig-param"><span class="n">ff</span><span class="o">=</span><span class="default_value">0.0</span></em>, <em class="sig-param"><span class="n">x0</span><span class="o">=</span><span class="default_value">0.0</span></em>, <em class="sig-param"><span class="n">y0</span><span class="o">=</span><span class="default_value">0.0</span></em>, <em class="sig-param"><span class="n">beta_list</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">beta_list_pol</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">beta_list_cpol</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">stretch</span><span class="o">=</span><span class="default_value">1.0</span></em>, <em class="sig-param"><span class="n">stretch_PA</span><span class="o">=</span><span class="default_value">0.0</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/model.html#Model.add_stretched_thick_mring_floor"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.model.Model.add_stretched_thick_mring_floor" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="ehtim.model.Model.add_stretched_thick_mring_floor">
+<span class="sig-name descname"><span class="pre">add_stretched_thick_mring_floor</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">F0</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">d</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">2.424068405547068e-10</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">alpha</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">4.848136811094136e-11</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ff</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">x0</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y0</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">beta_list</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">beta_list_pol</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">beta_list_cpol</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">stretch</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">stretch_PA</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/model.html#Model.add_stretched_thick_mring_floor"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ehtim.model.Model.add_stretched_thick_mring_floor" title="Permalink to this definition"></a></dt>
 <dd><p>Add a ring model with azimuthal brightness variations determined by a Fourier mode expansion and thickness determined by circular Gaussian convolution.
 For details, see Eq. 18-20 of <a class="reference external" href="https://arxiv.org/abs/1907.04329">https://arxiv.org/abs/1907.04329</a>
 The Gaussian convolution calculation is a trivial generalization of Appendix G of <a class="reference external" href="https://iopscience.iop.org/article/10.3847/2041-8213/ab0e85/pdf">https://iopscience.iop.org/article/10.3847/2041-8213/ab0e85/pdf</a></p>
 <dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>F0</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.13)"><em>float</em></a>) – The total flux of the ring (Jy), which is also beta_0.</p></li>
 <li><p><strong>d</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.13)"><em>float</em></a>) – The ring diameter (radians)</p></li>
@@ -416,22 +419,22 @@ Indices are all scaled by F0 = beta_0, so they are dimensionless.</p></li>
 <li><p><strong>stretch_PA</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.13)"><em>float</em></a>) – Position angle of the stretch, east of north (radians)</p></li>
 </ul>
 </dd>
-<dt class="field-even">Returns</dt>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
 <dd class="field-even"><p>Updated Model</p>
 </dd>
-<dt class="field-odd">Return type</dt>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
 <dd class="field-odd"><p>(<a class="reference internal" href="#ehtim.model.Model" title="ehtim.model.Model">Model</a>)</p>
 </dd>
 </dl>
 </dd></dl>
 
 <dl class="py method">
-<dt id="ehtim.model.Model.add_stretched_thick_ring">
-<code class="sig-name descname">add_stretched_thick_ring</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">F0</span><span class="o">=</span><span class="default_value">1.0</span></em>, <em class="sig-param"><span class="n">d</span><span class="o">=</span><span class="default_value">2.424068405547068e-10</span></em>, <em class="sig-param"><span class="n">alpha</span><span class="o">=</span><span class="default_value">4.848136811094136e-11</span></em>, <em class="sig-param"><span class="n">x0</span><span class="o">=</span><span class="default_value">0.0</span></em>, <em class="sig-param"><span class="n">y0</span><span class="o">=</span><span class="default_value">0.0</span></em>, <em class="sig-param"><span class="n">stretch</span><span class="o">=</span><span class="default_value">1.0</span></em>, <em class="sig-param"><span class="n">stretch_PA</span><span class="o">=</span><span class="default_value">0.0</span></em>, <em class="sig-param"><span class="n">pol_frac</span><span class="o">=</span><span class="default_value">0.0</span></em>, <em class="sig-param"><span class="n">pol_evpa</span><span class="o">=</span><span class="default_value">0.0</span></em>, <em class="sig-param"><span class="n">cpol_frac</span><span class="o">=</span><span class="default_value">0.0</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/model.html#Model.add_stretched_thick_ring"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.model.Model.add_stretched_thick_ring" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="ehtim.model.Model.add_stretched_thick_ring">
+<span class="sig-name descname"><span class="pre">add_stretched_thick_ring</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">F0</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">d</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">2.424068405547068e-10</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">alpha</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">4.848136811094136e-11</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">x0</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y0</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">stretch</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">stretch_PA</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pol_frac</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pol_evpa</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cpol_frac</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/model.html#Model.add_stretched_thick_ring"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ehtim.model.Model.add_stretched_thick_ring" title="Permalink to this definition"></a></dt>
 <dd><p>Add a ring model with finite thickness, determined by circular Gaussian convolution of a thin ring.
 For details, see Appendix G of <a class="reference external" href="https://iopscience.iop.org/article/10.3847/2041-8213/ab0e85/pdf">https://iopscience.iop.org/article/10.3847/2041-8213/ab0e85/pdf</a></p>
 <dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>F0</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.13)"><em>float</em></a>) – The total flux of the ring (Jy)</p></li>
 <li><p><strong>d</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.13)"><em>float</em></a>) – The ring diameter (radians)</p></li>
@@ -442,23 +445,23 @@ For details, see Appendix G of <a class="reference external" href="https://iopsc
 <li><p><strong>stretch_PA</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.13)"><em>float</em></a>) – Position angle of the stretch, east of north (radians)</p></li>
 </ul>
 </dd>
-<dt class="field-even">Returns</dt>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
 <dd class="field-even"><p>Updated Model</p>
 </dd>
-<dt class="field-odd">Return type</dt>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
 <dd class="field-odd"><p>(<a class="reference internal" href="#ehtim.model.Model" title="ehtim.model.Model">Model</a>)</p>
 </dd>
 </dl>
 </dd></dl>
 
 <dl class="py method">
-<dt id="ehtim.model.Model.add_thick_mring">
-<code class="sig-name descname">add_thick_mring</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">F0</span><span class="o">=</span><span class="default_value">1.0</span></em>, <em class="sig-param"><span class="n">d</span><span class="o">=</span><span class="default_value">2.424068405547068e-10</span></em>, <em class="sig-param"><span class="n">alpha</span><span class="o">=</span><span class="default_value">4.848136811094136e-11</span></em>, <em class="sig-param"><span class="n">x0</span><span class="o">=</span><span class="default_value">0.0</span></em>, <em class="sig-param"><span class="n">y0</span><span class="o">=</span><span class="default_value">0.0</span></em>, <em class="sig-param"><span class="n">beta_list</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">beta_list_pol</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">beta_list_cpol</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/model.html#Model.add_thick_mring"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.model.Model.add_thick_mring" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="ehtim.model.Model.add_thick_mring">
+<span class="sig-name descname"><span class="pre">add_thick_mring</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">F0</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">d</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">2.424068405547068e-10</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">alpha</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">4.848136811094136e-11</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">x0</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y0</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">beta_list</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">beta_list_pol</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">beta_list_cpol</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/model.html#Model.add_thick_mring"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ehtim.model.Model.add_thick_mring" title="Permalink to this definition"></a></dt>
 <dd><p>Add a ring model with azimuthal brightness variations determined by a Fourier mode expansion and thickness determined by circular Gaussian convolution.
 For details, see Eq. 18-20 of <a class="reference external" href="https://arxiv.org/abs/1907.04329">https://arxiv.org/abs/1907.04329</a>
 The Gaussian convolution calculation is a trivial generalization of Appendix G of <a class="reference external" href="https://iopscience.iop.org/article/10.3847/2041-8213/ab0e85/pdf">https://iopscience.iop.org/article/10.3847/2041-8213/ab0e85/pdf</a></p>
 <dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>F0</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.13)"><em>float</em></a>) – The total flux of the ring (Jy), which is also beta_0.</p></li>
 <li><p><strong>d</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.13)"><em>float</em></a>) – The ring diameter (radians)</p></li>
@@ -470,24 +473,24 @@ Negative indices are determined by the condition beta_{-m} = beta_m*.
 Indices are all scaled by F0 = beta_0, so they are dimensionless.</p></li>
 </ul>
 </dd>
-<dt class="field-even">Returns</dt>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
 <dd class="field-even"><p>Updated Model</p>
 </dd>
-<dt class="field-odd">Return type</dt>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
 <dd class="field-odd"><p>(<a class="reference internal" href="#ehtim.model.Model" title="ehtim.model.Model">Model</a>)</p>
 </dd>
 </dl>
 </dd></dl>
 
 <dl class="py method">
-<dt id="ehtim.model.Model.add_thick_mring_Gfloor">
-<code class="sig-name descname">add_thick_mring_Gfloor</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">F0</span><span class="o">=</span><span class="default_value">1.0</span></em>, <em class="sig-param"><span class="n">d</span><span class="o">=</span><span class="default_value">2.424068405547068e-10</span></em>, <em class="sig-param"><span class="n">alpha</span><span class="o">=</span><span class="default_value">4.848136811094136e-11</span></em>, <em class="sig-param"><span class="n">ff</span><span class="o">=</span><span class="default_value">0.0</span></em>, <em class="sig-param"><span class="n">FWHM</span><span class="o">=</span><span class="default_value">2.424068405547068e-10</span></em>, <em class="sig-param"><span class="n">x0</span><span class="o">=</span><span class="default_value">0.0</span></em>, <em class="sig-param"><span class="n">y0</span><span class="o">=</span><span class="default_value">0.0</span></em>, <em class="sig-param"><span class="n">beta_list</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">beta_list_pol</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">beta_list_cpol</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/model.html#Model.add_thick_mring_Gfloor"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.model.Model.add_thick_mring_Gfloor" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="ehtim.model.Model.add_thick_mring_Gfloor">
+<span class="sig-name descname"><span class="pre">add_thick_mring_Gfloor</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">F0</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">d</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">2.424068405547068e-10</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">alpha</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">4.848136811094136e-11</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ff</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">FWHM</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">2.424068405547068e-10</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">x0</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y0</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">beta_list</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">beta_list_pol</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">beta_list_cpol</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/model.html#Model.add_thick_mring_Gfloor"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ehtim.model.Model.add_thick_mring_Gfloor" title="Permalink to this definition"></a></dt>
 <dd><p>Add a ring model with azimuthal brightness variations determined by a Fourier mode expansion, thickness determined by circular Gaussian convolution, and a floor
 The floor is a circular Gaussian, with size FWHM
 For details, see Eq. 18-20 of <a class="reference external" href="https://arxiv.org/abs/1907.04329">https://arxiv.org/abs/1907.04329</a>
 The Gaussian convolution calculation is a trivial generalization of Appendix G of <a class="reference external" href="https://iopscience.iop.org/article/10.3847/2041-8213/ab0e85/pdf">https://iopscience.iop.org/article/10.3847/2041-8213/ab0e85/pdf</a></p>
 <dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>F0</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.13)"><em>float</em></a>) – The total flux of the model</p></li>
 <li><p><strong>d</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.13)"><em>float</em></a>) – The ring diameter (radians)</p></li>
@@ -501,24 +504,24 @@ Negative indices are determined by the condition beta_{-m} = beta_m*.
 Indices are all scaled by F0 = beta_0, so they are dimensionless.</p></li>
 </ul>
 </dd>
-<dt class="field-even">Returns</dt>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
 <dd class="field-even"><p>Updated Model</p>
 </dd>
-<dt class="field-odd">Return type</dt>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
 <dd class="field-odd"><p>(<a class="reference internal" href="#ehtim.model.Model" title="ehtim.model.Model">Model</a>)</p>
 </dd>
 </dl>
 </dd></dl>
 
 <dl class="py method">
-<dt id="ehtim.model.Model.add_thick_mring_floor">
-<code class="sig-name descname">add_thick_mring_floor</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">F0</span><span class="o">=</span><span class="default_value">1.0</span></em>, <em class="sig-param"><span class="n">d</span><span class="o">=</span><span class="default_value">2.424068405547068e-10</span></em>, <em class="sig-param"><span class="n">alpha</span><span class="o">=</span><span class="default_value">4.848136811094136e-11</span></em>, <em class="sig-param"><span class="n">ff</span><span class="o">=</span><span class="default_value">0.0</span></em>, <em class="sig-param"><span class="n">x0</span><span class="o">=</span><span class="default_value">0.0</span></em>, <em class="sig-param"><span class="n">y0</span><span class="o">=</span><span class="default_value">0.0</span></em>, <em class="sig-param"><span class="n">beta_list</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">beta_list_pol</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">beta_list_cpol</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/model.html#Model.add_thick_mring_floor"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.model.Model.add_thick_mring_floor" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="ehtim.model.Model.add_thick_mring_floor">
+<span class="sig-name descname"><span class="pre">add_thick_mring_floor</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">F0</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">d</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">2.424068405547068e-10</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">alpha</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">4.848136811094136e-11</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ff</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">x0</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y0</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">beta_list</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">beta_list_pol</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">beta_list_cpol</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/model.html#Model.add_thick_mring_floor"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ehtim.model.Model.add_thick_mring_floor" title="Permalink to this definition"></a></dt>
 <dd><p>Add a ring model with azimuthal brightness variations determined by a Fourier mode expansion, thickness determined by circular Gaussian convolution, and a floor
 The floor is a blurred disk, with diameter d and blurred FWHM alpha
 For details, see Eq. 18-20 of <a class="reference external" href="https://arxiv.org/abs/1907.04329">https://arxiv.org/abs/1907.04329</a>
 The Gaussian convolution calculation is a trivial generalization of Appendix G of <a class="reference external" href="https://iopscience.iop.org/article/10.3847/2041-8213/ab0e85/pdf">https://iopscience.iop.org/article/10.3847/2041-8213/ab0e85/pdf</a></p>
 <dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>F0</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.13)"><em>float</em></a>) – The total flux of the ring (Jy), which is also beta_0.</p></li>
 <li><p><strong>d</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.13)"><em>float</em></a>) – The ring diameter (radians)</p></li>
@@ -531,22 +534,22 @@ Negative indices are determined by the condition beta_{-m} = beta_m*.
 Indices are all scaled by F0 = beta_0, so they are dimensionless.</p></li>
 </ul>
 </dd>
-<dt class="field-even">Returns</dt>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
 <dd class="field-even"><p>Updated Model</p>
 </dd>
-<dt class="field-odd">Return type</dt>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
 <dd class="field-odd"><p>(<a class="reference internal" href="#ehtim.model.Model" title="ehtim.model.Model">Model</a>)</p>
 </dd>
 </dl>
 </dd></dl>
 
 <dl class="py method">
-<dt id="ehtim.model.Model.add_thick_ring">
-<code class="sig-name descname">add_thick_ring</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">F0</span><span class="o">=</span><span class="default_value">1.0</span></em>, <em class="sig-param"><span class="n">d</span><span class="o">=</span><span class="default_value">2.424068405547068e-10</span></em>, <em class="sig-param"><span class="n">alpha</span><span class="o">=</span><span class="default_value">4.848136811094136e-11</span></em>, <em class="sig-param"><span class="n">x0</span><span class="o">=</span><span class="default_value">0.0</span></em>, <em class="sig-param"><span class="n">y0</span><span class="o">=</span><span class="default_value">0.0</span></em>, <em class="sig-param"><span class="n">pol_frac</span><span class="o">=</span><span class="default_value">0.0</span></em>, <em class="sig-param"><span class="n">pol_evpa</span><span class="o">=</span><span class="default_value">0.0</span></em>, <em class="sig-param"><span class="n">cpol_frac</span><span class="o">=</span><span class="default_value">0.0</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/model.html#Model.add_thick_ring"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.model.Model.add_thick_ring" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="ehtim.model.Model.add_thick_ring">
+<span class="sig-name descname"><span class="pre">add_thick_ring</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">F0</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">d</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">2.424068405547068e-10</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">alpha</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">4.848136811094136e-11</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">x0</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y0</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pol_frac</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pol_evpa</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cpol_frac</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/model.html#Model.add_thick_ring"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ehtim.model.Model.add_thick_ring" title="Permalink to this definition"></a></dt>
 <dd><p>Add a ring model with finite thickness, determined by circular Gaussian convolution of a thin ring.
 For details, see Appendix G of <a class="reference external" href="https://iopscience.iop.org/article/10.3847/2041-8213/ab0e85/pdf">https://iopscience.iop.org/article/10.3847/2041-8213/ab0e85/pdf</a></p>
 <dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>F0</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.13)"><em>float</em></a>) – The total flux of the ring (Jy)</p></li>
 <li><p><strong>d</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.13)"><em>float</em></a>) – The ring diameter (radians)</p></li>
@@ -555,88 +558,88 @@ For details, see Appendix G of <a class="reference external" href="https://iopsc
 <li><p><strong>y0</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.13)"><em>float</em></a>) – The y-coordinate (radians)</p></li>
 </ul>
 </dd>
-<dt class="field-even">Returns</dt>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
 <dd class="field-even"><p>Updated Model</p>
 </dd>
-<dt class="field-odd">Return type</dt>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
 <dd class="field-odd"><p>(<a class="reference internal" href="#ehtim.model.Model" title="ehtim.model.Model">Model</a>)</p>
 </dd>
 </dl>
 </dd></dl>
 
 <dl class="py method">
-<dt id="ehtim.model.Model.blur_circ">
-<code class="sig-name descname">blur_circ</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">fwhm</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/model.html#Model.blur_circ"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.model.Model.blur_circ" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="ehtim.model.Model.blur_circ">
+<span class="sig-name descname"><span class="pre">blur_circ</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">fwhm</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/model.html#Model.blur_circ"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ehtim.model.Model.blur_circ" title="Permalink to this definition"></a></dt>
 <dd><p>Return a new model, equal to the current one convolved with a circular Gaussian kernel</p>
 <dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><p><strong>fwhm</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.13)"><em>float</em></a>) – Full width at half maximum of the kernel (radians)</p>
 </dd>
-<dt class="field-even">Returns</dt>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
 <dd class="field-even"><p>Blurred model</p>
 </dd>
-<dt class="field-odd">Return type</dt>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
 <dd class="field-odd"><p>(<a class="reference internal" href="#ehtim.model.Model" title="ehtim.model.Model">Model</a>)</p>
 </dd>
 </dl>
 </dd></dl>
 
 <dl class="py method">
-<dt id="ehtim.model.Model.centroid">
-<code class="sig-name descname">centroid</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">pol</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/model.html#Model.centroid"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.model.Model.centroid" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="ehtim.model.Model.centroid">
+<span class="sig-name descname"><span class="pre">centroid</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">pol</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/model.html#Model.centroid"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ehtim.model.Model.centroid" title="Permalink to this definition"></a></dt>
 <dd><p>Compute the location of the image centroid (corresponding to the polarization pol)
 Note: This quantity is only well defined for total intensity</p>
 <dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><p><strong>pol</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><em>str</em></a>) – The polarization for which to find the image centroid</p>
 </dd>
-<dt class="field-even">Returns</dt>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
 <dd class="field-even"><p>centroid positions (x0,y0) in radians</p>
 </dd>
-<dt class="field-odd">Return type</dt>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
 <dd class="field-odd"><p>(np.array)</p>
 </dd>
 </dl>
 </dd></dl>
 
 <dl class="py method">
-<dt id="ehtim.model.Model.copy">
-<code class="sig-name descname">copy</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/model.html#Model.copy"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.model.Model.copy" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="ehtim.model.Model.copy">
+<span class="sig-name descname"><span class="pre">copy</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/model.html#Model.copy"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ehtim.model.Model.copy" title="Permalink to this definition"></a></dt>
 <dd><p>Return a copy of the Model object.</p>
 <p>Args:</p>
 <dl class="field-list simple">
-<dt class="field-odd">Returns</dt>
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
 <dd class="field-odd"><p>copy of the Model.</p>
 </dd>
-<dt class="field-even">Return type</dt>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
 <dd class="field-even"><p>(<a class="reference internal" href="#ehtim.model.Model" title="ehtim.model.Model">Model</a>)</p>
 </dd>
 </dl>
 </dd></dl>
 
 <dl class="py method">
-<dt id="ehtim.model.Model.image_same">
-<code class="sig-name descname">image_same</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">im</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/model.html#Model.image_same"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.model.Model.image_same" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="ehtim.model.Model.image_same">
+<span class="sig-name descname"><span class="pre">image_same</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">im</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/model.html#Model.image_same"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ehtim.model.Model.image_same" title="Permalink to this definition"></a></dt>
 <dd><p>Create an image of the model with parameters equal to a reference image.</p>
 <dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><p><strong>im</strong> (<a class="reference internal" href="image.html#ehtim.image.Image" title="ehtim.image.Image"><em>Image</em></a>) – the reference image</p>
 </dd>
-<dt class="field-even">Returns</dt>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
 <dd class="field-even"><p>image of the model</p>
 </dd>
-<dt class="field-odd">Return type</dt>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
 <dd class="field-odd"><p>(<a class="reference internal" href="image.html#ehtim.image.Image" title="ehtim.image.Image">Image</a>)</p>
 </dd>
 </dl>
 </dd></dl>
 
 <dl class="py method">
-<dt id="ehtim.model.Model.make_image">
-<code class="sig-name descname">make_image</code><span class="sig-paren">(</span><em class="sig-param">fov</em>, <em class="sig-param">npix</em>, <em class="sig-param">polrep='stokes'</em>, <em class="sig-param">pol_prim=None</em>, <em class="sig-param">pulse=&lt;function trianglePulse2D&gt;</em>, <em class="sig-param">time=0.0</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/model.html#Model.make_image"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.model.Model.make_image" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="ehtim.model.Model.make_image">
+<span class="sig-name descname"><span class="pre">make_image</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">fov</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">npix</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">polrep='stokes'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pol_prim=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pulse=&lt;function</span> <span class="pre">trianglePulse2D&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">time=0.0</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/model.html#Model.make_image"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ehtim.model.Model.make_image" title="Permalink to this definition"></a></dt>
 <dd><p>Sample the model onto a square image.</p>
 <dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>fov</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.13)"><em>float</em></a>) – the field of view of each axis in radians</p></li>
 <li><p><strong>npix</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.13)"><em>int</em></a>) – the number of pixels on each axis</p></li>
@@ -651,21 +654,21 @@ Note: This quantity is only well defined for total intensity</p>
 <li><p><strong>time</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.13)"><em>float</em></a>) – The observing time of the image (UTC hours)</p></li>
 </ul>
 </dd>
-<dt class="field-even">Returns</dt>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
 <dd class="field-even"><p>an image object</p>
 </dd>
-<dt class="field-odd">Return type</dt>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
 <dd class="field-odd"><p>(<a class="reference internal" href="image.html#ehtim.image.Image" title="ehtim.image.Image">Image</a>)</p>
 </dd>
 </dl>
 </dd></dl>
 
 <dl class="py method">
-<dt id="ehtim.model.Model.observe">
-<code class="sig-name descname">observe</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">array</span></em>, <em class="sig-param"><span class="n">tint</span></em>, <em class="sig-param"><span class="n">tadv</span></em>, <em class="sig-param"><span class="n">tstart</span></em>, <em class="sig-param"><span class="n">tstop</span></em>, <em class="sig-param"><span class="n">bw</span></em>, <em class="sig-param"><span class="n">mjd</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">timetype</span><span class="o">=</span><span class="default_value">'UTC'</span></em>, <em class="sig-param"><span class="n">polrep_obs</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">elevmin</span><span class="o">=</span><span class="default_value">10.0</span></em>, <em class="sig-param"><span class="n">elevmax</span><span class="o">=</span><span class="default_value">85.0</span></em>, <em class="sig-param"><span class="n">no_elevcut_space</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">fix_theta_GMST</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">add_th_noise</span><span class="o">=</span><span class="default_value">True</span></em>, <em class="sig-param"><span class="n">opacitycal</span><span class="o">=</span><span class="default_value">True</span></em>, <em class="sig-param"><span class="n">ampcal</span><span class="o">=</span><span class="default_value">True</span></em>, <em class="sig-param"><span class="n">phasecal</span><span class="o">=</span><span class="default_value">True</span></em>, <em class="sig-param"><span class="n">dcal</span><span class="o">=</span><span class="default_value">True</span></em>, <em class="sig-param"><span class="n">frcal</span><span class="o">=</span><span class="default_value">True</span></em>, <em class="sig-param"><span class="n">rlgaincal</span><span class="o">=</span><span class="default_value">True</span></em>, <em class="sig-param"><span class="n">stabilize_scan_phase</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">stabilize_scan_amp</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">jones</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">inv_jones</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">tau</span><span class="o">=</span><span class="default_value">0.1</span></em>, <em class="sig-param"><span class="n">taup</span><span class="o">=</span><span class="default_value">0.1</span></em>, <em class="sig-param"><span class="n">gainp</span><span class="o">=</span><span class="default_value">0.1</span></em>, <em class="sig-param"><span class="n">gain_offset</span><span class="o">=</span><span class="default_value">0.1</span></em>, <em class="sig-param"><span class="n">dterm_offset</span><span class="o">=</span><span class="default_value">0.05</span></em>, <em class="sig-param"><span class="n">rlratio_std</span><span class="o">=</span><span class="default_value">0.0</span></em>, <em class="sig-param"><span class="n">rlphase_std</span><span class="o">=</span><span class="default_value">0.0</span></em>, <em class="sig-param"><span class="n">seed</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/model.html#Model.observe"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.model.Model.observe" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="ehtim.model.Model.observe">
+<span class="sig-name descname"><span class="pre">observe</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">array</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tint</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tadv</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tstart</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tstop</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">bw</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mjd</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">timetype</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'UTC'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">polrep_obs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">elevmin</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">10.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">elevmax</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">85.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">no_elevcut_space</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fix_theta_GMST</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">add_th_noise</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">opacitycal</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ampcal</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">phasecal</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dcal</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">frcal</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rlgaincal</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">stabilize_scan_phase</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">stabilize_scan_amp</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">jones</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">inv_jones</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tau</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">taup</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">gainp</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">gain_offset</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dterm_offset</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.05</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rlratio_std</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rlphase_std</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">seed</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/model.html#Model.observe"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ehtim.model.Model.observe" title="Permalink to this definition"></a></dt>
 <dd><p>Generate baselines from an array object and observe the image.</p>
 <dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>array</strong> (<a class="reference internal" href="array.html#ehtim.array.Array" title="ehtim.array.Array"><em>Array</em></a>) – an array object containing sites with which to generate baselines</p></li>
 <li><p><strong>tint</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.13)"><em>float</em></a>) – the scan integration time in seconds</p></li>
@@ -710,21 +713,21 @@ a negative value samples from uniform</p></li>
 <li><p><strong>seed</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.13)"><em>int</em></a>) – seeds the random component of noise added. DO NOT set to 0!</p></li>
 </ul>
 </dd>
-<dt class="field-even">Returns</dt>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
 <dd class="field-even"><p>an observation object</p>
 </dd>
-<dt class="field-odd">Return type</dt>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
 <dd class="field-odd"><p>(<a class="reference internal" href="obsdata.html#ehtim.obsdata.Obsdata" title="ehtim.obsdata.Obsdata">Obsdata</a>)</p>
 </dd>
 </dl>
 </dd></dl>
 
 <dl class="py method">
-<dt id="ehtim.model.Model.observe_same">
-<code class="sig-name descname">observe_same</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">obs_in</span></em>, <em class="sig-param"><span class="n">add_th_noise</span><span class="o">=</span><span class="default_value">True</span></em>, <em class="sig-param"><span class="n">sgrscat</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">ttype</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">opacitycal</span><span class="o">=</span><span class="default_value">True</span></em>, <em class="sig-param"><span class="n">ampcal</span><span class="o">=</span><span class="default_value">True</span></em>, <em class="sig-param"><span class="n">phasecal</span><span class="o">=</span><span class="default_value">True</span></em>, <em class="sig-param"><span class="n">dcal</span><span class="o">=</span><span class="default_value">True</span></em>, <em class="sig-param"><span class="n">frcal</span><span class="o">=</span><span class="default_value">True</span></em>, <em class="sig-param"><span class="n">rlgaincal</span><span class="o">=</span><span class="default_value">True</span></em>, <em class="sig-param"><span class="n">stabilize_scan_phase</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">stabilize_scan_amp</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">neggains</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">jones</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">inv_jones</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">tau</span><span class="o">=</span><span class="default_value">0.1</span></em>, <em class="sig-param"><span class="n">taup</span><span class="o">=</span><span class="default_value">0.1</span></em>, <em class="sig-param"><span class="n">gain_offset</span><span class="o">=</span><span class="default_value">0.1</span></em>, <em class="sig-param"><span class="n">gainp</span><span class="o">=</span><span class="default_value">0.1</span></em>, <em class="sig-param"><span class="n">dterm_offset</span><span class="o">=</span><span class="default_value">0.05</span></em>, <em class="sig-param"><span class="n">rlratio_std</span><span class="o">=</span><span class="default_value">0.0</span></em>, <em class="sig-param"><span class="n">rlphase_std</span><span class="o">=</span><span class="default_value">0.0</span></em>, <em class="sig-param"><span class="n">caltable_path</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">seed</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/model.html#Model.observe_same"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.model.Model.observe_same" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="ehtim.model.Model.observe_same">
+<span class="sig-name descname"><span class="pre">observe_same</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">obs_in</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">add_th_noise</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sgrscat</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ttype</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">opacitycal</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ampcal</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">phasecal</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dcal</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">frcal</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rlgaincal</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">stabilize_scan_phase</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">stabilize_scan_amp</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">neggains</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">jones</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">inv_jones</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tau</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">taup</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">gain_offset</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">gainp</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dterm_offset</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.05</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rlratio_std</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rlphase_std</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">caltable_path</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">seed</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/model.html#Model.observe_same"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ehtim.model.Model.observe_same" title="Permalink to this definition"></a></dt>
 <dd><p>Observe the image on the same baselines as an existing observation object and add noise.</p>
 <dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>obs_in</strong> (<a class="reference internal" href="obsdata.html#ehtim.obsdata.Obsdata" title="ehtim.obsdata.Obsdata"><em>Obsdata</em></a>) – the existing observation</p></li>
 <li><p><strong>add_th_noise</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.13)"><em>bool</em></a>) – if True, baseline-dependent thermal noise is added</p></li>
@@ -758,140 +761,140 @@ a negative value samples from uniform</p></li>
 <li><p><strong>seed</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.13)"><em>int</em></a>) – seeds the random component of the noise terms. DO NOT set to 0!</p></li>
 </ul>
 </dd>
-<dt class="field-even">Returns</dt>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
 <dd class="field-even"><p>an observation object</p>
 </dd>
-<dt class="field-odd">Return type</dt>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
 <dd class="field-odd"><p>(<a class="reference internal" href="obsdata.html#ehtim.obsdata.Obsdata" title="ehtim.obsdata.Obsdata">Obsdata</a>)</p>
 </dd>
 </dl>
 </dd></dl>
 
 <dl class="py method">
-<dt id="ehtim.model.Model.observe_same_nonoise">
-<code class="sig-name descname">observe_same_nonoise</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">obs</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/model.html#Model.observe_same_nonoise"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.model.Model.observe_same_nonoise" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="ehtim.model.Model.observe_same_nonoise">
+<span class="sig-name descname"><span class="pre">observe_same_nonoise</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">obs</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/model.html#Model.observe_same_nonoise"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ehtim.model.Model.observe_same_nonoise" title="Permalink to this definition"></a></dt>
 <dd><p>Observe the model on the same baselines as an existing observation, without noise.</p>
 <dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><p><strong>obs</strong> (<a class="reference internal" href="obsdata.html#ehtim.obsdata.Obsdata" title="ehtim.obsdata.Obsdata"><em>Obsdata</em></a>) – the existing observation</p>
 </dd>
-<dt class="field-even">Returns</dt>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
 <dd class="field-even"><p>an observation object with no noise</p>
 </dd>
-<dt class="field-odd">Return type</dt>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
 <dd class="field-odd"><p>(<a class="reference internal" href="obsdata.html#ehtim.obsdata.Obsdata" title="ehtim.obsdata.Obsdata">Obsdata</a>)</p>
 </dd>
 </dl>
 </dd></dl>
 
 <dl class="py method">
-<dt id="ehtim.model.Model.sample_grad_uv">
-<code class="sig-name descname">sample_grad_uv</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">u</span></em>, <em class="sig-param"><span class="n">v</span></em>, <em class="sig-param"><span class="n">pol</span><span class="o">=</span><span class="default_value">'I'</span></em>, <em class="sig-param"><span class="n">fit_pol</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">fit_cpol</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">fit_leakage</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">jonesdict</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/model.html#Model.sample_grad_uv"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.model.Model.sample_grad_uv" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="ehtim.model.Model.sample_grad_uv">
+<span class="sig-name descname"><span class="pre">sample_grad_uv</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">u</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">v</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pol</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'I'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fit_pol</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fit_cpol</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fit_leakage</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">jonesdict</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/model.html#Model.sample_grad_uv"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ehtim.model.Model.sample_grad_uv" title="Permalink to this definition"></a></dt>
 <dd><p>Sample model visibility gradient on the specified u and v coordinates wrt all model parameters</p>
 <dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>u</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.13)"><em>float</em></a>) – u coordinate (dimensionless)</p></li>
 <li><p><strong>v</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.13)"><em>float</em></a>) – v coordinate (dimensionless)</p></li>
 </ul>
 </dd>
-<dt class="field-even">Returns</dt>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
 <dd class="field-even"><p>complex visibility (Jy)</p>
 </dd>
-<dt class="field-odd">Return type</dt>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
 <dd class="field-odd"><p>(<a class="reference external" href="https://docs.python.org/3/library/functions.html#complex" title="(in Python v3.13)">complex</a>)</p>
 </dd>
 </dl>
 </dd></dl>
 
 <dl class="py method">
-<dt id="ehtim.model.Model.sample_graduv_uv">
-<code class="sig-name descname">sample_graduv_uv</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">u</span></em>, <em class="sig-param"><span class="n">v</span></em>, <em class="sig-param"><span class="n">pol</span><span class="o">=</span><span class="default_value">'I'</span></em>, <em class="sig-param"><span class="n">jonesdict</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/model.html#Model.sample_graduv_uv"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.model.Model.sample_graduv_uv" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="ehtim.model.Model.sample_graduv_uv">
+<span class="sig-name descname"><span class="pre">sample_graduv_uv</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">u</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">v</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pol</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'I'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">jonesdict</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/model.html#Model.sample_graduv_uv"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ehtim.model.Model.sample_graduv_uv" title="Permalink to this definition"></a></dt>
 <dd><p>Sample model visibility gradient on the specified u and v coordinates wrt (u,v)</p>
 <dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>u</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.13)"><em>float</em></a>) – u coordinate (dimensionless)</p></li>
 <li><p><strong>v</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.13)"><em>float</em></a>) – v coordinate (dimensionless)</p></li>
 </ul>
 </dd>
-<dt class="field-even">Returns</dt>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
 <dd class="field-even"><p>complex visibility (Jy)</p>
 </dd>
-<dt class="field-odd">Return type</dt>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
 <dd class="field-odd"><p>(<a class="reference external" href="https://docs.python.org/3/library/functions.html#complex" title="(in Python v3.13)">complex</a>)</p>
 </dd>
 </dl>
 </dd></dl>
 
 <dl class="py method">
-<dt id="ehtim.model.Model.sample_uv">
-<code class="sig-name descname">sample_uv</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">u</span></em>, <em class="sig-param"><span class="n">v</span></em>, <em class="sig-param"><span class="n">polrep_obs</span><span class="o">=</span><span class="default_value">'Stokes'</span></em>, <em class="sig-param"><span class="n">pol</span><span class="o">=</span><span class="default_value">'I'</span></em>, <em class="sig-param"><span class="n">jonesdict</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/model.html#Model.sample_uv"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.model.Model.sample_uv" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="ehtim.model.Model.sample_uv">
+<span class="sig-name descname"><span class="pre">sample_uv</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">u</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">v</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">polrep_obs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'Stokes'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pol</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'I'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">jonesdict</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/model.html#Model.sample_uv"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ehtim.model.Model.sample_uv" title="Permalink to this definition"></a></dt>
 <dd><p>Sample model visibility on the specified u and v coordinates</p>
 <dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>u</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.13)"><em>float</em></a>) – u coordinate (dimensionless)</p></li>
 <li><p><strong>v</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.13)"><em>float</em></a>) – v coordinate (dimensionless)</p></li>
 </ul>
 </dd>
-<dt class="field-even">Returns</dt>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
 <dd class="field-even"><p>complex visibility (Jy)</p>
 </dd>
-<dt class="field-odd">Return type</dt>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
 <dd class="field-odd"><p>(<a class="reference external" href="https://docs.python.org/3/library/functions.html#complex" title="(in Python v3.13)">complex</a>)</p>
 </dd>
 </dl>
 </dd></dl>
 
 <dl class="py method">
-<dt id="ehtim.model.Model.sample_xy">
-<code class="sig-name descname">sample_xy</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">x</span></em>, <em class="sig-param"><span class="n">y</span></em>, <em class="sig-param"><span class="n">psize</span><span class="o">=</span><span class="default_value">4.848136811094136e-12</span></em>, <em class="sig-param"><span class="n">pol</span><span class="o">=</span><span class="default_value">'I'</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/model.html#Model.sample_xy"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.model.Model.sample_xy" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="ehtim.model.Model.sample_xy">
+<span class="sig-name descname"><span class="pre">sample_xy</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">psize</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">4.848136811094136e-12</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pol</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'I'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/model.html#Model.sample_xy"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ehtim.model.Model.sample_xy" title="Permalink to this definition"></a></dt>
 <dd><p>Sample model image on the specified x and y coordinates</p>
 <dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>x</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.13)"><em>float</em></a>) – x coordinate (dimensionless)</p></li>
 <li><p><strong>y</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.13)"><em>float</em></a>) – y coordinate (dimensionless)</p></li>
 </ul>
 </dd>
-<dt class="field-even">Returns</dt>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
 <dd class="field-even"><p>Image brightness (Jy/radian^2)</p>
 </dd>
-<dt class="field-odd">Return type</dt>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
 <dd class="field-odd"><p>(<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.13)">float</a>)</p>
 </dd>
 </dl>
 </dd></dl>
 
 <dl class="py method">
-<dt id="ehtim.model.Model.switch_polrep">
-<code class="sig-name descname">switch_polrep</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">polrep_out</span><span class="o">=</span><span class="default_value">'stokes'</span></em>, <em class="sig-param"><span class="n">pol_prim_out</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/model.html#Model.switch_polrep"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.model.Model.switch_polrep" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="ehtim.model.Model.switch_polrep">
+<span class="sig-name descname"><span class="pre">switch_polrep</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">polrep_out</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'stokes'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pol_prim_out</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/model.html#Model.switch_polrep"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ehtim.model.Model.switch_polrep" title="Permalink to this definition"></a></dt>
 <dd><p>Return a new model with the polarization representation changed
 :param polrep_out: the polrep of the output data
 :type polrep_out: str
 :param pol_prim_out: The default image: I,Q,U or V for Stokes, RR,LL,LR,RL for circ
 :type pol_prim_out: str</p>
 <dl class="field-list simple">
-<dt class="field-odd">Returns</dt>
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
 <dd class="field-odd"><p>new Model object with potentially different polrep</p>
 </dd>
-<dt class="field-even">Return type</dt>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
 <dd class="field-even"><p>(<a class="reference internal" href="#ehtim.model.Model" title="ehtim.model.Model">Model</a>)</p>
 </dd>
 </dl>
 </dd></dl>
 
 <dl class="py method">
-<dt id="ehtim.model.Model.total_flux">
-<code class="sig-name descname">total_flux</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/model.html#Model.total_flux"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.model.Model.total_flux" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="ehtim.model.Model.total_flux">
+<span class="sig-name descname"><span class="pre">total_flux</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/model.html#Model.total_flux"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ehtim.model.Model.total_flux" title="Permalink to this definition"></a></dt>
 <dd><p>Return the total flux of the model in Jy.</p>
 <p>Args:</p>
 <dl class="field-list simple">
-<dt class="field-odd">Returns</dt>
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
 <dd class="field-odd"><p>model total flux (Jy)</p>
 </dd>
-<dt class="field-even">Return type</dt>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
 <dd class="field-even"><p>(<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.13)">float</a>)</p>
 </dd>
 </dl>
@@ -900,35 +903,35 @@ a negative value samples from uniform</p></li>
 </dd></dl>
 
 <dl class="py function">
-<dt id="ehtim.model.blur_circ_1model">
-<code class="sig-prename descclassname">ehtim.model.</code><code class="sig-name descname">blur_circ_1model</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">model_type</span></em>, <em class="sig-param"><span class="n">params</span></em>, <em class="sig-param"><span class="n">fwhm</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/model.html#blur_circ_1model"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.model.blur_circ_1model" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="ehtim.model.blur_circ_1model">
+<span class="sig-prename descclassname"><span class="pre">ehtim.model.</span></span><span class="sig-name descname"><span class="pre">blur_circ_1model</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model_type</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">params</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fwhm</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/model.html#blur_circ_1model"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ehtim.model.blur_circ_1model" title="Permalink to this definition"></a></dt>
 <dd><p>Blur a single model, returning new model type and associated parameters</p>
 <dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><p><strong>fwhm</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.13)"><em>float</em></a>) – Full width at half maximum of the kernel (radians)</p>
 </dd>
-<dt class="field-even">Returns</dt>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
 <dd class="field-even"><p>Dictionary with new ‘model_type’ and new ‘params’</p>
 </dd>
-<dt class="field-odd">Return type</dt>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
 <dd class="field-odd"><p>(<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.13)">dict</a>)</p>
 </dd>
 </dl>
 </dd></dl>
 
 <dl class="py function">
-<dt id="ehtim.model.default_prior">
-<code class="sig-prename descclassname">ehtim.model.</code><code class="sig-name descname">default_prior</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">model_type</span></em>, <em class="sig-param"><span class="n">model_params</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">fit_pol</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">fit_cpol</span><span class="o">=</span><span class="default_value">False</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/model.html#default_prior"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.model.default_prior" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="ehtim.model.default_prior">
+<span class="sig-prename descclassname"><span class="pre">ehtim.model.</span></span><span class="sig-name descname"><span class="pre">default_prior</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model_type</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">model_params</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fit_pol</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fit_cpol</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/model.html#default_prior"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ehtim.model.default_prior" title="Permalink to this definition"></a></dt>
 <dd><p>Return the default model prior and transformation for a specified model type</p>
 </dd></dl>
 
 <dl class="py function">
-<dt id="ehtim.model.model_params">
-<code class="sig-prename descclassname">ehtim.model.</code><code class="sig-name descname">model_params</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">model_type</span></em>, <em class="sig-param"><span class="n">model_params</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">fit_pol</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">fit_cpol</span><span class="o">=</span><span class="default_value">False</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/model.html#model_params"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.model.model_params" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="ehtim.model.model_params">
+<span class="sig-prename descclassname"><span class="pre">ehtim.model.</span></span><span class="sig-name descname"><span class="pre">model_params</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model_type</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">model_params</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fit_pol</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fit_cpol</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/model.html#model_params"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ehtim.model.model_params" title="Permalink to this definition"></a></dt>
 <dd><p>Return the ordered list of model parameters for a specified model type. This order must match that of the gradient function, sample_1model_grad_uv.</p>
 </dd></dl>
 
-</div>
+</section>
 
 
            </div>

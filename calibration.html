@@ -1,18 +1,21 @@
 <!DOCTYPE html>
 <html class="writer-html5" lang="en" >
 <head>
-  <meta charset="utf-8" />
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
+
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Calibration &mdash; ehtim 1.2.6 documentation</title><link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
-    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+  <title>Calibration &mdash; ehtim 1.2.6 documentation</title>
+      <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
   <!--[if lt IE 9]>
     <script src="_static/js/html5shiv.min.js"></script>
   <![endif]-->
-  <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+  
+        <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
         <script src="_static/jquery.js"></script>
         <script src="_static/underscore.js"></script>
+        <script src="_static/_sphinx_javascript_frameworks_compat.js"></script>
         <script src="_static/doctools.js"></script>
-        <script src="_static/language_data.js"></script>
     <script src="_static/js/theme.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
@@ -38,7 +41,7 @@
   </form>
 </div>
         </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
-              <p class="caption"><span class="caption-text">Contents:</span></p>
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
 <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="image.html">Image</a></li>
 <li class="toctree-l1"><a class="reference internal" href="array.html">Array</a></li>
@@ -78,127 +81,127 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
              
-  <span class="target" id="module-calibration"></span><div class="section" id="calibration">
-<span id="id1"></span><h1>Calibration<a class="headerlink" href="#calibration" title="Permalink to this headline">¶</a></h1>
+  <span class="target" id="module-calibration"></span><section id="calibration">
+<span id="id1"></span><h1>Calibration<a class="headerlink" href="#calibration" title="Permalink to this heading"></a></h1>
 <span class="target" id="module-ehtim.caltable"></span><dl class="py class">
-<dt id="ehtim.caltable.Caltable">
-<em class="property">class </em><code class="sig-prename descclassname">ehtim.caltable.</code><code class="sig-name descname">Caltable</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">ra</span></em>, <em class="sig-param"><span class="n">dec</span></em>, <em class="sig-param"><span class="n">rf</span></em>, <em class="sig-param"><span class="n">bw</span></em>, <em class="sig-param"><span class="n">datadict</span></em>, <em class="sig-param"><span class="n">tarr</span></em>, <em class="sig-param"><span class="n">source</span><span class="o">=</span><span class="default_value">'SgrA'</span></em>, <em class="sig-param"><span class="n">mjd</span><span class="o">=</span><span class="default_value">51544</span></em>, <em class="sig-param"><span class="n">timetype</span><span class="o">=</span><span class="default_value">'UTC'</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/caltable.html#Caltable"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.caltable.Caltable" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="ehtim.caltable.Caltable">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">ehtim.caltable.</span></span><span class="sig-name descname"><span class="pre">Caltable</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ra</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dec</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rf</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">bw</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">datadict</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tarr</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">source</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'SgrA'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mjd</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">51544</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">timetype</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'UTC'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/caltable.html#Caltable"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ehtim.caltable.Caltable" title="Permalink to this definition"></a></dt>
 <dd><dl class="py attribute">
-<dt id="ehtim.caltable.Caltable.source">
-<code class="sig-name descname">source</code><a class="headerlink" href="#ehtim.caltable.Caltable.source" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="ehtim.caltable.Caltable.source">
+<span class="sig-name descname"><span class="pre">source</span></span><a class="headerlink" href="#ehtim.caltable.Caltable.source" title="Permalink to this definition"></a></dt>
 <dd><p>The source name</p>
 <dl class="field-list simple">
-<dt class="field-odd">Type</dt>
+<dt class="field-odd">Type<span class="colon">:</span></dt>
 <dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)">str</a></p>
 </dd>
 </dl>
 </dd></dl>
 
 <dl class="py attribute">
-<dt id="ehtim.caltable.Caltable.ra">
-<code class="sig-name descname">ra</code><a class="headerlink" href="#ehtim.caltable.Caltable.ra" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="ehtim.caltable.Caltable.ra">
+<span class="sig-name descname"><span class="pre">ra</span></span><a class="headerlink" href="#ehtim.caltable.Caltable.ra" title="Permalink to this definition"></a></dt>
 <dd><p>The source Right Ascension in fractional hours</p>
 <dl class="field-list simple">
-<dt class="field-odd">Type</dt>
+<dt class="field-odd">Type<span class="colon">:</span></dt>
 <dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.13)">float</a></p>
 </dd>
 </dl>
 </dd></dl>
 
 <dl class="py attribute">
-<dt id="ehtim.caltable.Caltable.dec">
-<code class="sig-name descname">dec</code><a class="headerlink" href="#ehtim.caltable.Caltable.dec" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="ehtim.caltable.Caltable.dec">
+<span class="sig-name descname"><span class="pre">dec</span></span><a class="headerlink" href="#ehtim.caltable.Caltable.dec" title="Permalink to this definition"></a></dt>
 <dd><p>The source declination in fractional degrees</p>
 <dl class="field-list simple">
-<dt class="field-odd">Type</dt>
+<dt class="field-odd">Type<span class="colon">:</span></dt>
 <dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.13)">float</a></p>
 </dd>
 </dl>
 </dd></dl>
 
 <dl class="py attribute">
-<dt id="ehtim.caltable.Caltable.mjd">
-<code class="sig-name descname">mjd</code><a class="headerlink" href="#ehtim.caltable.Caltable.mjd" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="ehtim.caltable.Caltable.mjd">
+<span class="sig-name descname"><span class="pre">mjd</span></span><a class="headerlink" href="#ehtim.caltable.Caltable.mjd" title="Permalink to this definition"></a></dt>
 <dd><p>The integer MJD of the observation</p>
 <dl class="field-list simple">
-<dt class="field-odd">Type</dt>
+<dt class="field-odd">Type<span class="colon">:</span></dt>
 <dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.13)">int</a></p>
 </dd>
 </dl>
 </dd></dl>
 
 <dl class="py attribute">
-<dt id="ehtim.caltable.Caltable.rf">
-<code class="sig-name descname">rf</code><a class="headerlink" href="#ehtim.caltable.Caltable.rf" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="ehtim.caltable.Caltable.rf">
+<span class="sig-name descname"><span class="pre">rf</span></span><a class="headerlink" href="#ehtim.caltable.Caltable.rf" title="Permalink to this definition"></a></dt>
 <dd><p>The observation frequency in Hz</p>
 <dl class="field-list simple">
-<dt class="field-odd">Type</dt>
+<dt class="field-odd">Type<span class="colon">:</span></dt>
 <dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.13)">float</a></p>
 </dd>
 </dl>
 </dd></dl>
 
 <dl class="py attribute">
-<dt id="ehtim.caltable.Caltable.bw">
-<code class="sig-name descname">bw</code><a class="headerlink" href="#ehtim.caltable.Caltable.bw" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="ehtim.caltable.Caltable.bw">
+<span class="sig-name descname"><span class="pre">bw</span></span><a class="headerlink" href="#ehtim.caltable.Caltable.bw" title="Permalink to this definition"></a></dt>
 <dd><p>The observation bandwidth in Hz</p>
 <dl class="field-list simple">
-<dt class="field-odd">Type</dt>
+<dt class="field-odd">Type<span class="colon">:</span></dt>
 <dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.13)">float</a></p>
 </dd>
 </dl>
 </dd></dl>
 
 <dl class="py attribute">
-<dt id="ehtim.caltable.Caltable.timetype">
-<code class="sig-name descname">timetype</code><a class="headerlink" href="#ehtim.caltable.Caltable.timetype" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="ehtim.caltable.Caltable.timetype">
+<span class="sig-name descname"><span class="pre">timetype</span></span><a class="headerlink" href="#ehtim.caltable.Caltable.timetype" title="Permalink to this definition"></a></dt>
 <dd><p>How to interpret tstart and tstop; either ‘GMST’ or ‘UTC’</p>
 <dl class="field-list simple">
-<dt class="field-odd">Type</dt>
+<dt class="field-odd">Type<span class="colon">:</span></dt>
 <dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)">str</a></p>
 </dd>
 </dl>
 </dd></dl>
 
 <dl class="py attribute">
-<dt id="ehtim.caltable.Caltable.tarr">
-<code class="sig-name descname">tarr</code><a class="headerlink" href="#ehtim.caltable.Caltable.tarr" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="ehtim.caltable.Caltable.tarr">
+<span class="sig-name descname"><span class="pre">tarr</span></span><a class="headerlink" href="#ehtim.caltable.Caltable.tarr" title="Permalink to this definition"></a></dt>
 <dd><p>The array of telescope data with datatype DTARR</p>
 <dl class="field-list simple">
-<dt class="field-odd">Type</dt>
+<dt class="field-odd">Type<span class="colon">:</span></dt>
 <dd class="field-odd"><p>numpy.recarray</p>
 </dd>
 </dl>
 </dd></dl>
 
 <dl class="py attribute">
-<dt id="ehtim.caltable.Caltable.tkey">
-<code class="sig-name descname">tkey</code><a class="headerlink" href="#ehtim.caltable.Caltable.tkey" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="ehtim.caltable.Caltable.tkey">
+<span class="sig-name descname"><span class="pre">tkey</span></span><a class="headerlink" href="#ehtim.caltable.Caltable.tkey" title="Permalink to this definition"></a></dt>
 <dd><p>A dictionary of rows in the tarr for each site name</p>
 <dl class="field-list simple">
-<dt class="field-odd">Type</dt>
+<dt class="field-odd">Type<span class="colon">:</span></dt>
 <dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.13)">dict</a></p>
 </dd>
 </dl>
 </dd></dl>
 
 <dl class="py attribute">
-<dt id="ehtim.caltable.Caltable.data">
-<code class="sig-name descname">data</code><a class="headerlink" href="#ehtim.caltable.Caltable.data" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="ehtim.caltable.Caltable.data">
+<span class="sig-name descname"><span class="pre">data</span></span><a class="headerlink" href="#ehtim.caltable.Caltable.data" title="Permalink to this definition"></a></dt>
 <dd><p>keys are sites in tarr, entries are calibration data tables of type DTCAL</p>
 <dl class="field-list simple">
-<dt class="field-odd">Type</dt>
+<dt class="field-odd">Type<span class="colon">:</span></dt>
 <dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.13)">dict</a></p>
 </dd>
 </dl>
 </dd></dl>
 
 <dl class="py method">
-<dt id="ehtim.caltable.Caltable.applycal">
-<code class="sig-name descname">applycal</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">obs</span></em>, <em class="sig-param"><span class="n">interp</span><span class="o">=</span><span class="default_value">'linear'</span></em>, <em class="sig-param"><span class="n">extrapolate</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">force_singlepol</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">copy_closure_tables</span><span class="o">=</span><span class="default_value">True</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/caltable.html#Caltable.applycal"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.caltable.Caltable.applycal" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="ehtim.caltable.Caltable.applycal">
+<span class="sig-name descname"><span class="pre">applycal</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">obs</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">interp</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'linear'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">extrapolate</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">force_singlepol</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">copy_closure_tables</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/caltable.html#Caltable.applycal"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ehtim.caltable.Caltable.applycal" title="Permalink to this definition"></a></dt>
 <dd><p>Apply the calibration table to an observation.</p>
 <dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>obs</strong> (<a class="reference internal" href="obsdata.html#ehtim.obsdata.Obsdata" title="ehtim.obsdata.Obsdata"><em>Obsdata</em></a>) – The observation  with data to be calibrated</p></li>
 <li><p><strong>interp</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><em>str</em></a>) – Interpolation method (‘linear’,’nearest’,’cubic’)</p></li>
@@ -207,38 +210,38 @@
 equal to chosen polarization</p></li>
 </ul>
 </dd>
-<dt class="field-even">Returns</dt>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
 <dd class="field-even"><p>the calibrated Obsdata object</p>
 </dd>
-<dt class="field-odd">Return type</dt>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
 <dd class="field-odd"><p>(<a class="reference internal" href="obsdata.html#ehtim.obsdata.Obsdata" title="ehtim.obsdata.Obsdata">Obsdata</a>)</p>
 </dd>
 </dl>
 </dd></dl>
 
 <dl class="py method">
-<dt id="ehtim.caltable.Caltable.copy">
-<code class="sig-name descname">copy</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/caltable.html#Caltable.copy"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.caltable.Caltable.copy" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="ehtim.caltable.Caltable.copy">
+<span class="sig-name descname"><span class="pre">copy</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/caltable.html#Caltable.copy"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ehtim.caltable.Caltable.copy" title="Permalink to this definition"></a></dt>
 <dd><p>Copy the observation object.</p>
 <p>Args:</p>
 <dl class="field-list simple">
-<dt class="field-odd">Returns</dt>
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
 <dd class="field-odd"><p>a copy of the Caltable object.</p>
 </dd>
-<dt class="field-even">Return type</dt>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
 <dd class="field-even"><p>(<a class="reference internal" href="#ehtim.caltable.Caltable" title="ehtim.caltable.Caltable">Caltable</a>)</p>
 </dd>
 </dl>
 </dd></dl>
 
 <dl class="py method">
-<dt id="ehtim.caltable.Caltable.enforce_positive">
-<code class="sig-name descname">enforce_positive</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">method</span><span class="o">=</span><span class="default_value">'median'</span></em>, <em class="sig-param"><span class="n">min_gain</span><span class="o">=</span><span class="default_value">0.9</span></em>, <em class="sig-param"><span class="n">sites</span><span class="o">=</span><span class="default_value">[]</span></em>, <em class="sig-param"><span class="n">verbose</span><span class="o">=</span><span class="default_value">True</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/caltable.html#Caltable.enforce_positive"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.caltable.Caltable.enforce_positive" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="ehtim.caltable.Caltable.enforce_positive">
+<span class="sig-name descname"><span class="pre">enforce_positive</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">method</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'median'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">min_gain</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.9</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sites</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[]</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbose</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/caltable.html#Caltable.enforce_positive"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ehtim.caltable.Caltable.enforce_positive" title="Permalink to this definition"></a></dt>
 <dd><p>Enforce that caltable gains are not low
 (e.g., that sites are not significantly more sensitive than estimated).
 By rescaling the entire gain curve to enforce a specified minimum site gain.</p>
 <dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>caltab</strong> (<a class="reference internal" href="#ehtim.caltable.Caltable" title="ehtim.caltable.Caltable"><em>Caltable</em></a>) – Input Caltable with station gains</p></li>
 <li><p><strong>method</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><em>str</em></a>) – ‘median’, ‘mean’, or ‘min’</p></li>
@@ -247,62 +250,62 @@ By rescaling the entire gain curve to enforce a specified minimum site gain.</p>
 <li><p><strong>verbose</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.13)"><em>bool</em></a>) – If True, print corrections.</p></li>
 </ul>
 </dd>
-<dt class="field-even">Returns</dt>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
 <dd class="field-even"><p>Axes object with the plot</p>
 </dd>
-<dt class="field-odd">Return type</dt>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
 <dd class="field-odd"><p>(<a class="reference internal" href="#ehtim.caltable.Caltable" title="ehtim.caltable.Caltable">Caltable</a>)</p>
 </dd>
 </dl>
 </dd></dl>
 
 <dl class="py method">
-<dt id="ehtim.caltable.Caltable.merge">
-<code class="sig-name descname">merge</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">caltablelist</span></em>, <em class="sig-param"><span class="n">interp</span><span class="o">=</span><span class="default_value">'linear'</span></em>, <em class="sig-param"><span class="n">extrapolate</span><span class="o">=</span><span class="default_value">1</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/caltable.html#Caltable.merge"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.caltable.Caltable.merge" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="ehtim.caltable.Caltable.merge">
+<span class="sig-name descname"><span class="pre">merge</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">caltablelist</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">interp</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'linear'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">extrapolate</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/caltable.html#Caltable.merge"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ehtim.caltable.Caltable.merge" title="Permalink to this definition"></a></dt>
 <dd><p>Merge the calibration table with a list of other calibration tables</p>
 <dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>caltablelist</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.13)"><em>list</em></a>) – The list of caltables to be merged</p></li>
 <li><p><strong>interp</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><em>str</em></a>) – Interpolation method (‘linear’,’nearest’,’cubic’)</p></li>
 <li><p><strong>extrapolate</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.13)"><em>bool</em></a>) – If True, points outside interpolation range will be extrapolated.</p></li>
 </ul>
 </dd>
-<dt class="field-even">Returns</dt>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
 <dd class="field-even"><p>the merged Caltable object</p>
 </dd>
-<dt class="field-odd">Return type</dt>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
 <dd class="field-odd"><p>(<a class="reference internal" href="#ehtim.caltable.Caltable" title="ehtim.caltable.Caltable">Caltable</a>)</p>
 </dd>
 </dl>
 </dd></dl>
 
 <dl class="py method">
-<dt id="ehtim.caltable.Caltable.pad_scans">
-<code class="sig-name descname">pad_scans</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">maxdiff</span><span class="o">=</span><span class="default_value">60</span></em>, <em class="sig-param"><span class="n">padtype</span><span class="o">=</span><span class="default_value">'median'</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/caltable.html#Caltable.pad_scans"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.caltable.Caltable.pad_scans" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="ehtim.caltable.Caltable.pad_scans">
+<span class="sig-name descname"><span class="pre">pad_scans</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">maxdiff</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">60</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">padtype</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'median'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/caltable.html#Caltable.pad_scans"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ehtim.caltable.Caltable.pad_scans" title="Permalink to this definition"></a></dt>
 <dd><p>Pad data points around scans.</p>
 <dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>maxdiff</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.13)"><em>float</em></a>) – “scan” separation length (seconds)</p></li>
 <li><p><strong>padtype</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><em>str</em></a>) – padding type, ‘endval’ or ‘median’</p></li>
 </ul>
 </dd>
-<dt class="field-even">Returns</dt>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
 <dd class="field-even"><p>a padded caltable object</p>
 </dd>
-<dt class="field-odd">Return type</dt>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
 <dd class="field-odd"><p>(<a class="reference internal" href="#ehtim.caltable.Caltable" title="ehtim.caltable.Caltable">Caltable</a>)</p>
 </dd>
 </dl>
 </dd></dl>
 
 <dl class="py method">
-<dt id="ehtim.caltable.Caltable.plot_dterms">
-<code class="sig-name descname">plot_dterms</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">sites</span><span class="o">=</span><span class="default_value">'all'</span></em>, <em class="sig-param"><span class="n">label</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">legend</span><span class="o">=</span><span class="default_value">True</span></em>, <em class="sig-param"><span class="n">clist</span><span class="o">=</span><span class="default_value">[0.11764705882352941, 0.5647058823529412, 1.0, 1.0, 0.38823529411764707, 0.2784313725490196, 0.5411764705882353, 0.16862745098039217, 0.8862745098039215, 0.4196078431372549, 0.5568627450980392, 0.13725490196078433, 1.0, 0.6470588235294118, 0.0, 0.5450980392156862, 0.27058823529411763, 0.07450980392156863, 0.0, 0.0, 0.803921568627451, 1.0, 0.0, 0.0, 0.0, 1.0, 1.0, 1.0, 0.0, 1.0, 0.0, 0.39215686274509803, 0.0, 0.8235294117647058, 0.7058823529411765, 0.5490196078431373, 0.0, 0.0, 0.0]</span></em>, <em class="sig-param"><span class="n">rangex</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">rangey</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">markersize</span><span class="o">=</span><span class="default_value">6</span></em>, <em class="sig-param"><span class="n">show</span><span class="o">=</span><span class="default_value">True</span></em>, <em class="sig-param"><span class="n">grid</span><span class="o">=</span><span class="default_value">True</span></em>, <em class="sig-param"><span class="n">export_pdf</span><span class="o">=</span><span class="default_value">''</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/caltable.html#Caltable.plot_dterms"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.caltable.Caltable.plot_dterms" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="ehtim.caltable.Caltable.plot_dterms">
+<span class="sig-name descname"><span class="pre">plot_dterms</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">sites</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'all'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">label</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">legend</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">clist</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[(0.11764705882352941,</span> <span class="pre">0.5647058823529412,</span> <span class="pre">1.0),</span> <span class="pre">(1.0,</span> <span class="pre">0.38823529411764707,</span> <span class="pre">0.2784313725490196),</span> <span class="pre">(0.5411764705882353,</span> <span class="pre">0.16862745098039217,</span> <span class="pre">0.8862745098039215),</span> <span class="pre">(0.4196078431372549,</span> <span class="pre">0.5568627450980392,</span> <span class="pre">0.13725490196078433),</span> <span class="pre">(1.0,</span> <span class="pre">0.6470588235294118,</span> <span class="pre">0.0),</span> <span class="pre">(0.5450980392156862,</span> <span class="pre">0.27058823529411763,</span> <span class="pre">0.07450980392156863),</span> <span class="pre">(0.0,</span> <span class="pre">0.0,</span> <span class="pre">0.803921568627451),</span> <span class="pre">(1.0,</span> <span class="pre">0.0,</span> <span class="pre">0.0),</span> <span class="pre">(0.0,</span> <span class="pre">1.0,</span> <span class="pre">1.0),</span> <span class="pre">(1.0,</span> <span class="pre">0.0,</span> <span class="pre">1.0),</span> <span class="pre">(0.0,</span> <span class="pre">0.39215686274509803,</span> <span class="pre">0.0),</span> <span class="pre">(0.8235294117647058,</span> <span class="pre">0.7058823529411765,</span> <span class="pre">0.5490196078431373),</span> <span class="pre">(0.0,</span> <span class="pre">0.0,</span> <span class="pre">0.0)]</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rangex</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rangey</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">markersize</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">6</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">show</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">grid</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">export_pdf</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">''</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/caltable.html#Caltable.plot_dterms"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ehtim.caltable.Caltable.plot_dterms" title="Permalink to this definition"></a></dt>
 <dd><p>Make a plot of the D-terms.</p>
 <dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>sites</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.13)"><em>list</em></a>) – list of sites to plot</p></li>
 <li><p><strong>label</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><em>str</em></a>) – title for plot</p></li>
@@ -316,15 +319,15 @@ By rescaling the entire gain curve to enforce a specified minimum site gain.</p>
 <li><p><strong>export_pdf</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><em>str</em></a>) – save a pdf file to this path</p></li>
 </ul>
 </dd>
-<dt class="field-even">Returns</dt>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
 <dd class="field-even"><p>matplotlib.axes</p>
 </dd>
 </dl>
 </dd></dl>
 
 <dl class="py method">
-<dt id="ehtim.caltable.Caltable.plot_gains">
-<code class="sig-name descname">plot_gains</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">sites</span></em>, <em class="sig-param"><span class="n">gain_type</span><span class="o">=</span><span class="default_value">'amp'</span></em>, <em class="sig-param"><span class="n">pol</span><span class="o">=</span><span class="default_value">'R'</span></em>, <em class="sig-param"><span class="n">label</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">ang_unit</span><span class="o">=</span><span class="default_value">'deg'</span></em>, <em class="sig-param"><span class="n">timetype</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">yscale</span><span class="o">=</span><span class="default_value">'log'</span></em>, <em class="sig-param"><span class="n">legend</span><span class="o">=</span><span class="default_value">True</span></em>, <em class="sig-param"><span class="n">clist</span><span class="o">=</span><span class="default_value">[0.11764705882352941, 0.5647058823529412, 1.0, 1.0, 0.38823529411764707, 0.2784313725490196, 0.5411764705882353, 0.16862745098039217, 0.8862745098039215, 0.4196078431372549, 0.5568627450980392, 0.13725490196078433, 1.0, 0.6470588235294118, 0.0, 0.5450980392156862, 0.27058823529411763, 0.07450980392156863, 0.0, 0.0, 0.803921568627451, 1.0, 0.0, 0.0, 0.0, 1.0, 1.0, 1.0, 0.0, 1.0, 0.0, 0.39215686274509803, 0.0, 0.8235294117647058, 0.7058823529411765, 0.5490196078431373, 0.0, 0.0, 0.0]</span></em>, <em class="sig-param"><span class="n">rangex</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">rangey</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">markersize</span><span class="o">=</span><span class="default_value">[3]</span></em>, <em class="sig-param"><span class="n">show</span><span class="o">=</span><span class="default_value">True</span></em>, <em class="sig-param"><span class="n">grid</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">axislabels</span><span class="o">=</span><span class="default_value">True</span></em>, <em class="sig-param"><span class="n">axis</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">export_pdf</span><span class="o">=</span><span class="default_value">''</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/caltable.html#Caltable.plot_gains"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.caltable.Caltable.plot_gains" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="ehtim.caltable.Caltable.plot_gains">
+<span class="sig-name descname"><span class="pre">plot_gains</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">sites</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">gain_type</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'amp'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pol</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'R'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">label</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ang_unit</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'deg'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">timetype</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">yscale</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'log'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">legend</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">clist</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[(0.11764705882352941,</span> <span class="pre">0.5647058823529412,</span> <span class="pre">1.0),</span> <span class="pre">(1.0,</span> <span class="pre">0.38823529411764707,</span> <span class="pre">0.2784313725490196),</span> <span class="pre">(0.5411764705882353,</span> <span class="pre">0.16862745098039217,</span> <span class="pre">0.8862745098039215),</span> <span class="pre">(0.4196078431372549,</span> <span class="pre">0.5568627450980392,</span> <span class="pre">0.13725490196078433),</span> <span class="pre">(1.0,</span> <span class="pre">0.6470588235294118,</span> <span class="pre">0.0),</span> <span class="pre">(0.5450980392156862,</span> <span class="pre">0.27058823529411763,</span> <span class="pre">0.07450980392156863),</span> <span class="pre">(0.0,</span> <span class="pre">0.0,</span> <span class="pre">0.803921568627451),</span> <span class="pre">(1.0,</span> <span class="pre">0.0,</span> <span class="pre">0.0),</span> <span class="pre">(0.0,</span> <span class="pre">1.0,</span> <span class="pre">1.0),</span> <span class="pre">(1.0,</span> <span class="pre">0.0,</span> <span class="pre">1.0),</span> <span class="pre">(0.0,</span> <span class="pre">0.39215686274509803,</span> <span class="pre">0.0),</span> <span class="pre">(0.8235294117647058,</span> <span class="pre">0.7058823529411765,</span> <span class="pre">0.5490196078431373),</span> <span class="pre">(0.0,</span> <span class="pre">0.0,</span> <span class="pre">0.0)]</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rangex</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rangey</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">markersize</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[3]</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">show</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">grid</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">axislabels</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">axis</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">export_pdf</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">''</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/caltable.html#Caltable.plot_gains"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ehtim.caltable.Caltable.plot_gains" title="Permalink to this definition"></a></dt>
 <dd><p>Plot gains on multiple sites vs time.
 :param sites: a list of site names for which to plot gains. Empty list is all sites.
 :type sites: list
@@ -361,18 +364,18 @@ By rescaling the entire gain curve to enforce a specified minimum site gain.</p>
 :param export_pdf: path to pdf file to save figure
 :type export_pdf: str</p>
 <dl class="field-list simple">
-<dt class="field-odd">Returns</dt>
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
 <dd class="field-odd"><p>Axes object with the plot</p>
 </dd>
-<dt class="field-even">Return type</dt>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
 <dd class="field-even"><p>(matplotlib.axes.Axes)</p>
 </dd>
 </dl>
 </dd></dl>
 
 <dl class="py method">
-<dt id="ehtim.caltable.Caltable.save_txt">
-<code class="sig-name descname">save_txt</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">obs</span></em>, <em class="sig-param"><span class="n">datadir</span><span class="o">=</span><span class="default_value">'.'</span></em>, <em class="sig-param"><span class="n">sqrt_gains</span><span class="o">=</span><span class="default_value">False</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/caltable.html#Caltable.save_txt"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.caltable.Caltable.save_txt" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="ehtim.caltable.Caltable.save_txt">
+<span class="sig-name descname"><span class="pre">save_txt</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">obs</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">datadir</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'.'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sqrt_gains</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/caltable.html#Caltable.save_txt"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ehtim.caltable.Caltable.save_txt" title="Permalink to this definition"></a></dt>
 <dd><p>Saves a Caltable object to text files in the given directory
 :param obs: The observation object associated with the Caltable
 :type obs: Obsdata
@@ -384,20 +387,20 @@ By rescaling the entire gain curve to enforce a specified minimum site gain.</p>
 </dd></dl>
 
 <dl class="py method">
-<dt id="ehtim.caltable.Caltable.scan_avg">
-<code class="sig-name descname">scan_avg</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">obs</span></em>, <em class="sig-param"><span class="n">incoherent</span><span class="o">=</span><span class="default_value">True</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/caltable.html#Caltable.scan_avg"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.caltable.Caltable.scan_avg" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="ehtim.caltable.Caltable.scan_avg">
+<span class="sig-name descname"><span class="pre">scan_avg</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">obs</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">incoherent</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/caltable.html#Caltable.scan_avg"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ehtim.caltable.Caltable.scan_avg" title="Permalink to this definition"></a></dt>
 <dd><p>average the gains across scans.</p>
 <dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>obs</strong> (<em>ehtim.Obsdata</em>) – input observation</p></li>
 <li><p><strong>incoherent</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.13)"><em>bool</em></a>) – True to average gain amps, False to average amps+phase</p></li>
 </ul>
 </dd>
-<dt class="field-even">Returns</dt>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
 <dd class="field-even"><p>the averaged Caltable object</p>
 </dd>
-<dt class="field-odd">Return type</dt>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
 <dd class="field-odd"><p>(<a class="reference internal" href="#ehtim.caltable.Caltable" title="ehtim.caltable.Caltable">Caltable</a>)</p>
 </dd>
 </dl>
@@ -406,8 +409,8 @@ By rescaling the entire gain curve to enforce a specified minimum site gain.</p>
 </dd></dl>
 
 <dl class="py function">
-<dt id="ehtim.caltable.load_caltable">
-<code class="sig-prename descclassname">ehtim.caltable.</code><code class="sig-name descname">load_caltable</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">obs</span></em>, <em class="sig-param"><span class="n">datadir</span></em>, <em class="sig-param"><span class="n">sqrt_gains</span><span class="o">=</span><span class="default_value">False</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/caltable.html#load_caltable"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.caltable.load_caltable" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="ehtim.caltable.load_caltable">
+<span class="sig-prename descclassname"><span class="pre">ehtim.caltable.</span></span><span class="sig-name descname"><span class="pre">load_caltable</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">obs</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">datadir</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sqrt_gains</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/caltable.html#load_caltable"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ehtim.caltable.load_caltable" title="Permalink to this definition"></a></dt>
 <dd><p>Load apriori Caltable object from text files in the given directory
 :param obs: The observation object associated with the Caltable
 :type obs: Obsdata
@@ -416,18 +419,18 @@ By rescaling the entire gain curve to enforce a specified minimum site gain.</p>
 :param sqrt_gains: If True, we take the sqrt of table gains before loading.
 :type sqrt_gains: bool</p>
 <dl class="field-list simple">
-<dt class="field-odd">Returns</dt>
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
 <dd class="field-odd"><p>a caltable object</p>
 </dd>
-<dt class="field-even">Return type</dt>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
 <dd class="field-even"><p>(<a class="reference internal" href="#ehtim.caltable.Caltable" title="ehtim.caltable.Caltable">Caltable</a>)</p>
 </dd>
 </dl>
 </dd></dl>
 
 <dl class="py function">
-<dt id="ehtim.caltable.make_caltable">
-<code class="sig-prename descclassname">ehtim.caltable.</code><code class="sig-name descname">make_caltable</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">obs</span></em>, <em class="sig-param"><span class="n">gains</span></em>, <em class="sig-param"><span class="n">sites</span></em>, <em class="sig-param"><span class="n">times</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/caltable.html#make_caltable"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.caltable.make_caltable" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="ehtim.caltable.make_caltable">
+<span class="sig-prename descclassname"><span class="pre">ehtim.caltable.</span></span><span class="sig-name descname"><span class="pre">make_caltable</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">obs</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">gains</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sites</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">times</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/caltable.html#make_caltable"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ehtim.caltable.make_caltable" title="Permalink to this definition"></a></dt>
 <dd><p>Create a Caltable object for an observation
 :param obs: The observation object associated with the Caltable
 :type obs: Obsdata
@@ -438,18 +441,18 @@ By rescaling the entire gain curve to enforce a specified minimum site gain.</p>
 :param times: list of times
 :type times: list</p>
 <dl class="field-list simple">
-<dt class="field-odd">Returns</dt>
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
 <dd class="field-odd"><p>a caltable object</p>
 </dd>
-<dt class="field-even">Return type</dt>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
 <dd class="field-even"><p>(<a class="reference internal" href="#ehtim.caltable.Caltable" title="ehtim.caltable.Caltable">Caltable</a>)</p>
 </dd>
 </dl>
 </dd></dl>
 
 <dl class="py function">
-<dt id="ehtim.caltable.save_caltable">
-<code class="sig-prename descclassname">ehtim.caltable.</code><code class="sig-name descname">save_caltable</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">caltable</span></em>, <em class="sig-param"><span class="n">obs</span></em>, <em class="sig-param"><span class="n">datadir</span><span class="o">=</span><span class="default_value">'.'</span></em>, <em class="sig-param"><span class="n">sqrt_gains</span><span class="o">=</span><span class="default_value">False</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/caltable.html#save_caltable"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.caltable.save_caltable" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="ehtim.caltable.save_caltable">
+<span class="sig-prename descclassname"><span class="pre">ehtim.caltable.</span></span><span class="sig-name descname"><span class="pre">save_caltable</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">caltable</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">obs</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">datadir</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'.'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sqrt_gains</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/caltable.html#save_caltable"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ehtim.caltable.save_caltable" title="Permalink to this definition"></a></dt>
 <dd><p>Saves a Caltable object to text files in the given directory
 :param obs: The observation object associated with the Caltable
 :type obs: Obsdata
@@ -461,11 +464,11 @@ By rescaling the entire gain curve to enforce a specified minimum site gain.</p>
 </dd></dl>
 
 <span class="target" id="module-ehtim.calibrating.self_cal"></span><dl class="py function">
-<dt id="ehtim.calibrating.self_cal.self_cal">
-<code class="sig-prename descclassname">ehtim.calibrating.self_cal.</code><code class="sig-name descname">self_cal</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">obs</span></em>, <em class="sig-param"><span class="n">im</span></em>, <em class="sig-param"><span class="n">sites</span><span class="o">=</span><span class="default_value">[]</span></em>, <em class="sig-param"><span class="n">pol</span><span class="o">=</span><span class="default_value">'I'</span></em>, <em class="sig-param"><span class="n">apply_singlepol</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">method</span><span class="o">=</span><span class="default_value">'both'</span></em>, <em class="sig-param"><span class="n">minimizer_method</span><span class="o">=</span><span class="default_value">'BFGS'</span></em>, <em class="sig-param"><span class="n">pad_amp</span><span class="o">=</span><span class="default_value">0.0</span></em>, <em class="sig-param"><span class="n">gain_tol</span><span class="o">=</span><span class="default_value">0.2</span></em>, <em class="sig-param"><span class="n">solution_interval</span><span class="o">=</span><span class="default_value">0.0</span></em>, <em class="sig-param"><span class="n">scan_solutions</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">ttype</span><span class="o">=</span><span class="default_value">'direct'</span></em>, <em class="sig-param"><span class="n">fft_pad_factor</span><span class="o">=</span><span class="default_value">2</span></em>, <em class="sig-param"><span class="n">caltable</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">debias</span><span class="o">=</span><span class="default_value">True</span></em>, <em class="sig-param"><span class="n">apply_dterms</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">copy_closure_tables</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">processes</span><span class="o">=</span><span class="default_value">- 1</span></em>, <em class="sig-param"><span class="n">show_solution</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">msgtype</span><span class="o">=</span><span class="default_value">'bar'</span></em>, <em class="sig-param"><span class="n">use_grad</span><span class="o">=</span><span class="default_value">False</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/calibrating/self_cal.html#self_cal"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.calibrating.self_cal.self_cal" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="ehtim.calibrating.self_cal.self_cal">
+<span class="sig-prename descclassname"><span class="pre">ehtim.calibrating.self_cal.</span></span><span class="sig-name descname"><span class="pre">self_cal</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">obs</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">im</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sites</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[]</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pol</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'I'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">apply_singlepol</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">method</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'both'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">minimizer_method</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'BFGS'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pad_amp</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">gain_tol</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.2</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">solution_interval</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">scan_solutions</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ttype</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'direct'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fft_pad_factor</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">2</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">caltable</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">debias</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">apply_dterms</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">copy_closure_tables</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">processes</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">-</span> <span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">show_solution</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">msgtype</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'bar'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">use_grad</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/calibrating/self_cal.html#self_cal"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ehtim.calibrating.self_cal.self_cal" title="Permalink to this definition"></a></dt>
 <dd><p>Self-calibrate a dataset to an image.</p>
 <dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>obs</strong> (<a class="reference internal" href="obsdata.html#ehtim.obsdata.Obsdata" title="ehtim.obsdata.Obsdata"><em>Obsdata</em></a>) – The observation to be calibrated</p></li>
 <li><p><strong>im</strong> (<a class="reference internal" href="image.html#ehtim.image.Image" title="ehtim.image.Image"><em>Image</em></a>) – the image to be calibrated  to</p></li>
@@ -495,22 +498,22 @@ If 0., determine solution for each unique time</p></li>
 <li><p><strong>use_grad</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.13)"><em>bool</em></a>) – if True, use gradients in minimizer</p></li>
 </ul>
 </dd>
-<dt class="field-even">Returns</dt>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
 <dd class="field-even"><p>the calibrated observation, if caltable==False
 (Caltable): the derived calibration table, if caltable==True</p>
 </dd>
-<dt class="field-odd">Return type</dt>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
 <dd class="field-odd"><p>(<a class="reference internal" href="obsdata.html#ehtim.obsdata.Obsdata" title="ehtim.obsdata.Obsdata">Obsdata</a>)</p>
 </dd>
 </dl>
 </dd></dl>
 
 <dl class="py function">
-<dt id="ehtim.calibrating.self_cal.self_cal_scan">
-<code class="sig-prename descclassname">ehtim.calibrating.self_cal.</code><code class="sig-name descname">self_cal_scan</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">scan</span></em>, <em class="sig-param"><span class="n">im</span></em>, <em class="sig-param"><span class="n">V_scan</span><span class="o">=</span><span class="default_value">[]</span></em>, <em class="sig-param"><span class="n">sites</span><span class="o">=</span><span class="default_value">[]</span></em>, <em class="sig-param"><span class="n">polrep</span><span class="o">=</span><span class="default_value">'stokes'</span></em>, <em class="sig-param"><span class="n">pol</span><span class="o">=</span><span class="default_value">'I'</span></em>, <em class="sig-param"><span class="n">apply_singlepol</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">method</span><span class="o">=</span><span class="default_value">'both'</span></em>, <em class="sig-param"><span class="n">minimizer_method</span><span class="o">=</span><span class="default_value">'BFGS'</span></em>, <em class="sig-param"><span class="n">show_solution</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">pad_amp</span><span class="o">=</span><span class="default_value">0.0</span></em>, <em class="sig-param"><span class="n">gain_tol</span><span class="o">=</span><span class="default_value">0.2</span></em>, <em class="sig-param"><span class="n">debias</span><span class="o">=</span><span class="default_value">True</span></em>, <em class="sig-param"><span class="n">caltable</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">use_grad</span><span class="o">=</span><span class="default_value">False</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/calibrating/self_cal.html#self_cal_scan"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.calibrating.self_cal.self_cal_scan" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="ehtim.calibrating.self_cal.self_cal_scan">
+<span class="sig-prename descclassname"><span class="pre">ehtim.calibrating.self_cal.</span></span><span class="sig-name descname"><span class="pre">self_cal_scan</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">scan</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">im</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">V_scan</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[]</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sites</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[]</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">polrep</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'stokes'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pol</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'I'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">apply_singlepol</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">method</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'both'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">minimizer_method</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'BFGS'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">show_solution</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pad_amp</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">gain_tol</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.2</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">debias</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">caltable</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">use_grad</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/calibrating/self_cal.html#self_cal_scan"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ehtim.calibrating.self_cal.self_cal_scan" title="Permalink to this definition"></a></dt>
 <dd><p>Self-calibrate a scan to an image.</p>
 <dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>scan</strong> (<em>np.recarray</em>) – data array of type DTPOL_STOKES or DTPOL_CIRC</p></li>
 <li><p><strong>im</strong> (<a class="reference internal" href="image.html#ehtim.image.Image" title="ehtim.image.Image"><em>Image</em></a>) – the image to be calibrated  to</p></li>
@@ -534,22 +537,22 @@ pass a 2-element list</p></li>
 <li><p><strong>use_grad</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.13)"><em>bool</em></a>) – if True, use gradients in minimizer</p></li>
 </ul>
 </dd>
-<dt class="field-even">Returns</dt>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
 <dd class="field-even"><p>the calibrated observation, if caltable==False
 (Caltable): the derived calibration table, if caltable==True</p>
 </dd>
-<dt class="field-odd">Return type</dt>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
 <dd class="field-odd"><p>(<a class="reference internal" href="obsdata.html#ehtim.obsdata.Obsdata" title="ehtim.obsdata.Obsdata">Obsdata</a>)</p>
 </dd>
 </dl>
 </dd></dl>
 
 <span class="target" id="module-ehtim.calibrating.network_cal"></span><dl class="py function">
-<dt id="ehtim.calibrating.network_cal.network_cal">
-<code class="sig-prename descclassname">ehtim.calibrating.network_cal.</code><code class="sig-name descname">network_cal</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">obs</span></em>, <em class="sig-param"><span class="n">zbl</span></em>, <em class="sig-param"><span class="n">sites</span><span class="o">=</span><span class="default_value">[]</span></em>, <em class="sig-param"><span class="n">zbl_uvdist_max</span><span class="o">=</span><span class="default_value">10000000.0</span></em>, <em class="sig-param"><span class="n">method</span><span class="o">=</span><span class="default_value">'amp'</span></em>, <em class="sig-param"><span class="n">minimizer_method</span><span class="o">=</span><span class="default_value">'BFGS'</span></em>, <em class="sig-param"><span class="n">pol</span><span class="o">=</span><span class="default_value">'I'</span></em>, <em class="sig-param"><span class="n">pad_amp</span><span class="o">=</span><span class="default_value">0.0</span></em>, <em class="sig-param"><span class="n">gain_tol</span><span class="o">=</span><span class="default_value">0.2</span></em>, <em class="sig-param"><span class="n">solution_interval</span><span class="o">=</span><span class="default_value">0.0</span></em>, <em class="sig-param"><span class="n">scan_solutions</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">caltable</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">processes</span><span class="o">=</span><span class="default_value">- 1</span></em>, <em class="sig-param"><span class="n">show_solution</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">debias</span><span class="o">=</span><span class="default_value">True</span></em>, <em class="sig-param"><span class="n">msgtype</span><span class="o">=</span><span class="default_value">'bar'</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/calibrating/network_cal.html#network_cal"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.calibrating.network_cal.network_cal" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="ehtim.calibrating.network_cal.network_cal">
+<span class="sig-prename descclassname"><span class="pre">ehtim.calibrating.network_cal.</span></span><span class="sig-name descname"><span class="pre">network_cal</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">obs</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">zbl</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sites</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[]</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">zbl_uvdist_max</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">10000000.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">method</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'amp'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">minimizer_method</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'BFGS'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pol</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'I'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pad_amp</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">gain_tol</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.2</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">solution_interval</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">scan_solutions</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">caltable</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">processes</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">-</span> <span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">show_solution</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">debias</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">msgtype</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'bar'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/calibrating/network_cal.html#network_cal"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ehtim.calibrating.network_cal.network_cal" title="Permalink to this definition"></a></dt>
 <dd><p>Network-calibrate a dataset with zero baseline constraints.</p>
 <dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>obs</strong> (<a class="reference internal" href="obsdata.html#ehtim.obsdata.Obsdata" title="ehtim.obsdata.Obsdata"><em>Obsdata</em></a>) – The observation to be calibrated</p></li>
 <li><p><strong>zbl</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.13)"><em>float</em></a><em> or </em><em>function</em>) – constant zero baseline flux in Jy, or a function of UT hour.</p></li>
@@ -573,22 +576,22 @@ Supersedes solution_interval</p></li>
 <li><p><strong>msgtype</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><em>str</em></a>) – type of progress message to be printed, default is ‘bar’</p></li>
 </ul>
 </dd>
-<dt class="field-even">Returns</dt>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
 <dd class="field-even"><p>the calibrated observation, if caltable==False
 (Caltable): the derived calibration table, if caltable==True</p>
 </dd>
-<dt class="field-odd">Return type</dt>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
 <dd class="field-odd"><p>(<a class="reference internal" href="obsdata.html#ehtim.obsdata.Obsdata" title="ehtim.obsdata.Obsdata">Obsdata</a>)</p>
 </dd>
 </dl>
 </dd></dl>
 
 <dl class="py function">
-<dt id="ehtim.calibrating.network_cal.network_cal_scan">
-<code class="sig-prename descclassname">ehtim.calibrating.network_cal.</code><code class="sig-name descname">network_cal_scan</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">scan</span></em>, <em class="sig-param"><span class="n">zbl</span></em>, <em class="sig-param"><span class="n">sites</span></em>, <em class="sig-param"><span class="n">clustered_sites</span></em>, <em class="sig-param"><span class="n">polrep</span><span class="o">=</span><span class="default_value">'stokes'</span></em>, <em class="sig-param"><span class="n">pol</span><span class="o">=</span><span class="default_value">'I'</span></em>, <em class="sig-param"><span class="n">zbl_uvidst_max</span><span class="o">=</span><span class="default_value">10000000.0</span></em>, <em class="sig-param"><span class="n">method</span><span class="o">=</span><span class="default_value">'both'</span></em>, <em class="sig-param"><span class="n">minimizer_method</span><span class="o">=</span><span class="default_value">'BFGS'</span></em>, <em class="sig-param"><span class="n">show_solution</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">pad_amp</span><span class="o">=</span><span class="default_value">0.0</span></em>, <em class="sig-param"><span class="n">gain_tol</span><span class="o">=</span><span class="default_value">0.2</span></em>, <em class="sig-param"><span class="n">caltable</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">debias</span><span class="o">=</span><span class="default_value">True</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/calibrating/network_cal.html#network_cal_scan"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.calibrating.network_cal.network_cal_scan" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="ehtim.calibrating.network_cal.network_cal_scan">
+<span class="sig-prename descclassname"><span class="pre">ehtim.calibrating.network_cal.</span></span><span class="sig-name descname"><span class="pre">network_cal_scan</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">scan</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">zbl</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sites</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">clustered_sites</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">polrep</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'stokes'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pol</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'I'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">zbl_uvidst_max</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">10000000.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">method</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'both'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">minimizer_method</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'BFGS'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">show_solution</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pad_amp</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">gain_tol</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.2</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">caltable</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">debias</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/calibrating/network_cal.html#network_cal_scan"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ehtim.calibrating.network_cal.network_cal_scan" title="Permalink to this definition"></a></dt>
 <dd><p>Network-calibrate a scan with zero baseline constraints.</p>
 <dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>obs</strong> (<a class="reference internal" href="obsdata.html#ehtim.obsdata.Obsdata" title="ehtim.obsdata.Obsdata"><em>Obsdata</em></a>) – The observation to be calibrated</p></li>
 <li><p><strong>zbl</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.13)"><em>float</em></a><em> or </em><em>function</em>) – constant zero baseline flux in Jy, or a function of UT hour.</p></li>
@@ -606,17 +609,17 @@ empty list calibrates all sites</p></li>
 <li><p><strong>show_solution</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.13)"><em>bool</em></a>) – if True, display the solution as it is calculated</p></li>
 </ul>
 </dd>
-<dt class="field-even">Returns</dt>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
 <dd class="field-even"><p>the calibrated scan, if caltable==False
 (Caltable): the derived calibration table, if caltable==True</p>
 </dd>
-<dt class="field-odd">Return type</dt>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
 <dd class="field-odd"><p>(<a class="reference internal" href="obsdata.html#ehtim.obsdata.Obsdata" title="ehtim.obsdata.Obsdata">Obsdata</a>)</p>
 </dd>
 </dl>
 </dd></dl>
 
-</div>
+</section>
 
 
            </div>

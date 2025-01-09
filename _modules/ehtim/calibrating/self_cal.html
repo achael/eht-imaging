@@ -3,16 +3,18 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>ehtim.calibrating.self_cal &mdash; ehtim 1.2.6 documentation</title><link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
-    <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+  <title>ehtim.calibrating.self_cal &mdash; ehtim 1.2.6 documentation</title>
+      <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
   <!--[if lt IE 9]>
     <script src="../../../_static/js/html5shiv.min.js"></script>
   <![endif]-->
-  <script id="documentation_options" data-url_root="../../../" src="../../../_static/documentation_options.js"></script>
+  
+        <script data-url_root="../../../" id="documentation_options" src="../../../_static/documentation_options.js"></script>
         <script src="../../../_static/jquery.js"></script>
         <script src="../../../_static/underscore.js"></script>
+        <script src="../../../_static/_sphinx_javascript_frameworks_compat.js"></script>
         <script src="../../../_static/doctools.js"></script>
-        <script src="../../../_static/language_data.js"></script>
     <script src="../../../_static/js/theme.js"></script>
     <link rel="index" title="Index" href="../../../genindex.html" />
     <link rel="search" title="Search" href="../../../search.html" /> 
@@ -36,7 +38,7 @@
   </form>
 </div>
         </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
-              <p class="caption"><span class="caption-text">Contents:</span></p>
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="../../../image.html">Image</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../array.html">Array</a></li>
@@ -131,13 +133,13 @@
 
 <div class="viewcode-block" id="self_cal"><a class="viewcode-back" href="../../../calibration.html#ehtim.calibrating.self_cal.self_cal">[docs]</a><span class="k">def</span> <span class="nf">self_cal</span><span class="p">(</span><span class="n">obs</span><span class="p">,</span> <span class="n">im</span><span class="p">,</span> <span class="n">sites</span><span class="o">=</span><span class="p">[],</span> <span class="n">pol</span><span class="o">=</span><span class="s1">&#39;I&#39;</span><span class="p">,</span> <span class="n">apply_singlepol</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">method</span><span class="o">=</span><span class="s2">&quot;both&quot;</span><span class="p">,</span> 
              <span class="n">minimizer_method</span><span class="o">=</span><span class="s1">&#39;BFGS&#39;</span><span class="p">,</span>
-             <span class="n">pad_amp</span><span class="o">=</span><span class="mf">0.</span><span class="p">,</span> <span class="n">gain_tol</span><span class="o">=.</span><span class="mi">2</span><span class="p">,</span> <span class="n">solution_interval</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">scan_solutions</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+             <span class="n">pad_amp</span><span class="o">=</span><span class="mf">0.</span><span class="p">,</span> <span class="n">gain_tol</span><span class="o">=</span><span class="mf">.2</span><span class="p">,</span> <span class="n">solution_interval</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">scan_solutions</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
              <span class="n">ttype</span><span class="o">=</span><span class="s1">&#39;direct&#39;</span><span class="p">,</span> <span class="n">fft_pad_factor</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">caltable</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
              <span class="n">debias</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">apply_dterms</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
              <span class="n">copy_closure_tables</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
              <span class="n">processes</span><span class="o">=-</span><span class="mi">1</span><span class="p">,</span> <span class="n">show_solution</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">msgtype</span><span class="o">=</span><span class="s1">&#39;bar&#39;</span><span class="p">,</span>
              <span class="n">use_grad</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Self-calibrate a dataset to an image.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Self-calibrate a dataset to an image.</span>
 
 <span class="sd">       Args:</span>
 <span class="sd">           obs (Obsdata): The observation to be calibrated</span>
@@ -300,9 +302,9 @@
 <div class="viewcode-block" id="self_cal_scan"><a class="viewcode-back" href="../../../calibration.html#ehtim.calibrating.self_cal.self_cal_scan">[docs]</a><span class="k">def</span> <span class="nf">self_cal_scan</span><span class="p">(</span><span class="n">scan</span><span class="p">,</span> <span class="n">im</span><span class="p">,</span> <span class="n">V_scan</span><span class="o">=</span><span class="p">[],</span> <span class="n">sites</span><span class="o">=</span><span class="p">[],</span> <span class="n">polrep</span><span class="o">=</span><span class="s1">&#39;stokes&#39;</span><span class="p">,</span> <span class="n">pol</span><span class="o">=</span><span class="s1">&#39;I&#39;</span><span class="p">,</span> <span class="n">apply_singlepol</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
                   <span class="n">method</span><span class="o">=</span><span class="s2">&quot;both&quot;</span><span class="p">,</span>
                   <span class="n">minimizer_method</span><span class="o">=</span><span class="s1">&#39;BFGS&#39;</span><span class="p">,</span> <span class="n">show_solution</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
-                  <span class="n">pad_amp</span><span class="o">=</span><span class="mf">0.</span><span class="p">,</span> <span class="n">gain_tol</span><span class="o">=.</span><span class="mi">2</span><span class="p">,</span> <span class="n">debias</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">caltable</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                  <span class="n">pad_amp</span><span class="o">=</span><span class="mf">0.</span><span class="p">,</span> <span class="n">gain_tol</span><span class="o">=</span><span class="mf">.2</span><span class="p">,</span> <span class="n">debias</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">caltable</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
                   <span class="n">use_grad</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Self-calibrate a scan to an image.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Self-calibrate a scan to an image.</span>
 
 <span class="sd">       Args:</span>
 <span class="sd">           scan (np.recarray): data array of type DTPOL_STOKES or DTPOL_CIRC</span>
