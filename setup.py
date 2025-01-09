@@ -36,8 +36,8 @@ if __name__ == "__main__":
                    "scripts/imaging.py",
                    "scripts/imgsum.py"],
 
-          install_requires=["numpy>=1.24,<2.0",
-                            "scipy>=1.9.3",#,<1.14",
+          install_requires=["numpy>=1.24",   #,<2.0",
+                            "scipy>=1.9.3",  #,<1.14.0"
                             "astropy>=5.0.4",
                             "matplotlib>=3.7.3",
                             "skyfield",
@@ -46,7 +46,7 @@ if __name__ == "__main__":
                             "requests",
                             "future",
                             "networkx", 
-                           # "pynfft; platform_system!='Darwin' or platform_machine!='arm64'",
+                           # "pynfft; platform_system!='Darwin' or platform_machine!='arm64'", # now must install manually
                             "paramsurvey"
                            ],
           classifiers=[

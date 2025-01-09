@@ -24,9 +24,9 @@ Incremental updates are developed on the `dev branch <https://github.com/achael/
 
 Installing with pip will update most of the required libraries automatically (`numpy <http://www.numpy.org/>`_, `scipy <http://www.scipy.org/>`_, `matplotlib <http://www.matplotlib.org/>`_, `astropy <http://www.astropy.org/>`_, `ephem <http://pypi.python.org/pypi/pyephem/>`_, `future <http://pypi.python.org/pypi/future>`_, `h5py <http://www.h5py.org/>`_, and `pandas <http://www.pandas.pydata.org/>`_).
 
-**If you want to use fast fourier transforms, you will also need to separately install** `NFFT <https://github.com/NFFT/nfft>`_ **and its** `pynfft wrapper <https://github.com/ghisvail/pyNFFT/>`__. 
+**If you want to use fast fourier transforms, you will also need to separately install** `NFFT <https://github.com/NFFT/nfft>`_ **and its** `pyNFFT wrapper <https://github.com/ghisvail/pyNFFT/>`__. **Note that pyNFFT is only supported for python versions 3.11 or lower.**
 
-The simplest way is to use `conda <https://anaconda.org/conda-forge/pynfft/>`__ to install both:
+The simplest way is to use `conda <https://anaconda.org/conda-forge/pynfft/>`__ to install both NFFT and pyNFFT:
 
 
 .. code-block:: bash
