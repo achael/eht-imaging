@@ -7,7 +7,7 @@ def read(fname):
 if __name__ == "__main__":
     setup(name="ehtim",
 
-          version = "1.2.9",
+          version = "1.2.10",
 
           author = "Andrew Chael",
           author_email = "achael@princeton.edu",
@@ -37,7 +37,7 @@ if __name__ == "__main__":
                    "scripts/imgsum.py"],
 
           install_requires=["numpy>=1.24,<2.0",
-                            "scipy>=1.9.3,<1.14",
+                            "scipy>=1.9.3",#,<1.14",
                             "astropy>=5.0.4",
                             "matplotlib>=3.7.3",
                             "skyfield",
@@ -46,7 +46,7 @@ if __name__ == "__main__":
                             "requests",
                             "future",
                             "networkx", 
-                            "pynfft; platform_system!='Darwin' or platform_machine!='arm64'",
+                           # "pynfft; platform_system!='Darwin' or platform_machine!='arm64'",
                             "paramsurvey"
                            ],
           classifiers=[
