@@ -17,7 +17,7 @@ The package contains several primary classes for loading, simulating, and manipu
 
     This is a pre-release of ehtim. If you have a problem please submit a pull request on the git repository and/or email achael@princeton.edu.edu
 
-The latest stable version (`1.2.6 <https://github.com/achael/eht-imaging/releases/tag/v1.2.6>`_) is available on `PyPi <https://pypi.org/project/ehtim/>`_. Simply install pip and run
+The latest stable version (`1.2.10 <https://github.com/achael/eht-imaging/releases/tag/v1.2.10>`_) is available on `PyPi <https://pypi.org/project/ehtim/>`_. Simply install pip and run
 
 .. code-block:: bash
 
@@ -31,8 +31,7 @@ Incremental updates are developed on the `dev branch <https://github.com/achael/
 
 Installing with pip will update most of the required libraries automatically (`numpy <http://www.numpy.org/>`_, `scipy <http://www.scipy.org/>`_, `matplotlib <http://www.matplotlib.org/>`_, `astropy <http://www.astropy.org/>`_, `ephem <http://pypi.python.org/pypi/pyephem/>`_, `future <http://pypi.python.org/pypi/future>`_, `h5py <http://www.h5py.org/>`_, and `pandas <http://www.pandas.pydata.org/>`_).
 
-**If you want to use fast fourier transforms, you will also need to separately install** `NFFT <https://github.com/NFFT/nfft>`_ **and its** `pynfft wrapper <https://github.com/ghisvail/pyNFFT/>`__. The simplest way is to use `conda <https://anaconda.org/conda-forge/pynfft/>`__ to install both:
-
+**If you want to use fast fourier transforms, you will also need to separately install** `NFFT <https://github.com/NFFT/nfft>`_ **and its** `pyNFFT wrapper <https://github.com/ghisvail/pyNFFT/>`__. **Note that pyNFFT is only supported for python versions 3.11 or lower.**
 
 .. code-block:: bash
 
