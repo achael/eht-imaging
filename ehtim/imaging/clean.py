@@ -23,12 +23,8 @@ from __future__ import print_function
 from __future__ import absolute_import
 from builtins import range
 
-import string
 import time
 import numpy as np
-import scipy.optimize as opt
-import scipy.ndimage as nd
-import scipy.ndimage.filters as filt
 import matplotlib.pyplot as plt
 try:
     from pynfft.nfft import NFFT
@@ -36,8 +32,6 @@ except ImportError:
     pass
     #print("Warning: No NFFT installed!")
 import numpy.polynomial.polynomial as p
-
-import ehtim.image as image
 
 from ehtim.const_def import *
 from ehtim.observing.obs_helpers import *
@@ -98,7 +92,7 @@ def dd_clean_vis(Obsdata, InitIm, niter=1, clipfloor=-1, ttype="direct", loop_ga
     npad = int(fft_pad_factor * np.max((InitIm.xdim, InitIm.ydim)))
     nfft_info = NFFTInfo(InitIm.xdim, InitIm.ydim, InitIm.psize, InitIm.pulse, npad, p_rad, uv)
     plan = nfft_info.plan
-    pulsefac = nfft_info.pulsefac
+    # pulsefac = nfft_info.pulsefac
 
     # Weights
     weights_nat = 1./(sigma**2)
@@ -123,7 +117,7 @@ def dd_clean_vis(Obsdata, InitIm, niter=1, clipfloor=-1, ttype="direct", loop_ga
     DeltasIm = InitIm.copy()
     ChisqIm = InitIm.copy()
 
-    res = Obsdata.res()
+    # res = Obsdata.res()
     beamparams = Obsdata.fit_beam()
 
     imvec_init = 0*InitIm.imvec[embed_mask]
@@ -231,25 +225,25 @@ def dd_clean_bispec_full(Obsdata, InitIm, niter=1, clipfloor=-1, loop_gain=.1,
 
     # TODO do we use pulse factors?
     plan1 = nfft_info1.plan
-    pulsefac1 = nfft_info1.pulsefac
+    # pulsefac1 = nfft_info1.pulsefac
     plan2 = nfft_info2.plan
-    pulsefac2 = nfft_info2.pulsefac
+    # pulsefac2 = nfft_info2.pulsefac
     plan3 = nfft_info3.plan
-    pulsefac3 = nfft_info3.pulsefac
+    # pulsefac3 = nfft_info3.pulsefac
 
     plan11 = nfft_info11.plan
-    pulsefac11 = nfft_info11.pulsefac
+    # pulsefac11 = nfft_info11.pulsefac
     plan22 = nfft_info22.plan
-    pulsefac22 = nfft_info22.pulsefac
+    # pulsefac22 = nfft_info22.pulsefac
     plan33 = nfft_info33.plan
-    pulsefac33 = nfft_info33.pulsefac
+    # pulsefac33 = nfft_info33.pulsefac
 
     plan12 = nfft_info12.plan
-    pulsefac12 = nfft_info12.pulsefac
+    # pulsefac12 = nfft_info12.pulsefac
     plan23 = nfft_info23.plan
-    pulsefac23 = nfft_info23.pulsefac
+    # pulsefac23 = nfft_info23.pulsefac
     plan31 = nfft_info31.plan
-    pulsefac31 = nfft_info31.pulsefac
+    # pulsefac31 = nfft_info31.pulsefac
 
     # Weights
     weights_nat = 1./(sigma**2)
@@ -274,7 +268,7 @@ def dd_clean_bispec_full(Obsdata, InitIm, niter=1, clipfloor=-1, loop_gain=.1,
     DeltasIm = InitIm.copy()
     ChisqIm = InitIm.copy()
 
-    res = Obsdata.res()
+    # res = Obsdata.res()
     beamparams = Obsdata.fit_beam()
 
     imvec_init = 0*InitIm.imvec[embed_mask]
@@ -296,7 +290,7 @@ def dd_clean_bispec_full(Obsdata, InitIm, niter=1, clipfloor=-1, loop_gain=.1,
     # clean loop
     print("\n")
     for it in range(niter):
-        t = time.time()
+        # t = time.time()
         # compute delta at each location
         resid_current = bs - bs_current
         vis12_current = vis1_current*vis2_current
@@ -523,25 +517,25 @@ def dd_clean_bispec_imweight(Obsdata, InitIm, niter=1, clipfloor=-1, ttype="dire
 
     # TODO do we use pulse factors?
     plan1 = nfft_info1.plan
-    pulsefac1 = nfft_info1.pulsefac
+    # pulsefac1 = nfft_info1.pulsefac
     plan2 = nfft_info2.plan
-    pulsefac2 = nfft_info2.pulsefac
+    # pulsefac2 = nfft_info2.pulsefac
     plan3 = nfft_info3.plan
-    pulsefac3 = nfft_info3.pulsefac
+    # pulsefac3 = nfft_info3.pulsefac
 
     plan11 = nfft_info11.plan
-    pulsefac11 = nfft_info11.pulsefac
+    # pulsefac11 = nfft_info11.pulsefac
     plan22 = nfft_info22.plan
-    pulsefac22 = nfft_info22.pulsefac
+    # pulsefac22 = nfft_info22.pulsefac
     plan33 = nfft_info33.plan
-    pulsefac33 = nfft_info33.pulsefac
+    # pulsefac33 = nfft_info33.pulsefac
 
     plan12 = nfft_info12.plan
-    pulsefac12 = nfft_info12.pulsefac
+    # pulsefac12 = nfft_info12.pulsefac
     plan23 = nfft_info23.plan
-    pulsefac23 = nfft_info23.pulsefac
+    # pulsefac23 = nfft_info23.pulsefac
     plan31 = nfft_info31.plan
-    pulsefac31 = nfft_info31.pulsefac
+    # pulsefac31 = nfft_info31.pulsefac
 
     # Weights
     weights_nat = 1./(sigma**2)
@@ -567,7 +561,7 @@ def dd_clean_bispec_imweight(Obsdata, InitIm, niter=1, clipfloor=-1, ttype="dire
     DeltasIm = InitIm.copy()
     ChisqIm = InitIm.copy()
 
-    res = Obsdata.res()
+    # res = Obsdata.res()
     beamparams = Obsdata.fit_beam()
 
     imvec_init = 0*InitIm.imvec[embed_mask]
@@ -590,7 +584,7 @@ def dd_clean_bispec_imweight(Obsdata, InitIm, niter=1, clipfloor=-1, ttype="dire
     # clean loop
     print("\n")
     for it in range(niter):
-        t = time.time()
+        # t = time.time()
         # compute delta at each location
         resid_current = bs - bs_current
         vis12_current = vis1_current*vis2_current
@@ -914,30 +908,30 @@ def dd_clean_amp_cphase(Obsdata, InitIm, niter=1, clipfloor=-1, loop_gain=.1, lo
 
     # TODO do we use pulse factors?
     planA = nfft_infoA.plan
-    pulsefacA = nfft_infoA.pulsefac
+    # pulsefacA = nfft_infoA.pulsefac
     planB = nfft_infoB.plan
-    pulsefacB = nfft_infoB.pulsefac
+    # pulsefacB = nfft_infoB.pulsefac
 
     plan1 = nfft_info1.plan
-    pulsefac1 = nfft_info1.pulsefac
+    # pulsefac1 = nfft_info1.pulsefac
     plan2 = nfft_info2.plan
-    pulsefac2 = nfft_info2.pulsefac
+    # pulsefac2 = nfft_info2.pulsefac
     plan3 = nfft_info3.plan
-    pulsefac3 = nfft_info3.pulsefac
+    # pulsefac3 = nfft_info3.pulsefac
 
     plan11 = nfft_info11.plan
-    pulsefac11 = nfft_info11.pulsefac
+    # pulsefac11 = nfft_info11.pulsefac
     plan22 = nfft_info22.plan
-    pulsefac22 = nfft_info22.pulsefac
+    # pulsefac22 = nfft_info22.pulsefac
     plan33 = nfft_info33.plan
-    pulsefac33 = nfft_info33.pulsefac
+    # pulsefac33 = nfft_info33.pulsefac
 
     plan12 = nfft_info12.plan
-    pulsefac12 = nfft_info12.pulsefac
+    # pulsefac12 = nfft_info12.pulsefac
     plan23 = nfft_info23.plan
-    pulsefac23 = nfft_info23.pulsefac
+    # pulsefac23 = nfft_info23.pulsefac
     plan31 = nfft_info31.plan
-    pulsefac31 = nfft_info31.pulsefac
+    # pulsefac31 = nfft_info31.pulsefac
 
     # Weights
     weights_amp2_nat = 1./(sigma_amp2**2)
@@ -975,20 +969,20 @@ def dd_clean_amp_cphase(Obsdata, InitIm, niter=1, clipfloor=-1, loop_gain=.1, lo
     DeltasIm = InitIm.copy()
     ChisqIm = InitIm.copy()
 
-    res = Obsdata.res()
+    # res = Obsdata.res()
     beamparams = Obsdata.fit_beam()
 
     imvec_init = 0*InitIm.imvec[embed_mask]
     vis_init =  np.zeros(len(amp2), dtype='complex128')
     chisq_amp2_init = np.sum(weights_amp2*(amp2 - np.abs(vis_init)**2)**2)
-    rchisq_amp2_init = np.sum(weights_amp2_nat*(amp2 - np.abs(vis_init)**2)**2)
+    # rchisq_amp2_init = np.sum(weights_amp2_nat*(amp2 - np.abs(vis_init)**2)**2)
 
     vis1_init = np.zeros(len(bs), dtype='complex128')
     vis2_init = np.zeros(len(bs), dtype='complex128')
     vis3_init = np.zeros(len(bs), dtype='complex128')
     bs_init = vis1_init*vis2_init*vis3_init
     chisq_bs_init =  np.sum(weights_bs*np.abs(bs - bs_init)**2)
-    rchisq_bs_init =  np.sum(weights_bs_nat*np.abs(bs - bs_init)**2)
+    # rchisq_bs_init =  np.sum(weights_bs_nat*np.abs(bs - bs_init)**2)
 
     chisq_init = chisq_amp2_init + phaseweight*chisq_bs_init
 
@@ -999,9 +993,9 @@ def dd_clean_amp_cphase(Obsdata, InitIm, niter=1, clipfloor=-1, loop_gain=.1, lo
     vis3_current = vis3_init.copy()
     bs_current = bs_init.copy()
     chisq_amp2_current = chisq_amp2_init
-    rchisq_amp2_current = rchisq_amp2_init
+    # rchisq_amp2_current = rchisq_amp2_init
     chisq_bs_current = chisq_bs_init
-    rchisq_bs_current = rchisq_bs_init
+    # rchisq_bs_current = rchisq_bs_init
     chisq_current = chisq_init
 
     # clean loop
@@ -1223,10 +1217,10 @@ def dd_clean_amp_cphase(Obsdata, InitIm, niter=1, clipfloor=-1, loop_gain=.1, lo
 
         # update chi^2 and output image
         chisq_amp2_current = np.sum(weights_amp2*(amp2 - amp2_current)**2)
-        rchisq_amp2_current = np.sum(weights_amp2_nat*(amp2 - amp2_current)**2)
+        # rchisq_amp2_current = np.sum(weights_amp2_nat*(amp2 - amp2_current)**2)
 
         chisq_bs_current =  np.sum(weights_bs*np.abs(bs - bs_current)**2)
-        rchisq_bs_current =  np.sum(weights_bs_nat*np.abs(bs - bs_current)**2)
+        # rchisq_bs_current =  np.sum(weights_bs_nat*np.abs(bs - bs_current)**2)
 
         chisq_current = chisq_amp2_current + phaseweight*chisq_bs_current
 

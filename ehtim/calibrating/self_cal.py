@@ -20,7 +20,6 @@
 from __future__ import division
 from __future__ import print_function
 
-from builtins import str
 from builtins import range
 from builtins import object
 
@@ -32,7 +31,6 @@ from multiprocessing import cpu_count, Pool
 
 import ehtim.obsdata
 import ehtim.parloop as parloop
-from . import cal_helpers as calh
 from ehtim.observing.obs_simulate import add_jones_and_noise
 import ehtim.observing.obs_helpers as obsh
 import ehtim.const_def as ehc
