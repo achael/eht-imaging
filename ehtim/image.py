@@ -858,7 +858,7 @@ class Image(object):
             frac = np.angle(np.sum(self.rlvec))
 
         return frac
-
+        
     def circ_polfrac(self):
         """Return the total fractional circular polarized flux
 
@@ -873,6 +873,92 @@ class Image(object):
             frac = np.sum(self.rrvec - self.llvec) / np.abs(np.sum(self.rrvec + self.llvec))
 
         return frac
+
+    def mnet(self):
+        """Return the blur-dependent image-averaged linear polarization fraction
+
+           Args:
+
+           Returns:
+                (float) : image-average fractional linear polarization <|m|>
+        """
+        if self.polrep == 'stokes':
+            frac = np.abs(np.sum(np.sqrt(self.qvec**2 + self.uvec**2))) / np.abs(np.sum(self.ivec))
+        elif self.polrep == 'circ':
+            frac = 2 * np.sum(np.abs(self.rlvec)) / np.abs(np.sum(self.rrvec + self.llvec))
+
+        return frac
+
+    def vnet(self):
+        """Return the blur-dependent image-averaged circular polarization fraction
+
+           Args:
+
+           Returns:
+                (float) : image-average fractional circular polarization <|v|>
+        """
+        if self.polrep == 'stokes':
+            frac = np.abs(np.sum(np.sqrt(self.vvec**2))) / np.abs(np.sum(self.ivec))
+        elif self.polrep == 'circ':
+            frac = np.sum(np.abs(self.rrvec - self.llvec)) / np.abs(np.sum(self.rrvec + self.llvec))
+
+        return frac
+
+    def betamodes(self, ms=[2], r_min=0, r_max=None):
+        """Return Palumbo+2020 linear beta_m modes integrated between image radius r_min, r_max
+           Does not center the image
+           
+           Args:
+                ms : list of integers m to compute beta modes for
+                r_min (float): minimum image radius for calculation (in rad)
+                r_max (float): maximum image radius for calculation (in rad). 
+                               if None, use the full image
+           Returns:
+                (list) : beta_m modes matching input list ms
+        """
+        if not (isinstance(ms, np.ndarray) or isinstance(ms, list)):
+            ms = [ms]
+        
+        if self.polrep == 'stokes':
+            parr = (self.qvec + 1j*self.uvec).reshape(self.ydim, self.xdim)
+            iarr = self.imvec.reshape(self.ydim, self.xdim)
+        elif self.polrep == 'circ':
+            parr = self.rlvec.reshape(self.ydim, self.xdim)
+            iarr = (0.5*(self.rrvec + self.llvec)).reshape(self.ydim, self.xdim)
+
+        # get angles measured East of North (corresponding to above conventions for EB modes)
+        s, t = np.meshgrid(np.flip(np.fft.fftshift(np.fft.fftfreq(self.xdim, d=1.0 / self.xdim))),
+                           np.flip(np.fft.fftshift(np.fft.fftfreq(self.ydim, d=1.0 / self.ydim))))
+        s = s + .5  # .5 offset to reference to pixel center
+        t = t + .5  # .5 offset to reference to pixel center
+        
+        imdist = np.sqrt(s**2 + t**2) # distance from the center in pixels
+        imangle = np.arctan2(s, t)
+        imangle[imangle<0.] += 2.*np.pi
+
+        # define masked region
+        if (r_min is not None) and (r_max is not None):
+            print ("restricting betamodes to annulus between %.2f to %.2f uas!"%(r_min/eh.RADPERUAS, r_max/eh.RADPERUAS))
+            mask = (imdist<=(r_max/self.psize)) * (imdist>=(r_min/self.psize))
+        else:
+            mask = np.ones(iarr.shape).astype(bool)
+        
+        # total flux in annulus
+        flux = np.abs(np.sum(iarr[mask])) 
+        
+        # compute beta modes
+        outlist = []
+        for m in ms:
+            
+            if not isinstance(m,int):
+                raise Exception("each element of 'ms' should be an integer in betamodes!")
+                 
+            integrand = (parr*np.exp(-1j*m*imangle))[mask]
+            coeff = np.sum(integrand)/flux
+            outlist.append(coeff)
+            
+        return outlist
+
 
     def center(self, pol=None):
         """Center the image based on the coordinates of the centroid().
