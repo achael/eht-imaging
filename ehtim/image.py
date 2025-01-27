@@ -874,7 +874,7 @@ class Image(object):
 
         return frac
 
-    def mnet(self):
+    def mavg(self):
         """Return the blur-dependent image-averaged linear polarization fraction
 
            Args:
@@ -889,7 +889,7 @@ class Image(object):
 
         return frac
 
-    def vnet(self):
+    def vavg(self):
         """Return the blur-dependent image-averaged circular polarization fraction
 
            Args:
