@@ -15,7 +15,7 @@ The package contains several primary classes for loading, simulating, and manipu
 
 .. note::
 
-    This is a pre-release of ehtim. If you have a problem please submit a pull request on the git repository and/or email achael@princeton.edu.edu
+    This is a pre-release of ehtim. If you have a problem please submit a pull request on the git repository and/or email achael@princeton.edu
 
 The latest stable version (`1.2.10 <https://github.com/achael/eht-imaging/releases/tag/v1.2.10>`_) is available on `PyPi <https://pypi.org/project/ehtim/>`_. Simply install pip and run
 
