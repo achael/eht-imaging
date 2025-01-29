@@ -21,18 +21,14 @@
 from __future__ import division
 from __future__ import print_function
 
-from builtins import str
 from builtins import range
-from builtins import object
 
 import numpy as np
 import scipy.optimize as opt
-import matplotlib.pyplot as plt
 import time
 
 import ehtim.imaging.imager_utils as iu
 import ehtim.observing.obs_simulate as simobs
-import ehtim.const_def as ehc
 
 MAXIT = 10000  # maximum number of iterations in self-cal minimizer
 NHIST = 50   # number of steps to store for hessian approx
