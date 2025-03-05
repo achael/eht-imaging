@@ -938,7 +938,7 @@ class Image(object):
 
         # define masked region
         if (r_min is not None) and (r_max is not None):
-            print ("restricting betamodes to annulus between %.2f to %.2f uas!"%(r_min/eh.RADPERUAS, r_max/eh.RADPERUAS))
+            print ("restricting betamodes to annulus between %.2f to %.2f uas!"%(r_min/ehc.RADPERUAS, r_max/ehc.RADPERUAS))
             mask = (imdist<=(r_max/self.psize)) * (imdist>=(r_min/self.psize))
         else:
             mask = np.ones(iarr.shape).astype(bool)
