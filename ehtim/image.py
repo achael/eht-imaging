@@ -904,7 +904,7 @@ class Image(object):
 
         return frac
 
-    def betamodes(self, ms=[2], r_min=0, r_max=None):
+    def betamodes(self, ms=[2], r_min=0, r_max=None, verbose=True):
         """Return Palumbo+2020 linear beta_m modes integrated between image radius r_min, r_max
            Does not center the image
            
@@ -913,6 +913,7 @@ class Image(object):
                 r_min (float): minimum image radius for calculation (in rad)
                 r_max (float): maximum image radius for calculation (in rad). 
                                if None, use the full image
+                verbose (bool): print details
            Returns:
                 (list) : beta_m modes matching input list ms
         """
@@ -938,7 +939,7 @@ class Image(object):
 
         # define masked region
         if (r_min is not None) and (r_max is not None):
-            print ("restricting betamodes to annulus between %.2f to %.2f uas!"%(r_min/ehc.RADPERUAS, r_max/ehc.RADPERUAS))
+            if verbose: print ("restricting betamodes to annulus between %.2f to %.2f uas!"%(r_min/ehc.RADPERUAS, r_max/ehc.RADPERUAS))
             mask = (imdist<=(r_max/self.psize)) * (imdist>=(r_min/self.psize))
         else:
             mask = np.ones(iarr.shape).astype(bool)
