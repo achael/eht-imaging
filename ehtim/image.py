@@ -1556,7 +1556,7 @@ class Image(object):
         reffreq = self.rf
 
         # remove any zeros in the images               
-        imlist = [self.get_image_mf(rf).blur_circ(kernel, filttype=filttype) for rf in freqs]
+        imlist = [self.get_image_mf(rf).blur_circ(fwhm, filttype=filttype) for rf in freqs]
         for image in imlist:
             image.imvec[image.imvec<=0] = np.min(image.imvec[image.imvec!=0])
             
@@ -1575,7 +1575,7 @@ class Image(object):
             alpha = 0*yfit
             beta = 0*yfit
             
-        outim = self.blur_circ(kernel, filttype=filttype)
+        outim = self.blur_circ(fwhm, filttype=filttype)
         outim.specvec = alpha
         outim.curvvec = beta
         return outim
@@ -3491,8 +3491,8 @@ class Image(object):
 
             if scale == 'log':
                 if (imarr < 0.0).any():
-                    print('clipping values less than 0 in display')
-                    imarr[imarr < 0.0] = 0.0
+                    print('clipping values leq 0 in log display')
+                    imarr[imarr <= 0.0] = 1.e-16*np.min(imarr[imarr>0]) # 0.0
                 if log_offset:
                     imarr = np.log10(imarr + log_offset / dynamic_range)
                 else:
@@ -3500,9 +3500,9 @@ class Image(object):
                 unit = r'$\log_{10}$(' + unit + ')'
 
             if scale == 'gamma':
-                if (imarr < 0.0).any():
-                    print('clipping values less than 0 in display')
-                    imarr[imarr < 0.0] = 0.0
+                #if (imarr < 0.0).any():
+                #    print('clipping values leq 0 in gamma display')
+                #    imarr[imarr <= 0.0] = 1.e-16*np.min(imarr[imarr>0]) # 0.0
                 imarr = (imarr + np.max(imarr) / dynamic_range)**(gamma)
                 unit = '(' + unit + ')^' + str(gamma)
 
@@ -3562,6 +3562,7 @@ class Image(object):
         # plot polarization with ticks!
         else:  
 
+                    
             im_stokes = self.switch_polrep(polrep_out='stokes')
             imvec = np.array(im_stokes.imvec).reshape(-1) / (10**power)
             qvec = np.array(im_stokes.qvec).reshape(-1) / (10**power)
@@ -3576,6 +3577,7 @@ class Image(object):
                 uvec = np.zeros(im_stokes.ydim * im_stokes.xdim)
             if len(vvec) == 0:
                 vvec = np.zeros(im_stokes.ydim * im_stokes.xdim)
+
 
             imvec *= factor
             qvec *= factor
@@ -3594,16 +3596,16 @@ class Image(object):
             # only the  stokes I image gets transformed! TODO
             imarr2 = imarr.copy()
             if scale == 'log':
-                if (imarr2 < 0.0).any():
-                    print('clipping values less than 0 in display')
-                    imarr2[imarr2 < 0.0] = 0.0
+                if (imarr2 <= 0.0).any():
+                    print('clipping values leq 0 in log display')
+                    imarr2[imarr2 <= 0.0] = 1.e-16*np.min(imarr2[imarr2>0]) #0
                 imarr2 = np.log10(imarr2 + np.max(imarr2) / dynamic_range)
                 unit = r'$\log_{10}$(' + unit + ')'
 
             if scale == 'gamma':
-                if (imarr2 < 0.0).any():
-                    print('clipping values less than 0 in display')
-                    imarr2[imarr2 < 0.0] = 0.0
+                #if (imarr2 < 0.0).any():
+                #    print('clipping values leq 0 in display')
+                #    imarr2[imarr2 <= 0.0] = 1.e-16*np.min(imarr2[imarr2>0]) #0 
                 imarr2 = (imarr2 + np.max(imarr2) / dynamic_range)**(gamma)
                 unit = '(' + unit + ')^gamma'
 
@@ -3614,6 +3616,10 @@ class Image(object):
                 imarr2[imarr2 < cbar_lims[0]] = cbar_lims[0]
 
             # polarization ticks
+            # clip zeros
+            print('clipping values leq 0 in pol display')
+            imvec[imvec <= 0.0] = 1.e-16*np.min(imvec[imvec>0]) # 0.0
+
             m = (np.abs(qvec + 1j * uvec) / imvec).reshape(self.ydim, self.xdim)
 
             thin = self.xdim // nvec
