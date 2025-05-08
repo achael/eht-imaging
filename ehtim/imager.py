@@ -902,9 +902,9 @@ class Imager(object):
                     flux = self.flux_next
                     
                 if flux > 1.2*maxamp:
-                    print("Warning! Specified flux %.1f is > 120% of maximum visibility amplitude for freq %.1f GHz!"%(flux,obs.rf/1.e9))
+                    print("Warning! Specified flux %.1f is > 120%% of maximum visibility amplitude for freq %.1f GHz!"%(flux,obs.rf/1.e9))
                 if flux < .8*maxamp:
-                    print("Warning! Specified flux %.1f is < 80% of maximum visibility amplitude for freq %.1f GHz!"%(flux,obs.rf/1.e9))
+                    print("Warning! Specified flux %.1f is < 80%% of maximum visibility amplitude for freq %.1f GHz!"%(flux,obs.rf/1.e9))
         return
 
 
