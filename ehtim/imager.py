@@ -897,7 +897,7 @@ class Imager(object):
                 
                 # TODO: better handling of mf fluxes
                 if len(self.mf_flux)==len(self.obslist_next): 
-                    flux = mf_flux[i]
+                    flux = self.mf_flux[i]
                 else:
                     flux = self.flux_next
                     
