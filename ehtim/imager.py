@@ -1696,17 +1696,18 @@ class Imager(object):
                     outstr += "%s : %0.1f " % (regname, rval)
 
                 # Embed and plot the image
-                if np.any(np.invert(self._embed_mask)):                
-                    implot = embed_imarr(imcur, self._embed_mask) 
-                else:
-                    implot = imcur
-                    
-                if self.pol_next in POLARIZATION_MODES:
-                    polutils.plot_m(implot, self.prior_next, self._nit, chi2_term_dict, **kwargs)
+                if not self.mf_next: # TODO plot multi-frequency? 
+                    if np.any(np.invert(self._embed_mask)):                
+                        implot = embed_imarr(imcur, self._embed_mask) 
+                    else:
+                        implot = imcur
+                       
+                    if self.pol_next in POLARIZATION_MODES:
+                        polutils.plot_m(implot, self.prior_next, self._nit, chi2_term_dict, **kwargs)
 
-                else:
-                    imutils.plot_i(implot, self.prior_next, self._nit,
-                                   chi2_term_dict, pol=self.pol_next, **kwargs)
+                    else:
+                        imutils.plot_i(implot, self.prior_next, self._nit,
+                                       chi2_term_dict, pol=self.pol_next, **kwargs)
 
                 if self._nit == 0:
                     print()
