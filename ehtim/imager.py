@@ -214,7 +214,7 @@ class Imager(object):
         self.mf_order_pol = kwargs.get('mf_order_pol',0)
         self.mf_rm = kwargs.get('mf_rm',0)
         self.mf_cm = kwargs.get('mf_cm',0)
-        self.flux_next_mf = kwargs.get('flux_next_mf',[self.flux_next]) # TODO: merge these 
+        self.mf_flux = kwargs.get('mf_flux',[self.flux_next]) # TODO: merge these 
         
         if kwargs.get('mf_which_solve') is not None:
             raise Exception("'mf_which_solve' argument for multifrequency imaging is deprecated -- use 'mf_order' instead!")
@@ -896,8 +896,8 @@ class Imager(object):
                 maxamp = np.max(np.abs(self.obs_next.unpack('amp')['amp']))
                 
                 # TODO: better handling of mf fluxes
-                if len(self.flux_next_mf)==len(self.obslist_next): 
-                    flux = flux_next_mf[i]
+                if len(self.mf_flux)==len(self.obslist_next): 
+                    flux = mf_flux[i]
                 else:
                     flux = self.flux_next
                     
@@ -1323,15 +1323,15 @@ class Imager(object):
                     if regname in REGULARIZERS_ALLFREQS_I:
                     
                         # TODO move this to checks? 
-                        if (not isinstance(self.flux_next_mf, list)) or len(self.flux_next_mf)!=len(self.obslist_next):
+                        if (not isinstance(self.mf_flux, list)) or len(self.mf_flux)!=len(self.obslist_next):
                             raise Exception("when using regularizer '%s', "%regname 
-                                            +"self.flux_next_mf must be a list of same length as self.obslist_next!")
+                                            +"self.mf_flux must be a list of same length as self.obslist_next!")
 
                         regname_base = '_'.join(regname.split('_')[:-1]) # remove the '_mf' tag                                
                         for i in range(len(self.obslist_next)): # sum up regularizer gradients at each frequency
                             
                             logfreqratio = self._logfreqratio_list[i]
-                            flux_nu = self.flux_next_mf[i]
+                            flux_nu = self.mf_flux[i]
                             
                             imcur_nu = mfutils.image_at_freq(imcur[0], logfreqratio)
                             prior_nu = mfutils.image_at_freq(self._xprior[0], logfreqratio)
@@ -1451,15 +1451,15 @@ class Imager(object):
 
                         
                         # TODO move this to checks? 
-                        if (not isinstance(self.flux_next_mf, list)) or len(self.flux_next_mf)!=len(self.obslist_next):
+                        if (not isinstance(self.mf_flux, list)) or len(self.mf_flux)!=len(self.obslist_next):
                             raise Exception("when using regularizer '%s', "%regname 
-                                            +"self.flux_next_mf must be a list of same length as self.obslist_next!")
+                                            +"self.mf_flux must be a list of same length as self.obslist_next!")
 
                         regname_base = '_'.join(regname.split('_')[:-1]) # remove the '_mf' tag                                
                         for i in range(len(self.obslist_next)): # sum up regularizer gradients at each frequency
                             
                             logfreqratio = self._logfreqratio_list[i]
-                            flux_nu = self.flux_next_mf[i]
+                            flux_nu = self.mf_flux[i]
                             
                             imcur_nu = mfutils.image_at_freq(imcur[0], logfreqratio)
                             prior_nu = mfutils.image_at_freq(self._xprior[0], logfreqratio)
