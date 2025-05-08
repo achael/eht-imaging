@@ -214,7 +214,9 @@ class Imager(object):
 
         if kwargs.get('mf_which_solve') is not None:
             raise Exception("'mf_which_solve' argument for multifrequency imaging is deprecated -- use 'mf_order' instead!")
-
+        if kwargs.get('reg_all_freq_mf') is not None:
+            raise Exception("'reg_all_freq_mf' argument for multifrequency imaging is deprecated")
+            
         # Imager history
         self._change_imgr_params = True
         self.nruns = 0
@@ -561,7 +563,11 @@ class Imager(object):
         self.mf_order_pol = kwargs.get('mf_order_pol', self.mf_order_pol)
         self.mf_rm = kwargs.get('mf_rm', self.mf_rm)
         self.mf_cm = kwargs.get('mf_cm', self.mf_cm)
-        
+        if kwargs.get('mf_which_solve') is not None:
+            raise Exception("'mf_which_solve' argument for multifrequency imaging is deprecated -- use 'mf_order' instead!")
+        if kwargs.get('reg_all_freq_mf') is not None:
+            raise Exception("'reg_all_freq_mf' argument for multifrequency imaging is deprecated")
+                   
         # polarization parameters
         if pol is None:
             pol_prim = self.pol_next
