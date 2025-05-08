@@ -600,13 +600,14 @@ class Imager(object):
         self.plotcur(self._xinit, **kwargs)
 
         # Minimize
+        print("Imaging . . .")
         optdict = {'maxiter': self.maxit_next,
                    'ftol': self.stop_next, 'gtol': self.stop_next,
                    'maxcor': NHIST, 'maxls': MAXLS}
         def callback_func(xcur):
             self.plotcur(xcur, **kwargs)
 
-        print("Imaging . . .")
+
         tstart = time.time()
         if grads:
             res = opt.minimize(self.objfunc, self._xinit, method='L-BFGS-B', jac=self.objgrad,
