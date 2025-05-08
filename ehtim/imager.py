@@ -893,7 +893,7 @@ class Imager(object):
                 print("Warning! Field of View is smaller than largest nonzero spatial wavelength for freq %.1f GHz!"%obs.rf/1.e9)
 
             if self.pol_next in ['I', 'RR', 'LL']:
-                maxamp = np.max(np.abs(self.obs_next.unpack('amp')['amp']))
+                maxamp = np.max(np.abs(obs.unpack('amp')['amp']))
                 
                 # TODO: better handling of mf fluxes
                 if len(self.mf_flux)==len(self.obslist_next): 
