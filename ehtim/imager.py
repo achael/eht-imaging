@@ -51,6 +51,9 @@ REGULARIZERS = ['gs', 'tv', 'tvlog','tv2', 'tv2log', 'l1', 'l1w', 'lA', 'patch',
                 'flux', 'cm', 'simple', 'compact', 'compact2', 'rgauss']
 REGULARIZERS_POL = ['msimple', 'hw', 'ptv','l1v','l2v','vtv','vtv2','vflux']
 
+REGULARIZERS_ALLFREQS_I = ['flux_mf']
+REGULARIZERS += REGULARIZERS_ALLFREQS_I
+
 REGULARIZERS_SPECIND = ['l2_alpha', 'tv_alpha']
 REGULARIZERS_CURV = ['l2_beta', 'tv_beta']
 REGULARIZERS_SPECIND_P = ['l2_alphap', 'tv_alphap']
@@ -211,7 +214,8 @@ class Imager(object):
         self.mf_order_pol = kwargs.get('mf_order_pol',0)
         self.mf_rm = kwargs.get('mf_rm',0)
         self.mf_cm = kwargs.get('mf_cm',0)
-
+        self.flux_next_mf = kwargs.get('flux_next_mf',[self.flux_next]) # TODO: merge these 
+        
         if kwargs.get('mf_which_solve') is not None:
             raise Exception("'mf_which_solve' argument for multifrequency imaging is deprecated -- use 'mf_order' instead!")
         if kwargs.get('reg_all_freq_mf') is not None:
@@ -876,23 +880,31 @@ class Imager(object):
     def check_limits(self):
         """Check image parameter consistency with observation.
         """
-        uvmax = 1.0/self.prior_next.psize
-        uvmin = 1.0/(self.prior_next.psize*np.max((self.prior_next.xdim, self.prior_next.ydim)))
-        uvdists = self.obs_next.unpack('uvdist')['uvdist']
-        maxbl = np.max(uvdists)
-        minbl = np.max(uvdists[uvdists > 0])
+        for i,obs in enumerate(self.obslist_next):
+            uvmax = 1.0/self.prior_next.psize
+            uvmin = 1.0/(self.prior_next.psize*np.max((self.prior_next.xdim, self.prior_next.ydim)))
+            uvdists = obs.unpack('uvdist')['uvdist']
+            maxbl = np.max(uvdists)
+            minbl = np.max(uvdists[uvdists > 0])
 
-        if uvmax < maxbl:
-            print("Warning! Pixel size is larger than smallest spatial wavelength!")
-        if uvmin > minbl:
-            print("Warning! Field of View is smaller than largest nonzero spatial wavelength!")
+            if uvmax < maxbl:
+                print("Warning! Pixel size is larger than smallest spatial wavelength for freq %.1f GHz!"%obs.rf/1.e9)
+            if uvmin > minbl:
+                print("Warning! Field of View is smaller than largest nonzero spatial wavelength for freq %.1f GHz!"%obs.rf/1.e9)
 
-        if self.pol_next in ['I', 'RR', 'LL']:
-            maxamp = np.max(np.abs(self.obs_next.unpack('amp')['amp']))
-            if self.flux_next > 1.2*maxamp:
-                print("Warning! Specified flux is > 120% of maximum visibility amplitude!")
-            if self.flux_next < .8*maxamp:
-                print("Warning! Specified flux is < 80% of maximum visibility amplitude!")
+            if self.pol_next in ['I', 'RR', 'LL']:
+                maxamp = np.max(np.abs(self.obs_next.unpack('amp')['amp']))
+                
+                # TODO: better handling of mf fluxes
+                if len(self.flux_next_mf)==len(self.obslist_next): 
+                    flux = flux_next_mf[i]
+                else:
+                    flux = self.flux_next
+                    
+                if flux > 1.2*maxamp:
+                    print("Warning! Specified flux %.1f is > 120% of maximum visibility amplitude for freq %.1f GHz!"%(flux,obs.rf/1.e9))
+                if flux < .8*maxamp:
+                    print("Warning! Specified flux %.1f is < 80% of maximum visibility amplitude for freq %.1f GHz!"%(flux,obs.rf/1.e9))
         return
 
 
@@ -1303,16 +1315,47 @@ class Imager(object):
                                                   regname,
                                                   norm_reg=self.norm_reg, beam_size=self.beam_size,
                                                   **self.regparams) 
-                                                                             
+
                 # Stokes I regularizers
                 elif regname in REGULARIZERS:         
-                    # we only regularize the reference frequency image
-                    reg = imutils.regularizer(imcur[0], self._xprior[0], self._embed_mask,
-                                              self.flux_next, self.prior_next.xdim,
-                                              self.prior_next.ydim, self.prior_next.psize,
-                                              regname,
-                                              norm_reg=self.norm_reg, beam_size=self.beam_size,
-                                              **self.regparams)
+
+                    # here we regularize images at each frequency                              
+                    if regname in REGULARIZERS_ALLFREQS_I:
+                    
+                        # TODO move this to checks? 
+                        if (not isinstance(self.flux_next_mf, list)) or len(self.flux_next_mf)!=len(self.obslist_next):
+                            raise Exception("when using regularizer '%s', "%regname 
+                                            +"self.flux_next_mf must be a list of same length as self.obslist_next!")
+
+                        regname_base = '_'.join(regname.split('_')[:-1]) # remove the '_mf' tag                                
+                        for i in range(len(self.obslist_next)): # sum up regularizer gradients at each frequency
+                            
+                            logfreqratio = self._logfreqratio_list[i]
+                            flux_nu = self.flux_next_mf[i]
+                            
+                            imcur_nu = mfutils.image_at_freq(imcur[0], logfreqratio)
+                            prior_nu = mfutils.image_at_freq(self._xprior[0], logfreqratio)
+
+                            regi = imutils.regularizer(imcur_nu, prior_nu, self._embed_mask,
+                                                      flux_nu, self.prior_next.xdim,
+                                                      self.prior_next.ydim, self.prior_next.psize,
+                                                      regname_base,
+                                                      norm_reg=self.norm_reg, beam_size=self.beam_size,
+                                                      **self.regparams)
+                                                  
+                            if i==0: 
+                                reg = regi
+                            else: 
+                                reg += regi
+                                
+                    # here we only regularize the reference frequency image
+                    else:
+                        reg = imutils.regularizer(imcur[0], self._xprior[0], self._embed_mask,
+                                                  self.flux_next, self.prior_next.xdim,
+                                                  self.prior_next.ydim, self.prior_next.psize,
+                                                  regname,
+                                                  norm_reg=self.norm_reg, beam_size=self.beam_size,
+                                                  **self.regparams)
                 
                 # Spectral regularizers
                 elif regname in REGULARIZERS_SPECTRAL:
@@ -1401,18 +1444,49 @@ class Imager(object):
                     reggrad[0:4] = regp
                     
                 # Stokes I regularizers
-                elif regname in REGULARIZERS:         
-                    # we only regularize reference frequency image
-                    regi = imutils.regularizergrad(imcur[0], self._xprior[0], 
-                                                   self._embed_mask, self.flux_next, 
-                                                   self.prior_next.xdim, self.prior_next.ydim, self.prior_next.psize,
-                                                   regname,
-                                                   norm_reg=self.norm_reg, beam_size=self.beam_size,
-                                                   **self.regparams)
-                    reggrad = np.zeros((len(imcur), self._nimage))
-                    reggrad[0] = regi  
-                                   
-                # Spectral regularizers
+                elif regname in REGULARIZERS:
+ 
+                    # here we regularize images at each frequency             
+                    if regname in REGULARIZERS_ALLFREQS_I:
+
+                        
+                        # TODO move this to checks? 
+                        if (not isinstance(self.flux_next_mf, list)) or len(self.flux_next_mf)!=len(self.obslist_next):
+                            raise Exception("when using regularizer '%s', "%regname 
+                                            +"self.flux_next_mf must be a list of same length as self.obslist_next!")
+
+                        regname_base = '_'.join(regname.split('_')[:-1]) # remove the '_mf' tag                                
+                        for i in range(len(self.obslist_next)): # sum up regularizer gradients at each frequency
+                            
+                            logfreqratio = self._logfreqratio_list[i]
+                            flux_nu = self.flux_next_mf[i]
+                            
+                            imcur_nu = mfutils.image_at_freq(imcur[0], logfreqratio)
+                            prior_nu = mfutils.image_at_freq(self._xprior[0], logfreqratio)
+
+                            regi = imutils.regularizergrad(imcur_nu, prior_nu, self._embed_mask,
+                                                           flux_nu, self.prior_next.xdim,
+                                                           self.prior_next.ydim, self.prior_next.psize,
+                                                           regname_base,
+                                                           norm_reg=self.norm_reg, beam_size=self.beam_size,
+                                                           **self.regparams)
+                            reggrad_i = mfutils.mf_all_grads_chain(regi, imcur_nu, imcur, logfreqratio)                        
+                            if i==0: 
+                                reggrad = reggrad_i
+                            else: 
+                                reggrad += reggrad_i
+                                
+                    # here we only regularize the reference frequency image                    
+                    else:         
+                        regi = imutils.regularizergrad(imcur[0], self._xprior[0], 
+                                                       self._embed_mask, self.flux_next, 
+                                                       self.prior_next.xdim, self.prior_next.ydim, self.prior_next.psize,
+                                                       regname,
+                                                       norm_reg=self.norm_reg, beam_size=self.beam_size,
+                                                       **self.regparams)
+                        reggrad = np.zeros((len(imcur), self._nimage))
+                        reggrad[0] = regi  
+                                                   
                 elif regname in REGULARIZERS_SPECTRAL:
                     if regname in REGULARIZERS_SPECIND:
                         if len(imcur)==10: idx = 4
