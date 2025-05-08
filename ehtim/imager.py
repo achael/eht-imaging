@@ -1333,8 +1333,8 @@ class Imager(object):
                             logfreqratio = self._logfreqratio_list[i]
                             flux_nu = self.mf_flux[i]
                             
-                            imcur_nu = mfutils.image_at_freq(imcur[0], logfreqratio)
-                            prior_nu = mfutils.image_at_freq(self._xprior[0], logfreqratio)
+                            imcur_nu = mfutils.image_at_freq(imcur, logfreqratio)
+                            prior_nu = mfutils.image_at_freq(self._xprior, logfreqratio)
 
                             regi = imutils.regularizer(imcur_nu, prior_nu, self._embed_mask,
                                                       flux_nu, self.prior_next.xdim,
@@ -1461,8 +1461,8 @@ class Imager(object):
                             logfreqratio = self._logfreqratio_list[i]
                             flux_nu = self.mf_flux[i]
                             
-                            imcur_nu = mfutils.image_at_freq(imcur[0], logfreqratio)
-                            prior_nu = mfutils.image_at_freq(self._xprior[0], logfreqratio)
+                            imcur_nu = mfutils.image_at_freq(imcur, logfreqratio)
+                            prior_nu = mfutils.image_at_freq(self._xprior, logfreqratio)
 
                             regi = imutils.regularizergrad(imcur_nu, prior_nu, self._embed_mask,
                                                            flux_nu, self.prior_next.xdim,
