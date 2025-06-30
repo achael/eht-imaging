@@ -26,7 +26,7 @@ import paramsurvey
 import paramsurvey.params
 
 import warnings
-warnings.filterwarnings("ignore", category=np.VisibleDeprecationWarning)
+#warnings.filterwarnings("ignore", category=np.VisibleDeprecationWarning)
 
 
 ##################################################################################################

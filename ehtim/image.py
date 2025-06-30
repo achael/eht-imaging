@@ -987,7 +987,7 @@ class Image(object):
             frac = np.angle(np.sum(self.rlvec))
 
         return frac
-
+        
     def circ_polfrac(self):
         """Return the total fractional circular polarized flux
 
@@ -1002,6 +1002,93 @@ class Image(object):
             frac = np.sum(self.rrvec - self.llvec) / np.abs(np.sum(self.rrvec + self.llvec))
 
         return frac
+
+    def mavg(self):
+        """Return the blur-dependent image-averaged linear polarization fraction
+
+           Args:
+
+           Returns:
+                (float) : image-average fractional linear polarization <|m|>
+        """
+        if self.polrep == 'stokes':
+            frac = np.abs(np.sum(np.sqrt(self.qvec**2 + self.uvec**2))) / np.abs(np.sum(self.ivec))
+        elif self.polrep == 'circ':
+            frac = 2 * np.sum(np.abs(self.rlvec)) / np.abs(np.sum(self.rrvec + self.llvec))
+
+        return frac
+
+    def vavg(self):
+        """Return the blur-dependent image-averaged circular polarization fraction
+
+           Args:
+
+           Returns:
+                (float) : image-average fractional circular polarization <|v|>
+        """
+        if self.polrep == 'stokes':
+            frac = np.abs(np.sum(np.sqrt(self.vvec**2))) / np.abs(np.sum(self.ivec))
+        elif self.polrep == 'circ':
+            frac = np.sum(np.abs(self.rrvec - self.llvec)) / np.abs(np.sum(self.rrvec + self.llvec))
+
+        return frac
+
+    def betamodes(self, ms=[2], r_min=0, r_max=None, verbose=True):
+        """Return Palumbo+2020 linear beta_m modes integrated between image radius r_min, r_max
+           Does not center the image
+           
+           Args:
+                ms : list of integers m to compute beta modes for
+                r_min (float): minimum image radius for calculation (in rad)
+                r_max (float): maximum image radius for calculation (in rad). 
+                               if None, use the full image
+                verbose (bool): print details
+           Returns:
+                (list) : beta_m modes matching input list ms
+        """
+        if not (isinstance(ms, np.ndarray) or isinstance(ms, list)):
+            ms = [ms]
+        
+        if self.polrep == 'stokes':
+            parr = (self.qvec + 1j*self.uvec).reshape(self.ydim, self.xdim)
+            iarr = self.imvec.reshape(self.ydim, self.xdim)
+        elif self.polrep == 'circ':
+            parr = self.rlvec.reshape(self.ydim, self.xdim)
+            iarr = (0.5*(self.rrvec + self.llvec)).reshape(self.ydim, self.xdim)
+
+        # get angles measured East of North (corresponding to above conventions for EB modes)
+        s, t = np.meshgrid(np.flip(np.fft.fftshift(np.fft.fftfreq(self.xdim, d=1.0 / self.xdim))),
+                           np.flip(np.fft.fftshift(np.fft.fftfreq(self.ydim, d=1.0 / self.ydim))))
+        s = s + .5  # .5 offset to reference to pixel center
+        t = t + .5  # .5 offset to reference to pixel center
+        
+        imdist = np.sqrt(s**2 + t**2) # distance from the center in pixels
+        imangle = np.arctan2(s, t)
+        imangle[imangle<0.] += 2.*np.pi
+
+        # define masked region
+        if (r_min is not None) and (r_max is not None):
+            if verbose: print ("restricting betamodes to annulus between %.2f to %.2f uas!"%(r_min/ehc.RADPERUAS, r_max/ehc.RADPERUAS))
+            mask = (imdist<=(r_max/self.psize)) * (imdist>=(r_min/self.psize))
+        else:
+            mask = np.ones(iarr.shape).astype(bool)
+        
+        # total flux in annulus
+        flux = np.abs(np.sum(iarr[mask])) 
+        
+        # compute beta modes
+        outlist = []
+        for m in ms:
+            
+            if not isinstance(m,int):
+                raise Exception("each element of 'ms' should be an integer in betamodes!")
+                 
+            integrand = (parr*np.exp(-1j*m*imangle))[mask]
+            coeff = np.sum(integrand)/flux
+            outlist.append(coeff)
+            
+        return outlist
+
 
     def center(self, pol=None):
         """Center the image based on the coordinates of the centroid().
@@ -1199,8 +1286,16 @@ class Image(object):
             if np.any(np.imag(imvec) != 0):
                 return interp_imvec(np.real(imvec)) + 1j * interp_imvec(np.imag(imvec))
 
-            interpfunc = scipy.interpolate.interp2d(y, x, np.reshape(imvec, (self.ydim, self.xdim)),
-                                                    kind=interp)
+
+            # interpfunc = scipy.interpolate.interp2d(y, x, np.reshape(imvec, (self.ydim, self.xdim)),
+                                                    # kind=interp) ## DEPRECATED. commented out for legacy
+
+            ## new code to be compatible with scipy 1.14+
+            interp_order = {"linear": 1, "quadratic": 2, "cubic": 3}.get(interp, 1)
+            grid_z = np.reshape(imvec, (self.ydim, self.xdim))
+            interpfunc = scipy.interpolate.RectBivariateSpline(y, x, grid_z, kx=interp_order, ky=interp_order)
+
+
             tmpimg = interpfunc(ytarget, xtarget)
             tmpimg[np.abs(xtarget) > fov_x / 2., :] = 0.0
             tmpimg[:, np.abs(ytarget) > fov_y / 2.] = 0.0
@@ -3602,8 +3697,8 @@ class Image(object):
 
             if scale == 'log':
                 if (imarr < 0.0).any():
-                    print('clipping values less than 0 in display')
-                    imarr[imarr < 0.0] = 0.0
+                    print('clipping values leq 0 in log display')
+                    imarr[imarr <= 0.0] = 1.e-16*np.min(imarr[imarr>0]) # 0.0
                 if log_offset:
                     imarr = np.log10(imarr + log_offset / dynamic_range)
                 else:
@@ -3611,9 +3706,9 @@ class Image(object):
                 unit = r'$\log_{10}$(' + unit + ')'
 
             if scale == 'gamma':
-                if (imarr < 0.0).any():
-                    print('clipping values less than 0 in display')
-                    imarr[imarr < 0.0] = 0.0
+                #if (imarr < 0.0).any():
+                #    print('clipping values leq 0 in gamma display')
+                #    imarr[imarr <= 0.0] = 1.e-16*np.min(imarr[imarr>0]) # 0.0
                 imarr = (imarr + np.max(imarr) / dynamic_range)**(gamma)
                 unit = '(' + unit + ')^' + str(gamma)
 
@@ -3673,6 +3768,7 @@ class Image(object):
         # plot polarization with ticks!
         else:  
 
+                    
             im_stokes = self.switch_polrep(polrep_out='stokes')
             imvec = np.array(im_stokes.imvec).reshape(-1) / (10**power)
             qvec = np.array(im_stokes.qvec).reshape(-1) / (10**power)
@@ -3687,6 +3783,7 @@ class Image(object):
                 uvec = np.zeros(im_stokes.ydim * im_stokes.xdim)
             if len(vvec) == 0:
                 vvec = np.zeros(im_stokes.ydim * im_stokes.xdim)
+
 
             imvec *= factor
             qvec *= factor
@@ -3705,16 +3802,16 @@ class Image(object):
             # only the  stokes I image gets transformed! TODO
             imarr2 = imarr.copy()
             if scale == 'log':
-                if (imarr2 < 0.0).any():
-                    print('clipping values less than 0 in display')
-                    imarr2[imarr2 < 0.0] = 0.0
+                if (imarr2 <= 0.0).any():
+                    print('clipping values leq 0 in log display')
+                    imarr2[imarr2 <= 0.0] = 1.e-16*np.min(imarr2[imarr2>0]) #0
                 imarr2 = np.log10(imarr2 + np.max(imarr2) / dynamic_range)
                 unit = r'$\log_{10}$(' + unit + ')'
 
             if scale == 'gamma':
-                if (imarr2 < 0.0).any():
-                    print('clipping values less than 0 in display')
-                    imarr2[imarr2 < 0.0] = 0.0
+                #if (imarr2 < 0.0).any():
+                #    print('clipping values leq 0 in display')
+                #    imarr2[imarr2 <= 0.0] = 1.e-16*np.min(imarr2[imarr2>0]) #0 
                 imarr2 = (imarr2 + np.max(imarr2) / dynamic_range)**(gamma)
                 unit = '(' + unit + ')^gamma'
 
@@ -3725,6 +3822,10 @@ class Image(object):
                 imarr2[imarr2 < cbar_lims[0]] = cbar_lims[0]
 
             # polarization ticks
+            # clip zeros
+            print('clipping values leq 0 in pol display')
+            imvec[imvec <= 0.0] = 1.e-16*np.min(imvec[imvec>0]) # 0.0
+
             m = (np.abs(qvec + 1j * uvec) / imvec).reshape(self.ydim, self.xdim)
 
             thin = self.xdim // nvec
