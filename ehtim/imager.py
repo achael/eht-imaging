@@ -889,9 +889,9 @@ class Imager(object):
             minbl = np.max(uvdists[uvdists > 0])
 
             if uvmax < maxbl:
-                print("Warning! Pixel size is larger than smallest spatial wavelength for freq %.1f GHz!"%obs.rf/1.e9)
+                print("Warning! Pixel size is larger than smallest spatial wavelength for freq %.1f GHz!"%(obs.rf/1.e9))
             if uvmin > minbl:
-                print("Warning! Field of View is smaller than largest nonzero spatial wavelength for freq %.1f GHz!"%obs.rf/1.e9)
+                print("Warning! Field of View is smaller than largest nonzero spatial wavelength for freq %.1f GHz!"%(obs.rf/1.e9))
 
             if self.pol_next in ['I', 'RR', 'LL']:
                 maxamp = np.max(np.abs(obs.unpack('amp')['amp']))
