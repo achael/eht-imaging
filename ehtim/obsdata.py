@@ -1155,7 +1155,7 @@ class Obsdata(object):
 
         return chisq
 
-    def polchisq(self, im, dtype='pvis', ttype='nfft', pol_trans=True, mask=[], **kwargs):
+    def polchisq(self, im, dtype='pvis', ttype='nfft', mask=[], **kwargs):
         """Give the reduced chi^2 for the specified image and polarimetric datatype.
 
            Args:
@@ -1164,7 +1164,7 @@ class Obsdata(object):
                 pol (str): polarization type ('I', 'Q', 'U', 'V', 'LL', 'RR', 'LR', or 'RL'
                 mask (arr): mask of same dimension as im.imvec
                 ttype (str): if "fast" or "nfft" or "direct"
-                pol_trans (bool): True for I,m,chi, False for IQU
+
                 fft_pad_factor (float): zero pad the image to (fft_pad_factor * image size) in FFT
                 conv_func ('str'):  The convolving function for gridding; 'gaussian', 'pill','cubic'
                 p_rad (int): The pixel radius for the convolving function
@@ -1194,33 +1194,22 @@ class Obsdata(object):
 
         # Pack the comparison image in the proper format
         imstokes = im.switch_polrep(polrep_out='stokes', pol_prim_out='I')
-        if pol_trans:
-            ivec = imstokes.imvec
-            mvec = (np.abs(imstokes.qvec + 1j * imstokes.uvec) / ivec)
-            chivec = np.angle(imstokes.qvec + 1j * imstokes.uvec) / 2
-            vvec = imstokes.vvec/ivec
-            if len(mask) > 0 and np.any(np.invert(mask)):
-                ivec = ivec[mask]
-                mvec = mvec[mask]
-                chivec = chivec[mask]
-                vvec = vvec[mask]
-            imtuple = np.array((ivec, mvec, chivec,vvec))
-        else:
-            ivec = imstokes.imvec
-            qvec = imstokes.qvec
-            uvec = imstokes.uvec
-            vvec = imstokes.vvec
-            if len(mask) > 0 and np.any(np.invert(mask)):
-                ivec = ivec[mask]
-                qvec = qvec[mask]
-                uvec = uvec[mask]
-                vvec = vvec[mask]
-            imtuple = np.array((ivec, qvec, uvec,vvec))
+
+        ivec = imstokes.imvec
+        rhovec = np.sqrt(imstokes.qvec**2 + imstokes.uvec**2 + imstokes.vvec**2) / ivec
+        phivec = np.angle(imstokes.qvec + 1j * imstokes.uvec) 
+        psivec = np.arcsin(vvec/ivec)
+        if len(mask) > 0 and np.any(np.invert(mask)):
+            ivec = ivec[mask]
+            rhovec = rhovec[mask]
+            phivec = phivec[mask]
+            psivec = psivec[mask]
+        imarr = np.array((ivec, rhovec, phivec, psivec))
 
 
         # Calculate the chi^2
-        chisq = piu.polchisq(imtuple, A, data, sigma, dtype,
-                             ttype=ttype, mask=mask, pol_trans=pol_trans)
+        chisq = piu.polchisq(imarr, A, data, sigma, dtype,
+                             ttype=ttype, mask=mask)
 
         return chisq
 

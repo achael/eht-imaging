@@ -6,7 +6,8 @@ import ehtim as eh
 import time
 import ehtim.imaging.imager_utils as iu
 
-im = eh.image.load_txt('../../models/avery_sgra_eofn.txt')
+path = eh.__path__[0]
+im = eh.image.load_txt(path + '/../models/avery_sgra_eofn.txt')
 im.pulse = eh.observing.pulses.deltaPulse2D
    
 # mask
@@ -35,6 +36,7 @@ for rtype in iu.REGULARIZERS:
 
     def reggrad_numeric(imvec):
         dx = 1e-10
+        dx = 1e-4*np.median(imvec)
         reg1 = reg(imvec)
         grad = reggrad(imvec)
         for j in range(len(imvec)):
@@ -49,4 +51,7 @@ for rtype in iu.REGULARIZERS:
     pad = np.median(np.abs(grad1))/1000.0
     print("reg_grad analytic: ", grad1)
     print("reg_grad numeric:  ", grad2)
-    print("Fractional Difference %0.4f"% np.max(np.abs((grad1 - grad2))/(np.abs(grad1)+pad)))
+#    print("Fractional Difference %0.4f"% np.max(np.abs((grad1 - grad2))/(np.abs(grad1)+pad)))
+    compare_floor = np.min(np.abs(grad1))*1.e-20 + 1.e-100
+    print("Median Fractional Difference %0.4f"% np.median(np.abs((grad1 - grad2))/(np.abs(grad1)+compare_floor)))    
+    print("Max Fractional Difference %0.4f"% np.max(np.abs((grad1 - grad2))/(np.abs(grad1)+compare_floor)))        
