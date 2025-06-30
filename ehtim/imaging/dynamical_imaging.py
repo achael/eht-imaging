@@ -30,8 +30,6 @@ import scipy.signal
 
 import matplotlib.pyplot as plt
 
-import itertools as it
-
 from ehtim.const_def import * #Note: C is m/s rather than cm/s.
 from ehtim.observing.obs_helpers import *
 import ehtim.obsdata as obsdata
@@ -42,7 +40,6 @@ from ehtim.imaging.imager_utils import *
 import ehtim.scattering as so
 
 from multiprocessing import Pool
-from functools import partial
 
 #imports from the blazarFileDownloader
 import calendar
@@ -234,13 +231,13 @@ def export_movie(im_List, out='movie.mp4', fps=10, dpi=120, scale='linear', cbar
 #        qvec = qvec * 1.e6
 #        uvec = uvec * 1.e6
 
-    unit = cbar_unit + '/pixel'
+    # unit = cbar_unit + '/pixel'
 
-    if scale=='log':
-        unit = 'log(' + cbar_unit + '/pixel)'
+    # if scale=='log':
+    #     unit = 'log(' + cbar_unit + '/pixel)'
 
-    if scale=='gamma':
-        unit = '(' + cbar_unit + '/pixel)^gamma'
+    # if scale=='gamma':
+    #     unit = '(' + cbar_unit + '/pixel)^gamma'
 
     def im_data(n):
         n_data = (n-n%pad_factor)//pad_factor
