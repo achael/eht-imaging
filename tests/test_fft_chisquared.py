@@ -6,7 +6,8 @@ import ehtim as eh
 from ehtim.imaging.imager_utils import chisqdata, chisqgrad, chisq
 import time
 
-path = eh.__path__[0]
+#path = eh.__path__[0]
+path = './tests'
 im = eh.image.load_txt(path + '/../models/avery_sgra_eofn.txt')
 eht = eh.array.load_txt(path + '/../arrays/EHT2017.txt')
 

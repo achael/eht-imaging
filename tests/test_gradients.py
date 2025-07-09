@@ -9,7 +9,8 @@ import numpy as np
 import ehtim as eh
 from ehtim.imaging.imager_utils import chisqdata, chisq, chisqgrad
 
-path = eh.__path__[0]
+#path = eh.__path__[0]
+path = './tests'
 im = eh.image.load_txt(path + '/../models/jason_mad_eofn.txt')
 eht = eh.array.load_txt(path + '/../arrays/EHT2017.txt')
 
