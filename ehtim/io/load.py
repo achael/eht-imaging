@@ -170,7 +170,13 @@ def load_im_hdf5(filename):
     lunit = hfp['header']['units']['L_unit'][()]    # in cm
     DX = hfp['header']['camera']['dx'][()]          # in GM/c^2
     nx = hfp['header']['camera']['nx'][()]          # width in pixels
-    time = hfp['header']['t'][()] * tunit / 3600.       # time in hours
+    
+    try:
+        time = hfp['header']['t'][()] * tunit / 3600.       # time in hours
+    except TypeError:
+        print("Warning! Time not found in hdf5 image header.")
+        time = 0.
+        
     if 'pol' in hfp:
         poldat = np.copy(hfp['pol'])[:, :, :4]            # NX,NY,{I,Q,U,V}
     else: # unpolarized data only
