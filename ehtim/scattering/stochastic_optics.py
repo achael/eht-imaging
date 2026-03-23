@@ -501,17 +501,18 @@ class ScatteringModel(object):
             if len(Unscattered_Image.vvec):
                 AI_V = np.copy((EA_Image.imvec).reshape(Ny,Nx))
                 EA_im_V = (EA_Image.vvec).reshape(Ny,Nx)
-            for rx in range(Nx):
-                for ry in range(Ny):
-                    # Annoyingly, the signs here must be negative to match the other approximation. I'm not sure which is correct, but it really shouldn't matter anyway because -phi has the same power spectrum as phi. However, getting the *relative* sign for the x- and y-directions correct is important.
-                    rxp = int(np.round(rx - rF**2.0 * phi_Gradient_x[ry,rx]/self.observer_screen_distance/Unscattered_Image.psize))%Nx
-                    ryp = int(np.round(ry - rF**2.0 * phi_Gradient_y[ry,rx]/self.observer_screen_distance/Unscattered_Image.psize))%Ny
-                    AI[ry,rx] = EA_im[ryp,rxp]
-                    if len(Unscattered_Image.qvec):
-                        AI_Q[ry,rx] = EA_im_Q[ryp,rxp]
-                        AI_U[ry,rx] = EA_im_U[ryp,rxp]
-                    if len(Unscattered_Image.vvec):
-                        AI_V[ry,rx] = EA_im_V[ryp,rxp]
+            # Vectorized remapping (replaces nested pixel loop)
+            rx = np.arange(Nx)[np.newaxis, :]  # (1, Nx)
+            ry = np.arange(Ny)[:, np.newaxis]  # (Ny, 1)
+            scale = rF**2.0 / self.observer_screen_distance / Unscattered_Image.psize
+            rxp = np.round(rx - scale * phi_Gradient_x).astype(int) % Nx
+            ryp = np.round(ry - scale * phi_Gradient_y).astype(int) % Ny
+            AI = EA_im[ryp, rxp]
+            if len(Unscattered_Image.qvec):
+                AI_Q = EA_im_Q[ryp, rxp]
+                AI_U = EA_im_U[ryp, rxp]
+            if len(Unscattered_Image.vvec):
+                AI_V = EA_im_V[ryp, rxp]
 
         #Optional: eliminate negative flux
         if Force_Positivity == True:
