@@ -492,16 +492,14 @@ class ScatteringModel(object):
                     AI_V = (EA_Image.vvec).reshape(Ny,Nx) + rF**2.0 * ( EA_Gradient_x*phi_Gradient_x + EA_Gradient_y*phi_Gradient_y )
         else: #Use Equation 9 of Johnson & Narayan (2016)
             EA_im = (EA_Image.imvec).reshape(Ny,Nx)
-            AI = np.copy((EA_Image.imvec).reshape(Ny,Nx))
             if len(Unscattered_Image.qvec):
-                AI_Q = np.copy((EA_Image.imvec).reshape(Ny,Nx))
-                AI_U = np.copy((EA_Image.imvec).reshape(Ny,Nx))
                 EA_im_Q = (EA_Image.qvec).reshape(Ny,Nx)
                 EA_im_U = (EA_Image.uvec).reshape(Ny,Nx)
             if len(Unscattered_Image.vvec):
-                AI_V = np.copy((EA_Image.imvec).reshape(Ny,Nx))
                 EA_im_V = (EA_Image.vvec).reshape(Ny,Nx)
-            # Vectorized remapping (replaces nested pixel loop)
+            # Note: signs are negative to match the linearized approximation. The choice
+            # shouldn't matter (-phi has the same power spectrum as phi), but getting the
+            # *relative* sign for x- and y-directions correct is important.
             rx = np.arange(Nx)[np.newaxis, :]  # (1, Nx)
             ry = np.arange(Ny)[:, np.newaxis]  # (Ny, 1)
             scale = rF**2.0 / self.observer_screen_distance / Unscattered_Image.psize
