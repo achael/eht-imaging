@@ -499,9 +499,7 @@ class ScatteringModel(object):
                 EA_im_V = (EA_Image.vvec).reshape(Ny,Nx)
             rx = np.arange(Nx)[np.newaxis, :]  # (1, Nx)
             ry = np.arange(Ny)[:, np.newaxis]  # (Ny, 1)
-            # Note: signs are negative to match the linearized approximation. The choice
-            # shouldn't matter (-phi has the same power spectrum as phi), but getting the
-            # *relative* sign for x- and y-directions correct is important.
+            # Annoyingly, the signs here must be negative to match the other approximation. I'm not sure which is correct, but it really shouldn't matter anyway because -phi has the same power spectrum as phi. However, getting the *relative* sign for the x- and y-directions correct is important.
             pixel_deflection = rF**2.0 / self.observer_screen_distance / Unscattered_Image.psize
             rxp = np.round(rx - pixel_deflection * phi_Gradient_x).astype(int) % Nx
             ryp = np.round(ry - pixel_deflection * phi_Gradient_y).astype(int) % Ny
