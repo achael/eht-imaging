@@ -497,14 +497,14 @@ class ScatteringModel(object):
                 EA_im_U = (EA_Image.uvec).reshape(Ny,Nx)
             if len(Unscattered_Image.vvec):
                 EA_im_V = (EA_Image.vvec).reshape(Ny,Nx)
+            rx = np.arange(Nx)[np.newaxis, :]  # (1, Nx)
+            ry = np.arange(Ny)[:, np.newaxis]  # (Ny, 1)
             # Note: signs are negative to match the linearized approximation. The choice
             # shouldn't matter (-phi has the same power spectrum as phi), but getting the
             # *relative* sign for x- and y-directions correct is important.
-            rx = np.arange(Nx)[np.newaxis, :]  # (1, Nx)
-            ry = np.arange(Ny)[:, np.newaxis]  # (Ny, 1)
-            scale = rF**2.0 / self.observer_screen_distance / Unscattered_Image.psize
-            rxp = np.round(rx - scale * phi_Gradient_x).astype(int) % Nx
-            ryp = np.round(ry - scale * phi_Gradient_y).astype(int) % Ny
+            pixel_deflection = rF**2.0 / self.observer_screen_distance / Unscattered_Image.psize
+            rxp = np.round(rx - pixel_deflection * phi_Gradient_x).astype(int) % Nx
+            ryp = np.round(ry - pixel_deflection * phi_Gradient_y).astype(int) % Ny
             AI = EA_im[ryp, rxp]
             if len(Unscattered_Image.qvec):
                 AI_Q = EA_im_Q[ryp, rxp]
