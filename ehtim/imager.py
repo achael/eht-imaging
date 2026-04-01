@@ -29,12 +29,19 @@ from builtins import object
 
 import copy
 import time
+from dataclasses import dataclass
+from typing import Any
 import numpy as np
 import scipy.optimize as opt
 
 import ehtim.imaging.imager_utils as imutils
 import ehtim.imaging.pol_imager_utils as polutils
 import ehtim.imaging.multifreq_imager_utils as mfutils
+from ehtim.imaging.imager_backend import (
+    embed_imarr, pack_imarr, unpack_imarr,
+    transform_imarr, transform_imarr_inverse,
+    transform_gradients, make_initarr,
+)
 import ehtim.image
 import ehtim.const_def as ehc
 
@@ -81,7 +88,40 @@ REGPARAMS_DEFAULT = {'major':50*ehc.RADPERUAS,
 POLARIZATION_MODES = ['P','QU','IP','IQU','V','IV','IQUV','IPV'] # TODO: treatment of V may be inconsistent
 MEANPOL_INIT = 0.2 # mean initial polarization if not in initial image
 SIGMAPOL_INIT = 1.e-2 # perturbations to initial polarization if not in initial image
+
 ###################################################################################################
+@dataclass
+class ImagerRunState:
+    """Snapshot of parameters and result from one imaging run."""
+    out: Any
+    obslist: list
+    init: Any
+    prior: Any
+    reg_term: dict
+    dat_term: dict
+    maxit: int
+    stop: float
+    pol: str
+    flux: float
+    pflux: Any
+    vflux: Any
+    clipfloor: float
+    snrcut: dict
+    debias: bool
+    systematic_noise: float
+    systematic_cphase_noise: float
+    transform: Any
+    weighting: str
+    maxset: bool
+    cp_uv_min: Any
+    reffreq: float
+    mf: bool
+    mf_order: int
+    mf_order_pol: int
+    mf_rm: int
+    mf_cm: int
+
+
 # Imager object
 ###################################################################################################
 
@@ -94,41 +134,7 @@ class Imager(object):
                  prior_im=None, flux=None, data_term=DAT_DEFAULT, reg_term=REG_DEFAULT, **kwargs):
 
         self.logstr = ""
-        self._out_list = []
-        
-        self._obs_list = []
-        self._init_list = []
-        self._prior_list = []
-
-        self._reg_term_list = []
-        self._dat_term_list = []
-
-        self._maxit_list = []
-        self._stop_list = []
-
-        self._pol_list = []
-        
-        self._flux_list = []
-        self._pflux_list = []
-        self._vflux_list = []
-
-        self._clipfloor_list = []        
-        self._snrcut_list = []
-        self._debias_list = []
-        self._systematic_noise_list = []
-        self._systematic_cphase_noise_list = []
-        self._transform_list = []
-        self._weighting_list = []
-
-        self._maxset_list = []
-        self._cp_uv_min_list = []
-
-        self._reffreq_list = []
-        self._mf_list = []
-        self._mf_order_list = []
-        self._mf_order_pol_list = []
-        self._mf_rm_list = []
-        self._mf_cm_list = []
+        self._history: list[ImagerRunState] = []
                 
         # iterations / convergence
         self.maxit_next = kwargs.get('maxit', MAXIT)
@@ -255,230 +261,123 @@ class Imager(object):
         """
         self.obslist_next = [obs]
 
-    def reg_terms_last(self):
-        """Return last used regularizer terms.
-        """
+    def _last(self, field: str) -> Any:
         if self.nruns == 0:
             print("No imager runs yet!")
             return
-        return self._reg_term_list[-1]
+        return getattr(self._history[-1], field)
+
+    def reg_terms_last(self):
+        """Return last used regularizer terms."""
+        return self._last('reg_term')
 
     def dat_terms_last(self):
-        """Return last used data terms.
-        """
-        if self.nruns == 0:
-            print("No imager runs yet!")
-            return
-        return self._dat_term_list[-1]
+        """Return last used data terms."""
+        return self._last('dat_term')
 
     def obslist_last(self):
-        """Return last used observation.
-        """
-        if self.nruns == 0:
-            print("No imager runs yet!")
-            return
-        return self._obs_list[-1]
+        """Return last used observation list."""
+        return self._last('obslist')
 
     def obs_last(self):
-        """Return last used observation.
-        """
-        if self.nruns == 0:
-            print("No imager runs yet!")
-            return
-        return self._obs_list[-1][0]
+        """Return last used observation."""
+        return self._last('obslist')[0]
 
     def prior_last(self):
-        """Return last used prior image.
-        """
-        if self.nruns == 0:
-            print("No imager runs yet!")
-            return
-        return self._prior_list[-1]
+        """Return last used prior image."""
+        return self._last('prior')
 
     def out_last(self):
-        """Return last result.
-        """
-        if self.nruns == 0:
-            print("No imager runs yet!")
-            return
-        return self._out_list[-1]
-
+        """Return last result."""
+        return self._last('out')
 
     def init_last(self):
-        """Return last initial image.
-        """
-        if self.nruns == 0:
-            print("No imager runs yet!")
-            return
-        return self._init_list[-1]
+        """Return last initial image."""
+        return self._last('init')
 
     def flux_last(self):
-        """Return last total flux constraint.
-        """
-        if self.nruns == 0:
-            print("No imager runs yet!")
-            return
-        return self._flux_list[-1]
+        """Return last total flux constraint."""
+        return self._last('flux')
 
     def pflux_last(self):
-        """Return last total linear polarimetric flux constraint.
-        """
-        if self.nruns == 0:
-            print("No imager runs yet!")
-            return
-        return self._pflux_list[-1]
+        """Return last total linear polarimetric flux constraint."""
+        return self._last('pflux')
 
     def vflux_last(self):
-        """Return last total circular polarimetric flux constraint.
-        """
-        if self.nruns == 0:
-            print("No imager runs yet!")
-            return
-        return self._vflux_list[-1]
+        """Return last total circular polarimetric flux constraint."""
+        return self._last('vflux')
 
     def clipfloor_last(self):
-        """Return last clip floor.
-        """
-        if self.nruns == 0:
-            print("No imager runs yet!")
-            return
-        return self._clipfloor_list[-1]
+        """Return last clip floor."""
+        return self._last('clipfloor')
 
     def pol_last(self):
-        """Return last polarization imaged.
-        """
-        if self.nruns == 0:
-            print("No imager runs yet!")
-            return
-        return self._pol_list[-1]
+        """Return last polarization imaged."""
+        return self._last('pol')
 
     def maxit_last(self):
-        """Return last max_iterations value.
-        """
-        if self.nruns == 0:
-            print("No imager runs yet!")
-            return
-        return self._maxit_list[-1]
+        """Return last max_iterations value."""
+        return self._last('maxit')
 
     def stop_last(self):
-        """Return last convergence value.
-        """
-        if self.nruns == 0:
-            print("No imager runs yet!")
-            return
-        return self._stop_list[-1]
-        
+        """Return last convergence value."""
+        return self._last('stop')
+
     def debias_last(self):
-        """Return last debias value.
-        """
-        if self.nruns == 0:
-            print("No imager runs yet!")
-            return
-        return self._debias_list[-1]
+        """Return last debias value."""
+        return self._last('debias')
 
     def snrcut_last(self):
-        """Return last snrcut value.
-        """
-        if self.nruns == 0:
-            print("No imager runs yet!")
-            return
-        return self._snrcut_list[-1]
+        """Return last snrcut value."""
+        return self._last('snrcut')
 
     def weighting_last(self):
-        """Return last weighting value.
-        """
-        if self.nruns == 0:
-            print("No imager runs yet!")
-            return
-        return self._weighting_list[-1]
+        """Return last weighting value."""
+        return self._last('weighting')
 
     def systematic_noise_last(self):
-        """Return last systematic_noise value.
-        """
-        if self.nruns == 0:
-            print("No imager runs yet!")
-            return
-        return self._systematic_noise_list[-1]
+        """Return last systematic_noise value."""
+        return self._last('systematic_noise')
 
     def systematic_cphase_noise_last(self):
-        """Return last closure phase systematic noise value (in degree).
-        """
-        if self.nruns == 0:
-            print("No imager runs yet!")
-            return
-        return self._systematic_cphase_noise_list[-1]
+        """Return last closure phase systematic noise value (in degrees)."""
+        return self._last('systematic_cphase_noise')
 
     def maxset_last(self):
-        """Return last choice of closure phase maximal/minimal set
-        """
-        if self.nruns == 0:
-            print("No imager runs yet!")
-            return
-        return self._maxset_list[-1]
+        """Return last choice of closure phase maximal/minimal set."""
+        return self._last('maxset')
 
     def cp_uv_min_last(self):
-        """Return last choice of minimal uvdistance for closure phases
-        """
-        if self.nruns == 0:
-            print("No imager runs yet!")
-            return
-        return self._cp_uv_min_list[-1]
+        """Return last choice of minimal uvdistance for closure phases."""
+        return self._last('cp_uv_min')
 
     def mf_last(self):
-        """Return last choice for multifrequency imaging
-        """
-        if self.nruns == 0:
-            print("No imager runs yet!")
-            return
-        return self._mf_list[-1]
+        """Return last choice for multifrequency imaging."""
+        return self._last('mf')
 
     def reffreq_last(self):
-        """Return last choice of order for multifrequency imaging
-        """
-        if self.nruns == 0:
-            print("No imager runs yet!")
-            return
-        return self._reffreq_list[-1]
-        
+        """Return last reference frequency for multifrequency imaging."""
+        return self._last('reffreq')
+
     def mf_order_last(self):
-        """Return last choice of order for multifrequency imaging
-        """
-        if self.nruns == 0:
-            print("No imager runs yet!")
-            return
-        return self._mf_order_list[-1]
+        """Return last choice of order for multifrequency imaging."""
+        return self._last('mf_order')
 
     def mf_order_pol_last(self):
-        """Return last choice of order for multifrequency polarimetric imaging
-        """
-        if self.nruns == 0:
-            print("No imager runs yet!")
-            return
-        return self._mf_order_pol_list[-1]
+        """Return last choice of order for multifrequency polarimetric imaging."""
+        return self._last('mf_order_pol')
 
     def mf_rm_last(self):
-        """Return last choice for RM imaging
-        """
-        if self.nruns == 0:
-            print("No imager runs yet!")
-            return
-        return self._mf_rm_list[-1]
+        """Return last choice for RM imaging."""
+        return self._last('mf_rm')
 
     def mf_cm_last(self):
-        """Return last choice for CM imaging
-        """
-        if self.nruns == 0:
-            print("No imager runs yet!")
-            return
-        return self._mf_cm_list[-1]
-                               
+        """Return last choice for CM imaging."""
+        return self._last('mf_cm')
+
     def transform_last(self):
-        """Return last image transform used.
-        """
-        if self.nruns == 0:
-            print("No imager runs yet!")
-            return
-        return self._transform_list[-1]
+        """Return last image transform used."""
+        return self._last('transform')
 
     def converge(self, niter, blur_frac, pol, grads=True, **kwargs):
 
@@ -1805,370 +1704,34 @@ class Imager(object):
 
     def _append_image_history(self, outim, logstr):
         self.logstr += (logstr + "\n")
-        self._obs_list.append(self.obslist_next)
-        self._init_list.append(self.init_next)
-        self._prior_list.append(self.prior_next)
-        self._debias_list.append(self.debias_next)
-        self._weighting_list.append(self.weighting_next)
-        self._systematic_noise_list.append(self.systematic_noise_next)
-        self._systematic_cphase_noise_list.append(self.systematic_cphase_noise_next)
-        self._snrcut_list.append(self.snrcut_next)
-        self._flux_list.append(self.flux_next)
-        self._pflux_list.append(self.pflux_next)
-        self._vflux_list.append(self.vflux_next)        
-        self._pol_list.append(self.pol_next)
-        self._clipfloor_list.append(self.clipfloor_next)
-        self._maxset_list.append(self.clipfloor_next)
-        self._maxit_list.append(self.maxit_next)
-        self._stop_list.append(self.stop_next)       
-        self._cp_uv_min_list.append(self.cp_uv_min)
-                
-        self._mf_list.append(self.mf_next)
-        self._reffreq_list.append(self.reffreq)        
-        self._mf_order_list.append(self.mf_order)
-        self._mf_order_pol_list.append(self.mf_order_pol)
-        self._mf_rm_list.append(self.mf_rm)
-        self._mf_cm_list.append(self.mf_cm)
-                                
-        self._transform_list.append(self.transform_next)
-        self._reg_term_list.append(self.reg_term_next)
-        self._dat_term_list.append(self.dat_term_next)
-
-        self._out_list.append(outim)
-        return
+        self._history.append(ImagerRunState(
+            out=outim,
+            obslist=self.obslist_next,
+            init=self.init_next,
+            prior=self.prior_next,
+            reg_term=self.reg_term_next,
+            dat_term=self.dat_term_next,
+            maxit=self.maxit_next,
+            stop=self.stop_next,
+            pol=self.pol_next,
+            flux=self.flux_next,
+            pflux=self.pflux_next,
+            vflux=self.vflux_next,
+            clipfloor=self.clipfloor_next,
+            snrcut=self.snrcut_next,
+            debias=self.debias_next,
+            systematic_noise=self.systematic_noise_next,
+            systematic_cphase_noise=self.systematic_cphase_noise_next,
+            transform=self.transform_next,
+            weighting=self.weighting_next,
+            maxset=self.maxset_next,
+            cp_uv_min=self.cp_uv_min,
+            reffreq=self.reffreq,
+            mf=self.mf_next,
+            mf_order=self.mf_order,
+            mf_order_pol=self.mf_order_pol,
+            mf_rm=self.mf_rm,
+            mf_cm=self.mf_cm,
+        ))
     
     
-#############################################################   
-# Helper functions
-#############################################################
-def embed_imarr(imarr, mask, clipfloor=0., randomfloor=False):
-    """Embeds a multidimensional image array into the size of boolean embed mask
-    """
-
-    imarrdim = len(imarr.shape)   
-    if imarrdim==2:
-        nsolve = imarr.shape[0]    
-        nimage = imarr.shape[1]
-    elif imarrdim==1:
-        nsolve = 1
-        nimage = imarr.shape[0]
-        imarr = imarr.reshape((nsolve,nimage))
-    else:
-        raise Exception("in embed_imarr, imarr should have one or two dimensions!")
-               
-    if nimage!=np.sum(mask):
-        raise Exception("in embed_imarr, number of masked pixels is not consistent with imarr shape!")
-
-    nimage_out = len(mask)
-    outarr = np.empty((nsolve,nimage_out)) 
-    # TODO does this require the for loop? 
-    for kk in range(nsolve):
-        outarr[kk] = imutils.embed(imarr[kk], mask, clipfloor=clipfloor, randomfloor=randomfloor)
-    
-    if imarrdim==1:
-        outarr = outarr[0]
-                
-    return outarr
-    
-def pack_imarr(imarr, which_solve):
-    """pack image array imarr into 1D array vec for minimizaiton
-       ignore quantities not solved for
-    """
-    imarrdim = len(imarr.shape)   
-    if imarrdim==2:
-        nsolve = imarr.shape[0]    
-        nimage = imarr.shape[1]
-    elif imarrdim==1:
-        nsolve = 1
-        nimage = imarr.shape[0]
-        imarr = imarr.reshape((nsolve,nimage))
-    else:
-        raise Exception("in pack_imarr, imarr should have one or two dimensions!")
-        
-    if nsolve != len(which_solve):
-        raise Exception("in pack_imarr, imarr has inconsistent shape with which_solve!")
-        
-    vec = np.array([])
-    for kk in range(nsolve):
-        if which_solve[kk]!=0:
-            vec = np.hstack((vec,imarr[kk]))        
-
-    return vec
-    
-    
-def unpack_imarr(vec, priorarr, which_solve):
-    """unpack minimized vector vec into array,
-       replace quantities not solved for with their initial values
-    """
-    
-    imarrdim = len(priorarr.shape)
-    if imarrdim==2:
-        nsolve = priorarr.shape[0]    
-        nimage = priorarr.shape[1]
-    elif imarrdim==1:
-        nsolve = 1
-        nimage = priorarr.shape[0]
-        imarr = priorarr.reshape((nsolve,nimage))
-    else:
-        raise Exception("in unpack_imarr, priorarr should have one or two dimensions !")
-
-    if nsolve != len(which_solve):
-        raise Exception("in unpack_imarr, priorarr has inconsistent shape with which_solve!")
-
-    imct = 0
-    imarr = np.empty((nsolve, nimage))
-    for kk in range(nsolve):
-        if which_solve[kk]==0:
-            imarr[kk] = priorarr[kk]
-        else:
-            imarr[kk] = vec[imct*nimage:(imct+1)*nimage]
-            imct += 1
-            
-    if imarrdim==1:
-        imarr = imarr[0]
-    return imarr
-    
-
-def transform_imarr(imarr, transforms, which_solve):
-    """Apply transformation from solver to physical values for all polarizations"""           
-    if ('polcv' in transforms):
-        if ('vcv' in transforms) or ('mcv' in transforms):
-            raise Exception("'mcv' and 'vcv' are not compatible with 'polcv' image transforms!")
-    elif ('vcv' in transforms) and ('mcv' in transforms):
-        raise Exception("'mcv' and 'vcv' are not compatible with each other in image transforms!")
-        
-    imarrdim = len(imarr.shape)   
-    if imarrdim==2:
-        nimage = imarr.shape[0]
-    elif imarrdim==1:
-        nimage = 1
-
-    if nimage==1 or nimage==3:
-        pol_which_solve = np.array((1,0,0,0)) # single polarization imaging
-    elif nimage==4:
-        pol_which_solve = which_solve         # single-frequency, multi-polarization imaging
-    elif nimage==10:
-        pol_which_solve = which_solve[0:4]    # multi-frequency, multi-polarization imaging
-    else:
-        raise Exception("transform_imarr requires imarr.shape[0] be either 1, 3, 4, or 10!")    
-
-    outarr = imarr.copy()    
-    if nimage==1 and ('log' in transforms):
-        outarr = np.exp(outarr)   
-    elif nimage==3 and ('log' in transforms):
-        outarr[0] = np.exp(outarr[0])
-    else:
-
-        if pol_which_solve[0]==1 and ('log' in transforms):  # full polarization, including stokes I imaging
-            outarr[0] = np.exp(outarr[0])
-            
-        if (pol_which_solve[1]==1 and pol_which_solve[3]==1 and ('polcv' in transforms)):
-            outarr[0:4] = polutils.polcv(outarr)
-        elif (pol_which_solve[1]==1) and ('mcv' in transforms):
-            outarr[0:4] = polutils.mcv(outarr)
-        elif (pol_which_solve[3]==1) and ('vcv' in transforms):
-            outarr[0:4] = polutils.vcv(outarr)
-             
-    return outarr
-
-def transform_imarr_inverse(imarr, transforms, which_solve):
-    """Apply inverse transformation from physical to solver values for all polarizations"""           
-    if ('polcv' in transforms):
-        if ('vcv' in transforms) or ('mcv' in transforms):
-            raise Exception("'mcv' and 'vcv' are not compatible with 'polcv' image transforms!")
-    elif ('vcv' in transforms) and ('mcv' in transforms):
-        raise Exception("'mcv' and 'vcv' are not compatible with each other in image transforms!")
-         
-    imarrdim = len(imarr.shape)   
-    if imarrdim==2:
-        nimage = imarr.shape[0]
-    elif imarrdim==1:
-        nimage = 1
-       
-    if nimage==1 or nimage==3:
-        pol_which_solve = np.array((1,0,0,0)) # single polarization imaging
-    elif nimage==4:
-        pol_which_solve = which_solve         # single-frequency, multi-polarization imaging
-    elif nimage==10:
-        pol_which_solve = which_solve[0:4]    # multi-frequency, multi-polarization imaging
-    else:
-        raise Exception("transform_imarr requires imarr.shape[0] be either 1, 3, 4, or 10!")    
-        
-    outarr = imarr.copy()
-    if nimage==1 and ('log' in transforms):
-        outarr = np.log(imarr)         
-    elif nimage==3 and ('log' in transforms):
-        outarr[0] = np.log(outarr[0])           
-    else:
-
-        if pol_which_solve[0]==1 and ('log' in transforms):  # full polarization, including stokes I imaging
-            outarr[0] = np.log(outarr[0])
-            
-        if (pol_which_solve[1]==1 and pol_which_solve[3]==1 and ('polcv' in transforms)):
-            outarr[0:4] = polutils.polcv_r(outarr[0:4])
-        elif pol_which_solve[1]==1 and ('mcv' in transforms):
-            outarr[0:4] = polutils.mcv_r(outarr[0:4])
-        elif pol_which_solve[3]==1 and ('vcv' in transforms):
-            outarr[0:4] = polutils.vcv_r(outarr[0:4])
-             
-    return outarr
-
-def transform_gradients(gradarr, imarr, transforms, which_solve):
-    """Apply chain rule gradients for solver values for all polarizations
-       gradarr is objective func gradients w/r/t physical variables
-       imarr is the current image in solver variables """           
-
-    if ('polcv' in transforms):
-        if ('vcv' in transforms) or ('mcv' in transforms):
-            raise Exception("'mcv' and 'vcv' are not compatible with 'polcv' image transforms!")
-    elif ('vcv' in transforms) and ('mcv' in transforms):
-        raise Exception("'mcv' and 'vcv' are not compatible with each other in image transforms!")
-        
-    imarrdim = len(imarr.shape)   
-    if imarrdim==2:
-        nimage = imarr.shape[0]
-    elif imarrdim==1:
-        nimage = 1
-
-    if nimage==1 or nimage==3:
-        pol_which_solve = np.array((1,0,0,0)) # single polarization imaging
-    elif nimage==4:
-        pol_which_solve = which_solve         # single-frequency, multi-polarization imaging
-    elif nimage==10:
-        pol_which_solve = which_solve[0:4]    # multi-frequency, multi-polarization imaging
-    else:
-        raise Exception("transform_imarr requires imarr.shape[0] be either 1, 3, 4, or 10!")    
-
-    outarr = gradarr.copy()    
-    if nimage==1 and ('log' in transforms):
-        outarr = np.exp(imarr) * gradarr
-    elif nimage==3 and ('log' in transforms):
-        outarr[0] = np.exp(imarr[0]) * gradarr[0]
-    else:
-
-        if pol_which_solve[0]==1 and ('log' in transforms):  # full polarization, including stokes I imaging
-            outarr[0] = np.exp(imarr[0]) * gradarr[0]
-            
-        if (pol_which_solve[1]==1 and pol_which_solve[3]==1 and ('polcv' in transforms)):
-            outarr[0:4] = polutils.polcv_chain(imarr[0:4]) * gradarr[0:4]
-        elif (pol_which_solve[1]==1) and ('mcv' in transforms):
-            outarr[0:4] = polutils.mcv_chain(imarr[0:4]) * gradarr[0:4]
-        elif (pol_which_solve[3]==1) and ('vcv' in transforms):
-            outarr[0:4] = polutils.vcv_chain(imarr[0:4]) * gradarr[0:4]
-             
-             
-    return outarr
-
-
-def make_initarr(image, mask, norm_init=False, flux=1, 
-                 mf=False, pol=False, 
-                 randompol_lin=False, randompol_circ=False, 
-                 meanpol=0.2, sigmapol=1.e-2):
-    """Make initial image array from image object, or initialize with default values"""           
-    # set initial and prior images
-    init_I = image.imvec[mask]
-    nimage = len(init_I)
-                    
-    if norm_init:
-        normfac = flux / (np.sum(init_I)) 
-        init_I = normfac * init_I         
-    else:
-        normfac = 1
-
-    # TODO -- apply a floor to init_I? 
-
-    # single-frequency, single-polarization
-    if not(pol) and not(mf):
-        initarr = np.array(init_I)
-            
-    # polarization        
-    if pol:
-        if len(image.qvec):
-            init_q = normfac*image.qvec[mask]
-        else:
-            init_q = np.zeros(nimage)
-        if len(image.uvec):
-            init_u = normfac*image.uvec[mask]
-        else:
-            init_u = np.zeros(nimage)            
-        if len(image.vvec):
-            init_v = normfac*image.vvec[mask]
-        else:
-            init_v = normfac*np.zeros(nimage)
-
-        init_P = np.sqrt(init_q**2 + init_u**2)
-                     
-        init_rho = np.sqrt(init_q**2 + init_u**2 + init_v**2) / init_I
-        init_phi = np.arctan2(init_u, init_q)       
-        init_psi = np.arctan2(init_v, init_P)
-                                
-        if not(np.any(init_rho!=0)) and randompol_lin:
-            print("No polarimetric image in init!")
-            print("--initializing with 20% pol and random orientation!")
-            init_rho = meanpol * (np.ones(nimage) + sigmapol * np.random.rand(nimage))
-            init_phi = np.zeros(nimage) + sigmapol * np.random.rand(nimage)
-            
-        if not(np.any(init_psi!=0)) and randompol_circ:                
-            print("No circular polarization image in init!")
-            print("--initializing with random values!")                
-            init_rho = meanpol * (np.ones(nimage) + sigmapol * np.random.rand(nimage))
-            init_psi = np.zeros(nimage) + sigmapol * np.random.rand(nimage)
-        
-        if not(mf):
-            initarr = np.array((init_I, init_rho, init_phi, init_psi))
-     
-    # multi-frequency        
-    if mf: 
-        if len(image.specvec):
-            init_a = image.specvec[mask]
-        else:
-            init_a = np.zeros(nimage)
-            
-        if len(image.curvvec):
-            init_b = image.curvvec[mask]
-        else:
-            init_b = np.zeros(nimage)
-            
-        # multi-frequency, multi-polarization    
-        if pol:
-            if len(image.specvec_pol):
-                init_ap = image.specvec_pol[mask]
-            else:
-                init_ap = np.zeros(nimage)
-
-            if len(image.curvvec_pol):
-                init_bp = image.curvvec_pol[mask]
-            else:
-                init_bp = np.zeros(nimage)
-
-            # TODO what do we want to initialize RM and CM to? 
-            if len(image.rmvec):
-                init_rm = image.rmvec[mask]
-            else:
-                init_rm = np.zeros(nimage)
-
-            if len(image.cmvec):
-                init_cm = image.cmvec[mask]
-            else:
-                init_cm = np.zeros(nimage)
-
-            initarr = np.array((init_I, init_rho, init_phi, init_psi,
-                                init_a, init_b, init_ap, init_bp,
-                                init_rm, init_cm))
-       
-        else:
-            initarr = np.array((init_I, init_a, init_b))
-
-    return initarr
-
-
-
-
-
-
-
-
-
-
-
-
