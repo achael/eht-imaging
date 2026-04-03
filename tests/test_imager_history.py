@@ -31,14 +31,14 @@ def _make_test_imager(**kwargs):
         add_th_noise=False, ampcal=True, phasecal=True,
         ttype="direct",
     )
-    return Imager(
-        obs, im, prior_im=im,
+    defaults = dict(
         data_term={"vis": 1},
         reg_term={"simple": 1, "flux": 100},
         ttype="direct",
         maxit=5,
-        **kwargs,
     )
+    defaults.update(kwargs)
+    return Imager(obs, im, prior_im=im, **defaults)
 
 
 # ---------------------------------------------------------------------------
