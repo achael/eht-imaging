@@ -1,0 +1,58 @@
+[build-system]
+requires = ["setuptools>=64", "wheel"]
+build-backend = "setuptools.build_meta"
+
+# Project metadata stays in setup.py for backward compatibility.
+# This file provides the modern build system declaration and tool configuration.
+
+[project]
+name = "ehtim"
+dynamic = ["version"]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0",
+    "pytest-cov",
+    "ruff",
+]
+
+# --- pytest ---
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-v --tb=short"
+
+# --- ruff ---
+
+[tool.ruff]
+target-version = "py310"
+line-length = 120
+
+[tool.ruff.lint]
+select = [
+    "E",    # pycodestyle errors
+    "W",    # pycodestyle warnings
+    "F",    # pyflakes
+    "I",    # isort (import sorting)
+    "UP",   # pyupgrade
+]
+ignore = [
+    "E501",   # line too long — legacy code has many long lines
+    "E741",   # ambiguous variable name (l, I, O) — common in physics code
+    "F841",   # local variable assigned but never used — catch gradually
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/*" = ["F841"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["ehtim"]
+
+# --- coverage ---
+
+[tool.coverage.run]
+source = ["ehtim"]
+
+[tool.coverage.report]
+show_missing = true
+skip_empty = true
