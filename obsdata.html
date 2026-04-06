@@ -1711,20 +1711,6 @@ This is useful for AIPS data, which has a missing factor relating ‘weights’ 
 </dd></dl>
 
 <dl class="py method">
-<dt class="sig sig-object py" id="ehtim.obsdata.Obsdata.save_oifits">
-<span class="sig-name descname"><span class="pre">save_oifits</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">fname</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">flux</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.0</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/obsdata.html#Obsdata.save_oifits"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ehtim.obsdata.Obsdata.save_oifits" title="Permalink to this definition"></a></dt>
-<dd><p>Save visibility data to oifits. Polarization data is NOT saved.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>fname</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a>) – path to output text file</p></li>
-<li><p><strong>flux</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><em>float</em></a>) – normalization total flux</p></li>
-</ul>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py method">
 <dt class="sig sig-object py" id="ehtim.obsdata.Obsdata.save_txt">
 <span class="sig-name descname"><span class="pre">save_txt</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">fname</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/obsdata.html#Obsdata.save_txt"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ehtim.obsdata.Obsdata.save_txt" title="Permalink to this definition"></a></dt>
 <dd><p>Save visibility data to a text file.</p>
@@ -1982,26 +1968,6 @@ when converting ‘stokes’ to ‘circ’ if only I is present</p></li>
 <li><p><strong>mjd</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><em>int</em></a>) – integer observation  MJD</p></li>
 <li><p><strong>ampcal</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.14)"><em>bool</em></a>) – True if amplitude calibrated</p></li>
 <li><p><strong>phasecal</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.14)"><em>bool</em></a>) – True if phase calibrated</p></li>
-</ul>
-</dd>
-<dt class="field-even">Returns<span class="colon">:</span></dt>
-<dd class="field-even"><p>Obsdata object loaded from file</p>
-</dd>
-<dt class="field-odd">Return type<span class="colon">:</span></dt>
-<dd class="field-odd"><p>obs (<a class="reference internal" href="#ehtim.obsdata.Obsdata" title="ehtim.obsdata.Obsdata">Obsdata</a>)</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py function">
-<dt class="sig sig-object py" id="ehtim.obsdata.load_oifits">
-<span class="sig-prename descclassname"><span class="pre">ehtim.obsdata.</span></span><span class="sig-name descname"><span class="pre">load_oifits</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">fname</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">flux</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.0</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/obsdata.html#load_oifits"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ehtim.obsdata.load_oifits" title="Permalink to this definition"></a></dt>
-<dd><p>Load data from an oifits file. Does NOT currently support polarization.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>fname</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a>) – path to input text file</p></li>
-<li><p><strong>flux</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><em>float</em></a>) – normalization total flux</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>

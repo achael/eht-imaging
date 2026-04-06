@@ -4761,25 +4761,9 @@
 
         <span class="n">hdulist</span> <span class="o">=</span> <span class="n">ehtim</span><span class="o">.</span><span class="n">io</span><span class="o">.</span><span class="n">save</span><span class="o">.</span><span class="n">save_obs_uvfits</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span>
                                                 <span class="n">force_singlepol</span><span class="o">=</span><span class="n">force_singlepol</span><span class="p">,</span> <span class="n">polrep_out</span><span class="o">=</span><span class="n">polrep_out</span><span class="p">)</span>
-        <span class="k">return</span> <span class="n">hdulist</span></div>
+        <span class="k">return</span> <span class="n">hdulist</span></div></div>
 
 
-<div class="viewcode-block" id="Obsdata.save_oifits"><a class="viewcode-back" href="../../obsdata.html#ehtim.obsdata.Obsdata.save_oifits">[docs]</a>    <span class="k">def</span> <span class="nf">save_oifits</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">fname</span><span class="p">,</span> <span class="n">flux</span><span class="o">=</span><span class="mf">1.0</span><span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot; Save visibility data to oifits. Polarization data is NOT saved.</span>
-
-<span class="sd">            Args:</span>
-<span class="sd">                fname (str): path to output text file</span>
-<span class="sd">                flux (float): normalization total flux</span>
-<span class="sd">        &quot;&quot;&quot;</span>
-
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">polrep</span> <span class="o">!=</span> <span class="s1">&#39;stokes&#39;</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;save_oifits not yet implemented for polreps other than &#39;stokes&#39;&quot;</span><span class="p">)</span>
-
-        <span class="c1"># Antenna diameters are currently incorrect</span>
-        <span class="c1"># the exact times are also not correct in the datetime object</span>
-        <span class="n">ehtim</span><span class="o">.</span><span class="n">io</span><span class="o">.</span><span class="n">save</span><span class="o">.</span><span class="n">save_obs_oifits</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">fname</span><span class="p">,</span> <span class="n">flux</span><span class="o">=</span><span class="n">flux</span><span class="p">)</span>
-
-        <span class="k">return</span></div></div>
 
 <span class="c1">##################################################################################################</span>
 <span class="c1"># Observation creation functions</span>
@@ -4902,18 +4886,6 @@
                                          <span class="n">trial_speedups</span><span class="o">=</span><span class="n">trial_speedups</span><span class="p">)</span></div>
 
 
-<div class="viewcode-block" id="load_oifits"><a class="viewcode-back" href="../../obsdata.html#ehtim.obsdata.load_oifits">[docs]</a><span class="k">def</span> <span class="nf">load_oifits</span><span class="p">(</span><span class="n">fname</span><span class="p">,</span> <span class="n">flux</span><span class="o">=</span><span class="mf">1.0</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Load data from an oifits file. Does NOT currently support polarization.</span>
-
-<span class="sd">       Args:</span>
-<span class="sd">           fname (str): path to input text file</span>
-<span class="sd">           flux (float): normalization total flux</span>
-
-<span class="sd">       Returns:</span>
-<span class="sd">           obs (Obsdata): Obsdata object loaded from file</span>
-<span class="sd">    &quot;&quot;&quot;</span>
-
-    <span class="k">return</span> <span class="n">ehtim</span><span class="o">.</span><span class="n">io</span><span class="o">.</span><span class="n">load</span><span class="o">.</span><span class="n">load_obs_oifits</span><span class="p">(</span><span class="n">fname</span><span class="p">,</span> <span class="n">flux</span><span class="o">=</span><span class="n">flux</span><span class="p">)</span></div>
 
 
 <div class="viewcode-block" id="load_maps"><a class="viewcode-back" href="../../obsdata.html#ehtim.obsdata.load_maps">[docs]</a><span class="k">def</span> <span class="nf">load_maps</span><span class="p">(</span><span class="n">arrfile</span><span class="p">,</span> <span class="n">obsspec</span><span class="p">,</span> <span class="n">ifile</span><span class="p">,</span> <span class="n">qfile</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">ufile</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">vfile</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
@@ -4997,10 +4969,6 @@
 
     <span class="k">elif</span> <span class="n">fname_extension</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;txt&#39;</span><span class="p">,</span> <span class="s1">&#39;text&#39;</span><span class="p">]:</span>
         <span class="k">return</span> <span class="n">load_txt</span><span class="p">(</span><span class="n">fname</span><span class="p">,</span> <span class="n">polrep</span><span class="o">=</span><span class="n">polrep</span><span class="p">)</span>
-
-    <span class="k">elif</span> <span class="n">fname_extension</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="o">==</span> <span class="s1">&#39;oifits&#39;</span><span class="p">:</span>
-        <span class="k">return</span> <span class="n">load_oifits</span><span class="p">(</span><span class="n">fname</span><span class="p">,</span> <span class="n">flux</span><span class="o">=</span><span class="n">flux</span><span class="p">)</span>
-
 
     <span class="k">else</span><span class="p">:</span>
         <span class="k">if</span> <span class="n">obsspec</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">ifile</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
