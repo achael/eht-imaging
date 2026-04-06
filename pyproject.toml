@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "ehtim"
-version = "1.2.10"
+version = "1.2.11"
 description = "Imaging, analysis, and simulation software for radio interferometry"
 readme = "README.rst"
 license = { text = "GPLv3" }
