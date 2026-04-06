@@ -3,14 +3,14 @@ ehtim (eht-imaging)
 .. image:: https://zenodo.org/badge/42943499.svg
    :target: https://zenodo.org/badge/latestdoi/42943499
 
-Python modules for simulating and manipulating VLBI data and producing images with regularized maximum likelihood methods. This version is an early release so please raise an issue, submit a pull request, or email achael@princeton.edu if you have trouble or need help for your application.
+Python modules for simulating and manipulating VLBI data and producing images with regularized maximum likelihood methods. This version is an early release so please raise an issue, submit a pull request, or email achael@outlook.com if you have trouble or need help for your application.
 
 The package contains several primary classes for loading, simulating, and manipulating VLBI data. The main classes are the ``Image``, ``Movie``, ``Array``, ``Obsdata``, ``Imager``, and ``Caltable`` classes, which provide tools for loading images and data, producing simulated data from realistic u-v tracks,  calibrating, inspecting, and  plotting data, and producing images from data sets in various polarizations using various data terms and regularizing functions.
 
 Installation
 ------------
 
-The latest stable version (`1.2.10 <https://github.com/achael/eht-imaging/releases/tag/v1.2.10>`_) is available on `PyPi <https://pypi.org/project/ehtim/>`_. Simply install pip and run
+The latest stable version (`1.2.11 <https://github.com/achael/eht-imaging/releases/tag/v1.2.11>`_) is available on `PyPi <https://pypi.org/project/ehtim/>`_. Simply install pip and run
 
 .. code-block:: bash
 
@@ -24,7 +24,10 @@ Incremental updates are developed on the `dev branch <https://github.com/achael/
 
 Installing with pip will update most of the required libraries automatically (`numpy <http://www.numpy.org/>`_, `scipy <http://www.scipy.org/>`_, `matplotlib <http://www.matplotlib.org/>`_, `astropy <http://www.astropy.org/>`_, `ephem <http://pypi.python.org/pypi/pyephem/>`_, `future <http://pypi.python.org/pypi/future>`_, `h5py <http://www.h5py.org/>`_, and `pandas <http://www.pandas.pydata.org/>`_).
 
-**If you want to use fast fourier transforms, you will also need to separately install** `NFFT <https://github.com/NFFT/nfft>`_ **and its** `pyNFFT wrapper <https://github.com/ghisvail/pyNFFT/>`__. **Note that pyNFFT is only supported for python versions 3.11 or lower.**
+
+NFFT Installation
+-----------------
+**If you want to use fast fourier transforms, you will also need to separately install** `NFFT <https://github.com/NFFT/nfft>`_ **and its** `pyNFFT wrapper <https://github.com/ghisvail/pyNFFT/>`__. 
 
 The simplest way is to use `conda <https://anaconda.org/conda-forge/pynfft/>`__ to install both NFFT and pyNFFT:
 
@@ -35,7 +38,9 @@ The simplest way is to use `conda <https://anaconda.org/conda-forge/pynfft/>`__ 
 
 Alternatively, first install NFFT manually following the instructions on the `readme <https://github.com/NFFT/nfft>`__, making sure to use the ``--enable-openmp`` flag in compilation. Then install `pynfft <https://github.com/ghisvail/pyNFFT/>`__, with pip, following the readme instructions to link the installation to where you installed NFFT. Finally, reinstall ehtim.
 
-**For M1 Macs (OS >= v12.0)**, install the M1 Mac version of `pynfft <https://github.com/rohandahale/pyNFFT.git>`__ and follow the instructions on the `readme  <https://github.com/rohandahale/pyNFFT.git>`__. It has the instructions to install `fftw <http://www.fftw.org>`_, `nfft <https://github.com/NFFT/nfft>`__ and then `pynfft <https://github.com/rohandahale/pyNFFT.git>`__.
+**Note that, unfortunately, pyNFFT is only supported for python versions 3.11 or lower.** eht-imaging version 2.0 using the `finufft <https://github.com/flatironinstitute/finufft>`__ library is in active development.
+
+**For M1/M2/M3/M4/M5 Macs (MacOS >= v12.0)**, install the updated Mac version of `pynfft <https://github.com/rohandahale/pyNFFT.git>`__ and follow the instructions on the `readme  <https://github.com/rohandahale/pyNFFT.git>`__ to manually install `fftw <http://www.fftw.org>`_, `nfft <https://github.com/NFFT/nfft>`__ and then `pynfft <https://github.com/rohandahale/pyNFFT.git>`__.
 
 **Certain eht-imaging functions require other external packages that are not automatically installed.** In addition to pynfft, these include  `networkx <https://networkx.github.io/>`_ (for image comparison functions), `requests <http://docs.python-requests.org/en/master/>`_ (for dynamical imaging), and `scikit-image <https://scikit-image.org/>`_ (for a few image analysis functions). However, the vast majority of the code will work without these dependencies.
 
@@ -43,26 +48,24 @@ Documentation and Tutorials
 ---------------------------
 Documentation is  `here <https://achael.github.io/eht-imaging>`_.
 
-A intro to imaging tutorial jupyter notebook can be found in the repo at `tutorials/ehtim_tutorial.ipynb <https://github.com/achael/eht-imaging/blob/main/tutorials/ehtim_tutorial.ipynb>`__
+A tutorial jupyter notebook for imaging can be found in the repo at `tutorials/ehtim_tutorial.ipynb <https://github.com/achael/eht-imaging/blob/main/tutorials/ehtim_tutorial.ipynb>`__
 
 `Slides <https://docs.google.com/presentation/d/1A0y9omYI2ueSUa6_t5reylBhw6eiLwjqDzw-HUOk8Ac/edit?usp=sharing>`__ for the included tutorial walk through the basic steps of reconstructing EHT images with the code
 
-Here are some other ways to learn to use the code:
+Scripts in the examples directory contain several older simple example workflows but have not been recently validated.  
 
-- Start with the script examples/example.py, which contains a series of sample commands to load an image and array, generate data, and produce an image with various imaging algorithms.
-
-- Older `Slides <https://www.dropbox.com/s/7533ucj8bt54yh7/Bouman_Chael.pdf?dl=0>`__ from the EHT2016 data generation and imaging workshop contain a tutorial on generating data with the VLBI imaging `website <http://vlbiimaging.csail.mit.edu>`_, loading into the library, and producing an image.
 
 Citation
---------------------------------
+--------
 If you use ehtim in your publication, please cite `Chael+ 2018 <http://adsabs.harvard.edu/abs/2018ApJ...857...23C>`_.
 
 The latest version is also available as a static doi on `Zenodo <https://zenodo.org/badge/latestdoi/42943499>`_.
 
+
 Selected publications that use ehtim
 ------------------------------------
 
-Let us know if you use ehtim in your publication and we'll list it here!
+Let us know if you use eht-imaging in your publication and we'll list it here!
 
 - High-Resolution Linear Polarimetric Imaging for the Event Horizon Telescope, `Chael et al. 2016 <https://arxiv.org/abs/1605.06156>`_ 
 
@@ -132,6 +135,8 @@ Let us know if you use ehtim in your publication and we'll list it here!
 
 - The persistent shadow of the supermassive black hole of M 87. I. Observations, calibration, imaging, and analysis, `EHTC 2023 <https://www.aanda.org/articles/aa/pdf/2024/01/aa47932-23.pdf>`_
 
+- Fundamental Physics Opportunities with the Next-Generation Event Horizon Telescope, `Ayzenberg et al. 2023 <https://arxiv.org/abs/2312.02130>`_
+
 - Parsec-scale evolution of the gigahertz-peaked spectrum quasar PKS 0858-279, `Kosogorov et al. 2024 <https://arxiv.org/pdf/2401.03603.pdf>`_
 
 - Atmospheric Limitations for High-frequency Ground-based Very Long Baseline Interferometry, `Pesce et a. 2024 <https://arxiv.org/abs/2404.01482>`_
@@ -148,13 +153,29 @@ Let us know if you use ehtim in your publication and we'll list it here!
 
 - Evolution, speed, and precession of the parsec-scale jet in the 3C 84 radio galaxy, `Foschi et al. 2024 <https://arxiv.org/pdf/2412.09215>`_
 
-oifits Documentation
---------------------
+- Origin of the ring ellipticity in the black hole images of M87*, `Dahale et al. 2025 <https://arxiv.org/pdf/2505.10333>`_
 
-The oifits_new.py file used for reading/writing .oifits files is a slightly modified version of Paul Boley's package `oifits <http://astro.ins.urfu.ru/pages/~pboley/oifits/>`_.  
-The oifits read/write functionality in ehtim is still being developed and may not work with all versions of python or astropy.
+- Revealing a ribbon-like jet in OJ 287 with RadioAstron, `Traianou et al. 2025 <https://arxiv.org/pdf/2508.01747>`_
 
-The documentation is styled after `dfm's projects <https://github.com/dfm>`_ 
+- Revisiting 3C 279 jet morphology with space VLBI at 26 microarcsecond resolution, `Toscano et al. 2025 <https://arxiv.org/pdf/2509.21987>`_
+
+- Horizon-scale variability of M87* from 2017-2021 EHT obesrvations, `EHTC et al. 2025 <https://arxiv.org/pdf/2509.24593>`_
+
+- Probing the disk-jet coupling in M 87, `Saiz-Perez et al. 2025 <https://arxiv.org/pdf/2511.15482>`_
+
+- Probing jet base emission of M87* with the 2021 Event Horizon Telescope observations, `Saurabh et al. <https://arxiv.org/pdf/2512.08970>`_
+
+- Radio properties of the quasi-periodic eruption source RXJ1301.9+2747 at parsec scales, `von Fellenberg et al. <https://arxiv.org/pdf/2511.14863>`_
+
+- Spatially resolved polarization swings in the supermassive binary black hole candidate OJ 287 with first Event Horizon Telescope observations, `Gomez et al. 2026 <https://www.aanda.org/articles/aa/pdf/2026/01/aa55831-25.pdf>`_
+
+- Locating the missing large-scale emission in the jet of M87* with short EHT baselines, `Georgiev et al. 2026 <https://arxiv.org/pdf/2601.13356>`_
+
+- Evidence of a non-equipartition energy regime in 1803+784, `Perez-Diez et al. 2026 <https://arxiv.org/pdf/2602.20746>`_
+
+- Where within the 3c 84 jet are gamma-rays produced? `Paraschos et al. 2026 <https://arxiv.org/pdf/2603.22403>`_
+
+- Ring Asymmetry and Spin in M87*, `Bernshteyn et al. 2026 <2601.00394>`_
 
 License
 -------

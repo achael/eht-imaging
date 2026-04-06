@@ -7,16 +7,16 @@ def read(fname):
 if __name__ == "__main__":
     setup(name="ehtim",
 
-          version = "1.2.10",
+          version = "1.2.11",
 
           author = "Andrew Chael",
-          author_email = "achael@princeton.edu",
+          author_email = "achael@outlook.com",
           description = "Imaging, analysis, and simulation software for radio interferometry",
           long_description=read('README.rst'),
           license = "GPLv3",
           keywords = "imaging astronomy EHT polarimetry",
           url = "https://github.com/achael/eht-imaging",
-          download_url = "https://github.com/achael/eht-imaging/archive/v1.2.9.tar.gz",
+          download_url = "https://github.com/achael/eht-imaging/archive/v1.2.11.tar.gz",
           packages = ["ehtim",
                       "scripts",
                       "ehtim.calibrating",

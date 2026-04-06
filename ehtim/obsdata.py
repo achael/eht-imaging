@@ -4683,22 +4683,6 @@ class Obsdata(object):
         return hdulist
 
 
-    def save_oifits(self, fname, flux=1.0):
-        """ Save visibility data to oifits. Polarization data is NOT saved.
-
-            Args:
-                fname (str): path to output text file
-                flux (float): normalization total flux
-        """
-
-        if self.polrep != 'stokes':
-            raise Exception("save_oifits not yet implemented for polreps other than 'stokes'")
-
-        # Antenna diameters are currently incorrect
-        # the exact times are also not correct in the datetime object
-        ehtim.io.save.save_obs_oifits(self, fname, flux=flux)
-
-        return
 
 ##################################################################################################
 # Observation creation functions
@@ -4821,18 +4805,6 @@ def load_uvfits(fname, flipbl=False, remove_nan=False, force_singlepol=None,
                                          trial_speedups=trial_speedups)
 
 
-def load_oifits(fname, flux=1.0):
-    """Load data from an oifits file. Does NOT currently support polarization.
-
-       Args:
-           fname (str): path to input text file
-           flux (float): normalization total flux
-
-       Returns:
-           obs (Obsdata): Obsdata object loaded from file
-    """
-
-    return ehtim.io.load.load_obs_oifits(fname, flux=flux)
 
 
 def load_maps(arrfile, obsspec, ifile, qfile=0, ufile=0, vfile=0,
@@ -4916,10 +4888,6 @@ def load_obs(
 
     elif fname_extension.lower() in ['txt', 'text']:
         return load_txt(fname, polrep=polrep)
-
-    elif fname_extension.lower() == 'oifits':
-        return load_oifits(fname, flux=flux)
-
 
     else:
         if obsspec is not None and ifile is None:
