@@ -39,7 +39,7 @@ import ehtim.movie
 import ehtim.vex
 import ehtim.observing
 
-import ehtim.io.oifits
+
 import ehtim.const_def as ehc
 
 import warnings
@@ -170,7 +170,13 @@ def load_im_hdf5(filename):
     lunit = hfp['header']['units']['L_unit'][()]    # in cm
     DX = hfp['header']['camera']['dx'][()]          # in GM/c^2
     nx = hfp['header']['camera']['nx'][()]          # width in pixels
-    time = hfp['header']['t'][()] * tunit / 3600.       # time in hours
+    
+    try:
+        time = hfp['header']['t'][()] * tunit / 3600.       # time in hours
+    except KeyError:
+        print("   Warning! Time not found in hdf5 image header.")
+        time = 0.
+        
     if 'pol' in hfp:
         poldat = np.copy(hfp['pol'])[:, :, :4]            # NX,NY,{I,Q,U,V}
     else: # unpolarized data only
@@ -1492,129 +1498,6 @@ def load_obs_uvfits(filename, polrep='stokes', flipbl=False,
     # TODO get calibration flags from uvfits?
     return obs
 
-
-def load_obs_oifits(filename, flux=1.0):
-    """Load data from an oifits file. Does NOT currently support polarization.
-       Args:
-           fname (str): path to input text file
-           flux (float): normalization total flux
-       Returns:
-           obs (Obsdata): Obsdata object loaded from file
-    """
-
-    print('Warning: load_obs_oifits does NOT currently support polarimetric data!')
-
-    # open oifits file and get visibilities
-    oidata = ehtim.io.oifits.open(filename)
-    vis_data = oidata.vis
-
-    # get source info
-    src = oidata.target[0].target
-    ra = oidata.target[0].raep0.angle
-    dec = oidata.target[0].decep0.angle
-
-    # get annena info
-    nAntennas = len(oidata.array[list(oidata.array.keys())[0]].station)
-    sites = np.array([oidata.array[list(oidata.array.keys())[0]
-                                   ].station[i].sta_name for i in range(nAntennas)])
-    arrayX = oidata.array[list(oidata.array.keys())[0]].arrxyz[0]
-    arrayY = oidata.array[list(oidata.array.keys())[0]].arrxyz[1]
-    arrayZ = oidata.array[list(oidata.array.keys())[0]].arrxyz[2]
-    x = np.array([arrayX + oidata.array[list(oidata.array.keys())[0]].station[i].staxyz[0]
-                  for i in range(nAntennas)])
-    y = np.array([arrayY + oidata.array[list(oidata.array.keys())[0]].station[i].staxyz[1]
-                  for i in range(nAntennas)])
-    z = np.array([arrayZ + oidata.array[list(oidata.array.keys())[0]].station[i].staxyz[2]
-                  for i in range(nAntennas)])
-
-    # get wavelength and corresponding frequencies
-    wavelength = oidata.wavelength[list(oidata.wavelength.keys())[0]].eff_wave
-    nWavelengths = wavelength.shape[0]
-    bandpass = oidata.wavelength[list(oidata.wavelength.keys())[0]].eff_band
-    frequency = ehc.C / wavelength
-
-    # TODO: this result seems wrong...
-    bw = np.mean(2 * (np.sqrt(bandpass**2 * frequency**2 + ehc.C**2) - ehc.C) / bandpass)
-    rf = np.mean(frequency)
-
-    # get the u-v point for each visibility
-    u = np.array([vis_data[i].ucoord / wavelength for i in range(len(vis_data))])
-    v = np.array([vis_data[i].vcoord / wavelength for i in range(len(vis_data))])
-
-    # get visibility info - currently the phase error is not being used properly
-    amp = np.array([vis_data[i]._visamp for i in range(len(vis_data))])
-    phase = np.array([vis_data[i]._visphi for i in range(len(vis_data))])
-    amperr = np.array([vis_data[i]._visamperr for i in range(len(vis_data))])
-    visphierr = np.array([vis_data[i]._visphierr for i in range(len(vis_data))])
-    timeobs = np.array([vis_data[i].timeobs for i in range(len(vis_data))]
-                       )  # convert to single number
-
-    # return timeobs
-    time = np.transpose(np.tile(np.array([(ttime.mktime((timeobs[i] +
-                                                        datetime.timedelta(days=1)).timetuple())
-                                           ) / (60.0 * 60.0)
-                                          for i in range(len(timeobs))]), [nWavelengths, 1]))
-
-    # integration time
-    tint = np.array([vis_data[i].int_time for i in range(len(vis_data))])
-    # if not all(tint[0] == item for item in np.reshape(tint, (-1)) ):
-    #    raise TypeError("The time integrations for each visibility are different")
-    tint = tint[0]
-    tint = tint * np.ones(amp.shape)
-
-    # get telescope names for each visibility
-    t1 = np.transpose(np.tile(np.array([vis_data[i].station[0].sta_name
-                                        for i in range(len(vis_data))]), [nWavelengths, 1]))
-    t2 = np.transpose(np.tile(np.array([vis_data[i].station[1].sta_name
-                                        for i in range(len(vis_data))]), [nWavelengths, 1]))
-
-    # dummy variables
-    tau1 = np.zeros(amp.shape)
-    tau2 = np.zeros(amp.shape)
-    qvis = np.zeros(amp.shape)
-    uvis = np.zeros(amp.shape)
-    vvis = np.zeros(amp.shape)
-    sefdr = np.zeros(x.shape)
-    sefdl = np.zeros(x.shape)
-    fr_par = np.zeros(x.shape)
-    fr_el = np.zeros(x.shape)
-    fr_off = np.zeros(x.shape)
-    dr = np.zeros(x.shape) + 1j * np.zeros(x.shape)
-    dl = np.zeros(x.shape) + 1j * np.zeros(x.shape)
-
-    # vectorize
-    time = time.ravel()
-    tint = tint.ravel()
-    t1 = t1.ravel()
-    t2 = t2.ravel()
-
-    tau1 = tau1.ravel()
-    tau2 = tau2.ravel()
-    u = u.ravel()
-    v = v.ravel()
-    vis = amp.ravel() * np.exp(-1j * phase.ravel() * np.pi / 180.0)
-    qvis = qvis.ravel()
-    uvis = uvis.ravel()
-    vvis = vvis.ravel()
-    amperr = amperr.ravel()
-
-    # TODO - check that we are properly using the error from the amplitude and phase
-    # create data tables
-    datatable = np.array([(time[i], tint[i], t1[i], t2[i], tau1[i], tau2[i], u[i], v[i],
-                           flux * vis[i], qvis[i], uvis[i], vvis[i],
-                           flux * amperr[i], flux * amperr[i], flux * amperr[i], flux * amperr[i]
-                           ) for i in range(len(vis))
-                          ], dtype=ehc.DTPOL_STOKES)
-
-    tarr = np.array([(sites[i], x[i], y[i], z[i],
-                      sefdr[i], sefdl[i], dr[i], dl[i],
-                      fr_par[i], fr_el[i], fr_off[i],
-                      ) for i in range(nAntennas)
-                     ], dtype=ehc.DTARR)
-
-    # return object
-    return ehtim.obsdata.Obsdata(ra, dec, rf, bw, datatable, tarr,
-                                 polrep='stokes', source=src, mjd=time[0])
 
 def load_obs_maps(arrfile, obsspec, ifile, qfile=0, ufile=0, vfile=0,
                   src=ehc.SOURCE_DEFAULT, mjd=ehc.MJD_DEFAULT, ampcal=False, phasecal=False):

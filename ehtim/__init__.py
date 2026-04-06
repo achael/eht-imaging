@@ -3,7 +3,7 @@
     :platform: Unix
     :synopsis: EHT Imaging Utilities
 
-.. moduleauthor:: Andrew Chael (achael@cfa.harvard.edu)
+.. moduleauthor:: Andrew Chael (achael@outlook.com)
 
 """
 from __future__ import division
@@ -15,7 +15,6 @@ from builtins import object
 
 import ehtim.observing
 from ehtim.const_def import *
-from ehtim.imaging.imager_utils import imager_func
 from ehtim.modeling.modeling_utils import modeler_func
 import ehtim.imaging
 from ehtim.features import rex

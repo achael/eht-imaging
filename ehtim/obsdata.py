@@ -1155,7 +1155,7 @@ class Obsdata(object):
 
         return chisq
 
-    def polchisq(self, im, dtype='pvis', ttype='nfft', pol_trans=True, mask=[], **kwargs):
+    def polchisq(self, im, dtype='pvis', ttype='nfft', mask=[], **kwargs):
         """Give the reduced chi^2 for the specified image and polarimetric datatype.
 
            Args:
@@ -1164,7 +1164,7 @@ class Obsdata(object):
                 pol (str): polarization type ('I', 'Q', 'U', 'V', 'LL', 'RR', 'LR', or 'RL'
                 mask (arr): mask of same dimension as im.imvec
                 ttype (str): if "fast" or "nfft" or "direct"
-                pol_trans (bool): True for I,m,chi, False for IQU
+
                 fft_pad_factor (float): zero pad the image to (fft_pad_factor * image size) in FFT
                 conv_func ('str'):  The convolving function for gridding; 'gaussian', 'pill','cubic'
                 p_rad (int): The pixel radius for the convolving function
@@ -1194,33 +1194,22 @@ class Obsdata(object):
 
         # Pack the comparison image in the proper format
         imstokes = im.switch_polrep(polrep_out='stokes', pol_prim_out='I')
-        if pol_trans:
-            ivec = imstokes.imvec
-            mvec = (np.abs(imstokes.qvec + 1j * imstokes.uvec) / ivec)
-            chivec = np.angle(imstokes.qvec + 1j * imstokes.uvec) / 2
-            vvec = imstokes.vvec/ivec
-            if len(mask) > 0 and np.any(np.invert(mask)):
-                ivec = ivec[mask]
-                mvec = mvec[mask]
-                chivec = chivec[mask]
-                vvec = vvec[mask]
-            imtuple = np.array((ivec, mvec, chivec,vvec))
-        else:
-            ivec = imstokes.imvec
-            qvec = imstokes.qvec
-            uvec = imstokes.uvec
-            vvec = imstokes.vvec
-            if len(mask) > 0 and np.any(np.invert(mask)):
-                ivec = ivec[mask]
-                qvec = qvec[mask]
-                uvec = uvec[mask]
-                vvec = vvec[mask]
-            imtuple = np.array((ivec, qvec, uvec,vvec))
+
+        ivec = imstokes.imvec
+        rhovec = np.sqrt(imstokes.qvec**2 + imstokes.uvec**2 + imstokes.vvec**2) / ivec
+        phivec = np.angle(imstokes.qvec + 1j * imstokes.uvec) 
+        psivec = np.arcsin(vvec/ivec)
+        if len(mask) > 0 and np.any(np.invert(mask)):
+            ivec = ivec[mask]
+            rhovec = rhovec[mask]
+            phivec = phivec[mask]
+            psivec = psivec[mask]
+        imarr = np.array((ivec, rhovec, phivec, psivec))
 
 
         # Calculate the chi^2
-        chisq = piu.polchisq(imtuple, A, data, sigma, dtype,
-                             ttype=ttype, mask=mask, pol_trans=pol_trans)
+        chisq = piu.polchisq(imarr, A, data, sigma, dtype,
+                             ttype=ttype, mask=mask)
 
         return chisq
 
@@ -4694,22 +4683,6 @@ class Obsdata(object):
         return hdulist
 
 
-    def save_oifits(self, fname, flux=1.0):
-        """ Save visibility data to oifits. Polarization data is NOT saved.
-
-            Args:
-                fname (str): path to output text file
-                flux (float): normalization total flux
-        """
-
-        if self.polrep != 'stokes':
-            raise Exception("save_oifits not yet implemented for polreps other than 'stokes'")
-
-        # Antenna diameters are currently incorrect
-        # the exact times are also not correct in the datetime object
-        ehtim.io.save.save_obs_oifits(self, fname, flux=flux)
-
-        return
 
 ##################################################################################################
 # Observation creation functions
@@ -4832,18 +4805,6 @@ def load_uvfits(fname, flipbl=False, remove_nan=False, force_singlepol=None,
                                          trial_speedups=trial_speedups)
 
 
-def load_oifits(fname, flux=1.0):
-    """Load data from an oifits file. Does NOT currently support polarization.
-
-       Args:
-           fname (str): path to input text file
-           flux (float): normalization total flux
-
-       Returns:
-           obs (Obsdata): Obsdata object loaded from file
-    """
-
-    return ehtim.io.load.load_obs_oifits(fname, flux=flux)
 
 
 def load_maps(arrfile, obsspec, ifile, qfile=0, ufile=0, vfile=0,
@@ -4927,10 +4888,6 @@ def load_obs(
 
     elif fname_extension.lower() in ['txt', 'text']:
         return load_txt(fname, polrep=polrep)
-
-    elif fname_extension.lower() == 'oifits':
-        return load_oifits(fname, flux=flux)
-
 
     else:
         if obsspec is not None and ifile is None:
