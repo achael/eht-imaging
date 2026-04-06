@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>ehtim.image &mdash; ehtim 1.2.6 documentation</title>
+  <title>ehtim.image &mdash; ehtim 1.2.11 documentation</title>
       <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
       <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
   <!--[if lt IE 9]>
@@ -28,7 +28,7 @@
             <a href="../../index.html" class="icon icon-home"> ehtim
           </a>
               <div class="version">
-                1.2.6
+                1.2.11
               </div>
 <div role="search">
   <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
@@ -123,10 +123,12 @@
 <span class="kn">import</span> <span class="nn">ehtim.io.load</span>
 <span class="kn">import</span> <span class="nn">ehtim.const_def</span> <span class="k">as</span> <span class="nn">ehc</span>
 <span class="kn">import</span> <span class="nn">ehtim.observing.obs_helpers</span> <span class="k">as</span> <span class="nn">obsh</span>
+<span class="kn">import</span> <span class="nn">ehtim.imaging.pol_imager_utils</span> <span class="k">as</span> <span class="nn">polutils</span>
 
 <span class="c1"># TODO : add time to all images</span>
 <span class="c1"># TODO : add arbitrary center location</span>
 
+<span class="kn">from</span> <span class="nn">ehtim.imaging.multifreq_imager_utils</span> <span class="kn">import</span> <span class="n">DD_RHOPOL</span>
 <span class="c1">###################################################################################################</span>
 <span class="c1"># Image object</span>
 <span class="c1">###################################################################################################</span>
@@ -151,7 +153,7 @@
 <span class="sd">           polrep (str): polarization representation, either &#39;stokes&#39; or &#39;circ&#39;</span>
 <span class="sd">           pol_prim (str): The default image: I,Q,U or V for Stokes, or RR,LL,LR,RL for Circular</span>
 <span class="sd">           _imdict (dict): The dictionary with the polarimetric images</span>
-<span class="sd">           _mflist (list): List of spectral index images (and higher order terms)</span>
+<span class="sd">           _mflist (list): List of spectral index images (and higher order/polarization terms)</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">image</span><span class="p">,</span> <span class="n">psize</span><span class="p">,</span> <span class="n">ra</span><span class="p">,</span> <span class="n">dec</span><span class="p">,</span> <span class="n">pa</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span>
@@ -219,7 +221,11 @@
         <span class="c1"># TODO -- don&#39;t initialize to zero?</span>
         <span class="n">avec</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([])</span> 
         <span class="n">bvec</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([])</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_mflist</span> <span class="o">=</span> <span class="p">[</span><span class="n">avec</span><span class="p">,</span> <span class="n">bvec</span><span class="p">]</span>
+        <span class="n">avec_pol</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([])</span> 
+        <span class="n">bvec_pol</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([])</span>
+        <span class="n">rmvec</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([])</span>
+        <span class="n">cmvec</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([])</span>        
+        <span class="bp">self</span><span class="o">.</span><span class="n">_mflist</span> <span class="o">=</span> <span class="p">[</span><span class="n">avec</span><span class="p">,</span> <span class="n">bvec</span><span class="p">,</span> <span class="n">avec_pol</span><span class="p">,</span> <span class="n">bvec_pol</span><span class="p">,</span> <span class="n">rmvec</span><span class="p">,</span> <span class="n">cmvec</span><span class="p">]</span>
 
         <span class="c1"># Save the image dimension data</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">pol_prim</span> <span class="o">=</span> <span class="n">pol_prim</span>
@@ -280,6 +286,50 @@
             <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;vec size is not consistent with xdim*ydim!&quot;</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_mflist</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="n">vec</span>
 
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">specvec_pol</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">specvec_pol</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_mflist</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span>
+        <span class="k">return</span> <span class="n">specvec_pol</span>
+
+    <span class="nd">@specvec_pol</span><span class="o">.</span><span class="n">setter</span>
+    <span class="k">def</span> <span class="nf">specvec_pol</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">vec</span><span class="p">):</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">vec</span><span class="p">)</span> <span class="o">!=</span> <span class="bp">self</span><span class="o">.</span><span class="n">xdim</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">ydim</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;vec size is not consistent with xdim*ydim!&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_mflist</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span> <span class="o">=</span> <span class="n">vec</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">curvvec_pol</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">curvvec_pol</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_mflist</span><span class="p">[</span><span class="mi">3</span><span class="p">]</span>
+        <span class="k">return</span> <span class="n">curvvec_pol</span>
+
+    <span class="nd">@curvvec_pol</span><span class="o">.</span><span class="n">setter</span>
+    <span class="k">def</span> <span class="nf">curvvec_pol</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">vec</span><span class="p">):</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">vec</span><span class="p">)</span> <span class="o">!=</span> <span class="bp">self</span><span class="o">.</span><span class="n">xdim</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">ydim</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;vec size is not consistent with xdim*ydim!&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_mflist</span><span class="p">[</span><span class="mi">3</span><span class="p">]</span> <span class="o">=</span> <span class="n">vec</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">rmvec</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">rmvec</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_mflist</span><span class="p">[</span><span class="mi">4</span><span class="p">]</span>
+        <span class="k">return</span> <span class="n">rmvec</span>
+
+    <span class="nd">@rmvec</span><span class="o">.</span><span class="n">setter</span>
+    <span class="k">def</span> <span class="nf">rmvec</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">vec</span><span class="p">):</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">vec</span><span class="p">)</span> <span class="o">!=</span> <span class="bp">self</span><span class="o">.</span><span class="n">xdim</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">ydim</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;vec size is not consistent with xdim*ydim!&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_mflist</span><span class="p">[</span><span class="mi">4</span><span class="p">]</span> <span class="o">=</span> <span class="n">vec</span>
+        
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">cmvec</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">cmvec</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_mflist</span><span class="p">[</span><span class="mi">5</span><span class="p">]</span>
+        <span class="k">return</span> <span class="n">cmvec</span>
+
+    <span class="nd">@cmvec</span><span class="o">.</span><span class="n">setter</span>
+    <span class="k">def</span> <span class="nf">cmvec</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">vec</span><span class="p">):</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">vec</span><span class="p">)</span> <span class="o">!=</span> <span class="bp">self</span><span class="o">.</span><span class="n">xdim</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">ydim</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;vec size is not consistent with xdim*ydim!&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_mflist</span><span class="p">[</span><span class="mi">5</span><span class="p">]</span> <span class="o">=</span> <span class="n">vec</span>
+        
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">ivec</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="n">ivec</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([])</span>
@@ -446,7 +496,7 @@
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">pvec</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Return the polarization magnitude for each pixel&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Return the linear polarization magnitude for each pixel&quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">polrep</span> <span class="o">==</span> <span class="s1">&#39;circ&#39;</span><span class="p">:</span>
             <span class="n">pvec</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">rlvec</span><span class="p">)</span>
         <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">polrep</span> <span class="o">==</span> <span class="s1">&#39;stokes&#39;</span><span class="p">:</span>
@@ -456,7 +506,7 @@
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">mvec</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Return the fractional polarization for each pixel&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Return the fractional linear polarization for each pixel&quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">polrep</span> <span class="o">==</span> <span class="s1">&#39;circ&#39;</span><span class="p">:</span>
             <span class="n">mvec</span> <span class="o">=</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">rlvec</span><span class="p">)</span> <span class="o">/</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">rrvec</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">llvec</span><span class="p">)</span>
         <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">polrep</span> <span class="o">==</span> <span class="s1">&#39;stokes&#39;</span><span class="p">:</span>
@@ -466,7 +516,7 @@
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">chivec</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Return the fractional polarization angle for each pixel&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Return the linear polarization angle for each pixel&quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">polrep</span> <span class="o">==</span> <span class="s1">&#39;circ&#39;</span><span class="p">:</span>
             <span class="n">chivec</span> <span class="o">=</span> <span class="mf">0.5</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">angle</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">rlvec</span> <span class="o">/</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">rrvec</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">llvec</span><span class="p">))</span>
         <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">polrep</span> <span class="o">==</span> <span class="s1">&#39;stokes&#39;</span><span class="p">:</span>
@@ -479,6 +529,25 @@
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Return the fractional polarization angle for each pixel&quot;&quot;&quot;</span>
 
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">chivec</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">rhovec</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Return the total polarization fraction for each pixel&quot;&quot;&quot;</span>
+        <span class="n">rhovec</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">qvec</span><span class="o">**</span><span class="mi">2</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">uvec</span><span class="o">**</span><span class="mi">2</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">vvec</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">ivec</span>
+        <span class="k">return</span> <span class="n">rhovec</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">phivec</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Return the linear Poincare angle, twice the EVPA&quot;&quot;&quot;</span>
+        <span class="n">phivec</span> <span class="o">=</span> <span class="mi">2</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">chivec</span>
+        <span class="k">return</span> <span class="n">phivec</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">psivec</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Return the circular Poincare angle&quot;&quot;&quot;</span>
+        <span class="n">psivec</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arctan2</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">vvec</span> <span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">pvec</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">psivec</span>
+               
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">evec</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
@@ -609,9 +678,9 @@
         <span class="c1"># Copy over all polarization images</span>
         <span class="n">newim</span><span class="o">.</span><span class="n">copy_pol_images</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
 
-        <span class="c1"># Copy over spectral index information</span>
+        <span class="c1"># Copy over spectral information</span>
         <span class="n">newim</span><span class="o">.</span><span class="n">_mflist</span> <span class="o">=</span> <span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_mflist</span><span class="p">)</span>
-
+                
         <span class="k">return</span> <span class="n">newim</span></div>
 
 <div class="viewcode-block" id="Image.copy_pol_images"><a class="viewcode-back" href="../../image.html#ehtim.image.Image.copy_pol_images">[docs]</a>    <span class="k">def</span> <span class="nf">copy_pol_images</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">old_image</span><span class="p">):</span>
@@ -785,7 +854,7 @@
                 <span class="n">polarr</span> <span class="o">=</span> <span class="n">polvec</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ydim</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">xdim</span><span class="p">)</span>
                 <span class="n">newim</span><span class="o">.</span><span class="n">add_pol_image</span><span class="p">(</span><span class="n">polarr</span><span class="p">,</span> <span class="n">pol</span><span class="p">)</span>
 
-        <span class="c1"># Add in spectral index</span>
+        <span class="c1"># Add in spectral information</span>
         <span class="n">newim</span><span class="o">.</span><span class="n">_mflist</span> <span class="o">=</span> <span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_mflist</span><span class="p">)</span>
 
         <span class="k">return</span> <span class="n">newim</span></div>
@@ -810,33 +879,93 @@
 
 <div class="viewcode-block" id="Image.get_image_mf"><a class="viewcode-back" href="../../image.html#ehtim.image.Image.get_image_mf">[docs]</a>    <span class="k">def</span> <span class="nf">get_image_mf</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">nu</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Get image at a given frequency given the spectral information in self._mflist</span>
-<span class="sd">        </span>
+<span class="sd">           NOTE: Only to 2nd order at the moment!!</span>
+<span class="sd">           </span>
 <span class="sd">           Args:</span>
 <span class="sd">               nu (float): frequency in Hz</span>
 
 <span class="sd">           Returns:</span>
 <span class="sd">               (Image): image at the desired frequency</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="c1"># TODO -- what to do about polarization? Faraday rotation?</span>
+
 
         <span class="n">nuref</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">rf</span>
         <span class="n">log_nufrac</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">nu</span> <span class="o">/</span> <span class="n">nuref</span><span class="p">)</span>
         <span class="n">log_imvec</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">imvec</span><span class="p">)</span>
 
-        <span class="k">for</span> <span class="n">n</span><span class="p">,</span> <span class="n">mfvec</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_mflist</span><span class="p">):</span>
-            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">mfvec</span><span class="p">):</span>
+        <span class="c1"># Stokes I/primary polarization</span>
+        <span class="k">for</span> <span class="n">n</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">2</span><span class="p">):</span>
+            <span class="n">mfvec</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_mflist</span><span class="p">[</span><span class="n">n</span><span class="p">]</span>
+            <span class="k">if</span> <span class="n">mfvec</span><span class="o">.</span><span class="n">size</span><span class="p">:</span>
                 <span class="n">log_imvec</span> <span class="o">+=</span> <span class="n">mfvec</span> <span class="o">*</span> <span class="p">(</span><span class="n">log_nufrac</span><span class="o">**</span><span class="p">(</span><span class="n">n</span> <span class="o">+</span> <span class="mi">1</span><span class="p">))</span>
         <span class="n">imvec</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="n">log_imvec</span><span class="p">)</span>
-
+        
         <span class="n">arglist</span><span class="p">,</span> <span class="n">argdict</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">image_args</span><span class="p">()</span>
         <span class="n">arglist</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">imvec</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ydim</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">xdim</span><span class="p">)</span>
         <span class="n">argdict</span><span class="p">[</span><span class="s1">&#39;rf&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">nu</span>
         <span class="n">outim</span> <span class="o">=</span> <span class="n">Image</span><span class="p">(</span><span class="o">*</span><span class="n">arglist</span><span class="p">,</span> <span class="o">**</span><span class="n">argdict</span><span class="p">)</span>
 
-        <span class="c1"># Copy over all polarization images -- unchanged for now</span>
-        <span class="n">outim</span><span class="o">.</span><span class="n">copy_pol_images</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+        
+        <span class="c1"># Polarization</span>
+        <span class="n">do_mf_pol</span><span class="o">=</span><span class="kc">False</span>
+        <span class="k">for</span> <span class="n">n</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">4</span><span class="p">):</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_mflist</span><span class="p">[</span><span class="n">n</span><span class="o">+</span><span class="mi">2</span><span class="p">]</span><span class="o">.</span><span class="n">size</span><span class="p">:</span> 
+                <span class="n">do_mf_pol</span><span class="o">=</span><span class="kc">True</span>
+           
+        <span class="k">if</span> <span class="n">do_mf_pol</span> <span class="ow">and</span> <span class="ow">not</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">qvec</span><span class="o">.</span><span class="n">size</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">uvec</span><span class="o">.</span><span class="n">size</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">vvec</span><span class="o">.</span><span class="n">size</span><span class="p">):</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;WARNING: polarization multifrequency terms exist but not all Stokes parameters are defined&quot;&quot;&quot;</span><span class="p">)</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Cannot apply spectral terms to polarization in get_image_mf&quot;</span><span class="p">)</span>
+            <span class="n">do_mf_pol</span><span class="o">=</span><span class="kc">False</span>
+        
+        <span class="k">if</span> <span class="n">do_mf_pol</span><span class="p">:</span>
+            <span class="n">outim</span> <span class="o">=</span> <span class="n">outim</span><span class="o">.</span><span class="n">switch_polrep</span><span class="p">(</span><span class="n">polrep_out</span><span class="o">=</span><span class="s1">&#39;stokes&#39;</span><span class="p">)</span>
+            <span class="n">im_stokes</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">switch_polrep</span><span class="p">(</span><span class="n">polrep_out</span><span class="o">=</span><span class="s1">&#39;stokes&#39;</span><span class="p">)</span>
+            <span class="n">rhovec</span> <span class="o">=</span> <span class="n">im_stokes</span><span class="o">.</span><span class="n">rhovec</span>
+            <span class="n">phivec</span> <span class="o">=</span> <span class="n">im_stokes</span><span class="o">.</span><span class="n">phivec</span>
+            <span class="n">psivec</span> <span class="o">=</span> <span class="n">im_stokes</span><span class="o">.</span><span class="n">psivec</span>
+            
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">specvec_pol</span><span class="o">.</span><span class="n">size</span><span class="p">:</span> 
+                <span class="n">alpha_pol</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">specvec_pol</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">alpha_pol</span> <span class="o">=</span> <span class="mi">0</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">curvvec_pol</span><span class="o">.</span><span class="n">size</span><span class="p">:</span> 
+                <span class="n">beta_pol</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">curvvec_pol</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">beta_pol</span> <span class="o">=</span> <span class="mi">0</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">rmvec</span><span class="o">.</span><span class="n">size</span><span class="p">:</span> 
+                <span class="n">rm</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">rmvec</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">rm</span> <span class="o">=</span> <span class="mi">0</span>         
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">cmvec</span><span class="o">.</span><span class="n">size</span><span class="p">:</span> 
+                <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;WARNING: cmvec exists, but Stokes V spectral behavior is not implemented yet!&quot;</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">cm</span> <span class="o">=</span> <span class="mi">0</span>
+            
+            <span class="c1"># TODO: can we use the same function as multifreq_imager_utils.image_at_freq??</span>
+            <span class="n">logrhovec_prime</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">rhovec</span><span class="p">)</span> <span class="o">+</span> <span class="n">alpha_pol</span><span class="o">*</span><span class="n">log_nufrac</span> <span class="o">+</span> <span class="n">beta_pol</span><span class="o">*</span><span class="n">log_nufrac</span><span class="o">*</span><span class="n">log_nufrac</span>
+            <span class="n">rhovec_prime</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="n">logrhovec_prime</span><span class="p">)</span>
+            
+            <span class="c1"># transformation of rhovec to ensure it is always &lt; 1 at any frequency</span>
+            <span class="n">rhovec</span> <span class="o">=</span> <span class="p">(</span><span class="n">rhovec_prime</span><span class="o">**</span><span class="p">(</span><span class="o">-</span><span class="n">DD_RHOPOL</span><span class="p">)</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span><span class="o">**</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="o">/</span><span class="n">DD_RHOPOL</span><span class="p">)</span>
+            
+            <span class="c1"># we use dimensionless rm scaled by lambda0^2 = c^2/nu0^2   </span>
+            <span class="n">phivec</span> <span class="o">=</span> <span class="n">phivec</span> <span class="o">+</span> <span class="n">rm</span><span class="o">*</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="o">-</span><span class="mi">2</span><span class="o">*</span><span class="n">log_nufrac</span><span class="p">)</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span>                               
+            <span class="n">psivec</span> <span class="o">=</span> <span class="n">psivec</span> <span class="c1"># Stokes V spectral behavior not implemented yet</span>
+            
+            <span class="n">polarr_out</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">((</span><span class="n">imvec</span><span class="p">,</span> <span class="n">rhovec</span><span class="p">,</span> <span class="n">phivec</span><span class="p">,</span> <span class="n">psivec</span><span class="p">))</span>
+            <span class="n">qimage_out</span> <span class="o">=</span> <span class="n">polutils</span><span class="o">.</span><span class="n">make_q_image</span><span class="p">(</span><span class="n">polarr_out</span><span class="p">)</span>
+            <span class="n">uimage_out</span> <span class="o">=</span> <span class="n">polutils</span><span class="o">.</span><span class="n">make_u_image</span><span class="p">(</span><span class="n">polarr_out</span><span class="p">)</span>
+            <span class="n">vimage_out</span> <span class="o">=</span> <span class="n">polutils</span><span class="o">.</span><span class="n">make_v_image</span><span class="p">(</span><span class="n">polarr_out</span><span class="p">)</span>
+            <span class="n">outim</span><span class="o">.</span><span class="n">add_pol_image</span><span class="p">(</span><span class="n">qimage_out</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">outim</span><span class="o">.</span><span class="n">ydim</span><span class="p">,</span> <span class="n">outim</span><span class="o">.</span><span class="n">xdim</span><span class="p">),</span> <span class="s1">&#39;Q&#39;</span><span class="p">)</span>  
+            <span class="n">outim</span><span class="o">.</span><span class="n">add_pol_image</span><span class="p">(</span><span class="n">uimage_out</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">outim</span><span class="o">.</span><span class="n">ydim</span><span class="p">,</span> <span class="n">outim</span><span class="o">.</span><span class="n">xdim</span><span class="p">),</span> <span class="s1">&#39;U&#39;</span><span class="p">)</span>            
+            <span class="n">outim</span><span class="o">.</span><span class="n">add_pol_image</span><span class="p">(</span><span class="n">vimage_out</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">outim</span><span class="o">.</span><span class="n">ydim</span><span class="p">,</span> <span class="n">outim</span><span class="o">.</span><span class="n">xdim</span><span class="p">),</span> <span class="s1">&#39;V&#39;</span><span class="p">)</span> 
+            <span class="n">outim</span> <span class="o">=</span> <span class="n">outim</span><span class="o">.</span><span class="n">switch_polrep</span><span class="p">(</span><span class="n">polrep_out</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">polrep</span><span class="p">)</span>           
+
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">outim</span><span class="o">.</span><span class="n">copy_pol_images</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
 
         <span class="c1"># DON&#39;T copy over spectral index information for now</span>
+        <span class="c1"># Because spectral terms may depend on the reference frequency</span>
         <span class="c1"># outim._mflist = copy.deepcopy(self._mflist)</span>
 
         <span class="k">return</span> <span class="n">outim</span></div>
@@ -939,7 +1068,7 @@
             <span class="n">frac</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">angle</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">rlvec</span><span class="p">))</span>
 
         <span class="k">return</span> <span class="n">frac</span></div>
-
+        
 <div class="viewcode-block" id="Image.circ_polfrac"><a class="viewcode-back" href="../../image.html#ehtim.image.Image.circ_polfrac">[docs]</a>    <span class="k">def</span> <span class="nf">circ_polfrac</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Return the total fractional circular polarized flux</span>
 
@@ -954,6 +1083,93 @@
             <span class="n">frac</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">rrvec</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">llvec</span><span class="p">)</span> <span class="o">/</span> <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">rrvec</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">llvec</span><span class="p">))</span>
 
         <span class="k">return</span> <span class="n">frac</span></div>
+
+<div class="viewcode-block" id="Image.mavg"><a class="viewcode-back" href="../../image.html#ehtim.image.Image.mavg">[docs]</a>    <span class="k">def</span> <span class="nf">mavg</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Return the blur-dependent image-averaged linear polarization fraction</span>
+
+<span class="sd">           Args:</span>
+
+<span class="sd">           Returns:</span>
+<span class="sd">                (float) : image-average fractional linear polarization &lt;|m|&gt;</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">polrep</span> <span class="o">==</span> <span class="s1">&#39;stokes&#39;</span><span class="p">:</span>
+            <span class="n">frac</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">qvec</span><span class="o">**</span><span class="mi">2</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">uvec</span><span class="o">**</span><span class="mi">2</span><span class="p">)))</span> <span class="o">/</span> <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ivec</span><span class="p">))</span>
+        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">polrep</span> <span class="o">==</span> <span class="s1">&#39;circ&#39;</span><span class="p">:</span>
+            <span class="n">frac</span> <span class="o">=</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">rlvec</span><span class="p">))</span> <span class="o">/</span> <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">rrvec</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">llvec</span><span class="p">))</span>
+
+        <span class="k">return</span> <span class="n">frac</span></div>
+
+<div class="viewcode-block" id="Image.vavg"><a class="viewcode-back" href="../../image.html#ehtim.image.Image.vavg">[docs]</a>    <span class="k">def</span> <span class="nf">vavg</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Return the blur-dependent image-averaged circular polarization fraction</span>
+
+<span class="sd">           Args:</span>
+
+<span class="sd">           Returns:</span>
+<span class="sd">                (float) : image-average fractional circular polarization &lt;|v|&gt;</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">polrep</span> <span class="o">==</span> <span class="s1">&#39;stokes&#39;</span><span class="p">:</span>
+            <span class="n">frac</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">vvec</span><span class="o">**</span><span class="mi">2</span><span class="p">)))</span> <span class="o">/</span> <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ivec</span><span class="p">))</span>
+        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">polrep</span> <span class="o">==</span> <span class="s1">&#39;circ&#39;</span><span class="p">:</span>
+            <span class="n">frac</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">rrvec</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">llvec</span><span class="p">))</span> <span class="o">/</span> <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">rrvec</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">llvec</span><span class="p">))</span>
+
+        <span class="k">return</span> <span class="n">frac</span></div>
+
+<div class="viewcode-block" id="Image.betamodes"><a class="viewcode-back" href="../../image.html#ehtim.image.Image.betamodes">[docs]</a>    <span class="k">def</span> <span class="nf">betamodes</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ms</span><span class="o">=</span><span class="p">[</span><span class="mi">2</span><span class="p">],</span> <span class="n">r_min</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">r_max</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Return Palumbo+2020 linear beta_m modes integrated between image radius r_min, r_max</span>
+<span class="sd">           Does not center the image</span>
+<span class="sd">           </span>
+<span class="sd">           Args:</span>
+<span class="sd">                ms : list of integers m to compute beta modes for</span>
+<span class="sd">                r_min (float): minimum image radius for calculation (in rad)</span>
+<span class="sd">                r_max (float): maximum image radius for calculation (in rad). </span>
+<span class="sd">                               if None, use the full image</span>
+<span class="sd">                verbose (bool): print details</span>
+<span class="sd">           Returns:</span>
+<span class="sd">                (list) : beta_m modes matching input list ms</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">ms</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span> <span class="ow">or</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">ms</span><span class="p">,</span> <span class="nb">list</span><span class="p">)):</span>
+            <span class="n">ms</span> <span class="o">=</span> <span class="p">[</span><span class="n">ms</span><span class="p">]</span>
+        
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">polrep</span> <span class="o">==</span> <span class="s1">&#39;stokes&#39;</span><span class="p">:</span>
+            <span class="n">parr</span> <span class="o">=</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">qvec</span> <span class="o">+</span> <span class="mi">1</span><span class="n">j</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">uvec</span><span class="p">)</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ydim</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">xdim</span><span class="p">)</span>
+            <span class="n">iarr</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">imvec</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ydim</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">xdim</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">polrep</span> <span class="o">==</span> <span class="s1">&#39;circ&#39;</span><span class="p">:</span>
+            <span class="n">parr</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">rlvec</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ydim</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">xdim</span><span class="p">)</span>
+            <span class="n">iarr</span> <span class="o">=</span> <span class="p">(</span><span class="mf">0.5</span><span class="o">*</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">rrvec</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">llvec</span><span class="p">))</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ydim</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">xdim</span><span class="p">)</span>
+
+        <span class="c1"># get angles measured East of North (corresponding to above conventions for EB modes)</span>
+        <span class="n">s</span><span class="p">,</span> <span class="n">t</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">meshgrid</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">flip</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">fft</span><span class="o">.</span><span class="n">fftshift</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">fft</span><span class="o">.</span><span class="n">fftfreq</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">xdim</span><span class="p">,</span> <span class="n">d</span><span class="o">=</span><span class="mf">1.0</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">xdim</span><span class="p">))),</span>
+                           <span class="n">np</span><span class="o">.</span><span class="n">flip</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">fft</span><span class="o">.</span><span class="n">fftshift</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">fft</span><span class="o">.</span><span class="n">fftfreq</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ydim</span><span class="p">,</span> <span class="n">d</span><span class="o">=</span><span class="mf">1.0</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">ydim</span><span class="p">))))</span>
+        <span class="n">s</span> <span class="o">=</span> <span class="n">s</span> <span class="o">+</span> <span class="mf">.5</span>  <span class="c1"># .5 offset to reference to pixel center</span>
+        <span class="n">t</span> <span class="o">=</span> <span class="n">t</span> <span class="o">+</span> <span class="mf">.5</span>  <span class="c1"># .5 offset to reference to pixel center</span>
+        
+        <span class="n">imdist</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">s</span><span class="o">**</span><span class="mi">2</span> <span class="o">+</span> <span class="n">t</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span> <span class="c1"># distance from the center in pixels</span>
+        <span class="n">imangle</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arctan2</span><span class="p">(</span><span class="n">s</span><span class="p">,</span> <span class="n">t</span><span class="p">)</span>
+        <span class="n">imangle</span><span class="p">[</span><span class="n">imangle</span><span class="o">&lt;</span><span class="mf">0.</span><span class="p">]</span> <span class="o">+=</span> <span class="mf">2.</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span>
+
+        <span class="c1"># define masked region</span>
+        <span class="k">if</span> <span class="p">(</span><span class="n">r_min</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">)</span> <span class="ow">and</span> <span class="p">(</span><span class="n">r_max</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">verbose</span><span class="p">:</span> <span class="nb">print</span> <span class="p">(</span><span class="s2">&quot;restricting betamodes to annulus between </span><span class="si">%.2f</span><span class="s2"> to </span><span class="si">%.2f</span><span class="s2"> uas!&quot;</span><span class="o">%</span><span class="p">(</span><span class="n">r_min</span><span class="o">/</span><span class="n">ehc</span><span class="o">.</span><span class="n">RADPERUAS</span><span class="p">,</span> <span class="n">r_max</span><span class="o">/</span><span class="n">ehc</span><span class="o">.</span><span class="n">RADPERUAS</span><span class="p">))</span>
+            <span class="n">mask</span> <span class="o">=</span> <span class="p">(</span><span class="n">imdist</span><span class="o">&lt;=</span><span class="p">(</span><span class="n">r_max</span><span class="o">/</span><span class="bp">self</span><span class="o">.</span><span class="n">psize</span><span class="p">))</span> <span class="o">*</span> <span class="p">(</span><span class="n">imdist</span><span class="o">&gt;=</span><span class="p">(</span><span class="n">r_min</span><span class="o">/</span><span class="bp">self</span><span class="o">.</span><span class="n">psize</span><span class="p">))</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">mask</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="n">iarr</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">bool</span><span class="p">)</span>
+        
+        <span class="c1"># total flux in annulus</span>
+        <span class="n">flux</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">iarr</span><span class="p">[</span><span class="n">mask</span><span class="p">]))</span> 
+        
+        <span class="c1"># compute beta modes</span>
+        <span class="n">outlist</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">m</span> <span class="ow">in</span> <span class="n">ms</span><span class="p">:</span>
+            
+            <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">m</span><span class="p">,</span><span class="nb">int</span><span class="p">):</span>
+                <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;each element of &#39;ms&#39; should be an integer in betamodes!&quot;</span><span class="p">)</span>
+                 
+            <span class="n">integrand</span> <span class="o">=</span> <span class="p">(</span><span class="n">parr</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="n">j</span><span class="o">*</span><span class="n">m</span><span class="o">*</span><span class="n">imangle</span><span class="p">))[</span><span class="n">mask</span><span class="p">]</span>
+            <span class="n">coeff</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">integrand</span><span class="p">)</span><span class="o">/</span><span class="n">flux</span>
+            <span class="n">outlist</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">coeff</span><span class="p">)</span>
+            
+        <span class="k">return</span> <span class="n">outlist</span></div>
+
 
 <div class="viewcode-block" id="Image.center"><a class="viewcode-back" href="../../image.html#ehtim.image.Image.center">[docs]</a>    <span class="k">def</span> <span class="nf">center</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pol</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Center the image based on the coordinates of the centroid().</span>
@@ -1029,7 +1245,7 @@
                 <span class="n">polarr</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">pad</span><span class="p">(</span><span class="n">polarr</span><span class="p">,</span> <span class="p">((</span><span class="n">pady</span><span class="p">,</span> <span class="n">pady</span><span class="p">),</span> <span class="p">(</span><span class="n">padx</span><span class="p">,</span> <span class="n">padx</span><span class="p">)),</span> <span class="s1">&#39;constant&#39;</span><span class="p">)</span>
                 <span class="n">outim</span><span class="o">.</span><span class="n">add_pol_image</span><span class="p">(</span><span class="n">polarr</span><span class="p">,</span> <span class="n">pol</span><span class="p">)</span>
 
-        <span class="c1"># Add in spectral index</span>
+        <span class="c1"># Add in spectral data</span>
         <span class="n">mflist_out</span> <span class="o">=</span> <span class="p">[]</span>
         <span class="k">for</span> <span class="n">mfvec</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_mflist</span><span class="p">:</span>
             <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">mfvec</span><span class="p">):</span>
@@ -1110,7 +1326,7 @@
                 <span class="n">polarr_new</span> <span class="o">*=</span> <span class="n">scaling</span>
                 <span class="n">outim</span><span class="o">.</span><span class="n">add_pol_image</span><span class="p">(</span><span class="n">polarr_new</span><span class="p">,</span> <span class="n">pol</span><span class="p">)</span>
 
-        <span class="c1"># Interpolate spectral index and copy over</span>
+        <span class="c1"># Interpolate spectral data and copy over</span>
         <span class="n">mflist_out</span> <span class="o">=</span> <span class="p">[]</span>
         <span class="k">for</span> <span class="n">mfvec</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_mflist</span><span class="p">:</span>
             <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;WARNING: resample_squre not debugged for spectral index resampling!&quot;</span><span class="p">)</span>
@@ -1162,8 +1378,8 @@
 
 
             <span class="n">tmpimg</span> <span class="o">=</span> <span class="n">interpfunc</span><span class="p">(</span><span class="n">ytarget</span><span class="p">,</span> <span class="n">xtarget</span><span class="p">)</span>
-            <span class="n">tmpimg</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">xtarget</span><span class="p">)</span> <span class="o">&gt;</span> <span class="n">fov_x</span> <span class="o">/</span> <span class="mf">2.</span><span class="p">,</span> <span class="p">:]</span> <span class="o">=</span> <span class="mf">0.0</span>
-            <span class="n">tmpimg</span><span class="p">[:,</span> <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">ytarget</span><span class="p">)</span> <span class="o">&gt;</span> <span class="n">fov_y</span> <span class="o">/</span> <span class="mf">2.</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.0</span>
+            <span class="n">tmpimg</span><span class="p">[:,</span> <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">xtarget</span><span class="p">)</span> <span class="o">&gt;</span> <span class="n">fov_x</span> <span class="o">/</span> <span class="mf">2.</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.0</span>
+            <span class="n">tmpimg</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">ytarget</span><span class="p">)</span> <span class="o">&gt;</span> <span class="n">fov_y</span> <span class="o">/</span> <span class="mf">2.</span><span class="p">,</span> <span class="p">:]</span> <span class="o">=</span> <span class="mf">0.0</span>
 
             <span class="k">if</span> <span class="ow">not</span> <span class="n">specind</span><span class="p">:</span> <span class="c1"># adjust pixel size if not a spectral index map</span>
                 <span class="n">tmpimg</span> <span class="o">=</span> <span class="n">tmpimg</span> <span class="o">*</span> <span class="p">(</span><span class="n">psize_new</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">psize</span><span class="o">**</span><span class="mi">2</span>
@@ -1186,7 +1402,7 @@
                 <span class="n">polarr_new</span> <span class="o">=</span> <span class="n">interp_imvec</span><span class="p">(</span><span class="n">polvec</span><span class="p">)</span>
                 <span class="n">outim</span><span class="o">.</span><span class="n">add_pol_image</span><span class="p">(</span><span class="n">polarr_new</span><span class="p">,</span> <span class="n">pol</span><span class="p">)</span>
 
-        <span class="c1"># Interpolate spectral index and copy over</span>
+        <span class="c1"># Interpolate spectral data and copy over</span>
         <span class="n">mflist_out</span> <span class="o">=</span> <span class="p">[]</span>
         <span class="k">for</span> <span class="n">mfvec</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_mflist</span><span class="p">:</span>
             <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">mfvec</span><span class="p">):</span>
@@ -1259,7 +1475,7 @@
 
                 <span class="n">outim</span><span class="o">.</span><span class="n">add_pol_image</span><span class="p">(</span><span class="n">polarr_rot</span><span class="p">,</span> <span class="n">pol</span><span class="p">)</span>
 
-        <span class="c1"># Rotate spectral index and copy over</span>
+        <span class="c1"># Rotate spectral data and copy over</span>
         <span class="n">mflist_out</span> <span class="o">=</span> <span class="p">[]</span>
         <span class="k">for</span> <span class="n">mfvec</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_mflist</span><span class="p">:</span>
             <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">mfvec</span><span class="p">):</span>
@@ -1304,7 +1520,7 @@
                 <span class="n">polarr_shift</span> <span class="o">=</span> <span class="n">shift_imvec</span><span class="p">(</span><span class="n">polvec</span><span class="p">)</span>
                 <span class="n">outim</span><span class="o">.</span><span class="n">add_pol_image</span><span class="p">(</span><span class="n">polarr_shift</span><span class="p">,</span> <span class="n">pol</span><span class="p">)</span>
 
-        <span class="c1"># Shift spectral index and copy over</span>
+        <span class="c1"># Shift spectral data and copy over</span>
         <span class="n">mflist_out</span> <span class="o">=</span> <span class="p">[]</span>
         <span class="k">for</span> <span class="n">mfvec</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_mflist</span><span class="p">:</span>
             <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">mfvec</span><span class="p">):</span>
@@ -1354,7 +1570,7 @@
                 <span class="n">imarr_rotate</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">real</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">fft</span><span class="o">.</span><span class="n">ifft2</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">fft</span><span class="o">.</span><span class="n">fft2</span><span class="p">(</span><span class="n">imarr</span><span class="p">)</span> <span class="o">*</span> <span class="n">rotate</span><span class="p">))</span>
                 <span class="n">outim</span><span class="o">.</span><span class="n">add_pol_image</span><span class="p">(</span><span class="n">imarr_rotate</span><span class="p">,</span> <span class="n">pol</span><span class="p">)</span>
 
-        <span class="c1"># Shift spectral index and copy over</span>
+        <span class="c1"># Shift spectral data and copy over</span>
         <span class="n">mflist_out</span> <span class="o">=</span> <span class="p">[]</span>
         <span class="k">for</span> <span class="n">mfvec</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_mflist</span><span class="p">:</span>
             <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">mfvec</span><span class="p">):</span>
@@ -1431,7 +1647,8 @@
                     <span class="n">polarr</span> <span class="o">=</span> <span class="n">blur</span><span class="p">(</span><span class="n">polarr</span><span class="p">,</span> <span class="n">gausspol</span><span class="p">)</span>
                 <span class="n">outim</span><span class="o">.</span><span class="n">add_pol_image</span><span class="p">(</span><span class="n">polarr</span><span class="p">,</span> <span class="n">pol</span><span class="p">)</span>
 
-        <span class="c1"># Blur spectral index and copy over</span>
+        <span class="c1"># Blur spectral data and copy over</span>
+        <span class="c1"># TODO WARNING!! This is not what we want to use for obtaining blurred spectral</span>
         <span class="n">mflist_out</span> <span class="o">=</span> <span class="p">[]</span>
         <span class="k">for</span> <span class="n">mfvec</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_mflist</span><span class="p">:</span>
             <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">mfvec</span><span class="p">):</span>
@@ -1504,7 +1721,8 @@
         <span class="n">arglist</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">imarr_blur</span>
         <span class="n">outim</span> <span class="o">=</span> <span class="n">Image</span><span class="p">(</span><span class="o">*</span><span class="n">arglist</span><span class="p">,</span> <span class="o">**</span><span class="n">argdict</span><span class="p">)</span>
 
-        <span class="c1"># Blur spectral index and copy over</span>
+        <span class="c1"># Blur spectral terms and copy over</span>
+        <span class="c1"># TODO WARNING!! This is not what we want to use for obtaining blurred spectral</span>
         <span class="n">mflist_out</span> <span class="o">=</span> <span class="p">[]</span>
         <span class="k">for</span> <span class="n">mfvec</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_mflist</span><span class="p">:</span>
             <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">mfvec</span><span class="p">):</span>
@@ -1516,7 +1734,7 @@
             <span class="n">mflist_out</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">mfvec_out</span><span class="p">)</span>
         <span class="n">outim</span><span class="o">.</span><span class="n">_mflist</span> <span class="o">=</span> <span class="n">mflist_out</span>
 
-        <span class="c1"># Blur all polarizations and copy overi</span>
+        <span class="c1"># Blur all polarizations and copy over</span>
         <span class="k">for</span> <span class="n">pol</span> <span class="ow">in</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_imdict</span><span class="o">.</span><span class="n">keys</span><span class="p">()):</span>
             <span class="k">if</span> <span class="n">pol</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">pol_prim</span><span class="p">:</span>
                 <span class="k">continue</span>
@@ -1530,9 +1748,9 @@
 
         <span class="k">return</span> <span class="n">outim</span></div>
 
-<div class="viewcode-block" id="Image.blur_mf"><a class="viewcode-back" href="../../image.html#ehtim.image.Image.blur_mf">[docs]</a>    <span class="k">def</span> <span class="nf">blur_mf</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">freqs</span><span class="p">,</span> <span class="n">fwhm</span><span class="p">,</span> <span class="n">fit_order</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">filttype</span><span class="o">=</span><span class="s1">&#39;gauss&#39;</span><span class="p">):</span>
+<div class="viewcode-block" id="Image.blur_mf"><a class="viewcode-back" href="../../image.html#ehtim.image.Image.blur_mf">[docs]</a>    <span class="k">def</span> <span class="nf">blur_mf</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">freqs</span><span class="p">,</span> <span class="n">fwhm</span><span class="p">,</span> <span class="n">fit_order</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">fit_order_pol</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">filttype</span><span class="o">=</span><span class="s1">&#39;gauss&#39;</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Blur image correctly across multiple frequencies</span>
-<span class="sd">           WARNING: does not currently do polarization correctly!</span>
+<span class="sd">           NOTE: unlike blur_circ, it blurs polarization automatically</span>
 
 <span class="sd">           Args:</span>
 <span class="sd">               freqs (float): Frequencies to include in the blurring &amp; spectral index fit</span>
@@ -1550,12 +1768,15 @@
         <span class="n">reffreq</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">rf</span>
 
         <span class="c1"># remove any zeros in the images               </span>
-        <span class="n">imlist</span> <span class="o">=</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">get_image_mf</span><span class="p">(</span><span class="n">rf</span><span class="p">)</span><span class="o">.</span><span class="n">blur_circ</span><span class="p">(</span><span class="n">kernel</span><span class="p">,</span> <span class="n">filttype</span><span class="o">=</span><span class="n">filttype</span><span class="p">)</span> <span class="k">for</span> <span class="n">rf</span> <span class="ow">in</span> <span class="n">freqs</span><span class="p">]</span>
-        <span class="k">for</span> <span class="n">image</span> <span class="ow">in</span> <span class="n">imlist</span><span class="p">:</span>
-            <span class="n">image</span><span class="o">.</span><span class="n">imvec</span><span class="p">[</span><span class="n">image</span><span class="o">.</span><span class="n">imvec</span><span class="o">&lt;=</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">min</span><span class="p">(</span><span class="n">image</span><span class="o">.</span><span class="n">imvec</span><span class="p">[</span><span class="n">image</span><span class="o">.</span><span class="n">imvec</span><span class="o">!=</span><span class="mi">0</span><span class="p">])</span>
-            
+        <span class="n">imlist</span> <span class="o">=</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">get_image_mf</span><span class="p">(</span><span class="n">rf</span><span class="p">)</span><span class="o">.</span><span class="n">blur_circ</span><span class="p">(</span><span class="n">fwhm</span><span class="p">,</span> <span class="n">fwhm</span><span class="p">,</span> <span class="n">filttype</span><span class="o">=</span><span class="n">filttype</span><span class="p">)</span> <span class="k">for</span> <span class="n">rf</span> <span class="ow">in</span> <span class="n">freqs</span><span class="p">]</span>
+        <span class="n">imvecs</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">im</span><span class="o">.</span><span class="n">imvec</span> <span class="k">for</span> <span class="n">im</span> <span class="ow">in</span> <span class="n">imlist</span><span class="p">])</span>
+        
+        <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">any</span><span class="p">(</span><span class="n">imvecs</span><span class="o">&lt;=</span><span class="mi">0</span><span class="p">):</span>
+            <span class="n">imvecs</span><span class="p">[</span><span class="n">imvecs</span><span class="o">&lt;=</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">min</span><span class="p">(</span><span class="n">imvecs</span><span class="p">[</span><span class="n">imvecs</span><span class="o">&lt;=</span><span class="mi">0</span><span class="p">])</span>
+        
+        <span class="c1"># total intensity</span>
         <span class="n">xfit</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">freqs</span><span class="p">)</span><span class="o">/</span><span class="n">reffreq</span><span class="p">)</span>
-        <span class="n">yfit</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">im</span><span class="o">.</span><span class="n">imvec</span> <span class="k">for</span> <span class="n">im</span> <span class="ow">in</span> <span class="n">imlist</span><span class="p">]))</span>
+        <span class="n">yfit</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">imvecs</span><span class="p">)</span>
         
         <span class="k">if</span> <span class="n">fit_order</span> <span class="o">==</span> <span class="mi">2</span><span class="p">:</span>
             <span class="n">coeffs</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">polyfit</span><span class="p">(</span><span class="n">xfit</span><span class="p">,</span><span class="n">yfit</span><span class="p">,</span><span class="mi">2</span><span class="p">)</span>
@@ -1569,9 +1790,57 @@
             <span class="n">alpha</span> <span class="o">=</span> <span class="mi">0</span><span class="o">*</span><span class="n">yfit</span>
             <span class="n">beta</span> <span class="o">=</span> <span class="mi">0</span><span class="o">*</span><span class="n">yfit</span>
             
-        <span class="n">outim</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">blur_circ</span><span class="p">(</span><span class="n">kernel</span><span class="p">,</span> <span class="n">filttype</span><span class="o">=</span><span class="n">filttype</span><span class="p">)</span>
+        <span class="c1"># base image</span>
+        <span class="n">outim</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">blur_circ</span><span class="p">(</span><span class="n">fwhm</span><span class="p">,</span> <span class="n">fwhm</span><span class="p">,</span> <span class="n">filttype</span><span class="o">=</span><span class="n">filttype</span><span class="p">)</span>
         <span class="n">outim</span><span class="o">.</span><span class="n">specvec</span> <span class="o">=</span> <span class="n">alpha</span>
         <span class="n">outim</span><span class="o">.</span><span class="n">curvvec</span> <span class="o">=</span> <span class="n">beta</span>
+                
+        <span class="c1"># polarization</span>
+        <span class="n">do_mf_pol</span><span class="o">=</span><span class="kc">False</span>
+        <span class="k">for</span> <span class="n">n</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">4</span><span class="p">):</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_mflist</span><span class="p">[</span><span class="n">n</span><span class="o">+</span><span class="mi">2</span><span class="p">]</span><span class="o">.</span><span class="n">size</span><span class="p">:</span> 
+                <span class="n">do_mf_pol</span><span class="o">=</span><span class="kc">True</span>
+           
+        <span class="k">if</span> <span class="n">do_mf_pol</span> <span class="ow">and</span> <span class="ow">not</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">qvec</span><span class="o">.</span><span class="n">size</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">uvec</span><span class="o">.</span><span class="n">size</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">vvec</span><span class="o">.</span><span class="n">size</span><span class="p">):</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;WARNING: polarization multifrequency terms exist but not all Stokes parameters are defined&quot;&quot;&quot;</span><span class="p">)</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Cannot apply spectral terms to polarization in get_image_mf&quot;</span><span class="p">)</span>
+            <span class="n">do_mf_pol</span><span class="o">=</span><span class="kc">False</span>
+        
+        <span class="k">if</span> <span class="n">do_mf_pol</span><span class="p">:</span> <span class="c1"># blur mulitfrequency polarizaiton</span>
+
+            <span class="n">rhovecs</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">im</span><span class="o">.</span><span class="n">rhovec</span> <span class="k">for</span> <span class="n">im</span> <span class="ow">in</span> <span class="n">imlist</span><span class="p">])</span>
+            <span class="n">phivecs</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">im</span><span class="o">.</span><span class="n">phivec</span> <span class="k">for</span> <span class="n">im</span> <span class="ow">in</span> <span class="n">imlist</span><span class="p">])</span>                    
+            <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">any</span><span class="p">(</span><span class="n">rhovecs</span><span class="o">&lt;=</span><span class="mi">0</span><span class="p">):</span>
+                <span class="n">rhovecs</span><span class="p">[</span><span class="n">rhovecs</span><span class="o">&lt;=</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">min</span><span class="p">(</span><span class="n">rhovecs</span><span class="p">[</span><span class="n">imvecs</span><span class="o">&lt;=</span><span class="mi">0</span><span class="p">])</span>
+
+            <span class="c1"># fit polarization fraction</span>
+            <span class="n">xfit</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">freqs</span><span class="p">)</span><span class="o">/</span><span class="n">reffreq</span><span class="p">)</span>
+            <span class="n">yfit</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">rhovecs</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">fit_order_pol</span> <span class="o">==</span> <span class="mi">2</span><span class="p">:</span>
+                <span class="n">coeffs</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">polyfit</span><span class="p">(</span><span class="n">xfit</span><span class="p">,</span><span class="n">yfit</span><span class="p">,</span><span class="mi">2</span><span class="p">)</span>
+                <span class="n">betap</span> <span class="o">=</span> <span class="n">coeffs</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+                <span class="n">alphap</span> <span class="o">=</span> <span class="n">coeffs</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>    
+            <span class="k">elif</span> <span class="n">fit_order_pol</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+                <span class="n">coeffs</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">polyfit</span><span class="p">(</span><span class="n">xfit</span><span class="p">,</span><span class="n">yfit</span><span class="p">,</span><span class="mi">1</span><span class="p">)</span>
+                <span class="n">alphap</span> <span class="o">=</span> <span class="n">coeffs</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>    
+                <span class="n">betap</span> <span class="o">=</span> <span class="mi">0</span><span class="o">*</span><span class="n">alpha</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">alphap</span> <span class="o">=</span> <span class="mi">0</span><span class="o">*</span><span class="n">yfit</span>
+                <span class="n">betap</span> <span class="o">=</span> <span class="mi">0</span><span class="o">*</span><span class="n">yfit</span>                        
+            <span class="n">outim</span><span class="o">.</span><span class="n">specvec_pol</span> <span class="o">=</span> <span class="n">alphap</span>
+            <span class="n">outim</span><span class="o">.</span><span class="n">curvvec_pol</span> <span class="o">=</span> <span class="n">betap</span>
+ 
+            <span class="c1"># fit rm           </span>
+            <span class="c1"># TODO what about phase wraps? </span>
+            <span class="n">xfit</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="o">-</span><span class="mi">2</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">freqs</span><span class="p">)</span><span class="o">/</span><span class="n">reffreq</span><span class="p">))</span><span class="o">-</span><span class="mi">1</span>
+            <span class="n">yfit</span> <span class="o">=</span> <span class="n">phivecs</span>
+            <span class="n">coeffs</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">polyfit</span><span class="p">(</span><span class="n">xfit</span><span class="p">,</span><span class="n">yfit</span><span class="p">,</span><span class="mi">1</span><span class="p">)</span>
+            <span class="n">rm</span> <span class="o">=</span> <span class="n">coeffs</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>    
+            <span class="n">outim</span><span class="o">.</span><span class="n">rmvec</span> <span class="o">=</span> <span class="n">rm</span>
+            
+            <span class="c1"># TODO: no multifrequency V/\psi allowed</span>
+            <span class="n">outim</span><span class="o">.</span><span class="n">cmvec</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">outim</span><span class="o">.</span><span class="n">imvec</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
+
         <span class="k">return</span> <span class="n">outim</span></div>
         
 <div class="viewcode-block" id="Image.grad"><a class="viewcode-back" href="../../image.html#ehtim.image.Image.grad">[docs]</a>    <span class="k">def</span> <span class="nf">grad</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">gradtype</span><span class="o">=</span><span class="s1">&#39;abs&#39;</span><span class="p">):</span>
@@ -1619,7 +1888,7 @@
                 <span class="n">gradarr</span> <span class="o">=</span> <span class="n">gradim</span><span class="p">(</span><span class="n">polvec</span><span class="p">)</span>
                 <span class="n">outim</span><span class="o">.</span><span class="n">add_pol_image</span><span class="p">(</span><span class="n">gradarr</span><span class="p">,</span> <span class="n">pol</span><span class="p">)</span>
 
-        <span class="c1"># Find the spectral index gradients and copy over</span>
+        <span class="c1"># Find the spectral gradients and copy over</span>
         <span class="n">mflist_out</span> <span class="o">=</span> <span class="p">[]</span>
         <span class="k">for</span> <span class="n">mfvec</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_mflist</span><span class="p">:</span>
             <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">mfvec</span><span class="p">):</span>
@@ -1722,7 +1991,7 @@
                 <span class="n">polarr</span> <span class="o">=</span> <span class="n">polvec</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ydim</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">xdim</span><span class="p">)</span>
                 <span class="n">outim</span><span class="o">.</span><span class="n">add_pol_image</span><span class="p">(</span><span class="n">polarr</span><span class="p">,</span> <span class="n">pol</span><span class="p">)</span>
 
-        <span class="c1"># Apply mask to spectral index and copy over</span>
+        <span class="c1"># Apply mask to spectral terms and copy over</span>
         <span class="n">mflist_out</span> <span class="o">=</span> <span class="p">[]</span>
         <span class="k">for</span> <span class="n">mfvec</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_mflist</span><span class="p">:</span>
             <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">mfvec</span><span class="p">):</span>
@@ -1802,7 +2071,7 @@
                     <span class="n">polarr</span> <span class="o">+=</span> <span class="n">flatarr</span>
                 <span class="n">outim</span><span class="o">.</span><span class="n">add_pol_image</span><span class="p">(</span><span class="n">polarr</span><span class="p">,</span> <span class="n">pol2</span><span class="p">)</span>
 
-        <span class="c1"># Copy the spectral index (unchanged)</span>
+        <span class="c1"># Copy the spectral data (unchanged)</span>
         <span class="n">outim</span><span class="o">.</span><span class="n">_mflist</span> <span class="o">=</span> <span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_mflist</span><span class="p">)</span>
 
         <span class="k">return</span> <span class="n">outim</span></div>
@@ -1860,7 +2129,7 @@
                     <span class="n">polarr</span> <span class="o">+=</span> <span class="n">hatarr</span>
                 <span class="n">outim</span><span class="o">.</span><span class="n">add_pol_image</span><span class="p">(</span><span class="n">polarr</span><span class="p">,</span> <span class="n">pol2</span><span class="p">)</span>
 
-        <span class="c1"># Copy the spectral index (unchanged)</span>
+        <span class="c1"># Copy the spectral data (unchanged)</span>
         <span class="n">outim</span><span class="o">.</span><span class="n">_mflist</span> <span class="o">=</span> <span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_mflist</span><span class="p">)</span>
 
         <span class="k">return</span> <span class="n">outim</span></div>
@@ -1931,7 +2200,7 @@
                     <span class="n">polarr</span> <span class="o">+=</span> <span class="n">gaussarr</span>
                 <span class="n">outim</span><span class="o">.</span><span class="n">add_pol_image</span><span class="p">(</span><span class="n">polarr</span><span class="p">,</span> <span class="n">pol2</span><span class="p">)</span>
 
-        <span class="c1"># Copy the spectral index (unchanged)</span>
+        <span class="c1"># Copy the spectral data (unchanged)</span>
         <span class="n">outim</span><span class="o">.</span><span class="n">_mflist</span> <span class="o">=</span> <span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_mflist</span><span class="p">)</span>
 
         <span class="k">return</span> <span class="n">outim</span></div>
@@ -1997,7 +2266,7 @@
                     <span class="n">polarr</span> <span class="o">+=</span> <span class="n">crescarr</span>
                 <span class="n">outim</span><span class="o">.</span><span class="n">add_pol_image</span><span class="p">(</span><span class="n">polarr</span><span class="p">,</span> <span class="n">pol2</span><span class="p">)</span>
 
-        <span class="c1"># Copy the spectral index (unchanged)</span>
+        <span class="c1"># Copy the spectral data (unchanged)</span>
         <span class="n">outim</span><span class="o">.</span><span class="n">_mflist</span> <span class="o">=</span> <span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_mflist</span><span class="p">)</span>
 
         <span class="k">return</span> <span class="n">outim</span></div>
@@ -2075,7 +2344,7 @@
                     <span class="n">polarr</span> <span class="o">+=</span> <span class="n">ringarr</span>
                 <span class="n">outim</span><span class="o">.</span><span class="n">add_pol_image</span><span class="p">(</span><span class="n">polarr</span><span class="p">,</span> <span class="n">pol2</span><span class="p">)</span>
 
-        <span class="c1"># Copy the spectral index (unchanged)</span>
+        <span class="c1"># Copy the spectral data (unchanged)</span>
         <span class="n">outim</span><span class="o">.</span><span class="n">_mflist</span> <span class="o">=</span> <span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_mflist</span><span class="p">)</span>
 
         <span class="k">return</span> <span class="n">outim</span></div>
@@ -2127,7 +2396,7 @@
                 <span class="n">polarr</span> <span class="o">=</span> <span class="n">polvec</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ydim</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">xdim</span><span class="p">)</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
                 <span class="n">outim</span><span class="o">.</span><span class="n">add_pol_image</span><span class="p">(</span><span class="n">polarr</span><span class="p">,</span> <span class="n">pol</span><span class="p">)</span>
 
-        <span class="c1"># Copy the spectral index (unchanged)</span>
+        <span class="c1"># Copy the spectral data (unchanged)</span>
         <span class="n">outim</span><span class="o">.</span><span class="n">_mflist</span> <span class="o">=</span> <span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_mflist</span><span class="p">)</span>
 
         <span class="k">return</span> <span class="n">outim</span></div>
@@ -2211,18 +2480,22 @@
                 <span class="n">polarr</span> <span class="o">=</span> <span class="n">polvec</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ydim</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">xdim</span><span class="p">)</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
                 <span class="n">outim</span><span class="o">.</span><span class="n">add_pol_image</span><span class="p">(</span><span class="n">polarr</span><span class="p">,</span> <span class="n">pol</span><span class="p">)</span>
 
-        <span class="c1"># Copy the spectral index (unchanged)</span>
+        <span class="c1"># Copy the spectral data (unchanged)</span>
         <span class="n">outim</span><span class="o">.</span><span class="n">_mflist</span> <span class="o">=</span> <span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_mflist</span><span class="p">)</span>
 
         <span class="k">return</span> <span class="n">outim</span></div>
 
-<div class="viewcode-block" id="Image.add_const_mf"><a class="viewcode-back" href="../../image.html#ehtim.image.Image.add_const_mf">[docs]</a>    <span class="k">def</span> <span class="nf">add_const_mf</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">alpha</span><span class="p">,</span> <span class="n">beta</span><span class="o">=</span><span class="mf">0.</span><span class="p">):</span>
+<div class="viewcode-block" id="Image.add_const_mf"><a class="viewcode-back" href="../../image.html#ehtim.image.Image.add_const_mf">[docs]</a>    <span class="k">def</span> <span class="nf">add_const_mf</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">alpha</span><span class="p">,</span> <span class="n">beta</span><span class="o">=</span><span class="mf">0.</span><span class="p">,</span> <span class="n">alpha_pol</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">beta_pol</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">rm</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">cm</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Add a constant spectral index and curvature term</span>
 
 <span class="sd">           Args:</span>
 <span class="sd">               alpha (float): spectral index (with no - sign)</span>
 <span class="sd">               beta (float): curvature</span>
-
+<span class="sd">               alpha_pol (float): polarization fraction spectral index</span>
+<span class="sd">               beta_pol (float): polarization fraction spectral curvature</span>
+<span class="sd">               rm (float): rotation measure (dimensionless at reference freq)</span>
+<span class="sd">               cm (float): conversion measure (not yet implemented)</span>
+<span class="sd">               </span>
 <span class="sd">           Returns:</span>
 <span class="sd">                (Image): output image with constant mf information added</span>
 <span class="sd">        &quot;&quot;&quot;</span>
@@ -2230,9 +2503,29 @@
         <span class="n">avec</span> <span class="o">=</span> <span class="n">alpha</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">imvec</span><span class="p">))</span>
         <span class="n">bvec</span> <span class="o">=</span> <span class="n">beta</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">imvec</span><span class="p">))</span>
 
+        <span class="k">if</span> <span class="n">alpha_pol</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">apvec</span> <span class="o">=</span> <span class="n">alpha_pol</span><span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">imvec</span><span class="p">))</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">apvec</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([])</span>
+
+        <span class="k">if</span> <span class="n">beta_pol</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">bpvec</span> <span class="o">=</span> <span class="n">beta_pol</span><span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">imvec</span><span class="p">))</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">bpvec</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([])</span>
+            
+        <span class="k">if</span> <span class="n">rm</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">rmvec</span> <span class="o">=</span> <span class="n">rm</span><span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">imvec</span><span class="p">))</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">rmvec</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([])</span>
+
+        <span class="k">if</span> <span class="n">cm</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">cmvec</span> <span class="o">=</span> <span class="n">cm</span><span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">imvec</span><span class="p">))</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">cmvec</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([])</span>
+                                            
         <span class="c1"># create the new image object</span>
         <span class="n">outim</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
-        <span class="n">outim</span><span class="o">.</span><span class="n">_mflist</span> <span class="o">=</span> <span class="p">[</span><span class="n">avec</span><span class="p">,</span> <span class="n">bvec</span><span class="p">]</span>
+        <span class="n">outim</span><span class="o">.</span><span class="n">_mflist</span> <span class="o">=</span> <span class="p">[</span><span class="n">avec</span><span class="p">,</span> <span class="n">bvec</span><span class="p">,</span> <span class="n">apvec</span><span class="p">,</span><span class="n">bpvec</span><span class="p">,</span><span class="n">rmvec</span><span class="p">,</span><span class="n">cmvec</span> <span class="p">]</span>
 
         <span class="k">return</span> <span class="n">outim</span></div>
 
@@ -3485,8 +3778,8 @@
 
             <span class="k">if</span> <span class="n">scale</span> <span class="o">==</span> <span class="s1">&#39;log&#39;</span><span class="p">:</span>
                 <span class="k">if</span> <span class="p">(</span><span class="n">imarr</span> <span class="o">&lt;</span> <span class="mf">0.0</span><span class="p">)</span><span class="o">.</span><span class="n">any</span><span class="p">():</span>
-                    <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;clipping values less than 0 in display&#39;</span><span class="p">)</span>
-                    <span class="n">imarr</span><span class="p">[</span><span class="n">imarr</span> <span class="o">&lt;</span> <span class="mf">0.0</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.0</span>
+                    <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;clipping values leq 0 in log display&#39;</span><span class="p">)</span>
+                    <span class="n">imarr</span><span class="p">[</span><span class="n">imarr</span> <span class="o">&lt;=</span> <span class="mf">0.0</span><span class="p">]</span> <span class="o">=</span> <span class="mf">1.e-16</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">min</span><span class="p">(</span><span class="n">imarr</span><span class="p">[</span><span class="n">imarr</span><span class="o">&gt;</span><span class="mi">0</span><span class="p">])</span> <span class="c1"># 0.0</span>
                 <span class="k">if</span> <span class="n">log_offset</span><span class="p">:</span>
                     <span class="n">imarr</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">log10</span><span class="p">(</span><span class="n">imarr</span> <span class="o">+</span> <span class="n">log_offset</span> <span class="o">/</span> <span class="n">dynamic_range</span><span class="p">)</span>
                 <span class="k">else</span><span class="p">:</span>
@@ -3494,9 +3787,9 @@
                 <span class="n">unit</span> <span class="o">=</span> <span class="sa">r</span><span class="s1">&#39;$\log_</span><span class="si">{10}</span><span class="s1">$(&#39;</span> <span class="o">+</span> <span class="n">unit</span> <span class="o">+</span> <span class="s1">&#39;)&#39;</span>
 
             <span class="k">if</span> <span class="n">scale</span> <span class="o">==</span> <span class="s1">&#39;gamma&#39;</span><span class="p">:</span>
-                <span class="k">if</span> <span class="p">(</span><span class="n">imarr</span> <span class="o">&lt;</span> <span class="mf">0.0</span><span class="p">)</span><span class="o">.</span><span class="n">any</span><span class="p">():</span>
-                    <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;clipping values less than 0 in display&#39;</span><span class="p">)</span>
-                    <span class="n">imarr</span><span class="p">[</span><span class="n">imarr</span> <span class="o">&lt;</span> <span class="mf">0.0</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.0</span>
+                <span class="c1">#if (imarr &lt; 0.0).any():</span>
+                <span class="c1">#    print(&#39;clipping values leq 0 in gamma display&#39;)</span>
+                <span class="c1">#    imarr[imarr &lt;= 0.0] = 1.e-16*np.min(imarr[imarr&gt;0]) # 0.0</span>
                 <span class="n">imarr</span> <span class="o">=</span> <span class="p">(</span><span class="n">imarr</span> <span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">imarr</span><span class="p">)</span> <span class="o">/</span> <span class="n">dynamic_range</span><span class="p">)</span><span class="o">**</span><span class="p">(</span><span class="n">gamma</span><span class="p">)</span>
                 <span class="n">unit</span> <span class="o">=</span> <span class="s1">&#39;(&#39;</span> <span class="o">+</span> <span class="n">unit</span> <span class="o">+</span> <span class="s1">&#39;)^&#39;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">gamma</span><span class="p">)</span>
 
@@ -3556,6 +3849,7 @@
         <span class="c1"># plot polarization with ticks!</span>
         <span class="k">else</span><span class="p">:</span>  
 
+                    
             <span class="n">im_stokes</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">switch_polrep</span><span class="p">(</span><span class="n">polrep_out</span><span class="o">=</span><span class="s1">&#39;stokes&#39;</span><span class="p">)</span>
             <span class="n">imvec</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">im_stokes</span><span class="o">.</span><span class="n">imvec</span><span class="p">)</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span> <span class="o">/</span> <span class="p">(</span><span class="mi">10</span><span class="o">**</span><span class="n">power</span><span class="p">)</span>
             <span class="n">qvec</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">im_stokes</span><span class="o">.</span><span class="n">qvec</span><span class="p">)</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span> <span class="o">/</span> <span class="p">(</span><span class="mi">10</span><span class="o">**</span><span class="n">power</span><span class="p">)</span>
@@ -3570,6 +3864,7 @@
                 <span class="n">uvec</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">im_stokes</span><span class="o">.</span><span class="n">ydim</span> <span class="o">*</span> <span class="n">im_stokes</span><span class="o">.</span><span class="n">xdim</span><span class="p">)</span>
             <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">vvec</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
                 <span class="n">vvec</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">im_stokes</span><span class="o">.</span><span class="n">ydim</span> <span class="o">*</span> <span class="n">im_stokes</span><span class="o">.</span><span class="n">xdim</span><span class="p">)</span>
+
 
             <span class="n">imvec</span> <span class="o">*=</span> <span class="n">factor</span>
             <span class="n">qvec</span> <span class="o">*=</span> <span class="n">factor</span>
@@ -3588,16 +3883,16 @@
             <span class="c1"># only the  stokes I image gets transformed! TODO</span>
             <span class="n">imarr2</span> <span class="o">=</span> <span class="n">imarr</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
             <span class="k">if</span> <span class="n">scale</span> <span class="o">==</span> <span class="s1">&#39;log&#39;</span><span class="p">:</span>
-                <span class="k">if</span> <span class="p">(</span><span class="n">imarr2</span> <span class="o">&lt;</span> <span class="mf">0.0</span><span class="p">)</span><span class="o">.</span><span class="n">any</span><span class="p">():</span>
-                    <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;clipping values less than 0 in display&#39;</span><span class="p">)</span>
-                    <span class="n">imarr2</span><span class="p">[</span><span class="n">imarr2</span> <span class="o">&lt;</span> <span class="mf">0.0</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.0</span>
+                <span class="k">if</span> <span class="p">(</span><span class="n">imarr2</span> <span class="o">&lt;=</span> <span class="mf">0.0</span><span class="p">)</span><span class="o">.</span><span class="n">any</span><span class="p">():</span>
+                    <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;clipping values leq 0 in log display&#39;</span><span class="p">)</span>
+                    <span class="n">imarr2</span><span class="p">[</span><span class="n">imarr2</span> <span class="o">&lt;=</span> <span class="mf">0.0</span><span class="p">]</span> <span class="o">=</span> <span class="mf">1.e-16</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">min</span><span class="p">(</span><span class="n">imarr2</span><span class="p">[</span><span class="n">imarr2</span><span class="o">&gt;</span><span class="mi">0</span><span class="p">])</span> <span class="c1">#0</span>
                 <span class="n">imarr2</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">log10</span><span class="p">(</span><span class="n">imarr2</span> <span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">imarr2</span><span class="p">)</span> <span class="o">/</span> <span class="n">dynamic_range</span><span class="p">)</span>
                 <span class="n">unit</span> <span class="o">=</span> <span class="sa">r</span><span class="s1">&#39;$\log_</span><span class="si">{10}</span><span class="s1">$(&#39;</span> <span class="o">+</span> <span class="n">unit</span> <span class="o">+</span> <span class="s1">&#39;)&#39;</span>
 
             <span class="k">if</span> <span class="n">scale</span> <span class="o">==</span> <span class="s1">&#39;gamma&#39;</span><span class="p">:</span>
-                <span class="k">if</span> <span class="p">(</span><span class="n">imarr2</span> <span class="o">&lt;</span> <span class="mf">0.0</span><span class="p">)</span><span class="o">.</span><span class="n">any</span><span class="p">():</span>
-                    <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;clipping values less than 0 in display&#39;</span><span class="p">)</span>
-                    <span class="n">imarr2</span><span class="p">[</span><span class="n">imarr2</span> <span class="o">&lt;</span> <span class="mf">0.0</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.0</span>
+                <span class="c1">#if (imarr2 &lt; 0.0).any():</span>
+                <span class="c1">#    print(&#39;clipping values leq 0 in display&#39;)</span>
+                <span class="c1">#    imarr2[imarr2 &lt;= 0.0] = 1.e-16*np.min(imarr2[imarr2&gt;0]) #0 </span>
                 <span class="n">imarr2</span> <span class="o">=</span> <span class="p">(</span><span class="n">imarr2</span> <span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">imarr2</span><span class="p">)</span> <span class="o">/</span> <span class="n">dynamic_range</span><span class="p">)</span><span class="o">**</span><span class="p">(</span><span class="n">gamma</span><span class="p">)</span>
                 <span class="n">unit</span> <span class="o">=</span> <span class="s1">&#39;(&#39;</span> <span class="o">+</span> <span class="n">unit</span> <span class="o">+</span> <span class="s1">&#39;)^gamma&#39;</span>
 
@@ -3608,6 +3903,10 @@
                 <span class="n">imarr2</span><span class="p">[</span><span class="n">imarr2</span> <span class="o">&lt;</span> <span class="n">cbar_lims</span><span class="p">[</span><span class="mi">0</span><span class="p">]]</span> <span class="o">=</span> <span class="n">cbar_lims</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
 
             <span class="c1"># polarization ticks</span>
+            <span class="c1"># clip zeros</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;clipping values leq 0 in pol display&#39;</span><span class="p">)</span>
+            <span class="n">imvec</span><span class="p">[</span><span class="n">imvec</span> <span class="o">&lt;=</span> <span class="mf">0.0</span><span class="p">]</span> <span class="o">=</span> <span class="mf">1.e-16</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">min</span><span class="p">(</span><span class="n">imvec</span><span class="p">[</span><span class="n">imvec</span><span class="o">&gt;</span><span class="mi">0</span><span class="p">])</span> <span class="c1"># 0.0</span>
+
             <span class="n">m</span> <span class="o">=</span> <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">qvec</span> <span class="o">+</span> <span class="mi">1</span><span class="n">j</span> <span class="o">*</span> <span class="n">uvec</span><span class="p">)</span> <span class="o">/</span> <span class="n">imvec</span><span class="p">)</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ydim</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">xdim</span><span class="p">)</span>
 
             <span class="n">thin</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">xdim</span> <span class="o">//</span> <span class="n">nvec</span>
@@ -4202,35 +4501,6 @@
     
     <span class="k">return</span> <span class="n">outim</span></div>
 
-
-<div class="viewcode-block" id="blur_mf"><a class="viewcode-back" href="../../image.html#ehtim.image.blur_mf">[docs]</a><span class="k">def</span> <span class="nf">blur_mf</span><span class="p">(</span><span class="n">im</span><span class="p">,</span><span class="n">freqs</span><span class="p">,</span><span class="n">kernel</span><span class="p">,</span><span class="n">fit_order</span><span class="o">=</span><span class="mi">2</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;blur multifrequncy images with the same beam&quot;&quot;&quot;</span>
-    <span class="n">reffreq</span> <span class="o">=</span> <span class="n">im</span><span class="o">.</span><span class="n">rf</span>
-
-    <span class="c1"># remove any zeros in the images</span>
-    <span class="n">imlist</span> <span class="o">=</span> <span class="p">[</span><span class="n">im</span><span class="o">.</span><span class="n">get_image_mf</span><span class="p">(</span><span class="n">rf</span><span class="p">)</span><span class="o">.</span><span class="n">blur_circ</span><span class="p">(</span><span class="n">kernel</span><span class="p">)</span> <span class="k">for</span> <span class="n">rf</span> <span class="ow">in</span> <span class="n">freqs</span><span class="p">]</span>
-    <span class="k">for</span> <span class="n">image</span> <span class="ow">in</span> <span class="n">imlist</span><span class="p">:</span>
-        <span class="n">image</span><span class="o">.</span><span class="n">imvec</span><span class="p">[</span><span class="n">image</span><span class="o">.</span><span class="n">imvec</span><span class="o">&lt;=</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">min</span><span class="p">(</span><span class="n">image</span><span class="o">.</span><span class="n">imvec</span><span class="p">[</span><span class="n">image</span><span class="o">.</span><span class="n">imvec</span><span class="o">!=</span><span class="mi">0</span><span class="p">])</span>
-        
-    <span class="n">xfit</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">freqs</span><span class="p">)</span><span class="o">/</span><span class="n">reffreq</span><span class="p">)</span>
-    <span class="n">yfit</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">im</span><span class="o">.</span><span class="n">imvec</span> <span class="k">for</span> <span class="n">im</span> <span class="ow">in</span> <span class="n">imlist</span><span class="p">]))</span>
-    
-    <span class="k">if</span> <span class="n">fit_order</span> <span class="o">==</span> <span class="mi">2</span><span class="p">:</span>
-        <span class="n">coeffs</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">polyfit</span><span class="p">(</span><span class="n">xfit</span><span class="p">,</span><span class="n">yfit</span><span class="p">,</span><span class="mi">2</span><span class="p">)</span>
-        <span class="n">beta</span> <span class="o">=</span> <span class="n">coeffs</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
-        <span class="n">alpha</span> <span class="o">=</span> <span class="n">coeffs</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>    
-    <span class="k">elif</span> <span class="n">fit_order</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
-        <span class="n">coeffs</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">polyfit</span><span class="p">(</span><span class="n">xfit</span><span class="p">,</span><span class="n">yfit</span><span class="p">,</span><span class="mi">1</span><span class="p">)</span>
-        <span class="n">alpha</span> <span class="o">=</span> <span class="n">coeffs</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>    
-        <span class="n">beta</span> <span class="o">=</span> <span class="mi">0</span><span class="o">*</span><span class="n">alpha</span>
-    <span class="k">else</span><span class="p">:</span>
-        <span class="n">alpha</span> <span class="o">=</span> <span class="mi">0</span><span class="o">*</span><span class="n">yfit</span>
-        <span class="n">beta</span> <span class="o">=</span> <span class="mi">0</span><span class="o">*</span><span class="n">yfit</span>
-        
-    <span class="n">outim</span> <span class="o">=</span> <span class="n">im</span><span class="o">.</span><span class="n">blur_circ</span><span class="p">(</span><span class="n">kernel</span><span class="p">)</span>
-    <span class="n">outim</span><span class="o">.</span><span class="n">specvec</span> <span class="o">=</span> <span class="n">alpha</span>
-    <span class="n">outim</span><span class="o">.</span><span class="n">curvvec</span> <span class="o">=</span> <span class="n">beta</span>
-    <span class="k">return</span> <span class="n">outim</span></div>
 </pre></div>
 
            </div>
@@ -4240,7 +4510,7 @@
   <hr/>
 
   <div role="contentinfo">
-    <p>&#169; Copyright 2023, Andrew Chael.</p>
+    <p>&#169; Copyright 2026, Andrew Chael.</p>
   </div>
 
   Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
