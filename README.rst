@@ -173,7 +173,7 @@ Let us know if you use eht-imaging in your publication and we'll list it here!
 
 - Evidence of a non-equipartition energy regime in 1803+784, `Perez-Diez et al. 2026 <https://arxiv.org/pdf/2602.20746>`_
 
-- Where within the 3c 84 jet are $\gamma$-rays produced? `Paraschos et al. 2026 <https://arxiv.org/pdf/2603.22403>`_
+- Where within the 3c 84 jet are gamma-rays produced? `Paraschos et al. 2026 <https://arxiv.org/pdf/2603.22403>`_
 
 - Ring Asymmetry and Spin in M87*, `Bernshteyn et al. 2026 <2601.00394>`_
 
