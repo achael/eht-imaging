@@ -28,8 +28,6 @@ import astropy.io.fits as fits
 import datetime
 import h5py
 
-import ehtim.io.writeoifits
-import ehtim.io.oifits
 from astropy.time import Time
 
 import ehtim.const_def as ehc
@@ -831,107 +829,6 @@ def save_obs_uvfits(obs, fname=None, force_singlepol=None, polrep_out='circ'):
         hdulist_new.writeto(fname, overwrite=True)
 
     return hdulist_new.copy()
-
-
-
-def save_obs_oifits(obs, fname, flux=1.0):
-    """Save visibility data to oifits file.
-       Polarization data is NOT saved
-       NOTE: as of 2021, this function is very out-of-date and should be updated
-       Args:
-            obs (Obsdata): obsdata object
-            fname (str): path to output uvfits file.
-            flux (float): Flux density normalization
-       Returns:
-    """
-
-    # TODO: Add polarization to oifits??
-    print('Warning: save_oifits does NOT save polarimetric visibility data!')
-
-    # output times must be in utc
-    obs = obs.switch_timetype(timetype_out='UTC')
-
-    if (obs.polrep != 'stokes'):
-        raise Exception("save_obs_oifits only works with polrep 'stokes'!")
-
-    # Normalizing by the total flux passed in - note this is changing the data inside the obs structure
-    obs.data['vis'] /= flux
-    obs.data['sigma'] /= flux
-
-    data = obs.unpack(['u', 'v', 'amp', 'phase', 'sigma', 'time', 't1', 't2', 'tint'])
-    biarr = obs.bispectra(mode="all", count="min")
-
-    # extract the telescope names and parameters
-    antennaNames = obs.tarr['site']
-    sefd = obs.tarr['sefdr']
-    antennaX = obs.tarr['x']
-    antennaY = obs.tarr['y']
-    antennaZ = obs.tarr['z']
-
-    # TODO: this is incorrect and there is just a dummy variable here
-    # antennaDiam = -np.ones(antennaX.shape)
-    antennaDiam = sefd  # replace antennaDiam with SEFD for radio observtions
-
-    # create dictionary
-    union = {}
-    union = ehtim.io.writeoifits.arrayUnion(antennaNames, union)
-
-    # extract the integration time
-    intTime = data['tint'][0]
-    if not all(data['tint'][0] == item for item in np.reshape(data['tint'], (-1))):
-        raise TypeError("The time integrations for each visibility are different")
-
-    # get visibility information
-    amp = data['amp']
-    phase = data['phase']
-    viserror = data['sigma']
-    u = data['u']
-    v = data['v']
-
-    # convert antenna name strings to number identifiers
-    ant1 = ehtim.io.writeoifits.convertStrings(data['t1'], union)
-    ant2 = ehtim.io.writeoifits.convertStrings(data['t2'], union)
-
-    # convert times to datetime objects
-    # TODO: these do not correspond to the acutal times
-    time = data['time']
-    dttime = np.array([datetime.datetime.utcfromtimestamp(x*60.0*60.0)
-                       for x in time])
-
-    # get the bispectrum information
-    bi = biarr['bispec']
-    t3amp = np.abs(bi)
-    t3phi = np.angle(bi, deg=1)
-    t3amperr = biarr['sigmab']
-    t3phierr = 180.0/np.pi * (1.0/t3amp) * t3amperr
-    uClosure = np.transpose(np.array([np.array(biarr['u1']), np.array(biarr['u2'])]))
-    vClosure = np.transpose(np.array([np.array(biarr['v1']), np.array(biarr['v2'])]))
-
-    # convert times to datetime objects
-    # TODO: these do not correspond to the acutal times
-    timeClosure = biarr['time']
-    dttimeClosure = np.array([datetime.datetime.utcfromtimestamp(x*60.0*60.0)
-                              for x in timeClosure])
-
-    # convert antenna name strings to number identifiers
-    biarr_ant1 = ehtim.io.writeoifits.convertStrings(biarr['t1'], union)
-    biarr_ant2 = ehtim.io.writeoifits.convertStrings(biarr['t2'], union)
-    biarr_ant3 = ehtim.io.writeoifits.convertStrings(biarr['t3'], union)
-    antOrder = np.transpose(np.array([biarr_ant1, biarr_ant2, biarr_ant3]))
-
-    # todo: check that putting the negatives on the phase and t3phi is correct
-    ehtim.io.writeoifits.writeOIFITS(fname, obs.ra, obs.dec, obs.rf, obs.bw, intTime,
-                                   amp, viserror, phase, viserror, u, v, ant1, ant2, dttime,
-                                   t3amp, t3amperr, t3phi, t3phierr, uClosure, vClosure, antOrder,
-                                   dttimeClosure, antennaNames, antennaDiam,
-                                   antennaX, antennaY, antennaZ)
-
-    # Un-Normalizing by the total flux passed in
-    # NOTE this is changing the data inside the obs structure back to what it originally was
-    obs.data['vis'] *= flux
-    obs.data['sigma'] *= flux
-
-    return
 
 
 def save_dtype_txt(obs, fname, dtype='cphase'):
