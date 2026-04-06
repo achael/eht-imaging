@@ -26,7 +26,7 @@ Installing with pip will update most of the required libraries automatically (`n
 
 
 NFFT Installation
-------------
+-----------------
 **If you want to use fast fourier transforms, you will also need to separately install** `NFFT <https://github.com/NFFT/nfft>`_ **and its** `pyNFFT wrapper <https://github.com/ghisvail/pyNFFT/>`__. 
 
 The simplest way is to use `conda <https://anaconda.org/conda-forge/pynfft/>`__ to install both NFFT and pyNFFT:
@@ -56,7 +56,7 @@ Scripts in the examples directory contain several older simple example workflows
 
 
 Citation
---------------------------------
+--------
 If you use ehtim in your publication, please cite `Chael+ 2018 <http://adsabs.harvard.edu/abs/2018ApJ...857...23C>`_.
 
 The latest version is also available as a static doi on `Zenodo <https://zenodo.org/badge/latestdoi/42943499>`_.
