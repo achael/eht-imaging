@@ -1,9 +1,9 @@
 cff-version: 1.2.6
 message: "If you use this software, please cite it as below."
 authors:
-- family-names: "Chael"
-  given-names: "Andrew"
-  orcid: "https://orcid.org/0000-0003-2966-6220"
+- family-names: Chael
+  given-names: Andrew
+  orcid: https://orcid.org/0000-0003-2966-6220
 title: "eht-imaging"
 version: 1.2.10
 doi: 10.5281/zenodo.7226661
