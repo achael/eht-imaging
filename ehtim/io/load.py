@@ -174,7 +174,7 @@ def load_im_hdf5(filename):
     try:
         time = hfp['header']['t'][()] * tunit / 3600.       # time in hours
     except KeyError:
-        print("Warning! Time not found in hdf5 image header.")
+        print("   Warning! Time not found in hdf5 image header.")
         time = 0.
         
     if 'pol' in hfp:
