@@ -1,0 +1,106 @@
+[build-system]
+requires = ["setuptools>=64", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "ehtim"
+version = "1.2.10"
+description = "Imaging, analysis, and simulation software for radio interferometry"
+readme = "README.rst"
+license = { text = "GPLv3" }
+keywords = ["imaging", "astronomy", "EHT", "polarimetry"]
+
+authors = [
+    { name = "Andrew Chael", email = "achael@outlook.com" },
+    { name = "Rohan Dahale", email = "rohan.dahale@utoronto.ca"}
+]
+
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "Topic :: Software Development :: Build Tools",
+    "License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
+    "Programming Language :: Python :: 3.8",
+]
+
+dependencies = [
+    "numpy>=1.24",
+    "scipy>=1.9.3",
+    "astropy>=5.0.4",
+    "matplotlib>=3.7.3",
+    "skyfield",
+    "h5py",
+    "pandas",
+    "requests",
+    "future",
+    "networkx",
+    "paramsurvey",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0",
+    "pytest-cov",
+    "ruff",
+]
+
+[project.urls]
+Homepage = "https://github.com/achael/eht-imaging"
+Download = "https://github.com/achael/eht-imaging/archive/v1.2.11.tar.gz"
+
+# --- setuptools-specific config ---
+
+[tool.setuptools.packages.find]     # replaces packages=[...] — auto-discovers
+where = ["."]
+include = ["ehtim*"]                # finds ehtim and all subpackages automatically
+
+[tool.setuptools]
+script-files = [                    # replaces scripts=[...] — installs raw script files
+    "scripts/calibrate.py",
+    "scripts/cleanup.py",
+    "scripts/cli_blur_comp.py",
+    "scripts/gendata.py",
+    "scripts/imaging.py",
+    "scripts/imgsum.py",
+]
+
+# --- pytest ---
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-v --tb=short"
+
+# --- ruff ---
+
+[tool.ruff]
+target-version = "py310"
+line-length = 120
+
+[tool.ruff.lint]
+select = [
+    "E",    # pycodestyle errors
+    "W",    # pycodestyle warnings
+    "F",    # pyflakes
+    "I",    # isort (import sorting)
+    "UP",   # pyupgrade
+]
+ignore = [
+    "E501",   # line too long — legacy code has many long lines
+    "E741",   # ambiguous variable name (l, I, O) — common in physics code
+    "F841",   # local variable assigned but never used — catch gradually
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/*" = ["F841"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["ehtim"]
+
+# --- coverage ---
+
+[tool.coverage.run]
+source = ["ehtim"]
+
+[tool.coverage.report]
+show_missing = true
+skip_empty = true
