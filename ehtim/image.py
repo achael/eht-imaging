@@ -1081,8 +1081,8 @@ class Image(object):
 
 
             tmpimg = interpfunc(ytarget, xtarget)
-            tmpimg[np.abs(xtarget) > fov_x / 2., :] = 0.0
-            tmpimg[:, np.abs(ytarget) > fov_y / 2.] = 0.0
+            tmpimg[:, np.abs(xtarget) > fov_x / 2.] = 0.0
+            tmpimg[np.abs(ytarget) > fov_y / 2., :] = 0.0
 
             if not specind: # adjust pixel size if not a spectral index map
                 tmpimg = tmpimg * (psize_new)**2 / self.psize**2
