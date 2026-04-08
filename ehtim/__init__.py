@@ -54,10 +54,18 @@ warnings.filterwarnings(
 #iers.conf.auto_download = False
 
 try:
-    import pkg_resources
-    version = pkg_resources.get_distribution("ehtim").version
-    print("Welcome to eht-imaging! v", version,'\n')
-except:
+    from importlib.metadata import metadata, PackageNotFoundError
+    _meta = metadata("ehtim")
+    __version__ = _meta["Version"]
+    __author__  = _meta["Author-email"]
+    __license__ = _meta["License"]
+    __summary__ = _meta["Summary"]
+    print("Welcome to eht-imaging! v", __version__, '\n')
+except PackageNotFoundError:
+    __version__ = "unknown"
+    __author__  = "unknown"
+    __license__ = "unknown"
+    __summary__ = "unknown"
     print("Welcome to eht-imaging!\n")
 
 
