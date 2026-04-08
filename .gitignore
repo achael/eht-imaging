@@ -34,6 +34,7 @@ tutorials/tutorial_results/*
 !ehtim/tests/test_*.py
 !tests/
 !tests/test_*.py
+!tests/conftest.py
 
 .ipynb_checkpoints
 
