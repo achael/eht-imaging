@@ -14,7 +14,9 @@ import ehtim.imaging.imager_utils as iu
 MEDIAN_FRAC_TOL = 0.05
 MAX_FRAC_TOL = 0.6
 
-# rgauss: gradient does not match numeric finite differences at any step size
+# rgauss requires major/minor/PA kwargs specific to the target source shape.
+# With default params (major=minor=1 radian), any image matches trivially
+# and the gradient is ~1e-20 (machine noise), making comparison meaningless.
 SKIP_GRAD_RTYPES = {"rgauss"}
 
 # Number of pixels to subsample for numeric gradient (seeded for reproducibility)
@@ -25,7 +27,7 @@ GRAD_SEED = 42
 @pytest.fixture(scope="module")
 def reg_setup(sgra_im_small):
     """Set up regularizer test data from 32x32 SgrA image."""
-    im = sgra_im_small
+    im = sgra_im_small.copy()
     im.pulse = eh.observing.pulses.deltaPulse2D
     mask = im.imvec > 0
     imvec = im.imvec

@@ -21,7 +21,10 @@ BW_HZ = 4e9
 DATATERMS = ["vis", "bs", "amp", "cphase", "camp", "logcamp"]
 
 # Transform type pairs to compare
-TTYPE_PAIRS = [("direct", "fast")]
+TTYPE_PAIRS = [("direct", "fast"), ("direct", "nfft"), ("nfft", "fast")]
+
+# NFFT max gradient tolerance is much wider at 32x32 resolution
+GRAD_MAX_TOL_NFFT = 10.0
 
 # Tolerances (calibrated on 32x32 SgrA image)
 CHISQ_FRAC_TOL = 0.01
@@ -119,7 +122,8 @@ class TestChisqGradConsistency:
     @pytest.mark.parametrize("pair", TTYPE_PAIRS, ids=lambda p: f"{p[0]}-{p[1]}")
     def test_grad_max_frac_diff(self, chisq_setup, dtype, pair):
         _, max_frac = _gradient_comparison(chisq_setup, dtype, pair)
-        assert max_frac < GRAD_MAX_TOL, (
+        tol = GRAD_MAX_TOL_NFFT if "nfft" in pair else GRAD_MAX_TOL
+        assert max_frac < tol, (
             f"{dtype} {pair[0]}-{pair[1]}: grad max frac diff = {max_frac:.6f}"
         )
 
