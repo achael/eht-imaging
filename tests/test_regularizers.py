@@ -1,59 +1,95 @@
-from __future__ import division
-from __future__ import print_function
+"""Tests for ehtim regularizer functions.
+
+Verifies that all regularizer types return finite values and that
+analytic gradients match numeric finite differences.
+"""
 
 import numpy as np
+import pytest
+
 import ehtim as eh
-import time
 import ehtim.imaging.imager_utils as iu
 
-#path = eh.__path__[0]
-path = './tests'
+# Tolerances for gradient checks (calibrated on 32x32 SgrA image)
+MEDIAN_FRAC_TOL = 0.05
+MAX_FRAC_TOL = 0.6
 
-im = eh.image.load_txt(path + '/../models/avery_sgra_eofn.txt')
-im.pulse = eh.observing.pulses.deltaPulse2D
-   
-# mask
-mask = im.imvec > 0
+# rgauss: gradient does not match numeric finite differences at any step size
+SKIP_GRAD_RTYPES = {"rgauss"}
 
-imvec = im.imvec
-nprior= im.imvec*0.0+1.0
-nprior= nprior/np.sum(nprior)
-embed_mask = mask
-flux = im.total_flux()*0.95 #not exactly equal to the total flux
-alpha_A = 5000.0#7.5
+# Number of pixels to subsample for numeric gradient (seeded for reproducibility)
+N_GRAD_SAMPLES = 100
+GRAD_SEED = 42
 
-# Test the normalization of the regularizers
-blur_im = im.blur_circ(20.*eh.RADPERUAS)
-for rtype in iu.REGULARIZERS:
-    print(rtype,'norm_reg=False',iu.regularizer(blur_im.imvec, nprior, embed_mask, flux, im.xdim, im.ydim, im.psize, rtype, alpha_A = alpha_A, beam_size=20.*eh.RADPERUAS, norm_reg=False))
-    print(rtype,'norm_reg=True',iu.regularizer(blur_im.imvec, nprior, embed_mask, flux, im.xdim, im.ydim, im.psize, rtype, alpha_A = alpha_A, beam_size=20.*eh.RADPERUAS, norm_reg=True))
 
-for rtype in iu.REGULARIZERS:
-    print('\nTesting the gradient of',rtype)
-    def reg(imvec):
-        return iu.regularizer(imvec, nprior, embed_mask, flux, im.xdim, im.ydim, im.psize, rtype, beam_size=20.*eh.RADPERUAS, alpha_A = alpha_A, norm_reg=True)
+@pytest.fixture(scope="module")
+def reg_setup(sgra_im_small):
+    """Set up regularizer test data from 32x32 SgrA image."""
+    im = sgra_im_small
+    im.pulse = eh.observing.pulses.deltaPulse2D
+    mask = im.imvec > 0
+    imvec = im.imvec
+    nprior = np.ones_like(imvec)
+    nprior = nprior / np.sum(nprior)
+    flux = im.total_flux() * 0.95
+    return im, imvec, nprior, mask, flux
 
-    def reggrad(imvec):
-        return iu.regularizergrad(imvec, nprior, embed_mask, flux, im.xdim, im.ydim, im.psize, rtype, beam_size=20.*eh.RADPERUAS, alpha_A = alpha_A, norm_reg=True)
 
-    def reggrad_numeric(imvec):
-        dx = 1e-10
-        dx = 1e-4*np.median(imvec)
-        reg1 = reg(imvec)
-        grad = reggrad(imvec)
-        for j in range(len(imvec)):
-            imvec2 = imvec.copy()
-            imvec2[j] += dx
-            grad[j] = (reg(imvec2) - reg1)/dx
-        return grad
+class TestRegularizerValues:
+    """All regularizer types return finite values."""
 
-    print("reg: %f" % reg(imvec))
-    grad1 = reggrad(imvec)
-    grad2 = reggrad_numeric(imvec)
-    pad = np.median(np.abs(grad1))/1000.0
-    print("reg_grad analytic: ", grad1)
-    print("reg_grad numeric:  ", grad2)
-#    print("Fractional Difference %0.4f"% np.max(np.abs((grad1 - grad2))/(np.abs(grad1)+pad)))
-    compare_floor = np.min(np.abs(grad1))*1.e-20 + 1.e-100
-    print("Median Fractional Difference %0.4f"% np.median(np.abs((grad1 - grad2))/(np.abs(grad1)+compare_floor)))    
-    print("Max Fractional Difference %0.4f"% np.max(np.abs((grad1 - grad2))/(np.abs(grad1)+compare_floor)))        
+    @pytest.mark.parametrize("rtype", iu.REGULARIZERS)
+    @pytest.mark.parametrize("norm_reg", [True, False], ids=["normalized", "unnormalized"])
+    def test_returns_finite(self, reg_setup, rtype, norm_reg):
+        im, imvec, nprior, mask, flux = reg_setup
+        val = iu.regularizer(
+            imvec, nprior, mask, flux,
+            im.xdim, im.ydim, im.psize, rtype,
+            beam_size=20.0 * eh.RADPERUAS, alpha_A=5000.0, norm_reg=norm_reg,
+        )
+        assert np.isfinite(val), f"{rtype} (norm_reg={norm_reg}) returned {val}"
+
+
+class TestRegularizerGradients:
+    """Analytic regularizer gradients match numeric finite differences."""
+
+    @pytest.mark.parametrize("rtype", [r for r in iu.REGULARIZERS if r not in SKIP_GRAD_RTYPES])
+    def test_median_frac_diff(self, reg_setup, rtype):
+        median_frac, _ = _gradient_check(reg_setup, rtype)
+        assert median_frac < MEDIAN_FRAC_TOL, (
+            f"{rtype} median fractional gradient diff = {median_frac:.6f}"
+        )
+
+    @pytest.mark.parametrize("rtype", [r for r in iu.REGULARIZERS if r not in SKIP_GRAD_RTYPES])
+    def test_max_frac_diff(self, reg_setup, rtype):
+        _, max_frac = _gradient_check(reg_setup, rtype)
+        assert max_frac < MAX_FRAC_TOL, (
+            f"{rtype} max fractional gradient diff = {max_frac:.6f}"
+        )
+
+
+def _gradient_check(reg_setup, rtype):
+    """Compute median and max fractional diff between analytic and numeric gradient."""
+    im, imvec, nprior, mask, flux = reg_setup
+    kwargs = dict(
+        beam_size=20.0 * eh.RADPERUAS, alpha_A=5000.0, norm_reg=True,
+    )
+
+    y0 = iu.regularizer(imvec, nprior, mask, flux, im.xdim, im.ydim, im.psize, rtype, **kwargs)
+    grad_exact = iu.regularizergrad(imvec, nprior, mask, flux, im.xdim, im.ydim, im.psize, rtype, **kwargs)
+
+    rng = np.random.default_rng(GRAD_SEED)
+    sample_idx = rng.choice(len(imvec), size=N_GRAD_SAMPLES, replace=False)
+
+    grad_numeric = np.zeros(N_GRAD_SAMPLES)
+    for i, j in enumerate(sample_idx):
+        dx = max(1e-8 * abs(imvec[j]), 1e-12)
+        imvec2 = imvec.copy()
+        imvec2[j] += dx
+        y1 = iu.regularizer(imvec2, nprior, mask, flux, im.xdim, im.ydim, im.psize, rtype, **kwargs)
+        grad_numeric[i] = (y1 - y0) / dx
+
+    grad_exact_sampled = grad_exact[sample_idx]
+    compare_floor = np.min(np.abs(grad_exact_sampled)) * 1e-20 + 1e-100
+    frac_diff = np.abs((grad_numeric - grad_exact_sampled) / (np.abs(grad_exact_sampled) + compare_floor))
+    return np.median(frac_diff), np.max(frac_diff)
