@@ -13,10 +13,10 @@ jobs:
         with:
           fetch-depth: 0
       - run: git fetch origin ${{ github.base_ref }}
-      - uses: actions/setup-python@v5
+      - uses: astral-sh/ruff-action@v3
         with:
-          python-version: "3.12"
-      - run: pip install ruff
+          version: "0.15"
+          args: "--version"
       - name: Ruff check (changed files only)
         run: |
           FILES=$(git diff --name-only --diff-filter=ACMR origin/${{ github.base_ref }}...HEAD -- '*.py' || true)
