@@ -29,7 +29,9 @@ NFFT Installation
 -----------------
 **If you want to use fast fourier transforms, you will also need to separately install** `NFFT <https://github.com/NFFT/nfft>`_ **and its** `pyNFFT wrapper <https://github.com/ghisvail/pyNFFT/>`__. 
 
-**Note that, unfortunately, pyNFFT is only supported for python versions 3.11 or lower and numpy versions 1.26.4 and lower.** eht-imaging version 2.0 replacing pynfft with the actively maintained `finufft <https://github.com/flatironinstitute/finufft>`__ library is in active development.
+**Note that, unfortunately, pyNFFT is only supported for python versions <=3.11  and numpy versions <=1.26.4** 
+
+A new eht-imaging version 2.0 replacing pynfft with the actively maintained `finufft <https://github.com/flatironinstitute/finufft>`__ library is in active development.
 
 The simplest way is to use `conda <https://anaconda.org/conda-forge/pynfft/>`__ to install both NFFT and pyNFFT:
 
