@@ -1,13 +1,15 @@
-from __future__ import division
-from __future__ import print_function
+"""Tests for ehtim I/O functions."""
+
+import os
 
 import ehtim as eh
 from ehtim.io import load
-#path = eh.__path__[0]
-path = './tests'
+
+_ROOT = os.path.join(os.path.dirname(__file__), "..")
+DATA_DIR = os.path.join(_ROOT, "data")
+
 
 def test_load_obs_uvfits():
-    """Test if load_obs_uvfits() can successfully read a uvfits file
-    """
-    assert load.load_obs_uvfits(path + "/../data/sample.uvfits")
-    # TODO: verify the result
+    """Test that load_obs_uvfits can read a UVFITS file and return an Obsdata."""
+    obs = load.load_obs_uvfits(os.path.join(DATA_DIR, "sample.uvfits"))
+    assert isinstance(obs, eh.obsdata.Obsdata)
