@@ -29,6 +29,8 @@ NFFT Installation
 -----------------
 **If you want to use fast fourier transforms, you will also need to separately install** `NFFT <https://github.com/NFFT/nfft>`_ **and its** `pyNFFT wrapper <https://github.com/ghisvail/pyNFFT/>`__. 
 
+**Note that, unfortunately, pyNFFT is only supported for python versions 3.11 or lower and numpy versions 1.26.4 and lower.** eht-imaging version 2.0 replacing pynfft with the actively maintained `finufft <https://github.com/flatironinstitute/finufft>`__ library is in active development.
+
 The simplest way is to use `conda <https://anaconda.org/conda-forge/pynfft/>`__ to install both NFFT and pyNFFT:
 
 
@@ -37,8 +39,6 @@ The simplest way is to use `conda <https://anaconda.org/conda-forge/pynfft/>`__ 
     conda install -c conda-forge pynfft
 
 Alternatively, first install NFFT manually following the instructions on the `readme <https://github.com/NFFT/nfft>`__, making sure to use the ``--enable-openmp`` flag in compilation. Then install `pynfft <https://github.com/ghisvail/pyNFFT/>`__, with pip, following the readme instructions to link the installation to where you installed NFFT. Finally, reinstall ehtim.
-
-**Note that, unfortunately, pyNFFT is only supported for python versions 3.11 or lower.** eht-imaging version 2.0 using the `finufft <https://github.com/flatironinstitute/finufft>`__ library is in active development.
 
 **For M1/M2/M3/M4/M5 Macs (MacOS >= v12.0)**, install the updated Mac version of `pynfft <https://github.com/rohandahale/pyNFFT.git>`__ and follow the instructions on the `readme  <https://github.com/rohandahale/pyNFFT.git>`__ to manually install `fftw <http://www.fftw.org>`_, `nfft <https://github.com/NFFT/nfft>`__ and then `pynfft <https://github.com/rohandahale/pyNFFT.git>`__.
 
