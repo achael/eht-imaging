@@ -1,107 +1,145 @@
-from __future__ import division
-from __future__ import print_function
+"""Tests for chi-squared consistency across transform types (direct, fast, nfft).
+
+Verifies that chi-squared values and gradients agree between DFT, FFT, and NFFT
+for all standard data types.
+"""
 
 import numpy as np
+import pytest
+
 import ehtim as eh
-from ehtim.imaging.imager_utils import chisqdata, chisqgrad, chisq
-import time
+from ehtim.imaging.imager_utils import chisq, chisqdata, chisqgrad
 
-#path = eh.__path__[0]
-path = './tests'
-im = eh.image.load_txt(path + '/../models/avery_sgra_eofn.txt')
-eht = eh.array.load_txt(path + '/../arrays/EHT2017.txt')
+# Observation parameters (must match conftest.py)
+TINT_SEC = 5
+TADV_SEC = 600
+TSTART_HR = 0
+TSTOP_HR = 24
+BW_HZ = 4e9
 
-PADFAC=10
-PRAD_FFT = 12
-PRAD_NFFT = 12
+# Data types to test
+DATATERMS = ["vis", "bs", "amp", "cphase", "camp", "logcamp"]
 
-tint_sec = 5
-tadv_sec = 600
-tstart_hr = 0
-tstop_hr = 24
-bw_hz = 4e9
+# Transform type pairs to compare
+TTYPE_PAIRS = [("direct", "fast")]
 
-start = time.time()
-obs_dft = im.observe(eht, tint_sec, tadv_sec, tstart_hr, tstop_hr, bw_hz, sgrscat=False, ampcal=True, phasecal=False, ttype='direct', add_th_noise=False)
-stop = time.time()
-print ('direct',stop-start)
+# Tolerances (calibrated on 32x32 SgrA image)
+CHISQ_FRAC_TOL = 0.01
+GRAD_MEDIAN_TOL = 0.05
+GRAD_MAX_TOL = 0.25
 
-start = time.time()
-obs_fft = im.observe(eht, tint_sec, tadv_sec, tstart_hr, tstop_hr, bw_hz, sgrscat=False, ampcal=True, phasecal=False, ttype='fast', fft_pad_factor=PADFAC, add_th_noise=False)
-stop = time.time()
-print ('our fft',stop-start)
-
-start = time.time()
-obs_nfft = im.observe(eht, tint_sec, tadv_sec, tstart_hr, tstop_hr, bw_hz, sgrscat=False, ampcal=True, phasecal=False, ttype='nfft', fft_pad_factor=PADFAC, add_th_noise=False)
-stop = time.time()
-print ('nfft',stop-start)
+FFT_PAD_FACTOR = 10
 
 
-#prior = im.copy()
-prior = eh.image.make_square(obs_dft, im.xdim , im.xdim*im.psize)
-prior = prior.add_gauss(im.total_flux(), (50*eh.RADPERUAS, 50*eh.RADPERUAS, 0, 0, 0))
+@pytest.fixture(scope="module")
+def chisq_setup(sgra_im_small, eht_array):
+    """Set up observation and test image for chi-squared comparison tests.
 
-#im2 = im.copy() # This is our test image
-im2 = prior.copy()
+    Uses a single DFT observation as ground truth. The chi-squared functions
+    are then evaluated with different transform matrices (direct, fast, nfft)
+    on the same data, testing that the transform approximations agree.
+    """
+    im = sgra_im_small
 
-for j in range(len(im2.imvec)):
-    im2.imvec[j] *= (1.0 + (np.random.rand()-0.5)/10.0)
-    im2.imvec[j] += (np.random.rand()/10.)*im.imvec[j]
+    obs = im.observe(
+        eht_array, TINT_SEC, TADV_SEC, TSTART_HR, TSTOP_HR, BW_HZ,
+        sgrscat=False, ampcal=True, phasecal=False,
+        ttype="direct", add_th_noise=False,
+    )
 
-# mask
-mask = im2.imvec > 0#0.1*np.mean(im2.imvec)
+    prior = eh.image.make_square(obs, im.xdim, im.xdim * im.psize)
+    prior = prior.add_gauss(im.total_flux(), (50 * eh.RADPERUAS, 50 * eh.RADPERUAS, 0, 0, 0))
 
-#mask=[]
-test_imvec = im2.imvec
+    im2 = prior.copy()
+    rng = np.random.RandomState(42)
+    im2.imvec *= 1.0 + (rng.rand(len(im2.imvec)) - 0.5) / 10.0
+    im2.imvec += rng.rand(len(im2.imvec)) / 10.0 * im.imvec
 
-if len(mask) >0 and np.any(np.invert(mask)):
-    print("unmasked size %i"%len(test_imvec))
-    test_imvec = test_imvec[mask]
-    print("masked size %i"%len(test_imvec))
+    mask = im2.imvec > 0
+    test_imvec = im2.imvec[mask] if np.any(~mask) else im2.imvec
 
-# Testing the chi^2
-for dtype in ['vis', 'bs', 'amp', 'cphase', 'camp', 'logcamp']:
-    print('\nTesting',dtype)
-    chisqdata_dft = chisqdata(obs_dft, prior, mask, dtype, ttype='direct')
-    chisqdata_fft = chisqdata(obs_dft, prior, mask, dtype, ttype='fast', fft_pad_factor=PADFAC,p_rad=PRAD_FFT)
-    chisqdata_nfft = chisqdata(obs_dft, prior, mask, dtype, ttype='nfft', fft_pad_factor=PADFAC,p_rad=PRAD_NFFT)
-  
-    chisq_dft = chisq(test_imvec, chisqdata_dft[2], chisqdata_dft[0], chisqdata_dft[1], dtype, ttype='direct', mask=mask)
-    chisq_fft = chisq(test_imvec, chisqdata_fft[2], chisqdata_fft[0], chisqdata_fft[1], dtype, ttype='fast', mask=mask)
-    chisq_nfft = chisq(test_imvec, chisqdata_nfft[2], chisqdata_nfft[0], chisqdata_nfft[1], dtype, ttype='nfft', mask=mask)
-    print("\n")
-    print("chisq_dft: %f" % chisq_dft)
-    print("chisq_fft: %f" % chisq_fft)
-    print("chisq_nfft: %f" % chisq_nfft)
-
-    print("Fractional Difference direct-fast %0.4f"% np.abs((chisq_dft - chisq_fft)/(np.abs(chisq_dft))))
-    print("Fractional Difference direct-nfft %0.4f"% np.abs((chisq_dft - chisq_nfft)/(np.abs(chisq_dft))))
-    print("Fractional Difference nfft-fast %0.4f"% np.abs((chisq_nfft - chisq_fft)/(np.abs(chisq_nfft))))
-
-# Testing the chi^2 gradients
-for dtype in ['vis', 'bs', 'amp', 'cphase', 'camp', 'logcamp']:
-    print('\nTesting',dtype)
-    print('------------------------------')
-    chisqdata_dft  = chisqdata(obs_dft, prior, mask, dtype, ttype='direct')
-    chisqdata_fft  = chisqdata(obs_dft, prior, mask, dtype, ttype='fast', fft_pad_factor=PADFAC,p_rad=PRAD_FFT)
-    chisqdata_nfft = chisqdata(obs_dft, prior, mask, dtype, ttype='nfft', fft_pad_factor=PADFAC,p_rad=PRAD_NFFT)
-  
-    chisq_dft_grad  = chisqgrad(test_imvec, chisqdata_dft[2], chisqdata_dft[0], chisqdata_dft[1], dtype, ttype='direct', mask=mask)
-    chisq_fft_grad  = chisqgrad(test_imvec, chisqdata_fft[2], chisqdata_fft[0], chisqdata_fft[1], dtype, ttype='fast', mask=mask)
-    chisq_nfft_grad = chisqgrad(test_imvec, chisqdata_nfft[2], chisqdata_nfft[0], chisqdata_nfft[1], dtype, ttype='nfft', mask=mask)
-    #print("chisq_dft_grad:",chisq_dft_grad.reshape((im.ydim,im.xdim))[47:53,47:53])
-    #print("chisq_fft_grad:",chisq_fft_grad.reshape((im.ydim,im.xdim))[47:53,47:53])
-    compare_floor = np.min(np.abs(chisq_dft_grad))*1.e-20 + 1.e-100
-    #chisq_dft_grad = chisq_dft_grad.reshape((im.ydim,im.xdim))[10:-10,10:-10]
-    #chisq_fft_grad = chisq_fft_grad.reshape((im.ydim,im.xdim))[10:-10,10:-10]
-    print("\n")
-    print("Median Fractional Difference direct-fast %0.4f"% np.median(np.abs((chisq_dft_grad - chisq_fft_grad)/(np.abs(chisq_dft_grad)+compare_floor))))
-    print("Median Fractional Difference direct-nfft %0.4f"% np.median(np.abs((chisq_dft_grad - chisq_nfft_grad)/(np.abs(chisq_dft_grad)+compare_floor))))
-    print("Median Fractional Difference nfft-fast %0.4f"% np.median(np.abs((chisq_nfft_grad - chisq_fft_grad)/(np.abs(chisq_nfft_grad)+compare_floor))))
-
-    print("Max Fractional Difference direct-fast %0.4f"% np.max(np.abs((chisq_dft_grad - chisq_fft_grad)/(np.abs(chisq_dft_grad)+compare_floor))))
-    print("Max Fractional Difference direct-nfft %0.4f"% np.max(np.abs((chisq_dft_grad - chisq_nfft_grad)/(np.abs(chisq_dft_grad)+compare_floor))))
-    print("Max Fractional Difference nfft-fast %0.4f"% np.max(np.abs((chisq_nfft_grad - chisq_fft_grad)/(np.abs(chisq_nfft_grad)+compare_floor))))
+    return {
+        "obs": obs,
+        "prior": prior,
+        "test_imvec": test_imvec,
+        "mask": mask,
+        "im": im,
+    }
 
 
+def _chisq_kwargs(ttype):
+    """Return extra kwargs for chisqdata based on ttype."""
+    if ttype == "fast":
+        return {"fft_pad_factor": FFT_PAD_FACTOR}
+    return {}
 
+
+class TestChisqConsistency:
+    """Chi-squared values agree across transform types.
+
+    Same observation data is used for both ttypes. Only the transform matrix
+    (DFT vs FFT) differs, so differences reflect the approximation error.
+    """
+
+    @pytest.mark.parametrize("dtype", DATATERMS)
+    @pytest.mark.parametrize("pair", TTYPE_PAIRS, ids=lambda p: f"{p[0]}-{p[1]}")
+    def test_chisq_values(self, chisq_setup, dtype, pair):
+        ttype_a, ttype_b = pair
+        if "nfft" in (ttype_a, ttype_b):
+            pytest.importorskip("pynfft")
+        obs = chisq_setup["obs"]
+        prior = chisq_setup["prior"]
+        mask = chisq_setup["mask"]
+        test_imvec = chisq_setup["test_imvec"]
+
+        cdata_a = chisqdata(obs, prior, mask, dtype, ttype=ttype_a, **_chisq_kwargs(ttype_a))
+        cdata_b = chisqdata(obs, prior, mask, dtype, ttype=ttype_b, **_chisq_kwargs(ttype_b))
+
+        chi_a = chisq(test_imvec, cdata_a[2], cdata_a[0], cdata_a[1], dtype, ttype=ttype_a, mask=mask)
+        chi_b = chisq(test_imvec, cdata_b[2], cdata_b[0], cdata_b[1], dtype, ttype=ttype_b, mask=mask)
+
+        frac_diff = abs((chi_a - chi_b) / abs(chi_a))
+        assert frac_diff < CHISQ_FRAC_TOL, (
+            f"{dtype} {ttype_a}-{ttype_b}: chisq frac diff = {frac_diff:.6f}"
+        )
+
+
+class TestChisqGradConsistency:
+    """Chi-squared gradients agree across transform types."""
+
+    @pytest.mark.parametrize("dtype", DATATERMS)
+    @pytest.mark.parametrize("pair", TTYPE_PAIRS, ids=lambda p: f"{p[0]}-{p[1]}")
+    def test_grad_median_frac_diff(self, chisq_setup, dtype, pair):
+        median_frac, _ = _gradient_comparison(chisq_setup, dtype, pair)
+        assert median_frac < GRAD_MEDIAN_TOL, (
+            f"{dtype} {pair[0]}-{pair[1]}: grad median frac diff = {median_frac:.6f}"
+        )
+
+    @pytest.mark.parametrize("dtype", DATATERMS)
+    @pytest.mark.parametrize("pair", TTYPE_PAIRS, ids=lambda p: f"{p[0]}-{p[1]}")
+    def test_grad_max_frac_diff(self, chisq_setup, dtype, pair):
+        _, max_frac = _gradient_comparison(chisq_setup, dtype, pair)
+        assert max_frac < GRAD_MAX_TOL, (
+            f"{dtype} {pair[0]}-{pair[1]}: grad max frac diff = {max_frac:.6f}"
+        )
+
+
+def _gradient_comparison(chisq_setup, dtype, pair):
+    """Compute median and max fractional gradient diff between two ttypes."""
+    ttype_a, ttype_b = pair
+    if "nfft" in (ttype_a, ttype_b):
+        pytest.importorskip("pynfft")
+    obs = chisq_setup["obs"]
+    prior = chisq_setup["prior"]
+    mask = chisq_setup["mask"]
+    test_imvec = chisq_setup["test_imvec"]
+
+    cdata_a = chisqdata(obs, prior, mask, dtype, ttype=ttype_a, **_chisq_kwargs(ttype_a))
+    cdata_b = chisqdata(obs, prior, mask, dtype, ttype=ttype_b, **_chisq_kwargs(ttype_b))
+
+    grad_a = chisqgrad(test_imvec, cdata_a[2], cdata_a[0], cdata_a[1], dtype, ttype=ttype_a, mask=mask)
+    grad_b = chisqgrad(test_imvec, cdata_b[2], cdata_b[0], cdata_b[1], dtype, ttype=ttype_b, mask=mask)
+
+    compare_floor = np.min(np.abs(grad_a)) * 1e-20 + 1e-100
+    frac_diff = np.abs((grad_a - grad_b) / (np.abs(grad_a) + compare_floor))
+    return np.median(frac_diff), np.max(frac_diff)
