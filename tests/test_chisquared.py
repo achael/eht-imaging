@@ -133,6 +133,7 @@ class TestChisqConsistency:
         chi_b = chisq(test_imvec, cdata_b[2], cdata_b[0], cdata_b[1], dtype, ttype=ttype_b, mask=mask)
 
         frac_diff = abs((chi_a - chi_b) / abs(chi_a))
+        print(f"  {dtype} {ttype_a}-{ttype_b}: chisq frac diff = {frac_diff:.6f}")
         assert frac_diff < CHISQ_FRAC_TOL, (
             f"{dtype} {ttype_a}-{ttype_b}: chisq frac diff = {frac_diff:.6f}"
         )
@@ -177,4 +178,5 @@ def _gradient_comparison(chisq_setup, dtype, pair):
 
     compare_floor = np.min(np.abs(grad_a)) * 1e-20 + 1e-100
     frac_diff = np.abs((grad_a - grad_b) / (np.abs(grad_a) + compare_floor))
+    print(f"  {dtype} {ttype_a}-{ttype_b}: grad median={np.median(frac_diff):.6f} max={np.max(frac_diff):.6f}")
     return np.median(frac_diff), np.max(frac_diff)
