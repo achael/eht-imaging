@@ -14,12 +14,25 @@ import ehtim.imaging.imager_utils as iu
 MEDIAN_FRAC_TOL = 0.05
 MAX_FRAC_TOL = 0.6
 
-# No regularizers skipped from gradient checks
-SKIP_GRAD_RTYPES = set()
+# ---------------------------------------------------------------------------
+# Regularizer optional parameters (explicit for tracking across refactors)
+# ---------------------------------------------------------------------------
+BEAM_SIZE = 20.0 * eh.RADPERUAS
+ALPHA_A = 5000.0
+EPSILON_TV = 0.0
 
-# Number of pixels to subsample for numeric gradient (seeded for reproducibility)
+# rgauss-specific parameters
+RGAUSS_MAJOR = 50.0 * eh.RADPERUAS
+RGAUSS_MINOR = 60.0 * eh.RADPERUAS
+RGAUSS_PA = np.pi / 3
+
+# ---------------------------------------------------------------------------
+# Numeric gradient parameters
+# ---------------------------------------------------------------------------
 N_GRAD_SAMPLES = 100
 GRAD_SEED = 42
+GRAD_DX_REL = 1e-8    # relative step size per pixel
+GRAD_DX_FLOOR = 1e-12  # absolute minimum step size
 
 
 @pytest.fixture(scope="module")
@@ -42,14 +55,10 @@ class TestRegularizerValues:
     @pytest.mark.parametrize("norm_reg", [True, False], ids=["normalized", "unnormalized"])
     def test_returns_finite(self, reg_setup, rtype, norm_reg):
         im, imvec, nprior, mask, flux = reg_setup
-        kwargs = dict(beam_size=20.0 * eh.RADPERUAS, alpha_A=5000.0, norm_reg=norm_reg)
-        if rtype == "rgauss":
-            kwargs["major"] = 50.0 * eh.RADPERUAS
-            kwargs["minor"] = 60.0 * eh.RADPERUAS
-            kwargs["PA"] = np.pi / 3
         val = iu.regularizer(
             imvec, nprior, mask, flux,
-            im.xdim, im.ydim, im.psize, rtype, **kwargs,
+            im.xdim, im.ydim, im.psize, rtype,
+            **_reg_kwargs(rtype, norm_reg=norm_reg),
         )
         assert np.isfinite(val), f"{rtype} (norm_reg={norm_reg}) returned {val}"
 
@@ -57,14 +66,14 @@ class TestRegularizerValues:
 class TestRegularizerGradients:
     """Analytic regularizer gradients match numeric finite differences."""
 
-    @pytest.mark.parametrize("rtype", [r for r in iu.REGULARIZERS if r not in SKIP_GRAD_RTYPES])
+    @pytest.mark.parametrize("rtype", iu.REGULARIZERS)
     def test_median_frac_diff(self, reg_setup, rtype):
         median_frac, _ = _gradient_check(reg_setup, rtype)
         assert median_frac < MEDIAN_FRAC_TOL, (
             f"{rtype} median fractional gradient diff = {median_frac:.6f}"
         )
 
-    @pytest.mark.parametrize("rtype", [r for r in iu.REGULARIZERS if r not in SKIP_GRAD_RTYPES])
+    @pytest.mark.parametrize("rtype", iu.REGULARIZERS)
     def test_max_frac_diff(self, reg_setup, rtype):
         _, max_frac = _gradient_check(reg_setup, rtype)
         assert max_frac < MAX_FRAC_TOL, (
@@ -72,16 +81,22 @@ class TestRegularizerGradients:
         )
 
 
+def _reg_kwargs(rtype, norm_reg=True):
+    """Return kwargs for regularizer/regularizergrad based on rtype."""
+    kwargs = dict(
+        beam_size=BEAM_SIZE, alpha_A=ALPHA_A, epsilon_tv=EPSILON_TV, norm_reg=norm_reg,
+    )
+    if rtype == "rgauss":
+        kwargs["major"] = RGAUSS_MAJOR
+        kwargs["minor"] = RGAUSS_MINOR
+        kwargs["PA"] = RGAUSS_PA
+    return kwargs
+
+
 def _gradient_check(reg_setup, rtype):
     """Compute median and max fractional diff between analytic and numeric gradient."""
     im, imvec, nprior, mask, flux = reg_setup
-    kwargs = dict(
-        beam_size=20.0 * eh.RADPERUAS, alpha_A=5000.0, norm_reg=True,
-    )
-    if rtype == "rgauss":
-        kwargs["major"] = 50.0 * eh.RADPERUAS
-        kwargs["minor"] = 60.0 * eh.RADPERUAS
-        kwargs["PA"] = np.pi / 3
+    kwargs = _reg_kwargs(rtype)
 
     y0 = iu.regularizer(imvec, nprior, mask, flux, im.xdim, im.ydim, im.psize, rtype, **kwargs)
     grad_exact = iu.regularizergrad(imvec, nprior, mask, flux, im.xdim, im.ydim, im.psize, rtype, **kwargs)
@@ -91,7 +106,7 @@ def _gradient_check(reg_setup, rtype):
 
     grad_numeric = np.zeros(N_GRAD_SAMPLES)
     for i, j in enumerate(sample_idx):
-        dx = max(1e-8 * abs(imvec[j]), 1e-12)
+        dx = max(GRAD_DX_REL * abs(imvec[j]), GRAD_DX_FLOOR)
         imvec2 = imvec.copy()
         imvec2[j] += dx
         y1 = iu.regularizer(imvec2, nprior, mask, flux, im.xdim, im.ydim, im.psize, rtype, **kwargs)
