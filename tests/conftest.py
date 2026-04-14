@@ -50,9 +50,21 @@ def sgra_im():
 
 
 @pytest.fixture(scope="session")
+def sgra_im_small(sgra_im):
+    """Regrid the SgrA model image to 32x32 for fast tests."""
+    return sgra_im.regrid_image(sgra_im.fovx(), 32)
+
+
+@pytest.fixture(scope="session")
 def m87_im():
     """Load the jason_mad M87 model image."""
     return eh.image.load_txt(os.path.join(MODEL_DIR, "jason_mad_eofn.txt"))
+
+
+@pytest.fixture(scope="session")
+def m87_im_small(m87_im):
+    """Regrid the M87 model image to 32x32 for fast tests."""
+    return m87_im.regrid_image(m87_im.fovx(), 32)
 
 
 @pytest.fixture(scope="session")
@@ -97,15 +109,3 @@ def obs_noisy(gauss_im, eht_array):
 def gauss_prior(gauss_im):
     """A blurred copy of the Gaussian image suitable for use as a prior."""
     return gauss_im.blur_circ(30 * eh.RADPERUAS)
-
-
-@pytest.fixture(scope="session")
-def sgra_im_small(sgra_im):
-    """Regrid the SgrA model image to 32x32 for fast tests."""
-    return sgra_im.regrid_image(sgra_im.fovx(), 32)
-
-
-@pytest.fixture(scope="session")
-def m87_im_small(m87_im):
-    """Regrid the M87 model image to 32x32 for fast tests."""
-    return m87_im.regrid_image(m87_im.fovx(), 32)
