@@ -31,7 +31,26 @@ CHISQ_FRAC_TOL = 0.01
 GRAD_MEDIAN_TOL = 0.05
 GRAD_MAX_TOL = 0.25
 
+# ---------------------------------------------------------------------------
+# chisqdata optional parameters (explicit for tracking across refactors)
+# ---------------------------------------------------------------------------
+
+# Common to all ttypes and dtypes
+SYSTEMATIC_NOISE = 0.0
+SNRCUT = 0.0
+DEBIAS = True
+WEIGHTING = "natural"
+
+# Closure-specific
+MAXSET = False
+CP_UV_MIN = False
+SYSTEMATIC_CPHASE_NOISE = 0.0
+
+# FFT/NFFT-specific
 FFT_PAD_FACTOR = 10
+P_RAD = 12
+CONV_FUNC = "gaussian"
+FFT_INTERP_ORDER = 3
 
 
 @pytest.fixture(scope="module")
@@ -72,9 +91,21 @@ def chisq_setup(sgra_im_small, eht_array):
 
 def _chisq_kwargs(ttype):
     """Return extra kwargs for chisqdata based on ttype."""
-    if ttype == "fast":
-        return {"fft_pad_factor": FFT_PAD_FACTOR}
-    return {}
+    kwargs = {
+        "systematic_noise": SYSTEMATIC_NOISE,
+        "snrcut": SNRCUT,
+        "debias": DEBIAS,
+        "weighting": WEIGHTING,
+        "maxset": MAXSET,
+        "cp_uv_min": CP_UV_MIN,
+        "systematic_cphase_noise": SYSTEMATIC_CPHASE_NOISE,
+    }
+    if ttype in ("fast", "nfft"):
+        kwargs["fft_pad_factor"] = FFT_PAD_FACTOR
+        kwargs["p_rad"] = P_RAD
+        kwargs["conv_func"] = CONV_FUNC
+        kwargs["order"] = FFT_INTERP_ORDER
+    return kwargs
 
 
 class TestChisqConsistency:
