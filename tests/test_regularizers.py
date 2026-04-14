@@ -14,10 +14,8 @@ import ehtim.imaging.imager_utils as iu
 MEDIAN_FRAC_TOL = 0.05
 MAX_FRAC_TOL = 0.6
 
-# rgauss requires major/minor/PA kwargs specific to the target source shape.
-# With default params (major=minor=1 radian), any image matches trivially
-# and the gradient is ~1e-20 (machine noise), making comparison meaningless.
-SKIP_GRAD_RTYPES = {"rgauss"}
+# No regularizers skipped from gradient checks
+SKIP_GRAD_RTYPES = set()
 
 # Number of pixels to subsample for numeric gradient (seeded for reproducibility)
 N_GRAD_SAMPLES = 100
@@ -44,10 +42,14 @@ class TestRegularizerValues:
     @pytest.mark.parametrize("norm_reg", [True, False], ids=["normalized", "unnormalized"])
     def test_returns_finite(self, reg_setup, rtype, norm_reg):
         im, imvec, nprior, mask, flux = reg_setup
+        kwargs = dict(beam_size=20.0 * eh.RADPERUAS, alpha_A=5000.0, norm_reg=norm_reg)
+        if rtype == "rgauss":
+            kwargs["major"] = 50.0 * eh.RADPERUAS
+            kwargs["minor"] = 60.0 * eh.RADPERUAS
+            kwargs["PA"] = np.pi / 3
         val = iu.regularizer(
             imvec, nprior, mask, flux,
-            im.xdim, im.ydim, im.psize, rtype,
-            beam_size=20.0 * eh.RADPERUAS, alpha_A=5000.0, norm_reg=norm_reg,
+            im.xdim, im.ydim, im.psize, rtype, **kwargs,
         )
         assert np.isfinite(val), f"{rtype} (norm_reg={norm_reg}) returned {val}"
 
@@ -76,6 +78,10 @@ def _gradient_check(reg_setup, rtype):
     kwargs = dict(
         beam_size=20.0 * eh.RADPERUAS, alpha_A=5000.0, norm_reg=True,
     )
+    if rtype == "rgauss":
+        kwargs["major"] = 50.0 * eh.RADPERUAS
+        kwargs["minor"] = 60.0 * eh.RADPERUAS
+        kwargs["PA"] = np.pi / 3
 
     y0 = iu.regularizer(imvec, nprior, mask, flux, im.xdim, im.ydim, im.psize, rtype, **kwargs)
     grad_exact = iu.regularizergrad(imvec, nprior, mask, flux, im.xdim, im.ydim, im.psize, rtype, **kwargs)
