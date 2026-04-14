@@ -1,12 +1,8 @@
 """Tests for ehtim diagnostics module."""
 
-import matplotlib
+import numpy as np
 
-matplotlib.use("Agg")
-
-import numpy as np  # noqa: E402
-
-import ehtim.diagnostics as ds  # noqa: E402
+import ehtim.diagnostics as ds
 
 
 def gauss(x0, sx):
