@@ -13,10 +13,10 @@ jobs:
         with:
           fetch-depth: 0
       - run: git fetch origin ${{ github.base_ref }}
-      - uses: actions/setup-python@v5
+      - uses: astral-sh/ruff-action@v3
         with:
-          python-version: "3.12"
-      - run: pip install ruff
+          version: "0.15"
+          args: "--version"
       - name: Ruff check (changed files only)
         run: |
           FILES=$(git diff --name-only --diff-filter=ACMR origin/${{ github.base_ref }}...HEAD -- '*.py' || true)
@@ -28,7 +28,7 @@ jobs:
 
   test:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 30
     strategy:
       matrix:
         python-version: ["3.10", "3.12"]
@@ -39,7 +39,7 @@ jobs:
           python-version: ${{ matrix.python-version }}
           cache: 'pip'
       - run: pip install -e ".[dev]"
-      - run: pytest tests/test_imager_history.py --cov --cov-branch --cov-report=xml
+      - run: pytest --cov --cov-branch --cov-report=xml
       - uses: codecov/codecov-action@v4
         if: matrix.python-version == '3.12'
         with:
