@@ -341,3 +341,56 @@ def make_initarr(image, mask, norm_init=False, flux=1,
             initarr = np.array((init_I, init_a, init_b))
 
     return initarr
+
+
+def compute_embed(imvec, xdim, ydim, psize, clipfloor):
+    """Compute embedding mask and coordinate matrix from a prior image vector.
+
+    Parameters
+    ----------
+    imvec : np.ndarray
+        Prior image vector (full, not embedded).
+    xdim : int
+        Image x dimension.
+    ydim : int
+        Image y dimension.
+    psize : float
+        Pixel size in radians.
+    clipfloor : float
+        Minimum pixel value; pixels below this are masked out.
+
+    Returns
+    -------
+    embed_mask : np.ndarray of bool
+        Boolean mask, True for pixels above clipfloor.
+    coord_matrix : np.ndarray, shape (n_embed, 2)
+        Pixel coordinates (in radians) for unmasked pixels.
+    """
+
+    embed_mask = (imvec > clipfloor)
+    if not np.any(embed_mask):
+        raise Exception("clipfloor too large: all prior pixels have been clipped!")
+
+    xmax = xdim // 2
+    ymax = ydim // 2
+
+    if xdim % 2:
+        xmin = -xmax - 1
+    else:
+        xmin = -xmax
+
+    if ydim % 2:
+        ymin = -ymax - 1
+    else:
+        ymin = -ymax
+
+    coord = np.array([[[x, y]
+                        for x in np.arange(xmax, xmin, -1)]
+                        for y in np.arange(ymax, ymin, -1)])
+
+    coord = coord.reshape(ydim * xdim, 2)
+    coord = coord * psize
+
+    coord_matrix = coord[embed_mask]
+
+    return embed_mask, coord_matrix

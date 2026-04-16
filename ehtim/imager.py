@@ -41,6 +41,7 @@ from ehtim.imaging.imager_backend import (
     embed_imarr, pack_imarr, unpack_imarr,
     transform_imarr, transform_imarr_inverse,
     transform_gradients, make_initarr,
+    compute_embed,
 )
 import ehtim.image
 import ehtim.const_def as ehc
@@ -1058,31 +1059,12 @@ class Imager(object):
         return
 
     def set_embed(self):
-        """Set embedding matrix.
-        """
-        self._embed_mask = (self.prior_next.imvec > self.clipfloor_next)
-        if not np.any(self._embed_mask):
-            raise Exception("clipfloor_next too large: all prior pixels have been clipped!")
-
-        xmax = self.prior_next.xdim//2
-        ymax = self.prior_next.ydim//2
-        
-        if self.prior_next.xdim % 2: xmin=-xmax-1
-        else: xmin=-xmax
-        
-        if self.prior_next.ydim % 2: ymin=-ymax-1
-        else: ymin=-ymax
-        
-        coord = np.array([[[x, y]
-                           for x in np.arange(xmax, xmin, -1)]
-                           for y in np.arange(ymax, ymin, -1)])
-
-        coord = coord.reshape(self.prior_next.ydim * self.prior_next.xdim, 2)
-        coord = coord * self.prior_next.psize
-
-        self._coord_matrix = coord[self._embed_mask]
-
-        return
+        """Set embedding matrix."""
+        self._embed_mask, self._coord_matrix = compute_embed(
+            self.prior_next.imvec, self.prior_next.xdim,
+            self.prior_next.ydim, self.prior_next.psize,
+            self.clipfloor_next,
+        )
 
 
     def make_chisq_dict(self, imcur):
