@@ -458,7 +458,7 @@ class Imager:
         """
 
         print("==============================")
-        print("Imager run %i " % (int(self.nruns)+1))
+        print(f"Imager run {int(self.nruns)+1} ")
 
         # multifrequency parameters
         self.mf_next = mf
@@ -534,16 +534,18 @@ class Imager:
                 if len(self.obslist_next)==1:
                     dname_key = dname
                 else:
-                    dname_key = dname + ('_%i' % i)
+                    dname_key = dname + (f'_{i}')
                 outstr += f"chi2_{dname_key} : {chi2_term_dict[dname_key]:0.2f} "
 
         try:
-            print("time: %f s" % (tstop - tstart))
+            print(f"time: {tstop - tstart:f} s")
             print(f"J: {res.fun:f}")
             print(outstr)
-            if isinstance(res.message,str): print(res.message)
-            else: print(res.message.decode())
-        except: # TODO -- issues for some users with res.message
+            if isinstance(res.message, str):
+                print(res.message)
+            else:
+                print(res.message.decode())
+        except Exception:  # TODO -- issues for some users with res.message
             pass
 
         print("==============================")
@@ -826,12 +828,15 @@ class Imager:
 
             # determine self._which_solve
             # TODO is there a nicer way to do this?
-            if self.mf_order==2:
-                do_a = 1; do_b = 1
-            elif self.mf_order==1:
-                do_a = 1; do_b = 0
+            if self.mf_order == 2:
+                do_a = 1
+                do_b = 1
+            elif self.mf_order == 1:
+                do_a = 1
+                do_b = 0
             elif self.mf_order == 0:
-                do_a = 0; do_b = 0
+                do_a = 0
+                do_b = 0
             else:
                 raise Exception("Imager.mf_order must be 0, 1, or 2!")
 
@@ -841,11 +846,14 @@ class Imager:
                 # determine self._which_solve
                 # TODO is there a nicer way to do this?
                 if self.mf_order_pol == 2:
-                    do_ap=1; do_bp=1
+                    do_ap = 1
+                    do_bp = 1
                 elif self.mf_order_pol == 1:
-                    do_ap=1; do_bp=0
+                    do_ap = 1
+                    do_bp = 0
                 elif self.mf_order_pol == 0:
-                    do_ap=0; do_bp=0
+                    do_ap = 0
+                    do_bp = 0
                 else:
                     raise Exception("Imager.mf_order_pol must be 0, 1, or 2!")
 
@@ -865,7 +873,8 @@ class Imager:
                     do_i = 0
 
                 # TODO: No Stokes V imaging for multifrequency yet
-                do_rho = 1; do_phi=1
+                do_rho = 1
+                do_phi = 1
                 do_psi = 0
                 if not (('P' in self.pol_next) or ('QU' in self.pol_next)):
                     raise Exception("Multifrequency polarization imaging currently requires pol_next=P!")
@@ -937,9 +946,11 @@ class Imager:
                     do_i = 0
 
                 if ('P' in self.pol_next) or ('QU' in self.pol_next):
-                    do_rho = 1; do_phi=1
+                    do_rho = 1
+                    do_phi = 1
                 else:
-                    do_rho = 0; do_phi=0
+                    do_rho = 0
+                    do_phi = 0
 
                 if ('V' in self.pol_next):
                     do_psi = 1
@@ -1017,7 +1028,7 @@ class Imager:
                     if len(self.obslist_next)==1:
                         dname_key = dname
                     else:
-                        dname_key = dname + ('_%i' % i)
+                        dname_key = dname + (f'_{i}')
 
                     # Polarimetric data products
                     if dname in DATATERMS_POL:
@@ -1078,7 +1089,7 @@ class Imager:
                 if len(self.obslist_next)==1:
                     dname_key = dname
                 else:
-                    dname_key = dname + ('_%i' % i)
+                    dname_key = dname + (f'_{i}')
 
                 # get data products
                 (data, sigma, A) = self._data_tuples[dname_key]
@@ -1122,7 +1133,7 @@ class Imager:
                 if len(self.obslist_next)==1:
                     dname_key = dname
                 else:
-                    dname_key = dname + ('_%i' % i)
+                    dname_key = dname + (f'_{i}')
 
                 # get data products
                 (data, sigma, A) = self._data_tuples[dname_key]
@@ -1242,11 +1253,9 @@ class Imager:
                 elif regname in REGULARIZERS_SPECTRAL:
 
                     if regname in REGULARIZERS_SPECIND:
-                        if len(imcur)==10: idx = 4
-                        else: idx=1
+                        idx = 4 if len(imcur) == 10 else 1
                     elif regname in REGULARIZERS_CURV:
-                        if len(imcur)==10: idx = 5
-                        else: idx=2
+                        idx = 5 if len(imcur) == 10 else 2
                     elif regname in REGULARIZERS_SPECIND_P:
                         idx = 6
                     elif regname in REGULARIZERS_CURV_P:
@@ -1370,11 +1379,9 @@ class Imager:
 
                 elif regname in REGULARIZERS_SPECTRAL:
                     if regname in REGULARIZERS_SPECIND:
-                        if len(imcur)==10: idx = 4
-                        else: idx=1
+                        idx = 4 if len(imcur) == 10 else 1
                     elif regname in REGULARIZERS_CURV:
-                        if len(imcur)==10: idx = 5
-                        else: idx=2
+                        idx = 5 if len(imcur) == 10 else 2
                     elif regname in REGULARIZERS_SPECIND_P:
                         idx = 6
                     elif regname in REGULARIZERS_CURV_P:
@@ -1459,7 +1466,7 @@ class Imager:
                 if len(self.obslist_next)==1:
                     dname_key = dname
                 else:
-                    dname_key = dname + ('_%i' % i)
+                    dname_key = dname + (f'_{i}')
 
                 chi2 = chi2_term_dict[dname_key]
 
@@ -1504,7 +1511,7 @@ class Imager:
                 if len(self.obslist_next)==1:
                     dname_key = dname
                 else:
-                    dname_key = dname + ('_%i' % i)
+                    dname_key = dname + (f'_{i}')
 
                 chi2_grad = chi2_term_dict[dname_key]
 
@@ -1552,13 +1559,13 @@ class Imager:
 
                 # Format print string
                 outstr = "------------------------------------------------------------------"
-                outstr += "\n%4d | " % self._nit
+                outstr += f"\n{self._nit:4d} | "
                 for dname in sorted(self.dat_term_next.keys()):
                     for i, obs in enumerate(self.obslist_next):
                         if len(self.obslist_next)==1:
                             dname_key = dname
                         else:
-                            dname_key = dname + ('_%i' % i)
+                            dname_key = dname + (f'_{i}')
                         outstr += f"chi2_{dname_key} : {chi2_term_dict[dname_key]:0.2f} "
                 outstr += "\n        "
                 for dname in sorted(self.dat_term_next.keys()):
@@ -1566,7 +1573,7 @@ class Imager:
                         if len(self.obslist_next)==1:
                             dname_key = dname
                         else:
-                            dname_key = dname + ('_%i' % i)
+                            dname_key = dname + (f'_{i}')
                         dval = chi2_term_dict[dname_key]*self.dat_term_next[dname]
                         outstr += f"{dname_key} : {dval:0.1f} "
 
