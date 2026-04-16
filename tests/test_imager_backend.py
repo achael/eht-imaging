@@ -51,7 +51,8 @@ class TestComputeEmbed:
             eht_array, 5, 600, 0, 24, 4e9,
             ampcal=True, phasecal=True, ttype="direct", add_th_noise=False,
         )
-        imgr = eh.imager.Imager(obs, gauss_im, gauss_im, gauss_im.total_flux())
+        imgr = eh.imager.Imager(obs, gauss_im, gauss_im, gauss_im.total_flux(),
+                                ttype="direct")
 
         # Call the Imager method
         imgr.set_embed()
