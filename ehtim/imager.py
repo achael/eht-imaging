@@ -17,34 +17,33 @@
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 # TODO FIX INDEXING MESS FOR MULTIFREQUENCY POLARIZATION
-# TODO for polarization imaging give better control than just initializing at 20% 
+# TODO for polarization imaging give better control than just initializing at 20%
 #       better initialization for all terms!! in init_imager
 
-from __future__ import division
-from __future__ import print_function
-
-from builtins import str
-from builtins import range
-from builtins import object
 
 import copy
 import time
 from dataclasses import dataclass
 from typing import Any
+
 import numpy as np
 import scipy.optimize as opt
 
-import ehtim.imaging.imager_utils as imutils
-import ehtim.imaging.pol_imager_utils as polutils
-import ehtim.imaging.multifreq_imager_utils as mfutils
-from ehtim.imaging.imager_backend import (
-    embed_imarr, pack_imarr, unpack_imarr,
-    transform_imarr, transform_imarr_inverse,
-    transform_gradients, make_initarr,
-    compute_embed,
-)
-import ehtim.image
 import ehtim.const_def as ehc
+import ehtim.image
+import ehtim.imaging.imager_utils as imutils
+import ehtim.imaging.multifreq_imager_utils as mfutils
+import ehtim.imaging.pol_imager_utils as polutils
+from ehtim.imaging.imager_backend import (
+    compute_embed,
+    embed_imarr,
+    make_initarr,
+    pack_imarr,
+    transform_gradients,
+    transform_imarr,
+    transform_imarr_inverse,
+    unpack_imarr,
+)
 
 MAXIT = 200  # number of iterations
 NHIST = 50   # number of steps to store for hessian approx
@@ -68,7 +67,7 @@ REGULARIZERS_SPECIND_P = ['l2_alphap', 'tv_alphap']
 REGULARIZERS_CURV_P = ['l2_betap', 'tv_betap']
 REGULARIZERS_RM = ['l2_rm', 'tv_rm']
 REGULARIZERS_CM = ['l2_cm', 'tv_cm']
-REGULARIZERS_ISPECTRAL = REGULARIZERS_SPECIND + REGULARIZERS_CURV 
+REGULARIZERS_ISPECTRAL = REGULARIZERS_SPECIND + REGULARIZERS_CURV
 REGULARIZERS_POLSPECTRAL = REGULARIZERS_SPECIND_P + REGULARIZERS_CURV_P + REGULARIZERS_RM + REGULARIZERS_CM
 REGULARIZERS_SPECTRAL = REGULARIZERS_ISPECTRAL + REGULARIZERS_POLSPECTRAL
 
@@ -127,7 +126,7 @@ class ImagerRunState:
 ###################################################################################################
 
 
-class Imager(object):
+class Imager:
     """A general interferometric imager.
     """
 
@@ -136,11 +135,11 @@ class Imager(object):
 
         self.logstr = ""
         self._history: list[ImagerRunState] = []
-                
+
         # iterations / convergence
         self.maxit_next = kwargs.get('maxit', MAXIT)
         self.stop_next = kwargs.get('stop', STOP)
-        
+
         # Regularizer/data terms for the next imaging iteration
         self.reg_term_next = reg_term   # e.g. [('simple',1), ('l1',10), ('flux',500), ('cm',500)]
         self.dat_term_next = data_term  # e.g. [('amp', 1000), ('cphase',100)]
@@ -171,12 +170,12 @@ class Imager(object):
         # used in polarimetric regularizer normalization
         self.pflux_next = kwargs.get('pflux', flux)
         self.vflux_next = kwargs.get('vflux', flux)
-                
+
         # Polarization and image transforms
         self.pol_next = kwargs.get('pol', self.init_next.pol_prim)
         self.transform_next = kwargs.get('transform', ['log','mcv'])
         self.transform_next = np.array([self.transform_next]).flatten() #so we can handle multiple transforms
-        
+
         # Weighting/debiasing/snr cut/systematic noise
         self.debias_next = kwargs.get('debias', True)
         snrcut = kwargs.get('snrcut', 0.)
@@ -192,7 +191,7 @@ class Imager(object):
         self.systematic_noise_next = kwargs.get('systematic_noise', 0.)
         self.systematic_cphase_noise_next = kwargs.get('systematic_cphase_noise', 0.)
         self.weighting_next = kwargs.get('weighting', 'natural')
-        
+
         # Maximal/minimal closure set
         self.maxset_next = kwargs.get('maxset', False)
         self.cp_uv_min = kwargs.get('cp_uv_min', False)  # UV minimum for closure phase
@@ -213,7 +212,7 @@ class Imager(object):
         self._fft_conv_func = kwargs.get('fft_conv_func', GRIDDER_CONV_FUNC_DEFAULT)
         self._fft_pad_factor = kwargs.get('fft_pad_factor', FFT_PAD_DEFAULT)
         self._fft_interp_order = kwargs.get('fft_interp_order', FFT_INTERP_DEFAULT)
-        
+
         # multifrequency
         self.mf_next = kwargs.get('mf',False)
 
@@ -221,22 +220,22 @@ class Imager(object):
         self.mf_order_pol = kwargs.get('mf_order_pol',0)
         self.mf_rm = kwargs.get('mf_rm',0)
         self.mf_cm = kwargs.get('mf_cm',0)
-        self.mf_flux = kwargs.get('mf_flux',[self.flux_next]) # TODO: merge these 
-        
+        self.mf_flux = kwargs.get('mf_flux',[self.flux_next]) # TODO: merge these
+
         if kwargs.get('mf_which_solve') is not None:
             raise Exception("'mf_which_solve' argument for multifrequency imaging is deprecated -- use 'mf_order' instead!")
         if kwargs.get('reg_all_freq_mf') is not None:
             raise Exception("'reg_all_freq_mf' argument for multifrequency imaging is deprecated")
-            
+
         # Imager history
         self._change_imgr_params = True
         self.nruns = 0
-                
+
         # Set embedding matrices and prepare imager
         self.check_params()
         self.check_limits()
         self.init_imager()
-        
+
 
     @property
     def obslist_next(self):
@@ -389,7 +388,7 @@ class Imager(object):
             self.init_next = init
             self.make_image(pol=pol, grads=grads, **kwargs)
 
-        
+
     def make_image_I(self, grads=True, niter=1, blur_frac=1, **kwargs):
         """Make Stokes I image using current imager settings.
         """
@@ -436,23 +435,23 @@ class Imager(object):
         self.converge(niter, blur_frac, pol, grads, **kwargs)
 
         return self.out_last()
-                
+
     def make_image(self, pol=None, grads=True, mf=False, **kwargs):
         """Make an image using current imager settings.
 
            Args:
                pol (str): which polarization to image
                grads (bool): whether or not to use image gradients
-               
-               show_updates (bool): whether or not to show imager progress 
-               update_interval (int): step interval for plotting if show_updates=True 
-               
+
+               show_updates (bool): whether or not to show imager progress
+               update_interval (int): step interval for plotting if show_updates=True
+
                mf (bool): whether or not to do multifrequency (spectral index only for now)
                mf_order (int): order for multifrequency spectral index imaging
                mf_order_pol (int): order for multifrequency polarization fraction imaging
                mf_rm (int): order for rotation measure imaging
                mf_cm (int): order for conversion measure imaging
-               
+
            Returns:
                (Image): output image
 
@@ -460,7 +459,7 @@ class Imager(object):
 
         print("==============================")
         print("Imager run %i " % (int(self.nruns)+1))
-        
+
         # multifrequency parameters
         self.mf_next = mf
         self.mf_order = kwargs.get('mf_order', self.mf_order)
@@ -471,7 +470,7 @@ class Imager(object):
             raise Exception("'mf_which_solve' argument for multifrequency imaging is deprecated -- use 'mf_order' instead!")
         if kwargs.get('reg_all_freq_mf') is not None:
             raise Exception("'reg_all_freq_mf' argument for multifrequency imaging is deprecated")
-                   
+
         # polarization parameters
         if pol is None:
             pol_prim = self.pol_next
@@ -520,7 +519,7 @@ class Imager(object):
         # Format output
         out = res.x[:]
         self.tmpout = res.x
-         
+
         # unpack output vector into outarr
         outarr = unpack_imarr(out, self._xarr, self._which_solve)
 
@@ -536,11 +535,11 @@ class Imager(object):
                     dname_key = dname
                 else:
                     dname_key = dname + ('_%i' % i)
-                outstr += "chi2_%s : %0.2f " % (dname_key, chi2_term_dict[dname_key])
+                outstr += f"chi2_{dname_key} : {chi2_term_dict[dname_key]:0.2f} "
 
         try:
             print("time: %f s" % (tstop - tstart))
-            print("J: %f" % res.fun)
+            print(f"J: {res.fun:f}")
             print(outstr)
             if isinstance(res.message,str): print(res.message)
             else: print(res.message.decode())
@@ -551,9 +550,9 @@ class Imager(object):
 
         # Format final image object
         outim = self.format_outim(outarr, pol_prim=pol_prim)
-        
+
         # Append to history
-        logstr = str(self.nruns) + ": make_image(pol=%s)" % pol
+        logstr = str(self.nruns) + f": make_image(pol={pol})"
         self._append_image_history(outim, logstr)
         self.nruns += 1
 
@@ -569,18 +568,18 @@ class Imager(object):
             (self.prior_next.ydim != self.init_next.ydim)):
             raise Exception("Initial image does not match dimensions of the prior image!")
 
-        if ((self.prior_next.rf != self.init_next.rf)):
+        if (self.prior_next.rf != self.init_next.rf):
             raise Exception("Initial image does not have same frequency as prior image!")
 
         if (self.prior_next.polrep != self.init_next.polrep):
             raise Exception(
                 "Initial image polrep does not match prior polrep!")
 
-        if (self.prior_next.polrep == 'circ' and not(self.pol_next in ['RR', 'LL'])):
+        if (self.prior_next.polrep == 'circ' and self.pol_next not in ['RR', 'LL']):
             raise Exception("Initial image polrep is 'circ': pol_next must be 'RR' or 'LL'")
 
-        if (self.prior_next.polrep == 'stokes' 
-            and not(self.pol_next in ['I', 'Q', 'U', 'V', 'P','IP','IQU','IV','IQUV'])):
+        if (self.prior_next.polrep == 'stokes'
+            and self.pol_next not in ['I', 'Q', 'U', 'V', 'P','IP','IQU','IV','IQUV']):
             raise Exception(
                 "Initial image polrep is 'stokes': pol_next must be in 'I', 'Q', 'U', 'V', 'P','IP','IQU','IV','IQUV'!")
 
@@ -594,46 +593,46 @@ class Imager(object):
 
         if self._ttype not in ['fast', 'direct', 'nfft']:
             raise Exception("Possible ttype values are 'fast', 'direct','nfft'!")
-            
+
         # Catch errors in multifrequency imaging setup
         if self.mf_next:
             if len(set(self.freq_list)) < 2:
                 raise Exception("Must have observations at at least two frequencies for multifrequency imaging!")
             if self.mf_order not in [0,1,2]:
                 raise Exception("mf_order must be in [0,1,2]!")
-                
+
             if (self.pol_next in POLARIZATION_MODES):
-                if not (self.pol_next in ['P','QU']):
+                if self.pol_next not in ['P','QU']:
                     raise Exception("Currently we only support pol_next=P for polarization multifrequency imaging!")
                 if self.mf_order_pol not in [0,1,2]:
                     raise Exception("mf_order_pol must be in [0,1,2]!")
-                                      
+
         # Catch errors for polarimetric imaging setup
         if self.pol_next in POLARIZATION_MODES:
             if (self.pol_next in ['P', 'QU','IP','IQU']):
                 if 'mcv' not in self.transform_next:
-                    raise Exception("%s imaging requires 'mcv' transform!"%self.pol_next)
+                    raise Exception(f"{self.pol_next} imaging requires 'mcv' transform!")
                 if 'vcv' in self.transform_next:
-                    raise Exception("Cannot do %s imaging with 'vcv' transform!"%self.pol_next)
+                    raise Exception(f"Cannot do {self.pol_next} imaging with 'vcv' transform!")
                 if 'polcv' in self.transform_next:
-                    raise Exception("Cannot do %s imaging only with 'polcv' transform!"%self.pol_next)
-                                        
+                    raise Exception(f"Cannot do {self.pol_next} imaging only with 'polcv' transform!")
+
             if (self.pol_next in ['V','IV']):
                 if 'vcv' not in self.transform_next:
-                    raise Exception("%s imaging requires 'vcv' transform!"%self.pol_next)
+                    raise Exception(f"{self.pol_next} imaging requires 'vcv' transform!")
                 if 'mcv' in self.transform_next:
-                    raise Exception("Cannot do %s imaging only with 'mcv' transform!"%self.pol_next)
+                    raise Exception(f"Cannot do {self.pol_next} imaging only with 'mcv' transform!")
                 if 'polcv' in self.transform_next:
-                    raise Exception("Cannot do %s imaging only with 'polcv' transform!"%self.pol_next)                  
-                    
+                    raise Exception(f"Cannot do {self.pol_next} imaging only with 'polcv' transform!")
+
             if self.pol_next in ['IPV','IQUV']:
                 if 'polcv' not in self.transform_next:
-                    raise Exception("Linear+Circular polarization imaging requires 'polcv' transform!")  
-                                                     
+                    raise Exception("Linear+Circular polarization imaging requires 'polcv' transform!")
+
             if (self._ttype not in ["direct", "nfft"]):
                 raise Exception("FFT not yet implemented in polarimetric imaging -- use NFFT!")
 
-        # catch errors in general imaging setup               
+        # catch errors in general imaging setup
         if self.mf_next:
             if self.pol_next in POLARIZATION_MODES:
                 if 'I' in self.pol_next:
@@ -644,8 +643,8 @@ class Imager(object):
                     dlist = DATATERMS_POL
             else:
                 rlist = REGULARIZERS + REGULARIZERS_ISPECTRAL
-                dlist = DATATERMS        
-        else:     
+                dlist = DATATERMS
+        else:
             if self.pol_next in POLARIZATION_MODES:
                 if 'I' in self.pol_next:
                     rlist = REGULARIZERS + REGULARIZERS_POL
@@ -656,7 +655,7 @@ class Imager(object):
             else:
                 rlist = REGULARIZERS
                 dlist = DATATERMS
- 
+
 
         dt_here = False
         dt_type = True
@@ -683,7 +682,7 @@ class Imager(object):
         if not st_type:
             raise Exception("Invalid regularizer: valid regularizers are: " + ','.join(rlist))
 
-                    
+
         # Determine if we need to recompute the saved imager parameters on the next imager run
         if self.nruns == 0:
             return
@@ -710,13 +709,13 @@ class Imager(object):
 
         for term in sorted(self.dat_term_next.keys()):
             if term not in self.dat_terms_last().keys():
-                print("added %s to data terms" % term)
+                print(f"added {term} to data terms")
                 self._change_imgr_params = True
                 return
 
         for term in sorted(self.reg_term_next.keys()):
             if term not in self.reg_terms_last().keys():
-                print("added %s to regularizers!" % term)
+                print(f"added {term} to regularizers!")
                 self._change_imgr_params = True
                 return
 
@@ -726,7 +725,7 @@ class Imager(object):
             print("changed prior dimensions!")
             self._change_imgr_params = True
             return
-            
+
         if self.debias_next != self.debias_last():
             print("changed debiasing!")
             self._change_imgr_params = True
@@ -770,14 +769,14 @@ class Imager(object):
         if self.mf_rm != self.mf_rm_last():
             print("changed pol. rm imaging order!")
             self._change_imgr_params = True
-            return                                                           
+            return
         if self.mf_cm != self.mf_cm_last():
             print("changed pol. cm imaging order!")
             self._change_imgr_params = True
-            return                                                           
-                                                                                                                                  
+            return
+
         return
-        
+
     def check_limits(self):
         """Check image parameter consistency with observation.
         """
@@ -795,17 +794,17 @@ class Imager(object):
 
             if self.pol_next in ['I', 'RR', 'LL']:
                 maxamp = np.max(np.abs(obs.unpack('amp')['amp']))
-                
+
                 # TODO: better handling of mf fluxes
-                if len(self.mf_flux)==len(self.obslist_next): 
+                if len(self.mf_flux)==len(self.obslist_next):
                     flux = self.mf_flux[i]
                 else:
                     flux = self.flux_next
-                    
+
                 if flux > 1.2*maxamp:
-                    print("Warning! Specified flux %.1f is > 120%% of maximum visibility amplitude for freq %.1f GHz!"%(flux,obs.rf/1.e9))
+                    print(f"Warning! Specified flux {flux:.1f} is > 120% of maximum visibility amplitude for freq {obs.rf/1.e9:.1f} GHz!")
                 if flux < .8*maxamp:
-                    print("Warning! Specified flux %.1f is < 80%% of maximum visibility amplitude for freq %.1f GHz!"%(flux,obs.rf/1.e9))
+                    print(f"Warning! Specified flux {flux:.1f} is < 80% of maximum visibility amplitude for freq {obs.rf/1.e9:.1f} GHz!")
         return
 
 
@@ -815,46 +814,46 @@ class Imager(object):
         # Set embedding mask
         self.set_embed()
         self._nimage = np.sum(self._embed_mask)
-        
+
         # Set prior & initial image vectors for multifrequency imaging
         if self.mf_next:
 
             # set reference frequency to same as prior
-            self.reffreq = self.init_next.rf 
-            
+            self.reffreq = self.init_next.rf
+
             # reset logfreqratios in case the reference frequency changed
             self._logfreqratio_list = [np.log(nu/self.reffreq) for nu in self.freq_list]
 
             # determine self._which_solve
-            # TODO is there a nicer way to do this? 
+            # TODO is there a nicer way to do this?
             if self.mf_order==2:
-                do_a = 1; do_b = 1;
+                do_a = 1; do_b = 1
             elif self.mf_order==1:
-                do_a = 1; do_b = 0;
+                do_a = 1; do_b = 0
             elif self.mf_order == 0:
-                do_a = 0; do_b = 0;
+                do_a = 0; do_b = 0
             else:
                 raise Exception("Imager.mf_order must be 0, 1, or 2!")
-                           
+
             # polarization multi-frequency
             if self.pol_next in POLARIZATION_MODES:
 
                 # determine self._which_solve
-                # TODO is there a nicer way to do this?            
+                # TODO is there a nicer way to do this?
                 if self.mf_order_pol == 2:
-                    do_ap=1; do_bp=1     
-                elif self.mf_order_pol == 1:   
-                    do_ap=1; do_bp=0  
+                    do_ap=1; do_bp=1
+                elif self.mf_order_pol == 1:
+                    do_ap=1; do_bp=0
                 elif self.mf_order_pol == 0:
                     do_ap=0; do_bp=0
                 else:
                     raise Exception("Imager.mf_order_pol must be 0, 1, or 2!")
-                
+
                 if self.mf_rm:
                     do_rm = 1
                 else:
                     do_rm = 0
-                    
+
                 if self.mf_cm:
                     do_cm = 1
                 else:
@@ -864,57 +863,57 @@ class Imager(object):
                     do_i = 1
                 else:
                     do_i = 0
-                
+
                 # TODO: No Stokes V imaging for multifrequency yet
-                do_rho = 1; do_phi=1              
+                do_rho = 1; do_phi=1
                 do_psi = 0
                 if not (('P' in self.pol_next) or ('QU' in self.pol_next)):
                     raise Exception("Multifrequency polarization imaging currently requires pol_next=P!")
                 if ('V' in self.pol_next):
                     raise Exception("Stokes V not yet implemented in multifrequency polarization imaging!")
-                    
-                # set_which_solve vector                
+
+                # set_which_solve vector
                 self._which_solve = np.array([do_i,do_rho,do_phi,do_psi,
                                               do_a,do_b,do_ap,do_bp,
                                               do_rm,do_cm])
-        
+
                 # make initial and prior images
                 randompol_circ = randompol_lin=False
-                if 'V' in self.pol_next: 
+                if 'V' in self.pol_next:
                     randompol_circ=True
                 if ('P' in self.pol_next) or ('QU' in self.pol_next):
                     randompol_lin=True
-                    
-                initarr = make_initarr(self.init_next, self._embed_mask, 
-                                       norm_init=self.norm_init, flux=self.flux_next, 
-                                       mf=True, pol=True, 
-                                       randompol_lin=randompol_lin, randompol_circ=randompol_circ, 
+
+                initarr = make_initarr(self.init_next, self._embed_mask,
+                                       norm_init=self.norm_init, flux=self.flux_next,
+                                       mf=True, pol=True,
+                                       randompol_lin=randompol_lin, randompol_circ=randompol_circ,
                                        meanpol=MEANPOL_INIT, sigmapol=SIGMAPOL_INIT)
-                priorarr = make_initarr(self.prior_next, self._embed_mask, 
-                                        norm_init=self.norm_init, flux=self.flux_next, 
-                                        mf=True, pol=True, 
-                                        randompol_lin=False, randompol_circ=False)                    
+                priorarr = make_initarr(self.prior_next, self._embed_mask,
+                                        norm_init=self.norm_init, flux=self.flux_next,
+                                        mf=True, pol=True,
+                                        randompol_lin=False, randompol_circ=False)
                 # prior
                 self._xprior = priorarr
 
                 # transform the initial image to solved for values and assign to self._xarr
                 initarr = transform_imarr_inverse(initarr, self.transform_next, self._which_solve)
                 self._xarr = initarr
-                         
+
             # Stokes I multi-frequency
             else:
 
-                # set_which_solve vector                
+                # set_which_solve vector
                 self._which_solve = np.array([1,do_a,do_b])
-                                              
-                # make initial and prior images                    
-                initarr = make_initarr(self.init_next, self._embed_mask, 
-                                       norm_init=self.norm_init, flux=self.flux_next, 
+
+                # make initial and prior images
+                initarr = make_initarr(self.init_next, self._embed_mask,
+                                       norm_init=self.norm_init, flux=self.flux_next,
                                        mf=True, pol=False)
-                priorarr = make_initarr(self.prior_next, self._embed_mask, 
-                                       norm_init=self.norm_init, flux=self.flux_next, 
-                                       mf=True, pol=False) 
-            
+                priorarr = make_initarr(self.prior_next, self._embed_mask,
+                                       norm_init=self.norm_init, flux=self.flux_next,
+                                       mf=True, pol=False)
+
                 # prior
                 self._xprior = priorarr
 
@@ -922,10 +921,10 @@ class Imager(object):
                 # transform the initial image to solved for values and assign to self._xarr
                 initarr = transform_imarr_inverse(initarr, self.transform_next, self._which_solve)
                 self._xarr = initarr
-                    
+
             # Pack multi-frequency tuple into single vector
             self._xinit = pack_imarr(self._xarr, self._which_solve)
-                
+
         # Set prior & initial image vectors for single-frequency imaging
         else:
             # single-frequency polarimetric imaging
@@ -936,67 +935,67 @@ class Imager(object):
                     do_i = 1
                 else:
                     do_i = 0
-                    
+
                 if ('P' in self.pol_next) or ('QU' in self.pol_next):
                     do_rho = 1; do_phi=1
                 else:
                     do_rho = 0; do_phi=0
-                    
+
                 if ('V' in self.pol_next):
-                    do_psi = 1;
+                    do_psi = 1
                 else:
-                    do_psi = 0;    
-                
-                    
-                # set self._which_solve vector                
+                    do_psi = 0
+
+
+                # set self._which_solve vector
                 self._which_solve = np.array([do_i,do_rho,do_phi,do_psi])
-                
+
                 # make initial and prior images
                 randompol_circ = randompol_lin=False
-                if 'V' in self.pol_next: 
+                if 'V' in self.pol_next:
                     randompol_circ=True
                 if ('P' in self.pol_next) or ('QU' in self.pol_next):
                     randompol_lin=True
-                    
-                initarr = make_initarr(self.init_next, self._embed_mask, 
-                                       norm_init=self.norm_init, flux=self.flux_next, 
-                                       mf=False, pol=True, 
-                                       randompol_lin=randompol_lin, randompol_circ=randompol_circ, 
+
+                initarr = make_initarr(self.init_next, self._embed_mask,
+                                       norm_init=self.norm_init, flux=self.flux_next,
+                                       mf=False, pol=True,
+                                       randompol_lin=randompol_lin, randompol_circ=randompol_circ,
                                        meanpol=MEANPOL_INIT, sigmapol=SIGMAPOL_INIT)
-                priorarr = make_initarr(self.prior_next, self._embed_mask, 
-                                       norm_init=self.norm_init, flux=self.flux_next, 
-                                       mf=False, pol=True, 
-                                       randompol_lin=False, randompol_circ=False)                    
+                priorarr = make_initarr(self.prior_next, self._embed_mask,
+                                       norm_init=self.norm_init, flux=self.flux_next,
+                                       mf=False, pol=True,
+                                       randompol_lin=False, randompol_circ=False)
                 # prior
                 self._xprior = priorarr
 
                 # transform the initial image to solved for values and assign to self._xarr
                 initarr = transform_imarr_inverse(initarr, self.transform_next, self._which_solve)
                 self._xarr = initarr
-                                            
+
                 # Pack into single vector
                 self._xinit = pack_imarr(self._xarr, self._which_solve)
 
             # regular single-frequency single-stokes (or RR, LL) imaging
             else:
-                # set self._which_solve vector                
+                # set self._which_solve vector
                 self._which_solve = np.array([1])
 
-                # make initial and prior images                            
-                initarr = make_initarr(self.init_next, self._embed_mask, 
-                                       norm_init=self.norm_init, flux=self.flux_next, 
+                # make initial and prior images
+                initarr = make_initarr(self.init_next, self._embed_mask,
+                                       norm_init=self.norm_init, flux=self.flux_next,
                                        mf=False, pol=False)
-                priorarr = make_initarr(self.prior_next, self._embed_mask, 
-                                       norm_init=self.norm_init, flux=self.flux_next, 
-                                       mf=False, pol=False)                    
-                                       
+                priorarr = make_initarr(self.prior_next, self._embed_mask,
+                                       norm_init=self.norm_init, flux=self.flux_next,
+                                       mf=False, pol=False)
+
                 # Prior
                 self._xprior = priorarr
 
                 # transform the initial image to solved for values and assign to self._xarr
                 initarr = transform_imarr_inverse(initarr, self.transform_next, self._which_solve)
                 self._xarr = initarr
-                                            
+
                 # Pack into single vector
                 self._xinit = pack_imarr(self._xarr, self._which_solve)
 
@@ -1031,12 +1030,12 @@ class Imager(object):
                     # Single polarization data products
                     elif dname in DATATERMS:
                         if self.pol_next in POLARIZATION_MODES:
-                            if not 'I' in self.pol_next:
-                                raise Exception("cannot use dterm %s with pol=%s"%(dname,self.pol_next))
-                            pol_next = 'I'                            
+                            if 'I' not in self.pol_next:
+                                raise Exception(f"cannot use dterm {dname} with pol={self.pol_next}")
+                            pol_next = 'I'
                         else:
                             pol_next = self.pol_next
-                            
+
                         tup = imutils.chisqdata(obs, self.prior_next, self._embed_mask, dname,
                                                 pol=pol_next, maxset=self.maxset_next,
                                                 debias=self.debias_next,
@@ -1050,7 +1049,7 @@ class Imager(object):
                                                 p_rad=self._fft_gridder_prad,
                                                 cp_uv_min=self.cp_uv_min)
                     else:
-                        raise Exception("data term %s not recognized!" % dname)
+                        raise Exception(f"data term {dname} not recognized!")
 
                     self._data_tuples[dname_key] = tup
 
@@ -1090,23 +1089,23 @@ class Imager(object):
                     imcur_nu = mfutils.image_at_freq(imcur, logfreqratio)
                 else:
                     imcur_nu = imcur
-                         
+
                 # Polarization chi^2 terms
-                if dname in DATATERMS_POL: 
+                if dname in DATATERMS_POL:
                     chi2 = polutils.polchisq(imcur_nu, A, data, sigma, dname,
                                              ttype=self._ttype, mask=self._embed_mask)
 
                 # Single Polarization chi^2 terms
                 elif dname in DATATERMS:
-                    if self.pol_next in POLARIZATION_MODES: 
-                        imcur_nu_I = imcur_nu[0] 
+                    if self.pol_next in POLARIZATION_MODES:
+                        imcur_nu_I = imcur_nu[0]
                     else:
                         imcur_nu_I = imcur_nu
                     chi2 = imutils.chisq(imcur_nu, A, data, sigma, dname,
                                          ttype=self._ttype, mask=self._embed_mask)
 
                 else:
-                    raise Exception("data term %s not recognized!" % dname)
+                    raise Exception(f"data term {dname} not recognized!")
 
                 chi2_dict[dname_key] = chi2
 
@@ -1134,7 +1133,7 @@ class Imager(object):
                     imcur_nu = mfutils.image_at_freq(imcur, logfreqratio)
                 else:
                     imcur_nu = imcur
-                
+
                 # Polarimetric chi^2 gradients
                 if dname in DATATERMS_POL:
                     if self.mf_next:
@@ -1144,26 +1143,26 @@ class Imager(object):
                     chi2grad = polutils.polchisqgrad(imcur_nu, A, data, sigma, dname,
                                                      ttype=self._ttype, mask=self._embed_mask,
                                                      pol_solve=pol_solve)
-                                                     
+
                 # Single polarization chi^2 gradients
                 elif dname in DATATERMS:
                     if self.pol_next in POLARIZATION_MODES: # polarization
                         imcur_nu_I = imcur_nu[0]
                     else:
                         imcur_nu_I = imcur_nu
-                            
+
                     chi2grad = imutils.chisqgrad(imcur_nu_I, A, data, sigma, dname,
                                                  ttype=self._ttype, mask=self._embed_mask)
 
                     # If imaging Stokes I with polarization simultaneously, bundle the gradient
-                    if self.pol_next in POLARIZATION_MODES: 
+                    if self.pol_next in POLARIZATION_MODES:
                         chi2grad = np.array((chi2grad,
                                              np.zeros(self._nimage),
                                              np.zeros(self._nimage),
                                              np.zeros(self._nimage)))
 
                 else:
-                    raise Exception("data term %s not recognized!" % dname)
+                    raise Exception(f"data term {dname} not recognized!")
 
                 # If multifrequency imaging,
                 # transform the image gradients for all the solved quantities
@@ -1177,12 +1176,12 @@ class Imager(object):
 
     def make_reg_dict(self, imcur):
         """Make a dictionary of current regularizer values
-           input is image array transformed to bounded values 
+           input is image array transformed to bounded values
         """
         reg_dict = {}
-                           
+
         for regname in sorted(self.reg_term_next.keys()):
-        
+
             # Multifrequency regularizers
             if self.mf_next:
 
@@ -1190,31 +1189,31 @@ class Imager(object):
                 if regname in REGULARIZERS_POL:
                     # we only regularize the reference frequency image
                     imcur_pol = imcur[0:4]
-                    prior_pol = self._xprior[0:4] 
-                    reg = polutils.polregularizer(imcur_pol, prior_pol, self._embed_mask, 
+                    prior_pol = self._xprior[0:4]
+                    reg = polutils.polregularizer(imcur_pol, prior_pol, self._embed_mask,
                                                   self.flux_next, self.pflux_next, self.vflux_next,
-                                                  self.prior_next.xdim, self.prior_next.ydim, self.prior_next.psize, 
+                                                  self.prior_next.xdim, self.prior_next.ydim, self.prior_next.psize,
                                                   regname,
                                                   norm_reg=self.norm_reg, beam_size=self.beam_size,
-                                                  **self.regparams) 
+                                                  **self.regparams)
 
                 # Stokes I regularizers
-                elif regname in REGULARIZERS:         
+                elif regname in REGULARIZERS:
 
-                    # here we regularize images at each frequency                              
+                    # here we regularize images at each frequency
                     if regname in REGULARIZERS_ALLFREQS_I:
-                    
-                        # TODO move this to checks? 
+
+                        # TODO move this to checks?
                         if (not isinstance(self.mf_flux, list)) or len(self.mf_flux)!=len(self.obslist_next):
-                            raise Exception("when using regularizer '%s', "%regname 
+                            raise Exception(f"when using regularizer '{regname}', "
                                             +"self.mf_flux must be a list of same length as self.obslist_next!")
 
-                        regname_base = '_'.join(regname.split('_')[:-1]) # remove the '_mf' tag                                
+                        regname_base = '_'.join(regname.split('_')[:-1]) # remove the '_mf' tag
                         for i in range(len(self.obslist_next)): # sum up regularizer gradients at each frequency
-                            
+
                             logfreqratio = self._logfreqratio_list[i]
                             flux_nu = self.mf_flux[i]
-                            
+
                             imcur_nu = mfutils.image_at_freq(imcur, logfreqratio)
                             prior_nu = mfutils.image_at_freq(self._xprior, logfreqratio)
 
@@ -1224,12 +1223,12 @@ class Imager(object):
                                                       regname_base,
                                                       norm_reg=self.norm_reg, beam_size=self.beam_size,
                                                       **self.regparams)
-                                                  
-                            if i==0: 
+
+                            if i==0:
                                 reg = regi
-                            else: 
+                            else:
                                 reg += regi
-                                
+
                     # here we only regularize the reference frequency image
                     else:
                         reg = imutils.regularizer(imcur[0], self._xprior[0], self._embed_mask,
@@ -1238,7 +1237,7 @@ class Imager(object):
                                                   regname,
                                                   norm_reg=self.norm_reg, beam_size=self.beam_size,
                                                   **self.regparams)
-                
+
                 # Spectral regularizers
                 elif regname in REGULARIZERS_SPECTRAL:
 
@@ -1256,25 +1255,25 @@ class Imager(object):
                         idx = 8
                     elif regname in REGULARIZERS_CM:
                         idx = 9
-                                            
+
                     reg = mfutils.regularizer_mf(imcur[idx], self._xprior[idx], self._embed_mask,
                                                  self.prior_next.xdim, self.prior_next.ydim, self.prior_next.psize,
                                                  regname,
                                                  norm_reg=self.norm_reg, beam_size=self.beam_size,
                                                  **self.regparams)
                 else:
-                    raise Exception("regularizer term %s not recognized!" % regname)                            
+                    raise Exception(f"regularizer term {regname} not recognized!")
 
             # Single-frequency polarimetric regularizer
             elif regname in REGULARIZERS_POL:
-                reg = polutils.polregularizer(imcur, self._xprior, self._embed_mask, 
+                reg = polutils.polregularizer(imcur, self._xprior, self._embed_mask,
                                               self.flux_next, self.pflux_next, self.vflux_next,
-                                              self.prior_next.xdim, self.prior_next.ydim, self.prior_next.psize, 
+                                              self.prior_next.xdim, self.prior_next.ydim, self.prior_next.psize,
                                               regname,
                                               norm_reg=self.norm_reg, beam_size=self.beam_size,
-                                              **self.regparams) 
+                                              **self.regparams)
 
-            # Single-frequency, single-polarization regularizer                                              
+            # Single-frequency, single-polarization regularizer
             elif regname in REGULARIZERS:
                 if self.pol_next in POLARIZATION_MODES:
                     imcur0 = imcur[0]
@@ -1282,15 +1281,15 @@ class Imager(object):
                 else:
                     imcur0 = imcur
                     prior0 = self._xprior
-                    
+
                 reg = imutils.regularizer(imcur0, prior0, self._embed_mask,
-                                          self.flux_next, 
+                                          self.flux_next,
                                           self.prior_next.xdim, self.prior_next.ydim, self.prior_next.psize,
                                           regname,
                                           norm_reg=self.norm_reg, beam_size=self.beam_size,
                                           **self.regparams)
             else:
-                raise Exception("regularizer term %s not recognized!" % regname)
+                raise Exception(f"regularizer term {regname} not recognized!")
 
             # put regularizer terms in the dictionary
             reg_dict[regname] = reg
@@ -1299,50 +1298,50 @@ class Imager(object):
 
     def make_reggrad_dict(self, imcur):
         """Make a dictionary of current regularizer gradient values
-           input is image array transformed to bounded values         
+           input is image array transformed to bounded values
         """
-                
+
         reggrad_dict = {}
-                      
+
         for regname in sorted(self.reg_term_next.keys()):
-            
-            # Multifrequency regularizers 
+
+            # Multifrequency regularizers
             if self.mf_next:
-            
+
                 # Polarimetric regularizers
                 if regname in REGULARIZERS_POL:
                     # we only regularize reference frequency image
                     imcur_pol = imcur[0:4]
-                    prior_pol = self._xprior[0:4] 
+                    prior_pol = self._xprior[0:4]
                     pol_solve = self._which_solve[0:4]
-                    regp = polutils.polregularizergrad(imcur_pol, prior_pol, self._embed_mask, 
+                    regp = polutils.polregularizergrad(imcur_pol, prior_pol, self._embed_mask,
                                                       self.flux_next, self.pflux_next, self.vflux_next,
-                                                      self.prior_next.xdim, self.prior_next.ydim, self.prior_next.psize, 
+                                                      self.prior_next.xdim, self.prior_next.ydim, self.prior_next.psize,
                                                       regname,
                                                       norm_reg=self.norm_reg, beam_size=self.beam_size,
                                                       pol_solve=pol_solve,
-                                                      **self.regparams) 
+                                                      **self.regparams)
                     reggrad = np.zeros((len(imcur), self._nimage))
                     reggrad[0:4] = regp
-                    
+
                 # Stokes I regularizers
                 elif regname in REGULARIZERS:
- 
-                    # here we regularize images at each frequency             
+
+                    # here we regularize images at each frequency
                     if regname in REGULARIZERS_ALLFREQS_I:
 
-                        
-                        # TODO move this to checks? 
+
+                        # TODO move this to checks?
                         if (not isinstance(self.mf_flux, list)) or len(self.mf_flux)!=len(self.obslist_next):
-                            raise Exception("when using regularizer '%s', "%regname 
+                            raise Exception(f"when using regularizer '{regname}', "
                                             +"self.mf_flux must be a list of same length as self.obslist_next!")
 
-                        regname_base = '_'.join(regname.split('_')[:-1]) # remove the '_mf' tag                                
+                        regname_base = '_'.join(regname.split('_')[:-1]) # remove the '_mf' tag
                         for i in range(len(self.obslist_next)): # sum up regularizer gradients at each frequency
-                            
+
                             logfreqratio = self._logfreqratio_list[i]
                             flux_nu = self.mf_flux[i]
-                            
+
                             imcur_nu = mfutils.image_at_freq(imcur, logfreqratio)
                             prior_nu = mfutils.image_at_freq(self._xprior, logfreqratio)
 
@@ -1352,23 +1351,23 @@ class Imager(object):
                                                            regname_base,
                                                            norm_reg=self.norm_reg, beam_size=self.beam_size,
                                                            **self.regparams)
-                            reggrad_i = mfutils.mf_all_grads_chain(regi, imcur_nu, imcur, logfreqratio)                        
-                            if i==0: 
+                            reggrad_i = mfutils.mf_all_grads_chain(regi, imcur_nu, imcur, logfreqratio)
+                            if i==0:
                                 reggrad = reggrad_i
-                            else: 
+                            else:
                                 reggrad += reggrad_i
-                                
-                    # here we only regularize the reference frequency image                    
-                    else:         
-                        regi = imutils.regularizergrad(imcur[0], self._xprior[0], 
-                                                       self._embed_mask, self.flux_next, 
+
+                    # here we only regularize the reference frequency image
+                    else:
+                        regi = imutils.regularizergrad(imcur[0], self._xprior[0],
+                                                       self._embed_mask, self.flux_next,
                                                        self.prior_next.xdim, self.prior_next.ydim, self.prior_next.psize,
                                                        regname,
                                                        norm_reg=self.norm_reg, beam_size=self.beam_size,
                                                        **self.regparams)
                         reggrad = np.zeros((len(imcur), self._nimage))
-                        reggrad[0] = regi  
-                                                   
+                        reggrad[0] = regi
+
                 elif regname in REGULARIZERS_SPECTRAL:
                     if regname in REGULARIZERS_SPECIND:
                         if len(imcur)==10: idx = 4
@@ -1390,18 +1389,18 @@ class Imager(object):
                                                        regname,
                                                        norm_reg=self.norm_reg, beam_size=self.beam_size,
                                                        **self.regparams)
-                    
-                    reggrad = np.zeros((len(imcur), self._nimage))
-                    reggrad[idx] = regmf  
-                else:
-                    raise Exception("regularizer term %s not recognized!" % regname)                            
-            
 
-                    
-            else:        
+                    reggrad = np.zeros((len(imcur), self._nimage))
+                    reggrad[idx] = regmf
+                else:
+                    raise Exception(f"regularizer term {regname} not recognized!")
+
+
+
+            else:
                 # Single-frequency polarimetric regularizer
                 if regname in REGULARIZERS_POL:
-                    reggrad = polutils.polregularizergrad(imcur, self._xprior, self._embed_mask, 
+                    reggrad = polutils.polregularizergrad(imcur, self._xprior, self._embed_mask,
                                                       self.flux_next, self.pflux_next, self.vflux_next,
                                                       self.prior_next.xdim, self.prior_next.ydim,
                                                       self.prior_next.psize, regname,
@@ -1424,16 +1423,16 @@ class Imager(object):
                                                       regname,
                                                       norm_reg=self.norm_reg, beam_size=self.beam_size,
                                                       **self.regparams)
-                                                  
+
                     # If imaging Stokes I with polarization simultaneously, bundle the gradient
-                    if self.pol_next in POLARIZATION_MODES: 
+                    if self.pol_next in POLARIZATION_MODES:
                         reggrad = np.array((reggrad,
                                             np.zeros(self._nimage),
                                             np.zeros(self._nimage),
                                             np.zeros(self._nimage)))
 
                 else:
-                    raise Exception("regularizer term %s not recognized!" % regname)
+                    raise Exception(f"regularizer term {regname} not recognized!")
 
             # put regularizer terms in the dictionary
             reggrad_dict[regname] = reggrad
@@ -1443,13 +1442,13 @@ class Imager(object):
     def objfunc(self, imvec):
         """Current objective function.
         """
-        
+
         # Unpack polarimetric/multifrequency vector into an array
         imcur =  unpack_imarr(imvec, self._xarr, self._which_solve)
 
         # apply image transform to bounded values
         imcur = transform_imarr(imcur, self.transform_next, self._which_solve)
-        
+
         # Data terms
         datterm = 0.
         chi2_term_dict = self.make_chisq_dict(imcur)
@@ -1479,7 +1478,7 @@ class Imager(object):
 
         # Total cost
         cost = datterm + regterm
-        
+
         return cost
 
     def objgrad(self, imvec):
@@ -1492,7 +1491,7 @@ class Imager(object):
         # apply image transform to bounded values
         imcur_prime = imcur.copy()
         imcur = transform_imarr(imcur, self.transform_next, self._which_solve)
-        
+
         # Data terms
         datterm = 0.
         chi2_term_dict = self.make_chisqgrad_dict(imcur)
@@ -1528,10 +1527,10 @@ class Imager(object):
 
         # Chain rule term for change of variables
         grad = transform_gradients(grad, imcur_prime, self.transform_next, self._which_solve)
-        
+
         # repack gradient
         grad = pack_imarr(grad, self._which_solve)
-        
+
         return grad
 
     def plotcur(self, imvec, **kwargs):
@@ -1542,11 +1541,11 @@ class Imager(object):
             if self._nit % self._update_interval == 0:
                 # Unpack polarimetric/multifrequency vector into an array
                 imcur =  unpack_imarr(imvec, self._xarr, self._which_solve)
-                
+
                 # apply image transform to bounded values
                 imcur_prime = imcur.copy()
                 imcur = transform_imarr(imcur, self.transform_next, self._which_solve)
-        
+
                 # Get chi^2 and regularizer
                 chi2_term_dict = self.make_chisq_dict(imcur)
                 reg_term_dict = self.make_reg_dict(imcur)
@@ -1560,7 +1559,7 @@ class Imager(object):
                             dname_key = dname
                         else:
                             dname_key = dname + ('_%i' % i)
-                        outstr += "chi2_%s : %0.2f " % (dname_key, chi2_term_dict[dname_key])
+                        outstr += f"chi2_{dname_key} : {chi2_term_dict[dname_key]:0.2f} "
                 outstr += "\n        "
                 for dname in sorted(self.dat_term_next.keys()):
                     for i, obs in enumerate(self.obslist_next):
@@ -1569,21 +1568,21 @@ class Imager(object):
                         else:
                             dname_key = dname + ('_%i' % i)
                         dval = chi2_term_dict[dname_key]*self.dat_term_next[dname]
-                        outstr += "%s : %0.1f " % (dname_key, dval)
+                        outstr += f"{dname_key} : {dval:0.1f} "
 
                 outstr += "\n        "
                 for regname in sorted(self.reg_term_next.keys()):
-               
+
                     rval = reg_term_dict[regname]*self.reg_term_next[regname]
-                    outstr += "%s : %0.1f " % (regname, rval)
+                    outstr += f"{regname} : {rval:0.1f} "
 
                 # Embed and plot the image
-                if not self.mf_next: # TODO plot multi-frequency? 
-                    if np.any(np.invert(self._embed_mask)):                
-                        implot = embed_imarr(imcur, self._embed_mask) 
+                if not self.mf_next: # TODO plot multi-frequency?
+                    if np.any(np.invert(self._embed_mask)):
+                        implot = embed_imarr(imcur, self._embed_mask)
                     else:
                         implot = imcur
-                       
+
                     if self.pol_next in POLARIZATION_MODES:
                         polutils.plot_m(implot, self.prior_next, self._nit, chi2_term_dict, **kwargs)
 
@@ -1597,14 +1596,14 @@ class Imager(object):
 
         self._nit += 1
 
-                
-    def format_outim(self, outarr, pol_prim='I'): 
+
+    def format_outim(self, outarr, pol_prim='I'):
         """format the final image data into an Image object"""
 
         # embed the image into the full frame
         if np.any(np.invert(self._embed_mask)):
-            outarr = embed_imarr(outarr, self._embed_mask) 
-                           
+            outarr = embed_imarr(outarr, self._embed_mask)
+
         if self.mf_next:
             # multi-frequency polarization
             if self.pol_next in POLARIZATION_MODES:
@@ -1619,8 +1618,8 @@ class Imager(object):
 
                 qimage_out = polutils.make_q_image(polarr_out)
                 uimage_out = polutils.make_u_image(polarr_out)
-                vimage_out = polutils.make_v_image(polarr_out)  
-                
+                vimage_out = polutils.make_v_image(polarr_out)
+
             # multi-frequency Stokes I
             else:
                 iimage_out = outarr[0]
@@ -1631,13 +1630,13 @@ class Imager(object):
             if self.pol_next in POLARIZATION_MODES:
                 iimage_out = outarr[0]
                 polarr_out = (outarr[0], outarr[1], outarr[2], outarr[3])
-                
+
                 qimage_out = polutils.make_q_image(polarr_out)
                 uimage_out = polutils.make_u_image(polarr_out)
                 vimage_out = polutils.make_v_image(polarr_out)
-                
-            # single frequency Stokes I 
-            else: 
+
+            # single frequency Stokes I
+            else:
                 iimage_out = outarr
 
         # Create Image object
@@ -1672,14 +1671,14 @@ class Imager(object):
         if self.mf_next:
             outim._mflist[0] = specind_out
             outim._mflist[1] = curv_out
-            
+
             # polarization multi-frequency
-            if self.pol_next in POLARIZATION_MODES: 
+            if self.pol_next in POLARIZATION_MODES:
                 outim._mflist[2] = specind_out_pol
                 outim._mflist[3] = curv_out_pol
                 outim._mflist[4] = rm_out
                 outim._mflist[5] = cm_out
-                            
+
         # Return Image object
         return outim
 
@@ -1715,5 +1714,5 @@ class Imager(object):
             mf_rm=self.mf_rm,
             mf_cm=self.mf_cm,
         ))
-    
-    
+
+
