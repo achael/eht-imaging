@@ -47,10 +47,59 @@ TSTOP_HR = 24
 BW_HZ = 4e9
 
 
+def _make_rect_image(xdim, ydim, psize=None):
+    """Construct a Gaussian image with arbitrary (xdim, ydim) dimensions."""
+    if psize is None:
+        psize = 200 * eh.RADPERUAS / max(xdim, ydim)
+    image_arr = np.zeros((ydim, xdim))
+    for i in range(ydim):
+        for j in range(xdim):
+            x = (j - xdim / 2) * psize
+            y = (i - ydim / 2) * psize
+            sigma = 50 * eh.RADPERUAS
+            image_arr[i, j] = np.exp(-(x**2 + y**2) / (2 * sigma**2))
+    image_arr /= image_arr.sum()
+    return eh.image.Image(
+        image_arr, psize, 17.761, -29.0,
+        polrep="stokes", pol_prim="I", rf=230e9,
+    )
+
+
 @pytest.fixture(scope="module")
 def grad_setup(m87_im_small, eht_array):
     """Set up observation and test image for gradient verification."""
     im = m87_im_small
+
+    obs = im.observe(
+        eht_array, TINT_SEC, TADV_SEC, TSTART_HR, TSTOP_HR, BW_HZ,
+        sgrscat=False, ampcal=True, phasecal=True,
+        ttype="direct", add_th_noise=False,
+    )
+
+    prior = im.copy()
+    im2 = prior.copy()
+
+    rng = np.random.RandomState(42)
+    im2.imvec *= 1.0 + (rng.rand(len(im2.imvec)) - 0.5) / 10.0
+    im2.imvec += (1.0 + (rng.rand(len(im2.imvec)) - 0.5) / 10.0) * np.mean(im2.imvec)
+
+    mask = im2.imvec > 0.5 * np.median(im2.imvec)
+    test_imvec = im2.imvec[mask] if np.any(~mask) else im2.imvec
+
+    return {
+        "obs": obs,
+        "prior": prior,
+        "test_imvec": test_imvec,
+        "mask": mask,
+        "im": im,
+    }
+
+
+@pytest.fixture(scope="module")
+def grad_setup_rect(eht_array):
+    """Set up observation and test image from 32x48 rectangular Gaussian."""
+    im = _make_rect_image(32, 48)
+    im.imvec = im.imvec * 2.0 / im.total_flux()  # normalize to 2 Jy
 
     obs = im.observe(
         eht_array, TINT_SEC, TADV_SEC, TSTART_HR, TSTOP_HR, BW_HZ,
@@ -179,3 +228,50 @@ def _reg_gradient_check(grad_setup, rtype):
     compare_floor = np.min(np.abs(grad_sampled)) * 1e-20 + 1e-100
     frac_diff = np.abs((grad_numeric - grad_sampled) / (np.abs(grad_sampled) + compare_floor))
     return np.median(frac_diff), np.max(frac_diff)
+
+
+# ---------------------------------------------------------------------------
+# Rectangular image tests (xdim != ydim)
+# ---------------------------------------------------------------------------
+
+
+class TestChisqGradientFiniteDiffRect:
+    """Analytic chi-squared gradients match numeric finite differences on rectangular images."""
+
+    @pytest.mark.parametrize("dtype", DATATERMS)
+    @pytest.mark.parametrize("ttype", TTYPES)
+    def test_median_frac_diff(self, grad_setup_rect, dtype, ttype):
+        if ttype == "nfft":
+            pytest.importorskip("pynfft")
+        median_frac, _ = _chisq_gradient_check(grad_setup_rect, dtype, ttype)
+        assert median_frac < CHISQ_GRAD_MEDIAN_TOL, (
+            f"{dtype} ({ttype}) rect median fractional gradient diff = {median_frac:.6f}"
+        )
+
+    @pytest.mark.parametrize("dtype", DATATERMS)
+    @pytest.mark.parametrize("ttype", TTYPES)
+    def test_max_frac_diff(self, grad_setup_rect, dtype, ttype):
+        if ttype == "nfft":
+            pytest.importorskip("pynfft")
+        _, max_frac = _chisq_gradient_check(grad_setup_rect, dtype, ttype)
+        assert max_frac < CHISQ_GRAD_MAX_TOL, (
+            f"{dtype} ({ttype}) rect max fractional gradient diff = {max_frac:.6f}"
+        )
+
+
+class TestRegularizerGradientFiniteDiffRect:
+    """Analytic regularizer gradients match numeric finite differences on rectangular images."""
+
+    @pytest.mark.parametrize("rtype", REGULARIZERS)
+    def test_median_frac_diff(self, grad_setup_rect, rtype):
+        median_frac, _ = _reg_gradient_check(grad_setup_rect, rtype)
+        assert median_frac < REG_GRAD_MEDIAN_TOL, (
+            f"{rtype} rect median fractional gradient diff = {median_frac:.6f}"
+        )
+
+    @pytest.mark.parametrize("rtype", REGULARIZERS)
+    def test_max_frac_diff(self, grad_setup_rect, rtype):
+        _, max_frac = _reg_gradient_check(grad_setup_rect, rtype)
+        assert max_frac < REG_GRAD_MAX_TOL, (
+            f"{rtype} rect max fractional gradient diff = {max_frac:.6f}"
+        )
