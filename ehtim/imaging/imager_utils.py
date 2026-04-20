@@ -784,7 +784,6 @@ def chisqgrad_vis_fft(vis_arr, A, vis, sigma):
     grad_arr = grad_arr * (im_info.npad * im_info.npad)
 
     # extract relevant cells and flatten
-    # TODO or is x<-->y??
     out = np.real(grad_arr[im_info.padvaly1:-im_info.padvaly2,
                            im_info.padvalx1:-im_info.padvalx2].flatten())
 
@@ -822,7 +821,6 @@ def chisqgrad_amp_fft(vis_arr, A, amp, sigma):
     grad_arr = grad_arr * (im_info.npad * im_info.npad)
 
     # extract relevent cells and flatten
-    # TODO or is x<-->y??
     out = np.real(grad_arr[im_info.padvaly1:-im_info.padvaly2,
                            im_info.padvalx1:-im_info.padvalx2].flatten())
 
@@ -860,7 +858,6 @@ def chisqgrad_bs_fft(vis_arr, A, bis, sigma):
     grad_arr = grad_arr * (im_info.npad * im_info.npad)
 
     # extract relevant cells and flatten
-    # TODO or is x<-->y??
     out = np.real(grad_arr[im_info.padvaly1:-im_info.padvaly2,
                            im_info.padvalx1:-im_info.padvalx2].flatten())
     return out
@@ -904,7 +901,6 @@ def chisqgrad_cphase_fft(vis_arr, A, clphase, sigma):
     grad_arr = grad_arr * (im_info.npad * im_info.npad)
 
     # extract relevant cells and flatten
-    # TODO or is x<-->y??
     out = np.imag(grad_arr[im_info.padvaly1:-im_info.padvaly2,
                            im_info.padvalx1:-im_info.padvalx2].flatten())
 
@@ -1025,7 +1021,6 @@ def chisqgrad_camp_fft(vis_arr, A, clamp, sigma):
     grad_arr = grad_arr * (im_info.npad * im_info.npad)
 
     # extract relevant cells and flatten
-    # TODO or is x<-->y??
     out = np.real(grad_arr[im_info.padvaly1:-im_info.padvaly2,
                            im_info.padvalx1:-im_info.padvalx2].flatten())
 
@@ -1071,7 +1066,6 @@ def chisqgrad_logcamp_fft(vis_arr, A, log_clamp, sigma):
     grad_arr = grad_arr * (im_info.npad * im_info.npad)
 
     # extract relevant cells and flatten
-    # TODO or is x<-->y??
     out = np.real(grad_arr[im_info.padvaly1:-im_info.padvaly2,
                            im_info.padvalx1:-im_info.padvalx2].flatten())
 
@@ -1195,7 +1189,6 @@ def chisqgrad_logamp_fft(vis_arr, A, amp, sigma):
     grad_arr = grad_arr * (im_info.npad * im_info.npad)
 
     # extract relevent cells and flatten
-    # TODO or is x<-->y??
     out = np.real(grad_arr[im_info.padvaly1:-im_info.padvaly2,
                            im_info.padvalx1:-im_info.padvalx2].flatten())
 
