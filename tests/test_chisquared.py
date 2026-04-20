@@ -52,6 +52,9 @@ P_RAD = 12
 CONV_FUNC = "gaussian"
 FFT_INTERP_ORDER = 3
 
+# Random seed for image perturbation in fixtures
+RNG_SEED = 4
+
 
 def _make_rect_image(xdim, ydim, psize=None):
     """Construct a Gaussian image with arbitrary (xdim, ydim) dimensions."""
@@ -91,7 +94,7 @@ def chisq_setup(sgra_im_small, eht_array):
     prior = prior.add_gauss(im.total_flux(), (50 * eh.RADPERUAS, 50 * eh.RADPERUAS, 0, 0, 0))
 
     im2 = prior.copy()
-    rng = np.random.RandomState(42)
+    rng = np.random.RandomState(RNG_SEED)
     im2.imvec *= 1.0 + (rng.rand(len(im2.imvec)) - 0.5) / 10.0
     im2.imvec += rng.rand(len(im2.imvec)) / 10.0 * im.imvec
 
@@ -122,7 +125,7 @@ def chisq_setup_rect(eht_array):
     prior = im.copy()
 
     im2 = prior.copy()
-    rng = np.random.RandomState(4)
+    rng = np.random.RandomState(RNG_SEED)
     im2.imvec *= 1.0 + (rng.rand(len(im2.imvec)) - 0.5) / 10.0
     im2.imvec += rng.rand(len(im2.imvec)) / 10.0 * im.imvec
 
