@@ -11,6 +11,35 @@ import ehtim as eh
 from ehtim.imaging.imager_backend import compute_embed
 
 
+def _make_image(xdim, ydim, psize=None):
+    """Construct a Gaussian image with arbitrary (xdim, ydim)."""
+    if psize is None:
+        psize = 200 * eh.RADPERUAS / max(xdim, ydim)
+    image_arr = np.zeros((ydim, xdim))
+    # Add a 2D Gaussian centered at the middle
+    for i in range(ydim):
+        for j in range(xdim):
+            x = (j - xdim / 2) * psize
+            y = (i - ydim / 2) * psize
+            sigma = 50 * eh.RADPERUAS
+            image_arr[i, j] = np.exp(-(x**2 + y**2) / (2 * sigma**2))
+    image_arr /= image_arr.sum()
+    return eh.image.Image(
+        image_arr, psize, 17.761, -29.0,
+        polrep="stokes", pol_prim="I", rf=230e9,
+    )
+
+
+# Parametrize over square, tall, and wide images
+IMAGE_SHAPES = [
+    (32, 32),  # square
+    (32, 48),  # tall (ydim > xdim)
+    (48, 32),  # wide (xdim > ydim)
+    (31, 31),  # odd square
+    (31, 33),  # odd rectangular
+]
+
+
 class TestComputeEmbed:
     """Tests for compute_embed (extracted from Imager.set_embed)."""
 
@@ -67,15 +96,15 @@ class TestComputeEmbed:
         np.testing.assert_array_equal(embed_mask, imgr._embed_mask)
         np.testing.assert_array_equal(coord_matrix, imgr._coord_matrix)
 
-    def test_odd_dimensions(self):
-        """Odd image dimensions are handled correctly."""
-        im = eh.image.make_empty(31, 200 * eh.RADPERUAS, 0.0, 0.0)
-        im = im.add_gauss(1.0, (50 * eh.RADPERUAS, 50 * eh.RADPERUAS, 0, 0, 0))
+    @pytest.mark.parametrize("xdim,ydim", IMAGE_SHAPES)
+    def test_shapes(self, xdim, ydim):
+        """Backend handles square, rectangular, and odd-dim images correctly."""
+        im = _make_image(xdim, ydim)
         embed_mask, coord_matrix = compute_embed(
             im.imvec, im.xdim, im.ydim, im.psize, clipfloor=0.0,
         )
-        assert embed_mask.shape == (31 * 31,)
-        assert coord_matrix.shape == (31 * 31, 2)
+        assert embed_mask.shape == (xdim * ydim,)
+        assert coord_matrix.shape == (xdim * ydim, 2)
 
     def test_coord_matrix_units(self, gauss_im):
         """Coordinate matrix values are in radians (scaled by psize)."""
