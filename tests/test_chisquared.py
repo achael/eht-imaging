@@ -94,9 +94,9 @@ def chisq_setup(sgra_im_small, eht_array):
     prior = prior.add_gauss(im.total_flux(), (50 * eh.RADPERUAS, 50 * eh.RADPERUAS, 0, 0, 0))
 
     im2 = prior.copy()
-    rng = np.random.RandomState(RNG_SEED)
-    im2.imvec *= 1.0 + (rng.rand(len(im2.imvec)) - 0.5) / 10.0
-    im2.imvec += rng.rand(len(im2.imvec)) / 10.0 * im.imvec
+    rng = np.random.default_rng(RNG_SEED)
+    im2.imvec *= 1.0 + (rng.random(len(im2.imvec)) - 0.5) / 10.0
+    im2.imvec += rng.random(len(im2.imvec)) / 10.0 * im.imvec
 
     mask = im2.imvec > 0
     test_imvec = im2.imvec[mask] if np.any(~mask) else im2.imvec
@@ -125,9 +125,9 @@ def chisq_setup_rect(eht_array):
     prior = im.copy()
 
     im2 = prior.copy()
-    rng = np.random.RandomState(RNG_SEED)
-    im2.imvec *= 1.0 + (rng.rand(len(im2.imvec)) - 0.5) / 10.0
-    im2.imvec += rng.rand(len(im2.imvec)) / 10.0 * im.imvec
+    rng = np.random.default_rng(RNG_SEED)
+    im2.imvec *= 1.0 + (rng.random(len(im2.imvec)) - 0.5) / 10.0
+    im2.imvec += rng.random(len(im2.imvec)) / 10.0 * im.imvec
 
     mask = im2.imvec > 0
     test_imvec = im2.imvec[mask] if np.any(~mask) else im2.imvec

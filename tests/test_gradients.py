@@ -79,9 +79,9 @@ def grad_setup(m87_im_small, eht_array):
     prior = im.copy()
     im2 = prior.copy()
 
-    rng = np.random.RandomState(42)
-    im2.imvec *= 1.0 + (rng.rand(len(im2.imvec)) - 0.5) / 10.0
-    im2.imvec += (1.0 + (rng.rand(len(im2.imvec)) - 0.5) / 10.0) * np.mean(im2.imvec)
+    rng = np.random.default_rng(42)
+    im2.imvec *= 1.0 + (rng.random(len(im2.imvec)) - 0.5) / 10.0
+    im2.imvec += (1.0 + (rng.random(len(im2.imvec)) - 0.5) / 10.0) * np.mean(im2.imvec)
 
     mask = im2.imvec > 0.5 * np.median(im2.imvec)
     test_imvec = im2.imvec[mask] if np.any(~mask) else im2.imvec
@@ -110,9 +110,9 @@ def grad_setup_rect(eht_array):
     prior = im.copy()
     im2 = prior.copy()
 
-    rng = np.random.RandomState(42)
-    im2.imvec *= 1.0 + (rng.rand(len(im2.imvec)) - 0.5) / 10.0
-    im2.imvec += (1.0 + (rng.rand(len(im2.imvec)) - 0.5) / 10.0) * np.mean(im2.imvec)
+    rng = np.random.default_rng(42)
+    im2.imvec *= 1.0 + (rng.random(len(im2.imvec)) - 0.5) / 10.0
+    im2.imvec += (1.0 + (rng.random(len(im2.imvec)) - 0.5) / 10.0) * np.mean(im2.imvec)
 
     mask = im2.imvec > 0.5 * np.median(im2.imvec)
     test_imvec = im2.imvec[mask] if np.any(~mask) else im2.imvec
