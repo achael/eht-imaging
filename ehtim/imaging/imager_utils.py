@@ -785,8 +785,8 @@ def chisqgrad_vis_fft(vis_arr, A, vis, sigma):
 
     # extract relevant cells and flatten
     # TODO or is x<-->y??
-    out = np.real(grad_arr[im_info.padvalx1:-im_info.padvalx2,
-                           im_info.padvaly1:-im_info.padvaly2].flatten())
+    out = np.real(grad_arr[im_info.padvaly1:-im_info.padvaly2,
+                           im_info.padvalx1:-im_info.padvalx2].flatten())
 
     return out
 
@@ -823,8 +823,8 @@ def chisqgrad_amp_fft(vis_arr, A, amp, sigma):
 
     # extract relevent cells and flatten
     # TODO or is x<-->y??
-    out = np.real(grad_arr[im_info.padvalx1:-im_info.padvalx2,
-                           im_info.padvaly1:-im_info.padvaly2].flatten())
+    out = np.real(grad_arr[im_info.padvaly1:-im_info.padvaly2,
+                           im_info.padvalx1:-im_info.padvalx2].flatten())
 
     return out
 
@@ -861,8 +861,8 @@ def chisqgrad_bs_fft(vis_arr, A, bis, sigma):
 
     # extract relevant cells and flatten
     # TODO or is x<-->y??
-    out = np.real(grad_arr[im_info.padvalx1:-im_info.padvalx2,
-                           im_info.padvaly1:-im_info.padvaly2].flatten())
+    out = np.real(grad_arr[im_info.padvaly1:-im_info.padvaly2,
+                           im_info.padvalx1:-im_info.padvalx2].flatten())
     return out
 
 
@@ -905,8 +905,8 @@ def chisqgrad_cphase_fft(vis_arr, A, clphase, sigma):
 
     # extract relevant cells and flatten
     # TODO or is x<-->y??
-    out = np.imag(grad_arr[im_info.padvalx1:-im_info.padvalx2,
-                           im_info.padvaly1:-im_info.padvaly2].flatten())
+    out = np.imag(grad_arr[im_info.padvaly1:-im_info.padvaly2,
+                           im_info.padvalx1:-im_info.padvalx2].flatten())
 
     return out
 
@@ -982,8 +982,8 @@ def chisqgrad_cphase_diag_fft(imvec, A, clphase_diag, sigma):
     grad_arr = grad_arr * (im_info.npad * im_info.npad)
 
     # extract relevant cells and flatten
-    deriv = np.imag(grad_arr[im_info.padvalx1:-im_info.padvalx2,
-                             im_info.padvaly1:-im_info.padvaly2].flatten())
+    deriv = np.imag(grad_arr[im_info.padvaly1:-im_info.padvaly2,
+                             im_info.padvalx1:-im_info.padvalx2].flatten())
     deriv *= 1.0/np.float(len(clphase_diag))
 
     return deriv
@@ -1026,8 +1026,8 @@ def chisqgrad_camp_fft(vis_arr, A, clamp, sigma):
 
     # extract relevant cells and flatten
     # TODO or is x<-->y??
-    out = np.real(grad_arr[im_info.padvalx1:-im_info.padvalx2,
-                           im_info.padvaly1:-im_info.padvaly2].flatten())
+    out = np.real(grad_arr[im_info.padvaly1:-im_info.padvaly2,
+                           im_info.padvalx1:-im_info.padvalx2].flatten())
 
     return out
 
@@ -1072,8 +1072,8 @@ def chisqgrad_logcamp_fft(vis_arr, A, log_clamp, sigma):
 
     # extract relevant cells and flatten
     # TODO or is x<-->y??
-    out = np.real(grad_arr[im_info.padvalx1:-im_info.padvalx2,
-                           im_info.padvaly1:-im_info.padvaly2].flatten())
+    out = np.real(grad_arr[im_info.padvaly1:-im_info.padvaly2,
+                           im_info.padvalx1:-im_info.padvalx2].flatten())
 
     return out
 
@@ -1152,8 +1152,8 @@ def chisqgrad_logcamp_diag_fft(imvec, A, log_clamp_diag, sigma):
     grad_arr = grad_arr * (im_info.npad * im_info.npad)
 
     # extract relevant cells and flatten
-    deriv = np.real(grad_arr[im_info.padvalx1:-im_info.padvalx2,
-                             im_info.padvaly1:-im_info.padvaly2].flatten())
+    deriv = np.real(grad_arr[im_info.padvaly1:-im_info.padvaly2,
+                             im_info.padvalx1:-im_info.padvalx2].flatten())
     deriv *= 1.0/np.float(len(log_clamp_diag))
 
     return deriv
@@ -1196,8 +1196,8 @@ def chisqgrad_logamp_fft(vis_arr, A, amp, sigma):
 
     # extract relevent cells and flatten
     # TODO or is x<-->y??
-    out = np.real(grad_arr[im_info.padvalx1:-im_info.padvalx2,
-                           im_info.padvaly1:-im_info.padvaly2].flatten())
+    out = np.real(grad_arr[im_info.padvaly1:-im_info.padvaly2,
+                           im_info.padvalx1:-im_info.padvalx2].flatten())
 
     return out
 
