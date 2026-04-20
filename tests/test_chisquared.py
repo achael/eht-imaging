@@ -56,24 +56,6 @@ FFT_INTERP_ORDER = 3
 RNG_SEED = 4
 
 
-def _make_rect_image(xdim, ydim, psize=None):
-    """Construct a Gaussian image with arbitrary (xdim, ydim) dimensions."""
-    if psize is None:
-        psize = 200 * eh.RADPERUAS / max(xdim, ydim)
-    image_arr = np.zeros((ydim, xdim))
-    for i in range(ydim):
-        for j in range(xdim):
-            x = (j - xdim / 2) * psize
-            y = (i - ydim / 2) * psize
-            sigma = 50 * eh.RADPERUAS
-            image_arr[i, j] = np.exp(-(x**2 + y**2) / (2 * sigma**2))
-    image_arr /= image_arr.sum()
-    return eh.image.Image(
-        image_arr, psize, 17.761, -29.0,
-        polrep="stokes", pol_prim="I", rf=230e9,
-    )
-
-
 @pytest.fixture(scope="module")
 def chisq_setup(sgra_im_small, eht_array):
     """Set up observation and test image for chi-squared comparison tests.
@@ -111,9 +93,9 @@ def chisq_setup(sgra_im_small, eht_array):
 
 
 @pytest.fixture(scope="module")
-def chisq_setup_rect(eht_array):
+def chisq_setup_rect(eht_array, make_rect_image):
     """Set up 32x48 rectangular Gaussian image observation for chi-squared tests."""
-    im = _make_rect_image(32, 48)
+    im = make_rect_image(32, 48)
     im.imvec = im.imvec * 2.0 / im.total_flux()  # normalize to 2 Jy
 
     obs = im.observe(

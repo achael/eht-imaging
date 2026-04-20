@@ -30,31 +30,9 @@ RGAUSS_PA = np.pi / 3
 # Numeric gradient parameters
 # ---------------------------------------------------------------------------
 N_GRAD_SAMPLES = 100
-GRAD_SEED = 42
+RNG_SEED = 4
 GRAD_DX_REL = 1e-8    # relative step size per pixel
 GRAD_DX_FLOOR = 1e-12  # absolute minimum step size
-
-
-def _make_rect_image(xdim, ydim, psize=None):
-    """Construct a Gaussian image with arbitrary (xdim, ydim) dimensions.
-
-    Used for rectangular image test variants (xdim != ydim) to exercise
-    code paths that might assume square images.
-    """
-    if psize is None:
-        psize = 200 * eh.RADPERUAS / max(xdim, ydim)
-    image_arr = np.zeros((ydim, xdim))
-    for i in range(ydim):
-        for j in range(xdim):
-            x = (j - xdim / 2) * psize
-            y = (i - ydim / 2) * psize
-            sigma = 50 * eh.RADPERUAS
-            image_arr[i, j] = np.exp(-(x**2 + y**2) / (2 * sigma**2))
-    image_arr /= image_arr.sum()
-    return eh.image.Image(
-        image_arr, psize, 17.761, -29.0,
-        polrep="stokes", pol_prim="I", rf=230e9,
-    )
 
 
 @pytest.fixture(scope="module")
@@ -71,9 +49,9 @@ def reg_setup(sgra_im_small):
 
 
 @pytest.fixture(scope="module")
-def reg_setup_rect():
+def reg_setup_rect(make_rect_image):
     """Set up regularizer test data from 32x48 rectangular Gaussian image."""
-    im = _make_rect_image(32, 48)
+    im = make_rect_image(32, 48)
     im.pulse = eh.observing.pulses.deltaPulse2D
     mask = im.imvec > 0
     imvec = im.imvec
@@ -136,7 +114,7 @@ def _gradient_check(reg_setup, rtype):
     y0 = iu.regularizer(imvec, nprior, mask, flux, im.xdim, im.ydim, im.psize, rtype, **kwargs)
     grad_exact = iu.regularizergrad(imvec, nprior, mask, flux, im.xdim, im.ydim, im.psize, rtype, **kwargs)
 
-    rng = np.random.default_rng(GRAD_SEED)
+    rng = np.random.default_rng(RNG_SEED)
     sample_idx = rng.choice(len(imvec), size=N_GRAD_SAMPLES, replace=False)
 
     grad_numeric = np.zeros(N_GRAD_SAMPLES)

@@ -26,7 +26,7 @@ REG_GRAD_MAX_TOL = 0.10
 # Numeric gradient parameters
 # ---------------------------------------------------------------------------
 N_GRAD_SAMPLES = 100
-GRAD_SEED = 42
+RNG_SEED = 4
 GRAD_DX_REL = 1e-8    # relative step size per pixel
 GRAD_DX_FLOOR = 1e-12  # absolute minimum step size
 
@@ -47,24 +47,6 @@ TSTOP_HR = 24
 BW_HZ = 4e9
 
 
-def _make_rect_image(xdim, ydim, psize=None):
-    """Construct a Gaussian image with arbitrary (xdim, ydim) dimensions."""
-    if psize is None:
-        psize = 200 * eh.RADPERUAS / max(xdim, ydim)
-    image_arr = np.zeros((ydim, xdim))
-    for i in range(ydim):
-        for j in range(xdim):
-            x = (j - xdim / 2) * psize
-            y = (i - ydim / 2) * psize
-            sigma = 50 * eh.RADPERUAS
-            image_arr[i, j] = np.exp(-(x**2 + y**2) / (2 * sigma**2))
-    image_arr /= image_arr.sum()
-    return eh.image.Image(
-        image_arr, psize, 17.761, -29.0,
-        polrep="stokes", pol_prim="I", rf=230e9,
-    )
-
-
 @pytest.fixture(scope="module")
 def grad_setup(m87_im_small, eht_array):
     """Set up observation and test image for gradient verification."""
@@ -79,7 +61,7 @@ def grad_setup(m87_im_small, eht_array):
     prior = im.copy()
     im2 = prior.copy()
 
-    rng = np.random.default_rng(42)
+    rng = np.random.default_rng(RNG_SEED)
     im2.imvec *= 1.0 + (rng.random(len(im2.imvec)) - 0.5) / 10.0
     im2.imvec += (1.0 + (rng.random(len(im2.imvec)) - 0.5) / 10.0) * np.mean(im2.imvec)
 
@@ -96,9 +78,9 @@ def grad_setup(m87_im_small, eht_array):
 
 
 @pytest.fixture(scope="module")
-def grad_setup_rect(eht_array):
+def grad_setup_rect(eht_array, make_rect_image):
     """Set up observation and test image from 32x48 rectangular Gaussian."""
-    im = _make_rect_image(32, 48)
+    im = make_rect_image(32, 48)
     im.imvec = im.imvec * 2.0 / im.total_flux()  # normalize to 2 Jy
 
     obs = im.observe(
@@ -110,7 +92,7 @@ def grad_setup_rect(eht_array):
     prior = im.copy()
     im2 = prior.copy()
 
-    rng = np.random.default_rng(42)
+    rng = np.random.default_rng(RNG_SEED)
     im2.imvec *= 1.0 + (rng.random(len(im2.imvec)) - 0.5) / 10.0
     im2.imvec += (1.0 + (rng.random(len(im2.imvec)) - 0.5) / 10.0) * np.mean(im2.imvec)
 
@@ -179,7 +161,7 @@ def _chisq_gradient_check(grad_setup, dtype, ttype):
     grad_exact = chisqgrad(test_imvec, cdata[2], cdata[0], cdata[1], dtype, ttype=ttype, mask=mask)
     y0 = chisq(test_imvec, cdata[2], cdata[0], cdata[1], dtype, ttype=ttype, mask=mask)
 
-    rng = np.random.default_rng(GRAD_SEED)
+    rng = np.random.default_rng(RNG_SEED)
     sample_idx = rng.choice(len(test_imvec), size=N_GRAD_SAMPLES, replace=False)
 
     grad_numeric = np.zeros(N_GRAD_SAMPLES)
@@ -213,7 +195,7 @@ def _reg_gradient_check(grad_setup, rtype):
     y0 = iu.regularizer(test_imvec, nprior, mask, flux, im.xdim, im.ydim, im.psize, rtype, **kwargs)
     grad_exact = iu.regularizergrad(test_imvec, nprior, mask, flux, im.xdim, im.ydim, im.psize, rtype, **kwargs)
 
-    rng = np.random.default_rng(GRAD_SEED)
+    rng = np.random.default_rng(RNG_SEED)
     sample_idx = rng.choice(len(test_imvec), size=N_GRAD_SAMPLES, replace=False)
 
     grad_numeric = np.zeros(N_GRAD_SAMPLES)

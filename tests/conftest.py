@@ -109,3 +109,26 @@ def obs_noisy(gauss_im, eht_array):
 def gauss_prior(gauss_im):
     """A blurred copy of the Gaussian image suitable for use as a prior."""
     return gauss_im.blur_circ(30 * eh.RADPERUAS)
+
+
+@pytest.fixture(scope="session")
+def make_rect_image():
+    """Factory fixture: construct a Gaussian image with arbitrary (xdim, ydim)."""
+    import numpy as np
+
+    def _factory(xdim, ydim, psize=None):
+        if psize is None:
+            psize = 200 * eh.RADPERUAS / max(xdim, ydim)
+        image_arr = np.zeros((ydim, xdim))
+        for i in range(ydim):
+            for j in range(xdim):
+                x = (j - xdim / 2) * psize
+                y = (i - ydim / 2) * psize
+                sigma = 50 * eh.RADPERUAS
+                image_arr[i, j] = np.exp(-(x**2 + y**2) / (2 * sigma**2))
+        image_arr /= image_arr.sum()
+        return eh.image.Image(
+            image_arr, psize, 17.761, -29.0,
+            polrep="stokes", pol_prim="I", rf=230e9,
+        )
+    return _factory
