@@ -2529,7 +2529,7 @@ def sgauss(imvec, xdim, ydim, psize, major, minor, PA):
     sigxy_prime = (lambda2 - lambda1)*np.cos(phi)*np.sin(phi)
 
     # we get the dimensions and image vector
-    im = imvec.reshape(xdim, ydim)
+    im = imvec.reshape(ydim, xdim)
     xlist, ylist = np.meshgrid(range(xdim), range(ydim))
     xlist = xlist - (xdim-1)/2.0
     ylist = ylist - (ydim-1)/2.0
@@ -2571,7 +2571,7 @@ def sgauss_grad(imvec, xdim, ydim, psize, major, minor, PA):
     sigxy_prime = (lambda2 - lambda1)*np.cos(phi)*np.sin(phi)
 
     # we get the dimensions and image vector
-    im = imvec.reshape(xdim, ydim)
+    im = imvec.reshape(ydim, xdim)
     xlist, ylist = np.meshgrid(range(xdim), range(ydim))
     xlist = xlist - (xdim-1)/2.0
     ylist = ylist - (ydim-1)/2.0
@@ -2588,17 +2588,13 @@ def sgauss_grad(imvec, xdim, ydim, psize, major, minor, PA):
     sigyy = (np.sum((yy - y0)**2.*im)/np.sum(im))
     sigxy = (np.sum((xx - x0)*(yy - y0)*im)/np.sum(im))
 
-    # now we compute the gradients of all quantities
-    # gradient of centroid
-    dx0 = (xx - x0) / np.sum(im)
-    dy0 = (yy - y0) / np.sum(im)
-
     # gradients of covariance matrix elements
-    dxx = (((xx - x0)**2. - 2.*(xx - x0)*dx0*im) - sigxx) / np.sum(im)
-
-    dyy = (((yy - y0)**2. - 2.*(yy - y0)*dx0*im) - sigyy) / np.sum(im)
-
-    dxy = (((xx - x0)*(yy - y0) - (yy - y0)*dx0*im - (xx - x0)*dy0*im) - sigxy) / np.sum(im)
+    # d(sig_ab)/d(im_k) = [(a_k - a0)(b_k - b0) - sig_ab] / sum(im)
+    # cross-term through centroid dependence sums to zero by definition of centroid
+    S = np.sum(im)
+    dxx = ((xx - x0)**2. - sigxx) / S
+    dyy = ((yy - y0)**2. - sigyy) / S
+    dxy = ((xx - x0)*(yy - y0) - sigxy) / S
 
     # gradient of the regularizer #this line was CHANGED
     drgauss = (2.*(sigxx - sigxx_prime)*dxx +
