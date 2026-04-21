@@ -1,7 +1,8 @@
 """Tests for ehtim regularizer functions.
 
 Verifies that all regularizer types return finite values and that
-analytic gradients match numeric finite differences.
+analytic gradients match numeric finite differences. All tests use a
+32x48 image so xdim != ydim exercises the rectangular-image code paths.
 """
 
 import numpy as np
@@ -10,7 +11,7 @@ import pytest
 import ehtim as eh
 import ehtim.imaging.imager_utils as iu
 
-# Tolerances for gradient checks (calibrated on 32x32 SgrA image)
+# Tolerances for gradient checks (calibrated on 32x48 synthetic Gaussian)
 MEDIAN_FRAC_TOL = 0.05
 MAX_FRAC_TOL = 0.6
 
@@ -36,21 +37,11 @@ GRAD_DX_FLOOR = 1e-12  # absolute minimum step size
 
 
 @pytest.fixture(scope="module")
-def reg_setup(sgra_im_small):
-    """Set up regularizer test data from 32x32 SgrA image."""
-    im = sgra_im_small.copy()
-    im.pulse = eh.observing.pulses.deltaPulse2D
-    mask = im.imvec > 0
-    imvec = im.imvec
-    nprior = np.ones_like(imvec)
-    nprior = nprior / np.sum(nprior)
-    flux = im.total_flux() * 0.95
-    return im, imvec, nprior, mask, flux
+def reg_setup(make_rect_image):
+    """Set up regularizer test data from 32x48 synthetic Gaussian.
 
-
-@pytest.fixture(scope="module")
-def reg_setup_rect(make_rect_image):
-    """Set up regularizer test data from 32x48 rectangular Gaussian image."""
+    Uses xdim != ydim so the rectangular-image code paths are exercised.
+    """
     im = make_rect_image(32, 48)
     im.pulse = eh.observing.pulses.deltaPulse2D
     mask = im.imvec > 0
@@ -129,41 +120,3 @@ def _gradient_check(reg_setup, rtype):
     compare_floor = np.min(np.abs(grad_exact_sampled)) * 1e-20 + 1e-100
     frac_diff = np.abs((grad_numeric - grad_exact_sampled) / (np.abs(grad_exact_sampled) + compare_floor))
     return np.median(frac_diff), np.max(frac_diff)
-
-
-# ---------------------------------------------------------------------------
-# Rectangular image tests (xdim != ydim)
-# ---------------------------------------------------------------------------
-
-
-class TestRegularizerValuesRect:
-    """All regularizer types return finite values on rectangular (32x48) images."""
-
-    @pytest.mark.parametrize("rtype", iu.REGULARIZERS)
-    @pytest.mark.parametrize("norm_reg", [True, False], ids=["normalized", "unnormalized"])
-    def test_returns_finite(self, reg_setup_rect, rtype, norm_reg):
-        im, imvec, nprior, mask, flux = reg_setup_rect
-        val = iu.regularizer(
-            imvec, nprior, mask, flux,
-            im.xdim, im.ydim, im.psize, rtype,
-            **_reg_kwargs(rtype, norm_reg=norm_reg),
-        )
-        assert np.isfinite(val), f"{rtype} (norm_reg={norm_reg}, rect) returned {val}"
-
-
-class TestRegularizerGradientsRect:
-    """Analytic regularizer gradients match numeric finite differences on rectangular images."""
-
-    @pytest.mark.parametrize("rtype", iu.REGULARIZERS)
-    def test_median_frac_diff(self, reg_setup_rect, rtype):
-        median_frac, _ = _gradient_check(reg_setup_rect, rtype)
-        assert median_frac < MEDIAN_FRAC_TOL, (
-            f"{rtype} rect median fractional gradient diff = {median_frac:.6f}"
-        )
-
-    @pytest.mark.parametrize("rtype", iu.REGULARIZERS)
-    def test_max_frac_diff(self, reg_setup_rect, rtype):
-        _, max_frac = _gradient_check(reg_setup_rect, rtype)
-        assert max_frac < MAX_FRAC_TOL, (
-            f"{rtype} rect max fractional gradient diff = {max_frac:.6f}"
-        )
