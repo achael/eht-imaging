@@ -35,6 +35,7 @@ import ehtim.imaging.imager_utils as imutils
 import ehtim.imaging.multifreq_imager_utils as mfutils
 import ehtim.imaging.pol_imager_utils as polutils
 from ehtim.imaging.imager_backend import (
+    compute_chisq_dict,
     compute_embed,
     embed_imarr,
     make_initarr,
@@ -1081,46 +1082,12 @@ class Imager:
         """Make a dictionary of current chi^2 term values
            input is image array transformed to bounded values
         """
-
-        chi2_dict = {}
-        for dname in sorted(self.dat_term_next.keys()):
-            # Loop over all observations in the list
-            for i, obs in enumerate(self.obslist_next):
-                if len(self.obslist_next)==1:
-                    dname_key = dname
-                else:
-                    dname_key = dname + (f'_{i}')
-
-                # get data products
-                (data, sigma, A) = self._data_tuples[dname_key]
-
-                # get current multifrequency image
-                if self.mf_next:
-                    logfreqratio = self._logfreqratio_list[i]
-                    imcur_nu = mfutils.image_at_freq(imcur, logfreqratio)
-                else:
-                    imcur_nu = imcur
-
-                # Polarization chi^2 terms
-                if dname in DATATERMS_POL:
-                    chi2 = polutils.polchisq(imcur_nu, A, data, sigma, dname,
-                                             ttype=self._ttype, mask=self._embed_mask)
-
-                # Single Polarization chi^2 terms
-                elif dname in DATATERMS:
-                    if self.pol_next in POLARIZATION_MODES:
-                        imcur_nu_I = imcur_nu[0]
-                    else:
-                        imcur_nu_I = imcur_nu
-                    chi2 = imutils.chisq(imcur_nu, A, data, sigma, dname,
-                                         ttype=self._ttype, mask=self._embed_mask)
-
-                else:
-                    raise Exception(f"data term {dname} not recognized!")
-
-                chi2_dict[dname_key] = chi2
-
-        return chi2_dict
+        return compute_chisq_dict(
+            imcur, sorted(self.dat_term_next.keys()), self._data_tuples,
+            self.obslist_next, self._logfreqratio_list, self.mf_next,
+            self.pol_next, self._ttype, self._embed_mask,
+            DATATERMS, DATATERMS_POL, POLARIZATION_MODES,
+        )
 
     def make_chisqgrad_dict(self, imcur):
         """Make a dictionary of current chi^2 term gradient values

@@ -8,7 +8,13 @@ import numpy as np
 import pytest
 
 import ehtim as eh
-from ehtim.imaging.imager_backend import compute_embed
+from ehtim.imager import DATATERMS, DATATERMS_POL, POLARIZATION_MODES
+from ehtim.imaging.imager_backend import (
+    compute_chisq_dict,
+    compute_embed,
+    transform_imarr,
+    unpack_imarr,
+)
 
 # Parametrize over square, tall, and wide images
 IMAGE_SHAPES = [
@@ -95,3 +101,180 @@ class TestComputeEmbed:
         # Coordinates should be within +/- (xdim/2) * psize
         max_coord = (im.xdim // 2) * im.psize
         assert np.all(np.abs(coord_matrix) <= max_coord + im.psize)
+
+
+# ---------------------------------------------------------------------------
+# Helpers for chisq dict tests
+# ---------------------------------------------------------------------------
+
+
+def _initialize_imager(obs, im, data_term, pol="I", ttype="direct",
+                       mf=False, mf_order=0):
+    """Build an Imager and run init_imager so that _data_tuples etc. are populated.
+
+    Accepts either a single obs or a list of obs. Returns (imgr, imcur) where
+    imcur is the unpacked + transformed image array ready to pass into
+    make_chisq_dict / compute_chisq_dict.
+    """
+    imgr = eh.imager.Imager(
+        obs, im, prior_im=im, flux=im.total_flux(),
+        data_term=data_term, ttype=ttype, pol=pol,
+    )
+
+    # Mirror the early steps of make_image() so init_imager has the right state.
+    imgr.mf_next = mf
+    imgr.mf_order = mf_order
+    if pol in POLARIZATION_MODES:
+        imgr.prior_next = imgr.prior_next.switch_polrep(polrep_out="stokes", pol_prim_out="I")
+        imgr.init_next = imgr.init_next.switch_polrep(polrep_out="stokes", pol_prim_out="I")
+    imgr.check_params()
+    imgr.check_limits()
+    imgr.init_imager()
+
+    imcur = unpack_imarr(imgr._xinit, imgr._xarr, imgr._which_solve)
+    imcur = transform_imarr(imcur, imgr.transform_next, imgr._which_solve)
+    return imgr, imcur
+
+
+def _call_backend_chisq_dict(imgr, imcur):
+    """Call compute_chisq_dict with args pulled from an initialized Imager."""
+    return compute_chisq_dict(
+        imcur, sorted(imgr.dat_term_next.keys()), imgr._data_tuples,
+        imgr.obslist_next, imgr._logfreqratio_list, imgr.mf_next,
+        imgr.pol_next, imgr._ttype, imgr._embed_mask,
+        DATATERMS, DATATERMS_POL, POLARIZATION_MODES,
+    )
+
+
+class TestComputeChisqDict:
+    """Tests for compute_chisq_dict (extracted from Imager.make_chisq_dict)."""
+
+    def test_stokes_i_single_term(self, gauss_im, eht_array):
+        """Stokes I, single data term — returns one finite chi^2."""
+        obs = gauss_im.observe(
+            eht_array, 5, 600, 0, 24, 4e9,
+            ampcal=True, phasecal=True, ttype="direct", add_th_noise=False,
+        )
+        imgr, imcur = _initialize_imager(obs, gauss_im, {"vis": 100})
+        result = _call_backend_chisq_dict(imgr, imcur)
+        assert set(result.keys()) == {"vis"}
+        assert np.isfinite(result["vis"])
+
+    def test_multiple_dataterms(self, gauss_im, eht_array):
+        """Multiple data terms — one entry per term, all finite."""
+        obs = gauss_im.observe(
+            eht_array, 5, 600, 0, 24, 4e9,
+            ampcal=True, phasecal=True, ttype="direct", add_th_noise=False,
+        )
+        data_term = {"vis": 100, "amp": 10, "cphase": 5}
+        imgr, imcur = _initialize_imager(obs, gauss_im, data_term)
+        result = _call_backend_chisq_dict(imgr, imcur)
+        assert set(result.keys()) == set(data_term.keys())
+        for v in result.values():
+            assert np.isfinite(v)
+
+    def test_matches_imager(self, gauss_im, eht_array):
+        """Backend output == Imager.make_chisq_dict output (wrapper sanity check)."""
+        obs = gauss_im.observe(
+            eht_array, 5, 600, 0, 24, 4e9,
+            ampcal=True, phasecal=True, ttype="direct", add_th_noise=False,
+        )
+        imgr, imcur = _initialize_imager(obs, gauss_im, {"vis": 100, "cphase": 10})
+
+        method_result = imgr.make_chisq_dict(imcur)
+        backend_result = _call_backend_chisq_dict(imgr, imcur)
+
+        assert method_result.keys() == backend_result.keys()
+        for key in method_result:
+            np.testing.assert_array_equal(method_result[key], backend_result[key])
+
+    def test_multiple_observations(self, gauss_im, eht_array):
+        """Two observations — keys become dname_i, each entry finite."""
+        obs1 = gauss_im.observe(
+            eht_array, 5, 600, 0, 12, 4e9,
+            ampcal=True, phasecal=True, ttype="direct", add_th_noise=False,
+        )
+        obs2 = gauss_im.observe(
+            eht_array, 5, 600, 12, 24, 4e9,
+            ampcal=True, phasecal=True, ttype="direct", add_th_noise=False,
+        )
+        imgr, imcur = _initialize_imager(
+            [obs1, obs2], gauss_im, {"vis": 100},
+        )
+        result = _call_backend_chisq_dict(imgr, imcur)
+        assert set(result.keys()) == {"vis_0", "vis_1"}
+        for v in result.values():
+            assert np.isfinite(v)
+
+    def test_multifrequency(self, gauss_im, eht_array):
+        """Multifrequency imaging — exercises the mf_next=True branch (image_at_freq)."""
+        # Two observations at different frequencies, same source.
+        im_lo = gauss_im.copy()
+        im_lo.rf = 230e9
+        im_hi = gauss_im.copy()
+        im_hi.rf = 345e9
+        obs_lo = im_lo.observe(
+            eht_array, 5, 600, 0, 24, 4e9,
+            ampcal=True, phasecal=True, ttype="direct", add_th_noise=False,
+        )
+        obs_hi = im_hi.observe(
+            eht_array, 5, 600, 0, 24, 4e9,
+            ampcal=True, phasecal=True, ttype="direct", add_th_noise=False,
+        )
+
+        # Use im_lo (at reference freq 230 GHz) as the prior.
+        imgr, imcur = _initialize_imager(
+            [obs_lo, obs_hi], im_lo, {"vis": 100}, mf=True, mf_order=1,
+        )
+        assert imgr.mf_next is True
+        assert len(imgr._logfreqratio_list) == 2
+
+        result = _call_backend_chisq_dict(imgr, imcur)
+        assert set(result.keys()) == {"vis_0", "vis_1"}
+        for v in result.values():
+            assert np.isfinite(v)
+
+    def test_polarimetric_stokes_i_bundled(self, gauss_im, eht_array):
+        """pol='IP' with DATATERMS entry: exercises the imcur_nu_I bug fix.
+
+        Prior to the fix, imcur has shape (4, N) and was passed directly to
+        imutils.chisq which would crash with a shape mismatch. After the fix
+        the function slices imcur[0] for single-polarization data terms.
+        """
+        # Build a polarized image: Q and U scaled from Stokes I at a fixed angle.
+        im = gauss_im.copy()
+        qimage = 0.1 * im.imarr()
+        uimage = 0.05 * im.imarr()
+        im.add_qu(qimage, uimage)
+
+        obs = im.observe(
+            eht_array, 5, 600, 0, 24, 4e9,
+            ampcal=True, phasecal=True, ttype="direct", add_th_noise=False,
+        )
+        imgr, imcur = _initialize_imager(
+            obs, im, {"vis": 100, "pvis": 100}, pol="IP",
+        )
+        # The buggy version crashes here with ValueError before returning.
+        backend_result = _call_backend_chisq_dict(imgr, imcur)
+        assert set(backend_result.keys()) == {"vis", "pvis"}
+        for v in backend_result.values():
+            assert np.isfinite(v)
+
+        # Verify the wrapper (imgr.make_chisq_dict) also succeeds and matches.
+        method_result = imgr.make_chisq_dict(imcur)
+        assert method_result.keys() == backend_result.keys()
+        for key in method_result:
+            np.testing.assert_array_equal(method_result[key], backend_result[key])
+
+    @pytest.mark.parametrize("ttype", ["direct", "fast", "nfft"])
+    def test_all_ttypes(self, gauss_im, eht_array, ttype):
+        """Backend works for all three transform types."""
+        if ttype == "nfft":
+            pytest.importorskip("pynfft")
+        obs = gauss_im.observe(
+            eht_array, 5, 600, 0, 24, 4e9,
+            ampcal=True, phasecal=True, ttype=ttype, add_th_noise=False,
+        )
+        imgr, imcur = _initialize_imager(obs, gauss_im, {"vis": 100}, ttype=ttype)
+        result = _call_backend_chisq_dict(imgr, imcur)
+        assert np.isfinite(result["vis"])

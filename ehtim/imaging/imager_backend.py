@@ -20,6 +20,7 @@
 import numpy as np
 
 import ehtim.imaging.imager_utils as imutils
+import ehtim.imaging.multifreq_imager_utils as mfutils
 import ehtim.imaging.pol_imager_utils as polutils
 
 
@@ -394,3 +395,82 @@ def compute_embed(imvec, xdim, ydim, psize, clipfloor):
     coord_matrix = coord[embed_mask]
 
     return embed_mask, coord_matrix
+
+
+def compute_chisq_dict(imcur, dat_term_keys, data_tuples, obslist_next,
+                       logfreqratio_list, mf_next, pol_next, ttype, embed_mask,
+                       dataterms, dataterms_pol, polarization_modes):
+    """Compute chi^2 value for each data term across all observations.
+
+    Parameters
+    ----------
+    imcur : np.ndarray
+        Current image array transformed to bounded values.
+    dat_term_keys : list of str
+        Data term names to evaluate, already sorted.
+    data_tuples : dict
+        Pre-computed data products keyed by dname or dname_i,
+        each value is a (data, sigma, A) tuple.
+    obslist_next : list
+        List of Obsdata objects (one per frequency/epoch).
+    logfreqratio_list : list of float
+        Log frequency ratios log(nu_i/reffreq); one per obs.
+    mf_next : bool
+        Whether multifrequency imaging is enabled.
+    pol_next : str
+        Polarization mode string.
+    ttype : str
+        Transform type ('direct', 'fast', 'nfft').
+    embed_mask : np.ndarray of bool
+        Pixel embedding mask.
+    dataterms : list of str
+        Single-polarization data term names.
+    dataterms_pol : list of str
+        Polarimetric data term names.
+    polarization_modes : list of str
+        Polarization modes that bundle Stokes I with other terms.
+
+    Returns
+    -------
+    chi2_dict : dict
+        Mapping from dname (or dname_i for multi-obs) to chi^2 scalar.
+    """
+    chi2_dict = {}
+    for dname in dat_term_keys:
+        # Loop over all observations in the list
+        for i, obs in enumerate(obslist_next):
+            if len(obslist_next) == 1:
+                dname_key = dname
+            else:
+                dname_key = dname + (f'_{i}')
+
+            # get data products
+            (data, sigma, A) = data_tuples[dname_key]
+
+            # get current multifrequency image
+            if mf_next:
+                logfreqratio = logfreqratio_list[i]
+                imcur_nu = mfutils.image_at_freq(imcur, logfreqratio)
+            else:
+                imcur_nu = imcur
+
+            # Polarization chi^2 terms
+            if dname in dataterms_pol:
+                chi2 = polutils.polchisq(imcur_nu, A, data, sigma, dname,
+                                         ttype=ttype, mask=embed_mask)
+
+            # Single Polarization chi^2 terms
+            elif dname in dataterms:
+                if pol_next in polarization_modes:
+                    imcur_nu_I = imcur_nu[0]
+                else:
+                    imcur_nu_I = imcur_nu
+                chi2 = imutils.chisq(imcur_nu_I, A, data, sigma, dname,
+                                     ttype=ttype, mask=embed_mask)
+
+            else:
+                raise Exception(f"data term {dname} not recognized!")
+
+            chi2_dict[dname_key] = chi2
+
+    return chi2_dict
