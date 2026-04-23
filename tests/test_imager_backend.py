@@ -26,6 +26,29 @@ IMAGE_SHAPES = [
     (31, 33),  # odd rectangular
 ]
 
+# Observation parameters (match conftest.py convention)
+TINT_SEC = 5
+TADV_SEC = 600
+TSTART_HR = 0
+TSTOP_HR = 24
+BW_HZ = 4e9
+
+# Multifrequency test frequencies
+REFFREQ_HZ = 230e9
+MF_ALT_FREQ_HZ = 345e9
+
+# Synthetic polarization fractions for polarimetric tests
+POL_FRAC_Q = 0.1
+POL_FRAC_U = 0.05
+
+
+def _observe(im, eht_array, ttype="direct", tstart=TSTART_HR, tstop=TSTOP_HR):
+    """Noise-free observation with project-standard defaults."""
+    return im.observe(
+        eht_array, TINT_SEC, TADV_SEC, tstart, tstop, BW_HZ,
+        ampcal=True, phasecal=True, ttype=ttype, add_th_noise=False,
+    )
+
 
 class TestComputeEmbed:
     """Tests for compute_embed (extracted from Imager.set_embed)."""
@@ -63,10 +86,7 @@ class TestComputeEmbed:
 
     def test_matches_imager(self, gauss_im, eht_array):
         """Backend compute_embed matches Imager.set_embed exactly."""
-        obs = gauss_im.observe(
-            eht_array, 5, 600, 0, 24, 4e9,
-            ampcal=True, phasecal=True, ttype="direct", add_th_noise=False,
-        )
+        obs = _observe(gauss_im, eht_array)
         imgr = eh.imager.Imager(obs, gauss_im, gauss_im, gauss_im.total_flux(),
                                 ttype="direct")
 
@@ -163,10 +183,7 @@ class TestComputeChisqDict:
 
     def test_stokes_i_single_term(self, gauss_im, eht_array):
         """Stokes I, single data term — returns one finite chi^2."""
-        obs = gauss_im.observe(
-            eht_array, 5, 600, 0, 24, 4e9,
-            ampcal=True, phasecal=True, ttype="direct", add_th_noise=False,
-        )
+        obs = _observe(gauss_im, eht_array)
         imgr, imcur = _initialize_imager(obs, gauss_im, {"vis": 100})
         result = _call_backend_chisq_dict(imgr, imcur)
         assert set(result.keys()) == {"vis"}
@@ -174,10 +191,7 @@ class TestComputeChisqDict:
 
     def test_multiple_dataterms(self, gauss_im, eht_array):
         """Multiple data terms — one entry per term, all finite."""
-        obs = gauss_im.observe(
-            eht_array, 5, 600, 0, 24, 4e9,
-            ampcal=True, phasecal=True, ttype="direct", add_th_noise=False,
-        )
+        obs = _observe(gauss_im, eht_array)
         data_term = {"vis": 100, "amp": 10, "cphase": 5}
         imgr, imcur = _initialize_imager(obs, gauss_im, data_term)
         result = _call_backend_chisq_dict(imgr, imcur)
@@ -187,10 +201,7 @@ class TestComputeChisqDict:
 
     def test_matches_imager(self, gauss_im, eht_array):
         """Backend output == Imager.make_chisq_dict output (wrapper sanity check)."""
-        obs = gauss_im.observe(
-            eht_array, 5, 600, 0, 24, 4e9,
-            ampcal=True, phasecal=True, ttype="direct", add_th_noise=False,
-        )
+        obs = _observe(gauss_im, eht_array)
         imgr, imcur = _initialize_imager(obs, gauss_im, {"vis": 100, "cphase": 10})
 
         method_result = imgr.make_chisq_dict(imcur)
@@ -202,14 +213,9 @@ class TestComputeChisqDict:
 
     def test_multiple_observations(self, gauss_im, eht_array):
         """Two observations — keys become dname_i, each entry finite."""
-        obs1 = gauss_im.observe(
-            eht_array, 5, 600, 0, 12, 4e9,
-            ampcal=True, phasecal=True, ttype="direct", add_th_noise=False,
-        )
-        obs2 = gauss_im.observe(
-            eht_array, 5, 600, 12, 24, 4e9,
-            ampcal=True, phasecal=True, ttype="direct", add_th_noise=False,
-        )
+        tmid = (TSTART_HR + TSTOP_HR) / 2
+        obs1 = _observe(gauss_im, eht_array, tstart=TSTART_HR, tstop=tmid)
+        obs2 = _observe(gauss_im, eht_array, tstart=tmid, tstop=TSTOP_HR)
         imgr, imcur = _initialize_imager(
             [obs1, obs2], gauss_im, {"vis": 100},
         )
@@ -222,19 +228,13 @@ class TestComputeChisqDict:
         """Multifrequency imaging — exercises the mf_next=True branch (image_at_freq)."""
         # Two observations at different frequencies, same source.
         im_lo = gauss_im.copy()
-        im_lo.rf = 230e9
+        im_lo.rf = REFFREQ_HZ
         im_hi = gauss_im.copy()
-        im_hi.rf = 345e9
-        obs_lo = im_lo.observe(
-            eht_array, 5, 600, 0, 24, 4e9,
-            ampcal=True, phasecal=True, ttype="direct", add_th_noise=False,
-        )
-        obs_hi = im_hi.observe(
-            eht_array, 5, 600, 0, 24, 4e9,
-            ampcal=True, phasecal=True, ttype="direct", add_th_noise=False,
-        )
+        im_hi.rf = MF_ALT_FREQ_HZ
+        obs_lo = _observe(im_lo, eht_array)
+        obs_hi = _observe(im_hi, eht_array)
 
-        # Use im_lo (at reference freq 230 GHz) as the prior.
+        # Use im_lo (at reference freq) as the prior.
         imgr, imcur = _initialize_imager(
             [obs_lo, obs_hi], im_lo, {"vis": 100}, mf=True, mf_order=1,
         )
@@ -255,14 +255,11 @@ class TestComputeChisqDict:
         """
         # Build a polarized image: Q and U scaled from Stokes I at a fixed angle.
         im = gauss_im.copy()
-        qimage = 0.1 * im.imarr()
-        uimage = 0.05 * im.imarr()
+        qimage = POL_FRAC_Q * im.imarr()
+        uimage = POL_FRAC_U * im.imarr()
         im.add_qu(qimage, uimage)
 
-        obs = im.observe(
-            eht_array, 5, 600, 0, 24, 4e9,
-            ampcal=True, phasecal=True, ttype="direct", add_th_noise=False,
-        )
+        obs = _observe(im, eht_array)
         imgr, imcur = _initialize_imager(
             obs, im, {"vis": 100, "pvis": 100}, pol="IP",
         )
@@ -283,10 +280,7 @@ class TestComputeChisqDict:
         """Backend works for all three transform types."""
         if ttype == "nfft":
             pytest.importorskip("pynfft")
-        obs = gauss_im.observe(
-            eht_array, 5, 600, 0, 24, 4e9,
-            ampcal=True, phasecal=True, ttype=ttype, add_th_noise=False,
-        )
+        obs = _observe(gauss_im, eht_array, ttype=ttype)
         imgr, imcur = _initialize_imager(obs, gauss_im, {"vis": 100}, ttype=ttype)
         result = _call_backend_chisq_dict(imgr, imcur)
         assert np.isfinite(result["vis"])
@@ -297,10 +291,7 @@ class TestComputeChisqgradDict:
 
     def test_stokes_i_single_term(self, gauss_im, eht_array):
         """Stokes I gradient has shape (nimage,) and is finite."""
-        obs = gauss_im.observe(
-            eht_array, 5, 600, 0, 24, 4e9,
-            ampcal=True, phasecal=True, ttype="direct", add_th_noise=False,
-        )
+        obs = _observe(gauss_im, eht_array)
         imgr, imcur = _initialize_imager(obs, gauss_im, {"vis": 100})
         result = _call_backend_chisqgrad_dict(imgr, imcur)
         assert set(result.keys()) == {"vis"}
@@ -309,10 +300,7 @@ class TestComputeChisqgradDict:
 
     def test_multiple_dataterms(self, gauss_im, eht_array):
         """Multiple gradient entries, all finite, correct shape."""
-        obs = gauss_im.observe(
-            eht_array, 5, 600, 0, 24, 4e9,
-            ampcal=True, phasecal=True, ttype="direct", add_th_noise=False,
-        )
+        obs = _observe(gauss_im, eht_array)
         data_term = {"vis": 100, "amp": 10, "cphase": 5}
         imgr, imcur = _initialize_imager(obs, gauss_im, data_term)
         result = _call_backend_chisqgrad_dict(imgr, imcur)
@@ -323,10 +311,7 @@ class TestComputeChisqgradDict:
 
     def test_matches_imager(self, gauss_im, eht_array):
         """Backend output == Imager.make_chisqgrad_dict output (tight tol)."""
-        obs = gauss_im.observe(
-            eht_array, 5, 600, 0, 24, 4e9,
-            ampcal=True, phasecal=True, ttype="direct", add_th_noise=False,
-        )
+        obs = _observe(gauss_im, eht_array)
         imgr, imcur = _initialize_imager(obs, gauss_im, {"vis": 100, "cphase": 10})
 
         method_result = imgr.make_chisqgrad_dict(imcur)
@@ -339,14 +324,9 @@ class TestComputeChisqgradDict:
 
     def test_multiple_observations(self, gauss_im, eht_array):
         """Two observations — one gradient entry per obs."""
-        obs1 = gauss_im.observe(
-            eht_array, 5, 600, 0, 12, 4e9,
-            ampcal=True, phasecal=True, ttype="direct", add_th_noise=False,
-        )
-        obs2 = gauss_im.observe(
-            eht_array, 5, 600, 12, 24, 4e9,
-            ampcal=True, phasecal=True, ttype="direct", add_th_noise=False,
-        )
+        tmid = (TSTART_HR + TSTOP_HR) / 2
+        obs1 = _observe(gauss_im, eht_array, tstart=TSTART_HR, tstop=tmid)
+        obs2 = _observe(gauss_im, eht_array, tstart=tmid, tstop=TSTOP_HR)
         imgr, imcur = _initialize_imager(
             [obs1, obs2], gauss_im, {"vis": 100},
         )
@@ -359,17 +339,11 @@ class TestComputeChisqgradDict:
     def test_multifrequency(self, gauss_im, eht_array):
         """Multifrequency imaging — exercises mf_all_grads_chain branch."""
         im_lo = gauss_im.copy()
-        im_lo.rf = 230e9
+        im_lo.rf = REFFREQ_HZ
         im_hi = gauss_im.copy()
-        im_hi.rf = 345e9
-        obs_lo = im_lo.observe(
-            eht_array, 5, 600, 0, 24, 4e9,
-            ampcal=True, phasecal=True, ttype="direct", add_th_noise=False,
-        )
-        obs_hi = im_hi.observe(
-            eht_array, 5, 600, 0, 24, 4e9,
-            ampcal=True, phasecal=True, ttype="direct", add_th_noise=False,
-        )
+        im_hi.rf = MF_ALT_FREQ_HZ
+        obs_lo = _observe(im_lo, eht_array)
+        obs_hi = _observe(im_hi, eht_array)
         imgr, imcur = _initialize_imager(
             [obs_lo, obs_hi], im_lo, {"vis": 100}, mf=True, mf_order=1,
         )
@@ -383,14 +357,11 @@ class TestComputeChisqgradDict:
     def test_polarimetric_stokes_i_bundled(self, gauss_im, eht_array):
         """pol='IP' with DATATERMS entry: Stokes-I gradient is bundled (4, nimage)."""
         im = gauss_im.copy()
-        qimage = 0.1 * im.imarr()
-        uimage = 0.05 * im.imarr()
+        qimage = POL_FRAC_Q * im.imarr()
+        uimage = POL_FRAC_U * im.imarr()
         im.add_qu(qimage, uimage)
 
-        obs = im.observe(
-            eht_array, 5, 600, 0, 24, 4e9,
-            ampcal=True, phasecal=True, ttype="direct", add_th_noise=False,
-        )
+        obs = _observe(im, eht_array)
         imgr, imcur = _initialize_imager(
             obs, im, {"vis": 100, "pvis": 100}, pol="IP",
         )
@@ -415,10 +386,7 @@ class TestComputeChisqgradDict:
         """Backend works for all three transform types."""
         if ttype == "nfft":
             pytest.importorskip("pynfft")
-        obs = gauss_im.observe(
-            eht_array, 5, 600, 0, 24, 4e9,
-            ampcal=True, phasecal=True, ttype=ttype, add_th_noise=False,
-        )
+        obs = _observe(gauss_im, eht_array, ttype=ttype)
         imgr, imcur = _initialize_imager(obs, gauss_im, {"vis": 100}, ttype=ttype)
         result = _call_backend_chisqgrad_dict(imgr, imcur)
         assert np.all(np.isfinite(result["vis"]))
@@ -426,10 +394,7 @@ class TestComputeChisqgradDict:
 
 def test_chisq_and_chisqgrad_share_keys(gauss_im, eht_array):
     """Cross-cutting invariant: chisq and chisqgrad dicts share the same key set."""
-    obs = gauss_im.observe(
-        eht_array, 5, 600, 0, 24, 4e9,
-        ampcal=True, phasecal=True, ttype="direct", add_th_noise=False,
-    )
+    obs = _observe(gauss_im, eht_array)
     imgr, imcur = _initialize_imager(
         obs, gauss_im, {"vis": 100, "amp": 10, "cphase": 5},
     )
