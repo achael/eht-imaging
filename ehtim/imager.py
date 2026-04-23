@@ -36,6 +36,7 @@ import ehtim.imaging.multifreq_imager_utils as mfutils
 import ehtim.imaging.pol_imager_utils as polutils
 from ehtim.imaging.imager_backend import (
     compute_chisq_dict,
+    compute_chisqgrad_dict,
     compute_embed,
     embed_imarr,
     make_initarr,
@@ -1093,64 +1094,13 @@ class Imager:
         """Make a dictionary of current chi^2 term gradient values
            input is image array transformed to bounded values
         """
-        chi2grad_dict = {}
-        for dname in sorted(self.dat_term_next.keys()):
-            # Loop over all observations in the list
-            for i, obs in enumerate(self.obslist_next):
-                if len(self.obslist_next)==1:
-                    dname_key = dname
-                else:
-                    dname_key = dname + (f'_{i}')
-
-                # get data products
-                (data, sigma, A) = self._data_tuples[dname_key]
-
-                # get current multifrequency image
-                if self.mf_next:
-                    logfreqratio = self._logfreqratio_list[i]
-                    imcur_nu = mfutils.image_at_freq(imcur, logfreqratio)
-                else:
-                    imcur_nu = imcur
-
-                # Polarimetric chi^2 gradients
-                if dname in DATATERMS_POL:
-                    if self.mf_next:
-                        pol_solve = self._which_solve[0:4]
-                    else:
-                        pol_solve = self._which_solve
-                    chi2grad = polutils.polchisqgrad(imcur_nu, A, data, sigma, dname,
-                                                     ttype=self._ttype, mask=self._embed_mask,
-                                                     pol_solve=pol_solve)
-
-                # Single polarization chi^2 gradients
-                elif dname in DATATERMS:
-                    if self.pol_next in POLARIZATION_MODES: # polarization
-                        imcur_nu_I = imcur_nu[0]
-                    else:
-                        imcur_nu_I = imcur_nu
-
-                    chi2grad = imutils.chisqgrad(imcur_nu_I, A, data, sigma, dname,
-                                                 ttype=self._ttype, mask=self._embed_mask)
-
-                    # If imaging Stokes I with polarization simultaneously, bundle the gradient
-                    if self.pol_next in POLARIZATION_MODES:
-                        chi2grad = np.array((chi2grad,
-                                             np.zeros(self._nimage),
-                                             np.zeros(self._nimage),
-                                             np.zeros(self._nimage)))
-
-                else:
-                    raise Exception(f"data term {dname} not recognized!")
-
-                # If multifrequency imaging,
-                # transform the image gradients for all the solved quantities
-                if self.mf_next:
-                    logfreqratio = self._logfreqratio_list[i]
-                    chi2grad = mfutils.mf_all_grads_chain(chi2grad, imcur_nu, imcur, logfreqratio)
-
-                chi2grad_dict[dname_key] = np.array(chi2grad)
-
-        return chi2grad_dict
+        return compute_chisqgrad_dict(
+            imcur, sorted(self.dat_term_next.keys()), self._data_tuples,
+            self.obslist_next, self._logfreqratio_list, self.mf_next,
+            self.pol_next, self._ttype, self._embed_mask,
+            self._which_solve, self._nimage,
+            DATATERMS, DATATERMS_POL, POLARIZATION_MODES,
+        )
 
     def make_reg_dict(self, imcur):
         """Make a dictionary of current regularizer values
