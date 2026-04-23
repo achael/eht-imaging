@@ -1,13 +1,13 @@
 """Tests for chi-squared consistency across transform types (direct, fast, nfft).
 
 Verifies that chi-squared values and gradients agree between DFT, FFT, and NFFT
-for all standard data types.
+for all standard data types. All tests use a 32x48 image so xdim != ydim
+exercises the rectangular-image code paths (rect subsumes square).
 """
 
 import numpy as np
 import pytest
 
-import ehtim as eh
 from ehtim.imaging.imager_utils import chisq, chisqdata, chisqgrad
 
 # Observation parameters (must match conftest.py)
@@ -23,10 +23,10 @@ DATATERMS = ["vis", "bs", "amp", "cphase", "camp", "logcamp"]
 # Transform type pairs to compare
 TTYPE_PAIRS = [("direct", "fast"), ("direct", "nfft"), ("nfft", "fast")]
 
-# NFFT max gradient tolerance is much wider at 32x32 resolution
+# NFFT max gradient tolerance is much wider at this resolution
 GRAD_MAX_TOL_NFFT = 10.0
 
-# Tolerances (calibrated on 32x32 SgrA image)
+# Tolerances (calibrated on 32x48 synthetic Gaussian)
 CHISQ_FRAC_TOL = 0.01
 GRAD_MEDIAN_TOL = 0.05
 GRAD_MAX_TOL = 0.25
@@ -52,16 +52,21 @@ P_RAD = 12
 CONV_FUNC = "gaussian"
 FFT_INTERP_ORDER = 3
 
+# Random seed for image perturbation in fixtures
+RNG_SEED = 4
+
 
 @pytest.fixture(scope="module")
-def chisq_setup(sgra_im_small, eht_array):
+def chisq_setup(eht_array, make_rect_image):
     """Set up observation and test image for chi-squared comparison tests.
 
-    Uses a single DFT observation as ground truth. The chi-squared functions
-    are then evaluated with different transform matrices (direct, fast, nfft)
-    on the same data, testing that the transform approximations agree.
+    Uses a 32x48 synthetic Gaussian image so xdim != ydim exercises the
+    rectangular-image code paths. A single DFT observation serves as ground
+    truth; chi-squared is then evaluated with different transform matrices
+    (direct, fast, nfft), testing that the transform approximations agree.
     """
-    im = sgra_im_small
+    im = make_rect_image(32, 48)
+    im.imvec = im.imvec * 2.0 / im.total_flux()  # normalize to 2 Jy
 
     obs = im.observe(
         eht_array, TINT_SEC, TADV_SEC, TSTART_HR, TSTOP_HR, BW_HZ,
@@ -69,13 +74,12 @@ def chisq_setup(sgra_im_small, eht_array):
         ttype="direct", add_th_noise=False,
     )
 
-    prior = eh.image.make_square(obs, im.xdim, im.xdim * im.psize)
-    prior = prior.add_gauss(im.total_flux(), (50 * eh.RADPERUAS, 50 * eh.RADPERUAS, 0, 0, 0))
+    prior = im.copy()
 
     im2 = prior.copy()
-    rng = np.random.RandomState(42)
-    im2.imvec *= 1.0 + (rng.rand(len(im2.imvec)) - 0.5) / 10.0
-    im2.imvec += rng.rand(len(im2.imvec)) / 10.0 * im.imvec
+    rng = np.random.default_rng(RNG_SEED)
+    im2.imvec *= 1.0 + (rng.random(len(im2.imvec)) - 0.5) / 10.0
+    im2.imvec += rng.random(len(im2.imvec)) / 10.0 * im.imvec
 
     mask = im2.imvec > 0
     test_imvec = im2.imvec[mask] if np.any(~mask) else im2.imvec

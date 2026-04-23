@@ -1,7 +1,8 @@
 """Tests for ehtim regularizer functions.
 
 Verifies that all regularizer types return finite values and that
-analytic gradients match numeric finite differences.
+analytic gradients match numeric finite differences. All tests use a
+32x48 image so xdim != ydim exercises the rectangular-image code paths.
 """
 
 import numpy as np
@@ -10,7 +11,7 @@ import pytest
 import ehtim as eh
 import ehtim.imaging.imager_utils as iu
 
-# Tolerances for gradient checks (calibrated on 32x32 SgrA image)
+# Tolerances for gradient checks (calibrated on 32x48 synthetic Gaussian)
 MEDIAN_FRAC_TOL = 0.05
 MAX_FRAC_TOL = 0.6
 
@@ -30,15 +31,18 @@ RGAUSS_PA = np.pi / 3
 # Numeric gradient parameters
 # ---------------------------------------------------------------------------
 N_GRAD_SAMPLES = 100
-GRAD_SEED = 42
+RNG_SEED = 4
 GRAD_DX_REL = 1e-8    # relative step size per pixel
 GRAD_DX_FLOOR = 1e-12  # absolute minimum step size
 
 
 @pytest.fixture(scope="module")
-def reg_setup(sgra_im_small):
-    """Set up regularizer test data from 32x32 SgrA image."""
-    im = sgra_im_small.copy()
+def reg_setup(make_rect_image):
+    """Set up regularizer test data from 32x48 synthetic Gaussian.
+
+    Uses xdim != ydim so the rectangular-image code paths are exercised.
+    """
+    im = make_rect_image(32, 48)
     im.pulse = eh.observing.pulses.deltaPulse2D
     mask = im.imvec > 0
     imvec = im.imvec
@@ -101,7 +105,7 @@ def _gradient_check(reg_setup, rtype):
     y0 = iu.regularizer(imvec, nprior, mask, flux, im.xdim, im.ydim, im.psize, rtype, **kwargs)
     grad_exact = iu.regularizergrad(imvec, nprior, mask, flux, im.xdim, im.ydim, im.psize, rtype, **kwargs)
 
-    rng = np.random.default_rng(GRAD_SEED)
+    rng = np.random.default_rng(RNG_SEED)
     sample_idx = rng.choice(len(imvec), size=N_GRAD_SAMPLES, replace=False)
 
     grad_numeric = np.zeros(N_GRAD_SAMPLES)

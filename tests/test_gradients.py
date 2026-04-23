@@ -1,7 +1,8 @@
 """Tests for analytic gradient correctness via numeric finite differences.
 
 Verifies that analytic chi-squared gradients and regularizer gradients
-match numeric finite differences computed element-wise.
+match numeric finite differences computed element-wise. All tests use a
+32x48 image so xdim != ydim exercises the rectangular-image code paths.
 """
 
 import numpy as np
@@ -16,7 +17,7 @@ DATATERMS = ["vis", "bs", "amp", "cphase", "camp", "logcamp"]
 REGULARIZERS = ["simple", "gs", "l1w", "tv", "tv2"]
 TTYPES = ["direct"]  # expand to ["direct", "fast", "nfft"] to test other transforms
 
-# Tolerances (calibrated on 32x32 M87 image with relative step size)
+# Tolerances (calibrated on 32x48 synthetic Gaussian with relative step size)
 CHISQ_GRAD_MEDIAN_TOL = 0.001
 CHISQ_GRAD_MAX_TOL = 0.01
 REG_GRAD_MEDIAN_TOL = 0.01
@@ -26,7 +27,7 @@ REG_GRAD_MAX_TOL = 0.10
 # Numeric gradient parameters
 # ---------------------------------------------------------------------------
 N_GRAD_SAMPLES = 100
-GRAD_SEED = 42
+RNG_SEED = 4
 GRAD_DX_REL = 1e-8    # relative step size per pixel
 GRAD_DX_FLOOR = 1e-12  # absolute minimum step size
 
@@ -48,9 +49,13 @@ BW_HZ = 4e9
 
 
 @pytest.fixture(scope="module")
-def grad_setup(m87_im_small, eht_array):
-    """Set up observation and test image for gradient verification."""
-    im = m87_im_small
+def grad_setup(eht_array, make_rect_image):
+    """Set up observation and test image from 32x48 synthetic Gaussian.
+
+    Uses xdim != ydim so the rectangular-image code paths are exercised.
+    """
+    im = make_rect_image(32, 48)
+    im.imvec = im.imvec * 2.0 / im.total_flux()  # normalize to 2 Jy
 
     obs = im.observe(
         eht_array, TINT_SEC, TADV_SEC, TSTART_HR, TSTOP_HR, BW_HZ,
@@ -61,9 +66,9 @@ def grad_setup(m87_im_small, eht_array):
     prior = im.copy()
     im2 = prior.copy()
 
-    rng = np.random.RandomState(42)
-    im2.imvec *= 1.0 + (rng.rand(len(im2.imvec)) - 0.5) / 10.0
-    im2.imvec += (1.0 + (rng.rand(len(im2.imvec)) - 0.5) / 10.0) * np.mean(im2.imvec)
+    rng = np.random.default_rng(RNG_SEED)
+    im2.imvec *= 1.0 + (rng.random(len(im2.imvec)) - 0.5) / 10.0
+    im2.imvec += (1.0 + (rng.random(len(im2.imvec)) - 0.5) / 10.0) * np.mean(im2.imvec)
 
     mask = im2.imvec > 0.5 * np.median(im2.imvec)
     test_imvec = im2.imvec[mask] if np.any(~mask) else im2.imvec
@@ -130,7 +135,7 @@ def _chisq_gradient_check(grad_setup, dtype, ttype):
     grad_exact = chisqgrad(test_imvec, cdata[2], cdata[0], cdata[1], dtype, ttype=ttype, mask=mask)
     y0 = chisq(test_imvec, cdata[2], cdata[0], cdata[1], dtype, ttype=ttype, mask=mask)
 
-    rng = np.random.default_rng(GRAD_SEED)
+    rng = np.random.default_rng(RNG_SEED)
     sample_idx = rng.choice(len(test_imvec), size=N_GRAD_SAMPLES, replace=False)
 
     grad_numeric = np.zeros(N_GRAD_SAMPLES)
@@ -164,7 +169,7 @@ def _reg_gradient_check(grad_setup, rtype):
     y0 = iu.regularizer(test_imvec, nprior, mask, flux, im.xdim, im.ydim, im.psize, rtype, **kwargs)
     grad_exact = iu.regularizergrad(test_imvec, nprior, mask, flux, im.xdim, im.ydim, im.psize, rtype, **kwargs)
 
-    rng = np.random.default_rng(GRAD_SEED)
+    rng = np.random.default_rng(RNG_SEED)
     sample_idx = rng.choice(len(test_imvec), size=N_GRAD_SAMPLES, replace=False)
 
     grad_numeric = np.zeros(N_GRAD_SAMPLES)
