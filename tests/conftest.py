@@ -49,6 +49,15 @@ def gauss_im():
 
 
 @pytest.fixture(scope="session")
+def gauss_im_pol(gauss_im):
+    """Polarized Gaussian image: Stokes I plus scaled Q, U, V."""
+    im = gauss_im.copy()
+    im.add_qu(0.10 * im.imarr(), 0.05 * im.imarr())
+    im.add_v(0.02 * im.imarr())
+    return im
+
+
+@pytest.fixture(scope="session")
 def sgra_im():
     """Load the avery_sgra model image."""
     return eh.image.load_txt(os.path.join(MODEL_DIR, "avery_sgra_eofn.txt"))
@@ -168,11 +177,16 @@ def initialize_imager():
     either a single obs or a list of obs.
     """
     def _factory(obs, im, data_term, pol="I", ttype="direct",
-                 mf=False, mf_order=0, debias=True, snrcut=0.0):
-        imgr = eh.imager.Imager(
-            obs, im, prior_im=im, flux=im.total_flux(),
+                 mf=False, mf_order=0, debias=True, snrcut=0.0,
+                 transform=None):
+        imgr_kw = dict(
             data_term=data_term, ttype=ttype, pol=pol,
             debias=debias, snrcut=snrcut,
+        )
+        if transform is not None:
+            imgr_kw["transform"] = transform
+        imgr = eh.imager.Imager(
+            obs, im, prior_im=im, flux=im.total_flux(), **imgr_kw,
         )
 
         # Mirror the early steps of make_image() so init_imager has the right state.

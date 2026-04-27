@@ -36,6 +36,24 @@ POL_FRAC_U = 0.05
 # (NumPy 1.24+ inhomogeneous-array, deprecated `np.float`); tracked separately.
 PER_TERM_DATATERMS = ["vis", "amp", "bs", "cphase", "camp", "logcamp"]
 
+# Polarimetric data terms with required (pol, transform) per term.
+PER_TERM_POL_CASES = [
+    ("pvis", "IP", ["log", "mcv"]),
+    ("m",    "IP", ["log", "mcv"]),
+    ("vvis", "IV", ["log", "vcv"]),
+]
+
+# `chisqgrad_m` has a typo at pol_imager_utils.py:613 (missing operand before
+# the `*` inside np.real); the m-gradient path raises TypeError. Tracked
+# separately; only the gradient is broken, the chi^2 path works.
+PER_TERM_POL_GRAD_CASES = [
+    ("pvis", "IP", ["log", "mcv"]),
+    pytest.param("m", "IP", ["log", "mcv"], marks=pytest.mark.xfail(
+        reason="chisqgrad_m typo: np.real(   * np.dot(...)) at pol_imager_utils.py:613",
+        raises=TypeError, strict=True)),
+    ("vvis", "IV", ["log", "vcv"]),
+]
+
 # Noisy-truth bounds: snrcut=3 keeps the linearized error-propagation valid
 # for closure quantities; the (lo, hi) range is empirical over 20 seeds.
 NOISY_SNRCUT = 3.0
@@ -170,6 +188,34 @@ class TestComputeChisqDict:
         assert set(result.keys()) == {dterm}
         assert NOISY_CHISQ_LO < result[dterm] < NOISY_CHISQ_HI
 
+    @pytest.mark.parametrize("dterm,pol,transform", PER_TERM_POL_CASES)
+    def test_chisq_zero_on_truth_no_debias_pol(self, gauss_im_pol, observe,
+                                                initialize_imager,
+                                                dterm, pol, transform):
+        """chi^2 on a polarized truth image is ~0 (noise-free, no debias)."""
+        obs = observe(gauss_im_pol)
+        imgr, imcur = initialize_imager(
+            obs, gauss_im_pol, {dterm: 1},
+            pol=pol, transform=transform, debias=False,
+        )
+        result = _call_backend_chisq_dict(imgr, imcur)
+        assert set(result.keys()) == {dterm}
+        assert result[dterm] < 1e-10
+
+    @pytest.mark.parametrize("dterm,pol,transform", PER_TERM_POL_CASES)
+    def test_chisq_near_unity_on_noisy_truth_pol(self, gauss_im_pol, observe,
+                                                  initialize_imager,
+                                                  dterm, pol, transform):
+        """chi^2 on noisy polarized truth is ~1 for every pol data term."""
+        obs = observe(gauss_im_pol, seed=42)
+        imgr, imcur = initialize_imager(
+            obs, gauss_im_pol, {dterm: 1},
+            pol=pol, transform=transform, snrcut=NOISY_SNRCUT,
+        )
+        result = _call_backend_chisq_dict(imgr, imcur)
+        assert set(result.keys()) == {dterm}
+        assert NOISY_CHISQ_LO < result[dterm] < NOISY_CHISQ_HI
+
     def test_multiple_dataterms(self, gauss_im, observe, initialize_imager):
         """Multiple data terms — one entry per term, all finite."""
         obs = observe(gauss_im)
@@ -291,6 +337,34 @@ class TestComputeChisqgradDict:
         result = _call_backend_chisqgrad_dict(imgr, imcur)
         assert set(result.keys()) == {dterm}
         assert result[dterm].shape == (imgr._nimage,)
+        assert np.all(np.isfinite(result[dterm]))
+
+    @pytest.mark.parametrize("dterm,pol,transform", PER_TERM_POL_GRAD_CASES)
+    def test_grad_zero_on_truth_no_debias_pol(self, gauss_im_pol, observe,
+                                               initialize_imager,
+                                               dterm, pol, transform):
+        """Gradient on polarized truth is ~0 (noise-free, no debias)."""
+        obs = observe(gauss_im_pol)
+        imgr, imcur = initialize_imager(
+            obs, gauss_im_pol, {dterm: 1},
+            pol=pol, transform=transform, debias=False,
+        )
+        result = _call_backend_chisqgrad_dict(imgr, imcur)
+        assert set(result.keys()) == {dterm}
+        assert np.max(np.abs(result[dterm])) < 1e-10
+
+    @pytest.mark.parametrize("dterm,pol,transform", PER_TERM_POL_GRAD_CASES)
+    def test_grad_finite_on_noisy_truth_pol(self, gauss_im_pol, observe,
+                                             initialize_imager,
+                                             dterm, pol, transform):
+        """Gradient on noisy polarized truth is finite for every pol term."""
+        obs = observe(gauss_im_pol, seed=42)
+        imgr, imcur = initialize_imager(
+            obs, gauss_im_pol, {dterm: 1},
+            pol=pol, transform=transform, snrcut=NOISY_SNRCUT,
+        )
+        result = _call_backend_chisqgrad_dict(imgr, imcur)
+        assert set(result.keys()) == {dterm}
         assert np.all(np.isfinite(result[dterm]))
 
     def test_multiple_dataterms(self, gauss_im, observe, initialize_imager):
