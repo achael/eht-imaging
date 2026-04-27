@@ -43,16 +43,7 @@ PER_TERM_POL_CASES = [
     ("vvis", "IV", ["log", "vcv"]),
 ]
 
-# `chisqgrad_m` has a typo at pol_imager_utils.py:613 (missing operand before
-# the `*` inside np.real); the m-gradient path raises TypeError. Tracked
-# separately; only the gradient is broken, the chi^2 path works.
-PER_TERM_POL_GRAD_CASES = [
-    ("pvis", "IP", ["log", "mcv"]),
-    pytest.param("m", "IP", ["log", "mcv"], marks=pytest.mark.xfail(
-        reason="chisqgrad_m typo: np.real(   * np.dot(...)) at pol_imager_utils.py:613",
-        raises=TypeError, strict=True)),
-    ("vvis", "IV", ["log", "vcv"]),
-]
+PER_TERM_POL_GRAD_CASES = PER_TERM_POL_CASES
 
 # Noisy-truth bounds: snrcut=3 keeps the linearized error-propagation valid
 # for closure quantities; the (lo, hi) range is empirical over 20 seeds.

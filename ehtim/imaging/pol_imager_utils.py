@@ -610,7 +610,7 @@ def chisqgrad_m(imarr, Amatrix, m, sigmam,pol_solve=POL_SOLVE_DEFAULT):
     mdiff = (m - msamples) / (isamples.conj() * sigmam**2)
 
     if pol_solve[0]!=0:
-        gradi = (-np.real(   * np.dot(Amatrix.conj().T, mdiff)) / len(m) + 
+        gradi = (-np.real(mimage * np.exp(-2j*chiimage) * np.dot(Amatrix.conj().T, mdiff)) / len(m) +
                   np.real(np.dot(Amatrix.conj().T, msamples.conj() * mdiff)) / len(m))
         gradout[0] = gradi
 
