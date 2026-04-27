@@ -397,8 +397,8 @@ def compute_embed(imvec, xdim, ydim, psize, clipfloor):
     return embed_mask, coord_matrix
 
 
-def compute_chisq_dict(imcur, dat_term_keys, data_tuples, obslist_next,
-                       logfreqratio_list, mf_next, pol_next, ttype, embed_mask,
+def compute_chisq_dict(imcur, dat_term_keys, data_tuples, obslist,
+                       logfreqratio_list, mf, pol, ttype, embed_mask,
                        dataterms, dataterms_pol, polarization_modes):
     """Compute chi^2 value for each data term across all observations.
 
@@ -411,13 +411,13 @@ def compute_chisq_dict(imcur, dat_term_keys, data_tuples, obslist_next,
     data_tuples : dict
         Pre-computed data products keyed by dname or dname_i,
         each value is a (data, sigma, A) tuple.
-    obslist_next : list
+    obslist : list
         List of Obsdata objects (one per frequency/epoch).
     logfreqratio_list : list of float
         Log frequency ratios log(nu_i/reffreq); one per obs.
-    mf_next : bool
+    mf : bool
         Whether multifrequency imaging is enabled.
-    pol_next : str
+    pol : str
         Polarization mode string.
     ttype : str
         Transform type ('direct', 'fast', 'nfft').
@@ -438,8 +438,8 @@ def compute_chisq_dict(imcur, dat_term_keys, data_tuples, obslist_next,
     chi2_dict = {}
     for dname in dat_term_keys:
         # Loop over all observations in the list
-        for i, obs in enumerate(obslist_next):
-            if len(obslist_next) == 1:
+        for i, obs in enumerate(obslist):
+            if len(obslist) == 1:
                 dname_key = dname
             else:
                 dname_key = dname + (f'_{i}')
@@ -448,7 +448,7 @@ def compute_chisq_dict(imcur, dat_term_keys, data_tuples, obslist_next,
             (data, sigma, A) = data_tuples[dname_key]
 
             # get current multifrequency image
-            if mf_next:
+            if mf:
                 logfreqratio = logfreqratio_list[i]
                 imcur_nu = mfutils.image_at_freq(imcur, logfreqratio)
             else:
@@ -461,7 +461,7 @@ def compute_chisq_dict(imcur, dat_term_keys, data_tuples, obslist_next,
 
             # Single Polarization chi^2 terms
             elif dname in dataterms:
-                if pol_next in polarization_modes:
+                if pol in polarization_modes:
                     imcur_nu_I = imcur_nu[0]
                 else:
                     imcur_nu_I = imcur_nu
@@ -476,8 +476,8 @@ def compute_chisq_dict(imcur, dat_term_keys, data_tuples, obslist_next,
     return chi2_dict
 
 
-def compute_chisqgrad_dict(imcur, dat_term_keys, data_tuples, obslist_next,
-                           logfreqratio_list, mf_next, pol_next, ttype, embed_mask,
+def compute_chisqgrad_dict(imcur, dat_term_keys, data_tuples, obslist,
+                           logfreqratio_list, mf, pol, ttype, embed_mask,
                            which_solve, nimage,
                            dataterms, dataterms_pol, polarization_modes):
     """Compute chi^2 gradient for each data term across all observations.
@@ -491,13 +491,13 @@ def compute_chisqgrad_dict(imcur, dat_term_keys, data_tuples, obslist_next,
     data_tuples : dict
         Pre-computed data products keyed by dname or dname_i,
         each value is a (data, sigma, A) tuple.
-    obslist_next : list
+    obslist : list
         List of Obsdata objects (one per frequency/epoch).
     logfreqratio_list : list of float
         Log frequency ratios log(nu_i/reffreq); one per obs.
-    mf_next : bool
+    mf : bool
         Whether multifrequency imaging is enabled.
-    pol_next : str
+    pol : str
         Polarization mode string.
     ttype : str
         Transform type ('direct', 'fast', 'nfft').
@@ -525,8 +525,8 @@ def compute_chisqgrad_dict(imcur, dat_term_keys, data_tuples, obslist_next,
     zero_row = np.zeros(nimage)
     for dname in dat_term_keys:
         # Loop over all observations in the list
-        for i, obs in enumerate(obslist_next):
-            if len(obslist_next) == 1:
+        for i, obs in enumerate(obslist):
+            if len(obslist) == 1:
                 dname_key = dname
             else:
                 dname_key = dname + (f'_{i}')
@@ -535,7 +535,7 @@ def compute_chisqgrad_dict(imcur, dat_term_keys, data_tuples, obslist_next,
             (data, sigma, A) = data_tuples[dname_key]
 
             # get current multifrequency image
-            if mf_next:
+            if mf:
                 logfreqratio = logfreqratio_list[i]
                 imcur_nu = mfutils.image_at_freq(imcur, logfreqratio)
             else:
@@ -543,7 +543,7 @@ def compute_chisqgrad_dict(imcur, dat_term_keys, data_tuples, obslist_next,
 
             # Polarimetric chi^2 gradients
             if dname in dataterms_pol:
-                if mf_next:
+                if mf:
                     pol_solve = which_solve[0:4]
                 else:
                     pol_solve = which_solve
@@ -553,7 +553,7 @@ def compute_chisqgrad_dict(imcur, dat_term_keys, data_tuples, obslist_next,
 
             # Single polarization chi^2 gradients
             elif dname in dataterms:
-                if pol_next in polarization_modes:  # polarization
+                if pol in polarization_modes:  # polarization
                     imcur_nu_I = imcur_nu[0]
                 else:
                     imcur_nu_I = imcur_nu
@@ -562,7 +562,7 @@ def compute_chisqgrad_dict(imcur, dat_term_keys, data_tuples, obslist_next,
                                              ttype=ttype, mask=embed_mask)
 
                 # If imaging Stokes I with polarization simultaneously, bundle the gradient
-                if pol_next in polarization_modes:
+                if pol in polarization_modes:
                     chi2grad = np.array((chi2grad, zero_row, zero_row, zero_row))
 
             else:
@@ -570,7 +570,7 @@ def compute_chisqgrad_dict(imcur, dat_term_keys, data_tuples, obslist_next,
 
             # If multifrequency imaging,
             # transform the image gradients for all the solved quantities
-            if mf_next:
+            if mf:
                 logfreqratio = logfreqratio_list[i]
                 chi2grad = mfutils.mf_all_grads_chain(chi2grad, imcur_nu, imcur, logfreqratio)
 
