@@ -143,6 +143,20 @@ class TestComputeChisqDict:
         # so chi^2 should be at machine-precision zero.
         assert result["vis"] < 1e-20
 
+    def test_stokes_i_chi2_near_unity_with_noise(self, gauss_im, observe, initialize_imager):
+        """Stokes I 'vis' chi^2 on the truth image with thermal noise is ~1.
+
+        Catches sigma-normalization / weighting bugs that the noise-free test
+        cannot, since chi^2 = 0 holds regardless of how sigma is scaled when
+        residuals are zero. Empirically chi^2 ~ 1.00 +/- 0.04 across seeds for
+        the EHT2017 array (N ~ 1030 visibilities, theoretical std sqrt(2/N)).
+        """
+        obs = observe(gauss_im, seed=42)
+        imgr, imcur = initialize_imager(obs, gauss_im, {"vis": 100})
+        result = _call_backend_chisq_dict(imgr, imcur)
+        assert set(result.keys()) == {"vis"}
+        assert 0.85 < result["vis"] < 1.15
+
     def test_multiple_dataterms(self, gauss_im, observe, initialize_imager):
         """Multiple data terms — one entry per term, all finite."""
         obs = observe(gauss_im)

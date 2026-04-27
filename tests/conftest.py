@@ -141,15 +141,20 @@ def make_rect_image():
 
 @pytest.fixture(scope="session")
 def observe(eht_array):
-    """Factory fixture: noise-free observation with project-standard defaults.
+    """Factory fixture: observation with project-standard defaults.
 
-    Closes over `eht_array`. Tests call as `observe(im)` or override
-    `ttype`, `tstart`, `tstop` as needed.
+    Closes over `eht_array`. Tests call as `observe(im)` for noise-free output,
+    or `observe(im, seed=42)` to enable thermal noise with a deterministic seed.
     """
-    def _factory(im, ttype="direct", tstart=TSTART_HR, tstop=TSTOP_HR):
+    def _factory(im, ttype="direct", tstart=TSTART_HR, tstop=TSTOP_HR, seed=None):
+        kwargs = dict(
+            ampcal=True, phasecal=True, ttype=ttype,
+            add_th_noise=seed is not None,
+        )
+        if seed is not None:
+            kwargs["seed"] = seed
         return im.observe(
-            eht_array, TINT_SEC, TADV_SEC, tstart, tstop, BW_HZ,
-            ampcal=True, phasecal=True, ttype=ttype, add_th_noise=False,
+            eht_array, TINT_SEC, TADV_SEC, tstart, tstop, BW_HZ, **kwargs,
         )
     return _factory
 
