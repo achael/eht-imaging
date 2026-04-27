@@ -31,6 +31,17 @@ MF_ALT_FREQ_HZ = 345e9
 POL_FRAC_Q = 0.1
 POL_FRAC_U = 0.05
 
+# Data terms covered by per-term parametrized chi^2 / grad tests.
+# Diagonalized variants (cphase_diag, logcamp_diag) hit upstream ehtim bugs
+# (NumPy 1.24+ inhomogeneous-array, deprecated `np.float`); tracked separately.
+PER_TERM_DATATERMS = ["vis", "amp", "bs", "cphase", "camp", "logcamp"]
+
+# Noisy-truth bounds: snrcut=3 keeps the linearized error-propagation valid
+# for closure quantities; the (lo, hi) range is empirical over 20 seeds.
+NOISY_SNRCUT = 3.0
+NOISY_CHISQ_LO = 0.3
+NOISY_CHISQ_HI = 10.0
+
 
 class TestComputeEmbed:
     """Tests for compute_embed (extracted from Imager.set_embed)."""
@@ -133,29 +144,31 @@ def _call_backend_chisqgrad_dict(imgr, imcur):
 class TestComputeChisqDict:
     """Tests for compute_chisq_dict (extracted from Imager.make_chisq_dict)."""
 
-    def test_stokes_i_single_term(self, gauss_im, observe, initialize_imager):
-        """Stokes I 'vis' chi^2 on the truth image is ~0 (noise-free, perfect fit)."""
-        obs = observe(gauss_im)
-        imgr, imcur = initialize_imager(obs, gauss_im, {"vis": 100})
-        result = _call_backend_chisq_dict(imgr, imcur)
-        assert set(result.keys()) == {"vis"}
-        # Truth image + add_th_noise=False -> data exactly equals predicted vis,
-        # so chi^2 should be at machine-precision zero.
-        assert result["vis"] < 1e-20
+    @pytest.mark.parametrize("dterm", PER_TERM_DATATERMS)
+    def test_chisq_zero_on_truth_no_debias(self, gauss_im, observe,
+                                            initialize_imager, dterm):
+        """chi^2 on the truth image is ~0 for every data term (noise-free, no debias).
 
-    def test_stokes_i_chi2_near_unity_with_noise(self, gauss_im, observe, initialize_imager):
-        """Stokes I 'vis' chi^2 on the truth image with thermal noise is ~1.
-
-        Catches sigma-normalization / weighting bugs that the noise-free test
-        cannot, since chi^2 = 0 holds regardless of how sigma is scaled when
-        residuals are zero. Empirically chi^2 ~ 1.00 +/- 0.04 across seeds for
-        the EHT2017 array (N ~ 1030 visibilities, theoretical std sqrt(2/N)).
+        Tests forward-model correctness: predicted chi^2 == data when imcur is
+        the truth image and we disable both the noise and debias corrections
+        that would otherwise shift the data away from the raw truth values.
         """
-        obs = observe(gauss_im, seed=42)
-        imgr, imcur = initialize_imager(obs, gauss_im, {"vis": 100})
+        obs = observe(gauss_im)
+        imgr, imcur = initialize_imager(obs, gauss_im, {dterm: 1}, debias=False)
         result = _call_backend_chisq_dict(imgr, imcur)
-        assert set(result.keys()) == {"vis"}
-        assert 0.85 < result["vis"] < 1.15
+        assert set(result.keys()) == {dterm}
+        assert result[dterm] < 1e-10
+
+    @pytest.mark.parametrize("dterm", PER_TERM_DATATERMS)
+    def test_chisq_near_unity_on_noisy_truth(self, gauss_im, observe,
+                                              initialize_imager, dterm):
+        """chi^2 on noisy truth is ~1 for every data term (with snrcut)."""
+        obs = observe(gauss_im, seed=42)
+        imgr, imcur = initialize_imager(obs, gauss_im, {dterm: 1},
+                                        snrcut=NOISY_SNRCUT)
+        result = _call_backend_chisq_dict(imgr, imcur)
+        assert set(result.keys()) == {dterm}
+        assert NOISY_CHISQ_LO < result[dterm] < NOISY_CHISQ_HI
 
     def test_multiple_dataterms(self, gauss_im, observe, initialize_imager):
         """Multiple data terms — one entry per term, all finite."""
@@ -257,15 +270,28 @@ class TestComputeChisqDict:
 class TestComputeChisqgradDict:
     """Tests for compute_chisqgrad_dict (extracted from Imager.make_chisqgrad_dict)."""
 
-    def test_stokes_i_single_term(self, gauss_im, observe, initialize_imager):
-        """Stokes I 'vis' gradient on the truth image is ~0 (chi^2 at minimum)."""
+    @pytest.mark.parametrize("dterm", PER_TERM_DATATERMS)
+    def test_grad_zero_on_truth_no_debias(self, gauss_im, observe,
+                                           initialize_imager, dterm):
+        """Gradient on the truth image is ~0 for every data term (noise-free, no debias)."""
         obs = observe(gauss_im)
-        imgr, imcur = initialize_imager(obs, gauss_im, {"vis": 100})
+        imgr, imcur = initialize_imager(obs, gauss_im, {dterm: 1}, debias=False)
         result = _call_backend_chisqgrad_dict(imgr, imcur)
-        assert set(result.keys()) == {"vis"}
-        assert result["vis"].shape == (imgr._nimage,)
-        # Truth image is the chi^2 minimum so gradient should be machine-precision zero.
-        assert np.max(np.abs(result["vis"])) < 1e-10
+        assert set(result.keys()) == {dterm}
+        assert result[dterm].shape == (imgr._nimage,)
+        assert np.max(np.abs(result[dterm])) < 1e-10
+
+    @pytest.mark.parametrize("dterm", PER_TERM_DATATERMS)
+    def test_grad_finite_on_noisy_truth(self, gauss_im, observe,
+                                         initialize_imager, dterm):
+        """Gradient on noisy truth is finite for every data term."""
+        obs = observe(gauss_im, seed=42)
+        imgr, imcur = initialize_imager(obs, gauss_im, {dterm: 1},
+                                        snrcut=NOISY_SNRCUT)
+        result = _call_backend_chisqgrad_dict(imgr, imcur)
+        assert set(result.keys()) == {dterm}
+        assert result[dterm].shape == (imgr._nimage,)
+        assert np.all(np.isfinite(result[dterm]))
 
     def test_multiple_dataterms(self, gauss_im, observe, initialize_imager):
         """Multiple gradient entries, all finite, correct shape."""

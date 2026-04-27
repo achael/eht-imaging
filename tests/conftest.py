@@ -168,10 +168,11 @@ def initialize_imager():
     either a single obs or a list of obs.
     """
     def _factory(obs, im, data_term, pol="I", ttype="direct",
-                 mf=False, mf_order=0):
+                 mf=False, mf_order=0, debias=True, snrcut=0.0):
         imgr = eh.imager.Imager(
             obs, im, prior_im=im, flux=im.total_flux(),
             data_term=data_term, ttype=ttype, pol=pol,
+            debias=debias, snrcut=snrcut,
         )
 
         # Mirror the early steps of make_image() so init_imager has the right state.
