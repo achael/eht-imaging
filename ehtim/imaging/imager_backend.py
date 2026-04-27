@@ -23,6 +23,12 @@ import ehtim.imaging.imager_utils as imutils
 import ehtim.imaging.multifreq_imager_utils as mfutils
 import ehtim.imaging.pol_imager_utils as polutils
 
+# Data term and polarization-mode names recognized by the chi^2 dispatchers.
+# Imported by ehtim.imager for backward compatibility.
+DATATERMS = ['vis', 'bs', 'amp', 'cphase', 'cphase_diag', 'camp', 'logcamp', 'logcamp_diag']
+DATATERMS_POL = ['pvis', 'm', 'vvis']
+POLARIZATION_MODES = ['P', 'QU', 'IP', 'IQU', 'V', 'IV', 'IQUV', 'IPV']  # TODO: treatment of V may be inconsistent
+
 
 def embed_imarr(imarr, mask, clipfloor=0., randomfloor=False):
     """Embeds a multidimensional image array into the size of boolean embed mask
@@ -398,8 +404,7 @@ def compute_embed(imvec, xdim, ydim, psize, clipfloor):
 
 
 def compute_chisq_dict(imcur, dat_term_keys, data_tuples, obslist,
-                       logfreqratio_list, mf, pol, ttype, embed_mask,
-                       dataterms, dataterms_pol, polarization_modes):
+                       logfreqratio_list, mf, pol, ttype, embed_mask):
     """Compute chi^2 value for each data term across all observations.
 
     Parameters
@@ -423,12 +428,6 @@ def compute_chisq_dict(imcur, dat_term_keys, data_tuples, obslist,
         Transform type ('direct', 'fast', 'nfft').
     embed_mask : np.ndarray of bool
         Pixel embedding mask.
-    dataterms : list of str
-        Single-polarization data term names.
-    dataterms_pol : list of str
-        Polarimetric data term names.
-    polarization_modes : list of str
-        Polarization modes that bundle Stokes I with other terms.
 
     Returns
     -------
@@ -455,13 +454,13 @@ def compute_chisq_dict(imcur, dat_term_keys, data_tuples, obslist,
                 imcur_nu = imcur
 
             # Polarization chi^2 terms
-            if dname in dataterms_pol:
+            if dname in DATATERMS_POL:
                 chi2 = polutils.polchisq(imcur_nu, A, data, sigma, dname,
                                          ttype=ttype, mask=embed_mask)
 
             # Single Polarization chi^2 terms
-            elif dname in dataterms:
-                if pol in polarization_modes:
+            elif dname in DATATERMS:
+                if pol in POLARIZATION_MODES:
                     imcur_nu_I = imcur_nu[0]
                 else:
                     imcur_nu_I = imcur_nu
@@ -478,8 +477,7 @@ def compute_chisq_dict(imcur, dat_term_keys, data_tuples, obslist,
 
 def compute_chisqgrad_dict(imcur, dat_term_keys, data_tuples, obslist,
                            logfreqratio_list, mf, pol, ttype, embed_mask,
-                           which_solve, nimage,
-                           dataterms, dataterms_pol, polarization_modes):
+                           which_solve, nimage):
     """Compute chi^2 gradient for each data term across all observations.
 
     Parameters
@@ -507,12 +505,6 @@ def compute_chisqgrad_dict(imcur, dat_term_keys, data_tuples, obslist,
         Binary flags for which parameters are solved.
     nimage : int
         Number of active pixels (sum of embed_mask).
-    dataterms : list of str
-        Single-polarization data term names.
-    dataterms_pol : list of str
-        Polarimetric data term names.
-    polarization_modes : list of str
-        Polarization modes that bundle Stokes I with other terms.
 
     Returns
     -------
@@ -542,7 +534,7 @@ def compute_chisqgrad_dict(imcur, dat_term_keys, data_tuples, obslist,
                 imcur_nu = imcur
 
             # Polarimetric chi^2 gradients
-            if dname in dataterms_pol:
+            if dname in DATATERMS_POL:
                 if mf:
                     pol_solve = which_solve[0:4]
                 else:
@@ -552,8 +544,8 @@ def compute_chisqgrad_dict(imcur, dat_term_keys, data_tuples, obslist,
                                                  pol_solve=pol_solve)
 
             # Single polarization chi^2 gradients
-            elif dname in dataterms:
-                if pol in polarization_modes:  # polarization
+            elif dname in DATATERMS:
+                if pol in POLARIZATION_MODES:  # polarization
                     imcur_nu_I = imcur_nu[0]
                 else:
                     imcur_nu_I = imcur_nu
@@ -562,7 +554,7 @@ def compute_chisqgrad_dict(imcur, dat_term_keys, data_tuples, obslist,
                                              ttype=ttype, mask=embed_mask)
 
                 # If imaging Stokes I with polarization simultaneously, bundle the gradient
-                if pol in polarization_modes:
+                if pol in POLARIZATION_MODES:
                     chi2grad = np.array((chi2grad, zero_row, zero_row, zero_row))
 
             else:

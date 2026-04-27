@@ -8,8 +8,8 @@ import numpy as np
 import pytest
 
 import ehtim as eh
-from ehtim.imager import DATATERMS, DATATERMS_POL, POLARIZATION_MODES
 from ehtim.imaging.imager_backend import (
+    POLARIZATION_MODES,
     compute_chisq_dict,
     compute_chisqgrad_dict,
     compute_embed,
@@ -163,7 +163,6 @@ def _call_backend_chisq_dict(imgr, imcur):
         imcur, sorted(imgr.dat_term_next.keys()), imgr._data_tuples,
         imgr.obslist_next, imgr._logfreqratio_list, imgr.mf_next,
         imgr.pol_next, imgr._ttype, imgr._embed_mask,
-        DATATERMS, DATATERMS_POL, POLARIZATION_MODES,
     )
 
 
@@ -174,7 +173,6 @@ def _call_backend_chisqgrad_dict(imgr, imcur):
         imgr.obslist_next, imgr._logfreqratio_list, imgr.mf_next,
         imgr.pol_next, imgr._ttype, imgr._embed_mask,
         imgr._which_solve, imgr._nimage,
-        DATATERMS, DATATERMS_POL, POLARIZATION_MODES,
     )
 
 

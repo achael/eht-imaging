@@ -35,6 +35,9 @@ import ehtim.imaging.imager_utils as imutils
 import ehtim.imaging.multifreq_imager_utils as mfutils
 import ehtim.imaging.pol_imager_utils as polutils
 from ehtim.imaging.imager_backend import (
+    DATATERMS,
+    DATATERMS_POL,
+    POLARIZATION_MODES,
     compute_chisq_dict,
     compute_chisqgrad_dict,
     compute_embed,
@@ -52,9 +55,6 @@ NHIST = 50   # number of steps to store for hessian approx
 MAXLS = 40   # maximum number of line search steps in BFGS-B
 STOP = 1e-6  # convergence criterion
 EPS = 1e-8
-
-DATATERMS = ['vis', 'bs', 'amp', 'cphase', 'cphase_diag', 'camp', 'logcamp', 'logcamp_diag']
-DATATERMS_POL = ['pvis', 'm', 'vvis']
 
 REGULARIZERS = ['gs', 'tv', 'tvlog','tv2', 'tv2log', 'l1', 'l1w', 'lA', 'patch',
                 'flux', 'cm', 'simple', 'compact', 'compact2', 'rgauss']
@@ -87,7 +87,6 @@ REGPARAMS_DEFAULT = {'major':50*ehc.RADPERUAS,
                      'alpha_A':1.0,
                      'epsilon_tv':0.0}
 
-POLARIZATION_MODES = ['P','QU','IP','IQU','V','IV','IQUV','IPV'] # TODO: treatment of V may be inconsistent
 MEANPOL_INIT = 0.2 # mean initial polarization if not in initial image
 SIGMAPOL_INIT = 1.e-2 # perturbations to initial polarization if not in initial image
 
@@ -1087,7 +1086,6 @@ class Imager:
             imcur, sorted(self.dat_term_next.keys()), self._data_tuples,
             self.obslist_next, self._logfreqratio_list, self.mf_next,
             self.pol_next, self._ttype, self._embed_mask,
-            DATATERMS, DATATERMS_POL, POLARIZATION_MODES,
         )
 
     def make_chisqgrad_dict(self, imcur):
@@ -1099,7 +1097,6 @@ class Imager:
             self.obslist_next, self._logfreqratio_list, self.mf_next,
             self.pol_next, self._ttype, self._embed_mask,
             self._which_solve, self._nimage,
-            DATATERMS, DATATERMS_POL, POLARIZATION_MODES,
         )
 
     def make_reg_dict(self, imcur):
