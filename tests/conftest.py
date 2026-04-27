@@ -5,6 +5,11 @@ import os
 import pytest
 
 import ehtim as eh
+from ehtim.imaging.imager_backend import (
+    POLARIZATION_MODES,
+    transform_imarr,
+    unpack_imarr,
+)
 
 # ---------------------------------------------------------------------------
 # Paths
@@ -131,4 +136,50 @@ def make_rect_image():
             image_arr, psize, 17.761, -29.0,
             polrep="stokes", pol_prim="I", rf=230e9,
         )
+    return _factory
+
+
+@pytest.fixture(scope="session")
+def observe(eht_array):
+    """Factory fixture: noise-free observation with project-standard defaults.
+
+    Closes over `eht_array`. Tests call as `observe(im)` or override
+    `ttype`, `tstart`, `tstop` as needed.
+    """
+    def _factory(im, ttype="direct", tstart=TSTART_HR, tstop=TSTOP_HR):
+        return im.observe(
+            eht_array, TINT_SEC, TADV_SEC, tstart, tstop, BW_HZ,
+            ampcal=True, phasecal=True, ttype=ttype, add_th_noise=False,
+        )
+    return _factory
+
+
+@pytest.fixture(scope="session")
+def initialize_imager():
+    """Factory fixture: build an Imager and run init_imager.
+
+    Returns (imgr, imcur) where imcur is the unpacked + transformed image
+    array ready to pass into make_chisq_dict / compute_chisq_dict. Accepts
+    either a single obs or a list of obs.
+    """
+    def _factory(obs, im, data_term, pol="I", ttype="direct",
+                 mf=False, mf_order=0):
+        imgr = eh.imager.Imager(
+            obs, im, prior_im=im, flux=im.total_flux(),
+            data_term=data_term, ttype=ttype, pol=pol,
+        )
+
+        # Mirror the early steps of make_image() so init_imager has the right state.
+        imgr.mf_next = mf
+        imgr.mf_order = mf_order
+        if pol in POLARIZATION_MODES:
+            imgr.prior_next = imgr.prior_next.switch_polrep(polrep_out="stokes", pol_prim_out="I")
+            imgr.init_next = imgr.init_next.switch_polrep(polrep_out="stokes", pol_prim_out="I")
+        imgr.check_params()
+        imgr.check_limits()
+        imgr.init_imager()
+
+        imcur = unpack_imarr(imgr._xinit, imgr._xarr, imgr._which_solve)
+        imcur = transform_imarr(imcur, imgr.transform_next, imgr._which_solve)
+        return imgr, imcur
     return _factory
