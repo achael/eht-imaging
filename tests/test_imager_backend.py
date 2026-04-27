@@ -134,12 +134,14 @@ class TestComputeChisqDict:
     """Tests for compute_chisq_dict (extracted from Imager.make_chisq_dict)."""
 
     def test_stokes_i_single_term(self, gauss_im, observe, initialize_imager):
-        """Stokes I, single data term — returns one finite chi^2."""
+        """Stokes I 'vis' chi^2 on the truth image is ~0 (noise-free, perfect fit)."""
         obs = observe(gauss_im)
         imgr, imcur = initialize_imager(obs, gauss_im, {"vis": 100})
         result = _call_backend_chisq_dict(imgr, imcur)
         assert set(result.keys()) == {"vis"}
-        assert np.isfinite(result["vis"])
+        # Truth image + add_th_noise=False -> data exactly equals predicted vis,
+        # so chi^2 should be at machine-precision zero.
+        assert result["vis"] < 1e-20
 
     def test_multiple_dataterms(self, gauss_im, observe, initialize_imager):
         """Multiple data terms — one entry per term, all finite."""
@@ -242,13 +244,14 @@ class TestComputeChisqgradDict:
     """Tests for compute_chisqgrad_dict (extracted from Imager.make_chisqgrad_dict)."""
 
     def test_stokes_i_single_term(self, gauss_im, observe, initialize_imager):
-        """Stokes I gradient has shape (nimage,) and is finite."""
+        """Stokes I 'vis' gradient on the truth image is ~0 (chi^2 at minimum)."""
         obs = observe(gauss_im)
         imgr, imcur = initialize_imager(obs, gauss_im, {"vis": 100})
         result = _call_backend_chisqgrad_dict(imgr, imcur)
         assert set(result.keys()) == {"vis"}
         assert result["vis"].shape == (imgr._nimage,)
-        assert np.all(np.isfinite(result["vis"]))
+        # Truth image is the chi^2 minimum so gradient should be machine-precision zero.
+        assert np.max(np.abs(result["vis"])) < 1e-10
 
     def test_multiple_dataterms(self, gauss_im, observe, initialize_imager):
         """Multiple gradient entries, all finite, correct shape."""
