@@ -5,6 +5,11 @@ import os
 import pytest
 
 import ehtim as eh
+from ehtim.imaging.imager_backend import (
+    POLARIZATION_MODES,
+    transform_imarr,
+    unpack_imarr,
+)
 
 # ---------------------------------------------------------------------------
 # Paths
@@ -40,6 +45,15 @@ def gauss_im():
     """Create a 32x32 Gaussian test image (synthetic, no file dependency)."""
     im = eh.image.make_empty(32, 200 * eh.RADPERUAS, 17.761, -29.0, rf=230e9)
     im = im.add_gauss(1.0, (50 * eh.RADPERUAS, 50 * eh.RADPERUAS, 0, 0, 0))
+    return im
+
+
+@pytest.fixture(scope="session")
+def gauss_im_pol(gauss_im):
+    """Polarized Gaussian image: Stokes I plus scaled Q, U, V."""
+    im = gauss_im.copy()
+    im.add_qu(0.10 * im.imarr(), 0.05 * im.imarr())
+    im.add_v(0.02 * im.imarr())
     return im
 
 
@@ -131,4 +145,61 @@ def make_rect_image():
             image_arr, psize, 17.761, -29.0,
             polrep="stokes", pol_prim="I", rf=230e9,
         )
+    return _factory
+
+
+@pytest.fixture(scope="session")
+def observe(eht_array):
+    """Factory fixture: observation with project-standard defaults.
+
+    Closes over `eht_array`. Tests call as `observe(im)` for noise-free output,
+    or `observe(im, seed=42)` to enable thermal noise with a deterministic seed.
+    """
+    def _factory(im, ttype="direct", tstart=TSTART_HR, tstop=TSTOP_HR, seed=None):
+        kwargs = dict(
+            ampcal=True, phasecal=True, ttype=ttype,
+            add_th_noise=seed is not None,
+        )
+        if seed is not None:
+            kwargs["seed"] = seed
+        return im.observe(
+            eht_array, TINT_SEC, TADV_SEC, tstart, tstop, BW_HZ, **kwargs,
+        )
+    return _factory
+
+
+@pytest.fixture(scope="session")
+def initialize_imager():
+    """Factory fixture: build an Imager and run init_imager.
+
+    Returns (imgr, imcur) where imcur is the unpacked + transformed image
+    array ready to pass into make_chisq_dict / compute_chisq_dict. Accepts
+    either a single obs or a list of obs.
+    """
+    def _factory(obs, im, data_term, pol="I", ttype="direct",
+                 mf=False, mf_order=0, debias=True, snrcut=0.0,
+                 transform=None):
+        imgr_kw = dict(
+            data_term=data_term, ttype=ttype, pol=pol,
+            debias=debias, snrcut=snrcut,
+        )
+        if transform is not None:
+            imgr_kw["transform"] = transform
+        imgr = eh.imager.Imager(
+            obs, im, prior_im=im, flux=im.total_flux(), **imgr_kw,
+        )
+
+        # Mirror the early steps of make_image() so init_imager has the right state.
+        imgr.mf_next = mf
+        imgr.mf_order = mf_order
+        if pol in POLARIZATION_MODES:
+            imgr.prior_next = imgr.prior_next.switch_polrep(polrep_out="stokes", pol_prim_out="I")
+            imgr.init_next = imgr.init_next.switch_polrep(polrep_out="stokes", pol_prim_out="I")
+        imgr.check_params()
+        imgr.check_limits()
+        imgr.init_imager()
+
+        imcur = unpack_imarr(imgr._xinit, imgr._xarr, imgr._which_solve)
+        imcur = transform_imarr(imcur, imgr.transform_next, imgr._which_solve)
+        return imgr, imcur
     return _factory

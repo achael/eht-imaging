@@ -20,7 +20,14 @@
 import numpy as np
 
 import ehtim.imaging.imager_utils as imutils
+import ehtim.imaging.multifreq_imager_utils as mfutils
 import ehtim.imaging.pol_imager_utils as polutils
+
+# Data term and polarization-mode names recognized by the chi^2 dispatchers.
+# Imported by ehtim.imager for backward compatibility.
+DATATERMS = ['vis', 'bs', 'amp', 'cphase', 'cphase_diag', 'camp', 'logcamp', 'logcamp_diag']
+DATATERMS_POL = ['pvis', 'm', 'vvis']
+POLARIZATION_MODES = ['P', 'QU', 'IP', 'IQU', 'V', 'IV', 'IQUV', 'IPV']  # TODO: treatment of V may be inconsistent
 
 
 def embed_imarr(imarr, mask, clipfloor=0., randomfloor=False):
@@ -394,3 +401,171 @@ def compute_embed(imvec, xdim, ydim, psize, clipfloor):
     coord_matrix = coord[embed_mask]
 
     return embed_mask, coord_matrix
+
+
+def compute_chisq_dict(imcur, dat_term_keys, data_tuples, obslist,
+                       logfreqratio_list, mf, pol, ttype, embed_mask):
+    """Compute chi^2 value for each data term across all observations.
+
+    Parameters
+    ----------
+    imcur : np.ndarray
+        Current image array transformed to bounded values.
+    dat_term_keys : list of str
+        Data term names to evaluate, already sorted.
+    data_tuples : dict
+        Pre-computed data products keyed by dname or dname_i,
+        each value is a (data, sigma, A) tuple.
+    obslist : list
+        List of Obsdata objects (one per frequency/epoch).
+    logfreqratio_list : list of float
+        Log frequency ratios log(nu_i/reffreq); one per obs.
+    mf : bool
+        Whether multifrequency imaging is enabled.
+    pol : str
+        Polarization mode string.
+    ttype : str
+        Transform type ('direct', 'fast', 'nfft').
+    embed_mask : np.ndarray of bool
+        Pixel embedding mask.
+
+    Returns
+    -------
+    chi2_dict : dict
+        Mapping from dname (or dname_i for multi-obs) to chi^2 scalar.
+    """
+    chi2_dict = {}
+    for dname in dat_term_keys:
+        # Loop over all observations in the list
+        for i, obs in enumerate(obslist):
+            if len(obslist) == 1:
+                dname_key = dname
+            else:
+                dname_key = dname + (f'_{i}')
+
+            # get data products
+            (data, sigma, A) = data_tuples[dname_key]
+
+            # get current multifrequency image
+            if mf:
+                logfreqratio = logfreqratio_list[i]
+                imcur_nu = mfutils.image_at_freq(imcur, logfreqratio)
+            else:
+                imcur_nu = imcur
+
+            # Polarization chi^2 terms
+            if dname in DATATERMS_POL:
+                chi2 = polutils.polchisq(imcur_nu, A, data, sigma, dname,
+                                         ttype=ttype, mask=embed_mask)
+
+            # Single Polarization chi^2 terms
+            elif dname in DATATERMS:
+                if pol in POLARIZATION_MODES:
+                    imcur_nu_I = imcur_nu[0]
+                else:
+                    imcur_nu_I = imcur_nu
+                chi2 = imutils.chisq(imcur_nu_I, A, data, sigma, dname,
+                                     ttype=ttype, mask=embed_mask)
+
+            else:
+                raise Exception(f"data term {dname} not recognized!")
+
+            chi2_dict[dname_key] = chi2
+
+    return chi2_dict
+
+
+def compute_chisqgrad_dict(imcur, dat_term_keys, data_tuples, obslist,
+                           logfreqratio_list, mf, pol, ttype, embed_mask,
+                           which_solve, nimage):
+    """Compute chi^2 gradient for each data term across all observations.
+
+    Parameters
+    ----------
+    imcur : np.ndarray
+        Current image array transformed to bounded values.
+    dat_term_keys : list of str
+        Data term names to evaluate, already sorted.
+    data_tuples : dict
+        Pre-computed data products keyed by dname or dname_i,
+        each value is a (data, sigma, A) tuple.
+    obslist : list
+        List of Obsdata objects (one per frequency/epoch).
+    logfreqratio_list : list of float
+        Log frequency ratios log(nu_i/reffreq); one per obs.
+    mf : bool
+        Whether multifrequency imaging is enabled.
+    pol : str
+        Polarization mode string.
+    ttype : str
+        Transform type ('direct', 'fast', 'nfft').
+    embed_mask : np.ndarray of bool
+        Pixel embedding mask.
+    which_solve : np.ndarray of int
+        Binary flags for which parameters are solved.
+    nimage : int
+        Number of active pixels (sum of embed_mask).
+
+    Returns
+    -------
+    chi2grad_dict : dict
+        Mapping from dname (or dname_i for multi-obs) to chi^2 gradient array.
+    """
+    chi2grad_dict = {}
+    # Zero row reused in the polarization-bundled Stokes-I gradient; safe to share
+    # because np.array((...)) below copies into a new (4, nimage) array each time.
+    zero_row = np.zeros(nimage)
+    for dname in dat_term_keys:
+        # Loop over all observations in the list
+        for i, obs in enumerate(obslist):
+            if len(obslist) == 1:
+                dname_key = dname
+            else:
+                dname_key = dname + (f'_{i}')
+
+            # get data products
+            (data, sigma, A) = data_tuples[dname_key]
+
+            # get current multifrequency image
+            if mf:
+                logfreqratio = logfreqratio_list[i]
+                imcur_nu = mfutils.image_at_freq(imcur, logfreqratio)
+            else:
+                imcur_nu = imcur
+
+            # Polarimetric chi^2 gradients
+            if dname in DATATERMS_POL:
+                if mf:
+                    pol_solve = which_solve[0:4]
+                else:
+                    pol_solve = which_solve
+                chi2grad = polutils.polchisqgrad(imcur_nu, A, data, sigma, dname,
+                                                 ttype=ttype, mask=embed_mask,
+                                                 pol_solve=pol_solve)
+
+            # Single polarization chi^2 gradients
+            elif dname in DATATERMS:
+                if pol in POLARIZATION_MODES:  # polarization
+                    imcur_nu_I = imcur_nu[0]
+                else:
+                    imcur_nu_I = imcur_nu
+
+                chi2grad = imutils.chisqgrad(imcur_nu_I, A, data, sigma, dname,
+                                             ttype=ttype, mask=embed_mask)
+
+                # If imaging Stokes I with polarization simultaneously, bundle the gradient
+                if pol in POLARIZATION_MODES:
+                    chi2grad = np.array((chi2grad, zero_row, zero_row, zero_row))
+
+            else:
+                raise Exception(f"data term {dname} not recognized!")
+
+            # If multifrequency imaging,
+            # transform the image gradients for all the solved quantities
+            if mf:
+                logfreqratio = logfreqratio_list[i]
+                chi2grad = mfutils.mf_all_grads_chain(chi2grad, imcur_nu, imcur, logfreqratio)
+
+            chi2grad_dict[dname_key] = np.array(chi2grad)
+
+    return chi2grad_dict
