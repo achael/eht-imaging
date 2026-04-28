@@ -12,6 +12,8 @@ from ehtim.imaging.imager_backend import (
     compute_chisq_dict,
     compute_chisqgrad_dict,
     compute_embed,
+    transform_gradients,
+    transform_imarr,
 )
 
 # Parametrize over square, tall, and wide images
@@ -461,4 +463,150 @@ def test_chisq_and_chisqgrad_share_keys(gauss_im, observe, initialize_imager):
     chisq = _call_backend_chisq_dict(imgr, imcur)
     chisqgrad = _call_backend_chisqgrad_dict(imgr, imcur)
     assert set(chisq.keys()) == set(chisqgrad.keys())
+
+
+# ---------------------------------------------------------------------------
+# transform_gradients: chain rule correctness via finite differences
+# ---------------------------------------------------------------------------
+
+def _fd_grad_of_transform(imarr, transforms, which_solve, scalar_obj):
+    """Centered FD gradient of (scalar_obj o transform_imarr) w.r.t. solver vars.
+
+    Used to verify transform_gradients applies the chain rule correctly.
+    """
+    eps = 1e-6
+    grad = np.zeros_like(imarr)
+    for k in range(imarr.shape[0]):
+        for i in range(imarr.shape[1]):
+            ip = imarr.copy()
+            ip[k, i] += eps
+            im = imarr.copy()
+            im[k, i] -= eps
+            f_p = scalar_obj(transform_imarr(ip, transforms, which_solve))
+            f_m = scalar_obj(transform_imarr(im, transforms, which_solve))
+            grad[k, i] = (f_p - f_m) / (2 * eps)
+    return grad
+
+
+class TestTransformGradientsChainRule:
+    """transform_gradients chain rule agrees with FD of transform_imarr."""
+
+    @staticmethod
+    def _scalar_obj(phys):
+        """Arbitrary smooth scalar objective: weighted sum of physical components."""
+        weights = np.array([0.7, 1.3, -0.5, 0.9])[:, None]
+        return float(np.sum(weights * phys**2))
+
+    @staticmethod
+    def _solver_imarr(seed=0, n=8, v_pre=None, m_pre=None, chi_pre=None):
+        """Build a (4, n) solver-variable array; pass a scalar to pin a row."""
+        rng = np.random.default_rng(seed)
+        log_I = rng.uniform(-1.0, 1.0, size=n)
+        m_arr = rng.uniform(-2.0, 2.0, size=n) if m_pre is None else np.full(n, m_pre)
+        chi_arr = rng.uniform(-0.5, 0.5, size=n) if chi_pre is None else np.full(n, chi_pre)
+        v_arr = rng.uniform(-0.3, 0.3, size=n) if v_pre is None else np.full(n, v_pre)
+        return np.array([log_I, m_arr, chi_arr, v_arr])
+
+    @pytest.mark.parametrize(
+        "transforms,which_solve,imarr_kwargs,check_rows",
+        [
+            # ---- Real-usage operating points ----
+            # IP imaging: mcv with vfrac=0 (no V). Solve I, m_pre, chi.
+            (["log", "mcv"], np.array([1, 1, 1, 0]), {"v_pre": 0.0}, [0, 1, 2]),
+            # IV imaging: vcv with mfrac=0 (no Q/U). Solve I, v_pre.
+            (["log", "vcv"], np.array([1, 0, 0, 1]), {"m_pre": 0.0}, [0, 3]),
+            # IPV imaging: polcv with diagonal Jacobian. Solve I, rho_pre, psi_pre.
+            (["log", "polcv"], np.array([1, 1, 0, 1]), {}, [0, 1, 3]),
+            # ---- General regimes (cross-term coverage) ----
+            # mcv at vfrac != 0: dpsi/dmprime cross-term is nonzero.
+            (["log", "mcv"], np.array([1, 1, 0, 0]), {}, [0, 1]),
+            # vcv at mfrac != 0: dpsi/dvprime cross-term is nonzero.
+            (["log", "vcv"], np.array([1, 0, 0, 1]), {}, [0, 3]),
+            # ---- log only sanity ----
+            (["log"], np.array([1, 0, 0, 0]), {}, [0]),
+            # ---- pure pol cv (no log) sanity ----
+            (["mcv"], np.array([0, 1, 0, 0]), {"v_pre": 0.0}, [1]),
+            (["vcv"], np.array([0, 0, 0, 1]), {"m_pre": 0.0}, [3]),
+            (["polcv"], np.array([0, 1, 0, 1]), {}, [1, 3]),
+        ],
+        ids=[
+            "IP_vfrac0", "IV_mfrac0", "IPV",
+            "IP_general", "IV_general",
+            "log_only",
+            "mcv_only", "vcv_only", "polcv_only",
+        ],
+    )
+    def test_chain_rule_matches_finite_difference(self, transforms, which_solve,
+                                                    imarr_kwargs, check_rows):
+        """Chain rule output must match centered FD of (obj o transform)."""
+        imarr = self._solver_imarr(seed=0, **imarr_kwargs)
+
+        phys = transform_imarr(imarr, transforms, which_solve)
+        weights = np.array([0.7, 1.3, -0.5, 0.9])[:, None]
+        grad_phys = 2.0 * weights * phys
+
+        grad_solver = transform_gradients(grad_phys, imarr, transforms, which_solve)
+        grad_fd = _fd_grad_of_transform(
+            imarr, transforms, which_solve, self._scalar_obj,
+        )
+
+        for k in check_rows:
+            np.testing.assert_allclose(
+                grad_solver[k], grad_fd[k],
+                rtol=1e-5, atol=1e-8,
+                err_msg=f"chain rule mismatch on row {k} for transforms={transforms}",
+            )
+
+    def test_log_chain_preserved_under_mcv(self):
+        """outarr[0] from log+mcv must equal exp(imarr[0]) * gradarr[0]."""
+        imarr = self._solver_imarr(seed=1, v_pre=0.0)
+        gradarr = np.ones_like(imarr)
+        which_solve = np.array([1, 1, 0, 0])
+
+        out = transform_gradients(gradarr, imarr, ["log", "mcv"], which_solve)
+        np.testing.assert_allclose(out[0], np.exp(imarr[0]), rtol=1e-12)
+
+    def test_single_pol_log_chain_1d(self):
+        """nimage==1 branch: 1D imarr, outarr = exp(imarr) * gradarr."""
+        rng = np.random.default_rng(42)
+        imarr = rng.uniform(-1.0, 1.0, size=8)
+        gradarr = rng.uniform(-1.0, 1.0, size=8)
+        which_solve = np.array([1, 0, 0, 0])
+
+        out = transform_gradients(gradarr, imarr, ["log"], which_solve)
+        np.testing.assert_allclose(out, np.exp(imarr) * gradarr, rtol=1e-12)
+
+        out_no_log = transform_gradients(gradarr, imarr, [], which_solve)
+        np.testing.assert_allclose(out_no_log, gradarr, rtol=1e-12)
+
+    def test_multifreq_stokes_i_log_chain(self):
+        """nimage==3 branch: log applies to row 0 only; spectral coeffs pass through."""
+        rng = np.random.default_rng(7)
+        imarr = rng.uniform(-1.0, 1.0, size=(3, 6))
+        gradarr = rng.uniform(-1.0, 1.0, size=(3, 6))
+        which_solve = np.array([1, 1, 1, 0])
+
+        out = transform_gradients(gradarr, imarr, ["log"], which_solve)
+        np.testing.assert_allclose(out[0], np.exp(imarr[0]) * gradarr[0], rtol=1e-12)
+        np.testing.assert_array_equal(out[1], gradarr[1])
+        np.testing.assert_array_equal(out[2], gradarr[2])
+
+    def test_mf_pol_shape_smoke(self):
+        """nimage==10 branch (mf+pol): shape preserved, log applied to row 0, rows 4-9 pass through."""
+        rng = np.random.default_rng(13)
+        n = 6
+        imarr = np.empty((10, n))
+        imarr[0] = rng.uniform(-1.0, 1.0, size=n)
+        imarr[1] = rng.uniform(-2.0, 2.0, size=n)
+        imarr[2] = rng.uniform(-0.5, 0.5, size=n)
+        imarr[3] = 0.0  # vfrac pinned for pol='IP' regime
+        imarr[4:10] = rng.uniform(-0.3, 0.3, size=(6, n))
+        gradarr = rng.uniform(-1.0, 1.0, size=(10, n))
+        which_solve = np.array([1, 1, 0, 0, 1, 1, 0, 0, 0, 0])
+
+        out = transform_gradients(gradarr, imarr, ["log", "mcv"], which_solve)
+
+        assert out.shape == imarr.shape
+        np.testing.assert_allclose(out[0], np.exp(imarr[0]) * gradarr[0], rtol=1e-12)
+        np.testing.assert_array_equal(out[4:10], gradarr[4:10])
 
