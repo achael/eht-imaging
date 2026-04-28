@@ -176,22 +176,23 @@ def initialize_imager():
     array ready to pass into make_chisq_dict / compute_chisq_dict. Accepts
     either a single obs or a list of obs.
     """
-    def _factory(obs, im, data_term, pol="I", ttype="direct",
-                 mf=False, mf_order=0, debias=True, snrcut=0.0,
+    def _factory(obs, im, data_term, reg_term=None, pol="I", ttype="direct",
+                 mf=False, mf_order=0, mf_flux=None, debias=True, snrcut=0.0,
                  transform=None):
         imgr_kw = dict(
             data_term=data_term, ttype=ttype, pol=pol,
             debias=debias, snrcut=snrcut,
+            mf=mf, mf_order=mf_order,
         )
+        if reg_term is not None:
+            imgr_kw["reg_term"] = reg_term
+        if mf_flux is not None:
+            imgr_kw["mf_flux"] = mf_flux
         if transform is not None:
             imgr_kw["transform"] = transform
         imgr = eh.imager.Imager(
             obs, im, prior_im=im, flux=im.total_flux(), **imgr_kw,
         )
-
-        # Mirror the early steps of make_image() so init_imager has the right state.
-        imgr.mf_next = mf
-        imgr.mf_order = mf_order
         if pol in POLARIZATION_MODES:
             imgr.prior_next = imgr.prior_next.switch_polrep(polrep_out="stokes", pol_prim_out="I")
             imgr.init_next = imgr.init_next.switch_polrep(polrep_out="stokes", pol_prim_out="I")
