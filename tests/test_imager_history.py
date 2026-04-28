@@ -118,6 +118,10 @@ class TestBeforeAnyRun:
     def test_debias_last_no_runs(self, imager, capsys):
         self._check_prints_no_runs_and_returns_none(Imager.debias_last, imager, capsys)
 
+    def test_debias_next_default_is_false(self, imager):
+        """debias defaults to False (flipped from True per task 2.15)."""
+        assert imager.debias_next is False
+
     def test_snrcut_last_no_runs(self, imager, capsys):
         self._check_prints_no_runs_and_returns_none(Imager.snrcut_last, imager, capsys)
 

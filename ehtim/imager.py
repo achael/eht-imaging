@@ -167,7 +167,7 @@ class Imager:
         self.transform_next = np.array([self.transform_next]).flatten() #so we can handle multiple transforms
 
         # Weighting/debiasing/snr cut/systematic noise
-        self.debias_next = kwargs.get('debias', True)
+        self.debias_next = kwargs.get('debias', False)
         snrcut = kwargs.get('snrcut', 0.)
         self.snrcut_next = {key: 0. for key in set(DATATERMS+DATATERMS_POL)}
 

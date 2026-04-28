@@ -177,7 +177,7 @@ def initialize_imager():
     either a single obs or a list of obs.
     """
     def _factory(obs, im, data_term, reg_term=None, pol="I", ttype="direct",
-                 mf=False, mf_order=0, mf_flux=None, debias=True, snrcut=0.0,
+                 mf=False, mf_order=0, mf_flux=None, debias=False, snrcut=0.0,
                  transform=None):
         imgr_kw = dict(
             data_term=data_term, ttype=ttype, pol=pol,
