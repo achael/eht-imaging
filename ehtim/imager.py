@@ -32,28 +32,21 @@ import scipy.optimize as opt
 import ehtim.const_def as ehc
 import ehtim.image
 import ehtim.imaging.imager_utils as imutils
-import ehtim.imaging.multifreq_imager_utils as mfutils
 import ehtim.imaging.pol_imager_utils as polutils
 from ehtim.imaging.imager_backend import (
     DATATERMS,
     DATATERMS_POL,
     POLARIZATION_MODES,
     REGULARIZERS,
-    REGULARIZERS_ALLFREQS_I,
-    REGULARIZERS_CM,
-    REGULARIZERS_CURV,
-    REGULARIZERS_CURV_P,
     REGULARIZERS_ISPECTRAL,
     REGULARIZERS_POL,
     REGULARIZERS_POLSPECTRAL,
-    REGULARIZERS_RM,
-    REGULARIZERS_SPECIND,
-    REGULARIZERS_SPECIND_P,
     REGULARIZERS_SPECTRAL,
     compute_chisq_dict,
     compute_chisqgrad_dict,
     compute_embed,
     compute_reg_dict,
+    compute_reggrad_dict,
     embed_imarr,
     make_initarr,
     pack_imarr,
@@ -1112,142 +1105,15 @@ class Imager:
         """Make a dictionary of current regularizer gradient values
            input is image array transformed to bounded values
         """
-
-        reggrad_dict = {}
-
-        for regname in sorted(self.reg_term_next.keys()):
-
-            # Multifrequency regularizers
-            if self.mf_next:
-
-                # Polarimetric regularizers
-                if regname in REGULARIZERS_POL:
-                    # we only regularize reference frequency image
-                    imcur_pol = imcur[0:4]
-                    prior_pol = self._xprior[0:4]
-                    pol_solve = self._which_solve[0:4]
-                    regp = polutils.polregularizergrad(imcur_pol, prior_pol, self._embed_mask,
-                                                      self.flux_next, self.pflux_next, self.vflux_next,
-                                                      self.prior_next.xdim, self.prior_next.ydim, self.prior_next.psize,
-                                                      regname,
-                                                      norm_reg=self.norm_reg, beam_size=self.beam_size,
-                                                      pol_solve=pol_solve,
-                                                      **self.regparams)
-                    reggrad = np.zeros((len(imcur), self._nimage))
-                    reggrad[0:4] = regp
-
-                # Stokes I regularizers
-                elif regname in REGULARIZERS:
-
-                    # here we regularize images at each frequency
-                    if regname in REGULARIZERS_ALLFREQS_I:
-
-
-                        # TODO move this to checks?
-                        if (not isinstance(self.mf_flux, list)) or len(self.mf_flux)!=len(self.obslist_next):
-                            raise Exception(f"when using regularizer '{regname}', "
-                                            +"self.mf_flux must be a list of same length as self.obslist_next!")
-
-                        regname_base = '_'.join(regname.split('_')[:-1]) # remove the '_mf' tag
-                        for i in range(len(self.obslist_next)): # sum up regularizer gradients at each frequency
-
-                            logfreqratio = self._logfreqratio_list[i]
-                            flux_nu = self.mf_flux[i]
-
-                            imcur_nu = mfutils.image_at_freq(imcur, logfreqratio)
-                            prior_nu = mfutils.image_at_freq(self._xprior, logfreqratio)
-
-                            regi = imutils.regularizergrad(imcur_nu, prior_nu, self._embed_mask,
-                                                           flux_nu, self.prior_next.xdim,
-                                                           self.prior_next.ydim, self.prior_next.psize,
-                                                           regname_base,
-                                                           norm_reg=self.norm_reg, beam_size=self.beam_size,
-                                                           **self.regparams)
-                            reggrad_i = mfutils.mf_all_grads_chain(regi, imcur_nu, imcur, logfreqratio)
-                            if i==0:
-                                reggrad = reggrad_i
-                            else:
-                                reggrad += reggrad_i
-
-                    # here we only regularize the reference frequency image
-                    else:
-                        regi = imutils.regularizergrad(imcur[0], self._xprior[0],
-                                                       self._embed_mask, self.flux_next,
-                                                       self.prior_next.xdim, self.prior_next.ydim, self.prior_next.psize,
-                                                       regname,
-                                                       norm_reg=self.norm_reg, beam_size=self.beam_size,
-                                                       **self.regparams)
-                        reggrad = np.zeros((len(imcur), self._nimage))
-                        reggrad[0] = regi
-
-                elif regname in REGULARIZERS_SPECTRAL:
-                    if regname in REGULARIZERS_SPECIND:
-                        idx = 4 if len(imcur) == 10 else 1
-                    elif regname in REGULARIZERS_CURV:
-                        idx = 5 if len(imcur) == 10 else 2
-                    elif regname in REGULARIZERS_SPECIND_P:
-                        idx = 6
-                    elif regname in REGULARIZERS_CURV_P:
-                        idx = 7
-                    elif regname in REGULARIZERS_RM:
-                        idx = 8
-                    elif regname in REGULARIZERS_CM:
-                        idx = 9
-
-                    regmf = mfutils.regularizergrad_mf(imcur[idx], self._xprior[idx], self._embed_mask,
-                                                       self.prior_next.xdim, self.prior_next.ydim, self.prior_next.psize,
-                                                       regname,
-                                                       norm_reg=self.norm_reg, beam_size=self.beam_size,
-                                                       **self.regparams)
-
-                    reggrad = np.zeros((len(imcur), self._nimage))
-                    reggrad[idx] = regmf
-                else:
-                    raise Exception(f"regularizer term {regname} not recognized!")
-
-
-
-            else:
-                # Single-frequency polarimetric regularizer
-                if regname in REGULARIZERS_POL:
-                    reggrad = polutils.polregularizergrad(imcur, self._xprior, self._embed_mask,
-                                                      self.flux_next, self.pflux_next, self.vflux_next,
-                                                      self.prior_next.xdim, self.prior_next.ydim,
-                                                      self.prior_next.psize, regname,
-                                                      norm_reg=self.norm_reg, beam_size=self.beam_size,
-                                                      pol_solve=self._which_solve,
-                                                      **self.regparams)
-
-
-                # Single-frequency, single polarization regularizer
-                elif regname in REGULARIZERS:
-                    if self.pol_next in POLARIZATION_MODES:
-                        imcur0 = imcur[0]
-                        prior0 = self._xprior[0]
-                    else:
-                        imcur0 = imcur
-                        prior0 = self._xprior
-                    reggrad = imutils.regularizergrad(imcur0, prior0, self._embed_mask, self.flux_next,
-                                                      self.prior_next.xdim, self.prior_next.ydim,
-                                                      self.prior_next.psize,
-                                                      regname,
-                                                      norm_reg=self.norm_reg, beam_size=self.beam_size,
-                                                      **self.regparams)
-
-                    # If imaging Stokes I with polarization simultaneously, bundle the gradient
-                    if self.pol_next in POLARIZATION_MODES:
-                        reggrad = np.array((reggrad,
-                                            np.zeros(self._nimage),
-                                            np.zeros(self._nimage),
-                                            np.zeros(self._nimage)))
-
-                else:
-                    raise Exception(f"regularizer term {regname} not recognized!")
-
-            # put regularizer terms in the dictionary
-            reggrad_dict[regname] = reggrad
-
-        return reggrad_dict
+        return compute_reggrad_dict(
+            imcur, sorted(self.reg_term_next.keys()), self._xprior, self._embed_mask,
+            self.flux_next, self.pflux_next, self.vflux_next,
+            self.prior_next.xdim, self.prior_next.ydim, self.prior_next.psize,
+            self.norm_reg, self.beam_size, self.regparams,
+            self.mf_next, self.mf_flux, self.obslist_next,
+            self._logfreqratio_list, self.pol_next,
+            self._which_solve, self._nimage,
+        )
 
     def objfunc(self, imvec):
         """Current objective function.
