@@ -160,17 +160,32 @@ def polcv_r(imarr):
 
     return out
 
-def polcv_chain(imarr):
-    """chain rule term dm/dm' for mcv
-       input is solver values
+def polcv_grad(imarr, gradarr):
+    """Apply J^T @ gradarr for polcv (rho ← arctan(rho_pre/T_M); psi ← arctan(psi_pre/T_PSI)).
+
+    Diagonal Jacobian on slots 1 and 3; slot 2 (phi) passes through.
+
+    Parameters
+    ----------
+    imarr : np.ndarray, shape (4, ...)
+        Solver-space image array.
+    gradarr : np.ndarray, shape (4, ...)
+        Gradient w.r.t. physical components phys[0:4]. gradarr[0] is unused.
+
+    Returns
+    -------
+    out : np.ndarray, shape (3, ...)
+        Gradient w.r.t. solver slots (1, 2, 3).
     """
-    out = np.ones(imarr.shape)
+    rho_pre = imarr[1]
+    psi_pre = imarr[3]
+    drho_dpre = 1 / (TANWIDTH_M * np.pi * (1 + (rho_pre / TANWIDTH_M) ** 2))
+    dpsi_dpre = 1 / (TANWIDTH_PSI * (1 + (psi_pre / TANWIDTH_PSI) ** 2))
 
-    rho_prime = imarr[1]
-    out[1] = 1 / (TANWIDTH_M*np.pi*(1 + (rho_prime/TANWIDTH_M)**2))
-
-    psi_prime = imarr[3]
-    out[3] =  1 / (TANWIDTH_PSI*(1 + (psi_prime/TANWIDTH_PSI)**2))
+    out = np.empty((3,) + gradarr.shape[1:])
+    out[0] = drho_dpre * gradarr[1]
+    out[1] = gradarr[2]
+    out[2] = dpsi_dpre * gradarr[3]
     return out
 
 
@@ -209,36 +224,45 @@ def mcv_r(imarr):
     out = np.array((imarr[0], mfrac_prime, imarr[2], vfrac))
     return out
 
-# TODO WE ARE GOING TO HAVE TO CHECK ALL OF THESE NUMERICALLY
-def mcv_chain(imarr):
-    """chain rule terms drho/dm' and dpsi/dv' for mcv
-       input is solver values
+def mcv_grad(imarr, gradarr):
+    """Apply J^T @ gradarr for mcv (mprime → rho, psi; vfrac held constant).
+
+    phys[1]=rho and phys[3]=psi both depend on mprime via mfrac, so the
+    Jacobian has off-diagonal terms; both are included here. Slot 3 of
+    the result is zero because vfrac is held constant.
+
+    Parameters
+    ----------
+    imarr : np.ndarray, shape (4, ...)
+        Solver-space image array.
+    gradarr : np.ndarray, shape (4, ...)
+        Gradient w.r.t. physical components phys[0:4]. gradarr[0] is unused.
+
+    Returns
+    -------
+    out : np.ndarray, shape (3, ...)
+        Gradient w.r.t. solver slots (1, 2, 3).
     """
-    out = np.ones(imarr.shape)
+    vfrac = imarr[3]
+    mfrac_max = 1 - np.abs(vfrac)
+    if np.any(mfrac_max > 1):
+        raise Exception("mfrac_max>1 in mcv_grad!")
 
-    vfrac = imarr[3] # when using this transform, we interpret transformed imarr[3] as mfrac=\rho sin(\psi)
-    mfrac_max = 1-np.abs(vfrac)
-    if np.any(mfrac_max>1):
-        raise Exception("mfrac_max>1 in mcv!")
+    mprime = imarr[1]
+    mfrac = mfrac_max * (0.5 + np.arctan(mprime / TANWIDTH_M) / np.pi)
+    rho = np.sqrt(mfrac ** 2 + vfrac ** 2)
 
-    mfrac_prime =  imarr[1]
-    mfrac = mfrac_max*(0.5 + np.arctan(mfrac_prime/TANWIDTH_M)/np.pi)
+    dm_dmprime = mfrac_max / (TANWIDTH_M * np.pi * (1 + (mprime / TANWIDTH_M) ** 2))
 
-    rho = np.sqrt(mfrac**2 + vfrac**2)
-    psi = np.arcsin(vfrac/rho)
+    # Avoid 0/0 when total polarization is zero; in that limit both terms vanish.
+    safe_rho = np.where(rho > 0, rho, 1.0)
+    drho_dmprime = (mfrac / safe_rho) * dm_dmprime
+    dpsi_dmprime = -(vfrac * np.sign(mfrac)) / (safe_rho ** 2) * dm_dmprime
 
-    dm_dmprime = mfrac_max / (TANWIDTH_M*np.pi*(1 + (mfrac_prime/TANWIDTH_M)**2))
-
-    drho_dm = mfrac / rho                # drho/dm holding v constant
-    drho_dmprime = drho_dm * dm_dmprime
-    out[1] = drho_dmprime
-
-    # we only use mcv when holding v constant, so dF/imarr[3]=0
-    #dpsi_dm = -vfrac/ (rho*rho)         # dpsi/dm holding v constant # TODO CHECK
-    #dpsi_dmprime = dpsi_dm * dm_dmprime
-    #out[3] = dpsi_dmprime
-    out[3] = np.zeros(out[3].shape)
-
+    out = np.empty((3,) + gradarr.shape[1:])
+    out[0] = drho_dmprime * gradarr[1] + dpsi_dmprime * gradarr[3]
+    out[1] = gradarr[2]
+    out[2] = 0.0
     return out
 
 def vcv(imarr):
@@ -274,34 +298,45 @@ def vcv_r(imarr):
     out = np.array((imarr[0], mfrac, imarr[2], vfrac_prime))
     return out
 
-# TODO WE ARE GOING TO HAVE TO CHECK ALL OF THESE NUMERICALLY
-def vcv_chain(imarr):
-    """chain rule terms drho/dv' and dpsi/dv' for vcv
-       input is solver values
+def vcv_grad(imarr, gradarr):
+    """Apply J^T @ gradarr for vcv (vprime → rho, psi; mfrac held constant).
+
+    phys[1]=rho and phys[3]=psi both depend on vprime via vfrac, so the
+    Jacobian has off-diagonal terms. At mfrac=0 (pol='IV' regime) psi is
+    locally constant and the entire gradient flows through drho/dvprime.
+    Slot 1 of the result is zero because mfrac is held constant.
+
+    Parameters
+    ----------
+    imarr : np.ndarray, shape (4, ...)
+        Solver-space image array.
+    gradarr : np.ndarray, shape (4, ...)
+        Gradient w.r.t. physical components phys[0:4]. gradarr[0] is unused.
+
+    Returns
+    -------
+    out : np.ndarray, shape (3, ...)
+        Gradient w.r.t. solver slots (1, 2, 3).
     """
-    out = np.ones(imarr.shape)
+    mfrac = imarr[1]
+    vfrac_max = 1 - np.abs(mfrac)
+    if np.any(vfrac_max > 1):
+        raise Exception("vfrac_max>1 in vcv_grad!")
 
-    mfrac = imarr[1] # when using this transform, we interpret transformed imarr[1] as mfrac=\rho cos(\psi)
-    vfrac_max = 1-np.abs(mfrac)
-    if np.any(vfrac_max>1):
-        raise Exception("vfrac_max>1 in vcv_r!")
+    vprime = imarr[3]
+    vfrac = 2 * vfrac_max * np.arctan(vprime / TANWIDTH_V) / np.pi
+    rho = np.sqrt(mfrac ** 2 + vfrac ** 2)
 
-    vfrac_prime = imarr[3]
-    vfrac = 2*vfrac_max*np.arctan(vfrac_prime/TANWIDTH_V)/np.pi
-    rho = np.sqrt(mfrac**2 + vfrac**2)
-    psi = np.arcsin(vfrac/rho)
+    dv_dvprime = 2 * vfrac_max / (TANWIDTH_V * np.pi * (1 + (vprime / TANWIDTH_V) ** 2))
 
-    dv_dvprime = 2. * vfrac_max / (TANWIDTH_V*np.pi*(1 + (vfrac_prime/TANWIDTH_V)**2))
+    safe_rho = np.where(rho > 0, rho, 1.0)
+    drho_dvprime = (vfrac / safe_rho) * dv_dvprime
+    dpsi_dvprime = (np.abs(mfrac) / (safe_rho ** 2)) * dv_dvprime
 
-    # we only use mcv when holding v constant, so dF/imarr[1]=0
-    #drho_dv = rhofrac / v                # drho/dv holding m constant
-    #drho_dvprime = drho_dv * dv_dvprime
-    #out[1] = drho_dvprime
-    out[1] = np.zeros(out[3].shape)
-
-    dpsi_dv = mfrac / (rho*rho)          # dpsi/dv holding m constant # TODO CHECK
-    dpsi_dvprime = dpsi_dv * dv_dvprime
-    out[3] = dpsi_dvprime
+    out = np.empty((3,) + gradarr.shape[1:])
+    out[0] = 0.0
+    out[1] = gradarr[2]
+    out[2] = drho_dvprime * gradarr[1] + dpsi_dvprime * gradarr[3]
     return out
 
 

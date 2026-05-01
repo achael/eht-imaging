@@ -257,12 +257,13 @@ def transform_gradients(gradarr, imarr, transforms, which_solve):
         if pol_which_solve[0]==1 and ('log' in transforms):  # full polarization, including stokes I imaging
             outarr[0] = np.exp(imarr[0]) * gradarr[0]
 
+        # Each *_grad returns shape (3, ...) so outarr[0] (the log term above) survives.
         if (pol_which_solve[1]==1 and pol_which_solve[3]==1 and ('polcv' in transforms)):
-            outarr[0:4] = polutils.polcv_chain(imarr[0:4]) * gradarr[0:4]
+            outarr[1:4] = polutils.polcv_grad(imarr[0:4], gradarr[0:4])
         elif (pol_which_solve[1]==1) and ('mcv' in transforms):
-            outarr[0:4] = polutils.mcv_chain(imarr[0:4]) * gradarr[0:4]
+            outarr[1:4] = polutils.mcv_grad(imarr[0:4], gradarr[0:4])
         elif (pol_which_solve[3]==1) and ('vcv' in transforms):
-            outarr[0:4] = polutils.vcv_chain(imarr[0:4]) * gradarr[0:4]
+            outarr[1:4] = polutils.vcv_grad(imarr[0:4], gradarr[0:4])
 
     return outarr
 
