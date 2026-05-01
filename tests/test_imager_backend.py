@@ -772,9 +772,13 @@ def test_reg_and_reggrad_share_keys(gauss_im, observe, initialize_imager):
 # ---------------------------------------------------------------------------
 
 def _fd_grad_of_transform(imarr, transforms, which_solve, scalar_obj):
-    """Centered FD gradient of (scalar_obj o transform_imarr) w.r.t. solver vars.
+    """Centered finite-difference gradient of (scalar_obj o transform_imarr).
 
-    Used to verify transform_gradients applies the chain rule correctly.
+    Returns d/dimarr [scalar_obj(transform_imarr(imarr))] — the gradient of
+    the composed function in solver-space. Computed numerically to second order
+    via centered differences with eps=1e-6 (precision ~1e-10 in float64).
+    Independent of transform_gradients itself, so suitable as ground truth
+    for the chain rule it implements.
     """
     eps = 1e-6
     grad = np.zeros_like(imarr)
@@ -791,17 +795,51 @@ def _fd_grad_of_transform(imarr, transforms, which_solve, scalar_obj):
 
 
 class TestTransformGradientsChainRule:
-    """transform_gradients chain rule agrees with FD of transform_imarr."""
+    """Verify transform_gradients implements the J^T-times-grad chain rule.
+
+    `transform_gradients(grad_phys, imarr, transforms, which_solve)` converts
+    a gradient w.r.t. PHYSICAL space (df/dphys, where phys = transform_imarr(imarr))
+    into a gradient w.r.t. SOLVER space (df/dimarr), via the chain rule
+    df/dimarr = J^T @ df/dphys, where J is the Jacobian of transform_imarr.
+
+    Strategy: pick any smooth scalar f(phys), compute df/dimarr two ways —
+    (1) the chain rule under test, and (2) centered finite differences applied
+    to (f o transform_imarr). They must agree to FD precision (~1e-6).
+
+    Coverage spans:
+      - Real-usage operating points where ehtim pins one slot to enforce the
+        diagonal-Jacobian regime (mcv ⇒ vfrac=0 for pol='IP'; vcv ⇒ mfrac=0
+        for pol='IV'; polcv has a diagonal Jacobian everywhere).
+      - General regimes where Jacobians have non-zero off-diagonal entries.
+        These exercise the cross-derivative terms (drho/dmprime ↔ phys[3] for
+        mcv, drho/dvprime ↔ phys[1] for vcv).
+      - Pure transforms in isolation (no `log` composition).
+      - Shape-dispatch branches: nimage==1 (single Stokes I 1D), nimage==3
+        (multifreq Stokes I), nimage==4 (single-freq pol), nimage==10 (mf+pol).
+    """
 
     @staticmethod
     def _scalar_obj(phys):
-        """Arbitrary smooth scalar objective: weighted sum of physical components."""
+        """Arbitrary smooth scalar f(phys) = sum(weights * phys**2).
+
+        Choice is deliberately generic — any C^2 scalar would work for the FD
+        check. This form gives a closed-form analytic gradient (df/dphys =
+        2*weights*phys) so the test can compute the chain-rule input directly
+        without numerical noise.
+        """
         weights = np.array([0.7, 1.3, -0.5, 0.9])[:, None]
         return float(np.sum(weights * phys**2))
 
     @staticmethod
     def _solver_imarr(seed=0, n=8, v_pre=None, m_pre=None, chi_pre=None):
-        """Build a (4, n) solver-variable array; pass a scalar to pin a row."""
+        """Build a (4, n) solver-space image array.
+
+        Rows are (imarr[0..3]) = (log_I, mprime, chi, vfrac_or_vprime); the
+        meaning of slots 1 and 3 depends on which transforms are active.
+        Passing a scalar for any of v_pre/m_pre/chi_pre pins that whole row
+        — used to construct the diagonal-Jacobian operating points (mcv with
+        vfrac=0, vcv with mfrac=0).
+        """
         rng = np.random.default_rng(seed)
         log_I = rng.uniform(-1.0, 1.0, size=n)
         m_arr = rng.uniform(-2.0, 2.0, size=n) if m_pre is None else np.full(n, m_pre)
@@ -840,7 +878,23 @@ class TestTransformGradientsChainRule:
     )
     def test_chain_rule_matches_finite_difference(self, transforms, which_solve,
                                                     imarr_kwargs, check_rows):
-        """Chain rule output must match centered FD of (obj o transform)."""
+        """transform_gradients(grad_phys, ...) ≈ FD of (f o transform_imarr).
+
+        For each parametrized scenario:
+          1. Build a solver-space imarr in the requested operating point.
+          2. Compute phys = transform_imarr(imarr) and the analytic
+             grad_phys = df/dphys = 2*weights*phys (the gradient of
+             `_scalar_obj` w.r.t. its physical argument).
+          3. Apply the chain rule under test:
+                grad_solver = transform_gradients(grad_phys, imarr, ...)
+          4. Compute the same df/dimarr numerically:
+                grad_fd = centered FD of (f o transform_imarr)
+          5. Assert grad_solver[k] ≈ grad_fd[k] for each solved-for row k.
+
+        check_rows lists the rows to compare; non-solved rows have their
+        gradient discarded by pack_imarr in real usage, so the value is
+        irrelevant and not asserted.
+        """
         imarr = self._solver_imarr(seed=0, **imarr_kwargs)
 
         phys = transform_imarr(imarr, transforms, which_solve)
@@ -860,7 +914,13 @@ class TestTransformGradientsChainRule:
             )
 
     def test_log_chain_preserved_under_mcv(self):
-        """outarr[0] from log+mcv must equal exp(imarr[0]) * gradarr[0]."""
+        """Direct check on the I-segment chain rule under log+mcv.
+
+        With gradarr = ones, transform_gradients should produce
+            outarr[0] = exp(imarr[0]) * gradarr[0] = exp(imarr[0])
+        because the `log` block multiplies by exp(imarr[0]) and the mcv
+        chain rule (which writes to slots 1:3) must not touch slot 0.
+        """
         imarr = self._solver_imarr(seed=1, v_pre=0.0)
         gradarr = np.ones_like(imarr)
         which_solve = np.array([1, 1, 0, 0])
@@ -869,7 +929,11 @@ class TestTransformGradientsChainRule:
         np.testing.assert_allclose(out[0], np.exp(imarr[0]), rtol=1e-12)
 
     def test_single_pol_log_chain_1d(self):
-        """nimage==1 branch: 1D imarr, outarr = exp(imarr) * gradarr."""
+        """nimage==1 dispatch: 1D imarr (single-freq Stokes I, no pol).
+
+        With `log`: outarr = exp(imarr) * gradarr (element-wise).
+        Without `log`: outarr = gradarr (identity).
+        """
         rng = np.random.default_rng(42)
         imarr = rng.uniform(-1.0, 1.0, size=8)
         gradarr = rng.uniform(-1.0, 1.0, size=8)
@@ -882,7 +946,12 @@ class TestTransformGradientsChainRule:
         np.testing.assert_allclose(out_no_log, gradarr, rtol=1e-12)
 
     def test_multifreq_stokes_i_log_chain(self):
-        """nimage==3 branch: log applies to row 0 only; spectral coeffs pass through."""
+        """nimage==3 dispatch: (3, N) imarr (multifreq Stokes I, no pol).
+
+        Layout is (log_I, alpha, beta) at the reference frequency. The `log`
+        transform applies only to row 0 (Stokes I); the spectral coefficients
+        in rows 1, 2 pass through unchanged.
+        """
         rng = np.random.default_rng(7)
         imarr = rng.uniform(-1.0, 1.0, size=(3, 6))
         gradarr = rng.uniform(-1.0, 1.0, size=(3, 6))
@@ -894,7 +963,13 @@ class TestTransformGradientsChainRule:
         np.testing.assert_array_equal(out[2], gradarr[2])
 
     def test_mf_pol_shape_smoke(self):
-        """nimage==10 branch (mf+pol): shape preserved, log applied to row 0, rows 4-9 pass through."""
+        """nimage==10 dispatch: (10, N) imarr (multifreq + full polarization).
+
+        Layout is (I, mprime, chi, vfrac, alpha, beta, alphap, betap, rm, cm).
+        Verifies the dispatcher (a) preserves shape, (b) applies `log` to slot
+        0, and (c) leaves slots 4-9 (spectral / Faraday / conversion-measure
+        coefficients) unchanged.
+        """
         rng = np.random.default_rng(13)
         n = 6
         imarr = np.empty((10, n))
