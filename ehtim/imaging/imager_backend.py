@@ -257,6 +257,11 @@ def transform_gradients(gradarr, imarr, transforms, which_solve):
         if pol_which_solve[0]==1 and ('log' in transforms):  # full polarization, including stokes I imaging
             outarr[0] = np.exp(imarr[0]) * gradarr[0]
 
+        # Polarimetric chain rule. mcv (m-only) and vcv (V-only) are legacy
+        # single-axis parametrizations of the polarization sphere; polcv
+        # parametrizes (rho, psi) jointly and is the preferred form for full
+        # multi-Stokes imaging going forward. See polutils.{polcv,mcv,vcv}_grad
+        # docstrings for the per-transform Jacobian.
         # Each *_grad returns shape (3, ...) so outarr[0] (the log term above) survives.
         if (pol_which_solve[1]==1 and pol_which_solve[3]==1 and ('polcv' in transforms)):
             outarr[1:4] = polutils.polcv_grad(imarr[0:4], gradarr[0:4])
