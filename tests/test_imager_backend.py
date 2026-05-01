@@ -154,19 +154,31 @@ def _call_backend_chisqgrad_dict(imgr, imcur):
     )
 
 
-def _call_backend_reg_dict(imgr, imcur, mf_flux=None):
-    """Call compute_reg_dict with args pulled from an initialized Imager.
+def _build_regparams(imgr, mf_flux=None):
+    """Bundle all regularizer params from an Imager into a single dict.
 
     `mf_flux` overrides imgr.mf_flux for tests that exercise the
     REGULARIZERS_ALLFREQS_I validation path.
     """
+    return {
+        'flux': imgr.flux_next,
+        'pflux': imgr.pflux_next,
+        'vflux': imgr.vflux_next,
+        'xdim': imgr.prior_next.xdim,
+        'ydim': imgr.prior_next.ydim,
+        'psize': imgr.prior_next.psize,
+        'beam_size': imgr.beam_size,
+        'mf_flux': imgr.mf_flux if mf_flux is None else mf_flux,
+        **imgr.regparams,
+    }
+
+
+def _call_backend_reg_dict(imgr, imcur, mf_flux=None):
+    """Call compute_reg_dict with args pulled from an initialized Imager."""
     return compute_reg_dict(
         imcur, sorted(imgr.reg_term_next.keys()), imgr._xprior, imgr._embed_mask,
-        imgr.flux_next, imgr.pflux_next, imgr.vflux_next,
-        imgr.prior_next.xdim, imgr.prior_next.ydim, imgr.prior_next.psize,
-        imgr.norm_reg, imgr.beam_size, imgr.regparams,
-        imgr.mf_next, imgr.mf_flux if mf_flux is None else mf_flux,
-        imgr.obslist_next, imgr._logfreqratio_list, imgr.pol_next,
+        imgr.mf_next, imgr.obslist_next, imgr._logfreqratio_list, imgr.pol_next,
+        imgr.norm_reg, _build_regparams(imgr, mf_flux=mf_flux),
     )
 
 
@@ -174,11 +186,8 @@ def _call_backend_reggrad_dict(imgr, imcur, mf_flux=None):
     """Call compute_reggrad_dict with args pulled from an initialized Imager."""
     return compute_reggrad_dict(
         imcur, sorted(imgr.reg_term_next.keys()), imgr._xprior, imgr._embed_mask,
-        imgr.flux_next, imgr.pflux_next, imgr.vflux_next,
-        imgr.prior_next.xdim, imgr.prior_next.ydim, imgr.prior_next.psize,
-        imgr.norm_reg, imgr.beam_size, imgr.regparams,
-        imgr.mf_next, imgr.mf_flux if mf_flux is None else mf_flux,
-        imgr.obslist_next, imgr._logfreqratio_list, imgr.pol_next,
+        imgr.mf_next, imgr.obslist_next, imgr._logfreqratio_list, imgr.pol_next,
+        imgr.norm_reg, _build_regparams(imgr, mf_flux=mf_flux),
         imgr._which_solve, imgr._nimage,
     )
 
@@ -580,11 +589,8 @@ class TestComputeRegDict:
         with pytest.raises(Exception, match="not recognized"):
             compute_reg_dict(
                 imcur, ["not_a_regularizer"], imgr._xprior, imgr._embed_mask,
-                imgr.flux_next, imgr.pflux_next, imgr.vflux_next,
-                imgr.prior_next.xdim, imgr.prior_next.ydim, imgr.prior_next.psize,
-                imgr.norm_reg, imgr.beam_size, imgr.regparams,
-                imgr.mf_next, imgr.mf_flux, imgr.obslist_next,
-                imgr._logfreqratio_list, imgr.pol_next,
+                imgr.mf_next, imgr.obslist_next, imgr._logfreqratio_list, imgr.pol_next,
+                imgr.norm_reg, _build_regparams(imgr),
             )
 
     def test_mf_flux_validation(self, gauss_im, observe, initialize_imager):
@@ -709,11 +715,8 @@ class TestComputeReggradDict:
         with pytest.raises(Exception, match="not recognized"):
             compute_reggrad_dict(
                 imcur, ["not_a_regularizer"], imgr._xprior, imgr._embed_mask,
-                imgr.flux_next, imgr.pflux_next, imgr.vflux_next,
-                imgr.prior_next.xdim, imgr.prior_next.ydim, imgr.prior_next.psize,
-                imgr.norm_reg, imgr.beam_size, imgr.regparams,
-                imgr.mf_next, imgr.mf_flux, imgr.obslist_next,
-                imgr._logfreqratio_list, imgr.pol_next,
+                imgr.mf_next, imgr.obslist_next, imgr._logfreqratio_list, imgr.pol_next,
+                imgr.norm_reg, _build_regparams(imgr),
                 imgr._which_solve, imgr._nimage,
             )
 

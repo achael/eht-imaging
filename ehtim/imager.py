@@ -1088,17 +1088,28 @@ class Imager:
             self._which_solve, self._nimage,
         )
 
+    def _full_regparams(self):
+        """Bundle all regularizer params into a single dict for the backend."""
+        return {
+            'flux': self.flux_next,
+            'pflux': self.pflux_next,
+            'vflux': self.vflux_next,
+            'xdim': self.prior_next.xdim,
+            'ydim': self.prior_next.ydim,
+            'psize': self.prior_next.psize,
+            'beam_size': self.beam_size,
+            'mf_flux': self.mf_flux,
+            **self.regparams,
+        }
+
     def make_reg_dict(self, imcur):
         """Make a dictionary of current regularizer values
            input is image array transformed to bounded values
         """
         return compute_reg_dict(
             imcur, sorted(self.reg_term_next.keys()), self._xprior, self._embed_mask,
-            self.flux_next, self.pflux_next, self.vflux_next,
-            self.prior_next.xdim, self.prior_next.ydim, self.prior_next.psize,
-            self.norm_reg, self.beam_size, self.regparams,
-            self.mf_next, self.mf_flux, self.obslist_next,
-            self._logfreqratio_list, self.pol_next,
+            self.mf_next, self.obslist_next, self._logfreqratio_list, self.pol_next,
+            self.norm_reg, self._full_regparams(),
         )
 
     def make_reggrad_dict(self, imcur):
@@ -1107,11 +1118,8 @@ class Imager:
         """
         return compute_reggrad_dict(
             imcur, sorted(self.reg_term_next.keys()), self._xprior, self._embed_mask,
-            self.flux_next, self.pflux_next, self.vflux_next,
-            self.prior_next.xdim, self.prior_next.ydim, self.prior_next.psize,
-            self.norm_reg, self.beam_size, self.regparams,
-            self.mf_next, self.mf_flux, self.obslist_next,
-            self._logfreqratio_list, self.pol_next,
+            self.mf_next, self.obslist_next, self._logfreqratio_list, self.pol_next,
+            self.norm_reg, self._full_regparams(),
             self._which_solve, self._nimage,
         )
 
