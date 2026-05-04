@@ -941,10 +941,7 @@ def compute_objective_grad(imvec, xarr, which_solve, transforms,
             key = dname if n_obs == 1 else f"{dname}_{i}"
             chi2_grad = chi2grad_dict[key]
             if chisq_transform:
-                # chi2val_dict is keyed by dname (no per-obs suffix), unlike
-                # chi2grad_dict above. Asymmetry preserved verbatim from
-                # Imager.objgrad behaviour.
-                chi2_val = chi2val_dict[dname]
+                chi2_val = chi2val_dict[key]
                 datterm = datterm + weight * chi2_grad * (1.0 - 1.0 / (chi2_val ** 2))
             else:
                 datterm = datterm + weight * (chi2_grad + chisq_offset_gradient)
