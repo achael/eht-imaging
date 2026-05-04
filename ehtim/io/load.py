@@ -1028,7 +1028,8 @@ def load_obs_uvfits(filename, polrep='stokes', flipbl=False,
                     allow_singlepol=True, force_singlepol=None,
                     channel=all, IF=all, remove_nan=False,
                     ignore_pzero_date=True,
-                    trial_speedups=False):
+                    trial_speedups=False,
+                    invvar_channel_avg=True):
     """Load observation data from a uvfits file.
 
        Args:
@@ -1041,9 +1042,11 @@ def load_obs_uvfits(filename, polrep='stokes', flipbl=False,
            channel (list): list of channels to average in the import. channel=all averages all
            IF (list): list of IFs to  average in  the import. IF=all averages all
            remove_nan (bool): whether or not to remove entries with nan data
-           
            ignore_pzero_date (bool): if True, ignore the offset parameters in DATE field 
                                      TODO: what is the correct behavior per AIPS memo 117?
+           trial_speedups (bool): if True, use faster array/telescope handling paths
+           invvar_channel_avg (bool): if True, average IFs/channels with inverse-variance
+                                      weighting. If False, use the original simple averaging.
        Returns:
            obs (Obsdata): Obsdata object loaded from file
     """
@@ -1400,35 +1403,57 @@ def load_obs_uvfits(filename, polrep='stokes', flipbl=False,
     rlweight[~rlmask_2d] = np.nan
     lrweight[~lrmask_2d] = np.nan
 
-    # Compute the total weights
-    rr_totweight = np.nansum(np.nansum(rrweight, axis=2), axis=1)
-    ll_totweight = np.nansum(np.nansum(llweight, axis=2), axis=1)
-    rl_totweight = np.nansum(np.nansum(rlweight, axis=2), axis=1)
-    lr_totweight = np.nansum(np.nansum(lrweight, axis=2), axis=1)
+    if invvar_channel_avg:
+        # Inverse-variance weighted average across IF/channel:
+        # vis = sum_i(w_i * vis_i) / sum_i(w_i)
+        rr_totweight = np.nansum(np.nansum(rrweight, axis=2), axis=1)
+        ll_totweight = np.nansum(np.nansum(llweight, axis=2), axis=1)
+        rl_totweight = np.nansum(np.nansum(rlweight, axis=2), axis=1)
+        lr_totweight = np.nansum(np.nansum(lrweight, axis=2), axis=1)
 
-    # Inverse-variance weighted average across IF/channel:
-    # vis = sum_i(w_i * vis_i) / sum_i(w_i)
-    rr = (np.nansum(np.nansum(rr_2d * rrweight, axis=2), axis=1) /
-            rr_totweight)[mask]
-    ll = (np.nansum(np.nansum(ll_2d * llweight, axis=2), axis=1) /
-            ll_totweight)[mask]
-    rl = (np.nansum(np.nansum(rl_2d * rlweight, axis=2), axis=1) /
-            rl_totweight)[mask]
-    lr = (np.nansum(np.nansum(lr_2d * lrweight, axis=2), axis=1) /
-            lr_totweight)[mask]
+        rr_totweight[~rrmask] = np.nan
+        ll_totweight[~llmask] = np.nan
+        rl_totweight[~rlmask] = np.nan
+        lr_totweight[~lrmask] = np.nan
 
-    # Combine independent samples with inverse-variance weighting:
-    rrsig = 1. / np.sqrt(rr_totweight)
-    rrsig = rrsig[mask]
+        rr = (np.nansum(np.nansum(rr_2d * rrweight, axis=2), axis=1) /
+              rr_totweight)[mask]
+        ll = (np.nansum(np.nansum(ll_2d * llweight, axis=2), axis=1) /
+              ll_totweight)[mask]
+        rl = (np.nansum(np.nansum(rl_2d * rlweight, axis=2), axis=1) /
+              rl_totweight)[mask]
+        lr = (np.nansum(np.nansum(lr_2d * lrweight, axis=2), axis=1) /
+              lr_totweight)[mask]
 
-    llsig = 1. / np.sqrt(ll_totweight)
-    llsig = llsig[mask]
+        rrsig = (1. / np.sqrt(rr_totweight))[mask]
+        llsig = (1. / np.sqrt(ll_totweight))[mask]
+        rlsig = (1. / np.sqrt(rl_totweight))[mask]
+        lrsig = (1. / np.sqrt(lr_totweight))[mask]
+    else:
+        rr = np.nanmean(np.nanmean(rr_2d, axis=2), axis=1)[mask]
+        ll = np.nanmean(np.nanmean(ll_2d, axis=2), axis=1)[mask]
+        rl = np.nanmean(np.nanmean(rl_2d, axis=2), axis=1)[mask]
+        lr = np.nanmean(np.nanmean(lr_2d, axis=2), axis=1)[mask]
 
-    rlsig = 1. / np.sqrt(rl_totweight)
-    rlsig = rlsig[mask]
+        nsig_rr = np.sum(np.sum(rrmask_2d, axis=2), axis=1).astype(float)
+        nsig_rr[~rrmask] = np.nan
+        rrsig = np.sqrt(np.nansum(np.nansum(1. / rrweight, axis=2), axis=1)) / nsig_rr
+        rrsig = rrsig[mask]
 
-    lrsig = 1. / np.sqrt(lr_totweight)
-    lrsig = lrsig[mask]
+        nsig_ll = np.sum(np.sum(llmask_2d, axis=2), axis=1).astype(float)
+        nsig_ll[~llmask] = np.nan
+        llsig = np.sqrt(np.nansum(np.nansum(1. / llweight, axis=2), axis=1)) / nsig_ll
+        llsig = llsig[mask]
+
+        nsig_rl = np.sum(np.sum(rlmask_2d, axis=2), axis=1).astype(float)
+        nsig_rl[~rlmask] = np.nan
+        rlsig = np.sqrt(np.nansum(np.nansum(1. / rlweight, axis=2), axis=1)) / nsig_rl
+        rlsig = rlsig[mask]
+
+        nsig_lr = np.sum(np.sum(lrmask_2d, axis=2), axis=1).astype(float)
+        nsig_lr[~lrmask] = np.nan
+        lrsig = np.sqrt(np.nansum(np.nansum(1. / lrweight, axis=2), axis=1)) / nsig_lr
+        lrsig = lrsig[mask]
 
     # Reverse sign of baselines for correct imaging if asked
     if flipbl:
