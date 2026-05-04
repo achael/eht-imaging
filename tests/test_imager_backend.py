@@ -12,6 +12,7 @@ from ehtim.imaging.imager_backend import (
     compute_chisq_dict,
     compute_chisqgrad_dict,
     compute_embed,
+    compute_objective,
     compute_reg_dict,
     compute_reggrad_dict,
     transform_gradients,
@@ -189,6 +190,18 @@ def _call_backend_reggrad_dict(imgr, imcur, mf_flux=None):
         imgr.mf_next, imgr.obslist_next, imgr._logfreqratio_list, imgr.pol_next,
         imgr.norm_reg, _build_regparams(imgr, mf_flux=mf_flux),
         imgr._which_solve, imgr._nimage,
+    )
+
+
+def _call_backend_objective(imgr, imvec):
+    """Call compute_objective with args pulled from an initialized Imager."""
+    return compute_objective(
+        imvec, imgr._xarr, imgr._which_solve, imgr.transform_next,
+        imgr.dat_term_next, imgr.reg_term_next,
+        imgr._data_tuples, imgr.obslist_next, imgr._logfreqratio_list,
+        imgr.mf_next, imgr.pol_next, imgr._ttype, imgr._embed_mask,
+        imgr._xprior, imgr.norm_reg, _build_regparams(imgr),
+        imgr.chisq_transform,
     )
 
 
@@ -765,6 +778,97 @@ def test_reg_and_reggrad_share_keys(gauss_im, observe, initialize_imager):
     reg = _call_backend_reg_dict(imgr, imcur)
     reggrad = _call_backend_reggrad_dict(imgr, imcur)
     assert set(reg.keys()) == set(reggrad.keys())
+
+
+class TestComputeObjective:
+    """Tests for compute_objective (extracted from Imager.objfunc)."""
+
+    def test_matches_imager_stokes_i(self, gauss_im, observe, initialize_imager):
+        """Single-freq, pol='I', multi-key dat + reg — exercises sort + branch coverage."""
+        obs = observe(gauss_im)
+        imgr, _ = initialize_imager(
+            obs, gauss_im, {"vis": 100, "amp": 10},
+            reg_term={"simple": 1, "tv": 10},
+        )
+        imvec = imgr._xinit
+        backend_value = _call_backend_objective(imgr, imvec)
+        method_value = imgr.objfunc(imvec)
+        np.testing.assert_array_equal(backend_value, method_value)
+
+    def test_matches_imager_polarimetric(self, gauss_im_pol, observe, initialize_imager):
+        """pol='IP' with REGULARIZERS_POL — exercises polarimetric chisq + reg branches."""
+        obs = observe(gauss_im_pol)
+        imgr, _ = initialize_imager(
+            obs, gauss_im_pol, {"pvis": 100},
+            reg_term={"hw": 1, "ptv": 1},
+            pol="IP", transform=["log", "mcv"],
+        )
+        imvec = imgr._xinit
+        backend_value = _call_backend_objective(imgr, imvec)
+        method_value = imgr.objfunc(imvec)
+        np.testing.assert_array_equal(backend_value, method_value)
+
+    def test_matches_imager_stokes_i_pol_bundled(self, gauss_im_pol, observe,
+                                                   initialize_imager):
+        """pol='IP' with mixed Stokes-I + pol terms — both bundling branches active."""
+        obs = observe(gauss_im_pol)
+        imgr, _ = initialize_imager(
+            obs, gauss_im_pol, {"vis": 100, "pvis": 100},
+            reg_term={"simple": 1, "hw": 1},
+            pol="IP", transform=["log", "mcv"],
+        )
+        imvec = imgr._xinit
+        backend_value = _call_backend_objective(imgr, imvec)
+        method_value = imgr.objfunc(imvec)
+        np.testing.assert_array_equal(backend_value, method_value)
+
+    def test_matches_imager_multifrequency(self, gauss_im, observe, initialize_imager):
+        """Two obs at different rf — hits the f'{dname}_{i}' key suffix branch."""
+        im_lo = gauss_im.copy()
+        im_lo.rf = REFFREQ_HZ
+        im_hi = gauss_im.copy()
+        im_hi.rf = MF_ALT_FREQ_HZ
+        obs_lo = observe(im_lo)
+        obs_hi = observe(im_hi)
+
+        imgr, _ = initialize_imager(
+            [obs_lo, obs_hi], im_lo, {"vis": 100},
+            reg_term={"simple": 1, "flux_mf": 1, "l2_alpha": 1},
+            mf=True, mf_order=1,
+            mf_flux=[im_lo.total_flux(), im_hi.total_flux()],
+        )
+        imvec = imgr._xinit
+        backend_value = _call_backend_objective(imgr, imvec)
+        method_value = imgr.objfunc(imvec)
+        np.testing.assert_array_equal(backend_value, method_value)
+
+    def test_chisq_transform_branch(self, gauss_im, observe, initialize_imager):
+        """chisq_transform=True activates the (chi2 + 1/chi2 - 1) legacy branch."""
+        obs = observe(gauss_im)
+        imgr, _ = initialize_imager(
+            obs, gauss_im, {"vis": 100},
+            reg_term={"simple": 1},
+        )
+        imgr.chisq_transform = True
+        imvec = imgr._xinit
+        backend_value = _call_backend_objective(imgr, imvec)
+        method_value = imgr.objfunc(imvec)
+        np.testing.assert_array_equal(backend_value, method_value)
+
+    @pytest.mark.parametrize("xdim,ydim", IMAGE_SHAPES)
+    def test_rect_images(self, make_rect_image, observe, initialize_imager,
+                          xdim, ydim):
+        """Backend handles rectangular (xdim != ydim) images end-to-end."""
+        im = make_rect_image(xdim, ydim)
+        obs = observe(im)
+        imgr, _ = initialize_imager(
+            obs, im, {"vis": 100},
+            reg_term={"simple": 1, "tv": 10},
+        )
+        imvec = imgr._xinit
+        backend_value = _call_backend_objective(imgr, imvec)
+        method_value = imgr.objfunc(imvec)
+        np.testing.assert_array_equal(backend_value, method_value)
 
 
 # ---------------------------------------------------------------------------
