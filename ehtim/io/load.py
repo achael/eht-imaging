@@ -1394,37 +1394,40 @@ def load_obs_uvfits(filename, polrep='stokes', flipbl=False,
     rl_2d[~rlmask_2d] = np.nan
     lr_2d[~lrmask_2d] = np.nan
 
-    rr = np.nanmean(np.nanmean(rr_2d, axis=2), axis=1)[mask]
-    ll = np.nanmean(np.nanmean(ll_2d, axis=2), axis=1)[mask]
-    rl = np.nanmean(np.nanmean(rl_2d, axis=2), axis=1)[mask]
-    lr = np.nanmean(np.nanmean(lr_2d, axis=2), axis=1)[mask]
-
-    # average the weights
-    # variances are mean / N , or sum / N^2
-    # then replace masked weights with nans so they don't mess up the average
+    # replace flagged weights with nans so they don't mess up the average
     rrweight[~rrmask_2d] = np.nan
     llweight[~llmask_2d] = np.nan
     rlweight[~rlmask_2d] = np.nan
     lrweight[~lrmask_2d] = np.nan
 
-    nsig_rr = np.sum(np.sum(rrmask_2d, axis=2), axis=1).astype(float)
-    nsig_rr[~rrmask] = np.nan
-    rrsig = np.sqrt(np.nansum(np.nansum(1. / rrweight, axis=2), axis=1)) / nsig_rr
+    # Compute the total weights
+    rr_totweight = np.nansum(np.nansum(rrweight, axis=2), axis=1)
+    ll_totweight = np.nansum(np.nansum(llweight, axis=2), axis=1)
+    rl_totweight = np.nansum(np.nansum(rlweight, axis=2), axis=1)
+    lr_totweight = np.nansum(np.nansum(lrweight, axis=2), axis=1)
+
+    # Inverse-variance weighted average across IF/channel:
+    # vis = sum_i(w_i * vis_i) / sum_i(w_i)
+    rr = (np.nansum(np.nansum(rr_2d * rrweight, axis=2), axis=1) /
+            rr_totweight)[mask]
+    ll = (np.nansum(np.nansum(ll_2d * llweight, axis=2), axis=1) /
+            ll_totweight)[mask]
+    rl = (np.nansum(np.nansum(rl_2d * rlweight, axis=2), axis=1) /
+            rl_totweight)[mask]
+    lr = (np.nansum(np.nansum(lr_2d * lrweight, axis=2), axis=1) /
+            lr_totweight)[mask]
+
+    # Combine independent samples with inverse-variance weighting:
+    rrsig = 1. / np.sqrt(rr_totweight)
     rrsig = rrsig[mask]
 
-    nsig_ll = np.sum(np.sum(llmask_2d, axis=2), axis=1).astype(float)
-    nsig_ll[~llmask] = np.nan
-    llsig = np.sqrt(np.nansum(np.nansum(1. / llweight, axis=2), axis=1)) / nsig_ll
+    llsig = 1. / np.sqrt(ll_totweight)
     llsig = llsig[mask]
 
-    nsig_rl = np.sum(np.sum(rlmask_2d, axis=2), axis=1).astype(float)
-    nsig_rl[~rlmask] = np.nan
-    rlsig = np.sqrt(np.nansum(np.nansum(1. / rlweight, axis=2), axis=1)) / nsig_rl
+    rlsig = 1. / np.sqrt(rl_totweight)
     rlsig = rlsig[mask]
 
-    nsig_lr = np.sum(np.sum(lrmask_2d, axis=2), axis=1).astype(float)
-    nsig_lr[~lrmask] = np.nan
-    lrsig = np.sqrt(np.nansum(np.nansum(1. / lrweight, axis=2), axis=1)) / nsig_lr
+    lrsig = 1. / np.sqrt(lr_totweight)
     lrsig = lrsig[mask]
 
     # Reverse sign of baselines for correct imaging if asked
