@@ -2653,7 +2653,7 @@ def chisqdata_vis(Obsdata, Prior, mask, pol='I', **kwargs):
     # unpack keyword args
     systematic_noise = kwargs.get('systematic_noise', 0.)
     snrcut = kwargs.get('snrcut', 0.)
-    debias = kwargs.get('debias', True)
+    debias = kwargs.get('debias', False)
     weighting = kwargs.get('weighting', 'natural')
 
     # unpack data
@@ -2680,7 +2680,7 @@ def chisqdata_amp(Obsdata, Prior, mask, pol='I', **kwargs):
     # unpack keyword args
     systematic_noise = kwargs.get('systematic_noise', 0.)
     snrcut = kwargs.get('snrcut', 0.)
-    debias = kwargs.get('debias', True)
+    debias = kwargs.get('debias', False)
     weighting = kwargs.get('weighting', 'natural')
 
     # unpack data
@@ -2881,7 +2881,7 @@ def chisqdata_camp(Obsdata, Prior, mask, pol='I', **kwargs):
         count = 'min'
 
     snrcut = kwargs.get('snrcut', 0.)
-    debias = kwargs.get('debias', True)
+    debias = kwargs.get('debias', False)
     weighting = kwargs.get('weighting', 'natural')
 
     # unpack data & mask low snr points
@@ -2930,7 +2930,7 @@ def chisqdata_logcamp(Obsdata, Prior, mask, pol='I', **kwargs):
         count = 'min'
 
     snrcut = kwargs.get('snrcut', 0.)
-    debias = kwargs.get('debias', True)
+    debias = kwargs.get('debias', False)
     weighting = kwargs.get('weighting', 'natural')
 
     # unpack data & mask low snr points
@@ -2979,7 +2979,7 @@ def chisqdata_logcamp_diag(Obsdata, Prior, mask, pol='I', **kwargs):
         count = 'min'
 
     snrcut = kwargs.get('snrcut', 0.)
-    debias = kwargs.get('debias', True)
+    debias = kwargs.get('debias', False)
 
     # unpack data & mask low snr points
     vtype = ehc.vis_poldict[pol]
@@ -3041,7 +3041,7 @@ def chisqdata_vis_fft(Obsdata, Prior, pol='I', **kwargs):
     # unpack keyword args
     systematic_noise = kwargs.get('systematic_noise', 0.)
     snrcut = kwargs.get('snrcut', 0.)
-    debias = kwargs.get('debias', True)
+    debias = kwargs.get('debias', False)
     weighting = kwargs.get('weighting', 'natural')
     fft_pad_factor = kwargs.get('fft_pad_factor', ehc.FFT_PAD_DEFAULT)
     conv_func = kwargs.get('conv_func', ehc.GRIDDER_CONV_FUNC_DEFAULT)
@@ -3079,7 +3079,7 @@ def chisqdata_amp_fft(Obsdata, Prior, pol='I', **kwargs):
     # unpack keyword args
     systematic_noise = kwargs.get('systematic_noise', 0.)
     snrcut = kwargs.get('snrcut', 0.)
-    debias = kwargs.get('debias', True)
+    debias = kwargs.get('debias', False)
     weighting = kwargs.get('weighting', 'natural')
     fft_pad_factor = kwargs.get('fft_pad_factor', ehc.FFT_PAD_DEFAULT)
     conv_func = kwargs.get('conv_func', ehc.GRIDDER_CONV_FUNC_DEFAULT)
@@ -3336,7 +3336,7 @@ def chisqdata_camp_fft(Obsdata, Prior, pol='I', **kwargs):
         count = 'min'
 
     snrcut = kwargs.get('snrcut', 0.)
-    debias = kwargs.get('debias', True)
+    debias = kwargs.get('debias', False)
     weighting = kwargs.get('weighting', 'natural')
     fft_pad_factor = kwargs.get('fft_pad_factor', ehc.FFT_PAD_DEFAULT)
     conv_func = kwargs.get('conv_func', ehc.GRIDDER_CONV_FUNC_DEFAULT)
@@ -3398,7 +3398,7 @@ def chisqdata_logcamp_fft(Obsdata, Prior, pol='I', **kwargs):
         count = 'min'
 
     snrcut = kwargs.get('snrcut', 0.)
-    debias = kwargs.get('debias', True)
+    debias = kwargs.get('debias', False)
     weighting = kwargs.get('weighting', 'natural')
     fft_pad_factor = kwargs.get('fft_pad_factor', ehc.FFT_PAD_DEFAULT)
     conv_func = kwargs.get('conv_func', ehc.GRIDDER_CONV_FUNC_DEFAULT)
@@ -3460,7 +3460,7 @@ def chisqdata_logcamp_diag_fft(Obsdata, Prior, pol='I', **kwargs):
         count = 'min'
 
     snrcut = kwargs.get('snrcut', 0.)
-    debias = kwargs.get('debias', True)
+    debias = kwargs.get('debias', False)
     fft_pad_factor = kwargs.get('fft_pad_factor', ehc.FFT_PAD_DEFAULT)
     conv_func = kwargs.get('conv_func', ehc.GRIDDER_CONV_FUNC_DEFAULT)
     p_rad = kwargs.get('p_rad', ehc.GRIDDER_P_RAD_DEFAULT)
@@ -3553,7 +3553,7 @@ def chisqdata_vis_nfft(Obsdata, Prior, pol='I', **kwargs):
     # unpack keyword args
     systematic_noise = kwargs.get('systematic_noise', 0.)
     snrcut = kwargs.get('snrcut', 0.)
-    debias = kwargs.get('debias', True)
+    debias = kwargs.get('debias', False)
     weighting = kwargs.get('weighting', 'natural')
     fft_pad_factor = kwargs.get('fft_pad_factor', ehc.FFT_PAD_DEFAULT)
     p_rad = kwargs.get('p_rad', ehc.GRIDDER_P_RAD_DEFAULT)
@@ -3586,7 +3586,7 @@ def chisqdata_amp_nfft(Obsdata, Prior, pol='I', **kwargs):
     # unpack keyword args
     systematic_noise = kwargs.get('systematic_noise', 0.)
     snrcut = kwargs.get('snrcut', 0.)
-    debias = kwargs.get('debias', True)
+    debias = kwargs.get('debias', False)
     weighting = kwargs.get('weighting', 'natural')
     fft_pad_factor = kwargs.get('fft_pad_factor', ehc.FFT_PAD_DEFAULT)
     p_rad = kwargs.get('p_rad', ehc.GRIDDER_P_RAD_DEFAULT)
@@ -3819,7 +3819,7 @@ def chisqdata_camp_nfft(Obsdata, Prior, pol='I', **kwargs):
         count = 'min'
 
     snrcut = kwargs.get('snrcut', 0.)
-    debias = kwargs.get('debias', True)
+    debias = kwargs.get('debias', False)
     weighting = kwargs.get('weighting', 'natural')
     fft_pad_factor = kwargs.get('fft_pad_factor', ehc.FFT_PAD_DEFAULT)
     p_rad = kwargs.get('p_rad', ehc.GRIDDER_P_RAD_DEFAULT)
@@ -3874,7 +3874,7 @@ def chisqdata_logcamp_nfft(Obsdata, Prior, pol='I', **kwargs):
         count = 'min'
 
     snrcut = kwargs.get('snrcut', 0.)
-    debias = kwargs.get('debias', True)
+    debias = kwargs.get('debias', False)
     weighting = kwargs.get('weighting', 'natural')
     fft_pad_factor = kwargs.get('fft_pad_factor', ehc.FFT_PAD_DEFAULT)
     p_rad = kwargs.get('p_rad', ehc.GRIDDER_P_RAD_DEFAULT)
@@ -3929,7 +3929,7 @@ def chisqdata_logcamp_diag_nfft(Obsdata, Prior, pol='I', **kwargs):
         count = 'min'
 
     snrcut = kwargs.get('snrcut', 0.)
-    debias = kwargs.get('debias', True)
+    debias = kwargs.get('debias', False)
     fft_pad_factor = kwargs.get('fft_pad_factor', ehc.FFT_PAD_DEFAULT)
     p_rad = kwargs.get('p_rad', ehc.GRIDDER_P_RAD_DEFAULT)
 
