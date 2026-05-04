@@ -895,3 +895,64 @@ def compute_objective(imvec, xarr, which_solve, transforms,
         regterm = regterm + reg_term[regname] * reg_dict[regname]
 
     return datterm + regterm
+
+
+def compute_objective_grad(imvec, xarr, which_solve, transforms,
+                           dat_term, reg_term,
+                           data_tuples, obslist, logfreqratio_list,
+                           mf, pol, ttype, embed_mask,
+                           xprior, norm_reg, regparams,
+                           nimage,
+                           chisq_transform=False, chisq_offset_gradient=0.0):
+    """Pure objective gradient: data-fidelity grad + regularization grad,
+    chain-ruled through the bounded-value transform, packed into solver space."""
+
+    dat_term_keys = sorted(dat_term.keys())
+    reg_term_keys = sorted(reg_term.keys())
+
+    # Unpack solver vector; keep a pre-transform copy for the chain rule
+    imcur = unpack_imarr(imvec, xarr, which_solve)
+    imcur_prime = imcur.copy()
+    imcur = transform_imarr(imcur, transforms, which_solve)
+
+    chi2grad_dict = compute_chisqgrad_dict(
+        imcur, dat_term_keys, data_tuples,
+        obslist, logfreqratio_list, mf, pol, ttype, embed_mask,
+        which_solve, nimage,
+    )
+    chi2val_dict = None
+    if chisq_transform:
+        chi2val_dict = compute_chisq_dict(
+            imcur, dat_term_keys, data_tuples,
+            obslist, logfreqratio_list, mf, pol, ttype, embed_mask,
+        )
+
+    reggrad_dict = compute_reggrad_dict(
+        imcur, reg_term_keys, xprior, embed_mask,
+        mf, obslist, logfreqratio_list, pol, norm_reg, regparams,
+        which_solve, nimage,
+    )
+
+    n_obs = len(obslist)
+    datterm = 0.0
+    for dname in dat_term_keys:
+        weight = dat_term[dname]
+        for i in range(n_obs):
+            key = dname if n_obs == 1 else f"{dname}_{i}"
+            chi2_grad = chi2grad_dict[key]
+            if chisq_transform:
+                # chi2val_dict is keyed by dname (no per-obs suffix), unlike
+                # chi2grad_dict above. Asymmetry preserved verbatim from
+                # Imager.objgrad behaviour.
+                chi2_val = chi2val_dict[dname]
+                datterm = datterm + weight * chi2_grad * (1.0 - 1.0 / (chi2_val ** 2))
+            else:
+                datterm = datterm + weight * (chi2_grad + chisq_offset_gradient)
+
+    regterm = 0.0
+    for regname in reg_term_keys:
+        regterm = regterm + reg_term[regname] * reggrad_dict[regname]
+
+    grad = datterm + regterm
+    grad = transform_gradients(grad, imcur_prime, transforms, which_solve)
+    return pack_imarr(grad, which_solve)

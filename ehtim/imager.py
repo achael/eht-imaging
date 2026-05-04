@@ -46,12 +46,12 @@ from ehtim.imaging.imager_backend import (
     compute_chisqgrad_dict,
     compute_embed,
     compute_objective,
+    compute_objective_grad,
     compute_reg_dict,
     compute_reggrad_dict,
     embed_imarr,
     make_initarr,
     pack_imarr,
-    transform_gradients,
     transform_imarr,
     transform_imarr_inverse,
     unpack_imarr,
@@ -1136,56 +1136,16 @@ class Imager:
         )
 
     def objgrad(self, imvec):
-        """Current objective function gradient.
-        """
-
-        # Unpack polarimetric/multifrequency vector into an array
-        imcur =  unpack_imarr(imvec, self._xarr, self._which_solve)
-
-        # apply image transform to bounded values
-        imcur_prime = imcur.copy()
-        imcur = transform_imarr(imcur, self.transform_next, self._which_solve)
-
-        # Data terms
-        datterm = 0.
-        chi2_term_dict = self.make_chisqgrad_dict(imcur)
-        if self.chisq_transform:
-            chi2_value_dict = self.make_chisq_dict(imcur)
-        for dname in sorted(self.dat_term_next.keys()):
-            hyperparameter = self.dat_term_next[dname]
-
-            for i, obs in enumerate(self.obslist_next):
-                if len(self.obslist_next)==1:
-                    dname_key = dname
-                else:
-                    dname_key = dname + (f'_{i}')
-
-                chi2_grad = chi2_term_dict[dname_key]
-
-                if self.chisq_transform:
-                    chi2_val = chi2_value_dict[dname]
-                    datterm += hyperparameter * chi2_grad * (1. - 1./(chi2_val**2))
-                else:
-                    datterm += hyperparameter * (chi2_grad + self.chisq_offset_gradient)
-
-        # Regularizer terms
-        regterm = 0
-        reg_term_dict = self.make_reggrad_dict(imcur)
-        for regname in sorted(self.reg_term_next.keys()):
-            hyperparameter = self.reg_term_next[regname]
-            regularizer_grad = reg_term_dict[regname]
-            regterm += hyperparameter * regularizer_grad
-
-        # Total gradient
-        grad = datterm + regterm
-
-        # Chain rule term for change of variables
-        grad = transform_gradients(grad, imcur_prime, self.transform_next, self._which_solve)
-
-        # repack gradient
-        grad = pack_imarr(grad, self._which_solve)
-
-        return grad
+        """Current objective function gradient."""
+        return compute_objective_grad(
+            imvec, self._xarr, self._which_solve, self.transform_next,
+            self.dat_term_next, self.reg_term_next,
+            self._data_tuples, self.obslist_next, self._logfreqratio_list,
+            self.mf_next, self.pol_next, self._ttype, self._embed_mask,
+            self._xprior, self.norm_reg, self._full_regparams(),
+            self._nimage,
+            self.chisq_transform, self.chisq_offset_gradient,
+        )
 
     def plotcur(self, imvec, **kwargs):
         """Plot current image.

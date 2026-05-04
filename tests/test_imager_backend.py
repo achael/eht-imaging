@@ -13,6 +13,7 @@ from ehtim.imaging.imager_backend import (
     compute_chisqgrad_dict,
     compute_embed,
     compute_objective,
+    compute_objective_grad,
     compute_reg_dict,
     compute_reggrad_dict,
     transform_gradients,
@@ -202,6 +203,19 @@ def _call_backend_objective(imgr, imvec):
         imgr.mf_next, imgr.pol_next, imgr._ttype, imgr._embed_mask,
         imgr._xprior, imgr.norm_reg, _build_regparams(imgr),
         imgr.chisq_transform,
+    )
+
+
+def _call_backend_objective_grad(imgr, imvec):
+    """Call compute_objective_grad with args pulled from an initialized Imager."""
+    return compute_objective_grad(
+        imvec, imgr._xarr, imgr._which_solve, imgr.transform_next,
+        imgr.dat_term_next, imgr.reg_term_next,
+        imgr._data_tuples, imgr.obslist_next, imgr._logfreqratio_list,
+        imgr.mf_next, imgr.pol_next, imgr._ttype, imgr._embed_mask,
+        imgr._xprior, imgr.norm_reg, _build_regparams(imgr),
+        imgr._nimage,
+        imgr.chisq_transform, imgr.chisq_offset_gradient,
     )
 
 
@@ -869,6 +883,192 @@ class TestComputeObjective:
         backend_value = _call_backend_objective(imgr, imvec)
         method_value = imgr.objfunc(imvec)
         np.testing.assert_array_equal(backend_value, method_value)
+
+
+def _fd_grad_of_objective(imgr, imvec, indices, eps=1e-6):
+    """Centered finite-difference gradient of compute_objective at given indices.
+
+    Returns a full-length grad array but only the entries at `indices` are
+    populated. Independent of compute_objective_grad — usable as ground truth
+    for the analytic gradient under test.
+    """
+    grad = np.zeros_like(imvec)
+    for i in indices:
+        v_p = imvec.copy()
+        v_p[i] += eps
+        v_m = imvec.copy()
+        v_m[i] -= eps
+        f_p = _call_backend_objective(imgr, v_p)
+        f_m = _call_backend_objective(imgr, v_m)
+        grad[i] = (f_p - f_m) / (2 * eps)
+    return grad
+
+
+class TestComputeObjectiveGrad:
+    """Tests for compute_objective_grad (extracted from Imager.objgrad)."""
+
+    def test_matches_imager_stokes_i(self, gauss_im, observe, initialize_imager):
+        """Single-freq, pol='I' — gradient bit-identical to method, 1D shape."""
+        obs = observe(gauss_im)
+        imgr, _ = initialize_imager(
+            obs, gauss_im, {"vis": 100, "amp": 10},
+            reg_term={"simple": 1, "tv": 10},
+        )
+        imvec = imgr._xinit
+        backend_grad = _call_backend_objective_grad(imgr, imvec)
+        method_grad = imgr.objgrad(imvec)
+        np.testing.assert_array_equal(backend_grad, method_grad)
+        assert backend_grad.shape == imvec.shape
+
+    def test_matches_imager_polarimetric(self, gauss_im_pol, observe, initialize_imager):
+        """pol='IP' with REGULARIZERS_POL — exercises polchisqgrad + polreggrad chain."""
+        obs = observe(gauss_im_pol)
+        imgr, _ = initialize_imager(
+            obs, gauss_im_pol, {"pvis": 100},
+            reg_term={"hw": 1, "ptv": 1},
+            pol="IP", transform=["log", "mcv"],
+        )
+        imvec = imgr._xinit
+        backend_grad = _call_backend_objective_grad(imgr, imvec)
+        method_grad = imgr.objgrad(imvec)
+        np.testing.assert_array_equal(backend_grad, method_grad)
+
+    def test_matches_imager_stokes_i_pol_bundled(self, gauss_im_pol, observe,
+                                                   initialize_imager):
+        """pol='IP' with mixed Stokes-I + pol terms — cross-Stokes chain rule path."""
+        obs = observe(gauss_im_pol)
+        imgr, _ = initialize_imager(
+            obs, gauss_im_pol, {"vis": 100, "pvis": 100},
+            reg_term={"simple": 1, "hw": 1},
+            pol="IP", transform=["log", "mcv"],
+        )
+        imvec = imgr._xinit
+        backend_grad = _call_backend_objective_grad(imgr, imvec)
+        method_grad = imgr.objgrad(imvec)
+        np.testing.assert_array_equal(backend_grad, method_grad)
+
+    def test_matches_imager_multifrequency(self, gauss_im, observe, initialize_imager):
+        """Two obs at different rf — multifreq grad bundling + key suffix branch."""
+        im_lo = gauss_im.copy()
+        im_lo.rf = REFFREQ_HZ
+        im_hi = gauss_im.copy()
+        im_hi.rf = MF_ALT_FREQ_HZ
+        obs_lo = observe(im_lo)
+        obs_hi = observe(im_hi)
+
+        imgr, _ = initialize_imager(
+            [obs_lo, obs_hi], im_lo, {"vis": 100},
+            reg_term={"simple": 1, "flux_mf": 1, "l2_alpha": 1},
+            mf=True, mf_order=1,
+            mf_flux=[im_lo.total_flux(), im_hi.total_flux()],
+        )
+        imvec = imgr._xinit
+        backend_grad = _call_backend_objective_grad(imgr, imvec)
+        method_grad = imgr.objgrad(imvec)
+        np.testing.assert_array_equal(backend_grad, method_grad)
+
+    def test_chisq_transform_branch(self, gauss_im, observe, initialize_imager):
+        """chisq_transform=True activates chi2_grad * (1 - 1/chi2^2) branch."""
+        obs = observe(gauss_im)
+        imgr, _ = initialize_imager(
+            obs, gauss_im, {"vis": 100},
+            reg_term={"simple": 1},
+        )
+        imgr.chisq_transform = True
+        imvec = imgr._xinit
+        backend_grad = _call_backend_objective_grad(imgr, imvec)
+        method_grad = imgr.objgrad(imvec)
+        np.testing.assert_array_equal(backend_grad, method_grad)
+
+    def test_fd_matches_analytic_stokes_i(self, gauss_im, observe, initialize_imager):
+        """FD of compute_objective ≈ compute_objective_grad on solved-for indices.
+
+        Independent verification of the analytic gradient via centered FD.
+        Samples 20 random indices to keep the test under a few seconds.
+        """
+        obs = observe(gauss_im)
+        imgr, _ = initialize_imager(
+            obs, gauss_im, {"vis": 100},
+            reg_term={"simple": 1, "tv": 10},
+        )
+        imvec = imgr._xinit
+
+        rng = np.random.default_rng(42)
+        indices = rng.choice(len(imvec), size=20, replace=False)
+
+        grad_analytic = _call_backend_objective_grad(imgr, imvec)
+        grad_fd = _fd_grad_of_objective(imgr, imvec, indices)
+
+        np.testing.assert_allclose(
+            grad_analytic[indices], grad_fd[indices],
+            rtol=1e-4, atol=1e-8,
+        )
+
+    def test_fd_matches_analytic_polarimetric(self, gauss_im_pol, observe,
+                                                initialize_imager):
+        """FD verification under pol='IP' with log+mcv transforms.
+
+        Exercises the chain rule applied through both the log (Stokes I) and
+        mcv (polarization) transform components, on top of the polarimetric
+        forward model. atol=1e-7 covers the FD noise floor: with chisq values
+        ~O(1e6) and eps=1e-6, FD precision floors near 1e-7 in absolute terms.
+        """
+        obs = observe(gauss_im_pol)
+        imgr, _ = initialize_imager(
+            obs, gauss_im_pol, {"vis": 100, "pvis": 100},
+            reg_term={"simple": 1, "hw": 1},
+            pol="IP", transform=["log", "mcv"],
+        )
+        imvec = imgr._xinit
+
+        rng = np.random.default_rng(7)
+        indices = rng.choice(len(imvec), size=20, replace=False)
+
+        grad_analytic = _call_backend_objective_grad(imgr, imvec)
+        grad_fd = _fd_grad_of_objective(imgr, imvec, indices)
+
+        np.testing.assert_allclose(
+            grad_analytic[indices], grad_fd[indices],
+            rtol=1e-4, atol=1e-7,
+        )
+
+    @pytest.mark.parametrize("xdim,ydim", IMAGE_SHAPES)
+    def test_rect_images(self, make_rect_image, observe, initialize_imager,
+                          xdim, ydim):
+        """Backend handles rectangular (xdim != ydim) images end-to-end."""
+        im = make_rect_image(xdim, ydim)
+        obs = observe(im)
+        imgr, _ = initialize_imager(
+            obs, im, {"vis": 100},
+            reg_term={"simple": 1, "tv": 10},
+        )
+        imvec = imgr._xinit
+        backend_grad = _call_backend_objective_grad(imgr, imvec)
+        method_grad = imgr.objgrad(imvec)
+        np.testing.assert_array_equal(backend_grad, method_grad)
+
+
+def test_objective_and_objective_grad_share_consistency(gauss_im, observe,
+                                                          initialize_imager):
+    """Cross-cutting invariant: gradient finite-norm and re-evaluation parity.
+
+    Uses 'simple' regularizer only; TV/L1 can produce NaN at zero-pixel
+    edges of the unblurred prior, which is unrelated to objective wiring.
+    """
+    obs = observe(gauss_im)
+    imgr, _ = initialize_imager(
+        obs, gauss_im, {"vis": 100, "amp": 10},
+        reg_term={"simple": 1},
+    )
+    imvec = imgr._xinit
+    obj = _call_backend_objective(imgr, imvec)
+    grad = _call_backend_objective_grad(imgr, imvec)
+    assert np.isfinite(obj)
+    assert np.all(np.isfinite(grad))
+    assert grad.shape == imvec.shape
+    # Re-evaluation parity through the method wrappers
+    np.testing.assert_array_equal(obj, imgr.objfunc(imvec))
+    np.testing.assert_array_equal(grad, imgr.objgrad(imvec))
 
 
 # ---------------------------------------------------------------------------
