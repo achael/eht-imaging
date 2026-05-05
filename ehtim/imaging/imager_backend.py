@@ -428,7 +428,7 @@ def compute_embed(imvec, xdim, ydim, psize, clipfloor):
     return embed_mask, coord_matrix
 
 
-def compute_chisq_dict(imcur, dat_term_keys, data_tuples, obslist,
+def compute_chisq_dict(imcur, dat_term_keys, data_tuples, n_obs,
                        logfreqratio_list, mf, pol, ttype, embed_mask):
     """Compute chi^2 value for each data term across all observations.
 
@@ -441,8 +441,9 @@ def compute_chisq_dict(imcur, dat_term_keys, data_tuples, obslist,
     data_tuples : dict
         Pre-computed data products keyed by dname or dname_i,
         each value is a (data, sigma, A) tuple.
-    obslist : list
-        List of Obsdata objects (one per frequency/epoch).
+    n_obs : int
+        Number of observations (frequencies/epochs). Must equal
+        len(logfreqratio_list); validated by Imager.init_imager.
     logfreqratio_list : list of float
         Log frequency ratios log(nu_i/reffreq); one per obs.
     mf : bool
@@ -461,9 +462,9 @@ def compute_chisq_dict(imcur, dat_term_keys, data_tuples, obslist,
     """
     chi2_dict = {}
     for dname in dat_term_keys:
-        # Loop over all observations in the list
-        for i, obs in enumerate(obslist):
-            if len(obslist) == 1:
+        # Loop over all observations
+        for i in range(n_obs):
+            if n_obs == 1:
                 dname_key = dname
             else:
                 dname_key = dname + (f'_{i}')
@@ -500,7 +501,7 @@ def compute_chisq_dict(imcur, dat_term_keys, data_tuples, obslist,
     return chi2_dict
 
 
-def compute_chisqgrad_dict(imcur, dat_term_keys, data_tuples, obslist,
+def compute_chisqgrad_dict(imcur, dat_term_keys, data_tuples, n_obs,
                            logfreqratio_list, mf, pol, ttype, embed_mask,
                            which_solve, nimage):
     """Compute chi^2 gradient for each data term across all observations.
@@ -514,8 +515,9 @@ def compute_chisqgrad_dict(imcur, dat_term_keys, data_tuples, obslist,
     data_tuples : dict
         Pre-computed data products keyed by dname or dname_i,
         each value is a (data, sigma, A) tuple.
-    obslist : list
-        List of Obsdata objects (one per frequency/epoch).
+    n_obs : int
+        Number of observations (frequencies/epochs). Must equal
+        len(logfreqratio_list); validated by Imager.init_imager.
     logfreqratio_list : list of float
         Log frequency ratios log(nu_i/reffreq); one per obs.
     mf : bool
@@ -541,9 +543,9 @@ def compute_chisqgrad_dict(imcur, dat_term_keys, data_tuples, obslist,
     # because np.array((...)) below copies into a new (4, nimage) array each time.
     zero_row = np.zeros(nimage)
     for dname in dat_term_keys:
-        # Loop over all observations in the list
-        for i, obs in enumerate(obslist):
-            if len(obslist) == 1:
+        # Loop over all observations
+        for i in range(n_obs):
+            if n_obs == 1:
                 dname_key = dname
             else:
                 dname_key = dname + (f'_{i}')
@@ -597,7 +599,7 @@ def compute_chisqgrad_dict(imcur, dat_term_keys, data_tuples, obslist,
 
 
 def compute_reg_dict(imcur, reg_term_keys, xprior, embed_mask,
-                     mf, obslist, logfreqratio_list, pol,
+                     mf, n_obs, logfreqratio_list, pol,
                      norm_reg, regparams):
     """Compute regularizer value for each regularizer term.
 
@@ -613,8 +615,9 @@ def compute_reg_dict(imcur, reg_term_keys, xprior, embed_mask,
         Pixel embedding mask.
     mf : bool
         Whether multifrequency imaging is enabled.
-    obslist : list
-        List of Obsdata objects (one per frequency/epoch).
+    n_obs : int
+        Number of observations (frequencies/epochs). Must equal
+        len(logfreqratio_list); validated by Imager.init_imager.
     logfreqratio_list : list of float
         Log frequency ratios log(nu_i/reffreq); one per obs.
     pol : str
@@ -655,12 +658,12 @@ def compute_reg_dict(imcur, reg_term_keys, xprior, embed_mask,
                 if regname in REGULARIZERS_ALLFREQS_I:
 
                     # TODO move this to checks?
-                    if (not isinstance(mf_flux, list)) or len(mf_flux) != len(obslist):
+                    if (not isinstance(mf_flux, list)) or len(mf_flux) != n_obs:
                         raise Exception(f"when using regularizer '{regname}', "
-                                        + "mf_flux must be a list of same length as obslist!")
+                                        + "mf_flux must be a list of same length as n_obs!")
 
                     regname_base = '_'.join(regname.split('_')[:-1])  # remove the '_mf' tag
-                    for i in range(len(obslist)):
+                    for i in range(n_obs):
 
                         logfreqratio = logfreqratio_list[i]
                         imcur_nu = mfutils.image_at_freq(imcur, logfreqratio)
@@ -726,14 +729,14 @@ def compute_reg_dict(imcur, reg_term_keys, xprior, embed_mask,
 
 
 def compute_reggrad_dict(imcur, reg_term_keys, xprior, embed_mask,
-                         mf, obslist, logfreqratio_list, pol,
+                         mf, n_obs, logfreqratio_list, pol,
                          norm_reg, regparams,
                          which_solve, nimage):
     """Compute regularizer gradient for each regularizer term.
 
     Parameters
     ----------
-    imcur, reg_term_keys, xprior, embed_mask, mf, obslist, logfreqratio_list,
+    imcur, reg_term_keys, xprior, embed_mask, mf, n_obs, logfreqratio_list,
     pol, norm_reg, regparams : see compute_reg_dict.
     which_solve : np.ndarray of bool
         Per-Stokes solve mask (used by polregularizergrad).
@@ -773,12 +776,12 @@ def compute_reggrad_dict(imcur, reg_term_keys, xprior, embed_mask,
                 if regname in REGULARIZERS_ALLFREQS_I:
 
                     # TODO move this to checks?
-                    if (not isinstance(mf_flux, list)) or len(mf_flux) != len(obslist):
+                    if (not isinstance(mf_flux, list)) or len(mf_flux) != n_obs:
                         raise Exception(f"when using regularizer '{regname}', "
-                                        + "mf_flux must be a list of same length as obslist!")
+                                        + "mf_flux must be a list of same length as n_obs!")
 
                     regname_base = '_'.join(regname.split('_')[:-1])  # remove the '_mf' tag
-                    for i in range(len(obslist)):
+                    for i in range(n_obs):
 
                         logfreqratio = logfreqratio_list[i]
                         imcur_nu = mfutils.image_at_freq(imcur, logfreqratio)
@@ -856,7 +859,7 @@ def compute_reggrad_dict(imcur, reg_term_keys, xprior, embed_mask,
 
 def compute_objective(imvec, xarr, which_solve, transforms,
                       dat_term, reg_term,
-                      data_tuples, obslist, logfreqratio_list,
+                      data_tuples, n_obs, logfreqratio_list,
                       mf, pol, ttype, embed_mask,
                       xprior, norm_reg, regparams):
     """Pure objective: data fidelity + regularization, summed with hyperparameter weights."""
@@ -870,14 +873,13 @@ def compute_objective(imvec, xarr, which_solve, transforms,
 
     chi2_dict = compute_chisq_dict(
         imcur, dat_term_keys, data_tuples,
-        obslist, logfreqratio_list, mf, pol, ttype, embed_mask,
+        n_obs, logfreqratio_list, mf, pol, ttype, embed_mask,
     )
     reg_dict = compute_reg_dict(
         imcur, reg_term_keys, xprior, embed_mask,
-        mf, obslist, logfreqratio_list, pol, norm_reg, regparams,
+        mf, n_obs, logfreqratio_list, pol, norm_reg, regparams,
     )
 
-    n_obs = len(obslist)
     datterm = 0.0
     for dname in dat_term_keys:
         weight = dat_term[dname]
@@ -894,7 +896,7 @@ def compute_objective(imvec, xarr, which_solve, transforms,
 
 def compute_objective_grad(imvec, xarr, which_solve, transforms,
                            dat_term, reg_term,
-                           data_tuples, obslist, logfreqratio_list,
+                           data_tuples, n_obs, logfreqratio_list,
                            mf, pol, ttype, embed_mask,
                            xprior, norm_reg, regparams,
                            nimage):
@@ -911,17 +913,16 @@ def compute_objective_grad(imvec, xarr, which_solve, transforms,
 
     chi2grad_dict = compute_chisqgrad_dict(
         imcur, dat_term_keys, data_tuples,
-        obslist, logfreqratio_list, mf, pol, ttype, embed_mask,
+        n_obs, logfreqratio_list, mf, pol, ttype, embed_mask,
         which_solve, nimage,
     )
 
     reggrad_dict = compute_reggrad_dict(
         imcur, reg_term_keys, xprior, embed_mask,
-        mf, obslist, logfreqratio_list, pol, norm_reg, regparams,
+        mf, n_obs, logfreqratio_list, pol, norm_reg, regparams,
         which_solve, nimage,
     )
 
-    n_obs = len(obslist)
     datterm = 0.0
     for dname in dat_term_keys:
         weight = dat_term[dname]

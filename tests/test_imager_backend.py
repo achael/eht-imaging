@@ -141,7 +141,7 @@ def _call_backend_chisq_dict(imgr, imcur):
     """Call compute_chisq_dict with args pulled from an initialized Imager."""
     return compute_chisq_dict(
         imcur, sorted(imgr.dat_term_next.keys()), imgr._data_tuples,
-        imgr.obslist_next, imgr._logfreqratio_list, imgr.mf_next,
+        len(imgr.obslist_next), imgr._logfreqratio_list, imgr.mf_next,
         imgr.pol_next, imgr._ttype, imgr._embed_mask,
     )
 
@@ -150,7 +150,7 @@ def _call_backend_chisqgrad_dict(imgr, imcur):
     """Call compute_chisqgrad_dict with args pulled from an initialized Imager."""
     return compute_chisqgrad_dict(
         imcur, sorted(imgr.dat_term_next.keys()), imgr._data_tuples,
-        imgr.obslist_next, imgr._logfreqratio_list, imgr.mf_next,
+        len(imgr.obslist_next), imgr._logfreqratio_list, imgr.mf_next,
         imgr.pol_next, imgr._ttype, imgr._embed_mask,
         imgr._which_solve, imgr._nimage,
     )
@@ -179,7 +179,7 @@ def _call_backend_reg_dict(imgr, imcur, mf_flux=None):
     """Call compute_reg_dict with args pulled from an initialized Imager."""
     return compute_reg_dict(
         imcur, sorted(imgr.reg_term_next.keys()), imgr._xprior, imgr._embed_mask,
-        imgr.mf_next, imgr.obslist_next, imgr._logfreqratio_list, imgr.pol_next,
+        imgr.mf_next, len(imgr.obslist_next), imgr._logfreqratio_list, imgr.pol_next,
         imgr.norm_reg, _build_regparams(imgr, mf_flux=mf_flux),
     )
 
@@ -188,7 +188,7 @@ def _call_backend_reggrad_dict(imgr, imcur, mf_flux=None):
     """Call compute_reggrad_dict with args pulled from an initialized Imager."""
     return compute_reggrad_dict(
         imcur, sorted(imgr.reg_term_next.keys()), imgr._xprior, imgr._embed_mask,
-        imgr.mf_next, imgr.obslist_next, imgr._logfreqratio_list, imgr.pol_next,
+        imgr.mf_next, len(imgr.obslist_next), imgr._logfreqratio_list, imgr.pol_next,
         imgr.norm_reg, _build_regparams(imgr, mf_flux=mf_flux),
         imgr._which_solve, imgr._nimage,
     )
@@ -199,7 +199,7 @@ def _call_backend_objective(imgr, imvec):
     return compute_objective(
         imvec, imgr._xarr, imgr._which_solve, imgr.transform_next,
         imgr.dat_term_next, imgr.reg_term_next,
-        imgr._data_tuples, imgr.obslist_next, imgr._logfreqratio_list,
+        imgr._data_tuples, len(imgr.obslist_next), imgr._logfreqratio_list,
         imgr.mf_next, imgr.pol_next, imgr._ttype, imgr._embed_mask,
         imgr._xprior, imgr.norm_reg, _build_regparams(imgr),
     )
@@ -210,7 +210,7 @@ def _call_backend_objective_grad(imgr, imvec):
     return compute_objective_grad(
         imvec, imgr._xarr, imgr._which_solve, imgr.transform_next,
         imgr.dat_term_next, imgr.reg_term_next,
-        imgr._data_tuples, imgr.obslist_next, imgr._logfreqratio_list,
+        imgr._data_tuples, len(imgr.obslist_next), imgr._logfreqratio_list,
         imgr.mf_next, imgr.pol_next, imgr._ttype, imgr._embed_mask,
         imgr._xprior, imgr.norm_reg, _build_regparams(imgr),
         imgr._nimage,
@@ -614,7 +614,7 @@ class TestComputeRegDict:
         with pytest.raises(Exception, match="not recognized"):
             compute_reg_dict(
                 imcur, ["not_a_regularizer"], imgr._xprior, imgr._embed_mask,
-                imgr.mf_next, imgr.obslist_next, imgr._logfreqratio_list, imgr.pol_next,
+                imgr.mf_next, len(imgr.obslist_next), imgr._logfreqratio_list, imgr.pol_next,
                 imgr.norm_reg, _build_regparams(imgr),
             )
 
@@ -740,7 +740,7 @@ class TestComputeReggradDict:
         with pytest.raises(Exception, match="not recognized"):
             compute_reggrad_dict(
                 imcur, ["not_a_regularizer"], imgr._xprior, imgr._embed_mask,
-                imgr.mf_next, imgr.obslist_next, imgr._logfreqratio_list, imgr.pol_next,
+                imgr.mf_next, len(imgr.obslist_next), imgr._logfreqratio_list, imgr.pol_next,
                 imgr.norm_reg, _build_regparams(imgr),
                 imgr._which_solve, imgr._nimage,
             )

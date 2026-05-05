@@ -801,6 +801,15 @@ class Imager:
     def init_imager(self):
         """Set up Stokes I imager.
         """
+        # Backends accept n_obs as a scalar; this assertion guards the
+        # invariant they rely on (len(obslist) == len(freq_list) == len(logfreqratio_list)).
+        n_obs = len(self.obslist_next)
+        if not (len(self.freq_list) == n_obs and len(self._logfreqratio_list) == n_obs):
+            raise Exception(
+                "Imager state inconsistent: len(obslist_next), len(freq_list), "
+                "len(_logfreqratio_list) must all match."
+            )
+
         # Set embedding mask
         self.set_embed()
         self._nimage = np.sum(self._embed_mask)
@@ -1071,7 +1080,7 @@ class Imager:
         """
         return compute_chisq_dict(
             imcur, sorted(self.dat_term_next.keys()), self._data_tuples,
-            self.obslist_next, self._logfreqratio_list, self.mf_next,
+            len(self.obslist_next), self._logfreqratio_list, self.mf_next,
             self.pol_next, self._ttype, self._embed_mask,
         )
 
@@ -1081,7 +1090,7 @@ class Imager:
         """
         return compute_chisqgrad_dict(
             imcur, sorted(self.dat_term_next.keys()), self._data_tuples,
-            self.obslist_next, self._logfreqratio_list, self.mf_next,
+            len(self.obslist_next), self._logfreqratio_list, self.mf_next,
             self.pol_next, self._ttype, self._embed_mask,
             self._which_solve, self._nimage,
         )
@@ -1106,7 +1115,7 @@ class Imager:
         """
         return compute_reg_dict(
             imcur, sorted(self.reg_term_next.keys()), self._xprior, self._embed_mask,
-            self.mf_next, self.obslist_next, self._logfreqratio_list, self.pol_next,
+            self.mf_next, len(self.obslist_next), self._logfreqratio_list, self.pol_next,
             self.norm_reg, self._full_regparams(),
         )
 
@@ -1116,7 +1125,7 @@ class Imager:
         """
         return compute_reggrad_dict(
             imcur, sorted(self.reg_term_next.keys()), self._xprior, self._embed_mask,
-            self.mf_next, self.obslist_next, self._logfreqratio_list, self.pol_next,
+            self.mf_next, len(self.obslist_next), self._logfreqratio_list, self.pol_next,
             self.norm_reg, self._full_regparams(),
             self._which_solve, self._nimage,
         )
@@ -1126,7 +1135,7 @@ class Imager:
         return compute_objective(
             imvec, self._xarr, self._which_solve, self.transform_next,
             self.dat_term_next, self.reg_term_next,
-            self._data_tuples, self.obslist_next, self._logfreqratio_list,
+            self._data_tuples, len(self.obslist_next), self._logfreqratio_list,
             self.mf_next, self.pol_next, self._ttype, self._embed_mask,
             self._xprior, self.norm_reg, self._full_regparams(),
         )
@@ -1136,7 +1145,7 @@ class Imager:
         return compute_objective_grad(
             imvec, self._xarr, self._which_solve, self.transform_next,
             self.dat_term_next, self.reg_term_next,
-            self._data_tuples, self.obslist_next, self._logfreqratio_list,
+            self._data_tuples, len(self.obslist_next), self._logfreqratio_list,
             self.mf_next, self.pol_next, self._ttype, self._embed_mask,
             self._xprior, self.norm_reg, self._full_regparams(),
             self._nimage,
