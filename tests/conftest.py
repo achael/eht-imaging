@@ -200,7 +200,7 @@ def initialize_imager():
         imgr.check_limits()
         imgr.init_imager()
 
-        imcur = unpack_imarr(imgr._xinit, imgr._xarr, imgr._which_solve)
+        imcur = unpack_imarr(imgr._init_vec, imgr._init_arr, imgr._which_solve)
         imcur = transform_imarr(imcur, imgr.transform_next, imgr._which_solve)
         return imgr, imcur
     return _factory

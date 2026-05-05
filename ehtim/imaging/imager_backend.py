@@ -23,6 +23,24 @@ import ehtim.imaging.imager_utils as imutils
 import ehtim.imaging.multifreq_imager_utils as mfutils
 import ehtim.imaging.pol_imager_utils as polutils
 
+# -----------------------------------------------------------------------------
+# Naming convention for image arguments throughout this module
+# -----------------------------------------------------------------------------
+# Functions here distinguish between the *initial* image and the *prior* image:
+#   initvec / init_arr : the initial-value image used to fill not-solved-for
+#                        slots in unpack_imarr (the L-BFGS-B start point).
+#   priorvec           : the regularizer prior image, referenced by terms like
+#                        'simple', 'l1', 'rgauss'. Can differ from the initial
+#                        image entirely.
+# Suffix conventions:
+#   *_arr / init_arr   : multi-D unwrapped array (one row per Stokes/freq term).
+#   *_vec / initvec    : same content as *_arr but conceptually a vector
+#                        in the function signature (kept for Imager-side
+#                        readability; shape is identical).
+#   imvec              : the 1D packed solver vector (just the solved-for slots).
+# Imager-side equivalents: self._init_arr, self._prior_arr, self._init_vec.
+# -----------------------------------------------------------------------------
+
 # Data term and polarization-mode names recognized by the chi^2 dispatchers.
 # Imported by ehtim.imager for backward compatibility.
 DATATERMS = ['vis', 'bs', 'amp', 'cphase', 'cphase_diag', 'camp', 'logcamp', 'logcamp_diag']
@@ -428,8 +446,10 @@ def compute_embed(imvec, xdim, ydim, psize, clipfloor):
     return embed_mask, coord_matrix
 
 
-def compute_chisq_dict(imcur, dat_term_keys, data_tuples, n_obs,
-                       logfreqratio_list, mf, pol, ttype, embed_mask):
+def compute_chisq_dict(imcur, dat_term_keys,
+                       mf, pol,
+                       data_tuples, logfreqratio_list, n_obs,
+                       ttype, embed_mask):
     """Compute chi^2 value for each data term across all observations.
 
     Parameters
@@ -438,18 +458,18 @@ def compute_chisq_dict(imcur, dat_term_keys, data_tuples, n_obs,
         Current image array transformed to bounded values.
     dat_term_keys : list of str
         Data term names to evaluate, already sorted.
-    data_tuples : dict
-        Pre-computed data products keyed by dname or dname_i,
-        each value is a (data, sigma, A) tuple.
-    n_obs : int
-        Number of observations (frequencies/epochs). Must equal
-        len(logfreqratio_list); validated by Imager.init_imager.
-    logfreqratio_list : list of float
-        Log frequency ratios log(nu_i/reffreq); one per obs.
     mf : bool
         Whether multifrequency imaging is enabled.
     pol : str
         Polarization mode string.
+    data_tuples : dict
+        Pre-computed data products keyed by dname or dname_i,
+        each value is a (data, sigma, A) tuple.
+    logfreqratio_list : list of float
+        Log frequency ratios log(nu_i/reffreq); one per obs.
+    n_obs : int
+        Number of observations (frequencies/epochs). Must equal
+        len(logfreqratio_list); validated by Imager.init_imager.
     ttype : str
         Transform type ('direct', 'fast', 'nfft').
     embed_mask : np.ndarray of bool
@@ -501,8 +521,10 @@ def compute_chisq_dict(imcur, dat_term_keys, data_tuples, n_obs,
     return chi2_dict
 
 
-def compute_chisqgrad_dict(imcur, dat_term_keys, data_tuples, n_obs,
-                           logfreqratio_list, mf, pol, ttype, embed_mask,
+def compute_chisqgrad_dict(imcur, dat_term_keys,
+                           mf, pol,
+                           data_tuples, logfreqratio_list, n_obs,
+                           ttype, embed_mask,
                            which_solve, nimage):
     """Compute chi^2 gradient for each data term across all observations.
 
@@ -512,18 +534,18 @@ def compute_chisqgrad_dict(imcur, dat_term_keys, data_tuples, n_obs,
         Current image array transformed to bounded values.
     dat_term_keys : list of str
         Data term names to evaluate, already sorted.
-    data_tuples : dict
-        Pre-computed data products keyed by dname or dname_i,
-        each value is a (data, sigma, A) tuple.
-    n_obs : int
-        Number of observations (frequencies/epochs). Must equal
-        len(logfreqratio_list); validated by Imager.init_imager.
-    logfreqratio_list : list of float
-        Log frequency ratios log(nu_i/reffreq); one per obs.
     mf : bool
         Whether multifrequency imaging is enabled.
     pol : str
         Polarization mode string.
+    data_tuples : dict
+        Pre-computed data products keyed by dname or dname_i,
+        each value is a (data, sigma, A) tuple.
+    logfreqratio_list : list of float
+        Log frequency ratios log(nu_i/reffreq); one per obs.
+    n_obs : int
+        Number of observations (frequencies/epochs). Must equal
+        len(logfreqratio_list); validated by Imager.init_imager.
     ttype : str
         Transform type ('direct', 'fast', 'nfft').
     embed_mask : np.ndarray of bool
@@ -598,9 +620,11 @@ def compute_chisqgrad_dict(imcur, dat_term_keys, data_tuples, n_obs,
     return chi2grad_dict
 
 
-def compute_reg_dict(imcur, reg_term_keys, xprior, embed_mask,
-                     mf, n_obs, logfreqratio_list, pol,
-                     norm_reg, regparams):
+def compute_reg_dict(imcur, reg_term_keys,
+                     mf, pol,
+                     logfreqratio_list, n_obs,
+                     priorvec, norm_reg, regparams,
+                     embed_mask):
     """Compute regularizer value for each regularizer term.
 
     Parameters
@@ -609,19 +633,19 @@ def compute_reg_dict(imcur, reg_term_keys, xprior, embed_mask,
         Current image array transformed to bounded values.
     reg_term_keys : list of str
         Regularizer term names to evaluate, already sorted.
-    xprior : np.ndarray
-        Prior image array (same shape as imcur).
-    embed_mask : np.ndarray of bool
-        Pixel embedding mask.
     mf : bool
         Whether multifrequency imaging is enabled.
+    pol : str
+        Polarization mode string.
+    logfreqratio_list : list of float
+        Log frequency ratios log(nu_i/reffreq); one per obs.
     n_obs : int
         Number of observations (frequencies/epochs). Must equal
         len(logfreqratio_list); validated by Imager.init_imager.
-    logfreqratio_list : list of float
-        Log frequency ratios log(nu_i/reffreq); one per obs.
-    pol : str
-        Polarization mode string.
+    priorvec : np.ndarray
+        Prior image array (same shape as imcur). Used by regularizer terms
+        that depend on a reference image; distinct from `initvec` (the
+        initial image used for not-solved-for slots in `unpack_imarr`).
     norm_reg : bool
         Whether to apply per-regularizer normalization.
     regparams : dict
@@ -647,7 +671,7 @@ def compute_reg_dict(imcur, reg_term_keys, xprior, embed_mask,
             # Polarimetric regularizers
             if regname in REGULARIZERS_POL:
                 imcur_pol = imcur[0:4]
-                prior_pol = xprior[0:4]
+                prior_pol = priorvec[0:4]
                 reg = polutils.polregularizer(imcur_pol, prior_pol, embed_mask,
                                               stype=regname, norm_reg=norm_reg,
                                               **regparams)
@@ -667,7 +691,7 @@ def compute_reg_dict(imcur, reg_term_keys, xprior, embed_mask,
 
                         logfreqratio = logfreqratio_list[i]
                         imcur_nu = mfutils.image_at_freq(imcur, logfreqratio)
-                        prior_nu = mfutils.image_at_freq(xprior, logfreqratio)
+                        prior_nu = mfutils.image_at_freq(priorvec, logfreqratio)
 
                         regi = imutils.regularizer(imcur_nu, prior_nu, embed_mask,
                                                    stype=regname_base, norm_reg=norm_reg,
@@ -676,7 +700,7 @@ def compute_reg_dict(imcur, reg_term_keys, xprior, embed_mask,
                         reg = regi if i == 0 else reg + regi
 
                 else:
-                    reg = imutils.regularizer(imcur[0], xprior[0], embed_mask,
+                    reg = imutils.regularizer(imcur[0], priorvec[0], embed_mask,
                                               stype=regname, norm_reg=norm_reg,
                                               **regparams)
 
@@ -696,7 +720,7 @@ def compute_reg_dict(imcur, reg_term_keys, xprior, embed_mask,
                 elif regname in REGULARIZERS_CM:
                     idx = 9
 
-                reg = mfutils.regularizer_mf(imcur[idx], xprior[idx], embed_mask,
+                reg = mfutils.regularizer_mf(imcur[idx], priorvec[idx], embed_mask,
                                              stype=regname, norm_reg=norm_reg,
                                              **regparams)
             else:
@@ -704,7 +728,7 @@ def compute_reg_dict(imcur, reg_term_keys, xprior, embed_mask,
 
         # Single-frequency polarimetric regularizer
         elif regname in REGULARIZERS_POL:
-            reg = polutils.polregularizer(imcur, xprior, embed_mask,
+            reg = polutils.polregularizer(imcur, priorvec, embed_mask,
                                           stype=regname, norm_reg=norm_reg,
                                           **regparams)
 
@@ -712,10 +736,10 @@ def compute_reg_dict(imcur, reg_term_keys, xprior, embed_mask,
         elif regname in REGULARIZERS:
             if pol in POLARIZATION_MODES:
                 imcur0 = imcur[0]
-                prior0 = xprior[0]
+                prior0 = priorvec[0]
             else:
                 imcur0 = imcur
-                prior0 = xprior
+                prior0 = priorvec
 
             reg = imutils.regularizer(imcur0, prior0, embed_mask,
                                       stype=regname, norm_reg=norm_reg,
@@ -728,16 +752,18 @@ def compute_reg_dict(imcur, reg_term_keys, xprior, embed_mask,
     return reg_dict
 
 
-def compute_reggrad_dict(imcur, reg_term_keys, xprior, embed_mask,
-                         mf, n_obs, logfreqratio_list, pol,
-                         norm_reg, regparams,
+def compute_reggrad_dict(imcur, reg_term_keys,
+                         mf, pol,
+                         logfreqratio_list, n_obs,
+                         priorvec, norm_reg, regparams,
+                         embed_mask,
                          which_solve, nimage):
     """Compute regularizer gradient for each regularizer term.
 
     Parameters
     ----------
-    imcur, reg_term_keys, xprior, embed_mask, mf, n_obs, logfreqratio_list,
-    pol, norm_reg, regparams : see compute_reg_dict.
+    imcur, reg_term_keys, mf, pol, logfreqratio_list, n_obs,
+    priorvec, norm_reg, regparams, embed_mask : see compute_reg_dict.
     which_solve : np.ndarray of bool
         Per-Stokes solve mask (used by polregularizergrad).
     nimage : int
@@ -761,7 +787,7 @@ def compute_reggrad_dict(imcur, reg_term_keys, xprior, embed_mask,
             # Polarimetric regularizers
             if regname in REGULARIZERS_POL:
                 imcur_pol = imcur[0:4]
-                prior_pol = xprior[0:4]
+                prior_pol = priorvec[0:4]
                 pol_solve = which_solve[0:4]
                 regp = polutils.polregularizergrad(imcur_pol, prior_pol, embed_mask,
                                                    stype=regname, norm_reg=norm_reg,
@@ -785,7 +811,7 @@ def compute_reggrad_dict(imcur, reg_term_keys, xprior, embed_mask,
 
                         logfreqratio = logfreqratio_list[i]
                         imcur_nu = mfutils.image_at_freq(imcur, logfreqratio)
-                        prior_nu = mfutils.image_at_freq(xprior, logfreqratio)
+                        prior_nu = mfutils.image_at_freq(priorvec, logfreqratio)
 
                         regi = imutils.regularizergrad(imcur_nu, prior_nu, embed_mask,
                                                        stype=regname_base, norm_reg=norm_reg,
@@ -794,7 +820,7 @@ def compute_reggrad_dict(imcur, reg_term_keys, xprior, embed_mask,
                         reggrad = reggrad_i if i == 0 else reggrad + reggrad_i
 
                 else:
-                    regi = imutils.regularizergrad(imcur[0], xprior[0], embed_mask,
+                    regi = imutils.regularizergrad(imcur[0], priorvec[0], embed_mask,
                                                    stype=regname, norm_reg=norm_reg,
                                                    **regparams)
                     reggrad = np.zeros((len(imcur), nimage))
@@ -814,7 +840,7 @@ def compute_reggrad_dict(imcur, reg_term_keys, xprior, embed_mask,
                 elif regname in REGULARIZERS_CM:
                     idx = 9
 
-                regmf = mfutils.regularizergrad_mf(imcur[idx], xprior[idx], embed_mask,
+                regmf = mfutils.regularizergrad_mf(imcur[idx], priorvec[idx], embed_mask,
                                                    stype=regname, norm_reg=norm_reg,
                                                    **regparams)
 
@@ -826,7 +852,7 @@ def compute_reggrad_dict(imcur, reg_term_keys, xprior, embed_mask,
         else:
             # Single-frequency polarimetric regularizer
             if regname in REGULARIZERS_POL:
-                reggrad = polutils.polregularizergrad(imcur, xprior, embed_mask,
+                reggrad = polutils.polregularizergrad(imcur, priorvec, embed_mask,
                                                       stype=regname, norm_reg=norm_reg,
                                                       pol_solve=which_solve,
                                                       **regparams)
@@ -835,10 +861,10 @@ def compute_reggrad_dict(imcur, reg_term_keys, xprior, embed_mask,
             elif regname in REGULARIZERS:
                 if pol in POLARIZATION_MODES:
                     imcur0 = imcur[0]
-                    prior0 = xprior[0]
+                    prior0 = priorvec[0]
                 else:
                     imcur0 = imcur
-                    prior0 = xprior
+                    prior0 = priorvec
                 reggrad = imutils.regularizergrad(imcur0, prior0, embed_mask,
                                                   stype=regname, norm_reg=norm_reg,
                                                   **regparams)
@@ -857,27 +883,35 @@ def compute_reggrad_dict(imcur, reg_term_keys, xprior, embed_mask,
     return reggrad_dict
 
 
-def compute_objective(imvec, xarr, which_solve, transforms,
+def compute_objective(imvec, initvec,
+                      mf, pol,
+                      which_solve, data_tuples, logfreqratio_list, n_obs,
                       dat_term, reg_term,
-                      data_tuples, n_obs, logfreqratio_list,
-                      mf, pol, ttype, embed_mask,
-                      xprior, norm_reg, regparams):
+                      priorvec, norm_reg, regparams,
+                      transforms, embed_mask, ttype):
     """Pure objective: data fidelity + regularization, summed with hyperparameter weights."""
 
     dat_term_keys = sorted(dat_term.keys())
     reg_term_keys = sorted(reg_term.keys())
 
-    # Unpack solver vector into image array, then apply bounded-value transform
-    imcur = unpack_imarr(imvec, xarr, which_solve)
+    # Unpack solver vector into image array, then apply bounded-value transform.
+    # `initvec` provides the values used for any not-solved-for slots (it is
+    # the *initial* image, NOT the regularizer prior `priorvec`).
+    imcur = unpack_imarr(imvec, initvec, which_solve)
     imcur = transform_imarr(imcur, transforms, which_solve)
 
     chi2_dict = compute_chisq_dict(
-        imcur, dat_term_keys, data_tuples,
-        n_obs, logfreqratio_list, mf, pol, ttype, embed_mask,
+        imcur, dat_term_keys,
+        mf, pol,
+        data_tuples, logfreqratio_list, n_obs,
+        ttype, embed_mask,
     )
     reg_dict = compute_reg_dict(
-        imcur, reg_term_keys, xprior, embed_mask,
-        mf, n_obs, logfreqratio_list, pol, norm_reg, regparams,
+        imcur, reg_term_keys,
+        mf, pol,
+        logfreqratio_list, n_obs,
+        priorvec, norm_reg, regparams,
+        embed_mask,
     )
 
     datterm = 0.0
@@ -894,32 +928,39 @@ def compute_objective(imvec, xarr, which_solve, transforms,
     return datterm + regterm
 
 
-def compute_objective_grad(imvec, xarr, which_solve, transforms,
+def compute_objective_grad(imvec, initvec,
+                           mf, pol,
+                           which_solve, data_tuples, logfreqratio_list, n_obs,
                            dat_term, reg_term,
-                           data_tuples, n_obs, logfreqratio_list,
-                           mf, pol, ttype, embed_mask,
-                           xprior, norm_reg, regparams,
-                           nimage):
+                           priorvec, norm_reg, regparams,
+                           transforms, embed_mask, ttype, nimage):
     """Pure objective gradient: data-fidelity grad + regularization grad,
     chain-ruled through the bounded-value transform, packed into solver space."""
 
     dat_term_keys = sorted(dat_term.keys())
     reg_term_keys = sorted(reg_term.keys())
 
-    # Unpack solver vector; keep a pre-transform copy for the chain rule
-    imcur = unpack_imarr(imvec, xarr, which_solve)
+    # Unpack solver vector; keep a pre-transform copy for the chain rule.
+    # `initvec` is the initial image (for not-solved-for slots), distinct
+    # from `priorvec` which is the regularizer prior.
+    imcur = unpack_imarr(imvec, initvec, which_solve)
     imcur_prime = imcur.copy()
     imcur = transform_imarr(imcur, transforms, which_solve)
 
     chi2grad_dict = compute_chisqgrad_dict(
-        imcur, dat_term_keys, data_tuples,
-        n_obs, logfreqratio_list, mf, pol, ttype, embed_mask,
+        imcur, dat_term_keys,
+        mf, pol,
+        data_tuples, logfreqratio_list, n_obs,
+        ttype, embed_mask,
         which_solve, nimage,
     )
 
     reggrad_dict = compute_reggrad_dict(
-        imcur, reg_term_keys, xprior, embed_mask,
-        mf, n_obs, logfreqratio_list, pol, norm_reg, regparams,
+        imcur, reg_term_keys,
+        mf, pol,
+        logfreqratio_list, n_obs,
+        priorvec, norm_reg, regparams,
+        embed_mask,
         which_solve, nimage,
     )
 

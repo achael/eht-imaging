@@ -140,18 +140,20 @@ class TestComputeEmbed:
 def _call_backend_chisq_dict(imgr, imcur):
     """Call compute_chisq_dict with args pulled from an initialized Imager."""
     return compute_chisq_dict(
-        imcur, sorted(imgr.dat_term_next.keys()), imgr._data_tuples,
-        len(imgr.obslist_next), imgr._logfreqratio_list, imgr.mf_next,
-        imgr.pol_next, imgr._ttype, imgr._embed_mask,
+        imcur, sorted(imgr.dat_term_next.keys()),
+        imgr.mf_next, imgr.pol_next,
+        imgr._data_tuples, imgr._logfreqratio_list, len(imgr.obslist_next),
+        imgr._ttype, imgr._embed_mask,
     )
 
 
 def _call_backend_chisqgrad_dict(imgr, imcur):
     """Call compute_chisqgrad_dict with args pulled from an initialized Imager."""
     return compute_chisqgrad_dict(
-        imcur, sorted(imgr.dat_term_next.keys()), imgr._data_tuples,
-        len(imgr.obslist_next), imgr._logfreqratio_list, imgr.mf_next,
-        imgr.pol_next, imgr._ttype, imgr._embed_mask,
+        imcur, sorted(imgr.dat_term_next.keys()),
+        imgr.mf_next, imgr.pol_next,
+        imgr._data_tuples, imgr._logfreqratio_list, len(imgr.obslist_next),
+        imgr._ttype, imgr._embed_mask,
         imgr._which_solve, imgr._nimage,
     )
 
@@ -178,18 +180,22 @@ def _build_regparams(imgr, mf_flux=None):
 def _call_backend_reg_dict(imgr, imcur, mf_flux=None):
     """Call compute_reg_dict with args pulled from an initialized Imager."""
     return compute_reg_dict(
-        imcur, sorted(imgr.reg_term_next.keys()), imgr._xprior, imgr._embed_mask,
-        imgr.mf_next, len(imgr.obslist_next), imgr._logfreqratio_list, imgr.pol_next,
-        imgr.norm_reg, _build_regparams(imgr, mf_flux=mf_flux),
+        imcur, sorted(imgr.reg_term_next.keys()),
+        imgr.mf_next, imgr.pol_next,
+        imgr._logfreqratio_list, len(imgr.obslist_next),
+        imgr._prior_arr, imgr.norm_reg, _build_regparams(imgr, mf_flux=mf_flux),
+        imgr._embed_mask,
     )
 
 
 def _call_backend_reggrad_dict(imgr, imcur, mf_flux=None):
     """Call compute_reggrad_dict with args pulled from an initialized Imager."""
     return compute_reggrad_dict(
-        imcur, sorted(imgr.reg_term_next.keys()), imgr._xprior, imgr._embed_mask,
-        imgr.mf_next, len(imgr.obslist_next), imgr._logfreqratio_list, imgr.pol_next,
-        imgr.norm_reg, _build_regparams(imgr, mf_flux=mf_flux),
+        imcur, sorted(imgr.reg_term_next.keys()),
+        imgr.mf_next, imgr.pol_next,
+        imgr._logfreqratio_list, len(imgr.obslist_next),
+        imgr._prior_arr, imgr.norm_reg, _build_regparams(imgr, mf_flux=mf_flux),
+        imgr._embed_mask,
         imgr._which_solve, imgr._nimage,
     )
 
@@ -197,23 +203,26 @@ def _call_backend_reggrad_dict(imgr, imcur, mf_flux=None):
 def _call_backend_objective(imgr, imvec):
     """Call compute_objective with args pulled from an initialized Imager."""
     return compute_objective(
-        imvec, imgr._xarr, imgr._which_solve, imgr.transform_next,
+        imvec, imgr._init_arr,
+        imgr.mf_next, imgr.pol_next,
+        imgr._which_solve, imgr._data_tuples,
+        imgr._logfreqratio_list, len(imgr.obslist_next),
         imgr.dat_term_next, imgr.reg_term_next,
-        imgr._data_tuples, len(imgr.obslist_next), imgr._logfreqratio_list,
-        imgr.mf_next, imgr.pol_next, imgr._ttype, imgr._embed_mask,
-        imgr._xprior, imgr.norm_reg, _build_regparams(imgr),
+        imgr._prior_arr, imgr.norm_reg, _build_regparams(imgr),
+        imgr.transform_next, imgr._embed_mask, imgr._ttype,
     )
 
 
 def _call_backend_objective_grad(imgr, imvec):
     """Call compute_objective_grad with args pulled from an initialized Imager."""
     return compute_objective_grad(
-        imvec, imgr._xarr, imgr._which_solve, imgr.transform_next,
+        imvec, imgr._init_arr,
+        imgr.mf_next, imgr.pol_next,
+        imgr._which_solve, imgr._data_tuples,
+        imgr._logfreqratio_list, len(imgr.obslist_next),
         imgr.dat_term_next, imgr.reg_term_next,
-        imgr._data_tuples, len(imgr.obslist_next), imgr._logfreqratio_list,
-        imgr.mf_next, imgr.pol_next, imgr._ttype, imgr._embed_mask,
-        imgr._xprior, imgr.norm_reg, _build_regparams(imgr),
-        imgr._nimage,
+        imgr._prior_arr, imgr.norm_reg, _build_regparams(imgr),
+        imgr.transform_next, imgr._embed_mask, imgr._ttype, imgr._nimage,
     )
 
 
@@ -613,9 +622,11 @@ class TestComputeRegDict:
         # Bypass Imager.check_params by passing reg_term_keys directly.
         with pytest.raises(Exception, match="not recognized"):
             compute_reg_dict(
-                imcur, ["not_a_regularizer"], imgr._xprior, imgr._embed_mask,
-                imgr.mf_next, len(imgr.obslist_next), imgr._logfreqratio_list, imgr.pol_next,
-                imgr.norm_reg, _build_regparams(imgr),
+                imcur, ["not_a_regularizer"],
+                imgr.mf_next, imgr.pol_next,
+                imgr._logfreqratio_list, len(imgr.obslist_next),
+                imgr._prior_arr, imgr.norm_reg, _build_regparams(imgr),
+                imgr._embed_mask,
             )
 
     def test_mf_flux_validation(self, gauss_im, observe, initialize_imager):
@@ -739,9 +750,11 @@ class TestComputeReggradDict:
         imgr, imcur = initialize_imager(obs, gauss_im, {"vis": 100})
         with pytest.raises(Exception, match="not recognized"):
             compute_reggrad_dict(
-                imcur, ["not_a_regularizer"], imgr._xprior, imgr._embed_mask,
-                imgr.mf_next, len(imgr.obslist_next), imgr._logfreqratio_list, imgr.pol_next,
-                imgr.norm_reg, _build_regparams(imgr),
+                imcur, ["not_a_regularizer"],
+                imgr.mf_next, imgr.pol_next,
+                imgr._logfreqratio_list, len(imgr.obslist_next),
+                imgr._prior_arr, imgr.norm_reg, _build_regparams(imgr),
+                imgr._embed_mask,
                 imgr._which_solve, imgr._nimage,
             )
 
@@ -802,7 +815,7 @@ class TestComputeObjective:
             obs, gauss_im, {"vis": 100, "amp": 10},
             reg_term={"simple": 1, "tv": 10},
         )
-        imvec = imgr._xinit
+        imvec = imgr._init_vec
         backend_value = _call_backend_objective(imgr, imvec)
         method_value = imgr.objfunc(imvec)
         np.testing.assert_array_equal(backend_value, method_value)
@@ -815,7 +828,7 @@ class TestComputeObjective:
             reg_term={"hw": 1, "ptv": 1},
             pol="IP", transform=["log", "mcv"],
         )
-        imvec = imgr._xinit
+        imvec = imgr._init_vec
         backend_value = _call_backend_objective(imgr, imvec)
         method_value = imgr.objfunc(imvec)
         np.testing.assert_array_equal(backend_value, method_value)
@@ -829,7 +842,7 @@ class TestComputeObjective:
             reg_term={"simple": 1, "hw": 1},
             pol="IP", transform=["log", "mcv"],
         )
-        imvec = imgr._xinit
+        imvec = imgr._init_vec
         backend_value = _call_backend_objective(imgr, imvec)
         method_value = imgr.objfunc(imvec)
         np.testing.assert_array_equal(backend_value, method_value)
@@ -849,7 +862,7 @@ class TestComputeObjective:
             mf=True, mf_order=1,
             mf_flux=[im_lo.total_flux(), im_hi.total_flux()],
         )
-        imvec = imgr._xinit
+        imvec = imgr._init_vec
         backend_value = _call_backend_objective(imgr, imvec)
         method_value = imgr.objfunc(imvec)
         np.testing.assert_array_equal(backend_value, method_value)
@@ -864,7 +877,7 @@ class TestComputeObjective:
             obs, im, {"vis": 100},
             reg_term={"simple": 1, "tv": 10},
         )
-        imvec = imgr._xinit
+        imvec = imgr._init_vec
         backend_value = _call_backend_objective(imgr, imvec)
         method_value = imgr.objfunc(imvec)
         np.testing.assert_array_equal(backend_value, method_value)
@@ -899,7 +912,7 @@ class TestComputeObjectiveGrad:
             obs, gauss_im, {"vis": 100, "amp": 10},
             reg_term={"simple": 1, "tv": 10},
         )
-        imvec = imgr._xinit
+        imvec = imgr._init_vec
         backend_grad = _call_backend_objective_grad(imgr, imvec)
         method_grad = imgr.objgrad(imvec)
         np.testing.assert_array_equal(backend_grad, method_grad)
@@ -913,7 +926,7 @@ class TestComputeObjectiveGrad:
             reg_term={"hw": 1, "ptv": 1},
             pol="IP", transform=["log", "mcv"],
         )
-        imvec = imgr._xinit
+        imvec = imgr._init_vec
         backend_grad = _call_backend_objective_grad(imgr, imvec)
         method_grad = imgr.objgrad(imvec)
         np.testing.assert_array_equal(backend_grad, method_grad)
@@ -927,7 +940,7 @@ class TestComputeObjectiveGrad:
             reg_term={"simple": 1, "hw": 1},
             pol="IP", transform=["log", "mcv"],
         )
-        imvec = imgr._xinit
+        imvec = imgr._init_vec
         backend_grad = _call_backend_objective_grad(imgr, imvec)
         method_grad = imgr.objgrad(imvec)
         np.testing.assert_array_equal(backend_grad, method_grad)
@@ -947,7 +960,7 @@ class TestComputeObjectiveGrad:
             mf=True, mf_order=1,
             mf_flux=[im_lo.total_flux(), im_hi.total_flux()],
         )
-        imvec = imgr._xinit
+        imvec = imgr._init_vec
         backend_grad = _call_backend_objective_grad(imgr, imvec)
         method_grad = imgr.objgrad(imvec)
         np.testing.assert_array_equal(backend_grad, method_grad)
@@ -963,7 +976,7 @@ class TestComputeObjectiveGrad:
             obs, gauss_im, {"vis": 100},
             reg_term={"simple": 1, "tv": 10},
         )
-        imvec = imgr._xinit
+        imvec = imgr._init_vec
 
         rng = np.random.default_rng(42)
         indices = rng.choice(len(imvec), size=20, replace=False)
@@ -991,7 +1004,7 @@ class TestComputeObjectiveGrad:
             reg_term={"simple": 1, "hw": 1},
             pol="IP", transform=["log", "mcv"],
         )
-        imvec = imgr._xinit
+        imvec = imgr._init_vec
 
         rng = np.random.default_rng(7)
         indices = rng.choice(len(imvec), size=20, replace=False)
@@ -1014,7 +1027,7 @@ class TestComputeObjectiveGrad:
             obs, im, {"vis": 100},
             reg_term={"simple": 1, "tv": 10},
         )
-        imvec = imgr._xinit
+        imvec = imgr._init_vec
         backend_grad = _call_backend_objective_grad(imgr, imvec)
         method_grad = imgr.objgrad(imvec)
         np.testing.assert_array_equal(backend_grad, method_grad)
@@ -1032,7 +1045,7 @@ def test_objective_and_objective_grad_share_consistency(gauss_im, observe,
         obs, gauss_im, {"vis": 100, "amp": 10},
         reg_term={"simple": 1},
     )
-    imvec = imgr._xinit
+    imvec = imgr._init_vec
     obj = _call_backend_objective(imgr, imvec)
     grad = _call_backend_objective_grad(imgr, imvec)
     assert np.isfinite(obj)
