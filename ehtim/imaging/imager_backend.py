@@ -122,30 +122,34 @@ def pack_imarr(imarr, which_solve):
     return vec
 
 
-def unpack_imarr(vec, priorarr, which_solve):
-    """unpack minimized vector vec into array,
-       replace quantities not solved for with their initial values
+def unpack_imarr(vec, init_arr, which_solve):
+    """Unpack minimized 1D vector `vec` into a multi-D array.
+
+    For each Stokes / spectral slot k:
+      - if which_solve[k] == 1, take the next nimage values from `vec`;
+      - if which_solve[k] == 0, fall back to `init_arr[k]` (the *initial*
+        image, NOT a regularizer prior).
     """
 
-    imarrdim = len(priorarr.shape)
+    imarrdim = len(init_arr.shape)
     if imarrdim==2:
-        nsolve = priorarr.shape[0]
-        nimage = priorarr.shape[1]
+        nsolve = init_arr.shape[0]
+        nimage = init_arr.shape[1]
     elif imarrdim==1:
         nsolve = 1
-        nimage = priorarr.shape[0]
-        imarr = priorarr.reshape((nsolve,nimage))
+        nimage = init_arr.shape[0]
+        imarr = init_arr.reshape((nsolve,nimage))
     else:
-        raise Exception("in unpack_imarr, priorarr should have one or two dimensions !")
+        raise Exception("in unpack_imarr, init_arr should have one or two dimensions !")
 
     if nsolve != len(which_solve):
-        raise Exception("in unpack_imarr, priorarr has inconsistent shape with which_solve!")
+        raise Exception("in unpack_imarr, init_arr has inconsistent shape with which_solve!")
 
     imct = 0
     imarr = np.empty((nsolve, nimage))
     for kk in range(nsolve):
         if which_solve[kk]==0:
-            imarr[kk] = priorarr[kk]
+            imarr[kk] = init_arr[kk]
         else:
             imarr[kk] = vec[imct*nimage:(imct+1)*nimage]
             imct += 1
