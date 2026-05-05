@@ -202,7 +202,6 @@ def _call_backend_objective(imgr, imvec):
         imgr._data_tuples, imgr.obslist_next, imgr._logfreqratio_list,
         imgr.mf_next, imgr.pol_next, imgr._ttype, imgr._embed_mask,
         imgr._xprior, imgr.norm_reg, _build_regparams(imgr),
-        imgr.chisq_transform,
     )
 
 
@@ -215,7 +214,6 @@ def _call_backend_objective_grad(imgr, imvec):
         imgr.mf_next, imgr.pol_next, imgr._ttype, imgr._embed_mask,
         imgr._xprior, imgr.norm_reg, _build_regparams(imgr),
         imgr._nimage,
-        imgr.chisq_transform, imgr.chisq_offset_gradient,
     )
 
 
@@ -856,19 +854,6 @@ class TestComputeObjective:
         method_value = imgr.objfunc(imvec)
         np.testing.assert_array_equal(backend_value, method_value)
 
-    def test_chisq_transform_branch(self, gauss_im, observe, initialize_imager):
-        """chisq_transform=True activates the (chi2 + 1/chi2 - 1) legacy branch."""
-        obs = observe(gauss_im)
-        imgr, _ = initialize_imager(
-            obs, gauss_im, {"vis": 100},
-            reg_term={"simple": 1},
-        )
-        imgr.chisq_transform = True
-        imvec = imgr._xinit
-        backend_value = _call_backend_objective(imgr, imvec)
-        method_value = imgr.objfunc(imvec)
-        np.testing.assert_array_equal(backend_value, method_value)
-
     @pytest.mark.parametrize("xdim,ydim", IMAGE_SHAPES)
     def test_rect_images(self, make_rect_image, observe, initialize_imager,
                           xdim, ydim):
@@ -966,46 +951,6 @@ class TestComputeObjectiveGrad:
         backend_grad = _call_backend_objective_grad(imgr, imvec)
         method_grad = imgr.objgrad(imvec)
         np.testing.assert_array_equal(backend_grad, method_grad)
-
-    def test_chisq_transform_branch(self, gauss_im, observe, initialize_imager):
-        """chisq_transform=True activates chi2_grad * (1 - 1/chi2^2) branch."""
-        obs = observe(gauss_im)
-        imgr, _ = initialize_imager(
-            obs, gauss_im, {"vis": 100},
-            reg_term={"simple": 1},
-        )
-        imgr.chisq_transform = True
-        imvec = imgr._xinit
-        backend_grad = _call_backend_objective_grad(imgr, imvec)
-        method_grad = imgr.objgrad(imvec)
-        np.testing.assert_array_equal(backend_grad, method_grad)
-
-    def test_chisq_transform_multi_obs(self, gauss_im, observe, initialize_imager):
-        """chisq_transform=True under multi-obs imaging.
-
-        Regression test for the per-obs key lookup: chi2val_dict is keyed by
-        f'{dname}_{i}' for multi-obs runs, so the chisq_transform branch must
-        index by the same key as the surrounding chi2grad_dict lookup. Pre-fix
-        this path raised KeyError before producing any gradient.
-        """
-        im_lo = gauss_im.copy()
-        im_lo.rf = REFFREQ_HZ
-        im_hi = gauss_im.copy()
-        im_hi.rf = MF_ALT_FREQ_HZ
-        obs_lo = observe(im_lo)
-        obs_hi = observe(im_hi)
-
-        imgr, _ = initialize_imager(
-            [obs_lo, obs_hi], im_lo, {"vis": 100},
-            reg_term={"simple": 1},
-            mf=True, mf_order=1,
-            mf_flux=[im_lo.total_flux(), im_hi.total_flux()],
-        )
-        imgr.chisq_transform = True
-        imvec = imgr._xinit
-        backend_grad = _call_backend_objective_grad(imgr, imvec)
-        assert np.all(np.isfinite(backend_grad))
-        assert backend_grad.shape == imvec.shape
 
     def test_fd_matches_analytic_stokes_i(self, gauss_im, observe, initialize_imager):
         """FD of compute_objective ≈ compute_objective_grad on solved-for indices.

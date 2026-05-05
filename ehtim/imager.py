@@ -194,9 +194,6 @@ class Imager:
         self.beam_size = self.obslist_next[0].res()
         self.regparams = {k: kwargs.get(k, REGPARAMS_DEFAULT[k]) for k in REGPARAMS_DEFAULT.keys()}
 
-        self.chisq_transform = False
-        self.chisq_offset_gradient = 0.0
-
         # FFT parameters
         self._ttype = kwargs.get('ttype', 'nfft')
         self._fft_gridder_prad = kwargs.get('fft_gridder_prad', GRIDDER_P_RAD_DEFAULT)
@@ -1132,7 +1129,6 @@ class Imager:
             self._data_tuples, self.obslist_next, self._logfreqratio_list,
             self.mf_next, self.pol_next, self._ttype, self._embed_mask,
             self._xprior, self.norm_reg, self._full_regparams(),
-            self.chisq_transform,
         )
 
     def objgrad(self, imvec):
@@ -1144,7 +1140,6 @@ class Imager:
             self.mf_next, self.pol_next, self._ttype, self._embed_mask,
             self._xprior, self.norm_reg, self._full_regparams(),
             self._nimage,
-            self.chisq_transform, self.chisq_offset_gradient,
         )
 
     def plotcur(self, imvec, **kwargs):
