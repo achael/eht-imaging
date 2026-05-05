@@ -889,7 +889,58 @@ def compute_objective(imvec, initvec,
                       dat_term, reg_term,
                       priorvec, norm_reg, regparams,
                       transforms, embed_mask, ttype):
-    """Pure objective: data fidelity + regularization, summed with hyperparameter weights."""
+    """Compute the scalar imaging objective: data fidelity + regularization.
+
+    Pure-functional version of Imager.objfunc. Unpacks the 1D solver vector
+    `imvec` into a multi-D image array (filling not-solved-for slots from
+    `initvec`), applies the bounded-value transforms, evaluates each chi^2
+    and regularizer term via the dispatcher dicts, and returns the
+    hyperparameter-weighted sum.
+
+    Parameters
+    ----------
+    imvec : np.ndarray
+        1D solver vector (length sum(which_solve) * nimage), the optimization
+        variable for L-BFGS-B.
+    initvec : np.ndarray
+        Initial-image array (unwrapped, multi-D); used by `unpack_imarr` to
+        fill any not-solved-for slots. Distinct from `priorvec` (the
+        regularizer prior).
+    mf : bool
+        Multifrequency-imaging flag.
+    pol : str
+        Polarization mode (e.g. 'I', 'P', 'IP', 'V', 'IV', ...).
+    which_solve : np.ndarray of int
+        Per-Stokes / per-spectral-term solve mask.
+    data_tuples : dict
+        Pre-computed (data, sigma, A) tuples keyed by dname or dname_i.
+    logfreqratio_list : list of float
+        log(nu_i / reffreq) for each observation.
+    n_obs : int
+        Number of observations. Must equal len(logfreqratio_list); enforced
+        upstream by Imager.init_imager.
+    dat_term, reg_term : dict
+        Hyperparameter weights per data term and per regularizer term.
+    priorvec : np.ndarray
+        Prior-image array consumed by regularizers like 'simple', 'l1',
+        'rgauss'. Distinct from `initvec` (the optimization start point).
+    norm_reg : bool
+        Whether to apply per-regularizer normalization.
+    regparams : dict
+        Bundle of regularizer parameters. See compute_reg_dict.
+    transforms : list of str
+        Image transform list (e.g. ['log', 'mcv']) applied to imcur.
+    embed_mask : np.ndarray of bool
+        Pixel embedding mask.
+    ttype : str
+        Fourier-transform type ('direct', 'fast', 'nfft').
+
+    Returns
+    -------
+    cost : float
+        Scalar objective value, sum of weighted chi^2 deviations and
+        regularizer contributions.
+    """
 
     dat_term_keys = sorted(dat_term.keys())
     reg_term_keys = sorted(reg_term.keys())
@@ -934,8 +985,32 @@ def compute_objective_grad(imvec, initvec,
                            dat_term, reg_term,
                            priorvec, norm_reg, regparams,
                            transforms, embed_mask, ttype, nimage):
-    """Pure objective gradient: data-fidelity grad + regularization grad,
-    chain-ruled through the bounded-value transform, packed into solver space."""
+    """Compute the gradient of the imaging objective with respect to imvec.
+
+    Pure-functional version of Imager.objgrad. Computes the chi^2 and
+    regularizer gradients via the dispatcher dicts, sums them with the
+    hyperparameter weights, applies the chain rule through the bounded-value
+    transform, and packs the result back into solver space.
+
+    Designed so that `jax.grad(compute_objective)` is a drop-in replacement
+    once the underlying backends are JAXified (Phase 5D three-way check
+    against finite differences and analytic).
+
+    Parameters
+    ----------
+    imvec, initvec, mf, pol, which_solve, data_tuples, logfreqratio_list,
+    n_obs, dat_term, reg_term, priorvec, norm_reg, regparams, transforms,
+    embed_mask, ttype : see compute_objective.
+    nimage : int
+        Number of active pixels (sum of embed_mask). Used to size the
+        pre-pack gradient array.
+
+    Returns
+    -------
+    grad : np.ndarray
+        1D gradient vector (same length as imvec), suitable as the `jac`
+        argument to scipy.optimize.minimize.
+    """
 
     dat_term_keys = sorted(dat_term.keys())
     reg_term_keys = sorted(reg_term.keys())
