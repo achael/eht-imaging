@@ -45,12 +45,13 @@ from ehtim.imaging.imager_backend import (
     compute_chisq_dict,
     compute_chisqgrad_dict,
     compute_embed,
+    compute_objective,
+    compute_objective_grad,
     compute_reg_dict,
     compute_reggrad_dict,
     embed_imarr,
     make_initarr,
     pack_imarr,
-    transform_gradients,
     transform_imarr,
     transform_imarr_inverse,
     unpack_imarr,
@@ -192,9 +193,6 @@ class Imager:
         self.norm_reg = kwargs.get('norm_reg', False)
         self.beam_size = self.obslist_next[0].res()
         self.regparams = {k: kwargs.get(k, REGPARAMS_DEFAULT[k]) for k in REGPARAMS_DEFAULT.keys()}
-
-        self.chisq_transform = False
-        self.chisq_offset_gradient = 0.0
 
         # FFT parameters
         self._ttype = kwargs.get('ttype', 'nfft')
@@ -486,7 +484,7 @@ class Imager:
         self._update_interval = kwargs.get('update_interval', 1)
 
         # Plot initial image
-        self.plotcur(self._xinit, **kwargs)
+        self.plotcur(self._init_vec, **kwargs)
 
         # Minimize
         print("Imaging . . .")
@@ -499,10 +497,10 @@ class Imager:
 
         tstart = time.time()
         if grads:
-            res = opt.minimize(self.objfunc, self._xinit, method='L-BFGS-B', jac=self.objgrad,
+            res = opt.minimize(self.objfunc, self._init_vec, method='L-BFGS-B', jac=self.objgrad,
                                options=optdict, callback=callback_func)
         else:
-            res = opt.minimize(self.objfunc, self._xinit, method='L-BFGS-B',
+            res = opt.minimize(self.objfunc, self._init_vec, method='L-BFGS-B',
                                options=optdict, callback=callback_func)
         tstop = time.time()
 
@@ -511,7 +509,7 @@ class Imager:
         self.tmpout = res.x
 
         # unpack output vector into outarr
-        outarr = unpack_imarr(out, self._xarr, self._which_solve)
+        outarr = unpack_imarr(out, self._init_arr, self._which_solve)
 
         # apply image transform to bounded values
         outarr = transform_imarr(outarr, self.transform_next, self._which_solve)
@@ -802,7 +800,30 @@ class Imager:
 
     def init_imager(self):
         """Set up Stokes I imager.
+
+        Naming convention for image arrays (used here and in imager_backend):
+            init_*   the *initial image* (used as the not-solved-for fallback
+                     in unpack_imarr; replaces solved-for slots with starting
+                     values for L-BFGS-B).
+            prior_*  the regularizer *prior image* (a reference for terms like
+                     'simple', 'l1', 'rgauss'; can differ from the initial image).
+            *_phys   array in physical (Stokes / pol-fraction) space.
+            *_solver array in transformed solver space (e.g. log, mcv, polcv).
+            *_arr    multi-D unwrapped array (one row per Stokes/freq term).
+            *_vec    1D packed solver vector (only the solved-for slots, ready
+                     for scipy.optimize).
+        Hence: self._prior_arr (physical), self._init_arr (solver),
+               self._init_vec (packed solver vector).
         """
+        # Backends accept n_obs as a scalar; this assertion guards the
+        # invariant they rely on (len(obslist) == len(freq_list) == len(logfreqratio_list)).
+        n_obs = len(self.obslist_next)
+        if not (len(self.freq_list) == n_obs and len(self._logfreqratio_list) == n_obs):
+            raise Exception(
+                "Imager state inconsistent: len(obslist_next), len(freq_list), "
+                "len(_logfreqratio_list) must all match."
+            )
+
         # Set embedding mask
         self.set_embed()
         self._nimage = np.sum(self._embed_mask)
@@ -883,21 +904,21 @@ class Imager:
                 if ('P' in self.pol_next) or ('QU' in self.pol_next):
                     randompol_lin=True
 
-                initarr = make_initarr(self.init_next, self._embed_mask,
+                init_phys = make_initarr(self.init_next, self._embed_mask,
                                        norm_init=self.norm_init, flux=self.flux_next,
                                        mf=True, pol=True,
                                        randompol_lin=randompol_lin, randompol_circ=randompol_circ,
                                        meanpol=MEANPOL_INIT, sigmapol=SIGMAPOL_INIT)
-                priorarr = make_initarr(self.prior_next, self._embed_mask,
+                prior_phys = make_initarr(self.prior_next, self._embed_mask,
                                         norm_init=self.norm_init, flux=self.flux_next,
                                         mf=True, pol=True,
                                         randompol_lin=False, randompol_circ=False)
                 # prior
-                self._xprior = priorarr
+                self._prior_arr = prior_phys
 
-                # transform the initial image to solved for values and assign to self._xarr
-                initarr = transform_imarr_inverse(initarr, self.transform_next, self._which_solve)
-                self._xarr = initarr
+                # transform the initial image from physical to solver space
+                init_solver = transform_imarr_inverse(init_phys, self.transform_next, self._which_solve)
+                self._init_arr = init_solver
 
             # Stokes I multi-frequency
             else:
@@ -906,23 +927,23 @@ class Imager:
                 self._which_solve = np.array([1,do_a,do_b])
 
                 # make initial and prior images
-                initarr = make_initarr(self.init_next, self._embed_mask,
+                init_phys = make_initarr(self.init_next, self._embed_mask,
                                        norm_init=self.norm_init, flux=self.flux_next,
                                        mf=True, pol=False)
-                priorarr = make_initarr(self.prior_next, self._embed_mask,
+                prior_phys = make_initarr(self.prior_next, self._embed_mask,
                                        norm_init=self.norm_init, flux=self.flux_next,
                                        mf=True, pol=False)
 
                 # prior
-                self._xprior = priorarr
+                self._prior_arr = prior_phys
 
 
-                # transform the initial image to solved for values and assign to self._xarr
-                initarr = transform_imarr_inverse(initarr, self.transform_next, self._which_solve)
-                self._xarr = initarr
+                # transform the initial image from physical to solver space
+                init_solver = transform_imarr_inverse(init_phys, self.transform_next, self._which_solve)
+                self._init_arr = init_solver
 
             # Pack multi-frequency tuple into single vector
-            self._xinit = pack_imarr(self._xarr, self._which_solve)
+            self._init_vec = pack_imarr(self._init_arr, self._which_solve)
 
         # Set prior & initial image vectors for single-frequency imaging
         else:
@@ -958,24 +979,24 @@ class Imager:
                 if ('P' in self.pol_next) or ('QU' in self.pol_next):
                     randompol_lin=True
 
-                initarr = make_initarr(self.init_next, self._embed_mask,
+                init_phys = make_initarr(self.init_next, self._embed_mask,
                                        norm_init=self.norm_init, flux=self.flux_next,
                                        mf=False, pol=True,
                                        randompol_lin=randompol_lin, randompol_circ=randompol_circ,
                                        meanpol=MEANPOL_INIT, sigmapol=SIGMAPOL_INIT)
-                priorarr = make_initarr(self.prior_next, self._embed_mask,
+                prior_phys = make_initarr(self.prior_next, self._embed_mask,
                                        norm_init=self.norm_init, flux=self.flux_next,
                                        mf=False, pol=True,
                                        randompol_lin=False, randompol_circ=False)
                 # prior
-                self._xprior = priorarr
+                self._prior_arr = prior_phys
 
-                # transform the initial image to solved for values and assign to self._xarr
-                initarr = transform_imarr_inverse(initarr, self.transform_next, self._which_solve)
-                self._xarr = initarr
+                # transform the initial image from physical to solver space
+                init_solver = transform_imarr_inverse(init_phys, self.transform_next, self._which_solve)
+                self._init_arr = init_solver
 
                 # Pack into single vector
-                self._xinit = pack_imarr(self._xarr, self._which_solve)
+                self._init_vec = pack_imarr(self._init_arr, self._which_solve)
 
             # regular single-frequency single-stokes (or RR, LL) imaging
             else:
@@ -983,22 +1004,22 @@ class Imager:
                 self._which_solve = np.array([1])
 
                 # make initial and prior images
-                initarr = make_initarr(self.init_next, self._embed_mask,
+                init_phys = make_initarr(self.init_next, self._embed_mask,
                                        norm_init=self.norm_init, flux=self.flux_next,
                                        mf=False, pol=False)
-                priorarr = make_initarr(self.prior_next, self._embed_mask,
+                prior_phys = make_initarr(self.prior_next, self._embed_mask,
                                        norm_init=self.norm_init, flux=self.flux_next,
                                        mf=False, pol=False)
 
                 # Prior
-                self._xprior = priorarr
+                self._prior_arr = prior_phys
 
-                # transform the initial image to solved for values and assign to self._xarr
-                initarr = transform_imarr_inverse(initarr, self.transform_next, self._which_solve)
-                self._xarr = initarr
+                # transform the initial image from physical to solver space
+                init_solver = transform_imarr_inverse(init_phys, self.transform_next, self._which_solve)
+                self._init_arr = init_solver
 
                 # Pack into single vector
-                self._xinit = pack_imarr(self._xarr, self._which_solve)
+                self._init_vec = pack_imarr(self._init_arr, self._which_solve)
 
         # Make data term tuples
         if self._change_imgr_params:
@@ -1072,9 +1093,10 @@ class Imager:
            input is image array transformed to bounded values
         """
         return compute_chisq_dict(
-            imcur, sorted(self.dat_term_next.keys()), self._data_tuples,
-            self.obslist_next, self._logfreqratio_list, self.mf_next,
-            self.pol_next, self._ttype, self._embed_mask,
+            imcur, sorted(self.dat_term_next.keys()),
+            self.mf_next, self.pol_next,
+            self._data_tuples, self._logfreqratio_list, len(self.obslist_next),
+            self._ttype, self._embed_mask,
         )
 
     def make_chisqgrad_dict(self, imcur):
@@ -1082,9 +1104,10 @@ class Imager:
            input is image array transformed to bounded values
         """
         return compute_chisqgrad_dict(
-            imcur, sorted(self.dat_term_next.keys()), self._data_tuples,
-            self.obslist_next, self._logfreqratio_list, self.mf_next,
-            self.pol_next, self._ttype, self._embed_mask,
+            imcur, sorted(self.dat_term_next.keys()),
+            self.mf_next, self.pol_next,
+            self._data_tuples, self._logfreqratio_list, len(self.obslist_next),
+            self._ttype, self._embed_mask,
             self._which_solve, self._nimage,
         )
 
@@ -1107,9 +1130,11 @@ class Imager:
            input is image array transformed to bounded values
         """
         return compute_reg_dict(
-            imcur, sorted(self.reg_term_next.keys()), self._xprior, self._embed_mask,
-            self.mf_next, self.obslist_next, self._logfreqratio_list, self.pol_next,
-            self.norm_reg, self._full_regparams(),
+            imcur, sorted(self.reg_term_next.keys()),
+            self.mf_next, self.pol_next,
+            self._logfreqratio_list, len(self.obslist_next),
+            self._prior_arr, self.norm_reg, self._full_regparams(),
+            self._embed_mask,
         )
 
     def make_reggrad_dict(self, imcur):
@@ -1117,105 +1142,37 @@ class Imager:
            input is image array transformed to bounded values
         """
         return compute_reggrad_dict(
-            imcur, sorted(self.reg_term_next.keys()), self._xprior, self._embed_mask,
-            self.mf_next, self.obslist_next, self._logfreqratio_list, self.pol_next,
-            self.norm_reg, self._full_regparams(),
+            imcur, sorted(self.reg_term_next.keys()),
+            self.mf_next, self.pol_next,
+            self._logfreqratio_list, len(self.obslist_next),
+            self._prior_arr, self.norm_reg, self._full_regparams(),
+            self._embed_mask,
             self._which_solve, self._nimage,
         )
 
     def objfunc(self, imvec):
-        """Current objective function.
-        """
-
-        # Unpack polarimetric/multifrequency vector into an array
-        imcur =  unpack_imarr(imvec, self._xarr, self._which_solve)
-
-        # apply image transform to bounded values
-        imcur = transform_imarr(imcur, self.transform_next, self._which_solve)
-
-        # Data terms
-        datterm = 0.
-        chi2_term_dict = self.make_chisq_dict(imcur)
-        for dname in sorted(self.dat_term_next.keys()):
-            hyperparameter = self.dat_term_next[dname]
-
-            for i, obs in enumerate(self.obslist_next):
-                if len(self.obslist_next)==1:
-                    dname_key = dname
-                else:
-                    dname_key = dname + (f'_{i}')
-
-                chi2 = chi2_term_dict[dname_key]
-
-                if self.chisq_transform:
-                    datterm += hyperparameter * (chi2 + 1./chi2 - 1.)
-                else:
-                    datterm += hyperparameter * (chi2 - 1.)
-
-        # Regularizer terms
-        regterm = 0
-        reg_term_dict = self.make_reg_dict(imcur)
-        for regname in sorted(self.reg_term_next.keys()):
-            hyperparameter = self.reg_term_next[regname]
-            regularizer = reg_term_dict[regname]
-            regterm += hyperparameter * regularizer
-
-        # Total cost
-        cost = datterm + regterm
-
-        return cost
+        """Current objective function."""
+        return compute_objective(
+            imvec, self._init_arr,
+            self.mf_next, self.pol_next,
+            self._which_solve, self._data_tuples,
+            self._logfreqratio_list, len(self.obslist_next),
+            self.dat_term_next, self.reg_term_next,
+            self._prior_arr, self.norm_reg, self._full_regparams(),
+            self.transform_next, self._embed_mask, self._ttype,
+        )
 
     def objgrad(self, imvec):
-        """Current objective function gradient.
-        """
-
-        # Unpack polarimetric/multifrequency vector into an array
-        imcur =  unpack_imarr(imvec, self._xarr, self._which_solve)
-
-        # apply image transform to bounded values
-        imcur_prime = imcur.copy()
-        imcur = transform_imarr(imcur, self.transform_next, self._which_solve)
-
-        # Data terms
-        datterm = 0.
-        chi2_term_dict = self.make_chisqgrad_dict(imcur)
-        if self.chisq_transform:
-            chi2_value_dict = self.make_chisq_dict(imcur)
-        for dname in sorted(self.dat_term_next.keys()):
-            hyperparameter = self.dat_term_next[dname]
-
-            for i, obs in enumerate(self.obslist_next):
-                if len(self.obslist_next)==1:
-                    dname_key = dname
-                else:
-                    dname_key = dname + (f'_{i}')
-
-                chi2_grad = chi2_term_dict[dname_key]
-
-                if self.chisq_transform:
-                    chi2_val = chi2_value_dict[dname]
-                    datterm += hyperparameter * chi2_grad * (1. - 1./(chi2_val**2))
-                else:
-                    datterm += hyperparameter * (chi2_grad + self.chisq_offset_gradient)
-
-        # Regularizer terms
-        regterm = 0
-        reg_term_dict = self.make_reggrad_dict(imcur)
-        for regname in sorted(self.reg_term_next.keys()):
-            hyperparameter = self.reg_term_next[regname]
-            regularizer_grad = reg_term_dict[regname]
-            regterm += hyperparameter * regularizer_grad
-
-        # Total gradient
-        grad = datterm + regterm
-
-        # Chain rule term for change of variables
-        grad = transform_gradients(grad, imcur_prime, self.transform_next, self._which_solve)
-
-        # repack gradient
-        grad = pack_imarr(grad, self._which_solve)
-
-        return grad
+        """Current objective function gradient."""
+        return compute_objective_grad(
+            imvec, self._init_arr,
+            self.mf_next, self.pol_next,
+            self._which_solve, self._data_tuples,
+            self._logfreqratio_list, len(self.obslist_next),
+            self.dat_term_next, self.reg_term_next,
+            self._prior_arr, self.norm_reg, self._full_regparams(),
+            self.transform_next, self._embed_mask, self._ttype, self._nimage,
+        )
 
     def plotcur(self, imvec, **kwargs):
         """Plot current image.
@@ -1224,7 +1181,7 @@ class Imager:
         if self._show_updates:
             if self._nit % self._update_interval == 0:
                 # Unpack polarimetric/multifrequency vector into an array
-                imcur =  unpack_imarr(imvec, self._xarr, self._which_solve)
+                imcur =  unpack_imarr(imvec, self._init_arr, self._which_solve)
 
                 # apply image transform to bounded values
                 imcur_prime = imcur.copy()
