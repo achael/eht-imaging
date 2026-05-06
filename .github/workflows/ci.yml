@@ -1,6 +1,8 @@
 name: CI
 
 on:
+  push:
+    branches: [dev-backend]
   pull_request:
     branches: [dev-backend]
 
@@ -34,6 +36,8 @@ jobs:
         python-version: ["3.10", "3.12"]
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       - uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
