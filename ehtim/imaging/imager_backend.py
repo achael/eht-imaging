@@ -415,6 +415,99 @@ def compute_logfreqratios(freq_list, reffreq):
     return [np.log(nu / reffreq) for nu in freq_list]
 
 
+def compute_which_solve(pol, mf,
+                        mf_order=0, mf_order_pol=0,
+                        mf_rm=False, mf_cm=False):
+    """Build the which-solve flag array indicating which Stokes / spectral
+    parameter slots are optimized vs held fixed.
+
+    Layout of the returned array:
+        single-freq Stokes I:     [1]
+        single-freq polarimetric: [I, rho, phi, psi]
+        multi-freq Stokes I:      [1, alpha, beta]
+        multi-freq polarimetric:  [I, rho, phi, psi, alpha, beta,
+                                   alpha_p, beta_p, RM, CM]
+
+    Parameters
+    ----------
+    pol : str
+        Polarization mode (e.g. 'I', 'IP', 'IV'). Polarimetric modes are those
+        listed in POLARIZATION_MODES.
+    mf : bool
+        Multi-frequency imaging flag.
+    mf_order : {0, 1, 2}, optional
+        Stokes-I spectral expansion order. 0 -> none, 1 -> alpha only,
+        2 -> alpha + beta. Only used when mf=True.
+    mf_order_pol : {0, 1, 2}, optional
+        Polarimetric spectral expansion order (alpha_p, beta_p). Only used
+        when mf=True and pol is polarimetric.
+    mf_rm : bool, optional
+        Solve for rotation measure (RM). Only used when mf=True and pol is
+        polarimetric.
+    mf_cm : bool, optional
+        Solve for conversion measure (CM). Only used when mf=True and pol is
+        polarimetric.
+
+    Returns
+    -------
+    np.ndarray of int (0/1)
+    """
+    is_pol = pol in POLARIZATION_MODES
+
+    if mf:
+        if mf_order == 2:
+            do_a, do_b = 1, 1
+        elif mf_order == 1:
+            do_a, do_b = 1, 0
+        elif mf_order == 0:
+            do_a, do_b = 0, 0
+        else:
+            raise Exception("Imager.mf_order must be 0, 1, or 2!")
+
+        if is_pol:
+            if mf_order_pol == 2:
+                do_ap, do_bp = 1, 1
+            elif mf_order_pol == 1:
+                do_ap, do_bp = 1, 0
+            elif mf_order_pol == 0:
+                do_ap, do_bp = 0, 0
+            else:
+                raise Exception("Imager.mf_order_pol must be 0, 1, or 2!")
+
+            do_rm = 1 if mf_rm else 0
+            do_cm = 1 if mf_cm else 0
+            do_i = 1 if 'I' in pol else 0
+
+            # TODO: No Stokes V imaging for multifrequency yet
+            do_rho = 1
+            do_phi = 1
+            do_psi = 0
+            if not (('P' in pol) or ('QU' in pol)):
+                raise Exception("Multifrequency polarization imaging currently requires pol_next=P!")
+            if 'V' in pol:
+                raise Exception("Stokes V not yet implemented in multifrequency polarization imaging!")
+
+            return np.array([do_i, do_rho, do_phi, do_psi,
+                             do_a, do_b, do_ap, do_bp,
+                             do_rm, do_cm])
+
+        return np.array([1, do_a, do_b])
+
+    # single frequency
+    if is_pol:
+        do_i = 1 if 'I' in pol else 0
+        if ('P' in pol) or ('QU' in pol):
+            do_rho = 1
+            do_phi = 1
+        else:
+            do_rho = 0
+            do_phi = 0
+        do_psi = 1 if 'V' in pol else 0
+        return np.array([do_i, do_rho, do_phi, do_psi])
+
+    return np.array([1])
+
+
 def compute_embed(imvec, xdim, ydim, psize, clipfloor):
     """Compute embedding mask and coordinate matrix from a prior image vector.
 

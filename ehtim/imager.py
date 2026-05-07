@@ -50,6 +50,7 @@ from ehtim.imaging.imager_backend import (
     compute_objective_grad,
     compute_reg_dict,
     compute_reggrad_dict,
+    compute_which_solve,
     embed_imarr,
     make_initarr,
     pack_imarr,
@@ -829,6 +830,13 @@ class Imager:
         self.set_embed()
         self._nimage = np.sum(self._embed_mask)
 
+        # which Stokes / spectral slots to solve for
+        self._which_solve = compute_which_solve(
+            self.pol_next, self.mf_next,
+            mf_order=self.mf_order, mf_order_pol=self.mf_order_pol,
+            mf_rm=self.mf_rm, mf_cm=self.mf_cm,
+        )
+
         # Set prior & initial image vectors for multifrequency imaging
         if self.mf_next:
 
@@ -838,65 +846,8 @@ class Imager:
             # reset logfreqratios in case the reference frequency changed
             self._logfreqratio_list = compute_logfreqratios(self.freq_list, self.reffreq)
 
-            # determine self._which_solve
-            # TODO is there a nicer way to do this?
-            if self.mf_order == 2:
-                do_a = 1
-                do_b = 1
-            elif self.mf_order == 1:
-                do_a = 1
-                do_b = 0
-            elif self.mf_order == 0:
-                do_a = 0
-                do_b = 0
-            else:
-                raise Exception("Imager.mf_order must be 0, 1, or 2!")
-
             # polarization multi-frequency
             if self.pol_next in POLARIZATION_MODES:
-
-                # determine self._which_solve
-                # TODO is there a nicer way to do this?
-                if self.mf_order_pol == 2:
-                    do_ap = 1
-                    do_bp = 1
-                elif self.mf_order_pol == 1:
-                    do_ap = 1
-                    do_bp = 0
-                elif self.mf_order_pol == 0:
-                    do_ap = 0
-                    do_bp = 0
-                else:
-                    raise Exception("Imager.mf_order_pol must be 0, 1, or 2!")
-
-                if self.mf_rm:
-                    do_rm = 1
-                else:
-                    do_rm = 0
-
-                if self.mf_cm:
-                    do_cm = 1
-                else:
-                    do_cm = 0
-
-                if 'I' in self.pol_next:
-                    do_i = 1
-                else:
-                    do_i = 0
-
-                # TODO: No Stokes V imaging for multifrequency yet
-                do_rho = 1
-                do_phi = 1
-                do_psi = 0
-                if not (('P' in self.pol_next) or ('QU' in self.pol_next)):
-                    raise Exception("Multifrequency polarization imaging currently requires pol_next=P!")
-                if ('V' in self.pol_next):
-                    raise Exception("Stokes V not yet implemented in multifrequency polarization imaging!")
-
-                # set_which_solve vector
-                self._which_solve = np.array([do_i,do_rho,do_phi,do_psi,
-                                              do_a,do_b,do_ap,do_bp,
-                                              do_rm,do_cm])
 
                 # make initial and prior images
                 randompol_circ = randompol_lin=False
@@ -924,9 +875,6 @@ class Imager:
             # Stokes I multi-frequency
             else:
 
-                # set_which_solve vector
-                self._which_solve = np.array([1,do_a,do_b])
-
                 # make initial and prior images
                 init_phys = make_initarr(self.init_next, self._embed_mask,
                                        norm_init=self.norm_init, flux=self.flux_next,
@@ -950,28 +898,6 @@ class Imager:
         else:
             # single-frequency polarimetric imaging
             if self.pol_next in POLARIZATION_MODES:
-
-                # Determine self._which_solve
-                if ('I' in self.pol_next):
-                    do_i = 1
-                else:
-                    do_i = 0
-
-                if ('P' in self.pol_next) or ('QU' in self.pol_next):
-                    do_rho = 1
-                    do_phi = 1
-                else:
-                    do_rho = 0
-                    do_phi = 0
-
-                if ('V' in self.pol_next):
-                    do_psi = 1
-                else:
-                    do_psi = 0
-
-
-                # set self._which_solve vector
-                self._which_solve = np.array([do_i,do_rho,do_phi,do_psi])
 
                 # make initial and prior images
                 randompol_circ = randompol_lin=False
@@ -1001,8 +927,6 @@ class Imager:
 
             # regular single-frequency single-stokes (or RR, LL) imaging
             else:
-                # set self._which_solve vector
-                self._which_solve = np.array([1])
 
                 # make initial and prior images
                 init_phys = make_initarr(self.init_next, self._embed_mask,

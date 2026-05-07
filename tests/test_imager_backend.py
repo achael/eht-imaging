@@ -17,6 +17,7 @@ from ehtim.imaging.imager_backend import (
     compute_objective_grad,
     compute_reg_dict,
     compute_reggrad_dict,
+    compute_which_solve,
     transform_gradients,
     transform_imarr,
 )
@@ -175,6 +176,153 @@ class TestComputeLogfreqratios:
         )
         expected = compute_logfreqratios(imgr.freq_list, imgr.reffreq)
         assert imgr._logfreqratio_list == expected
+
+
+class TestComputeWhichSolve:
+    """Tests for compute_which_solve (extracted from Imager.init_imager)."""
+
+    # --- single-frequency ---
+
+    def test_sf_stokes_i(self):
+        np.testing.assert_array_equal(
+            compute_which_solve("I", mf=False), np.array([1]),
+        )
+
+    def test_sf_polarimetric_p(self):
+        np.testing.assert_array_equal(
+            compute_which_solve("P", mf=False), np.array([0, 1, 1, 0]),
+        )
+
+    def test_sf_polarimetric_ip(self):
+        np.testing.assert_array_equal(
+            compute_which_solve("IP", mf=False), np.array([1, 1, 1, 0]),
+        )
+
+    def test_sf_polarimetric_iv(self):
+        np.testing.assert_array_equal(
+            compute_which_solve("IV", mf=False), np.array([1, 0, 0, 1]),
+        )
+
+    def test_sf_polarimetric_ipv(self):
+        np.testing.assert_array_equal(
+            compute_which_solve("IPV", mf=False), np.array([1, 1, 1, 1]),
+        )
+
+    def test_sf_polarimetric_v(self):
+        np.testing.assert_array_equal(
+            compute_which_solve("V", mf=False), np.array([0, 0, 0, 1]),
+        )
+
+    # --- multi-frequency Stokes I ---
+
+    @pytest.mark.parametrize("mf_order,expected", [
+        (0, [1, 0, 0]),
+        (1, [1, 1, 0]),
+        (2, [1, 1, 1]),
+    ])
+    def test_mf_stokes_i_order(self, mf_order, expected):
+        np.testing.assert_array_equal(
+            compute_which_solve("I", mf=True, mf_order=mf_order),
+            np.array(expected),
+        )
+
+    # --- multi-frequency polarimetric ---
+
+    def test_mf_polarimetric_minimal(self):
+        """MF + IP + all spectral orders 0 + no RM/CM."""
+        np.testing.assert_array_equal(
+            compute_which_solve("IP", mf=True,
+                                mf_order=0, mf_order_pol=0,
+                                mf_rm=False, mf_cm=False),
+            np.array([1, 1, 1, 0,  # I, rho, phi, psi
+                      0, 0,         # alpha, beta
+                      0, 0,         # alpha_p, beta_p
+                      0, 0]),       # RM, CM
+        )
+
+    def test_mf_polarimetric_all_on(self):
+        """MF + IP with everything enabled."""
+        np.testing.assert_array_equal(
+            compute_which_solve("IP", mf=True,
+                                mf_order=2, mf_order_pol=2,
+                                mf_rm=True, mf_cm=True),
+            np.array([1, 1, 1, 0,
+                      1, 1,
+                      1, 1,
+                      1, 1]),
+        )
+
+    def test_mf_polarimetric_rm_only(self):
+        np.testing.assert_array_equal(
+            compute_which_solve("IP", mf=True,
+                                mf_order=1, mf_order_pol=1,
+                                mf_rm=True, mf_cm=False),
+            np.array([1, 1, 1, 0,
+                      1, 0,
+                      1, 0,
+                      1, 0]),
+        )
+
+    # --- error cases ---
+
+    def test_raises_on_invalid_mf_order(self):
+        with pytest.raises(Exception, match="mf_order must be 0, 1, or 2"):
+            compute_which_solve("I", mf=True, mf_order=3)
+
+    def test_raises_on_invalid_mf_order_pol(self):
+        with pytest.raises(Exception, match="mf_order_pol must be 0, 1, or 2"):
+            compute_which_solve("IP", mf=True, mf_order=1, mf_order_pol=3)
+
+    def test_raises_on_mf_pol_without_p(self):
+        with pytest.raises(Exception, match="requires pol_next=P"):
+            compute_which_solve("IV", mf=True, mf_order=1, mf_order_pol=1)
+
+    def test_raises_on_mf_pol_with_v(self):
+        # 'IPV' contains both 'P' and 'V'; the V check fires.
+        with pytest.raises(Exception, match="Stokes V not yet implemented"):
+            compute_which_solve("IPV", mf=True, mf_order=1, mf_order_pol=1)
+
+    # --- parity with init_imager ---
+
+    def test_matches_imager_init_imager_stokes_i(self, gauss_im, observe):
+        obs = observe(gauss_im)
+        imgr = eh.imager.Imager(
+            obs, gauss_im, prior_im=gauss_im, flux=gauss_im.total_flux(),
+            data_term={"vis": 1}, ttype="direct", pol="I",
+        )
+        imgr.check_params()
+        imgr.check_limits()
+        imgr.init_imager()
+        np.testing.assert_array_equal(
+            imgr._which_solve,
+            compute_which_solve(imgr.pol_next, imgr.mf_next,
+                                mf_order=imgr.mf_order,
+                                mf_order_pol=imgr.mf_order_pol,
+                                mf_rm=imgr.mf_rm, mf_cm=imgr.mf_cm),
+        )
+
+    def test_matches_imager_init_imager_polarimetric(self, gauss_im_pol, observe):
+        obs = observe(gauss_im_pol)
+        imgr = eh.imager.Imager(
+            obs, gauss_im_pol, prior_im=gauss_im_pol,
+            flux=gauss_im_pol.total_flux(),
+            data_term={"pvis": 1}, reg_term={"hw": 1},
+            ttype="direct", pol="IP", transform=["log", "mcv"],
+        )
+        imgr.prior_next = imgr.prior_next.switch_polrep(
+            polrep_out="stokes", pol_prim_out="I")
+        imgr.init_next = imgr.init_next.switch_polrep(
+            polrep_out="stokes", pol_prim_out="I")
+        imgr.check_params()
+        imgr.check_limits()
+        imgr.init_imager()
+        np.testing.assert_array_equal(
+            imgr._which_solve,
+            compute_which_solve(imgr.pol_next, imgr.mf_next,
+                                mf_order=imgr.mf_order,
+                                mf_order_pol=imgr.mf_order_pol,
+                                mf_rm=imgr.mf_rm, mf_cm=imgr.mf_cm),
+        )
 
 
 # ---------------------------------------------------------------------------
