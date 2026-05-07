@@ -44,19 +44,14 @@ from ehtim.imaging.imager_backend import (
     REGULARIZERS_SPECTRAL,
     compute_chisq_dict,
     compute_chisqgrad_dict,
-    compute_data_tuples,
-    compute_embed,
+    compute_init_state,
     compute_logfreqratios,
     compute_objective,
     compute_objective_grad,
     compute_reg_dict,
     compute_reggrad_dict,
-    compute_which_solve,
     embed_imarr,
-    make_initarr,
-    pack_imarr,
     transform_imarr,
-    transform_imarr_inverse,
     unpack_imarr,
 )
 
@@ -79,9 +74,6 @@ REGPARAMS_DEFAULT = {'major':50*ehc.RADPERUAS,
                      'PA':0.,
                      'alpha_A':1.0,
                      'epsilon_tv':0.0}
-
-MEANPOL_INIT = 0.2 # mean initial polarization if not in initial image
-SIGMAPOL_INIT = 1.e-2 # perturbations to initial polarization if not in initial image
 
 ###################################################################################################
 @dataclass
@@ -802,178 +794,59 @@ class Imager:
 
 
     def init_imager(self):
-        """Set up Stokes I imager.
+        """Initialize the solver-ready state on this Imager.
 
-        Naming convention for image arrays (used here and in imager_backend):
-            init_*   the *initial image* (used as the not-solved-for fallback
-                     in unpack_imarr; replaces solved-for slots with starting
-                     values for L-BFGS-B).
-            prior_*  the regularizer *prior image* (a reference for terms like
-                     'simple', 'l1', 'rgauss'; can differ from the initial image).
-            *_phys   array in physical (Stokes / pol-fraction) space.
-            *_solver array in transformed solver space (e.g. log, mcv, polcv).
-            *_arr    multi-D unwrapped array (one row per Stokes/freq term).
-            *_vec    1D packed solver vector (only the solved-for slots, ready
-                     for scipy.optimize).
-        Hence: self._prior_arr (physical), self._init_arr (solver),
-               self._init_vec (packed solver vector).
+        Thin wrapper around compute_init_state. Produces and assigns the
+        nine attributes consumed by compute_objective / compute_objective_grad:
+        _init_arr, _init_vec, _prior_arr, _data_tuples, _embed_mask,
+        _coord_matrix, _logfreqratio_list, _nimage, _which_solve.
+
+        See the naming-convention block at the top of imager_backend.py for
+        init_* vs prior_*, *_phys vs *_solver, *_arr vs *_vec.
         """
-        # Backends accept n_obs as a scalar; this assertion guards the
-        # invariant they rely on (len(obslist) == len(freq_list) == len(logfreqratio_list)).
         n_obs = len(self.obslist_next)
-        if not (len(self.freq_list) == n_obs and len(self._logfreqratio_list) == n_obs):
+        if not (len(self.freq_list) == n_obs
+                and len(self._logfreqratio_list) == n_obs):
             raise Exception(
                 "Imager state inconsistent: len(obslist_next), len(freq_list), "
                 "len(_logfreqratio_list) must all match."
             )
 
-        # Set embedding mask
-        self.set_embed()
-        self._nimage = np.sum(self._embed_mask)
-
-        # which Stokes / spectral slots to solve for
-        self._which_solve = compute_which_solve(
-            self.pol_next, self.mf_next,
-            mf_order=self.mf_order, mf_order_pol=self.mf_order_pol,
-            mf_rm=self.mf_rm, mf_cm=self.mf_cm,
-        )
-
-        # Set prior & initial image vectors for multifrequency imaging
-        if self.mf_next:
-
-            # set reference frequency to same as prior
-            self.reffreq = self.init_next.rf
-
-            # reset logfreqratios in case the reference frequency changed
-            self._logfreqratio_list = compute_logfreqratios(self.freq_list, self.reffreq)
-
-            # polarization multi-frequency
-            if self.pol_next in POLARIZATION_MODES:
-
-                # make initial and prior images
-                randompol_circ = randompol_lin=False
-                if 'V' in self.pol_next:
-                    randompol_circ=True
-                if ('P' in self.pol_next) or ('QU' in self.pol_next):
-                    randompol_lin=True
-
-                init_phys = make_initarr(self.init_next, self._embed_mask,
-                                       norm_init=self.norm_init, flux=self.flux_next,
-                                       mf=True, pol=True,
-                                       randompol_lin=randompol_lin, randompol_circ=randompol_circ,
-                                       meanpol=MEANPOL_INIT, sigmapol=SIGMAPOL_INIT)
-                prior_phys = make_initarr(self.prior_next, self._embed_mask,
-                                        norm_init=self.norm_init, flux=self.flux_next,
-                                        mf=True, pol=True,
-                                        randompol_lin=False, randompol_circ=False)
-                # prior
-                self._prior_arr = prior_phys
-
-                # transform the initial image from physical to solver space
-                init_solver = transform_imarr_inverse(init_phys, self.transform_next, self._which_solve)
-                self._init_arr = init_solver
-
-            # Stokes I multi-frequency
-            else:
-
-                # make initial and prior images
-                init_phys = make_initarr(self.init_next, self._embed_mask,
-                                       norm_init=self.norm_init, flux=self.flux_next,
-                                       mf=True, pol=False)
-                prior_phys = make_initarr(self.prior_next, self._embed_mask,
-                                       norm_init=self.norm_init, flux=self.flux_next,
-                                       mf=True, pol=False)
-
-                # prior
-                self._prior_arr = prior_phys
-
-
-                # transform the initial image from physical to solver space
-                init_solver = transform_imarr_inverse(init_phys, self.transform_next, self._which_solve)
-                self._init_arr = init_solver
-
-            # Pack multi-frequency tuple into single vector
-            self._init_vec = pack_imarr(self._init_arr, self._which_solve)
-
-        # Set prior & initial image vectors for single-frequency imaging
-        else:
-            # single-frequency polarimetric imaging
-            if self.pol_next in POLARIZATION_MODES:
-
-                # make initial and prior images
-                randompol_circ = randompol_lin=False
-                if 'V' in self.pol_next:
-                    randompol_circ=True
-                if ('P' in self.pol_next) or ('QU' in self.pol_next):
-                    randompol_lin=True
-
-                init_phys = make_initarr(self.init_next, self._embed_mask,
-                                       norm_init=self.norm_init, flux=self.flux_next,
-                                       mf=False, pol=True,
-                                       randompol_lin=randompol_lin, randompol_circ=randompol_circ,
-                                       meanpol=MEANPOL_INIT, sigmapol=SIGMAPOL_INIT)
-                prior_phys = make_initarr(self.prior_next, self._embed_mask,
-                                       norm_init=self.norm_init, flux=self.flux_next,
-                                       mf=False, pol=True,
-                                       randompol_lin=False, randompol_circ=False)
-                # prior
-                self._prior_arr = prior_phys
-
-                # transform the initial image from physical to solver space
-                init_solver = transform_imarr_inverse(init_phys, self.transform_next, self._which_solve)
-                self._init_arr = init_solver
-
-                # Pack into single vector
-                self._init_vec = pack_imarr(self._init_arr, self._which_solve)
-
-            # regular single-frequency single-stokes (or RR, LL) imaging
-            else:
-
-                # make initial and prior images
-                init_phys = make_initarr(self.init_next, self._embed_mask,
-                                       norm_init=self.norm_init, flux=self.flux_next,
-                                       mf=False, pol=False)
-                prior_phys = make_initarr(self.prior_next, self._embed_mask,
-                                       norm_init=self.norm_init, flux=self.flux_next,
-                                       mf=False, pol=False)
-
-                # Prior
-                self._prior_arr = prior_phys
-
-                # transform the initial image from physical to solver space
-                init_solver = transform_imarr_inverse(init_phys, self.transform_next, self._which_solve)
-                self._init_arr = init_solver
-
-                # Pack into single vector
-                self._init_vec = pack_imarr(self._init_arr, self._which_solve)
-
-        # Make data term tuples
         if self._change_imgr_params:
             msg = ("Initializing imager data products . . ."
                    if self.nruns == 0
                    else "Recomputing imager data products . . .")
             print(msg)
-            self._data_tuples = compute_data_tuples(
-                self.obslist_next, self.prior_next, self._embed_mask,
-                sorted(self.dat_term_next.keys()), self.pol_next,
-                self.maxset_next, self.debias_next, self.snrcut_next,
-                self.weighting_next, self.systematic_noise_next,
-                self.systematic_cphase_noise_next, self.cp_uv_min,
-                self._ttype, self._fft_pad_factor, self._fft_conv_func,
-                self._fft_gridder_prad, self._fft_interp_order,
-            )
-            self._change_imgr_params = False
 
-        return
-
-    def set_embed(self):
-        """Set embedding matrix."""
-        self._embed_mask, self._coord_matrix = compute_embed(
-            self.prior_next.imvec, self.prior_next.xdim,
-            self.prior_next.ydim, self.prior_next.psize,
-            self.clipfloor_next,
+        state = compute_init_state(
+            self.obslist_next, self.init_next, self.prior_next,
+            self.freq_list, self.reffreq,
+            self.pol_next, self.mf_next, self.transform_next,
+            self.mf_order, self.mf_order_pol, self.mf_rm, self.mf_cm,
+            self.norm_init, self.flux_next, self.clipfloor_next,
+            sorted(self.dat_term_next.keys()),
+            self.maxset_next, self.debias_next, self.snrcut_next,
+            self.weighting_next, self.systematic_noise_next,
+            self.systematic_cphase_noise_next, self.cp_uv_min,
+            self._ttype, self._fft_pad_factor, self._fft_conv_func,
+            self._fft_gridder_prad, self._fft_interp_order,
+            compute_data=self._change_imgr_params,
+            prior_data_tuples=getattr(self, "_data_tuples", None),
         )
 
+        self._init_arr = state.init_arr
+        self._init_vec = state.init_vec
+        self._prior_arr = state.prior_arr
+        self._data_tuples = state.data_tuples
+        self._embed_mask = state.embed_mask
+        self._coord_matrix = state.coord_matrix
+        self._logfreqratio_list = state.logfreqratio_list
+        self._nimage = state.nimage
+        self._which_solve = state.which_solve
+        self.reffreq = state.reffreq
+
+        if self._change_imgr_params:
+            self._change_imgr_params = False
 
     def make_chisq_dict(self, imcur):
         """Make a dictionary of current chi^2 term values

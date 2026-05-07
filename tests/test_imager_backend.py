@@ -9,10 +9,12 @@ import pytest
 
 import ehtim as eh
 from ehtim.imaging.imager_backend import (
+    ImagerInitState,
     compute_chisq_dict,
     compute_chisqgrad_dict,
     compute_data_tuples,
     compute_embed,
+    compute_init_state,
     compute_logfreqratios,
     compute_objective,
     compute_objective_grad,
@@ -94,25 +96,6 @@ class TestComputeEmbed:
                 im.imvec, im.xdim, im.ydim, im.psize,
                 clipfloor=np.max(im.imvec) + 1.0,
             )
-
-    def test_matches_imager(self, gauss_im, observe):
-        """Backend compute_embed matches Imager.set_embed exactly."""
-        obs = observe(gauss_im)
-        imgr = eh.imager.Imager(obs, gauss_im, gauss_im, gauss_im.total_flux(),
-                                ttype="direct")
-
-        # Call the Imager method
-        imgr.set_embed()
-
-        # Call the backend function with the same args
-        embed_mask, coord_matrix = compute_embed(
-            imgr.prior_next.imvec, imgr.prior_next.xdim,
-            imgr.prior_next.ydim, imgr.prior_next.psize,
-            imgr.clipfloor_next,
-        )
-
-        np.testing.assert_array_equal(embed_mask, imgr._embed_mask)
-        np.testing.assert_array_equal(coord_matrix, imgr._coord_matrix)
 
     @pytest.mark.parametrize("xdim,ydim", IMAGE_SHAPES)
     def test_shapes(self, make_rect_image, xdim, ydim):
@@ -422,6 +405,144 @@ class TestComputeDataTuples:
         for key, expected in imgr._data_tuples.items():
             for arr_a, arr_b in zip(result[key], expected, strict=True):
                 np.testing.assert_array_equal(arr_a, arr_b)
+
+
+def _call_compute_init_state(imgr):
+    """Call compute_init_state with args pulled from an initialized Imager."""
+    return compute_init_state(
+        imgr.obslist_next, imgr.init_next, imgr.prior_next,
+        imgr.freq_list, imgr.reffreq,
+        imgr.pol_next, imgr.mf_next, imgr.transform_next,
+        imgr.mf_order, imgr.mf_order_pol, imgr.mf_rm, imgr.mf_cm,
+        imgr.norm_init, imgr.flux_next, imgr.clipfloor_next,
+        sorted(imgr.dat_term_next.keys()),
+        imgr.maxset_next, imgr.debias_next, imgr.snrcut_next,
+        imgr.weighting_next, imgr.systematic_noise_next,
+        imgr.systematic_cphase_noise_next, imgr.cp_uv_min,
+        imgr._ttype, imgr._fft_pad_factor, imgr._fft_conv_func,
+        imgr._fft_gridder_prad, imgr._fft_interp_order,
+    )
+
+
+def _assert_state_matches_imager(state, imgr):
+    """Field-by-field parity: ImagerInitState vs Imager._* attributes."""
+    np.testing.assert_array_equal(state.init_arr, imgr._init_arr)
+    np.testing.assert_array_equal(state.init_vec, imgr._init_vec)
+    np.testing.assert_array_equal(state.prior_arr, imgr._prior_arr)
+    np.testing.assert_array_equal(state.embed_mask, imgr._embed_mask)
+    np.testing.assert_array_equal(state.coord_matrix, imgr._coord_matrix)
+    np.testing.assert_array_equal(state.which_solve, imgr._which_solve)
+    assert state.logfreqratio_list == imgr._logfreqratio_list
+    assert state.nimage == imgr._nimage
+    assert state.reffreq == imgr.reffreq
+    assert set(state.data_tuples.keys()) == set(imgr._data_tuples.keys())
+    for key, expected in imgr._data_tuples.items():
+        for arr_a, arr_b in zip(state.data_tuples[key], expected, strict=True):
+            np.testing.assert_array_equal(arr_a, arr_b)
+
+
+class TestComputeInitState:
+    """Tests for compute_init_state (orchestrator extracted from
+    Imager.init_imager). Parity tests run init_imager first to populate
+    Imager attributes, then call compute_init_state with the same args
+    and assert field-by-field equality."""
+
+    def test_returns_imager_init_state(self, gauss_im, observe,
+                                       initialize_imager):
+        imgr, _ = initialize_imager(observe(gauss_im), gauss_im, {"vis": 1})
+        state = _call_compute_init_state(imgr)
+        assert isinstance(state, ImagerInitState)
+
+    def test_matches_imager_init_imager_stokes_i(self, gauss_im, observe,
+                                                  initialize_imager):
+        imgr, _ = initialize_imager(
+            observe(gauss_im), gauss_im, {"vis": 1, "amp": 1},
+            reg_term={"simple": 1, "tv": 10},
+        )
+        np.random.seed(0)
+        state = _call_compute_init_state(imgr)
+        _assert_state_matches_imager(state, imgr)
+
+    def test_matches_imager_init_imager_polarimetric_ip(self, gauss_im_pol,
+                                                         observe,
+                                                         initialize_imager):
+        np.random.seed(0)
+        imgr, _ = initialize_imager(
+            observe(gauss_im_pol), gauss_im_pol,
+            {"pvis": 1}, reg_term={"hw": 1}, pol="IP",
+            transform=["log", "mcv"],
+        )
+        np.random.seed(0)
+        state = _call_compute_init_state(imgr)
+        _assert_state_matches_imager(state, imgr)
+
+    def test_matches_imager_init_imager_polarimetric_iv(self, gauss_im_pol,
+                                                         observe,
+                                                         initialize_imager):
+        np.random.seed(0)
+        imgr, _ = initialize_imager(
+            observe(gauss_im_pol), gauss_im_pol,
+            {"vvis": 1}, reg_term={"l2v": 1}, pol="IV",
+            transform=["log", "vcv"],
+        )
+        np.random.seed(0)
+        state = _call_compute_init_state(imgr)
+        _assert_state_matches_imager(state, imgr)
+
+    def test_matches_imager_init_imager_multi_obs(self, gauss_im, observe,
+                                                   initialize_imager):
+        obs1 = observe(gauss_im)
+        obs2 = observe(gauss_im)
+        imgr, _ = initialize_imager([obs1, obs2], gauss_im, {"vis": 1})
+        state = _call_compute_init_state(imgr)
+        _assert_state_matches_imager(state, imgr)
+
+    @pytest.mark.parametrize("xdim,ydim", IMAGE_SHAPES)
+    def test_rect_image_shapes(self, make_rect_image, eht_array, observe,
+                                initialize_imager, xdim, ydim):
+        im = make_rect_image(xdim, ydim)
+        imgr, _ = initialize_imager(observe(im), im, {"vis": 1})
+        state = _call_compute_init_state(imgr)
+        _assert_state_matches_imager(state, imgr)
+
+    def test_compute_data_false_uses_prior_tuples(self, gauss_im, observe,
+                                                   initialize_imager):
+        imgr, _ = initialize_imager(observe(gauss_im), gauss_im, {"vis": 1})
+        sentinel = {"vis": ("dummy", "tuple", "sentinel")}
+        state = compute_init_state(
+            imgr.obslist_next, imgr.init_next, imgr.prior_next,
+            imgr.freq_list, imgr.reffreq,
+            imgr.pol_next, imgr.mf_next, imgr.transform_next,
+            imgr.mf_order, imgr.mf_order_pol, imgr.mf_rm, imgr.mf_cm,
+            imgr.norm_init, imgr.flux_next, imgr.clipfloor_next,
+            sorted(imgr.dat_term_next.keys()),
+            imgr.maxset_next, imgr.debias_next, imgr.snrcut_next,
+            imgr.weighting_next, imgr.systematic_noise_next,
+            imgr.systematic_cphase_noise_next, imgr.cp_uv_min,
+            imgr._ttype, imgr._fft_pad_factor, imgr._fft_conv_func,
+            imgr._fft_gridder_prad, imgr._fft_interp_order,
+            compute_data=False, prior_data_tuples=sentinel,
+        )
+        assert state.data_tuples is sentinel
+
+    def test_raises_on_obslist_freq_mismatch(self, gauss_im, observe,
+                                              initialize_imager):
+        imgr, _ = initialize_imager(observe(gauss_im), gauss_im, {"vis": 1})
+        with pytest.raises(Exception, match="len\\(obslist\\) and len\\(freq_list\\)"):
+            compute_init_state(
+                imgr.obslist_next, imgr.init_next, imgr.prior_next,
+                imgr.freq_list + [230e9],  # length mismatch
+                imgr.reffreq,
+                imgr.pol_next, imgr.mf_next, imgr.transform_next,
+                imgr.mf_order, imgr.mf_order_pol, imgr.mf_rm, imgr.mf_cm,
+                imgr.norm_init, imgr.flux_next, imgr.clipfloor_next,
+                sorted(imgr.dat_term_next.keys()),
+                imgr.maxset_next, imgr.debias_next, imgr.snrcut_next,
+                imgr.weighting_next, imgr.systematic_noise_next,
+                imgr.systematic_cphase_noise_next, imgr.cp_uv_min,
+                imgr._ttype, imgr._fft_pad_factor, imgr._fft_conv_func,
+                imgr._fft_gridder_prad, imgr._fft_interp_order,
+            )
 
 
 # ---------------------------------------------------------------------------

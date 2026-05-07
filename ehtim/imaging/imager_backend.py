@@ -17,6 +17,8 @@
 #    You should have received a copy of the GNU General Public License
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+from typing import NamedTuple
+
 import numpy as np
 
 import ehtim.imaging.imager_utils as imutils
@@ -65,6 +67,10 @@ REGULARIZERS_CM = ['l2_cm', 'tv_cm']
 REGULARIZERS_ISPECTRAL = REGULARIZERS_SPECIND + REGULARIZERS_CURV
 REGULARIZERS_POLSPECTRAL = REGULARIZERS_SPECIND_P + REGULARIZERS_CURV_P + REGULARIZERS_RM + REGULARIZERS_CM
 REGULARIZERS_SPECTRAL = REGULARIZERS_ISPECTRAL + REGULARIZERS_POLSPECTRAL
+
+# Default initial-polarization parameters used when init image has no Q/U/V.
+MEANPOL_INIT = 0.2     # mean polarization fraction
+SIGMAPOL_INIT = 1.e-2  # perturbation scale
 
 
 def embed_imarr(imarr, mask, clipfloor=0., randomfloor=False):
@@ -508,6 +514,24 @@ def compute_which_solve(pol, mf,
     return np.array([1])
 
 
+class ImagerInitState(NamedTuple):
+    """Solver-ready state produced by compute_init_state.
+
+    Each field corresponds to an Imager._* attribute consumed by
+    compute_objective / compute_objective_grad.
+    """
+    init_arr: np.ndarray         # multi-D, solver space
+    init_vec: np.ndarray         # 1D packed solver vector
+    prior_arr: np.ndarray        # multi-D, physical space
+    data_tuples: dict            # keyed by dname or f"{dname}_{i}"
+    embed_mask: np.ndarray       # boolean
+    coord_matrix: np.ndarray     # pixel-coord companion to embed_mask
+    logfreqratio_list: list      # log(nu_i / reffreq)
+    nimage: int                  # number of active pixels = sum(embed_mask)
+    which_solve: np.ndarray      # int 0/1 flags
+    reffreq: float               # may be re-bound to init.rf when mf=True
+
+
 def compute_data_tuples(obslist, prior, embed_mask, dat_term_keys, pol,
                         maxset, debias, snrcut, weighting,
                         systematic_noise, systematic_cphase_noise,
@@ -583,6 +607,123 @@ def compute_data_tuples(obslist, prior, embed_mask, dat_term_keys, pol,
             data_tuples[dname_key] = tup
 
     return data_tuples
+
+
+def compute_init_state(
+    obslist, init_image, prior_image,
+    freq_list, reffreq,
+    pol, mf, transforms,
+    mf_order, mf_order_pol, mf_rm, mf_cm,
+    norm_init, flux, clipfloor,
+    dat_term_keys, maxset, debias, snrcut, weighting,
+    systematic_noise, systematic_cphase_noise, cp_uv_min,
+    ttype, fft_pad_factor, fft_conv_func, fft_gridder_prad, fft_interp_order,
+    *, compute_data=True, prior_data_tuples=None,
+):
+    """Build solver-ready imager state. Pure function.
+
+    Composes compute_embed + compute_logfreqratios + compute_which_solve +
+    make_initarr + transform_imarr_inverse + pack_imarr + compute_data_tuples
+    into the single state bundle consumed by compute_objective /
+    compute_objective_grad.
+
+    JAX note: when jitted, expect static_argnames=('pol', 'mf', 'transforms',
+    'mf_order', 'mf_order_pol', 'mf_rm', 'mf_cm', 'ttype', 'dat_term_keys',
+    'compute_data') plus static dict-key structure on snrcut.
+
+    Parameters
+    ----------
+    obslist : list of Obsdata
+    init_image, prior_image : Image
+        Initial image (L-BFGS-B start point) and regularizer prior image.
+    freq_list : list of float
+        Reference frequencies (Hz) of each obs in obslist.
+    reffreq : float
+        Reference frequency (Hz) of the multi-frequency expansion. When
+        mf=True this is overridden by init_image.rf.
+    pol, mf, transforms : str, bool, list of str
+        Polarization mode, multi-frequency flag, transform stack
+        (e.g. ['log', 'mcv']).
+    mf_order, mf_order_pol, mf_rm, mf_cm :
+        Multi-frequency expansion orders + RM/CM solve flags.
+    norm_init : bool
+    flux, clipfloor : float
+    dat_term_keys, maxset, debias, snrcut, weighting,
+    systematic_noise, systematic_cphase_noise, cp_uv_min, ttype,
+    fft_pad_factor, fft_conv_func, fft_gridder_prad, fft_interp_order :
+        Forwarded to compute_data_tuples; see its docstring.
+
+    Other Parameters
+    ----------------
+    compute_data : bool, optional
+        When False, skip compute_data_tuples and reuse prior_data_tuples
+        (used by Imager when _change_imgr_params is False).
+    prior_data_tuples : dict, optional
+        Pre-existing data_tuples dict reused when compute_data=False.
+
+    Returns
+    -------
+    ImagerInitState
+    """
+    n_obs = len(obslist)
+    if len(freq_list) != n_obs:
+        raise Exception(
+            "compute_init_state: len(obslist) and len(freq_list) must match.")
+
+    embed_mask, coord_matrix = compute_embed(
+        prior_image.imvec, prior_image.xdim, prior_image.ydim,
+        prior_image.psize, clipfloor,
+    )
+    nimage = int(np.sum(embed_mask))
+
+    # multi-freq: reffreq is re-bound to the init image's rf (matches the
+    # legacy Imager.init_imager behavior at the start of the mf branch).
+    reffreq_eff = init_image.rf if mf else reffreq
+    logfreqratio_list = compute_logfreqratios(freq_list, reffreq_eff)
+
+    which_solve = compute_which_solve(
+        pol, mf, mf_order=mf_order, mf_order_pol=mf_order_pol,
+        mf_rm=mf_rm, mf_cm=mf_cm,
+    )
+
+    is_pol = pol in POLARIZATION_MODES
+    randompol_lin = is_pol and (('P' in pol) or ('QU' in pol))
+    randompol_circ = is_pol and ('V' in pol)
+
+    init_phys = make_initarr(
+        init_image, embed_mask,
+        norm_init=norm_init, flux=flux,
+        mf=mf, pol=is_pol,
+        randompol_lin=randompol_lin, randompol_circ=randompol_circ,
+        meanpol=MEANPOL_INIT, sigmapol=SIGMAPOL_INIT,
+    )
+    prior_phys = make_initarr(
+        prior_image, embed_mask,
+        norm_init=norm_init, flux=flux,
+        mf=mf, pol=is_pol,
+        randompol_lin=False, randompol_circ=False,
+    )
+
+    init_solver = transform_imarr_inverse(init_phys, transforms, which_solve)
+    init_vec = pack_imarr(init_solver, which_solve)
+
+    if compute_data:
+        data_tuples = compute_data_tuples(
+            obslist, prior_image, embed_mask, dat_term_keys, pol,
+            maxset, debias, snrcut, weighting,
+            systematic_noise, systematic_cphase_noise, cp_uv_min,
+            ttype, fft_pad_factor, fft_conv_func, fft_gridder_prad,
+            fft_interp_order,
+        )
+    else:
+        data_tuples = prior_data_tuples
+
+    return ImagerInitState(
+        init_arr=init_solver, init_vec=init_vec, prior_arr=prior_phys,
+        data_tuples=data_tuples, embed_mask=embed_mask,
+        coord_matrix=coord_matrix, logfreqratio_list=logfreqratio_list,
+        nimage=nimage, which_solve=which_solve, reffreq=reffreq_eff,
+    )
 
 
 def compute_embed(imvec, xdim, ydim, psize, clipfloor):
