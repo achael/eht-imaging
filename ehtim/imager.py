@@ -44,6 +44,7 @@ from ehtim.imaging.imager_backend import (
     REGULARIZERS_SPECTRAL,
     compute_chisq_dict,
     compute_chisqgrad_dict,
+    compute_data_tuples,
     compute_embed,
     compute_logfreqratios,
     compute_objective,
@@ -948,58 +949,19 @@ class Imager:
 
         # Make data term tuples
         if self._change_imgr_params:
-            if self.nruns == 0:
-                print("Initializing imager data products . . .")
-            if self.nruns > 0:
-                print("Recomputing imager data products . . .")
-
-            self._data_tuples = {}
-
-            # Loop over all data term types
-            for dname in sorted(self.dat_term_next.keys()):
-
-                # Loop over all observations in the list
-                for i, obs in enumerate(self.obslist_next):
-                    # Each entry in the dterm dictionary past the first has an appended number
-                    if len(self.obslist_next)==1:
-                        dname_key = dname
-                    else:
-                        dname_key = dname + (f'_{i}')
-
-                    # Polarimetric data products
-                    if dname in DATATERMS_POL:
-                        tup = polutils.polchisqdata(obs, self.prior_next, self._embed_mask, dname,
-                                                    ttype=self._ttype,
-                                                    fft_pad_factor=self._fft_pad_factor,
-                                                    conv_func=self._fft_conv_func,
-                                                    p_rad=self._fft_gridder_prad)
-
-                    # Single polarization data products
-                    elif dname in DATATERMS:
-                        if self.pol_next in POLARIZATION_MODES:
-                            if 'I' not in self.pol_next:
-                                raise Exception(f"cannot use dterm {dname} with pol={self.pol_next}")
-                            pol_next = 'I'
-                        else:
-                            pol_next = self.pol_next
-
-                        tup = imutils.chisqdata(obs, self.prior_next, self._embed_mask, dname,
-                                                pol=pol_next, maxset=self.maxset_next,
-                                                debias=self.debias_next,
-                                                snrcut=self.snrcut_next[dname],
-                                                weighting=self.weighting_next,
-                                                systematic_noise=self.systematic_noise_next,
-                                                systematic_cphase_noise=self.systematic_cphase_noise_next,
-                                                ttype=self._ttype, order=self._fft_interp_order,
-                                                fft_pad_factor=self._fft_pad_factor,
-                                                conv_func=self._fft_conv_func,
-                                                p_rad=self._fft_gridder_prad,
-                                                cp_uv_min=self.cp_uv_min)
-                    else:
-                        raise Exception(f"data term {dname} not recognized!")
-
-                    self._data_tuples[dname_key] = tup
-
+            msg = ("Initializing imager data products . . ."
+                   if self.nruns == 0
+                   else "Recomputing imager data products . . .")
+            print(msg)
+            self._data_tuples = compute_data_tuples(
+                self.obslist_next, self.prior_next, self._embed_mask,
+                sorted(self.dat_term_next.keys()), self.pol_next,
+                self.maxset_next, self.debias_next, self.snrcut_next,
+                self.weighting_next, self.systematic_noise_next,
+                self.systematic_cphase_noise_next, self.cp_uv_min,
+                self._ttype, self._fft_pad_factor, self._fft_conv_func,
+                self._fft_gridder_prad, self._fft_interp_order,
+            )
             self._change_imgr_params = False
 
         return

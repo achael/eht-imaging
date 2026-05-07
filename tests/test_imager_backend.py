@@ -11,6 +11,7 @@ import ehtim as eh
 from ehtim.imaging.imager_backend import (
     compute_chisq_dict,
     compute_chisqgrad_dict,
+    compute_data_tuples,
     compute_embed,
     compute_logfreqratios,
     compute_objective,
@@ -323,6 +324,104 @@ class TestComputeWhichSolve:
                                 mf_order_pol=imgr.mf_order_pol,
                                 mf_rm=imgr.mf_rm, mf_cm=imgr.mf_cm),
         )
+
+
+def _call_compute_data_tuples(imgr):
+    """Call compute_data_tuples with the args init_imager would pass."""
+    return compute_data_tuples(
+        imgr.obslist_next, imgr.prior_next, imgr._embed_mask,
+        sorted(imgr.dat_term_next.keys()), imgr.pol_next,
+        imgr.maxset_next, imgr.debias_next, imgr.snrcut_next,
+        imgr.weighting_next, imgr.systematic_noise_next,
+        imgr.systematic_cphase_noise_next, imgr.cp_uv_min,
+        imgr._ttype, imgr._fft_pad_factor, imgr._fft_conv_func,
+        imgr._fft_gridder_prad, imgr._fft_interp_order,
+    )
+
+
+class TestComputeDataTuples:
+    """Tests for compute_data_tuples (extracted from Imager.init_imager)."""
+
+    def test_single_obs_single_term(self, gauss_im, observe, initialize_imager):
+        imgr, _ = initialize_imager(observe(gauss_im), gauss_im, {"vis": 1})
+        tuples = _call_compute_data_tuples(imgr)
+        assert set(tuples.keys()) == {"vis"}
+        assert len(tuples["vis"]) == 3
+
+    def test_multi_obs_key_suffixing(self, gauss_im, observe, initialize_imager):
+        obs1 = observe(gauss_im)
+        obs2 = observe(gauss_im)
+        imgr, _ = initialize_imager([obs1, obs2], gauss_im, {"vis": 1})
+        tuples = _call_compute_data_tuples(imgr)
+        assert set(tuples.keys()) == {"vis_0", "vis_1"}
+
+    def test_multiple_terms(self, gauss_im, observe, initialize_imager):
+        imgr, _ = initialize_imager(
+            observe(gauss_im), gauss_im, {"vis": 1, "amp": 1, "cphase": 1},
+        )
+        tuples = _call_compute_data_tuples(imgr)
+        assert set(tuples.keys()) == {"vis", "amp", "cphase"}
+
+    def test_polarimetric_term(self, gauss_im_pol, observe, initialize_imager):
+        imgr, _ = initialize_imager(
+            observe(gauss_im_pol), gauss_im_pol,
+            {"pvis": 1}, reg_term={"hw": 1}, pol="IP",
+            transform=["log", "mcv"],
+        )
+        tuples = _call_compute_data_tuples(imgr)
+        assert set(tuples.keys()) == {"pvis"}
+        assert len(tuples["pvis"]) == 3
+
+    def test_mixed_pol_and_unpol_terms(self, gauss_im_pol, observe,
+                                       initialize_imager):
+        """pol=IP with both pvis (pol) and vis (unpol) data terms."""
+        imgr, _ = initialize_imager(
+            observe(gauss_im_pol), gauss_im_pol,
+            {"vis": 1, "pvis": 1}, reg_term={"hw": 1},
+            pol="IP", transform=["log", "mcv"],
+        )
+        tuples = _call_compute_data_tuples(imgr)
+        assert set(tuples.keys()) == {"vis", "pvis"}
+
+    def test_unrecognized_term_raises(self, gauss_im, observe,
+                                      initialize_imager):
+        imgr, _ = initialize_imager(observe(gauss_im), gauss_im, {"vis": 1})
+        with pytest.raises(Exception, match="not recognized"):
+            compute_data_tuples(
+                imgr.obslist_next, imgr.prior_next, imgr._embed_mask,
+                ["bogus"], imgr.pol_next,
+                imgr.maxset_next, imgr.debias_next, {"bogus": 0.0},
+                imgr.weighting_next, imgr.systematic_noise_next,
+                imgr.systematic_cphase_noise_next, imgr.cp_uv_min,
+                imgr._ttype, imgr._fft_pad_factor, imgr._fft_conv_func,
+                imgr._fft_gridder_prad, imgr._fft_interp_order,
+            )
+
+    def test_matches_imager_init_imager(self, gauss_im, observe,
+                                        initialize_imager):
+        """Parity: backend output equals dict populated by init_imager."""
+        imgr, _ = initialize_imager(
+            observe(gauss_im), gauss_im, {"vis": 1, "amp": 1},
+        )
+        result = _call_compute_data_tuples(imgr)
+        assert set(result.keys()) == set(imgr._data_tuples.keys())
+        for key, expected in imgr._data_tuples.items():
+            for arr_a, arr_b in zip(result[key], expected, strict=True):
+                np.testing.assert_array_equal(arr_a, arr_b)
+
+    def test_matches_imager_init_imager_polarimetric(self, gauss_im_pol,
+                                                      observe,
+                                                      initialize_imager):
+        imgr, _ = initialize_imager(
+            observe(gauss_im_pol), gauss_im_pol,
+            {"pvis": 1}, reg_term={"hw": 1}, pol="IP",
+            transform=["log", "mcv"],
+        )
+        result = _call_compute_data_tuples(imgr)
+        assert set(result.keys()) == set(imgr._data_tuples.keys())
+        for key, expected in imgr._data_tuples.items():
+            for arr_a, arr_b in zip(result[key], expected, strict=True):
+                np.testing.assert_array_equal(arr_a, arr_b)
 
 
 # ---------------------------------------------------------------------------

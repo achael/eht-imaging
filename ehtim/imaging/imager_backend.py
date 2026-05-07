@@ -508,6 +508,83 @@ def compute_which_solve(pol, mf,
     return np.array([1])
 
 
+def compute_data_tuples(obslist, prior, embed_mask, dat_term_keys, pol,
+                        maxset, debias, snrcut, weighting,
+                        systematic_noise, systematic_cphase_noise,
+                        cp_uv_min, ttype,
+                        fft_pad_factor, fft_conv_func, fft_gridder_prad,
+                        fft_interp_order):
+    """Pre-compute (data, sigma, A) tuples for every (data-term, observation) pair.
+
+    Dispatches to polutils.polchisqdata for polarimetric terms (in
+    DATATERMS_POL) and imutils.chisqdata for standard terms (in DATATERMS).
+
+    Parameters
+    ----------
+    obslist : list of Obsdata
+    prior : Image
+    embed_mask : np.ndarray of bool
+    dat_term_keys : iterable of str
+        Sorted dat_term names. Each must be in DATATERMS or DATATERMS_POL.
+    pol : str
+        Polarization mode of the imager (e.g. 'I', 'IP', 'IV').
+    maxset, debias, snrcut, weighting, systematic_noise,
+    systematic_cphase_noise, cp_uv_min : scalar / dict
+        Per-data-term knobs forwarded to imutils.chisqdata. snrcut is a
+        dict keyed by dname.
+    ttype : {'direct', 'fast', 'nfft'}
+    fft_pad_factor, fft_conv_func, fft_gridder_prad, fft_interp_order :
+        FFT/NFFT-specific parameters.
+
+    Returns
+    -------
+    dict
+        Keys are dname (single-obs) or f"{dname}_{i}" (multi-obs).
+        Values are (data, sigma, A) tuples returned by chisqdata/polchisqdata.
+    """
+    n_obs = len(obslist)
+    data_tuples = {}
+
+    for dname in dat_term_keys:
+        for i, obs in enumerate(obslist):
+            dname_key = dname if n_obs == 1 else f"{dname}_{i}"
+
+            if dname in DATATERMS_POL:
+                tup = polutils.polchisqdata(obs, prior, embed_mask, dname,
+                                            ttype=ttype,
+                                            fft_pad_factor=fft_pad_factor,
+                                            conv_func=fft_conv_func,
+                                            p_rad=fft_gridder_prad)
+
+            elif dname in DATATERMS:
+                if pol in POLARIZATION_MODES:
+                    if 'I' not in pol:
+                        raise Exception(
+                            f"cannot use dterm {dname} with pol={pol}")
+                    dterm_pol = 'I'
+                else:
+                    dterm_pol = pol
+
+                tup = imutils.chisqdata(obs, prior, embed_mask, dname,
+                                        pol=dterm_pol, maxset=maxset,
+                                        debias=debias,
+                                        snrcut=snrcut[dname],
+                                        weighting=weighting,
+                                        systematic_noise=systematic_noise,
+                                        systematic_cphase_noise=systematic_cphase_noise,
+                                        ttype=ttype, order=fft_interp_order,
+                                        fft_pad_factor=fft_pad_factor,
+                                        conv_func=fft_conv_func,
+                                        p_rad=fft_gridder_prad,
+                                        cp_uv_min=cp_uv_min)
+            else:
+                raise Exception(f"data term {dname} not recognized!")
+
+            data_tuples[dname_key] = tup
+
+    return data_tuples
+
+
 def compute_embed(imvec, xdim, ydim, psize, clipfloor):
     """Compute embedding mask and coordinate matrix from a prior image vector.
 
