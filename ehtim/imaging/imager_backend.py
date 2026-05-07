@@ -397,6 +397,24 @@ def make_initarr(image, mask, norm_init=False, flux=1,
     return initarr
 
 
+def compute_logfreqratios(freq_list, reffreq):
+    """Log-frequency ratios for multi-frequency imaging.
+
+    Parameters
+    ----------
+    freq_list : list of float
+        Reference frequencies (Hz) of each observation in the obslist.
+    reffreq : float
+        Reference frequency (Hz) of the multi-frequency image expansion.
+
+    Returns
+    -------
+    list of float
+        log(nu_i / reffreq) for each nu_i in freq_list.
+    """
+    return [np.log(nu / reffreq) for nu in freq_list]
+
+
 def compute_embed(imvec, xdim, ydim, psize, clipfloor):
     """Compute embedding mask and coordinate matrix from a prior image vector.
 

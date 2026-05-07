@@ -12,6 +12,7 @@ from ehtim.imaging.imager_backend import (
     compute_chisq_dict,
     compute_chisqgrad_dict,
     compute_embed,
+    compute_logfreqratios,
     compute_objective,
     compute_objective_grad,
     compute_reg_dict,
@@ -130,6 +131,50 @@ class TestComputeEmbed:
         # Coordinates should be within +/- (xdim/2) * psize
         max_coord = (im.xdim // 2) * im.psize
         assert np.all(np.abs(coord_matrix) <= max_coord + im.psize)
+
+
+class TestComputeLogfreqratios:
+    """Tests for compute_logfreqratios (extracted from Imager.init_imager
+    and Imager.obslist_next setter)."""
+
+    def test_single_frequency_at_reference(self):
+        """Single freq at reffreq -> [0.0]."""
+        result = compute_logfreqratios([230e9], 230e9)
+        assert result == [0.0]
+
+    def test_known_three_frequency_case(self):
+        """Three frequencies bracketing reffreq."""
+        result = compute_logfreqratios([86e9, 230e9, 345e9], 230e9)
+        np.testing.assert_allclose(
+            result,
+            [np.log(86e9 / 230e9), 0.0, np.log(345e9 / 230e9)],
+        )
+
+    def test_monotonic_in_nu(self):
+        """Higher nu than reffreq -> positive ratio; lower -> negative."""
+        result = compute_logfreqratios([100e9, 230e9, 500e9], 230e9)
+        assert result[0] < 0.0
+        assert result[1] == 0.0
+        assert result[2] > 0.0
+
+    def test_returns_list(self):
+        """Return type is a list (not a numpy array)."""
+        result = compute_logfreqratios([230e9, 345e9], 230e9)
+        assert isinstance(result, list)
+
+    def test_empty_freq_list(self):
+        """Empty input -> empty output (degenerate but well-defined)."""
+        assert compute_logfreqratios([], 230e9) == []
+
+    def test_matches_imager_obslist_setter(self, gauss_im, observe):
+        """Backend output matches obslist_next.setter computation."""
+        obs = observe(gauss_im)
+        imgr = eh.imager.Imager(
+            obs, gauss_im, prior_im=gauss_im, flux=gauss_im.total_flux(),
+            data_term={"vis": 1}, ttype="direct", pol="I",
+        )
+        expected = compute_logfreqratios(imgr.freq_list, imgr.reffreq)
+        assert imgr._logfreqratio_list == expected
 
 
 # ---------------------------------------------------------------------------

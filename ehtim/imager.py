@@ -45,6 +45,7 @@ from ehtim.imaging.imager_backend import (
     compute_chisq_dict,
     compute_chisqgrad_dict,
     compute_embed,
+    compute_logfreqratios,
     compute_objective,
     compute_objective_grad,
     compute_reg_dict,
@@ -235,7 +236,7 @@ class Imager:
             raise Exception("obslist_next must be a list!")
         self._obslist_next = obslist
         self.freq_list = [obs.rf for obs in self.obslist_next]
-        self._logfreqratio_list = [np.log(nu/self.reffreq) for nu in self.freq_list]
+        self._logfreqratio_list = compute_logfreqratios(self.freq_list, self.reffreq)
 
     @property
     def obs_next(self):
@@ -835,7 +836,7 @@ class Imager:
             self.reffreq = self.init_next.rf
 
             # reset logfreqratios in case the reference frequency changed
-            self._logfreqratio_list = [np.log(nu/self.reffreq) for nu in self.freq_list]
+            self._logfreqratio_list = compute_logfreqratios(self.freq_list, self.reffreq)
 
             # determine self._which_solve
             # TODO is there a nicer way to do this?
