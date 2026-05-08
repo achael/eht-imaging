@@ -2864,10 +2864,12 @@ def chisqdata_cphase_diag(Obsdata, Prior, mask, pol='I', **kwargs):
         # get transformation matrix for this timestamp
         tform_mats.append(cl[4].astype('float'))
 
-    # combine Fourier and transformation matrices into tuple for outputting
-    Amatrices = (np.array(A3_diag), np.array(tform_mats))
+    # combine Fourier and transformation matrices into tuple for outputting.
+    # Per-timestamp baseline counts vary, so the outer arrays are ragged --
+    # NumPy >= 1.24 requires explicit dtype=object for inhomogeneous shape.
+    Amatrices = (np.array(A3_diag, dtype=object), np.array(tform_mats, dtype=object))
 
-    return (np.array(clphase_diag), np.array(sigma_diag), Amatrices)
+    return (np.array(clphase_diag, dtype=object), np.array(sigma_diag, dtype=object), Amatrices)
 
 
 def chisqdata_camp(Obsdata, Prior, mask, pol='I', **kwargs):
@@ -3024,10 +3026,12 @@ def chisqdata_logcamp_diag(Obsdata, Prior, mask, pol='I', **kwargs):
         # get transformation matrix for this timestamp
         tform_mats.append(cl[4].astype('float'))
 
-    # combine Fourier and transformation matrices into tuple for outputting
-    Amatrices = (np.array(A4_diag), np.array(tform_mats))
+    # combine Fourier and transformation matrices into tuple for outputting.
+    # Per-timestamp baseline counts vary, so the outer arrays are ragged --
+    # NumPy >= 1.24 requires explicit dtype=object for inhomogeneous shape.
+    Amatrices = (np.array(A4_diag, dtype=object), np.array(tform_mats, dtype=object))
 
-    return (np.array(clamp_diag), np.array(sigma_diag), Amatrices)
+    return (np.array(clamp_diag, dtype=object), np.array(sigma_diag, dtype=object), Amatrices)
 
 ##################################################################################################
 # FFT Chi^2 Data functions
