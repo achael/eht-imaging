@@ -3322,10 +3322,11 @@ def chisqdata_cphase_diag_fft(Obsdata, Prior, pol='I', **kwargs):
     gridder_info_list = [gs_info1[1], gs_info2[1], gs_info3[1]]
     A3 = (im_info, sampler_info_list, gridder_info_list)
 
-    # combine Fourier and transformation matrices into tuple for outputting
-    Amatrices = (A3, np.array(tform_mats))
+    # Per-timestamp transform matrices have varying shapes; NumPy >= 1.24
+    # requires explicit dtype=object for inhomogeneous arrays.
+    Amatrices = (A3, np.array(tform_mats, dtype=object))
 
-    return (np.array(clphase_diag), np.array(sigma_diag), Amatrices)
+    return (np.array(clphase_diag, dtype=object), np.array(sigma_diag, dtype=object), Amatrices)
 
 
 def chisqdata_camp_fft(Obsdata, Prior, pol='I', **kwargs):
@@ -3538,10 +3539,11 @@ def chisqdata_logcamp_diag_fft(Obsdata, Prior, pol='I', **kwargs):
     gridder_info_list = [gs_info1[1], gs_info2[1], gs_info3[1], gs_info4[1]]
     A = (im_info, sampler_info_list, gridder_info_list)
 
-    # combine Fourier and transformation matrices into tuple for outputting
-    Amatrices = (A, np.array(tform_mats))
+    # Per-timestamp transform matrices have varying shapes; NumPy >= 1.24
+    # requires explicit dtype=object for inhomogeneous arrays.
+    Amatrices = (A, np.array(tform_mats, dtype=object))
 
-    return (np.array(clamp_diag), np.array(sigma_diag), Amatrices)
+    return (np.array(clamp_diag, dtype=object), np.array(sigma_diag, dtype=object), Amatrices)
 
 ##################################################################################################
 # NFFT Chi^2 Data functions
@@ -3803,10 +3805,11 @@ def chisqdata_cphase_diag_nfft(Obsdata, Prior, pol='I', **kwargs):
     A3 = obsh.NFFTInfo(Prior.xdim, Prior.ydim, Prior.psize, Prior.pulse, npad, p_rad, uv3)
     A = [A1, A2, A3]
 
-    # combine Fourier and transformation matrices into tuple for outputting
-    Amatrices = (A, np.array(tform_mats))
+    # Per-timestamp transform matrices have varying shapes; NumPy >= 1.24
+    # requires explicit dtype=object for inhomogeneous arrays.
+    Amatrices = (A, np.array(tform_mats, dtype=object))
 
-    return (np.array(clphase_diag), np.array(sigma_diag), Amatrices)
+    return (np.array(clphase_diag, dtype=object), np.array(sigma_diag, dtype=object), Amatrices)
 
 
 def chisqdata_camp_nfft(Obsdata, Prior, pol='I', **kwargs):
@@ -3996,10 +3999,11 @@ def chisqdata_logcamp_diag_nfft(Obsdata, Prior, pol='I', **kwargs):
     A4 = obsh.NFFTInfo(Prior.xdim, Prior.ydim, Prior.psize, Prior.pulse, npad, p_rad, uv4)
     A = [A1, A2, A3, A4]
 
-    # combine Fourier and transformation matrices into tuple for outputting
-    Amatrices = (A, np.array(tform_mats))
+    # Per-timestamp transform matrices have varying shapes; NumPy >= 1.24
+    # requires explicit dtype=object for inhomogeneous arrays.
+    Amatrices = (A, np.array(tform_mats, dtype=object))
 
-    return (np.array(clamp_diag), np.array(sigma_diag), Amatrices)
+    return (np.array(clamp_diag, dtype=object), np.array(sigma_diag, dtype=object), Amatrices)
 
 ##################################################################################################
 # Plotting Functions
