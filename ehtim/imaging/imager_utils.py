@@ -583,7 +583,7 @@ def chisqgrad_cphase_diag(imvec, Amatrices, clphase_diag, sigma):
                                (clphase_diag_sigma**2.0)), (tform_mats[iA]/i3)), A3[2])
         deriv += -2.0*np.imag(term1 + term2 + term3)
 
-    deriv *= 1.0/np.float(len(np.concatenate(clphase_diag)))
+    deriv *= 1.0/float(len(np.concatenate(clphase_diag)))
 
     return deriv
 
@@ -720,7 +720,7 @@ def chisqgrad_logcamp_diag(imvec, Amatrices, log_clamp_diag, sigma):
                                (log_clamp_diag_sigma**2.0)), (tform_mats[iA]/i4)), A4[3])
         deriv += -2.0*np.real(term1 + term2 - term3 - term4)
 
-    deriv *= 1.0/np.float(len(np.concatenate(log_clamp_diag)))
+    deriv *= 1.0/float(len(np.concatenate(log_clamp_diag)))
 
     return deriv
 
@@ -980,7 +980,7 @@ def chisqgrad_cphase_diag_fft(imvec, A, clphase_diag, sigma):
     # extract relevant cells and flatten
     deriv = np.imag(grad_arr[im_info.padvaly1:-im_info.padvaly2,
                              im_info.padvalx1:-im_info.padvalx2].flatten())
-    deriv *= 1.0/np.float(len(clphase_diag))
+    deriv *= 1.0/float(len(clphase_diag))
 
     return deriv
 
@@ -1148,7 +1148,7 @@ def chisqgrad_logcamp_diag_fft(imvec, A, log_clamp_diag, sigma):
     # extract relevant cells and flatten
     deriv = np.real(grad_arr[im_info.padvaly1:-im_info.padvaly2,
                              im_info.padvalx1:-im_info.padvalx2].flatten())
-    deriv *= 1.0/np.float(len(log_clamp_diag))
+    deriv *= 1.0/float(len(log_clamp_diag))
 
     return deriv
 
@@ -1595,7 +1595,7 @@ def chisqgrad_cphase_diag_nfft(imvec, A, clphase_diag, sigma):
     out3 = np.imag((plan3.f_hat.copy().T).reshape(nfft_info3.xdim*nfft_info3.ydim))
 
     deriv = out1 + out2 + out3
-    deriv *= 1.0/np.float(len(clphase_diag))
+    deriv *= 1.0/float(len(clphase_diag))
 
     return deriv
 
@@ -1973,7 +1973,7 @@ def chisqgrad_logcamp_diag_nfft(imvec, A, log_clamp_diag, sigma):
     out4 = np.real((plan4.f_hat.copy().T).reshape(nfft_info4.xdim*nfft_info4.ydim))
 
     deriv = out1 + out2 + out3 + out4
-    deriv *= 1.0/np.float(len(log_clamp_diag))
+    deriv *= 1.0/float(len(log_clamp_diag))
 
     return deriv
 
