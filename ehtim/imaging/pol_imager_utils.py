@@ -27,7 +27,7 @@ except ImportError:
     _HAS_NFFT = False
 
 from ehtim.const_def import FFT_PAD_DEFAULT, GRIDDER_P_RAD_DEFAULT, RADPERAS
-from ehtim.imager import embed_imarr
+from ehtim.imaging.imager_utils import embed_imarr
 from ehtim.observing.obs_helpers import NFFTInfo, ftmatrix, ticks
 
 TANWIDTH_M = 0.5

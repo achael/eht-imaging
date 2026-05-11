@@ -4076,6 +4076,79 @@ def embed(imvec, mask, clipfloor=0., randomfloor=False):
     return out
 
 
+def embed_imarr(imarr, mask, clipfloor=0., randomfloor=False):
+    """Embed a packed image array back onto the full image grid.
+
+    Multi-row generalization of `embed`: each row of `imarr` is independently
+    embedded back into a full-grid representation using `mask`. Pixels outside
+    the mask are filled with `clipfloor` (constant) or `clipfloor * |N(0, 1)|`
+    when `randomfloor=True`.
+
+    Lives in imager_utils alongside `embed` rather than in imager_backend.py
+    to avoid a module-load cycle (pol_imager_utils -> imager_backend imports).
+
+    Parameters
+    ----------
+    imarr : np.ndarray
+        Either 1D of length `sum(mask)` (Stokes-I only), or 2D of shape
+        (nsolve, sum(mask)) where nsolve is the number of Stokes / spectral
+        slots being solved for (1 for Stokes-I only, 4 for full polarization,
+        3 or 10 for the multifrequency variants).
+    mask : np.ndarray of bool
+        Embed mask of length npix_total. Number of True entries must equal
+        the second axis of `imarr` (or its length, for 1D input).
+    clipfloor : float, optional
+        Value placed at non-mask pixels when `randomfloor=False`. Default 0.0.
+    randomfloor : bool, optional
+        If True, non-mask pixels get `clipfloor * |N(0, 1)|` instead of a
+        constant. Used to break gradient singularities in total-variation
+        regularizers. Default False.
+
+    Returns
+    -------
+    out : np.ndarray
+        Same dimensionality as `imarr` (1D or 2D), but the second axis
+        (or only axis) is extended to len(mask).
+
+    Raises
+    ------
+    Exception
+        If `imarr` is not 1D or 2D, or if its mask-axis length does not
+        equal `sum(mask)`.
+    """
+    imarrdim = len(imarr.shape)
+    if imarrdim == 2:
+        nsolve = imarr.shape[0]
+        nimage = imarr.shape[1]
+    elif imarrdim == 1:
+        nsolve = 1
+        nimage = imarr.shape[0]
+        imarr = imarr.reshape((nsolve, nimage))
+    else:
+        raise Exception("in embed_imarr, imarr should have one or two dimensions!")
+
+    if nimage != np.sum(mask):
+        raise Exception("in embed_imarr, number of masked pixels is not consistent with imarr shape!")
+
+    nimage_out = len(mask)
+    outarr = np.empty((nsolve, nimage_out))
+    # Vectorized over the nsolve axis: scatter imarr into the masked columns
+    # of outarr, then fill non-mask columns with clipfloor (or random).
+    not_mask = ~mask.astype(bool)
+    outarr[:, mask.astype(bool)] = imarr
+    if randomfloor:
+        outarr[:, not_mask] = clipfloor * np.abs(
+            np.random.normal(size=(nsolve, int(not_mask.sum())))
+        )
+    else:
+        outarr[:, not_mask] = clipfloor
+
+    if imarrdim == 1:
+        outarr = outarr[0]
+
+    return outarr
+
+
 
 
 

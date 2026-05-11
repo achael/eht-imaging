@@ -57,35 +57,6 @@ MEANPOL_INIT = 0.2     # mean polarization fraction
 SIGMAPOL_INIT = 1.e-2  # perturbation scale
 
 
-def embed_imarr(imarr, mask, clipfloor=0., randomfloor=False):
-    """Embeds a multidimensional image array into the size of boolean embed mask
-    """
-
-    imarrdim = len(imarr.shape)
-    if imarrdim==2:
-        nsolve = imarr.shape[0]
-        nimage = imarr.shape[1]
-    elif imarrdim==1:
-        nsolve = 1
-        nimage = imarr.shape[0]
-        imarr = imarr.reshape((nsolve,nimage))
-    else:
-        raise Exception("in embed_imarr, imarr should have one or two dimensions!")
-
-    if nimage!=np.sum(mask):
-        raise Exception("in embed_imarr, number of masked pixels is not consistent with imarr shape!")
-
-    nimage_out = len(mask)
-    outarr = np.empty((nsolve,nimage_out))
-    # TODO does this require the for loop?
-    for kk in range(nsolve):
-        outarr[kk] = imutils.embed(imarr[kk], mask, clipfloor=clipfloor, randomfloor=randomfloor)
-
-    if imarrdim==1:
-        outarr = outarr[0]
-
-    return outarr
-
 def pack_imarr(imarr, which_solve):
     """pack image array imarr into 1D array vec for minimizaiton
        ignore quantities not solved for
