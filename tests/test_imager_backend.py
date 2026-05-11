@@ -2820,3 +2820,27 @@ class TestComputeChisqdataTerm:
             compute_chisqdata_term(obs_direct, gauss_im, mask, 'vis',
                                    ttype='bogus', pol='I')
 
+    # ---- pol-mode translation (override moved from compute_data_tuples) ----
+
+    def test_standard_dtype_in_pol_mode_uses_stokes_I(self, gauss_im_pol, obs_direct):
+        """In pol='IP' mode, a standard dtype ('vis') reads Stokes-I data.
+
+        Equivalent to legacy chisqdata(..., pol='I') after the imager had
+        forced dterm_pol='I'. Compare with the new dispatcher passing pol='IP'.
+        """
+        from ehtim.imaging.imager_utils import chisqdata
+        mask = self._full_mask(gauss_im_pol)
+        kw = self._kwargs()
+        legacy_I = chisqdata(obs_direct, gauss_im_pol, mask, 'vis',
+                             pol='I', ttype='direct', **kw)
+        new_IP = compute_chisqdata_term(obs_direct, gauss_im_pol, mask, 'vis',
+                                        ttype='direct', pol='IP', **kw)
+        self._data_sigma_equal(legacy_I, new_IP)
+
+    def test_standard_dtype_with_no_stokes_I_pol_raises(self, gauss_im_pol, obs_direct):
+        """pol='P' (linear pol only, no Stokes-I) rejects standard data terms."""
+        mask = self._full_mask(gauss_im_pol)
+        with pytest.raises(Exception, match="cannot use dterm vis with pol=P"):
+            compute_chisqdata_term(obs_direct, gauss_im_pol, mask, 'vis',
+                                   ttype='direct', pol='P', **self._kwargs())
+

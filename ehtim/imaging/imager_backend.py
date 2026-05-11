@@ -791,6 +791,15 @@ def compute_chisqdata_term(obs, prior, mask, dtype, ttype='direct', pol='I', **k
     helper = by_ttype[ttype]
     is_pol = dtype in DATATERMS_POL
 
+    # Standard data terms consume a single Stokes letter ('I'/'Q'/'U'/'V'). When
+    # the imager is in a multi-Stokes mode (e.g. 'IP', 'IQUV'), the leaf needs
+    # pol='I' to unpack Stokes-I visibilities; pol modes without 'I' (e.g. 'P')
+    # are incompatible with standard data terms.
+    if not is_pol and pol in POLARIZATION_MODES:
+        if 'I' not in pol:
+            raise Exception(f"cannot use dterm {dtype} with pol={pol}")
+        pol = 'I'
+
     # Standard direct + all pol leaves take mask positionally.
     # Standard fast/nfft leaves omit it (they index uv coords from obs directly).
     if is_pol or ttype == 'direct':
@@ -836,45 +845,21 @@ def compute_data_tuples(obslist, prior, embed_mask, dat_term_keys, pol,
     for dname in dat_term_keys:
         for i, obs in enumerate(obslist):
             dname_key = dname if n_obs == 1 else f"{dname}_{i}"
-
-            if dname in DATATERMS_POL:
-                tup = polutils.polchisqdata(
-                    obs, prior, embed_mask, dname,
-                    ttype=ttype,
-                    fft_pad_factor=fft_params['fft_pad_factor'],
-                    conv_func=fft_params['fft_conv_func'],
-                    p_rad=fft_params['fft_gridder_prad'],
-                )
-
-            elif dname in DATATERMS:
-                if pol in POLARIZATION_MODES:
-                    if 'I' not in pol:
-                        raise Exception(
-                            f"cannot use dterm {dname} with pol={pol}")
-                    dterm_pol = 'I'
-                else:
-                    dterm_pol = pol
-
-                tup = imutils.chisqdata(
-                    obs, prior, embed_mask, dname,
-                    pol=dterm_pol,
-                    maxset=data_weighting_params['maxset'],
-                    debias=data_weighting_params['debias'],
-                    snrcut=data_weighting_params['snrcut'][dname],
-                    weighting=data_weighting_params['weighting'],
-                    systematic_noise=data_weighting_params['systematic_noise'],
-                    systematic_cphase_noise=data_weighting_params['systematic_cphase_noise'],
-                    cp_uv_min=data_weighting_params['cp_uv_min'],
-                    ttype=ttype,
-                    order=fft_params['fft_interp_order'],
-                    fft_pad_factor=fft_params['fft_pad_factor'],
-                    conv_func=fft_params['fft_conv_func'],
-                    p_rad=fft_params['fft_gridder_prad'],
-                )
-            else:
-                raise Exception(f"data term {dname} not recognized!")
-
-            data_tuples[dname_key] = tup
+            data_tuples[dname_key] = compute_chisqdata_term(
+                obs, prior, embed_mask, dname,
+                ttype=ttype, pol=pol,
+                maxset=data_weighting_params['maxset'],
+                debias=data_weighting_params['debias'],
+                snrcut=data_weighting_params['snrcut'][dname],
+                weighting=data_weighting_params['weighting'],
+                systematic_noise=data_weighting_params['systematic_noise'],
+                systematic_cphase_noise=data_weighting_params['systematic_cphase_noise'],
+                cp_uv_min=data_weighting_params['cp_uv_min'],
+                order=fft_params['fft_interp_order'],
+                fft_pad_factor=fft_params['fft_pad_factor'],
+                conv_func=fft_params['fft_conv_func'],
+                p_rad=fft_params['fft_gridder_prad'],
+            )
 
     return data_tuples
 
