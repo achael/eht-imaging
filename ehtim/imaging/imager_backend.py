@@ -536,6 +536,71 @@ def validate_params(prior, init, pol, transforms, dat_term_keys, reg_term_keys,
         raise Exception("Invalid regularizer: valid regularizers are: " + ','.join(rlist))
 
 
+def validate_limits(prior, obslist, pol, flux, mf_flux):
+    """Check image-grid vs observation uv-coverage and flux limits.
+
+    Returns a list of warning strings (does not print). Caller is
+    responsible for emitting the warnings. Pure function.
+
+    Parameters
+    ----------
+    prior : ehtim.image.Image
+        Image whose psize / xdim / ydim define the uv-resolution and FOV.
+    obslist : iterable of ehtim.obsdata.Obsdata
+        Observations whose uv-distances are compared against the grid.
+    pol : str
+        Polarization mode. Flux-vs-maxamp warnings only fire for total-flux
+        pols ('I', 'RR', 'LL').
+    flux : float
+        Specified total flux used as a fallback when mf_flux does not match
+        the number of observations.
+    mf_flux : iterable of float
+        Per-observation flux overrides for multifrequency imaging. Used
+        instead of `flux` when len(mf_flux) == len(obslist).
+
+    Returns
+    -------
+    list of str
+        One warning string per offending (obs, condition) pair. Empty if
+        the grid and flux are consistent with all observations.
+    """
+    warnings = []
+    uvmax = 1.0 / prior.psize
+    uvmin = 1.0 / (prior.psize * np.max((prior.xdim, prior.ydim)))
+    obslist = list(obslist)
+    use_mf_flux = len(mf_flux) == len(obslist)
+    for i, obs in enumerate(obslist):
+        uvdists = obs.unpack('uvdist')['uvdist']
+        maxbl = np.max(uvdists)
+        minbl = np.max(uvdists[uvdists > 0])
+
+        if uvmax < maxbl:
+            warnings.append(
+                "Warning! Pixel size is larger than smallest spatial wavelength for freq %.1f GHz!"
+                % (obs.rf / 1.e9)
+            )
+        if uvmin > minbl:
+            warnings.append(
+                "Warning! Field of View is smaller than largest nonzero spatial wavelength for freq %.1f GHz!"
+                % (obs.rf / 1.e9)
+            )
+
+        if pol in ['I', 'RR', 'LL']:
+            maxamp = np.max(np.abs(obs.unpack('amp')['amp']))
+            obs_flux = mf_flux[i] if use_mf_flux else flux
+            if obs_flux > 1.2 * maxamp:
+                warnings.append(
+                    f"Warning! Specified flux {obs_flux:.1f} is > 120% of "
+                    f"maximum visibility amplitude for freq {obs.rf/1.e9:.1f} GHz!"
+                )
+            if obs_flux < .8 * maxamp:
+                warnings.append(
+                    f"Warning! Specified flux {obs_flux:.1f} is < 80% of "
+                    f"maximum visibility amplitude for freq {obs.rf/1.e9:.1f} GHz!"
+                )
+    return warnings
+
+
 def compute_logfreqratios(freq_list, reffreq):
     """Log-frequency ratios for multi-frequency imaging.
 

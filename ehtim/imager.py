@@ -48,6 +48,7 @@ from ehtim.imaging.imager_backend import (
     embed_imarr,
     transform_imarr,
     unpack_imarr,
+    validate_limits,
     validate_params,
 )
 
@@ -649,32 +650,11 @@ class Imager:
     def check_limits(self):
         """Check image parameter consistency with observation.
         """
-        for i,obs in enumerate(self.obslist_next):
-            uvmax = 1.0/self.prior_next.psize
-            uvmin = 1.0/(self.prior_next.psize*np.max((self.prior_next.xdim, self.prior_next.ydim)))
-            uvdists = obs.unpack('uvdist')['uvdist']
-            maxbl = np.max(uvdists)
-            minbl = np.max(uvdists[uvdists > 0])
-
-            if uvmax < maxbl:
-                print("Warning! Pixel size is larger than smallest spatial wavelength for freq %.1f GHz!"%(obs.rf/1.e9))
-            if uvmin > minbl:
-                print("Warning! Field of View is smaller than largest nonzero spatial wavelength for freq %.1f GHz!"%(obs.rf/1.e9))
-
-            if self.pol_next in ['I', 'RR', 'LL']:
-                maxamp = np.max(np.abs(obs.unpack('amp')['amp']))
-
-                # TODO: better handling of mf fluxes
-                if len(self.mf_flux)==len(self.obslist_next):
-                    flux = self.mf_flux[i]
-                else:
-                    flux = self.flux_next
-
-                if flux > 1.2*maxamp:
-                    print(f"Warning! Specified flux {flux:.1f} is > 120% of maximum visibility amplitude for freq {obs.rf/1.e9:.1f} GHz!")
-                if flux < .8*maxamp:
-                    print(f"Warning! Specified flux {flux:.1f} is < 80% of maximum visibility amplitude for freq {obs.rf/1.e9:.1f} GHz!")
-        return
+        for msg in validate_limits(
+            self.prior_next, self.obslist_next, self.pol_next,
+            self.flux_next, self.mf_flux,
+        ):
+            print(msg)
 
 
     def init_imager(self):

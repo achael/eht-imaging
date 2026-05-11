@@ -28,6 +28,7 @@ from ehtim.imaging.imager_backend import (
     transform_imarr,
     transform_imarr_inverse,
     unpack_imarr,
+    validate_limits,
     validate_params,
 )
 
@@ -2503,4 +2504,96 @@ class TestValidateParams:
         cfg['reg_term_keys'] = ['not_a_reg']
         with pytest.raises(Exception, match="Invalid regularizer: valid regularizers are:"):
             self._call(**cfg)
+
+
+class TestValidateLimits:
+    """Direct unit tests for validate_limits.
+
+    Pure validator. Returns a list of warning strings instead of printing.
+    Per-observation conditions:
+      * pixel too coarse for largest baseline,
+      * FOV too small for smallest nonzero baseline,
+      * specified total flux outside [0.8, 1.2] * max(|vis amp|) (only for
+        pol in {'I', 'RR', 'LL'}).
+    """
+
+    @staticmethod
+    def _grid_copy(im, psize=None, xdim=None, ydim=None):
+        """Make a prior-shaped Image by overriding grid params on a copy."""
+        out = im.copy()
+        if psize is not None:
+            out.psize = psize
+        if xdim is not None:
+            out.xdim = xdim
+        if ydim is not None:
+            out.ydim = ydim
+        return out
+
+    @staticmethod
+    def _matched_flux(obs):
+        """Pick a flux value that won't trigger the flux warnings."""
+        return float(np.max(np.abs(obs.unpack('amp')['amp'])))
+
+    # ---- uv-resolution warnings ----
+
+    def test_no_warnings_when_grid_and_flux_match(self, gauss_im, obs_direct):
+        flux = self._matched_flux(obs_direct)
+        out = validate_limits(gauss_im, [obs_direct], 'I', flux, [])
+        assert out == []
+
+    def test_warns_when_pixel_too_coarse(self, gauss_im, obs_direct):
+        uvdists = obs_direct.unpack('uvdist')['uvdist']
+        maxbl = float(np.max(uvdists))
+        coarse = self._grid_copy(gauss_im, psize=2.0 / maxbl)  # uvmax = maxbl/2
+        flux = self._matched_flux(obs_direct)
+        out = validate_limits(coarse, [obs_direct], 'I', flux, [])
+        assert any("Pixel size is larger" in m for m in out)
+
+    def test_warns_when_fov_too_small(self, gauss_im, obs_direct):
+        uvdists = obs_direct.unpack('uvdist')['uvdist']
+        minbl = float(np.max(uvdists[uvdists > 0]))
+        tiny = self._grid_copy(gauss_im, xdim=1, ydim=1, psize=0.5 / minbl)
+        flux = self._matched_flux(obs_direct)
+        out = validate_limits(tiny, [obs_direct], 'I', flux, [])
+        assert any("Field of View is smaller" in m for m in out)
+
+    def test_multi_obs_appends_per_obs(self, gauss_im, obs_direct):
+        uvdists = obs_direct.unpack('uvdist')['uvdist']
+        maxbl = float(np.max(uvdists))
+        coarse = self._grid_copy(gauss_im, psize=2.0 / maxbl)
+        flux = self._matched_flux(obs_direct)
+        out = validate_limits(coarse, [obs_direct, obs_direct], 'I', flux, [])
+        pixel_warnings = [m for m in out if "Pixel size is larger" in m]
+        assert len(pixel_warnings) == 2
+
+    def test_empty_obslist_returns_empty(self, gauss_im):
+        assert validate_limits(gauss_im, [], 'I', 1.0, []) == []
+
+    # ---- flux warnings ----
+
+    def test_warns_when_flux_too_high(self, gauss_im, obs_direct):
+        maxamp = self._matched_flux(obs_direct)
+        out = validate_limits(gauss_im, [obs_direct], 'I', 2.0 * maxamp, [])
+        assert any("> 120%" in m for m in out)
+
+    def test_warns_when_flux_too_low(self, gauss_im, obs_direct):
+        maxamp = self._matched_flux(obs_direct)
+        out = validate_limits(gauss_im, [obs_direct], 'I', 0.5 * maxamp, [])
+        assert any("< 80%" in m for m in out)
+
+    def test_flux_check_skipped_for_polarimetric_pol(self, gauss_im, obs_direct):
+        """Flux warnings only fire for total-flux pols ('I', 'RR', 'LL')."""
+        maxamp = self._matched_flux(obs_direct)
+        out = validate_limits(gauss_im, [obs_direct], 'IP', 2.0 * maxamp, [])
+        assert all(("> 120%" not in m) and ("< 80%" not in m) for m in out)
+
+    def test_mf_flux_picks_per_obs_value(self, gauss_im, obs_direct):
+        """When len(mf_flux) == len(obslist), each obs uses its own flux."""
+        maxamp = self._matched_flux(obs_direct)
+        # First obs flux is good, second is too high.
+        mf_flux = [maxamp, 2.0 * maxamp]
+        out = validate_limits(gauss_im, [obs_direct, obs_direct], 'I',
+                              maxamp, mf_flux)
+        flux_warnings = [m for m in out if "> 120%" in m]
+        assert len(flux_warnings) == 1  # only the second obs trips
 
