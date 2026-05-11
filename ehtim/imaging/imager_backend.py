@@ -144,7 +144,7 @@ def unpack_imarr(vec, init_arr, which_solve):
     elif imarrdim==1:
         nsolve = 1
         nimage = init_arr.shape[0]
-        imarr = init_arr.reshape((nsolve,nimage))
+        init_arr = init_arr.reshape((nsolve, nimage))
     else:
         raise Exception("in unpack_imarr, init_arr should have one or two dimensions !")
 

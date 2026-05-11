@@ -1913,6 +1913,18 @@ class TestUnpackImarr:
         assert out.shape == imarr.shape
         np.testing.assert_array_equal(out, imarr)
 
+    def test_1d_unsolved_falls_back_to_full_init_arr(self):
+        """1D init_arr with which_solve=[0] returns init_arr unchanged.
+
+        Regression for an internal reshape that was assigning to the wrong
+        local name -- the unsolved fallback was broadcasting init_arr[0]
+        (a scalar) across the row instead of using the whole 1D init_arr.
+        """
+        init_arr = np.linspace(0.1, 1.0, 8)
+        out = unpack_imarr(np.array([]), init_arr, np.array([0]))
+        assert out.shape == init_arr.shape
+        np.testing.assert_array_equal(out, init_arr)
+
     def test_which_solve_length_mismatch_raises(self):
         """which_solve length must equal init_arr's nsolve dimension."""
         init_arr = np.zeros((4, 5))
