@@ -2744,8 +2744,6 @@ class TestComputeChisqdataTerm:
         cls._equal_recursive(a[0], b[0])
         cls._equal_recursive(a[1], b[1])
 
-    # ---- standard dtypes ----
-
     @pytest.mark.parametrize("dtype", STD_DTYPES)
     def test_parity_direct_standard(self, gauss_im, obs_direct, dtype):
         from ehtim.imaging.imager_utils import chisqdata
@@ -2779,8 +2777,6 @@ class TestComputeChisqdataTerm:
                                      ttype='nfft', pol='I', **kw)
         self._data_sigma_equal(legacy, new)
 
-    # ---- pol dtypes ----
-
     @pytest.mark.parametrize("dtype", POL_DTYPES)
     def test_parity_direct_pol(self, gauss_im_pol, obs_direct, dtype):
         from ehtim.imaging.pol_imager_utils import polchisqdata
@@ -2803,8 +2799,6 @@ class TestComputeChisqdataTerm:
                                      ttype='nfft', pol='IP', **kw_fft)
         self._data_sigma_equal(legacy, new)
 
-    # ---- exception cases ----
-
     def test_unknown_dtype_raises(self, gauss_im, obs_direct):
         mask = self._full_mask(gauss_im)
         with pytest.raises(Exception, match="data term .* not recognized"):
@@ -2822,8 +2816,6 @@ class TestComputeChisqdataTerm:
         with pytest.raises(Exception, match="Possible ttype values"):
             compute_chisqdata_term(obs_direct, gauss_im, mask, 'vis',
                                    ttype='bogus', pol='I')
-
-    # ---- pol-mode translation (override moved from compute_data_tuples) ----
 
     def test_standard_dtype_in_pol_mode_uses_stokes_I(self, gauss_im_pol, obs_direct):
         """In pol='IP' mode, a standard dtype ('vis') reads Stokes-I data.
@@ -2895,8 +2887,6 @@ class _ChisqTermFixtures:
 class TestComputeChisqTerm(_ChisqTermFixtures):
     """Bit-identical parity vs imutils.chisq / polutils.polchisq."""
 
-    # ---- standard dtypes ----
-
     @pytest.mark.parametrize("dtype", _ChisqTermFixtures.STD_DTYPES)
     def test_parity_direct_standard(self, gauss_im, obs_direct, dtype):
         from ehtim.imaging.imager_utils import chisq
@@ -2937,8 +2927,6 @@ class TestComputeChisqTerm(_ChisqTermFixtures):
                                  ttype='nfft', mask=mask)
         np.testing.assert_allclose(new, legacy, rtol=1e-12, atol=1e-15)
 
-    # ---- pol dtypes ----
-
     @pytest.mark.parametrize("dtype", _ChisqTermFixtures.POL_DTYPES)
     def test_parity_direct_pol(self, gauss_im_pol, obs_direct, dtype):
         from ehtim.imaging.pol_imager_utils import polchisq
@@ -2963,8 +2951,6 @@ class TestComputeChisqTerm(_ChisqTermFixtures):
         new = compute_chisq_term(imcur, dtype, A, data, sigma,
                                  ttype='nfft', mask=mask)
         np.testing.assert_allclose(new, legacy, rtol=1e-12, atol=1e-15)
-
-    # ---- exception cases ----
 
     def test_unknown_dtype_raises(self, gauss_im):
         imcur = np.array([gauss_im.imvec])
@@ -2996,8 +2982,6 @@ class TestComputeChisqTerm(_ChisqTermFixtures):
 
 class TestComputeChisqgradTerm(_ChisqTermFixtures):
     """Bit-identical parity vs imutils.chisqgrad / polutils.polchisqgrad."""
-
-    # ---- standard dtypes ----
 
     @pytest.mark.parametrize("dtype", _ChisqTermFixtures.STD_DTYPES)
     def test_parity_direct_standard(self, gauss_im, obs_direct, dtype):
@@ -3038,8 +3022,6 @@ class TestComputeChisqgradTerm(_ChisqTermFixtures):
                                      ttype='nfft', mask=mask)
         np.testing.assert_allclose(new, legacy, rtol=1e-12, atol=1e-15)
 
-    # ---- pol dtypes ----
-
     @pytest.mark.parametrize("dtype", _ChisqTermFixtures.POL_DTYPES)
     def test_parity_direct_pol(self, gauss_im_pol, obs_direct, dtype):
         from ehtim.imaging.pol_imager_utils import polchisqgrad
@@ -3071,20 +3053,15 @@ class TestComputeChisqgradTerm(_ChisqTermFixtures):
                                      pol_solve=pol_solve)
         np.testing.assert_allclose(new, legacy, rtol=1e-12, atol=1e-15)
 
-    # ---- pol_solve defaulting ----
-
-    def test_pol_grad_default_pol_solve(self, gauss_im_pol, obs_direct):
-        """Omitting pol_solve uses an all-ones default (full Stokes block)."""
-        from ehtim.imaging.pol_imager_utils import polchisqgrad
+    def test_pol_grad_missing_pol_solve_raises(self, gauss_im_pol, obs_direct):
+        """Pol grad requires explicit pol_solve; no hidden default."""
         mask = self._full_mask(gauss_im_pol)
         A, data, sigma = self._data_tuple(obs_direct, gauss_im_pol, mask, 'pvis',
                                           'direct', 'IP')
         imcur = self._imcur_pol(gauss_im_pol)
-        legacy = polchisqgrad(imcur, A, data, sigma, 'pvis', ttype='direct',
-                              mask=mask, pol_solve=np.ones(4, dtype=int))
-        new = compute_chisqgrad_term(imcur, 'pvis', A, data, sigma,
-                                     ttype='direct', mask=mask)
-        np.testing.assert_allclose(new, legacy, rtol=1e-12, atol=1e-15)
+        with pytest.raises(Exception, match="requires explicit pol_solve"):
+            compute_chisqgrad_term(imcur, 'pvis', A, data, sigma,
+                                   ttype='direct', mask=mask)
 
 
 class TestPolSolveBlock:

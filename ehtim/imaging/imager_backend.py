@@ -705,11 +705,7 @@ class ImagerInitState(NamedTuple):
     reffreq: float               # may be re-bound to init.rf when mf=True
 
 
-# Dispatch table for compute_chisqdata_term.
-# Maps (dtype, ttype) to the leaf helper that produces (data, sigma, A).
-# Standard dtypes route to imutils helpers; polarimetric dtypes (pvis/m/vvis)
-# route to polutils helpers. `logamp` aliases `amp` (same data product).
-# Pol dtypes have no `fast` ttype -- polchisqdata does not support FFT.
+# `logamp` aliases `amp` (same data product). Pol dtypes have no `fast`.
 _CHISQDATA_DISPATCH = {
     'vis':          {'direct': imutils.chisqdata_vis,
                      'fast':   imutils.chisqdata_vis_fft,
@@ -808,17 +804,12 @@ def compute_chisqdata_term(obs, prior, mask, dtype, ttype='direct', pol='I', **k
     return helper(obs, prior, pol=pol, **kwargs)
 
 
-# Dtypes whose `fast` leaf is not preceded by an FFT pre-compute step. The diag
-# variants index the gridded image directly per-baseline, so the orchestrator
-# passes imvec (not the pre-FFT'd vis_arr). Mirrors imager_utils.chisq lines 81 / 95.
+# _diag leaves index the gridded image directly per-baseline; their `fast`
+# variants take imvec rather than the pre-FFT'd vis_arr.
 _DIAG_DTYPES = frozenset({'cphase_diag', 'logcamp_diag'})
 
 
-# Dispatch table for compute_chisq_term + compute_chisqgrad_term. Maps
-# (dtype, ttype) to a (chisq_fn, chisqgrad_fn) pair, plus an `is_pol` flag.
-# Standard dtypes (`vis`, `amp`, ...) route to imutils leaves; polarimetric
-# (`pvis`, `m`, `vvis`) route to polutils leaves. Pol dtypes have no `fast`.
-# Phase 5 swaps entries in place to register JAX backends.
+# Pol dtypes have no `fast`; entries are (chisq_fn, chisqgrad_fn).
 _CHISQ_DISPATCH = {
     'vis':          {'is_pol': False,
                      'direct': (imutils.chisq_vis,          imutils.chisqgrad_vis),
@@ -934,8 +925,7 @@ def compute_chisq_term(imcur, dtype, A, data, sigma, ttype='direct', mask=None):
 
     imvec = imcur if (is_pol or imcur.ndim == 1) else imcur[0]
 
-    # Embed onto full grid for fast / nfft if a partial mask was supplied.
-    # Legacy chisq / polchisq both use randomfloor=True to break TV singularities.
+    # randomfloor=True breaks TV-regularizer gradient singularities.
     if (ttype != 'direct' and mask is not None
             and len(mask) > 0 and np.any(np.invert(mask))):
         if is_pol:
@@ -943,8 +933,6 @@ def compute_chisq_term(imcur, dtype, A, data, sigma, ttype='direct', mask=None):
         else:
             imvec = imutils.embed(imvec, mask, randomfloor=True)
 
-    # FFT pre-compute for the standard `fast` path (except _diag dtypes, whose
-    # leaves index the gridded image directly). Pol has no `fast` branch.
     if ttype == 'fast' and dtype not in _DIAG_DTYPES:
         imvec = obsh.fft_imvec(imvec, A[0])
 
@@ -955,9 +943,11 @@ def compute_chisqgrad_term(imcur, dtype, A, data, sigma, ttype='direct',
                            mask=None, pol_solve=None):
     """Single chi^2-gradient dispatcher. See compute_chisq_term.
 
-    Pol grad helpers take an extra `pol_solve` arg (Stokes block of which_solve);
-    standard grad helpers do not. Returned gradient is sliced back through `mask`
-    for fast / nfft to match the legacy chisqgrad / polchisqgrad return shapes:
+    For pol dtypes, `pol_solve` (the Stokes block of which_solve) must be
+    supplied explicitly -- there is no principled default since the right
+    value depends on the imager's pol mode. Standard grad helpers ignore
+    `pol_solve`. Returned gradient is sliced back through `mask` for
+    fast / nfft to match the legacy chisqgrad / polchisqgrad return shapes:
     pol grads are (4, n_masked); standard grads are (n_masked,).
     """
     _, chisqgrad_fn, is_pol = _lookup_chisq_entry(dtype, ttype)
@@ -976,15 +966,15 @@ def compute_chisqgrad_term(imcur, dtype, A, data, sigma, ttype='direct',
         imvec = obsh.fft_imvec(imvec, A[0])
 
     if is_pol:
-        # pol_solve is positional in the pol grad leaves; default to all-ones
-        # over the Stokes block if not supplied (matches polchisqgrad's default).
         if pol_solve is None:
-            pol_solve = np.ones(4, dtype=int)
+            raise Exception(
+                f"compute_chisqgrad_term requires explicit pol_solve for "
+                f"polarimetric dtype {dtype!r}"
+            )
         grad = chisqgrad_fn(imvec, A, data, sigma, pol_solve)
     else:
         grad = chisqgrad_fn(imvec, A, data, sigma)
 
-    # Mask-back gradient onto the solver subspace for fast / nfft.
     if ttype != 'direct' and has_partial_mask:
         grad = grad[:, mask] if is_pol else grad[mask]
 
@@ -1321,9 +1311,7 @@ def compute_chisqgrad_dict(imcur, dat_term_keys,
     """
     chi2grad_dict = {}
     pol_solve = _pol_solve_block(which_solve, pol)
-    # Zero rows for bundling standard-dtype Stokes-I gradient into a (4, nimage)
-    # pol block when imaging is polarimetric. np.array((...)) below copies, so
-    # sharing zero_row across iterations is safe.
+    # np.array((...)) below copies, so sharing zero_row across iterations is safe.
     zero_row = np.zeros(nimage)
     is_pol_mode = pol in POLARIZATION_MODES
     for dname in dat_term_keys:
@@ -1340,9 +1328,8 @@ def compute_chisqgrad_dict(imcur, dat_term_keys,
                 ttype=ttype, mask=embed_mask, pol_solve=pol_solve,
             )
 
-            # Standard dtypes return (nimage,); wrap into (4, nimage) when the
-            # imager is in polarimetric mode so the regularizer + mf chains
-            # see a uniform Stokes block layout.
+            # Pad standard (nimage,) grad to (4, nimage) Stokes block so the
+            # regularizer + mf chains see a uniform layout.
             if dname in DATATERMS and is_pol_mode:
                 chi2grad = np.array((chi2grad, zero_row, zero_row, zero_row))
 
