@@ -2981,6 +2981,18 @@ class TestComputeChisqTerm(_ChisqTermFixtures):
         with pytest.raises(Exception, match="Possible ttype values"):
             compute_chisq_term(imcur, 'vis', None, None, None, ttype='bogus')
 
+    def test_1d_imcur_standard_dtype(self, gauss_im, obs_direct):
+        """Non-pol mode passes a 1D imcur; standard dtype consumes it directly."""
+        from ehtim.imaging.imager_utils import chisq
+        mask = self._full_mask(gauss_im)
+        A, data, sigma = self._data_tuple(obs_direct, gauss_im, mask, 'vis',
+                                          'direct', 'I')
+        imcur_1d = gauss_im.imvec  # 1D, non-pol mode
+        legacy = chisq(imcur_1d, A, data, sigma, 'vis', ttype='direct', mask=mask)
+        new = compute_chisq_term(imcur_1d, 'vis', A, data, sigma,
+                                 ttype='direct', mask=mask)
+        np.testing.assert_allclose(new, legacy, rtol=1e-12, atol=1e-15)
+
 
 class TestComputeChisqgradTerm(_ChisqTermFixtures):
     """Bit-identical parity vs imutils.chisqgrad / polutils.polchisqgrad."""

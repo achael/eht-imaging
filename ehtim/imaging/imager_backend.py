@@ -903,15 +903,18 @@ def _lookup_chisq_entry(dtype, ttype):
 def compute_chisq_term(imcur, dtype, A, data, sigma, ttype='direct', mask=None):
     """Single chi^2 dispatcher unifying chisq + polchisq.
 
-    Pol dtypes consume the full (4, npix) imcur (or its (10, npix) multi-freq
-    extension); standard dtypes consume imcur[0]. Mask embedding and FFT
-    pre-computation match the legacy chisq / polchisq bodies exactly.
+    Pol dtypes consume the full multi-row imcur ((4, npix) single-frequency
+    or (10, npix) multi-frequency). Standard dtypes consume the Stokes-I
+    row: `imcur[0]` if imcur is 2D (pol-mode imager solving for several
+    Stokes), or imcur itself if 1D (non-pol mode, single Stokes-I solver).
+    Mask embedding and FFT pre-computation match the legacy chisq /
+    polchisq bodies exactly.
 
     Parameters
     ----------
     imcur : np.ndarray
-        Multi-row image array. Pol dtypes read all rows; standard dtypes
-        read row 0 (Stokes I) only.
+        Solver-space image. 1D (npix,) in non-pol mode, 2D (nsolve, npix)
+        in pol / mf-pol mode.
     dtype : str
         One of the keys of _CHISQ_DISPATCH (12 dtypes).
     A, data, sigma
@@ -929,7 +932,7 @@ def compute_chisq_term(imcur, dtype, A, data, sigma, ttype='direct', mask=None):
     """
     chisq_fn, _, is_pol = _lookup_chisq_entry(dtype, ttype)
 
-    imvec = imcur if is_pol else imcur[0]
+    imvec = imcur if (is_pol or imcur.ndim == 1) else imcur[0]
 
     # Embed onto full grid for fast / nfft if a partial mask was supplied.
     # Legacy chisq / polchisq both use randomfloor=True to break TV singularities.
@@ -959,7 +962,7 @@ def compute_chisqgrad_term(imcur, dtype, A, data, sigma, ttype='direct',
     """
     _, chisqgrad_fn, is_pol = _lookup_chisq_entry(dtype, ttype)
 
-    imvec = imcur if is_pol else imcur[0]
+    imvec = imcur if (is_pol or imcur.ndim == 1) else imcur[0]
     has_partial_mask = (mask is not None and len(mask) > 0
                         and np.any(np.invert(mask)))
 
@@ -1262,41 +1265,17 @@ def compute_chisq_dict(imcur, dat_term_keys,
     """
     chi2_dict = {}
     for dname in dat_term_keys:
-        # Loop over all observations
         for i in range(n_obs):
-            if n_obs == 1:
-                dname_key = dname
-            else:
-                dname_key = dname + (f'_{i}')
-
-            # get data products
-            (data, sigma, A) = data_tuples[dname_key]
-
-            # get current multifrequency image
-            if mf:
-                logfreqratio = logfreqratio_list[i]
-                imcur_nu = mfutils.image_at_freq(imcur, logfreqratio)
-            else:
-                imcur_nu = imcur
-
-            # Polarization chi^2 terms
-            if dname in DATATERMS_POL:
-                chi2 = polutils.polchisq(imcur_nu, A, data, sigma, dname,
-                                         ttype=ttype, mask=embed_mask)
-
-            # Single Polarization chi^2 terms
-            elif dname in DATATERMS:
-                if pol in POLARIZATION_MODES:
-                    imcur_nu_I = imcur_nu[0]
-                else:
-                    imcur_nu_I = imcur_nu
-                chi2 = imutils.chisq(imcur_nu_I, A, data, sigma, dname,
-                                     ttype=ttype, mask=embed_mask)
-
-            else:
-                raise Exception(f"data term {dname} not recognized!")
-
-            chi2_dict[dname_key] = chi2
+            dname_key = dname if n_obs == 1 else f"{dname}_{i}"
+            data, sigma, A = data_tuples[dname_key]
+            imcur_nu = (
+                mfutils.image_at_freq(imcur, logfreqratio_list[i])
+                if mf else imcur
+            )
+            chi2_dict[dname_key] = compute_chisq_term(
+                imcur_nu, dname, A, data, sigma,
+                ttype=ttype, mask=embed_mask,
+            )
 
     return chi2_dict
 
@@ -1341,59 +1320,36 @@ def compute_chisqgrad_dict(imcur, dat_term_keys,
         Mapping from dname (or dname_i for multi-obs) to chi^2 gradient array.
     """
     chi2grad_dict = {}
-    # Zero row reused in the polarization-bundled Stokes-I gradient; safe to share
-    # because np.array((...)) below copies into a new (4, nimage) array each time.
+    pol_solve = _pol_solve_block(which_solve, pol)
+    # Zero rows for bundling standard-dtype Stokes-I gradient into a (4, nimage)
+    # pol block when imaging is polarimetric. np.array((...)) below copies, so
+    # sharing zero_row across iterations is safe.
     zero_row = np.zeros(nimage)
+    is_pol_mode = pol in POLARIZATION_MODES
     for dname in dat_term_keys:
-        # Loop over all observations
         for i in range(n_obs):
-            if n_obs == 1:
-                dname_key = dname
-            else:
-                dname_key = dname + (f'_{i}')
+            dname_key = dname if n_obs == 1 else f"{dname}_{i}"
+            data, sigma, A = data_tuples[dname_key]
+            imcur_nu = (
+                mfutils.image_at_freq(imcur, logfreqratio_list[i])
+                if mf else imcur
+            )
 
-            # get data products
-            (data, sigma, A) = data_tuples[dname_key]
+            chi2grad = compute_chisqgrad_term(
+                imcur_nu, dname, A, data, sigma,
+                ttype=ttype, mask=embed_mask, pol_solve=pol_solve,
+            )
 
-            # get current multifrequency image
+            # Standard dtypes return (nimage,); wrap into (4, nimage) when the
+            # imager is in polarimetric mode so the regularizer + mf chains
+            # see a uniform Stokes block layout.
+            if dname in DATATERMS and is_pol_mode:
+                chi2grad = np.array((chi2grad, zero_row, zero_row, zero_row))
+
             if mf:
-                logfreqratio = logfreqratio_list[i]
-                imcur_nu = mfutils.image_at_freq(imcur, logfreqratio)
-            else:
-                imcur_nu = imcur
-
-            # Polarimetric chi^2 gradients
-            if dname in DATATERMS_POL:
-                if mf:
-                    pol_solve = which_solve[0:4]
-                else:
-                    pol_solve = which_solve
-                chi2grad = polutils.polchisqgrad(imcur_nu, A, data, sigma, dname,
-                                                 ttype=ttype, mask=embed_mask,
-                                                 pol_solve=pol_solve)
-
-            # Single polarization chi^2 gradients
-            elif dname in DATATERMS:
-                if pol in POLARIZATION_MODES:  # polarization
-                    imcur_nu_I = imcur_nu[0]
-                else:
-                    imcur_nu_I = imcur_nu
-
-                chi2grad = imutils.chisqgrad(imcur_nu_I, A, data, sigma, dname,
-                                             ttype=ttype, mask=embed_mask)
-
-                # If imaging Stokes I with polarization simultaneously, bundle the gradient
-                if pol in POLARIZATION_MODES:
-                    chi2grad = np.array((chi2grad, zero_row, zero_row, zero_row))
-
-            else:
-                raise Exception(f"data term {dname} not recognized!")
-
-            # If multifrequency imaging,
-            # transform the image gradients for all the solved quantities
-            if mf:
-                logfreqratio = logfreqratio_list[i]
-                chi2grad = mfutils.mf_all_grads_chain(chi2grad, imcur_nu, imcur, logfreqratio)
+                chi2grad = mfutils.mf_all_grads_chain(
+                    chi2grad, imcur_nu, imcur, logfreqratio_list[i],
+                )
 
             chi2grad_dict[dname_key] = np.array(chi2grad)
 
