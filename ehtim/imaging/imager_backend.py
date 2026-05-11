@@ -704,6 +704,100 @@ class ImagerInitState(NamedTuple):
     reffreq: float               # may be re-bound to init.rf when mf=True
 
 
+# Dispatch table for compute_chisqdata_term.
+# Maps (dtype, ttype) to the leaf helper that produces (data, sigma, A).
+# Standard dtypes route to imutils helpers; polarimetric dtypes (pvis/m/vvis)
+# route to polutils helpers. `logamp` aliases `amp` (same data product).
+# Pol dtypes have no `fast` ttype -- polchisqdata does not support FFT.
+_CHISQDATA_DISPATCH = {
+    'vis':          {'direct': imutils.chisqdata_vis,
+                     'fast':   imutils.chisqdata_vis_fft,
+                     'nfft':   imutils.chisqdata_vis_nfft},
+    'amp':          {'direct': imutils.chisqdata_amp,
+                     'fast':   imutils.chisqdata_amp_fft,
+                     'nfft':   imutils.chisqdata_amp_nfft},
+    'logamp':       {'direct': imutils.chisqdata_amp,
+                     'fast':   imutils.chisqdata_amp_fft,
+                     'nfft':   imutils.chisqdata_amp_nfft},
+    'bs':           {'direct': imutils.chisqdata_bs,
+                     'fast':   imutils.chisqdata_bs_fft,
+                     'nfft':   imutils.chisqdata_bs_nfft},
+    'cphase':       {'direct': imutils.chisqdata_cphase,
+                     'fast':   imutils.chisqdata_cphase_fft,
+                     'nfft':   imutils.chisqdata_cphase_nfft},
+    'cphase_diag':  {'direct': imutils.chisqdata_cphase_diag,
+                     'fast':   imutils.chisqdata_cphase_diag_fft,
+                     'nfft':   imutils.chisqdata_cphase_diag_nfft},
+    'camp':         {'direct': imutils.chisqdata_camp,
+                     'fast':   imutils.chisqdata_camp_fft,
+                     'nfft':   imutils.chisqdata_camp_nfft},
+    'logcamp':      {'direct': imutils.chisqdata_logcamp,
+                     'fast':   imutils.chisqdata_logcamp_fft,
+                     'nfft':   imutils.chisqdata_logcamp_nfft},
+    'logcamp_diag': {'direct': imutils.chisqdata_logcamp_diag,
+                     'fast':   imutils.chisqdata_logcamp_diag_fft,
+                     'nfft':   imutils.chisqdata_logcamp_diag_nfft},
+    'pvis':         {'direct': polutils.chisqdata_pvis,
+                     'nfft':   polutils.chisqdata_pvis_nfft},
+    'm':            {'direct': polutils.chisqdata_m,
+                     'nfft':   polutils.chisqdata_m_nfft},
+    'vvis':         {'direct': polutils.chisqdata_vvis,
+                     'nfft':   polutils.chisqdata_vvis_nfft},
+}
+
+
+def compute_chisqdata_term(obs, prior, mask, dtype, ttype='direct', pol='I', **kwargs):
+    """Single chisqdata dispatcher unifying chisqdata + polchisqdata.
+
+    Standard dtypes route to imutils.chisqdata_*; pol dtypes route to
+    polutils.chisqdata_*. Mask handling is asymmetric across the legacy
+    leaves (standard `fast`/`nfft` do not accept a mask param); this
+    function hides that.
+
+    Parameters
+    ----------
+    obs : ehtim.obsdata.Obsdata
+    prior : ehtim.image.Image
+    mask : np.ndarray of bool
+        Embedding mask. Passed positionally to direct + pol-nfft helpers;
+        ignored for standard fast/nfft (those helpers do not take mask).
+    dtype : str
+        Must be a key of _CHISQDATA_DISPATCH (12 dtypes).
+    ttype : {'direct', 'fast', 'nfft'}
+        'fast' is not supported for polarimetric dtypes.
+    pol : str
+        Polarization mode. Standard dtypes use this to unpack the right
+        Stokes (I/Q/U/V) data; pol dtypes absorb it via **kwargs (inert).
+    **kwargs
+        Per-dtype tuning knobs forwarded to the leaf helper. See
+        imager_utils.chisqdata for the standard kwarg list and
+        pol_imager_utils.chisqdata_pvis_nfft for the FFT-related kwargs.
+
+    Returns
+    -------
+    (data, sigma, A) tuple, same shape as the legacy chisqdata dispatchers.
+    """
+    if ttype not in ('direct', 'fast', 'nfft'):
+        raise Exception("Possible ttype values are 'fast', 'direct', 'nfft'!")
+
+    try:
+        by_ttype = _CHISQDATA_DISPATCH[dtype]
+    except KeyError:
+        raise Exception(f"data term {dtype} not recognized!")
+
+    if ttype not in by_ttype:
+        raise Exception(f"ttype={ttype!r} not supported for dtype={dtype!r}")
+
+    helper = by_ttype[ttype]
+    is_pol = dtype in DATATERMS_POL
+
+    # Standard direct + all pol leaves take mask positionally.
+    # Standard fast/nfft leaves omit it (they index uv coords from obs directly).
+    if is_pol or ttype == 'direct':
+        return helper(obs, prior, mask, pol=pol, **kwargs)
+    return helper(obs, prior, pol=pol, **kwargs)
+
+
 def compute_data_tuples(obslist, prior, embed_mask, dat_term_keys, pol,
                         ttype, data_weighting_params, fft_params):
     """Pre-compute (data, sigma, A) tuples for every (data-term, observation) pair.
