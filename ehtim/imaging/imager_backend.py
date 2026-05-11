@@ -343,15 +343,16 @@ def make_initarr(image, mask, norm_init=False, flux=1,
         init_phi = np.arctan2(init_u, init_q)
         init_psi = np.arctan2(init_v, init_P)
 
-        if not(np.any(init_rho!=0)) and randompol_lin:
-            print("No polarimetric image in init!")
-            print("--initializing with 20% pol and random orientation!")
+        # Caller (compute_init_state) decides when random-pol init applies.
+        # Here we just honor the flag: True means "use random pol initialization
+        # regardless of init image content"; False means "use init image's pol".
+        if randompol_lin:
+            print("Initializing linear polarization with 20% pol and random orientation!")
             init_rho = meanpol * (np.ones(nimage) + sigmapol * np.random.rand(nimage))
             init_phi = np.zeros(nimage) + sigmapol * np.random.rand(nimage)
 
-        if not(np.any(init_psi!=0)) and randompol_circ:
-            print("No circular polarization image in init!")
-            print("--initializing with random values!")
+        if randompol_circ:
+            print("Initializing circular polarization with random values!")
             init_rho = meanpol * (np.ones(nimage) + sigmapol * np.random.rand(nimage))
             init_psi = np.zeros(nimage) + sigmapol * np.random.rand(nimage)
 
@@ -687,8 +688,22 @@ def compute_init_state(
     )
 
     is_pol = pol in POLARIZATION_MODES
-    randompol_lin = is_pol and (('P' in pol) or ('QU' in pol))
-    randompol_circ = is_pol and ('V' in pol)
+
+    # Decide here (not inside make_initarr) whether random-pol initialization
+    # is needed. Random init only kicks in when (a) the imager is in
+    # polarimetric mode for that Stokes block, AND (b) init_image has no
+    # nonzero polarization to use as a starting point. If init_image already
+    # carries Q/U/V, make_initarr will use those values directly.
+    init_has_pol_lin = is_pol and (
+        (len(init_image.qvec) > 0 and np.any(init_image.qvec != 0))
+        or (len(init_image.uvec) > 0 and np.any(init_image.uvec != 0))
+        or (len(init_image.vvec) > 0 and np.any(init_image.vvec != 0))
+    )
+    init_has_pol_circ = is_pol and (
+        len(init_image.vvec) > 0 and np.any(init_image.vvec != 0)
+    )
+    randompol_lin = is_pol and (('P' in pol) or ('QU' in pol)) and not init_has_pol_lin
+    randompol_circ = is_pol and ('V' in pol) and not init_has_pol_circ
 
     init_phys = make_initarr(
         init_image, embed_mask,
