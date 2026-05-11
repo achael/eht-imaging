@@ -22,6 +22,7 @@ from ehtim.imaging.imager_backend import (
     compute_reggrad_dict,
     compute_which_solve,
     embed_imarr,
+    make_initarr,
     pack_imarr,
     transform_gradients,
     transform_imarr,
@@ -2123,4 +2124,120 @@ class TestTransformImarr:
         bad = np.zeros((2, 5))  # nimage = 2 is not a valid layout
         with pytest.raises(Exception, match="either 1, 3, 4, or 10"):
             transform_imarr(bad, ["log"], np.array([1, 0, 0, 0]))
+
+
+class TestMakeInitarr:
+    """Direct unit tests for make_initarr.
+
+    Builds the initial-image array passed to the solver: a 1D Stokes-I
+    vector (single-frequency, single-polarization), a (4, npix) array
+    (single-frequency, full pol), a (3, npix) array (multifreq Stokes I),
+    or a (10, npix) array (multifreq + full pol).
+
+    The polarimetric branch optionally re-initializes rho and phi/psi from
+    `np.random.rand` when `randompol_lin` or `randompol_circ` is set;
+    those tests seed `np.random.seed(...)` directly so the assertions are
+    deterministic. JAX migration will replace this with a
+    `jax.random.PRNGKey` arg.
+    """
+
+    def test_stokes_only_no_norm(self, gauss_im):
+        """No pol, no mf, no norm: initarr is the masked Stokes-I vector."""
+        mask = np.ones(gauss_im.imvec.size, dtype=bool)
+        out = make_initarr(gauss_im, mask, norm_init=False)
+        assert out.ndim == 1
+        np.testing.assert_array_equal(out, gauss_im.imvec)
+
+    def test_stokes_only_norm_init(self, gauss_im):
+        """norm_init rescales the masked Stokes-I vector to sum exactly to `flux`."""
+        mask = np.ones(gauss_im.imvec.size, dtype=bool)
+        target_flux = 2.5
+        out = make_initarr(gauss_im, mask, norm_init=True, flux=target_flux)
+        np.testing.assert_allclose(out.sum(), target_flux, rtol=1e-12)
+
+    def test_stokes_only_with_mask(self, gauss_im):
+        """Mask selects a subset of pixels; output length matches the mask."""
+        mask = np.zeros(gauss_im.imvec.size, dtype=bool)
+        mask[: mask.size // 2] = True
+        out = make_initarr(gauss_im, mask, norm_init=False)
+        assert out.shape == (mask.sum(),)
+        np.testing.assert_array_equal(out, gauss_im.imvec[mask])
+
+    def test_pol_shape_and_rows(self, gauss_im_pol):
+        """pol=True, mf=False: returns (4, npix) with (I, rho, phi, psi).
+
+        Loaded gauss_im_pol has nonzero Q/U/V, so without random reinit
+        rho and phi are populated from image content rather than RNG.
+        """
+        mask = np.ones(gauss_im_pol.imvec.size, dtype=bool)
+        out = make_initarr(gauss_im_pol, mask, pol=True)
+        assert out.shape == (4, mask.sum())
+        # init_rho is sqrt(Q^2 + U^2 + V^2) / I; positive everywhere here.
+        assert np.all(out[1] >= 0)
+        # phi = arctan2(U, Q) in [-pi, pi].
+        assert np.all((out[2] >= -np.pi) & (out[2] <= np.pi))
+
+    def test_pol_randompol_lin_seeded(self, gauss_im_pol):
+        """randompol_lin=True with seeded RNG is deterministic."""
+        mask = np.ones(gauss_im_pol.imvec.size, dtype=bool)
+
+        np.random.seed(42)
+        out1 = make_initarr(gauss_im_pol, mask, pol=True, randompol_lin=True,
+                            meanpol=0.2, sigmapol=1e-2)
+        np.random.seed(42)
+        out2 = make_initarr(gauss_im_pol, mask, pol=True, randompol_lin=True,
+                            meanpol=0.2, sigmapol=1e-2)
+        np.testing.assert_array_equal(out1, out2)
+
+        # rho ~ meanpol * (1 + sigmapol * U[0,1]); within (meanpol, meanpol*(1+sigmapol)).
+        rho = out1[1]
+        assert np.all(rho >= 0.2)
+        assert np.all(rho <= 0.2 * (1 + 1e-2))
+
+    def test_pol_randompol_lin_different_seeds_differ(self, gauss_im_pol):
+        """Different seeds yield different random pol initializations."""
+        mask = np.ones(gauss_im_pol.imvec.size, dtype=bool)
+        np.random.seed(1)
+        out1 = make_initarr(gauss_im_pol, mask, pol=True, randompol_lin=True)
+        np.random.seed(2)
+        out2 = make_initarr(gauss_im_pol, mask, pol=True, randompol_lin=True)
+        assert not np.array_equal(out1[1], out2[1])
+
+    def test_pol_randompol_circ_seeded(self, gauss_im_pol):
+        """randompol_circ writes rho and psi (slot 3), not phi (slot 2)."""
+        mask = np.ones(gauss_im_pol.imvec.size, dtype=bool)
+        np.random.seed(7)
+        out = make_initarr(gauss_im_pol, mask, pol=True, randompol_circ=True,
+                           meanpol=0.2, sigmapol=1e-2)
+        rho = out[1]
+        psi = out[3]
+        assert np.all(rho >= 0.2)
+        assert np.all(rho <= 0.2 * (1 + 1e-2))
+        assert np.all(np.abs(psi) <= 1e-2)
+
+    def test_mf_stokes_shape(self, gauss_im):
+        """mf=True, pol=False: returns (3, npix) with (I, alpha, beta).
+
+        The base gauss_im has no specvec / curvvec, so alpha and beta
+        are filled with zeros.
+        """
+        mask = np.ones(gauss_im.imvec.size, dtype=bool)
+        out = make_initarr(gauss_im, mask, mf=True)
+        assert out.shape == (3, mask.sum())
+        np.testing.assert_array_equal(out[1], 0.0)
+        np.testing.assert_array_equal(out[2], 0.0)
+
+    def test_mf_pol_shape(self, gauss_im_pol):
+        """mf=True, pol=True: returns (10, npix) layout (I, rho, phi, psi,
+        alpha, beta, alphap, betap, rm, cm)."""
+        mask = np.ones(gauss_im_pol.imvec.size, dtype=bool)
+        out = make_initarr(gauss_im_pol, mask, mf=True, pol=True)
+        assert out.shape == (10, mask.sum())
+        # Stokes I row matches the (norm_init=False default) raw imvec.
+        np.testing.assert_array_equal(out[0], gauss_im_pol.imvec[mask])
+        # Spectral coefficients default to zero on an image with no specvec.
+        np.testing.assert_array_equal(out[4], 0.0)
+        np.testing.assert_array_equal(out[5], 0.0)
+        np.testing.assert_array_equal(out[8], 0.0)
+        np.testing.assert_array_equal(out[9], 0.0)
 
