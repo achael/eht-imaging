@@ -28,6 +28,7 @@ from ehtim.imaging.imager_backend import (
     transform_imarr,
     transform_imarr_inverse,
     unpack_imarr,
+    validate_params,
 )
 
 # Parametrize over square, tall, and wide images
@@ -2240,4 +2241,266 @@ class TestMakeInitarr:
         np.testing.assert_array_equal(out[5], 0.0)
         np.testing.assert_array_equal(out[8], 0.0)
         np.testing.assert_array_equal(out[9], 0.0)
+
+
+class TestValidateParams:
+    """Direct unit tests for validate_params.
+
+    Pure validator extracted from Imager.check_params. Each test pins one
+    of the 24 raise paths by mutating a single field of a known-valid
+    baseline config. Exception messages are checked verbatim so any drift
+    in wording is a test failure.
+
+    Baseline: Stokes-I direct-DFT imaging with the basic data + reg terms
+    that Imager() defaults to. Each test calls _call(**overrides).
+    """
+
+    @staticmethod
+    def _baseline(prior, init=None):
+        return dict(
+            prior=prior,
+            init=init if init is not None else prior,
+            pol='I',
+            transforms=['log'],
+            dat_term_keys=['vis'],
+            reg_term_keys=['simple'],
+            ttype='direct',
+            mf=False,
+            mf_order=0,
+            mf_order_pol=0,
+            freq_list=[230e9],
+        )
+
+    @staticmethod
+    def _call(**kwargs):
+        return validate_params(**kwargs)
+
+    # Sanity: the baseline does not raise.
+    def test_baseline_ok(self, gauss_im):
+        self._call(**self._baseline(gauss_im))
+
+    # ---- image cross-checks ----
+
+    def test_dim_mismatch_raises(self, gauss_im):
+        bigger = gauss_im.regrid_image(gauss_im.fovx(), 64)
+        with pytest.raises(Exception,
+                           match="Initial image does not match dimensions of the prior image!"):
+            self._call(**self._baseline(gauss_im, init=bigger))
+
+    def test_freq_mismatch_raises(self, gauss_im):
+        other = gauss_im.copy()
+        other.rf = 345e9
+        with pytest.raises(Exception,
+                           match="Initial image does not have same frequency as prior image!"):
+            self._call(**self._baseline(gauss_im, init=other))
+
+    @staticmethod
+    def _circ_image(gauss_im):
+        """Build a polrep='circ' image with the same grid as gauss_im."""
+        circ_arr = gauss_im.imvec.reshape(gauss_im.ydim, gauss_im.xdim)
+        return eh.image.Image(
+            circ_arr, gauss_im.psize, gauss_im.ra, gauss_im.dec,
+            polrep='circ', pol_prim='RR', rf=gauss_im.rf,
+        )
+
+    def test_polrep_mismatch_raises(self, gauss_im):
+        other = self._circ_image(gauss_im)
+        with pytest.raises(Exception,
+                           match="Initial image polrep does not match prior polrep!"):
+            self._call(**self._baseline(gauss_im, init=other))
+
+    # ---- polrep × pol consistency ----
+
+    def test_circ_polrep_bad_pol_raises(self, gauss_im):
+        circ = self._circ_image(gauss_im)
+        cfg = self._baseline(circ)
+        cfg['pol'] = 'I'  # invalid for circ
+        with pytest.raises(Exception,
+                           match="polrep is 'circ': pol_next must be 'RR' or 'LL'"):
+            self._call(**cfg)
+
+    def test_stokes_polrep_bad_pol_raises(self, gauss_im):
+        cfg = self._baseline(gauss_im)
+        cfg['pol'] = 'XX'  # not a valid stokes pol_next
+        with pytest.raises(Exception,
+                           match="polrep is 'stokes': pol_next must be in"):
+            self._call(**cfg)
+
+    # ---- transform × pol consistency ----
+
+    def test_log_with_stokes_q_raises(self, gauss_im):
+        cfg = self._baseline(gauss_im)
+        cfg['pol'] = 'Q'
+        cfg['transforms'] = ['log']
+        with pytest.raises(Exception,
+                           match="Cannot image Stokes Q, U, V with log image transformation!"):
+            self._call(**cfg)
+
+    def test_gs_or_simple_reg_with_stokes_v_raises(self, gauss_im):
+        cfg = self._baseline(gauss_im)
+        cfg['pol'] = 'V'
+        cfg['transforms'] = []  # avoid the log-on-V raise above
+        cfg['reg_term_keys'] = ['simple']
+        with pytest.raises(Exception,
+                           match="'simple' and 'gs' regularizers do not work"):
+            self._call(**cfg)
+
+    # ---- ttype ----
+
+    def test_invalid_ttype_raises(self, gauss_im):
+        cfg = self._baseline(gauss_im)
+        cfg['ttype'] = 'bogus'
+        with pytest.raises(Exception,
+                           match=r"Possible ttype values are 'fast', 'direct','nfft'!"):
+            self._call(**cfg)
+
+    # ---- multifrequency ----
+
+    def test_mf_single_freq_raises(self, gauss_im):
+        cfg = self._baseline(gauss_im)
+        cfg['mf'] = True
+        cfg['freq_list'] = [230e9]  # only one freq
+        with pytest.raises(Exception,
+                           match="at least two frequencies for multifrequency imaging"):
+            self._call(**cfg)
+
+    def test_mf_order_bad_raises(self, gauss_im):
+        cfg = self._baseline(gauss_im)
+        cfg['mf'] = True
+        cfg['mf_order'] = 3
+        cfg['freq_list'] = [230e9, 345e9]
+        with pytest.raises(Exception, match=r"mf_order must be in \[0,1,2\]"):
+            self._call(**cfg)
+
+    def test_mf_pol_unsupported_pol_raises(self, gauss_im):
+        cfg = self._baseline(gauss_im)
+        cfg['mf'] = True
+        cfg['pol'] = 'IP'  # not in ['P', 'QU'] for mf pol
+        cfg['transforms'] = ['log', 'mcv']
+        cfg['ttype'] = 'direct'
+        cfg['freq_list'] = [230e9, 345e9]
+        with pytest.raises(Exception,
+                           match="only support pol_next=P for polarization multifrequency"):
+            self._call(**cfg)
+
+    def test_mf_order_pol_bad_raises(self, gauss_im):
+        cfg = self._baseline(gauss_im)
+        cfg['mf'] = True
+        cfg['pol'] = 'P'
+        cfg['transforms'] = ['mcv']
+        cfg['ttype'] = 'direct'
+        cfg['dat_term_keys'] = ['pvis']
+        cfg['reg_term_keys'] = ['msimple']
+        cfg['mf_order_pol'] = 3
+        cfg['freq_list'] = [230e9, 345e9]
+        with pytest.raises(Exception, match=r"mf_order_pol must be in \[0,1,2\]"):
+            self._call(**cfg)
+
+    # ---- pol × transform consistency ----
+
+    def test_p_without_mcv_raises(self, gauss_im):
+        cfg = self._baseline(gauss_im)
+        cfg['pol'] = 'IP'
+        cfg['transforms'] = ['log']
+        cfg['dat_term_keys'] = ['pvis']
+        cfg['reg_term_keys'] = ['msimple']
+        with pytest.raises(Exception, match=r"IP imaging requires 'mcv' transform!"):
+            self._call(**cfg)
+
+    def test_p_with_vcv_raises(self, gauss_im):
+        cfg = self._baseline(gauss_im)
+        cfg['pol'] = 'IP'
+        cfg['transforms'] = ['log', 'mcv', 'vcv']
+        cfg['dat_term_keys'] = ['pvis']
+        cfg['reg_term_keys'] = ['msimple']
+        with pytest.raises(Exception, match=r"Cannot do IP imaging with 'vcv' transform!"):
+            self._call(**cfg)
+
+    def test_p_with_polcv_raises(self, gauss_im):
+        cfg = self._baseline(gauss_im)
+        cfg['pol'] = 'IP'
+        cfg['transforms'] = ['log', 'mcv', 'polcv']
+        cfg['dat_term_keys'] = ['pvis']
+        cfg['reg_term_keys'] = ['msimple']
+        with pytest.raises(Exception,
+                           match=r"Cannot do IP imaging only with 'polcv' transform!"):
+            self._call(**cfg)
+
+    def test_v_without_vcv_raises(self, gauss_im):
+        cfg = self._baseline(gauss_im)
+        cfg['pol'] = 'IV'
+        cfg['transforms'] = ['log']
+        cfg['dat_term_keys'] = ['vvis']
+        cfg['reg_term_keys'] = ['msimple']
+        with pytest.raises(Exception, match=r"IV imaging requires 'vcv' transform!"):
+            self._call(**cfg)
+
+    def test_v_with_mcv_raises(self, gauss_im):
+        cfg = self._baseline(gauss_im)
+        cfg['pol'] = 'IV'
+        cfg['transforms'] = ['log', 'vcv', 'mcv']
+        cfg['dat_term_keys'] = ['vvis']
+        cfg['reg_term_keys'] = ['msimple']
+        with pytest.raises(Exception, match=r"Cannot do IV imaging only with 'mcv' transform!"):
+            self._call(**cfg)
+
+    def test_v_with_polcv_raises(self, gauss_im):
+        cfg = self._baseline(gauss_im)
+        cfg['pol'] = 'IV'
+        cfg['transforms'] = ['log', 'vcv', 'polcv']
+        cfg['dat_term_keys'] = ['vvis']
+        cfg['reg_term_keys'] = ['msimple']
+        with pytest.raises(Exception,
+                           match=r"Cannot do IV imaging only with 'polcv' transform!"):
+            self._call(**cfg)
+
+    def test_iquv_without_polcv_raises(self, gauss_im):
+        # IPV is in POLARIZATION_MODES but rejected by the earlier stokes-pol
+        # check (the valid-stokes list omits 'IPV'); the polcv guard is reached
+        # only via 'IQUV' for stokes-polrep images.
+        cfg = self._baseline(gauss_im)
+        cfg['pol'] = 'IQUV'
+        cfg['transforms'] = ['log']
+        cfg['dat_term_keys'] = ['pvis']
+        cfg['reg_term_keys'] = ['msimple']
+        with pytest.raises(Exception,
+                           match="Linear\\+Circular polarization imaging requires 'polcv' transform!"):
+            self._call(**cfg)
+
+    def test_pol_with_fast_ttype_raises(self, gauss_im):
+        cfg = self._baseline(gauss_im)
+        cfg['pol'] = 'IP'
+        cfg['transforms'] = ['log', 'mcv']
+        cfg['ttype'] = 'fast'
+        cfg['dat_term_keys'] = ['pvis']
+        cfg['reg_term_keys'] = ['msimple']
+        with pytest.raises(Exception,
+                           match="FFT not yet implemented in polarimetric imaging"):
+            self._call(**cfg)
+
+    # ---- data / regularizer term presence + validity ----
+
+    def test_missing_data_term_raises(self, gauss_im):
+        cfg = self._baseline(gauss_im)
+        cfg['dat_term_keys'] = []
+        with pytest.raises(Exception, match="Must have at least one data term!"):
+            self._call(**cfg)
+
+    def test_missing_reg_term_raises(self, gauss_im):
+        cfg = self._baseline(gauss_im)
+        cfg['reg_term_keys'] = []
+        with pytest.raises(Exception, match="Must have at least one regularizer term!"):
+            self._call(**cfg)
+
+    def test_invalid_data_term_raises(self, gauss_im):
+        cfg = self._baseline(gauss_im)
+        cfg['dat_term_keys'] = ['not_a_term']
+        with pytest.raises(Exception, match="Invalid data term: valid data terms are:"):
+            self._call(**cfg)
+
+    def test_invalid_reg_term_raises(self, gauss_im):
+        cfg = self._baseline(gauss_im)
+        cfg['reg_term_keys'] = ['not_a_reg']
+        with pytest.raises(Exception, match="Invalid regularizer: valid regularizers are:"):
+            self._call(**cfg)
 

@@ -1,21 +1,5 @@
 # imager_backend.py
 # Pure functional backend for imager.py
-# Extracted from imager.py; zero functional changes.
-#
-#    Copyright (C) 2018 Andrew Chael
-#
-#    This program is free software: you can redistribute it and/or modify
-#    it under the terms of the GNU General Public License as published by
-#    the Free Software Foundation, either version 3 of the License, or
-#    (at your option) any later version.
-#
-#    This program is distributed in the hope that it will be useful,
-#    but WITHOUT ANY WARRANTY; without even the implied warranty of
-#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-#    GNU General Public License for more details.
-#
-#    You should have received a copy of the GNU General Public License
-#    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 from typing import NamedTuple
 
@@ -402,6 +386,154 @@ def make_initarr(image, mask, norm_init=False, flux=1,
             initarr = np.array((init_I, init_a, init_b))
 
     return initarr
+
+
+def validate_params(prior, init, pol, transforms, dat_term_keys, reg_term_keys,
+                    ttype, mf, mf_order, mf_order_pol, freq_list):
+    """Validate imager configuration. Raises Exception on bad config.
+
+    Pure validator extracted from Imager.check_params. Exception messages
+    are preserved verbatim from the original implementation.
+
+    Parameters
+    ----------
+    prior, init : ehtim.image.Image
+        Prior (regularizer reference) and initial-value images. Must share
+        psize / xdim / ydim / rf / polrep.
+    pol : str
+        Polarization mode. For polrep='stokes': one of 'I', 'Q', 'U', 'V',
+        'P', 'IP', 'IQU', 'IV', 'IQUV'. For polrep='circ': 'RR' or 'LL'.
+    transforms : iterable of str
+        Active solver transforms (subset of 'log', 'mcv', 'vcv', 'polcv').
+    dat_term_keys, reg_term_keys : iterable of str
+        Data term and regularizer term keys actually requested.
+    ttype : str
+        Fourier transform type: 'direct', 'fast', or 'nfft'.
+    mf : bool
+        Multifrequency mode flag.
+    mf_order, mf_order_pol : int
+        Multifrequency expansion orders (must be in [0, 1, 2]).
+    freq_list : list of float
+        Per-observation reference frequencies. For mf=True, must contain
+        at least two distinct values.
+    """
+    if ((prior.psize != init.psize) or
+        (prior.xdim != init.xdim) or
+        (prior.ydim != init.ydim)):
+        raise Exception("Initial image does not match dimensions of the prior image!")
+
+    if (prior.rf != init.rf):
+        raise Exception("Initial image does not have same frequency as prior image!")
+
+    if (prior.polrep != init.polrep):
+        raise Exception(
+            "Initial image polrep does not match prior polrep!")
+
+    if (prior.polrep == 'circ' and pol not in ['RR', 'LL']):
+        raise Exception("Initial image polrep is 'circ': pol_next must be 'RR' or 'LL'")
+
+    if (prior.polrep == 'stokes'
+        and pol not in ['I', 'Q', 'U', 'V', 'P','IP','IQU','IV','IQUV']):
+        raise Exception(
+            "Initial image polrep is 'stokes': pol_next must be in 'I', 'Q', 'U', 'V', 'P','IP','IQU','IV','IQUV'!")
+
+    if ('log' in transforms and pol in ['Q', 'U', 'V']):
+        raise Exception("Cannot image Stokes Q, U, V with log image transformation!")
+
+    if(pol in ['Q', 'U', 'V'] and
+       ('gs' in reg_term_keys or 'simple' in reg_term_keys)):
+        raise Exception(
+            "'simple' and 'gs' regularizers do not work with Stokes Q, U, or V images!")
+
+    if ttype not in ['fast', 'direct', 'nfft']:
+        raise Exception("Possible ttype values are 'fast', 'direct','nfft'!")
+
+    # Catch errors in multifrequency imaging setup
+    if mf:
+        if len(set(freq_list)) < 2:
+            raise Exception("Must have observations at at least two frequencies for multifrequency imaging!")
+        if mf_order not in [0,1,2]:
+            raise Exception("mf_order must be in [0,1,2]!")
+
+        if (pol in POLARIZATION_MODES):
+            if pol not in ['P','QU']:
+                raise Exception("Currently we only support pol_next=P for polarization multifrequency imaging!")
+            if mf_order_pol not in [0,1,2]:
+                raise Exception("mf_order_pol must be in [0,1,2]!")
+
+    # Catch errors for polarimetric imaging setup
+    if pol in POLARIZATION_MODES:
+        if (pol in ['P', 'QU','IP','IQU']):
+            if 'mcv' not in transforms:
+                raise Exception(f"{pol} imaging requires 'mcv' transform!")
+            if 'vcv' in transforms:
+                raise Exception(f"Cannot do {pol} imaging with 'vcv' transform!")
+            if 'polcv' in transforms:
+                raise Exception(f"Cannot do {pol} imaging only with 'polcv' transform!")
+
+        if (pol in ['V','IV']):
+            if 'vcv' not in transforms:
+                raise Exception(f"{pol} imaging requires 'vcv' transform!")
+            if 'mcv' in transforms:
+                raise Exception(f"Cannot do {pol} imaging only with 'mcv' transform!")
+            if 'polcv' in transforms:
+                raise Exception(f"Cannot do {pol} imaging only with 'polcv' transform!")
+
+        if pol in ['IPV','IQUV']:
+            if 'polcv' not in transforms:
+                raise Exception("Linear+Circular polarization imaging requires 'polcv' transform!")
+
+        if (ttype not in ["direct", "nfft"]):
+            raise Exception("FFT not yet implemented in polarimetric imaging -- use NFFT!")
+
+    # catch errors in general imaging setup
+    if mf:
+        if pol in POLARIZATION_MODES:
+            if 'I' in pol:
+                rlist = REGULARIZERS + REGULARIZERS_POL + REGULARIZERS_SPECTRAL
+                dlist = DATATERMS + DATATERMS_POL
+            else:
+                rlist = REGULARIZERS_POL + REGULARIZERS_POLSPECTRAL
+                dlist = DATATERMS_POL
+        else:
+            rlist = REGULARIZERS + REGULARIZERS_ISPECTRAL
+            dlist = DATATERMS
+    else:
+        if pol in POLARIZATION_MODES:
+            if 'I' in pol:
+                rlist = REGULARIZERS + REGULARIZERS_POL
+                dlist = DATATERMS + DATATERMS_POL
+            else:
+                rlist = REGULARIZERS_POL
+                dlist = DATATERMS_POL
+        else:
+            rlist = REGULARIZERS
+            dlist = DATATERMS
+
+    dt_here = False
+    dt_type = True
+    for term in sorted(dat_term_keys):
+        if (term is not None) and (term is not False):
+            dt_here = True
+        if not ((term in dlist) or (term is False)):
+            dt_type = False
+
+    st_here = False
+    st_type = True
+    for term in sorted(reg_term_keys):
+        if (term is not None) and (term is not False):
+            st_here = True
+        if not ((term in rlist) or (term is False)):
+            st_type = False
+
+    if not dt_here:
+        raise Exception("Must have at least one data term!")
+    if not st_here:
+        raise Exception("Must have at least one regularizer term!")
+    if not dt_type:
+        raise Exception("Invalid data term: valid data terms are: " + ','.join(dlist))
+    if not st_type:
+        raise Exception("Invalid regularizer: valid regularizers are: " + ','.join(rlist))
 
 
 def compute_logfreqratios(freq_list, reffreq):
