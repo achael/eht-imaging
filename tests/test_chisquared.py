@@ -17,14 +17,23 @@ TSTART_HR = 0
 TSTOP_HR = 24
 BW_HZ = 4e9
 
-# Data types to test
-DATATERMS = ["vis", "bs", "amp", "cphase", "camp", "logcamp"]
+# Data types to test. The `_diag` variants are the per-timestamp diagonalized
+# closures (statistically independent components after orthogonalization).
+DATATERMS = ["vis", "bs", "amp", "cphase", "cphase_diag",
+             "camp", "logcamp", "logcamp_diag"]
 
 # Transform type pairs to compare
 TTYPE_PAIRS = [("direct", "fast"), ("direct", "nfft"), ("nfft", "fast")]
 
 # NFFT max gradient tolerance is much wider at this resolution
 GRAD_MAX_TOL_NFFT = 10.0
+
+# Diagonalized closures orthogonalize per-timestamp covariance, which can
+# amplify direct-vs-fast tail outliers in test_grad_max_frac_diff. Bump the
+# max-fractional-diff tolerance for these dtypes only; median tolerance and
+# chi-squared tolerance unchanged.
+GRAD_MAX_TOL_DIAG = 0.5
+DIAG_DTYPES = {"cphase_diag", "logcamp_diag"}
 
 # Tolerances (calibrated on 32x48 synthetic Gaussian)
 CHISQ_FRAC_TOL = 0.01
@@ -158,7 +167,12 @@ class TestChisqGradConsistency:
     @pytest.mark.parametrize("pair", TTYPE_PAIRS, ids=lambda p: f"{p[0]}-{p[1]}")
     def test_grad_max_frac_diff(self, chisq_setup, dtype, pair):
         _, max_frac = _gradient_comparison(chisq_setup, dtype, pair)
-        tol = GRAD_MAX_TOL_NFFT if "nfft" in pair else GRAD_MAX_TOL
+        if "nfft" in pair:
+            tol = GRAD_MAX_TOL_NFFT
+        elif dtype in DIAG_DTYPES:
+            tol = GRAD_MAX_TOL_DIAG
+        else:
+            tol = GRAD_MAX_TOL
         assert max_frac < tol, (
             f"{dtype} {pair[0]}-{pair[1]}: grad max frac diff = {max_frac:.6f}"
         )
