@@ -11,8 +11,10 @@ import ehtim as eh
 from ehtim.imaging.imager_backend import (
     ImagerInitState,
     compute_chisq_dict,
+    compute_chisq_term,
     compute_chisqdata_term,
     compute_chisqgrad_dict,
+    compute_chisqgrad_term,
     compute_data_tuples,
     compute_embed,
     compute_init_state,
@@ -2843,4 +2845,231 @@ class TestComputeChisqdataTerm:
         with pytest.raises(Exception, match="cannot use dterm vis with pol=P"):
             compute_chisqdata_term(obs_direct, gauss_im_pol, mask, 'vis',
                                    ttype='direct', pol='P', **self._kwargs())
+
+
+class _ChisqTermFixtures:
+    """Helpers shared by TestComputeChisqTerm + TestComputeChisqgradTerm."""
+
+    STD_DTYPES = TestComputeChisqdataTerm.STD_DTYPES
+    POL_DTYPES = TestComputeChisqdataTerm.POL_DTYPES
+
+    @staticmethod
+    def _full_mask(im):
+        return np.ones(im.imvec.size, dtype=bool)
+
+    @staticmethod
+    def _partial_mask(im, frac=0.7):
+        """Mask with the central `frac` of pixels True."""
+        n = im.imvec.size
+        m = np.zeros(n, dtype=bool)
+        # Mask the brightest fraction (Gaussian center) so the leaf gets
+        # nontrivial data on the masked subset.
+        cutoff = np.quantile(im.imvec, 1.0 - frac)
+        m[im.imvec >= cutoff] = True
+        return m
+
+    @staticmethod
+    def _imcur_pol(gauss_im_pol):
+        """Build a (4, npix) physical-space imcur from gauss_im_pol."""
+        I = gauss_im_pol.imvec
+        Q = 0.10 * I
+        U = 0.05 * I
+        V = 0.02 * I
+        # Convert to (I, rho, phi, psi) physical-space layout, matching
+        # what transform_imarr produces.
+        rho = np.sqrt(Q**2 + U**2 + V**2) / I
+        phi = np.arctan2(U, Q)
+        psi = np.arcsin(V / np.sqrt(Q**2 + U**2 + V**2 + 1e-30))
+        return np.array([I, rho, phi, psi])
+
+    @staticmethod
+    def _data_tuple(obs, prior, mask, dtype, ttype, pol):
+        """Get (A, data, sigma) for this (dtype, ttype) via the unified data-tuple dispatcher."""
+        data, sigma, A = compute_chisqdata_term(
+            obs, prior, mask, dtype, ttype=ttype, pol=pol,
+        )
+        return A, data, sigma
+
+
+class TestComputeChisqTerm(_ChisqTermFixtures):
+    """Bit-identical parity vs imutils.chisq / polutils.polchisq."""
+
+    # ---- standard dtypes ----
+
+    @pytest.mark.parametrize("dtype", _ChisqTermFixtures.STD_DTYPES)
+    def test_parity_direct_standard(self, gauss_im, obs_direct, dtype):
+        from ehtim.imaging.imager_utils import chisq
+        mask = self._full_mask(gauss_im)
+        A, data, sigma = self._data_tuple(obs_direct, gauss_im, mask, dtype,
+                                          'direct', 'I')
+        imcur = np.array([gauss_im.imvec])  # (1, npix) Stokes-I only
+        legacy = chisq(gauss_im.imvec, A, data, sigma, dtype, ttype='direct',
+                       mask=mask)
+        new = compute_chisq_term(imcur, dtype, A, data, sigma,
+                                 ttype='direct', mask=mask)
+        np.testing.assert_allclose(new, legacy, rtol=1e-12, atol=1e-15)
+
+    @pytest.mark.parametrize("dtype", _ChisqTermFixtures.STD_DTYPES)
+    def test_parity_fast_standard(self, gauss_im, obs_fast, dtype):
+        from ehtim.imaging.imager_utils import chisq
+        mask = self._partial_mask(gauss_im)
+        A, data, sigma = self._data_tuple(obs_fast, gauss_im, mask, dtype,
+                                          'fast', 'I')
+        # Solver-space imcur: only the masked subset.
+        imvec = gauss_im.imvec[mask]
+        imcur = np.array([imvec])
+        legacy = chisq(imvec, A, data, sigma, dtype, ttype='fast', mask=mask)
+        new = compute_chisq_term(imcur, dtype, A, data, sigma,
+                                 ttype='fast', mask=mask)
+        np.testing.assert_allclose(new, legacy, rtol=1e-12, atol=1e-15)
+
+    @pytest.mark.parametrize("dtype", _ChisqTermFixtures.STD_DTYPES)
+    def test_parity_nfft_standard(self, gauss_im, obs_nfft, dtype):
+        from ehtim.imaging.imager_utils import chisq
+        mask = self._partial_mask(gauss_im)
+        A, data, sigma = self._data_tuple(obs_nfft, gauss_im, mask, dtype,
+                                          'nfft', 'I')
+        imvec = gauss_im.imvec[mask]
+        imcur = np.array([imvec])
+        legacy = chisq(imvec, A, data, sigma, dtype, ttype='nfft', mask=mask)
+        new = compute_chisq_term(imcur, dtype, A, data, sigma,
+                                 ttype='nfft', mask=mask)
+        np.testing.assert_allclose(new, legacy, rtol=1e-12, atol=1e-15)
+
+    # ---- pol dtypes ----
+
+    @pytest.mark.parametrize("dtype", _ChisqTermFixtures.POL_DTYPES)
+    def test_parity_direct_pol(self, gauss_im_pol, obs_direct, dtype):
+        from ehtim.imaging.pol_imager_utils import polchisq
+        mask = self._full_mask(gauss_im_pol)
+        A, data, sigma = self._data_tuple(obs_direct, gauss_im_pol, mask, dtype,
+                                          'direct', 'IP')
+        imcur = self._imcur_pol(gauss_im_pol)
+        legacy = polchisq(imcur, A, data, sigma, dtype, ttype='direct', mask=mask)
+        new = compute_chisq_term(imcur, dtype, A, data, sigma,
+                                 ttype='direct', mask=mask)
+        np.testing.assert_allclose(new, legacy, rtol=1e-12, atol=1e-15)
+
+    @pytest.mark.parametrize("dtype", _ChisqTermFixtures.POL_DTYPES)
+    def test_parity_nfft_pol(self, gauss_im_pol, obs_nfft, dtype):
+        from ehtim.imaging.pol_imager_utils import polchisq
+        mask = self._partial_mask(gauss_im_pol)
+        A, data, sigma = self._data_tuple(obs_nfft, gauss_im_pol, mask, dtype,
+                                          'nfft', 'IP')
+        imcur_full = self._imcur_pol(gauss_im_pol)
+        imcur = imcur_full[:, mask]  # solver-space sub-array
+        legacy = polchisq(imcur, A, data, sigma, dtype, ttype='nfft', mask=mask)
+        new = compute_chisq_term(imcur, dtype, A, data, sigma,
+                                 ttype='nfft', mask=mask)
+        np.testing.assert_allclose(new, legacy, rtol=1e-12, atol=1e-15)
+
+    # ---- exception cases ----
+
+    def test_unknown_dtype_raises(self, gauss_im):
+        imcur = np.array([gauss_im.imvec])
+        with pytest.raises(Exception, match="data term .* not recognized"):
+            compute_chisq_term(imcur, 'bogus', None, None, None, ttype='direct')
+
+    def test_pol_with_fast_raises(self, gauss_im_pol):
+        imcur = self._imcur_pol(gauss_im_pol)
+        with pytest.raises(Exception, match="not supported for dtype"):
+            compute_chisq_term(imcur, 'pvis', None, None, None, ttype='fast')
+
+    def test_invalid_ttype_raises(self, gauss_im):
+        imcur = np.array([gauss_im.imvec])
+        with pytest.raises(Exception, match="Possible ttype values"):
+            compute_chisq_term(imcur, 'vis', None, None, None, ttype='bogus')
+
+
+class TestComputeChisqgradTerm(_ChisqTermFixtures):
+    """Bit-identical parity vs imutils.chisqgrad / polutils.polchisqgrad."""
+
+    # ---- standard dtypes ----
+
+    @pytest.mark.parametrize("dtype", _ChisqTermFixtures.STD_DTYPES)
+    def test_parity_direct_standard(self, gauss_im, obs_direct, dtype):
+        from ehtim.imaging.imager_utils import chisqgrad
+        mask = self._full_mask(gauss_im)
+        A, data, sigma = self._data_tuple(obs_direct, gauss_im, mask, dtype,
+                                          'direct', 'I')
+        imcur = np.array([gauss_im.imvec])
+        legacy = chisqgrad(gauss_im.imvec, A, data, sigma, dtype,
+                           ttype='direct', mask=mask)
+        new = compute_chisqgrad_term(imcur, dtype, A, data, sigma,
+                                     ttype='direct', mask=mask)
+        np.testing.assert_allclose(new, legacy, rtol=1e-12, atol=1e-15)
+
+    @pytest.mark.parametrize("dtype", _ChisqTermFixtures.STD_DTYPES)
+    def test_parity_fast_standard(self, gauss_im, obs_fast, dtype):
+        from ehtim.imaging.imager_utils import chisqgrad
+        mask = self._partial_mask(gauss_im)
+        A, data, sigma = self._data_tuple(obs_fast, gauss_im, mask, dtype,
+                                          'fast', 'I')
+        imvec = gauss_im.imvec[mask]
+        imcur = np.array([imvec])
+        legacy = chisqgrad(imvec, A, data, sigma, dtype, ttype='fast', mask=mask)
+        new = compute_chisqgrad_term(imcur, dtype, A, data, sigma,
+                                     ttype='fast', mask=mask)
+        np.testing.assert_allclose(new, legacy, rtol=1e-12, atol=1e-15)
+
+    @pytest.mark.parametrize("dtype", _ChisqTermFixtures.STD_DTYPES)
+    def test_parity_nfft_standard(self, gauss_im, obs_nfft, dtype):
+        from ehtim.imaging.imager_utils import chisqgrad
+        mask = self._partial_mask(gauss_im)
+        A, data, sigma = self._data_tuple(obs_nfft, gauss_im, mask, dtype,
+                                          'nfft', 'I')
+        imvec = gauss_im.imvec[mask]
+        imcur = np.array([imvec])
+        legacy = chisqgrad(imvec, A, data, sigma, dtype, ttype='nfft', mask=mask)
+        new = compute_chisqgrad_term(imcur, dtype, A, data, sigma,
+                                     ttype='nfft', mask=mask)
+        np.testing.assert_allclose(new, legacy, rtol=1e-12, atol=1e-15)
+
+    # ---- pol dtypes ----
+
+    @pytest.mark.parametrize("dtype", _ChisqTermFixtures.POL_DTYPES)
+    def test_parity_direct_pol(self, gauss_im_pol, obs_direct, dtype):
+        from ehtim.imaging.pol_imager_utils import polchisqgrad
+        mask = self._full_mask(gauss_im_pol)
+        A, data, sigma = self._data_tuple(obs_direct, gauss_im_pol, mask, dtype,
+                                          'direct', 'IP')
+        imcur = self._imcur_pol(gauss_im_pol)
+        pol_solve = np.ones(4, dtype=int)
+        legacy = polchisqgrad(imcur, A, data, sigma, dtype, ttype='direct',
+                              mask=mask, pol_solve=pol_solve)
+        new = compute_chisqgrad_term(imcur, dtype, A, data, sigma,
+                                     ttype='direct', mask=mask,
+                                     pol_solve=pol_solve)
+        np.testing.assert_allclose(new, legacy, rtol=1e-12, atol=1e-15)
+
+    @pytest.mark.parametrize("dtype", _ChisqTermFixtures.POL_DTYPES)
+    def test_parity_nfft_pol(self, gauss_im_pol, obs_nfft, dtype):
+        from ehtim.imaging.pol_imager_utils import polchisqgrad
+        mask = self._partial_mask(gauss_im_pol)
+        A, data, sigma = self._data_tuple(obs_nfft, gauss_im_pol, mask, dtype,
+                                          'nfft', 'IP')
+        imcur_full = self._imcur_pol(gauss_im_pol)
+        imcur = imcur_full[:, mask]
+        pol_solve = np.ones(4, dtype=int)
+        legacy = polchisqgrad(imcur, A, data, sigma, dtype, ttype='nfft',
+                              mask=mask, pol_solve=pol_solve)
+        new = compute_chisqgrad_term(imcur, dtype, A, data, sigma,
+                                     ttype='nfft', mask=mask,
+                                     pol_solve=pol_solve)
+        np.testing.assert_allclose(new, legacy, rtol=1e-12, atol=1e-15)
+
+    # ---- pol_solve defaulting ----
+
+    def test_pol_grad_default_pol_solve(self, gauss_im_pol, obs_direct):
+        """Omitting pol_solve uses an all-ones default (full Stokes block)."""
+        from ehtim.imaging.pol_imager_utils import polchisqgrad
+        mask = self._full_mask(gauss_im_pol)
+        A, data, sigma = self._data_tuple(obs_direct, gauss_im_pol, mask, 'pvis',
+                                          'direct', 'IP')
+        imcur = self._imcur_pol(gauss_im_pol)
+        legacy = polchisqgrad(imcur, A, data, sigma, 'pvis', ttype='direct',
+                              mask=mask, pol_solve=np.ones(4, dtype=int))
+        new = compute_chisqgrad_term(imcur, 'pvis', A, data, sigma,
+                                     ttype='direct', mask=mask)
+        np.testing.assert_allclose(new, legacy, rtol=1e-12, atol=1e-15)
 

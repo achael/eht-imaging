@@ -8,6 +8,7 @@ import numpy as np
 import ehtim.imaging.imager_utils as imutils
 import ehtim.imaging.multifreq_imager_utils as mfutils
 import ehtim.imaging.pol_imager_utils as polutils
+import ehtim.observing.obs_helpers as obsh
 
 # -----------------------------------------------------------------------------
 # Naming convention for image arguments throughout this module
@@ -805,6 +806,168 @@ def compute_chisqdata_term(obs, prior, mask, dtype, ttype='direct', pol='I', **k
     if is_pol or ttype == 'direct':
         return helper(obs, prior, mask, pol=pol, **kwargs)
     return helper(obs, prior, pol=pol, **kwargs)
+
+
+# Dtypes whose `fast` leaf is not preceded by an FFT pre-compute step. The diag
+# variants index the gridded image directly per-baseline, so the orchestrator
+# passes imvec (not the pre-FFT'd vis_arr). Mirrors imager_utils.chisq lines 81 / 95.
+_DIAG_DTYPES = frozenset({'cphase_diag', 'logcamp_diag'})
+
+
+# Dispatch table for compute_chisq_term + compute_chisqgrad_term. Maps
+# (dtype, ttype) to a (chisq_fn, chisqgrad_fn) pair, plus an `is_pol` flag.
+# Standard dtypes (`vis`, `amp`, ...) route to imutils leaves; polarimetric
+# (`pvis`, `m`, `vvis`) route to polutils leaves. Pol dtypes have no `fast`.
+# Phase 5 swaps entries in place to register JAX backends.
+_CHISQ_DISPATCH = {
+    'vis':          {'is_pol': False,
+                     'direct': (imutils.chisq_vis,          imutils.chisqgrad_vis),
+                     'fast':   (imutils.chisq_vis_fft,      imutils.chisqgrad_vis_fft),
+                     'nfft':   (imutils.chisq_vis_nfft,     imutils.chisqgrad_vis_nfft)},
+    'amp':          {'is_pol': False,
+                     'direct': (imutils.chisq_amp,          imutils.chisqgrad_amp),
+                     'fast':   (imutils.chisq_amp_fft,      imutils.chisqgrad_amp_fft),
+                     'nfft':   (imutils.chisq_amp_nfft,     imutils.chisqgrad_amp_nfft)},
+    'logamp':       {'is_pol': False,
+                     'direct': (imutils.chisq_logamp,       imutils.chisqgrad_logamp),
+                     'fast':   (imutils.chisq_logamp_fft,   imutils.chisqgrad_logamp_fft),
+                     'nfft':   (imutils.chisq_logamp_nfft,  imutils.chisqgrad_logamp_nfft)},
+    'bs':           {'is_pol': False,
+                     'direct': (imutils.chisq_bs,           imutils.chisqgrad_bs),
+                     'fast':   (imutils.chisq_bs_fft,       imutils.chisqgrad_bs_fft),
+                     'nfft':   (imutils.chisq_bs_nfft,      imutils.chisqgrad_bs_nfft)},
+    'cphase':       {'is_pol': False,
+                     'direct': (imutils.chisq_cphase,       imutils.chisqgrad_cphase),
+                     'fast':   (imutils.chisq_cphase_fft,   imutils.chisqgrad_cphase_fft),
+                     'nfft':   (imutils.chisq_cphase_nfft,  imutils.chisqgrad_cphase_nfft)},
+    'cphase_diag':  {'is_pol': False,
+                     'direct': (imutils.chisq_cphase_diag,      imutils.chisqgrad_cphase_diag),
+                     'fast':   (imutils.chisq_cphase_diag_fft,  imutils.chisqgrad_cphase_diag_fft),
+                     'nfft':   (imutils.chisq_cphase_diag_nfft, imutils.chisqgrad_cphase_diag_nfft)},
+    'camp':         {'is_pol': False,
+                     'direct': (imutils.chisq_camp,         imutils.chisqgrad_camp),
+                     'fast':   (imutils.chisq_camp_fft,     imutils.chisqgrad_camp_fft),
+                     'nfft':   (imutils.chisq_camp_nfft,    imutils.chisqgrad_camp_nfft)},
+    'logcamp':      {'is_pol': False,
+                     'direct': (imutils.chisq_logcamp,      imutils.chisqgrad_logcamp),
+                     'fast':   (imutils.chisq_logcamp_fft,  imutils.chisqgrad_logcamp_fft),
+                     'nfft':   (imutils.chisq_logcamp_nfft, imutils.chisqgrad_logcamp_nfft)},
+    'logcamp_diag': {'is_pol': False,
+                     'direct': (imutils.chisq_logcamp_diag,      imutils.chisqgrad_logcamp_diag),
+                     'fast':   (imutils.chisq_logcamp_diag_fft,  imutils.chisqgrad_logcamp_diag_fft),
+                     'nfft':   (imutils.chisq_logcamp_diag_nfft, imutils.chisqgrad_logcamp_diag_nfft)},
+    'pvis':         {'is_pol': True,
+                     'direct': (polutils.chisq_p,           polutils.chisqgrad_p),
+                     'nfft':   (polutils.chisq_p_nfft,      polutils.chisqgrad_p_nfft)},
+    'm':            {'is_pol': True,
+                     'direct': (polutils.chisq_m,           polutils.chisqgrad_m),
+                     'nfft':   (polutils.chisq_m_nfft,      polutils.chisqgrad_m_nfft)},
+    'vvis':         {'is_pol': True,
+                     'direct': (polutils.chisq_vvis,        polutils.chisqgrad_vvis),
+                     'nfft':   (polutils.chisq_vvis_nfft,   polutils.chisqgrad_vvis_nfft)},
+}
+
+
+def _lookup_chisq_entry(dtype, ttype):
+    """Look up (chisq_fn, chisqgrad_fn, is_pol) for (dtype, ttype). Raises on miss."""
+    if ttype not in ('direct', 'fast', 'nfft'):
+        raise Exception("Possible ttype values are 'fast', 'direct', 'nfft'!")
+    try:
+        entry = _CHISQ_DISPATCH[dtype]
+    except KeyError:
+        raise Exception(f"data term {dtype} not recognized!")
+    if ttype not in entry:
+        raise Exception(f"ttype={ttype!r} not supported for dtype={dtype!r}")
+    chisq_fn, chisqgrad_fn = entry[ttype]
+    return chisq_fn, chisqgrad_fn, entry['is_pol']
+
+
+def compute_chisq_term(imcur, dtype, A, data, sigma, ttype='direct', mask=None):
+    """Single chi^2 dispatcher unifying chisq + polchisq.
+
+    Pol dtypes consume the full (4, npix) imcur (or its (10, npix) multi-freq
+    extension); standard dtypes consume imcur[0]. Mask embedding and FFT
+    pre-computation match the legacy chisq / polchisq bodies exactly.
+
+    Parameters
+    ----------
+    imcur : np.ndarray
+        Multi-row image array. Pol dtypes read all rows; standard dtypes
+        read row 0 (Stokes I) only.
+    dtype : str
+        One of the keys of _CHISQ_DISPATCH (12 dtypes).
+    A, data, sigma
+        Per-dtype Fourier matrix or matrix-tuple, observed values, and
+        sigma values. Same shapes as the legacy leaf-helper signatures.
+    ttype : {'direct', 'fast', 'nfft'}
+        'fast' is not supported for pol dtypes.
+    mask : np.ndarray of bool, optional
+        Embedding mask used by fast / nfft leaves to expand the solver
+        image back onto the full grid. None or empty => no embedding.
+
+    Returns
+    -------
+    float
+    """
+    chisq_fn, _, is_pol = _lookup_chisq_entry(dtype, ttype)
+
+    imvec = imcur if is_pol else imcur[0]
+
+    # Embed onto full grid for fast / nfft if a partial mask was supplied.
+    # Legacy chisq / polchisq both use randomfloor=True to break TV singularities.
+    if (ttype != 'direct' and mask is not None
+            and len(mask) > 0 and np.any(np.invert(mask))):
+        if is_pol:
+            imvec = imutils.embed_imarr(imvec, mask, randomfloor=True)
+        else:
+            imvec = imutils.embed(imvec, mask, randomfloor=True)
+
+    # FFT pre-compute for the standard `fast` path (except _diag dtypes, whose
+    # leaves index the gridded image directly). Pol has no `fast` branch.
+    if ttype == 'fast' and dtype not in _DIAG_DTYPES:
+        imvec = obsh.fft_imvec(imvec, A[0])
+
+    return chisq_fn(imvec, A, data, sigma)
+
+
+def compute_chisqgrad_term(imcur, dtype, A, data, sigma, ttype='direct',
+                           mask=None, pol_solve=None):
+    """Single chi^2-gradient dispatcher. See compute_chisq_term.
+
+    Pol grad helpers take an extra `pol_solve` arg (Stokes block of which_solve);
+    standard grad helpers do not. Returned gradient is sliced back through `mask`
+    for fast / nfft to match the legacy chisqgrad / polchisqgrad return shapes:
+    pol grads are (4, n_masked); standard grads are (n_masked,).
+    """
+    _, chisqgrad_fn, is_pol = _lookup_chisq_entry(dtype, ttype)
+
+    imvec = imcur if is_pol else imcur[0]
+    has_partial_mask = (mask is not None and len(mask) > 0
+                        and np.any(np.invert(mask)))
+
+    if ttype != 'direct' and has_partial_mask:
+        if is_pol:
+            imvec = imutils.embed_imarr(imvec, mask, randomfloor=True)
+        else:
+            imvec = imutils.embed(imvec, mask, randomfloor=True)
+
+    if ttype == 'fast' and dtype not in _DIAG_DTYPES:
+        imvec = obsh.fft_imvec(imvec, A[0])
+
+    if is_pol:
+        # pol_solve is positional in the pol grad leaves; default to all-ones
+        # over the Stokes block if not supplied (matches polchisqgrad's default).
+        if pol_solve is None:
+            pol_solve = np.ones(4, dtype=int)
+        grad = chisqgrad_fn(imvec, A, data, sigma, pol_solve)
+    else:
+        grad = chisqgrad_fn(imvec, A, data, sigma)
+
+    # Mask-back gradient onto the solver subspace for fast / nfft.
+    if ttype != 'direct' and has_partial_mask:
+        grad = grad[:, mask] if is_pol else grad[mask]
+
+    return grad
 
 
 def compute_data_tuples(obslist, prior, embed_mask, dat_term_keys, pol,
