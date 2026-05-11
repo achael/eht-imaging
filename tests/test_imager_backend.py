@@ -2597,3 +2597,80 @@ class TestValidateLimits:
         flux_warnings = [m for m in out if "> 120%" in m]
         assert len(flux_warnings) == 1  # only the second obs trips
 
+
+class TestPolChisqdataKwargs:
+    """Pol direct chisqdata leaves accept and ignore standard-chisqdata kwargs.
+
+    Prerequisite for the unified compute_chisqdata_term dispatcher: pol leaves
+    must tolerate the kwargs that standard leaves consume (pol, snrcut, debias,
+    weighting, maxset, systematic_noise, systematic_cphase_noise, cp_uv_min)
+    without choking. Pol data preparation does not use any of these knobs --
+    they are simply absorbed by **kwargs.
+    """
+
+    @staticmethod
+    def _full_mask(im):
+        return np.ones(im.imvec.size, dtype=bool)
+
+    @staticmethod
+    def _kitchen_sink_kwargs():
+        return dict(
+            pol='IP',
+            snrcut=3.0,
+            debias=True,
+            weighting='uniform',
+            maxset=True,
+            systematic_noise=0.05,
+            systematic_cphase_noise=0.02,
+            cp_uv_min=1e6,
+        )
+
+    def test_chisqdata_pvis_ignores_kwargs(self, gauss_im_pol, obs_direct):
+        from ehtim.imaging.pol_imager_utils import chisqdata_pvis
+        mask = self._full_mask(gauss_im_pol)
+        base = chisqdata_pvis(obs_direct, gauss_im_pol, mask)
+        ext = chisqdata_pvis(obs_direct, gauss_im_pol, mask, **self._kitchen_sink_kwargs())
+        np.testing.assert_array_equal(base[0], ext[0])
+        np.testing.assert_array_equal(base[1], ext[1])
+        np.testing.assert_array_equal(base[2], ext[2])
+
+    def test_chisqdata_m_ignores_kwargs(self, gauss_im_pol, obs_direct):
+        from ehtim.imaging.pol_imager_utils import chisqdata_m
+        mask = self._full_mask(gauss_im_pol)
+        base = chisqdata_m(obs_direct, gauss_im_pol, mask)
+        ext = chisqdata_m(obs_direct, gauss_im_pol, mask, **self._kitchen_sink_kwargs())
+        np.testing.assert_array_equal(base[0], ext[0])
+        np.testing.assert_array_equal(base[1], ext[1])
+        np.testing.assert_array_equal(base[2], ext[2])
+
+    def test_chisqdata_vvis_ignores_kwargs(self, gauss_im_pol, obs_direct):
+        from ehtim.imaging.pol_imager_utils import chisqdata_vvis
+        mask = self._full_mask(gauss_im_pol)
+        base = chisqdata_vvis(obs_direct, gauss_im_pol, mask)
+        ext = chisqdata_vvis(obs_direct, gauss_im_pol, mask, **self._kitchen_sink_kwargs())
+        np.testing.assert_array_equal(base[0], ext[0])
+        np.testing.assert_array_equal(base[1], ext[1])
+        np.testing.assert_array_equal(base[2], ext[2])
+
+    def test_chisqdata_pvis_nfft_still_accepts_fft_kwargs(self, gauss_im_pol, obs_nfft):
+        from ehtim.imaging.pol_imager_utils import chisqdata_pvis_nfft
+        mask = self._full_mask(gauss_im_pol)
+        # Standard kwargs are inert; FFT kwargs (fft_pad_factor, p_rad) still work.
+        out = chisqdata_pvis_nfft(obs_nfft, gauss_im_pol, mask,
+                                  pol='IP', snrcut=3.0, fft_pad_factor=2, p_rad=2)
+        assert len(out) == 3  # (vis, sigma, A) triple
+
+    def test_chisqdata_m_nfft_still_accepts_fft_kwargs(self, gauss_im_pol, obs_nfft):
+        from ehtim.imaging.pol_imager_utils import chisqdata_m_nfft
+        mask = self._full_mask(gauss_im_pol)
+        out = chisqdata_m_nfft(obs_nfft, gauss_im_pol, mask,
+                               debias=True, fft_pad_factor=2, p_rad=2)
+        assert len(out) == 3
+
+    def test_chisqdata_vvis_nfft_still_accepts_fft_kwargs(self, gauss_im_pol, obs_nfft):
+        from ehtim.imaging.pol_imager_utils import chisqdata_vvis_nfft
+        mask = self._full_mask(gauss_im_pol)
+        out = chisqdata_vvis_nfft(obs_nfft, gauss_im_pol, mask,
+                                  weighting='uniform', fft_pad_factor=2, p_rad=2)
+        assert len(out) == 3
+

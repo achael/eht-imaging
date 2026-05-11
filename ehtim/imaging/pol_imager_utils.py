@@ -1409,8 +1409,11 @@ def stv2_v_grad(imarr, vflux, nx, ny, psize, pol_solve=POL_SOLVE_DEFAULT_V,
 ##################################################################################################
 # Chi^2 Data functions
 ##################################################################################################
-def chisqdata_pvis(Obsdata, Prior, mask):
-    """Return the visibilities, sigmas, and fourier matrix for an observation, prior, mask
+def chisqdata_pvis(Obsdata, Prior, mask, **kwargs):
+    """Return the visibilities, sigmas, and fourier matrix for an observation, prior, mask.
+
+    Accepts and ignores standard-chisqdata kwargs (pol, snrcut, debias, etc.) so the
+    unified compute_chisqdata_term dispatcher can pass them uniformly across all dtypes.
     """
 
     data_arr = Obsdata.unpack(['u','v','pvis','psigma'], conj=True)
@@ -1443,8 +1446,11 @@ def chisqdata_pvis_nfft(Obsdata, Prior, mask, **kwargs):
     return (vis, sigma, A)
 
 
-def chisqdata_m(Obsdata, Prior, mask):
-    """Return the pol  ratios, sigmas, and fourier matrix for and observation, prior, mask
+def chisqdata_m(Obsdata, Prior, mask, **kwargs):
+    """Return the pol ratios, sigmas, and fourier matrix for an observation, prior, mask.
+
+    Accepts and ignores standard-chisqdata kwargs (pol, snrcut, debias, etc.) so the
+    unified compute_chisqdata_term dispatcher can pass them uniformly across all dtypes.
     """
 
     mdata = Obsdata.unpack(['u','v','m','msigma'], conj=True)
@@ -1477,8 +1483,11 @@ def chisqdata_m_nfft(Obsdata, Prior, mask, **kwargs):
     return (m, sigmam, A)
 
 
-def chisqdata_vvis(Obsdata, Prior, mask):
-    """Return the visibilities, sigmas, and fourier matrix for an observation, prior, mask
+def chisqdata_vvis(Obsdata, Prior, mask, **kwargs):
+    """Return the visibilities, sigmas, and fourier matrix for an observation, prior, mask.
+
+    Accepts and ignores standard-chisqdata kwargs (pol, snrcut, debias, etc.) so the
+    unified compute_chisqdata_term dispatcher can pass them uniformly across all dtypes.
     """
 
     data_arr = Obsdata.unpack(['u','v','vvis','vsigma'], conj=False)
