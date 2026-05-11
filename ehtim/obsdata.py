@@ -4779,7 +4779,8 @@ def load_txt(fname, polrep='stokes'):
 def load_uvfits(fname, flipbl=False, remove_nan=False, force_singlepol=None,
                 channel=all, IF=all, polrep='stokes', allow_singlepol=True,
                 ignore_pzero_date=True,
-                trial_speedups=False):
+                trial_speedups=False,
+                invvar_channel_avg=True):
     """Load observation data from a uvfits file.
 
        Args:
@@ -4791,9 +4792,11 @@ def load_uvfits(fname, flipbl=False, remove_nan=False, force_singlepol=None,
            channel (list): list of channels to average in the import. channel=all averages all
            IF (list): list of IFs to  average in  the import. IF=all averages all IFS
            remove_nan (bool): whether or not to remove entries with nan data
-           
            ignore_pzero_date (bool): if True, ignore the offset parameters in DATE field 
                                      TODO: what is the correct behavior per AIPS memo 117?
+           trial_speedups (bool): if True, use faster array/telescope handling paths
+           invvar_channel_avg (bool): if True, average IFs/channels with inverse-variance
+                                      weighting. If False, use simple averaging.
        Returns:
            obs (Obsdata): Obsdata object loaded from file
     """
@@ -4802,7 +4805,8 @@ def load_uvfits(fname, flipbl=False, remove_nan=False, force_singlepol=None,
                                          channel=channel, IF=IF, polrep=polrep,
                                          remove_nan=remove_nan, allow_singlepol=allow_singlepol,
                                          ignore_pzero_date=ignore_pzero_date,
-                                         trial_speedups=trial_speedups)
+                                         trial_speedups=trial_speedups,
+                                         invvar_channel_avg=invvar_channel_avg)
 
 
 
