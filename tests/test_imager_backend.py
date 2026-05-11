@@ -21,6 +21,8 @@ from ehtim.imaging.imager_backend import (
     compute_reg_dict,
     compute_reggrad_dict,
     compute_which_solve,
+    embed_imarr,
+    pack_imarr,
     transform_gradients,
     transform_imarr,
 )
@@ -1675,4 +1677,149 @@ class TestTransformGradientsChainRule:
         assert out.shape == imarr.shape
         np.testing.assert_allclose(out[0], np.exp(imarr[0]) * gradarr[0], rtol=1e-12)
         np.testing.assert_array_equal(out[4:10], gradarr[4:10])
+
+
+class TestEmbedPackImarr:
+    """Direct unit tests for embed_imarr + pack_imarr.
+
+    embed_imarr extends a masked image array (nsolve, sum(mask)) into a full
+    grid (nsolve, len(mask)) by inserting `clipfloor` (constant or
+    `clipfloor * |N(0,1)|` if randomfloor=True) at non-mask pixels.
+
+    pack_imarr stacks the rows of (nsolve, npix) that have which_solve[k] != 0
+    into a single 1D solver vector. It does not consult the mask -- packing
+    selects across the Stokes/spectral axis, not pixels.
+
+    These two functions are not strict inverses of each other; their relation
+    to unpack_imarr is covered in TestUnpackImarr.
+    """
+
+    @staticmethod
+    def _make_mask(npix_total, npix_in, seed=0):
+        """Build a boolean mask of length npix_total with exactly npix_in True."""
+        rng = np.random.default_rng(seed)
+        idx = rng.choice(npix_total, size=npix_in, replace=False)
+        mask = np.zeros(npix_total, dtype=bool)
+        mask[idx] = True
+        return mask
+
+    # ------------------------------ embed_imarr ------------------------------
+
+    def test_embed_1d_basic(self):
+        """1D input dispatches through nsolve=1 branch and returns 1D output."""
+        mask = self._make_mask(20, 7, seed=1)
+        imvec = np.linspace(1.0, 7.0, 7)
+        out = embed_imarr(imvec, mask, clipfloor=0.0)
+        assert out.shape == (20,)
+        np.testing.assert_array_equal(out[mask], imvec)
+        np.testing.assert_array_equal(out[~mask], 0.0)
+
+    def test_embed_2d_basic(self):
+        """2D input (nsolve, npix_in) returns 2D output (nsolve, len(mask))."""
+        mask = self._make_mask(16, 5, seed=2)
+        imarr = np.arange(15, dtype=float).reshape(3, 5)
+        out = embed_imarr(imarr, mask, clipfloor=0.0)
+        assert out.shape == (3, 16)
+        np.testing.assert_array_equal(out[:, mask], imarr)
+        np.testing.assert_array_equal(out[:, ~mask], 0.0)
+
+    def test_embed_clipfloor_constant(self):
+        """Non-mask pixels get the constant clipfloor value when randomfloor=False."""
+        mask = self._make_mask(12, 4, seed=3)
+        imarr = np.array([[1.0, 2.0, 3.0, 4.0]])
+        out = embed_imarr(imarr, mask, clipfloor=0.7, randomfloor=False)
+        np.testing.assert_array_equal(out[0, ~mask], 0.7)
+        np.testing.assert_array_equal(out[0, mask], imarr[0])
+
+    def test_embed_randomfloor_seeded(self):
+        """randomfloor=True with a fixed RNG seed is reproducible."""
+        mask = self._make_mask(40, 10, seed=4)
+        imvec = np.full(10, 5.0)
+
+        np.random.seed(123)
+        out1 = embed_imarr(imvec, mask, clipfloor=0.1, randomfloor=True)
+        np.random.seed(123)
+        out2 = embed_imarr(imvec, mask, clipfloor=0.1, randomfloor=True)
+        np.testing.assert_array_equal(out1, out2)
+
+        # Off-mask values are positive (|N(0,1)| scaled by clipfloor) and not constant.
+        assert np.all(out1[~mask] >= 0.0)
+        assert np.unique(out1[~mask]).size > 1
+
+    def test_embed_all_true_mask_is_identity(self):
+        """Mask fully True -> embed equals input (all pixels in mask, no fill needed)."""
+        mask = np.ones(8, dtype=bool)
+        imvec = np.linspace(-1.0, 1.0, 8)
+        out = embed_imarr(imvec, mask, clipfloor=99.0)
+        np.testing.assert_array_equal(out, imvec)
+
+    def test_embed_wrong_imarr_dim_raises(self):
+        """3D imarr is rejected; only 1D and 2D are supported."""
+        mask = self._make_mask(10, 4, seed=5)
+        bad = np.zeros((2, 2, 4))
+        with pytest.raises(Exception, match="should have one or two dimensions"):
+            embed_imarr(bad, mask)
+
+    def test_embed_shape_mismatch_raises(self):
+        """imarr's npix axis must equal sum(mask)."""
+        mask = self._make_mask(10, 4, seed=6)
+        bad = np.zeros((2, 3))  # second axis = 3, but sum(mask) = 4
+        with pytest.raises(Exception, match="not consistent with imarr shape"):
+            embed_imarr(bad, mask)
+
+    # ------------------------------ pack_imarr -------------------------------
+
+    def test_pack_stokes_i_only(self):
+        """which_solve=[1,0,0,0] packs only row 0."""
+        imarr = np.arange(40, dtype=float).reshape(4, 10)
+        which_solve = np.array([1, 0, 0, 0])
+        vec = pack_imarr(imarr, which_solve)
+        assert vec.shape == (10,)
+        np.testing.assert_array_equal(vec, imarr[0])
+
+    def test_pack_full_iquv(self):
+        """which_solve=[1,1,1,1] packs all four rows concatenated in order."""
+        imarr = np.arange(20, dtype=float).reshape(4, 5)
+        which_solve = np.array([1, 1, 1, 1])
+        vec = pack_imarr(imarr, which_solve)
+        assert vec.shape == (20,)
+        np.testing.assert_array_equal(vec, imarr.reshape(-1))
+
+    def test_pack_mixed_solved(self):
+        """which_solve=[1,1,0,0] packs rows 0 and 1 in that order; 2 and 3 are skipped."""
+        imarr = np.arange(20, dtype=float).reshape(4, 5)
+        which_solve = np.array([1, 1, 0, 0])
+        vec = pack_imarr(imarr, which_solve)
+        np.testing.assert_array_equal(vec, np.hstack([imarr[0], imarr[1]]))
+
+    def test_pack_multifreq_pol_spectral(self):
+        """nimage=10 layout (mf+pol): which_solve picks I, mprime, alpha, beta."""
+        imarr = np.arange(60, dtype=float).reshape(10, 6)
+        which_solve = np.array([1, 1, 0, 0, 1, 1, 0, 0, 0, 0])
+        vec = pack_imarr(imarr, which_solve)
+        expected = np.hstack([imarr[0], imarr[1], imarr[4], imarr[5]])
+        np.testing.assert_array_equal(vec, expected)
+
+    def test_pack_1d_input(self):
+        """1D imarr with which_solve=[1] returns the input unchanged."""
+        imarr = np.linspace(0.0, 1.0, 7)
+        vec = pack_imarr(imarr, np.array([1]))
+        np.testing.assert_array_equal(vec, imarr)
+
+    def test_pack_no_solved_slots_returns_empty(self):
+        """which_solve all zero yields an empty 1D array."""
+        imarr = np.arange(12, dtype=float).reshape(3, 4)
+        vec = pack_imarr(imarr, np.array([0, 0, 0]))
+        assert vec.shape == (0,)
+
+    def test_pack_which_solve_length_mismatch_raises(self):
+        """which_solve length must equal imarr's nsolve dimension."""
+        imarr = np.zeros((4, 5))
+        with pytest.raises(Exception, match="inconsistent shape with which_solve"):
+            pack_imarr(imarr, np.array([1, 0, 0]))
+
+    def test_pack_wrong_dim_raises(self):
+        """3D imarr is rejected; only 1D and 2D are supported."""
+        with pytest.raises(Exception, match="should have one or two dimensions"):
+            pack_imarr(np.zeros((2, 2, 4)), np.array([1, 1]))
 
