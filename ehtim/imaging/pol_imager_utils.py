@@ -345,91 +345,33 @@ def vcv_grad(imarr, gradarr):
 ##################################################################################################
 
 def polchisq(imarr, A, data, sigma, dtype, ttype='direct', mask=[]):
-    """return the chi^2 for the appropriate dtype
+    """Return chi^2 for a polarimetric data term.
+
+    Thin shim around imager_backend.compute_chisq_term retained for backward
+    compatibility. New code should call compute_chisq_term directly.
+    Returns 1 (legacy silent fallback) if `dtype` is not a polarimetric term.
     """
-
-    chisq = 1
+    from ehtim.imaging.imager_backend import compute_chisq_term
     if dtype not in DATATERMS_POL:
-        return chisq
-    if ttype not in ['direct','nfft']:
-        raise Exception("Possible ttype values for polchisq are 'nfft' and 'direct'!")
+        return 1
+    return compute_chisq_term(imarr, dtype, A, data, sigma,
+                              ttype=ttype, mask=mask)
 
-    if ttype == 'direct':
-        # linear
-        if dtype == 'pvis':
-            chisq = chisq_p(imarr, A, data, sigma)
-        elif dtype == 'm':
-            chisq = chisq_m(imarr, A, data, sigma)
 
-        # circular
-        elif dtype == 'vvis':
-            chisq = chisq_vvis(imarr, A, data, sigma)
-
-    elif ttype== 'fast':
-        raise Exception("FFT not yet implemented in polchisq!")
-
-    elif ttype== 'nfft':
-        if len(mask)>0 and np.any(np.invert(mask)):
-            imarr = embed_imarr(imarr, mask, randomfloor=RANDOMFLOOR)
-
-        # linear
-        if dtype == 'pvis':
-            chisq = chisq_p_nfft(imarr, A, data, sigma)
-        elif dtype == 'm':
-            chisq = chisq_m_nfft(imarr, A, data, sigma)
-
-        # circular
-        elif dtype == 'vvis':
-            chisq = chisq_vvis_nfft(imarr, A, data, sigma)
-
-    return chisq
-
-def polchisqgrad(imarr, A, data, sigma, dtype, ttype='direct',mask=[],
+def polchisqgrad(imarr, A, data, sigma, dtype, ttype='direct', mask=[],
                  pol_solve=POL_SOLVE_DEFAULT):
+    """Return chi^2 gradient for a polarimetric data term.
 
-    """return the chi^2 gradient for the appropriate dtype
+    Thin shim around imager_backend.compute_chisqgrad_term retained for
+    backward compatibility. New code should call compute_chisqgrad_term
+    directly. Returns zeros (legacy silent fallback) if `dtype` is not a
+    polarimetric term.
     """
-
-    chisqgrad = np.zeros(imarr.shape)
+    from ehtim.imaging.imager_backend import compute_chisqgrad_term
     if dtype not in DATATERMS_POL:
-        return chisqgrad
-    if ttype not in ['direct','nfft']:
-        raise Exception("Possible ttype values for polchisqgrad are 'nfft' and 'direct'!")
-
-    if ttype == 'direct':
-        # linear
-        if dtype == 'pvis':
-            chisqgrad = chisqgrad_p(imarr, A, data, sigma, pol_solve)
-        elif dtype == 'm':
-            chisqgrad = chisqgrad_m(imarr, A, data, sigma, pol_solve)
-
-
-        # circular
-        elif dtype == 'vvis':
-            chisqgrad = chisqgrad_vvis(imarr, A, data, sigma, pol_solve)
-
-    elif ttype== 'fast':
-        raise Exception("FFT not yet implemented in polchisqgrad!")
-
-    elif ttype== 'nfft':
-        if len(mask)>0 and np.any(np.invert(mask)):
-            imarr = embed_imarr(imarr, mask, randomfloor=RANDOMFLOOR)
-
-        # linear
-        if dtype == 'pvis':
-            chisqgrad = chisqgrad_p_nfft(imarr, A, data, sigma, pol_solve)
-        elif dtype == 'm':
-            chisqgrad = chisqgrad_m_nfft(imarr, A, data, sigma, pol_solve)
-
-
-        # circular
-        elif dtype == 'vvis':
-            chisqgrad = chisqgrad_vvis_nfft(imarr, A, data, sigma, pol_solve)
-
-        if len(mask)>0 and np.any(np.invert(mask)):
-            chisqgrad = chisqgrad[:,mask]
-
-    return chisqgrad
+        return np.zeros(imarr.shape)
+    return compute_chisqgrad_term(imarr, dtype, A, data, sigma,
+                                  ttype=ttype, mask=mask, pol_solve=pol_solve)
 
 
 def polregularizer(imarr, priorarr, mask, flux, pflux, vflux, xdim, ydim, psize, stype, **kwargs):
@@ -525,36 +467,19 @@ def polregularizergrad(imarr, priorarr, mask, flux, pflux, vflux, xdim, ydim, ps
 
 
 def polchisqdata(Obsdata, Prior, mask, dtype, **kwargs):
+    """Return (data, sigma, A) for a polarimetric data term.
 
-    """Return the data, sigma, and matrices for the appropriate dtype
+    Thin shim around imager_backend.compute_chisqdata_term retained for
+    backward compatibility. New code should call compute_chisqdata_term
+    directly. Returns (False, False, False) (legacy silent fallback) if
+    `dtype` is not a polarimetric term.
     """
-
-    ttype = kwargs.get('ttype','direct')
-
-    (data, sigma, A) = (False, False, False)
-    if ttype not in ['direct','nfft']:
-        raise Exception("Possible ttype values for polchisqdata are 'nfft' and 'direct'!")
-
-    if ttype=='direct':
-        if dtype == 'pvis':
-            (data, sigma, A) = chisqdata_pvis(Obsdata, Prior, mask)
-        elif dtype == 'm':
-            (data, sigma, A) = chisqdata_m(Obsdata, Prior, mask)
-        elif dtype == 'vvis':
-            (data, sigma, A) = chisqdata_vvis(Obsdata, Prior, mask)
-
-    elif ttype=='fast':
-        raise Exception("FFT not yet implemented in polchisqdata!")
-
-    elif ttype=='nfft':
-        if dtype == 'pvis':
-            (data, sigma, A) = chisqdata_pvis_nfft(Obsdata, Prior, mask, **kwargs)
-        elif dtype == 'm':
-            (data, sigma, A) = chisqdata_m_nfft(Obsdata, Prior, mask, **kwargs)
-        elif dtype == 'vvis':
-            (data, sigma, A) = chisqdata_vvis_nfft(Obsdata, Prior, mask, **kwargs)
-
-    return (data, sigma, A)
+    from ehtim.imaging.imager_backend import compute_chisqdata_term
+    ttype = kwargs.pop('ttype', 'direct')
+    if dtype not in DATATERMS_POL:
+        return (False, False, False)
+    return compute_chisqdata_term(Obsdata, Prior, mask, dtype,
+                                  ttype=ttype, **kwargs)
 
 
 ##################################################################################################
