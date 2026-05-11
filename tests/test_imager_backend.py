@@ -314,11 +314,9 @@ def _call_compute_data_tuples(imgr):
     return compute_data_tuples(
         imgr.obslist_next, imgr.prior_next, imgr._embed_mask,
         sorted(imgr.dat_term_next.keys()), imgr.pol_next,
-        imgr.maxset_next, imgr.debias_next, imgr.snrcut_next,
-        imgr.weighting_next, imgr.systematic_noise_next,
-        imgr.systematic_cphase_noise_next, imgr.cp_uv_min,
-        imgr._ttype, imgr._fft_pad_factor, imgr._fft_conv_func,
-        imgr._fft_gridder_prad, imgr._fft_interp_order,
+        imgr._ttype,
+        imgr._full_data_weighting_params(),
+        imgr._full_fft_params(),
     )
 
 
@@ -369,15 +367,13 @@ class TestComputeDataTuples:
     def test_unrecognized_term_raises(self, gauss_im, observe,
                                       initialize_imager):
         imgr, _ = initialize_imager(observe(gauss_im), gauss_im, {"vis": 1})
+        bogus_weighting = {**imgr._full_data_weighting_params(),
+                           'snrcut': {'bogus': 0.0}}
         with pytest.raises(Exception, match="not recognized"):
             compute_data_tuples(
                 imgr.obslist_next, imgr.prior_next, imgr._embed_mask,
                 ["bogus"], imgr.pol_next,
-                imgr.maxset_next, imgr.debias_next, {"bogus": 0.0},
-                imgr.weighting_next, imgr.systematic_noise_next,
-                imgr.systematic_cphase_noise_next, imgr.cp_uv_min,
-                imgr._ttype, imgr._fft_pad_factor, imgr._fft_conv_func,
-                imgr._fft_gridder_prad, imgr._fft_interp_order,
+                imgr._ttype, bogus_weighting, imgr._full_fft_params(),
             )
 
     def test_matches_imager_init_imager(self, gauss_im, observe,
@@ -415,12 +411,9 @@ def _call_compute_init_state(imgr):
         imgr.pol_next, imgr.mf_next, imgr.transform_next,
         imgr.mf_order, imgr.mf_order_pol, imgr.mf_rm, imgr.mf_cm,
         imgr.norm_init, imgr.flux_next, imgr.clipfloor_next,
-        sorted(imgr.dat_term_next.keys()),
-        imgr.maxset_next, imgr.debias_next, imgr.snrcut_next,
-        imgr.weighting_next, imgr.systematic_noise_next,
-        imgr.systematic_cphase_noise_next, imgr.cp_uv_min,
-        imgr._ttype, imgr._fft_pad_factor, imgr._fft_conv_func,
-        imgr._fft_gridder_prad, imgr._fft_interp_order,
+        sorted(imgr.dat_term_next.keys()), imgr._ttype,
+        imgr._full_data_weighting_params(),
+        imgr._full_fft_params(),
     )
 
 
@@ -515,12 +508,9 @@ class TestComputeInitState:
             imgr.pol_next, imgr.mf_next, imgr.transform_next,
             imgr.mf_order, imgr.mf_order_pol, imgr.mf_rm, imgr.mf_cm,
             imgr.norm_init, imgr.flux_next, imgr.clipfloor_next,
-            sorted(imgr.dat_term_next.keys()),
-            imgr.maxset_next, imgr.debias_next, imgr.snrcut_next,
-            imgr.weighting_next, imgr.systematic_noise_next,
-            imgr.systematic_cphase_noise_next, imgr.cp_uv_min,
-            imgr._ttype, imgr._fft_pad_factor, imgr._fft_conv_func,
-            imgr._fft_gridder_prad, imgr._fft_interp_order,
+            sorted(imgr.dat_term_next.keys()), imgr._ttype,
+            imgr._full_data_weighting_params(),
+            imgr._full_fft_params(),
             compute_data=False, prior_data_tuples=sentinel,
         )
         assert state.data_tuples is sentinel
@@ -536,12 +526,9 @@ class TestComputeInitState:
                 imgr.pol_next, imgr.mf_next, imgr.transform_next,
                 imgr.mf_order, imgr.mf_order_pol, imgr.mf_rm, imgr.mf_cm,
                 imgr.norm_init, imgr.flux_next, imgr.clipfloor_next,
-                sorted(imgr.dat_term_next.keys()),
-                imgr.maxset_next, imgr.debias_next, imgr.snrcut_next,
-                imgr.weighting_next, imgr.systematic_noise_next,
-                imgr.systematic_cphase_noise_next, imgr.cp_uv_min,
-                imgr._ttype, imgr._fft_pad_factor, imgr._fft_conv_func,
-                imgr._fft_gridder_prad, imgr._fft_interp_order,
+                sorted(imgr.dat_term_next.keys()), imgr._ttype,
+                imgr._full_data_weighting_params(),
+                imgr._full_fft_params(),
             )
 
 

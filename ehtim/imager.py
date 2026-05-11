@@ -824,12 +824,8 @@ class Imager:
             self.pol_next, self.mf_next, self.transform_next,
             self.mf_order, self.mf_order_pol, self.mf_rm, self.mf_cm,
             self.norm_init, self.flux_next, self.clipfloor_next,
-            sorted(self.dat_term_next.keys()),
-            self.maxset_next, self.debias_next, self.snrcut_next,
-            self.weighting_next, self.systematic_noise_next,
-            self.systematic_cphase_noise_next, self.cp_uv_min,
-            self._ttype, self._fft_pad_factor, self._fft_conv_func,
-            self._fft_gridder_prad, self._fft_interp_order,
+            sorted(self.dat_term_next.keys()), self._ttype,
+            self._full_data_weighting_params(), self._full_fft_params(),
             compute_data=self._change_imgr_params,
             prior_data_tuples=getattr(self, "_data_tuples", None),
         )
@@ -883,6 +879,27 @@ class Imager:
             'beam_size': self.beam_size,
             'mf_flux': self.mf_flux,
             **self.regparams,
+        }
+
+    def _full_data_weighting_params(self):
+        """Bundle data-weighting params into a single dict for the backend."""
+        return {
+            'maxset': self.maxset_next,
+            'debias': self.debias_next,
+            'snrcut': self.snrcut_next,
+            'weighting': self.weighting_next,
+            'systematic_noise': self.systematic_noise_next,
+            'systematic_cphase_noise': self.systematic_cphase_noise_next,
+            'cp_uv_min': self.cp_uv_min,
+        }
+
+    def _full_fft_params(self):
+        """Bundle FFT/NFFT params into a single dict for the backend."""
+        return {
+            'fft_pad_factor': self._fft_pad_factor,
+            'fft_conv_func': self._fft_conv_func,
+            'fft_gridder_prad': self._fft_gridder_prad,
+            'fft_interp_order': self._fft_interp_order,
         }
 
     def make_reg_dict(self, imcur):

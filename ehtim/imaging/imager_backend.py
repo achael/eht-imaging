@@ -534,11 +534,7 @@ class ImagerInitState(NamedTuple):
 
 
 def compute_data_tuples(obslist, prior, embed_mask, dat_term_keys, pol,
-                        maxset, debias, snrcut, weighting,
-                        systematic_noise, systematic_cphase_noise,
-                        cp_uv_min, ttype,
-                        fft_pad_factor, fft_conv_func, fft_gridder_prad,
-                        fft_interp_order):
+                        ttype, data_weighting_params, fft_params):
     """Pre-compute (data, sigma, A) tuples for every (data-term, observation) pair.
 
     Dispatches to polutils.polchisqdata for polarimetric terms (in
@@ -553,13 +549,15 @@ def compute_data_tuples(obslist, prior, embed_mask, dat_term_keys, pol,
         Sorted dat_term names. Each must be in DATATERMS or DATATERMS_POL.
     pol : str
         Polarization mode of the imager (e.g. 'I', 'IP', 'IV').
-    maxset, debias, snrcut, weighting, systematic_noise,
-    systematic_cphase_noise, cp_uv_min : scalar / dict
-        Per-data-term knobs forwarded to imutils.chisqdata. snrcut is a
-        dict keyed by dname.
     ttype : {'direct', 'fast', 'nfft'}
-    fft_pad_factor, fft_conv_func, fft_gridder_prad, fft_interp_order :
-        FFT/NFFT-specific parameters.
+    data_weighting_params : dict
+        Per-data-term knobs forwarded to imutils.chisqdata. Expected keys:
+        'maxset', 'debias', 'snrcut' (dict[dname -> float]), 'weighting',
+        'systematic_noise', 'systematic_cphase_noise', 'cp_uv_min'.
+    fft_params : dict
+        FFT/NFFT-specific parameters. Expected keys:
+        'fft_pad_factor', 'fft_conv_func', 'fft_gridder_prad',
+        'fft_interp_order'.
 
     Returns
     -------
@@ -575,11 +573,13 @@ def compute_data_tuples(obslist, prior, embed_mask, dat_term_keys, pol,
             dname_key = dname if n_obs == 1 else f"{dname}_{i}"
 
             if dname in DATATERMS_POL:
-                tup = polutils.polchisqdata(obs, prior, embed_mask, dname,
-                                            ttype=ttype,
-                                            fft_pad_factor=fft_pad_factor,
-                                            conv_func=fft_conv_func,
-                                            p_rad=fft_gridder_prad)
+                tup = polutils.polchisqdata(
+                    obs, prior, embed_mask, dname,
+                    ttype=ttype,
+                    fft_pad_factor=fft_params['fft_pad_factor'],
+                    conv_func=fft_params['fft_conv_func'],
+                    p_rad=fft_params['fft_gridder_prad'],
+                )
 
             elif dname in DATATERMS:
                 if pol in POLARIZATION_MODES:
@@ -590,18 +590,22 @@ def compute_data_tuples(obslist, prior, embed_mask, dat_term_keys, pol,
                 else:
                     dterm_pol = pol
 
-                tup = imutils.chisqdata(obs, prior, embed_mask, dname,
-                                        pol=dterm_pol, maxset=maxset,
-                                        debias=debias,
-                                        snrcut=snrcut[dname],
-                                        weighting=weighting,
-                                        systematic_noise=systematic_noise,
-                                        systematic_cphase_noise=systematic_cphase_noise,
-                                        ttype=ttype, order=fft_interp_order,
-                                        fft_pad_factor=fft_pad_factor,
-                                        conv_func=fft_conv_func,
-                                        p_rad=fft_gridder_prad,
-                                        cp_uv_min=cp_uv_min)
+                tup = imutils.chisqdata(
+                    obs, prior, embed_mask, dname,
+                    pol=dterm_pol,
+                    maxset=data_weighting_params['maxset'],
+                    debias=data_weighting_params['debias'],
+                    snrcut=data_weighting_params['snrcut'][dname],
+                    weighting=data_weighting_params['weighting'],
+                    systematic_noise=data_weighting_params['systematic_noise'],
+                    systematic_cphase_noise=data_weighting_params['systematic_cphase_noise'],
+                    cp_uv_min=data_weighting_params['cp_uv_min'],
+                    ttype=ttype,
+                    order=fft_params['fft_interp_order'],
+                    fft_pad_factor=fft_params['fft_pad_factor'],
+                    conv_func=fft_params['fft_conv_func'],
+                    p_rad=fft_params['fft_gridder_prad'],
+                )
             else:
                 raise Exception(f"data term {dname} not recognized!")
 
@@ -616,9 +620,8 @@ def compute_init_state(
     pol, mf, transforms,
     mf_order, mf_order_pol, mf_rm, mf_cm,
     norm_init, flux, clipfloor,
-    dat_term_keys, maxset, debias, snrcut, weighting,
-    systematic_noise, systematic_cphase_noise, cp_uv_min,
-    ttype, fft_pad_factor, fft_conv_func, fft_gridder_prad, fft_interp_order,
+    dat_term_keys, ttype,
+    data_weighting_params, fft_params,
     *, compute_data=True, prior_data_tuples=None,
 ):
     """Build solver-ready imager state. Pure function.
@@ -630,7 +633,7 @@ def compute_init_state(
 
     JAX note: when jitted, expect static_argnames=('pol', 'mf', 'transforms',
     'mf_order', 'mf_order_pol', 'mf_rm', 'mf_cm', 'ttype', 'dat_term_keys',
-    'compute_data') plus static dict-key structure on snrcut.
+    'compute_data') plus static dict-key structure on data_weighting_params.
 
     Parameters
     ----------
@@ -649,10 +652,11 @@ def compute_init_state(
         Multi-frequency expansion orders + RM/CM solve flags.
     norm_init : bool
     flux, clipfloor : float
-    dat_term_keys, maxset, debias, snrcut, weighting,
-    systematic_noise, systematic_cphase_noise, cp_uv_min, ttype,
-    fft_pad_factor, fft_conv_func, fft_gridder_prad, fft_interp_order :
-        Forwarded to compute_data_tuples; see its docstring.
+    dat_term_keys : iterable of str
+        Sorted dat_term names. Each must be in DATATERMS or DATATERMS_POL.
+    ttype : {'direct', 'fast', 'nfft'}
+    data_weighting_params, fft_params : dict
+        Forwarded to compute_data_tuples; see its docstring for required keys.
 
     Other Parameters
     ----------------
@@ -725,10 +729,7 @@ def compute_init_state(
     if compute_data:
         data_tuples = compute_data_tuples(
             obslist, prior_image, embed_mask, dat_term_keys, pol,
-            maxset, debias, snrcut, weighting,
-            systematic_noise, systematic_cphase_noise, cp_uv_min,
-            ttype, fft_pad_factor, fft_conv_func, fft_gridder_prad,
-            fft_interp_order,
+            ttype, data_weighting_params, fft_params,
         )
     else:
         data_tuples = prior_data_tuples
