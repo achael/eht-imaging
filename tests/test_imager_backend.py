@@ -25,6 +25,7 @@ from ehtim.imaging.imager_backend import (
     pack_imarr,
     transform_gradients,
     transform_imarr,
+    unpack_imarr,
 )
 
 # Parametrize over square, tall, and wide images
@@ -1822,4 +1823,99 @@ class TestEmbedPackImarr:
         """3D imarr is rejected; only 1D and 2D are supported."""
         with pytest.raises(Exception, match="should have one or two dimensions"):
             pack_imarr(np.zeros((2, 2, 4)), np.array([1, 1]))
+
+
+class TestUnpackImarr:
+    """Direct unit tests for unpack_imarr.
+
+    unpack_imarr is the inverse of pack_imarr: it walks the rows of init_arr
+    and, for each row k, either consumes the next nimage values from vec
+    (when which_solve[k] != 0) or falls back to init_arr[k] (when 0).
+
+    The pack -> unpack round-trip is the contract checked here. It is
+    identity on solved-for rows; on unsolved rows it equals init_arr,
+    not the original imarr the vec was packed from.
+    """
+
+    def test_round_trip_stokes_i(self):
+        """Single-freq Stokes-I round-trip with which_solve=[1]."""
+        rng = np.random.default_rng(0)
+        imarr = rng.uniform(0.1, 1.0, size=(1, 16))
+        which_solve = np.array([1])
+        vec = pack_imarr(imarr, which_solve)
+        out = unpack_imarr(vec, imarr, which_solve)
+        np.testing.assert_array_equal(out, imarr)
+
+    def test_round_trip_full_iquv(self):
+        """which_solve all ones: pack/unpack is identity for any init_arr."""
+        rng = np.random.default_rng(1)
+        imarr = rng.uniform(-1.0, 1.0, size=(4, 12))
+        init_arr = rng.uniform(-5.0, 5.0, size=(4, 12))
+        which_solve = np.array([1, 1, 1, 1])
+        vec = pack_imarr(imarr, which_solve)
+        out = unpack_imarr(vec, init_arr, which_solve)
+        # All rows solved -> unsolved fallback never engaged; init_arr is ignored.
+        np.testing.assert_array_equal(out, imarr)
+
+    def test_round_trip_partial_solve_uses_init_arr(self):
+        """Unsolved rows of the output equal init_arr; solved rows equal imarr."""
+        rng = np.random.default_rng(2)
+        imarr = rng.uniform(-1.0, 1.0, size=(4, 8))
+        init_arr = rng.uniform(-5.0, 5.0, size=(4, 8))
+        which_solve = np.array([1, 1, 0, 0])  # IP-style: solve I and mprime
+        vec = pack_imarr(imarr, which_solve)
+        out = unpack_imarr(vec, init_arr, which_solve)
+        np.testing.assert_array_equal(out[0], imarr[0])
+        np.testing.assert_array_equal(out[1], imarr[1])
+        np.testing.assert_array_equal(out[2], init_arr[2])
+        np.testing.assert_array_equal(out[3], init_arr[3])
+
+    def test_round_trip_iv(self):
+        """IV-style which_solve=[1,0,0,1] picks rows 0 and 3 from vec."""
+        rng = np.random.default_rng(3)
+        imarr = rng.uniform(-1.0, 1.0, size=(4, 10))
+        init_arr = rng.uniform(-5.0, 5.0, size=(4, 10))
+        which_solve = np.array([1, 0, 0, 1])
+        vec = pack_imarr(imarr, which_solve)
+        out = unpack_imarr(vec, init_arr, which_solve)
+        np.testing.assert_array_equal(out[0], imarr[0])
+        np.testing.assert_array_equal(out[1], init_arr[1])
+        np.testing.assert_array_equal(out[2], init_arr[2])
+        np.testing.assert_array_equal(out[3], imarr[3])
+
+    def test_round_trip_multifreq_pol(self):
+        """nimage=10 (mf+pol): solve I, mprime, alpha, beta."""
+        rng = np.random.default_rng(4)
+        imarr = rng.uniform(-1.0, 1.0, size=(10, 6))
+        init_arr = rng.uniform(-5.0, 5.0, size=(10, 6))
+        which_solve = np.array([1, 1, 0, 0, 1, 1, 0, 0, 0, 0])
+        vec = pack_imarr(imarr, which_solve)
+        out = unpack_imarr(vec, init_arr, which_solve)
+        for k in (0, 1, 4, 5):
+            np.testing.assert_array_equal(out[k], imarr[k])
+        for k in (2, 3, 6, 7, 8, 9):
+            np.testing.assert_array_equal(out[k], init_arr[k])
+
+    def test_all_zero_which_solve_returns_init_arr(self):
+        """When nothing is solved for, vec is empty and output equals init_arr."""
+        init_arr = np.arange(20, dtype=float).reshape(4, 5)
+        which_solve = np.array([0, 0, 0, 0])
+        out = unpack_imarr(np.array([]), init_arr, which_solve)
+        np.testing.assert_array_equal(out, init_arr)
+
+    def test_1d_round_trip_solved(self):
+        """1D init_arr with which_solve=[1]: vec is unpacked back into 1D shape."""
+        rng = np.random.default_rng(7)
+        imarr = rng.uniform(0.1, 1.0, size=8)  # 1D
+        which_solve = np.array([1])
+        vec = pack_imarr(imarr, which_solve)
+        out = unpack_imarr(vec, imarr, which_solve)
+        assert out.shape == imarr.shape
+        np.testing.assert_array_equal(out, imarr)
+
+    def test_which_solve_length_mismatch_raises(self):
+        """which_solve length must equal init_arr's nsolve dimension."""
+        init_arr = np.zeros((4, 5))
+        with pytest.raises(Exception, match="inconsistent shape with which_solve"):
+            unpack_imarr(np.zeros(5), init_arr, np.array([1, 0, 0]))
 
