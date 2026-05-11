@@ -10,6 +10,7 @@ import pytest
 import ehtim as eh
 from ehtim.imaging.imager_backend import (
     ImagerInitState,
+    _pol_solve_block,
     compute_chisq_dict,
     compute_chisq_term,
     compute_chisqdata_term,
@@ -3072,4 +3073,49 @@ class TestComputeChisqgradTerm(_ChisqTermFixtures):
         new = compute_chisqgrad_term(imcur, 'pvis', A, data, sigma,
                                      ttype='direct', mask=mask)
         np.testing.assert_allclose(new, legacy, rtol=1e-12, atol=1e-15)
+
+
+class TestPolSolveBlock:
+    """Tests for _pol_solve_block.
+
+    Slices a polarimetric Stokes block out of which_solve. The function is
+    a seam for the future WhichSolve(stokes, spectral) NamedTuple refactor;
+    today it's a static 4-wide slice for the multifrequency + pol case.
+    """
+
+    def test_singlefreq_stokes_i_passthrough(self):
+        """Single-freq Stokes-I: 1-wide which_solve, non-pol mode -> identity."""
+        ws = np.array([1])
+        out = _pol_solve_block(ws, pol='I')
+        np.testing.assert_array_equal(out, ws)
+
+    def test_singlefreq_pol_passthrough(self):
+        """Single-freq pol: 4-wide which_solve, pol mode -> identity (no slicing needed)."""
+        ws = np.array([1, 1, 1, 0])
+        out = _pol_solve_block(ws, pol='IP')
+        np.testing.assert_array_equal(out, ws)
+
+    def test_multifreq_stokes_i_passthrough(self):
+        """Multifreq Stokes-I: 3-wide which_solve, non-pol mode -> identity."""
+        ws = np.array([1, 1, 1])
+        out = _pol_solve_block(ws, pol='I')
+        np.testing.assert_array_equal(out, ws)
+
+    def test_multifreq_pol_sliced(self):
+        """Multifreq pol: 10-wide which_solve, pol mode -> first 4 entries."""
+        ws = np.array([1, 1, 0, 0, 1, 1, 0, 0, 0, 0])
+        out = _pol_solve_block(ws, pol='IP')
+        np.testing.assert_array_equal(out, ws[:4])
+
+    def test_multifreq_pol_non_pol_mode_passthrough(self):
+        """If pol mode is not in POLARIZATION_MODES, do not slice even if length > 4."""
+        ws = np.array([1, 1, 1, 0, 0, 0, 0, 0, 0, 0])
+        out = _pol_solve_block(ws, pol='I')
+        np.testing.assert_array_equal(out, ws)
+
+    def test_pol_mode_short_which_solve_passthrough(self):
+        """Pol mode but 4-wide which_solve: no slicing (single-frequency case)."""
+        ws = np.array([1, 0, 0, 1])
+        out = _pol_solve_block(ws, pol='IV')
+        np.testing.assert_array_equal(out, ws)
 

@@ -868,6 +868,24 @@ _CHISQ_DISPATCH = {
 }
 
 
+def _pol_solve_block(which_solve, pol):
+    """Slice the polarimetric (Stokes) block from which_solve.
+
+    Multi-frequency polarimetric `which_solve` has layout
+    [I, rho, phi, psi, alpha, beta, alpha_p, beta_p, RM, CM] (10 slots);
+    pol chi^2 gradient kernels only consume the first four (the Stokes
+    block). Single-frequency polarimetric which_solve is already 4-wide,
+    so this is a no-op there.
+
+    TODO(Phase 6): replace with a `WhichSolve(stokes, spectral)` NamedTuple
+    so arbitrary spectral layouts do not need this hardcoded slice. Flagged
+    by Andrew in #227.
+    """
+    if pol in POLARIZATION_MODES and len(which_solve) > 4:
+        return which_solve[:4]
+    return which_solve
+
+
 def _lookup_chisq_entry(dtype, ttype):
     """Look up (chisq_fn, chisqgrad_fn, is_pol) for (dtype, ttype). Raises on miss."""
     if ttype not in ('direct', 'fast', 'nfft'):
