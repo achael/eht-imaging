@@ -25,6 +25,7 @@ from ehtim.imaging.imager_backend import (
     pack_imarr,
     transform_gradients,
     transform_imarr,
+    transform_imarr_inverse,
     unpack_imarr,
 )
 
@@ -1930,4 +1931,196 @@ class TestUnpackImarr:
         init_arr = np.zeros((4, 5))
         with pytest.raises(Exception, match="inconsistent shape with which_solve"):
             unpack_imarr(np.zeros(5), init_arr, np.array([1, 0, 0]))
+
+
+class TestTransformImarr:
+    """Direct unit tests for transform_imarr + transform_imarr_inverse.
+
+    transform_imarr maps solver-space variables to physical Stokes-like
+    variables and transform_imarr_inverse reverses it. The four transforms
+    in production are:
+      * log         -- imarr[0] (Stokes I) <-> exp(.) / log(.)
+      * mcv         -- (mfrac_prime, vfrac) <-> (rho, psi) with mfrac in [0, 1-|v|]
+      * vcv         -- (mfrac, vfrac_prime) <-> (rho, psi) with vfrac in [-(1-|m|), 1-|m|]
+      * polcv       -- (rho_prime, psi_prime) <-> (rho, psi) with rho in (0,1), psi in (-pi/2, pi/2)
+
+    Tests cover (a) the identity / no-op case, (b) the log dispatch across
+    nimage = 1, 3, 4, 10, (c) round-trip identity for each transform on
+    valid operating points, (d) specific value checks at well-known points,
+    and (e) the mutually-exclusive transform guards.
+    """
+
+    @staticmethod
+    def _pol_solver_imarr(seed=0, n=8, mfrac_prime=None, vfrac=None,
+                          rho=None, psi=None, log_I=None):
+        """Build a (4, n) solver-space image array.
+
+        Slot meanings depend on the active transform (mcv vs vcv vs polcv);
+        the helper just sets row values in solver space. Passing a scalar
+        pins the row, None makes the row a smooth ramp -- this keeps test
+        data deterministic without needing a separate RNG fixture per case.
+        """
+        rng = np.random.default_rng(seed)
+        out = np.empty((4, n))
+        out[0] = log_I if log_I is not None else rng.uniform(-1.0, 1.0, size=n)
+        out[1] = mfrac_prime if mfrac_prime is not None else rng.uniform(-2.0, 2.0, size=n)
+        out[2] = rng.uniform(-0.5, 0.5, size=n)  # phi (passes through)
+        out[3] = vfrac if vfrac is not None else rng.uniform(-0.3, 0.3, size=n)
+        # If caller specified physical (rho, psi) instead of solver values,
+        # use those directly; the test will run inverse first.
+        if rho is not None:
+            out[1] = rho
+        if psi is not None:
+            out[3] = psi
+        return out
+
+    # --------------------------- identity / log only ---------------------------
+
+    def test_no_transform_is_identity(self):
+        """Empty transforms list returns imarr unchanged."""
+        imarr = np.arange(16, dtype=float).reshape(4, 4)
+        out = transform_imarr(imarr, [], np.array([1, 1, 1, 1]))
+        np.testing.assert_array_equal(out, imarr)
+
+    def test_log_1d_dispatch(self):
+        """nimage=1 (1D imarr): out = exp(in)."""
+        rng = np.random.default_rng(11)
+        imarr = rng.uniform(-1.0, 1.0, size=8)
+        out = transform_imarr(imarr, ["log"], np.array([1, 0, 0, 0]))
+        np.testing.assert_allclose(out, np.exp(imarr), rtol=1e-12)
+
+    def test_log_multifreq_stokes_i(self):
+        """nimage=3 (mf no-pol): only row 0 (Stokes I) is exponentiated."""
+        rng = np.random.default_rng(12)
+        imarr = rng.uniform(-1.0, 1.0, size=(3, 5))
+        out = transform_imarr(imarr, ["log"], np.array([1, 1, 1, 0]))
+        np.testing.assert_allclose(out[0], np.exp(imarr[0]), rtol=1e-12)
+        np.testing.assert_array_equal(out[1], imarr[1])
+        np.testing.assert_array_equal(out[2], imarr[2])
+
+    def test_log_single_freq_pol(self):
+        """nimage=4 (sf pol): row 0 only is exponentiated."""
+        imarr = self._pol_solver_imarr(seed=13, vfrac=0.0)
+        which_solve = np.array([1, 1, 1, 0])
+        out = transform_imarr(imarr, ["log"], which_solve)
+        np.testing.assert_allclose(out[0], np.exp(imarr[0]), rtol=1e-12)
+        np.testing.assert_array_equal(out[1:], imarr[1:])
+
+    def test_log_multifreq_pol(self):
+        """nimage=10 (mf+pol): row 0 only is exponentiated; rows 4-9 untouched."""
+        rng = np.random.default_rng(14)
+        imarr = np.empty((10, 6))
+        imarr[0] = rng.uniform(-1.0, 1.0, size=6)
+        imarr[1:4] = rng.uniform(-0.3, 0.3, size=(3, 6))
+        imarr[4:10] = rng.uniform(-0.3, 0.3, size=(6, 6))
+        which_solve = np.array([1, 1, 0, 0, 1, 1, 0, 0, 0, 0])
+        out = transform_imarr(imarr, ["log"], which_solve)
+        np.testing.assert_allclose(out[0], np.exp(imarr[0]), rtol=1e-12)
+        np.testing.assert_array_equal(out[1:], imarr[1:])
+
+    # --------------------------- round-trip identity ---------------------------
+
+    @pytest.mark.parametrize(
+        "transforms,which_solve,kwargs",
+        [
+            (["log"], np.array([1, 0, 0, 0]), {}),
+            (["log", "mcv"], np.array([1, 1, 1, 0]), {"vfrac": 0.0}),
+            (["log", "mcv"], np.array([1, 1, 0, 0]), {}),
+            (["log", "vcv"], np.array([1, 0, 0, 1]), {"mfrac_prime": 0.0}),
+            (["log", "polcv"], np.array([1, 1, 0, 1]), {}),
+            (["mcv"], np.array([0, 1, 0, 0]), {"vfrac": 0.0}),
+            (["vcv"], np.array([0, 0, 0, 1]), {"mfrac_prime": 0.0}),
+            (["polcv"], np.array([0, 1, 0, 1]), {}),
+        ],
+        ids=[
+            "log_only", "log_mcv_IP", "log_mcv_general",
+            "log_vcv_IV", "log_polcv_IPV",
+            "mcv_only", "vcv_only", "polcv_only",
+        ],
+    )
+    def test_round_trip_identity(self, transforms, which_solve, kwargs):
+        """inverse(forward(imarr)) == imarr on valid operating points."""
+        imarr = self._pol_solver_imarr(seed=42, **kwargs)
+        phys = transform_imarr(imarr, transforms, which_solve)
+        back = transform_imarr_inverse(phys, transforms, which_solve)
+        np.testing.assert_allclose(back, imarr, atol=1e-10, rtol=1e-10)
+
+    def test_round_trip_log_1d(self):
+        """log inverse on 1D imarr is the inverse of exp."""
+        rng = np.random.default_rng(21)
+        imarr = rng.uniform(-1.0, 1.0, size=8)  # solver values (log I)
+        phys = transform_imarr(imarr, ["log"], np.array([1, 0, 0, 0]))
+        back = transform_imarr_inverse(phys, ["log"], np.array([1, 0, 0, 0]))
+        np.testing.assert_allclose(back, imarr, rtol=1e-12)
+
+    # --------------------------- specific value checks -------------------------
+
+    def test_mcv_at_zero(self):
+        """mcv at (mfrac_prime=0, vfrac=0): rho=0.5, psi=0.
+
+        With mfrac_max = 1 - |vfrac| = 1 and arctan(0) = 0:
+            mfrac = 1 * (0.5 + 0/pi) = 0.5
+            rho = sqrt(0.5^2 + 0^2) = 0.5
+            psi = arcsin(0 / 0.5) = 0
+        """
+        imarr = self._pol_solver_imarr(seed=0, n=4,
+                                       mfrac_prime=0.0, vfrac=0.0)
+        phys = transform_imarr(imarr, ["mcv"], np.array([1, 1, 0, 0]))
+        np.testing.assert_allclose(phys[1], 0.5, rtol=1e-12)
+        np.testing.assert_allclose(phys[3], 0.0, atol=1e-12)
+
+    def test_vcv_at_zero(self):
+        """vcv at (mfrac=0, vfrac_prime=0): rho=0, psi=0.
+
+        With vfrac_max = 1 - |mfrac| = 1 and arctan(0) = 0:
+            vfrac = 2 * 1 * 0 / pi = 0
+            rho = sqrt(0 + 0) = 0
+            psi = arcsin(0/0) -- handled inside, expect rho=0.
+        """
+        imarr = self._pol_solver_imarr(seed=0, n=4,
+                                       mfrac_prime=0.0, vfrac=0.0)
+        # In vcv the slot meanings are (I, mfrac, phi, vfrac_prime).
+        phys = transform_imarr(imarr, ["vcv"], np.array([0, 0, 0, 1]))
+        np.testing.assert_allclose(phys[1], 0.0, atol=1e-12)
+
+    def test_polcv_at_zero(self):
+        """polcv at (rho_prime=0, psi_prime=0): rho=0.5, psi=0."""
+        imarr = self._pol_solver_imarr(seed=0, n=4,
+                                       mfrac_prime=0.0, vfrac=0.0)
+        # polcv slot meanings: (I, rho_prime, phi, psi_prime).
+        phys = transform_imarr(imarr, ["polcv"], np.array([1, 1, 0, 1]))
+        np.testing.assert_allclose(phys[1], 0.5, rtol=1e-12)
+        np.testing.assert_allclose(phys[3], 0.0, atol=1e-12)
+
+    # --------------------------- guards ---------------------------------------
+
+    def test_polcv_with_mcv_raises(self):
+        """polcv cannot be combined with mcv."""
+        imarr = self._pol_solver_imarr(seed=0)
+        with pytest.raises(Exception, match="not compatible with 'polcv'"):
+            transform_imarr(imarr, ["polcv", "mcv"], np.array([1, 1, 0, 1]))
+
+    def test_polcv_with_vcv_raises(self):
+        """polcv cannot be combined with vcv."""
+        imarr = self._pol_solver_imarr(seed=0)
+        with pytest.raises(Exception, match="not compatible with 'polcv'"):
+            transform_imarr(imarr, ["polcv", "vcv"], np.array([1, 1, 0, 1]))
+
+    def test_mcv_with_vcv_raises(self):
+        """mcv and vcv cannot be combined."""
+        imarr = self._pol_solver_imarr(seed=0)
+        with pytest.raises(Exception, match="not compatible with each other"):
+            transform_imarr(imarr, ["mcv", "vcv"], np.array([1, 1, 0, 1]))
+
+    def test_inverse_guards_match_forward(self):
+        """Same conflict checks apply on the inverse path."""
+        imarr = self._pol_solver_imarr(seed=0)
+        with pytest.raises(Exception, match="not compatible"):
+            transform_imarr_inverse(imarr, ["mcv", "vcv"], np.array([1, 1, 0, 1]))
+
+    def test_invalid_nimage_raises(self):
+        """nimage not in (1, 3, 4, 10) is rejected."""
+        bad = np.zeros((2, 5))  # nimage = 2 is not a valid layout
+        with pytest.raises(Exception, match="either 1, 3, 4, or 10"):
+            transform_imarr(bad, ["log"], np.array([1, 0, 0, 0]))
 
