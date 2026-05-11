@@ -462,6 +462,9 @@ def compute_which_solve(pol, mf,
     is_pol = pol in POLARIZATION_MODES
 
     if mf:
+        # TODO: when we get to multifreq pol imaging, generalize this to
+        # an arbitrary number of spectral terms (currently hard-coded to
+        # alpha + beta). Likewise for the mf_order_pol branch below.
         if mf_order == 2:
             do_a, do_b = 1, 1
         elif mf_order == 1:
