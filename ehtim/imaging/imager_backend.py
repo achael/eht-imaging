@@ -17,6 +17,8 @@
 #    You should have received a copy of the GNU General Public License
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+from typing import NamedTuple
+
 import numpy as np
 
 import ehtim.imaging.imager_utils as imutils
@@ -65,6 +67,10 @@ REGULARIZERS_CM = ['l2_cm', 'tv_cm']
 REGULARIZERS_ISPECTRAL = REGULARIZERS_SPECIND + REGULARIZERS_CURV
 REGULARIZERS_POLSPECTRAL = REGULARIZERS_SPECIND_P + REGULARIZERS_CURV_P + REGULARIZERS_RM + REGULARIZERS_CM
 REGULARIZERS_SPECTRAL = REGULARIZERS_ISPECTRAL + REGULARIZERS_POLSPECTRAL
+
+# Default initial-polarization parameters used when init image has no Q/U/V.
+MEANPOL_INIT = 0.2     # mean polarization fraction
+SIGMAPOL_INIT = 1.e-2  # perturbation scale
 
 
 def embed_imarr(imarr, mask, clipfloor=0., randomfloor=False):
@@ -337,15 +343,16 @@ def make_initarr(image, mask, norm_init=False, flux=1,
         init_phi = np.arctan2(init_u, init_q)
         init_psi = np.arctan2(init_v, init_P)
 
-        if not(np.any(init_rho!=0)) and randompol_lin:
-            print("No polarimetric image in init!")
-            print("--initializing with 20% pol and random orientation!")
+        # Caller (compute_init_state) decides when random-pol init applies.
+        # Here we just honor the flag: True means "use random pol initialization
+        # regardless of init image content"; False means "use init image's pol".
+        if randompol_lin:
+            print("Initializing linear polarization with 20% pol and random orientation!")
             init_rho = meanpol * (np.ones(nimage) + sigmapol * np.random.rand(nimage))
             init_phi = np.zeros(nimage) + sigmapol * np.random.rand(nimage)
 
-        if not(np.any(init_psi!=0)) and randompol_circ:
-            print("No circular polarization image in init!")
-            print("--initializing with random values!")
+        if randompol_circ:
+            print("Initializing circular polarization with random values!")
             init_rho = meanpol * (np.ones(nimage) + sigmapol * np.random.rand(nimage))
             init_psi = np.zeros(nimage) + sigmapol * np.random.rand(nimage)
 
@@ -395,6 +402,347 @@ def make_initarr(image, mask, norm_init=False, flux=1,
             initarr = np.array((init_I, init_a, init_b))
 
     return initarr
+
+
+def compute_logfreqratios(freq_list, reffreq):
+    """Log-frequency ratios for multi-frequency imaging.
+
+    Parameters
+    ----------
+    freq_list : list of float
+        Reference frequencies (Hz) of each observation in the obslist.
+    reffreq : float
+        Reference frequency (Hz) of the multi-frequency image expansion.
+
+    Returns
+    -------
+    list of float
+        log(nu_i / reffreq) for each nu_i in freq_list.
+    """
+    return [np.log(nu / reffreq) for nu in freq_list]
+
+
+def compute_which_solve(pol, mf,
+                        mf_order=0, mf_order_pol=0,
+                        mf_rm=False, mf_cm=False):
+    """Build the which-solve flag array indicating which Stokes / spectral
+    parameter slots are optimized vs held fixed.
+
+    Layout of the returned array:
+        single-freq Stokes I:     [1]
+        single-freq polarimetric: [I, rho, phi, psi]
+        multi-freq Stokes I:      [1, alpha, beta]
+        multi-freq polarimetric:  [I, rho, phi, psi, alpha, beta,
+                                   alpha_p, beta_p, RM, CM]
+
+    Parameters
+    ----------
+    pol : str
+        Polarization mode (e.g. 'I', 'IP', 'IV'). Polarimetric modes are those
+        listed in POLARIZATION_MODES.
+    mf : bool
+        Multi-frequency imaging flag.
+    mf_order : {0, 1, 2}, optional
+        Stokes-I spectral expansion order. 0 -> none, 1 -> alpha only,
+        2 -> alpha + beta. Only used when mf=True.
+    mf_order_pol : {0, 1, 2}, optional
+        Polarimetric spectral expansion order (alpha_p, beta_p). Only used
+        when mf=True and pol is polarimetric.
+    mf_rm : bool, optional
+        Solve for rotation measure (RM). Only used when mf=True and pol is
+        polarimetric.
+    mf_cm : bool, optional
+        Solve for conversion measure (CM). Only used when mf=True and pol is
+        polarimetric.
+
+    Returns
+    -------
+    np.ndarray of int (0/1)
+    """
+    is_pol = pol in POLARIZATION_MODES
+
+    if mf:
+        # TODO: when we get to multifreq pol imaging, generalize this to
+        # an arbitrary number of spectral terms (currently hard-coded to
+        # alpha + beta). Likewise for the mf_order_pol branch below.
+        if mf_order == 2:
+            do_a, do_b = 1, 1
+        elif mf_order == 1:
+            do_a, do_b = 1, 0
+        elif mf_order == 0:
+            do_a, do_b = 0, 0
+        else:
+            raise Exception("Imager.mf_order must be 0, 1, or 2!")
+
+        if is_pol:
+            if mf_order_pol == 2:
+                do_ap, do_bp = 1, 1
+            elif mf_order_pol == 1:
+                do_ap, do_bp = 1, 0
+            elif mf_order_pol == 0:
+                do_ap, do_bp = 0, 0
+            else:
+                raise Exception("Imager.mf_order_pol must be 0, 1, or 2!")
+
+            do_rm = 1 if mf_rm else 0
+            do_cm = 1 if mf_cm else 0
+            do_i = 1 if 'I' in pol else 0
+
+            # TODO: No Stokes V imaging for multifrequency yet
+            do_rho = 1
+            do_phi = 1
+            do_psi = 0
+            if not (('P' in pol) or ('QU' in pol)):
+                raise Exception("Multifrequency polarization imaging currently requires pol_next=P!")
+            if 'V' in pol:
+                raise Exception("Stokes V not yet implemented in multifrequency polarization imaging!")
+
+            return np.array([do_i, do_rho, do_phi, do_psi,
+                             do_a, do_b, do_ap, do_bp,
+                             do_rm, do_cm])
+
+        return np.array([1, do_a, do_b])
+
+    # single frequency
+    if is_pol:
+        do_i = 1 if 'I' in pol else 0
+        if ('P' in pol) or ('QU' in pol):
+            do_rho = 1
+            do_phi = 1
+        else:
+            do_rho = 0
+            do_phi = 0
+        do_psi = 1 if 'V' in pol else 0
+        return np.array([do_i, do_rho, do_phi, do_psi])
+
+    return np.array([1])
+
+
+class ImagerInitState(NamedTuple):
+    """Solver-ready state produced by compute_init_state.
+
+    Each field corresponds to an Imager._* attribute consumed by
+    compute_objective / compute_objective_grad.
+    """
+    init_arr: np.ndarray         # multi-D, solver space
+    init_vec: np.ndarray         # 1D packed solver vector
+    prior_arr: np.ndarray        # multi-D, physical space
+    data_tuples: dict            # keyed by dname or f"{dname}_{i}"
+    embed_mask: np.ndarray       # boolean
+    coord_matrix: np.ndarray     # pixel-coord companion to embed_mask
+    logfreqratio_list: list      # log(nu_i / reffreq)
+    nimage: int                  # number of active pixels = sum(embed_mask)
+    which_solve: np.ndarray      # int 0/1 flags
+    reffreq: float               # may be re-bound to init.rf when mf=True
+
+
+def compute_data_tuples(obslist, prior, embed_mask, dat_term_keys, pol,
+                        ttype, data_weighting_params, fft_params):
+    """Pre-compute (data, sigma, A) tuples for every (data-term, observation) pair.
+
+    Dispatches to polutils.polchisqdata for polarimetric terms (in
+    DATATERMS_POL) and imutils.chisqdata for standard terms (in DATATERMS).
+
+    Parameters
+    ----------
+    obslist : list of Obsdata
+    prior : Image
+    embed_mask : np.ndarray of bool
+    dat_term_keys : iterable of str
+        Sorted dat_term names. Each must be in DATATERMS or DATATERMS_POL.
+    pol : str
+        Polarization mode of the imager (e.g. 'I', 'IP', 'IV').
+    ttype : {'direct', 'fast', 'nfft'}
+    data_weighting_params : dict
+        Per-data-term knobs forwarded to imutils.chisqdata. Expected keys:
+        'maxset', 'debias', 'snrcut' (dict[dname -> float]), 'weighting',
+        'systematic_noise', 'systematic_cphase_noise', 'cp_uv_min'.
+    fft_params : dict
+        FFT/NFFT-specific parameters. Expected keys:
+        'fft_pad_factor', 'fft_conv_func', 'fft_gridder_prad',
+        'fft_interp_order'.
+
+    Returns
+    -------
+    dict
+        Keys are dname (single-obs) or f"{dname}_{i}" (multi-obs).
+        Values are (data, sigma, A) tuples returned by chisqdata/polchisqdata.
+    """
+    n_obs = len(obslist)
+    data_tuples = {}
+
+    for dname in dat_term_keys:
+        for i, obs in enumerate(obslist):
+            dname_key = dname if n_obs == 1 else f"{dname}_{i}"
+
+            if dname in DATATERMS_POL:
+                tup = polutils.polchisqdata(
+                    obs, prior, embed_mask, dname,
+                    ttype=ttype,
+                    fft_pad_factor=fft_params['fft_pad_factor'],
+                    conv_func=fft_params['fft_conv_func'],
+                    p_rad=fft_params['fft_gridder_prad'],
+                )
+
+            elif dname in DATATERMS:
+                if pol in POLARIZATION_MODES:
+                    if 'I' not in pol:
+                        raise Exception(
+                            f"cannot use dterm {dname} with pol={pol}")
+                    dterm_pol = 'I'
+                else:
+                    dterm_pol = pol
+
+                tup = imutils.chisqdata(
+                    obs, prior, embed_mask, dname,
+                    pol=dterm_pol,
+                    maxset=data_weighting_params['maxset'],
+                    debias=data_weighting_params['debias'],
+                    snrcut=data_weighting_params['snrcut'][dname],
+                    weighting=data_weighting_params['weighting'],
+                    systematic_noise=data_weighting_params['systematic_noise'],
+                    systematic_cphase_noise=data_weighting_params['systematic_cphase_noise'],
+                    cp_uv_min=data_weighting_params['cp_uv_min'],
+                    ttype=ttype,
+                    order=fft_params['fft_interp_order'],
+                    fft_pad_factor=fft_params['fft_pad_factor'],
+                    conv_func=fft_params['fft_conv_func'],
+                    p_rad=fft_params['fft_gridder_prad'],
+                )
+            else:
+                raise Exception(f"data term {dname} not recognized!")
+
+            data_tuples[dname_key] = tup
+
+    return data_tuples
+
+
+def compute_init_state(
+    obslist, init_image, prior_image,
+    freq_list, reffreq,
+    pol, mf, transforms,
+    mf_order, mf_order_pol, mf_rm, mf_cm,
+    norm_init, flux, clipfloor,
+    dat_term_keys, ttype,
+    data_weighting_params, fft_params,
+    *, compute_data=True, prior_data_tuples=None,
+):
+    """Build solver-ready imager state. Pure function.
+
+    Composes compute_embed + compute_logfreqratios + compute_which_solve +
+    make_initarr + transform_imarr_inverse + pack_imarr + compute_data_tuples
+    into the single state bundle consumed by compute_objective /
+    compute_objective_grad.
+
+    JAX note: when jitted, expect static_argnames=('pol', 'mf', 'transforms',
+    'mf_order', 'mf_order_pol', 'mf_rm', 'mf_cm', 'ttype', 'dat_term_keys',
+    'compute_data') plus static dict-key structure on data_weighting_params.
+
+    Parameters
+    ----------
+    obslist : list of Obsdata
+    init_image, prior_image : Image
+        Initial image (L-BFGS-B start point) and regularizer prior image.
+    freq_list : list of float
+        Reference frequencies (Hz) of each obs in obslist.
+    reffreq : float
+        Reference frequency (Hz) of the multi-frequency expansion. When
+        mf=True this is overridden by init_image.rf.
+    pol, mf, transforms : str, bool, list of str
+        Polarization mode, multi-frequency flag, transform stack
+        (e.g. ['log', 'mcv']).
+    mf_order, mf_order_pol, mf_rm, mf_cm :
+        Multi-frequency expansion orders + RM/CM solve flags.
+    norm_init : bool
+    flux, clipfloor : float
+    dat_term_keys : iterable of str
+        Sorted dat_term names. Each must be in DATATERMS or DATATERMS_POL.
+    ttype : {'direct', 'fast', 'nfft'}
+    data_weighting_params, fft_params : dict
+        Forwarded to compute_data_tuples; see its docstring for required keys.
+
+    Other Parameters
+    ----------------
+    compute_data : bool, optional
+        When False, skip compute_data_tuples and reuse prior_data_tuples
+        (used by Imager when _change_imgr_params is False).
+    prior_data_tuples : dict, optional
+        Pre-existing data_tuples dict reused when compute_data=False.
+
+    Returns
+    -------
+    ImagerInitState
+    """
+    n_obs = len(obslist)
+    if len(freq_list) != n_obs:
+        raise Exception(
+            "compute_init_state: len(obslist) and len(freq_list) must match.")
+
+    embed_mask, coord_matrix = compute_embed(
+        prior_image.imvec, prior_image.xdim, prior_image.ydim,
+        prior_image.psize, clipfloor,
+    )
+    nimage = int(np.sum(embed_mask))
+
+    # multi-freq: reffreq is re-bound to the init image's rf (matches the
+    # legacy Imager.init_imager behavior at the start of the mf branch).
+    reffreq_eff = init_image.rf if mf else reffreq
+    logfreqratio_list = compute_logfreqratios(freq_list, reffreq_eff)
+
+    which_solve = compute_which_solve(
+        pol, mf, mf_order=mf_order, mf_order_pol=mf_order_pol,
+        mf_rm=mf_rm, mf_cm=mf_cm,
+    )
+
+    is_pol = pol in POLARIZATION_MODES
+
+    # Decide here (not inside make_initarr) whether random-pol initialization
+    # is needed. Random init only kicks in when (a) the imager is in
+    # polarimetric mode for that Stokes block, AND (b) init_image has no
+    # nonzero polarization to use as a starting point. If init_image already
+    # carries Q/U/V, make_initarr will use those values directly.
+    init_has_pol_lin = is_pol and (
+        (len(init_image.qvec) > 0 and np.any(init_image.qvec != 0))
+        or (len(init_image.uvec) > 0 and np.any(init_image.uvec != 0))
+        or (len(init_image.vvec) > 0 and np.any(init_image.vvec != 0))
+    )
+    init_has_pol_circ = is_pol and (
+        len(init_image.vvec) > 0 and np.any(init_image.vvec != 0)
+    )
+    randompol_lin = is_pol and (('P' in pol) or ('QU' in pol)) and not init_has_pol_lin
+    randompol_circ = is_pol and ('V' in pol) and not init_has_pol_circ
+
+    init_phys = make_initarr(
+        init_image, embed_mask,
+        norm_init=norm_init, flux=flux,
+        mf=mf, pol=is_pol,
+        randompol_lin=randompol_lin, randompol_circ=randompol_circ,
+        meanpol=MEANPOL_INIT, sigmapol=SIGMAPOL_INIT,
+    )
+    prior_phys = make_initarr(
+        prior_image, embed_mask,
+        norm_init=norm_init, flux=flux,
+        mf=mf, pol=is_pol,
+        randompol_lin=False, randompol_circ=False,
+    )
+
+    init_solver = transform_imarr_inverse(init_phys, transforms, which_solve)
+    init_vec = pack_imarr(init_solver, which_solve)
+
+    if compute_data:
+        data_tuples = compute_data_tuples(
+            obslist, prior_image, embed_mask, dat_term_keys, pol,
+            ttype, data_weighting_params, fft_params,
+        )
+    else:
+        data_tuples = prior_data_tuples
+
+    return ImagerInitState(
+        init_arr=init_solver, init_vec=init_vec, prior_arr=prior_phys,
+        data_tuples=data_tuples, embed_mask=embed_mask,
+        coord_matrix=coord_matrix, logfreqratio_list=logfreqratio_list,
+        nimage=nimage, which_solve=which_solve, reffreq=reffreq_eff,
+    )
 
 
 def compute_embed(imvec, xdim, ydim, psize, clipfloor):

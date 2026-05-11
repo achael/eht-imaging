@@ -9,13 +9,18 @@ import pytest
 
 import ehtim as eh
 from ehtim.imaging.imager_backend import (
+    ImagerInitState,
     compute_chisq_dict,
     compute_chisqgrad_dict,
+    compute_data_tuples,
     compute_embed,
+    compute_init_state,
+    compute_logfreqratios,
     compute_objective,
     compute_objective_grad,
     compute_reg_dict,
     compute_reggrad_dict,
+    compute_which_solve,
     transform_gradients,
     transform_imarr,
 )
@@ -92,25 +97,6 @@ class TestComputeEmbed:
                 clipfloor=np.max(im.imvec) + 1.0,
             )
 
-    def test_matches_imager(self, gauss_im, observe):
-        """Backend compute_embed matches Imager.set_embed exactly."""
-        obs = observe(gauss_im)
-        imgr = eh.imager.Imager(obs, gauss_im, gauss_im, gauss_im.total_flux(),
-                                ttype="direct")
-
-        # Call the Imager method
-        imgr.set_embed()
-
-        # Call the backend function with the same args
-        embed_mask, coord_matrix = compute_embed(
-            imgr.prior_next.imvec, imgr.prior_next.xdim,
-            imgr.prior_next.ydim, imgr.prior_next.psize,
-            imgr.clipfloor_next,
-        )
-
-        np.testing.assert_array_equal(embed_mask, imgr._embed_mask)
-        np.testing.assert_array_equal(coord_matrix, imgr._coord_matrix)
-
     @pytest.mark.parametrize("xdim,ydim", IMAGE_SHAPES)
     def test_shapes(self, make_rect_image, xdim, ydim):
         """Backend handles square, rectangular, and odd-dim images correctly."""
@@ -130,6 +116,420 @@ class TestComputeEmbed:
         # Coordinates should be within +/- (xdim/2) * psize
         max_coord = (im.xdim // 2) * im.psize
         assert np.all(np.abs(coord_matrix) <= max_coord + im.psize)
+
+
+class TestComputeLogfreqratios:
+    """Tests for compute_logfreqratios (extracted from Imager.init_imager
+    and Imager.obslist_next setter)."""
+
+    def test_single_frequency_at_reference(self):
+        """Single freq at reffreq -> [0.0]."""
+        result = compute_logfreqratios([230e9], 230e9)
+        assert result == [0.0]
+
+    def test_known_three_frequency_case(self):
+        """Three frequencies bracketing reffreq."""
+        result = compute_logfreqratios([86e9, 230e9, 345e9], 230e9)
+        np.testing.assert_allclose(
+            result,
+            [np.log(86e9 / 230e9), 0.0, np.log(345e9 / 230e9)],
+        )
+
+    def test_monotonic_in_nu(self):
+        """Higher nu than reffreq -> positive ratio; lower -> negative."""
+        result = compute_logfreqratios([100e9, 230e9, 500e9], 230e9)
+        assert result[0] < 0.0
+        assert result[1] == 0.0
+        assert result[2] > 0.0
+
+    def test_returns_list(self):
+        """Return type is a list (not a numpy array)."""
+        result = compute_logfreqratios([230e9, 345e9], 230e9)
+        assert isinstance(result, list)
+
+    def test_empty_freq_list(self):
+        """Empty input -> empty output (degenerate but well-defined)."""
+        assert compute_logfreqratios([], 230e9) == []
+
+    def test_matches_imager_obslist_setter(self, gauss_im, observe):
+        """Backend output matches obslist_next.setter computation."""
+        obs = observe(gauss_im)
+        imgr = eh.imager.Imager(
+            obs, gauss_im, prior_im=gauss_im, flux=gauss_im.total_flux(),
+            data_term={"vis": 1}, ttype="direct", pol="I",
+        )
+        expected = compute_logfreqratios(imgr.freq_list, imgr.reffreq)
+        assert imgr._logfreqratio_list == expected
+
+
+class TestComputeWhichSolve:
+    """Tests for compute_which_solve (extracted from Imager.init_imager)."""
+
+    # --- single-frequency ---
+
+    def test_sf_stokes_i(self):
+        np.testing.assert_array_equal(
+            compute_which_solve("I", mf=False), np.array([1]),
+        )
+
+    def test_sf_polarimetric_p(self):
+        np.testing.assert_array_equal(
+            compute_which_solve("P", mf=False), np.array([0, 1, 1, 0]),
+        )
+
+    def test_sf_polarimetric_ip(self):
+        np.testing.assert_array_equal(
+            compute_which_solve("IP", mf=False), np.array([1, 1, 1, 0]),
+        )
+
+    def test_sf_polarimetric_iv(self):
+        np.testing.assert_array_equal(
+            compute_which_solve("IV", mf=False), np.array([1, 0, 0, 1]),
+        )
+
+    def test_sf_polarimetric_ipv(self):
+        np.testing.assert_array_equal(
+            compute_which_solve("IPV", mf=False), np.array([1, 1, 1, 1]),
+        )
+
+    def test_sf_polarimetric_v(self):
+        np.testing.assert_array_equal(
+            compute_which_solve("V", mf=False), np.array([0, 0, 0, 1]),
+        )
+
+    # --- multi-frequency Stokes I ---
+
+    @pytest.mark.parametrize("mf_order,expected", [
+        (0, [1, 0, 0]),
+        (1, [1, 1, 0]),
+        (2, [1, 1, 1]),
+    ])
+    def test_mf_stokes_i_order(self, mf_order, expected):
+        np.testing.assert_array_equal(
+            compute_which_solve("I", mf=True, mf_order=mf_order),
+            np.array(expected),
+        )
+
+    # --- multi-frequency polarimetric ---
+
+    def test_mf_polarimetric_minimal(self):
+        """MF + IP + all spectral orders 0 + no RM/CM."""
+        np.testing.assert_array_equal(
+            compute_which_solve("IP", mf=True,
+                                mf_order=0, mf_order_pol=0,
+                                mf_rm=False, mf_cm=False),
+            np.array([1, 1, 1, 0,  # I, rho, phi, psi
+                      0, 0,         # alpha, beta
+                      0, 0,         # alpha_p, beta_p
+                      0, 0]),       # RM, CM
+        )
+
+    def test_mf_polarimetric_all_on(self):
+        """MF + IP with everything enabled."""
+        np.testing.assert_array_equal(
+            compute_which_solve("IP", mf=True,
+                                mf_order=2, mf_order_pol=2,
+                                mf_rm=True, mf_cm=True),
+            np.array([1, 1, 1, 0,
+                      1, 1,
+                      1, 1,
+                      1, 1]),
+        )
+
+    def test_mf_polarimetric_rm_only(self):
+        np.testing.assert_array_equal(
+            compute_which_solve("IP", mf=True,
+                                mf_order=1, mf_order_pol=1,
+                                mf_rm=True, mf_cm=False),
+            np.array([1, 1, 1, 0,
+                      1, 0,
+                      1, 0,
+                      1, 0]),
+        )
+
+    # --- error cases ---
+
+    def test_raises_on_invalid_mf_order(self):
+        with pytest.raises(Exception, match="mf_order must be 0, 1, or 2"):
+            compute_which_solve("I", mf=True, mf_order=3)
+
+    def test_raises_on_invalid_mf_order_pol(self):
+        with pytest.raises(Exception, match="mf_order_pol must be 0, 1, or 2"):
+            compute_which_solve("IP", mf=True, mf_order=1, mf_order_pol=3)
+
+    def test_raises_on_mf_pol_without_p(self):
+        with pytest.raises(Exception, match="requires pol_next=P"):
+            compute_which_solve("IV", mf=True, mf_order=1, mf_order_pol=1)
+
+    def test_raises_on_mf_pol_with_v(self):
+        # 'IPV' contains both 'P' and 'V'; the V check fires.
+        with pytest.raises(Exception, match="Stokes V not yet implemented"):
+            compute_which_solve("IPV", mf=True, mf_order=1, mf_order_pol=1)
+
+    # --- parity with init_imager ---
+
+    def test_matches_imager_init_imager_stokes_i(self, gauss_im, observe):
+        obs = observe(gauss_im)
+        imgr = eh.imager.Imager(
+            obs, gauss_im, prior_im=gauss_im, flux=gauss_im.total_flux(),
+            data_term={"vis": 1}, ttype="direct", pol="I",
+        )
+        imgr.check_params()
+        imgr.check_limits()
+        imgr.init_imager()
+        np.testing.assert_array_equal(
+            imgr._which_solve,
+            compute_which_solve(imgr.pol_next, imgr.mf_next,
+                                mf_order=imgr.mf_order,
+                                mf_order_pol=imgr.mf_order_pol,
+                                mf_rm=imgr.mf_rm, mf_cm=imgr.mf_cm),
+        )
+
+    def test_matches_imager_init_imager_polarimetric(self, gauss_im_pol, observe):
+        obs = observe(gauss_im_pol)
+        imgr = eh.imager.Imager(
+            obs, gauss_im_pol, prior_im=gauss_im_pol,
+            flux=gauss_im_pol.total_flux(),
+            data_term={"pvis": 1}, reg_term={"hw": 1},
+            ttype="direct", pol="IP", transform=["log", "mcv"],
+        )
+        imgr.prior_next = imgr.prior_next.switch_polrep(
+            polrep_out="stokes", pol_prim_out="I")
+        imgr.init_next = imgr.init_next.switch_polrep(
+            polrep_out="stokes", pol_prim_out="I")
+        imgr.check_params()
+        imgr.check_limits()
+        imgr.init_imager()
+        np.testing.assert_array_equal(
+            imgr._which_solve,
+            compute_which_solve(imgr.pol_next, imgr.mf_next,
+                                mf_order=imgr.mf_order,
+                                mf_order_pol=imgr.mf_order_pol,
+                                mf_rm=imgr.mf_rm, mf_cm=imgr.mf_cm),
+        )
+
+
+def _call_compute_data_tuples(imgr):
+    """Call compute_data_tuples with the args init_imager would pass."""
+    return compute_data_tuples(
+        imgr.obslist_next, imgr.prior_next, imgr._embed_mask,
+        sorted(imgr.dat_term_next.keys()), imgr.pol_next,
+        imgr._ttype,
+        imgr._full_data_weighting_params(),
+        imgr._full_fft_params(),
+    )
+
+
+class TestComputeDataTuples:
+    """Tests for compute_data_tuples (extracted from Imager.init_imager)."""
+
+    def test_single_obs_single_term(self, gauss_im, observe, initialize_imager):
+        imgr, _ = initialize_imager(observe(gauss_im), gauss_im, {"vis": 1})
+        tuples = _call_compute_data_tuples(imgr)
+        assert set(tuples.keys()) == {"vis"}
+        assert len(tuples["vis"]) == 3
+
+    def test_multi_obs_key_suffixing(self, gauss_im, observe, initialize_imager):
+        obs1 = observe(gauss_im)
+        obs2 = observe(gauss_im)
+        imgr, _ = initialize_imager([obs1, obs2], gauss_im, {"vis": 1})
+        tuples = _call_compute_data_tuples(imgr)
+        assert set(tuples.keys()) == {"vis_0", "vis_1"}
+
+    def test_multiple_terms(self, gauss_im, observe, initialize_imager):
+        imgr, _ = initialize_imager(
+            observe(gauss_im), gauss_im, {"vis": 1, "amp": 1, "cphase": 1},
+        )
+        tuples = _call_compute_data_tuples(imgr)
+        assert set(tuples.keys()) == {"vis", "amp", "cphase"}
+
+    def test_polarimetric_term(self, gauss_im_pol, observe, initialize_imager):
+        imgr, _ = initialize_imager(
+            observe(gauss_im_pol), gauss_im_pol,
+            {"pvis": 1}, reg_term={"hw": 1}, pol="IP",
+            transform=["log", "mcv"],
+        )
+        tuples = _call_compute_data_tuples(imgr)
+        assert set(tuples.keys()) == {"pvis"}
+        assert len(tuples["pvis"]) == 3
+
+    def test_mixed_pol_and_unpol_terms(self, gauss_im_pol, observe,
+                                       initialize_imager):
+        """pol=IP with both pvis (pol) and vis (unpol) data terms."""
+        imgr, _ = initialize_imager(
+            observe(gauss_im_pol), gauss_im_pol,
+            {"vis": 1, "pvis": 1}, reg_term={"hw": 1},
+            pol="IP", transform=["log", "mcv"],
+        )
+        tuples = _call_compute_data_tuples(imgr)
+        assert set(tuples.keys()) == {"vis", "pvis"}
+
+    def test_unrecognized_term_raises(self, gauss_im, observe,
+                                      initialize_imager):
+        imgr, _ = initialize_imager(observe(gauss_im), gauss_im, {"vis": 1})
+        bogus_weighting = {**imgr._full_data_weighting_params(),
+                           'snrcut': {'bogus': 0.0}}
+        with pytest.raises(Exception, match="not recognized"):
+            compute_data_tuples(
+                imgr.obslist_next, imgr.prior_next, imgr._embed_mask,
+                ["bogus"], imgr.pol_next,
+                imgr._ttype, bogus_weighting, imgr._full_fft_params(),
+            )
+
+    def test_matches_imager_init_imager(self, gauss_im, observe,
+                                        initialize_imager):
+        """Parity: backend output equals dict populated by init_imager."""
+        imgr, _ = initialize_imager(
+            observe(gauss_im), gauss_im, {"vis": 1, "amp": 1},
+        )
+        result = _call_compute_data_tuples(imgr)
+        assert set(result.keys()) == set(imgr._data_tuples.keys())
+        for key, expected in imgr._data_tuples.items():
+            for arr_a, arr_b in zip(result[key], expected, strict=True):
+                np.testing.assert_array_equal(arr_a, arr_b)
+
+    def test_matches_imager_init_imager_polarimetric(self, gauss_im_pol,
+                                                      observe,
+                                                      initialize_imager):
+        imgr, _ = initialize_imager(
+            observe(gauss_im_pol), gauss_im_pol,
+            {"pvis": 1}, reg_term={"hw": 1}, pol="IP",
+            transform=["log", "mcv"],
+        )
+        result = _call_compute_data_tuples(imgr)
+        assert set(result.keys()) == set(imgr._data_tuples.keys())
+        for key, expected in imgr._data_tuples.items():
+            for arr_a, arr_b in zip(result[key], expected, strict=True):
+                np.testing.assert_array_equal(arr_a, arr_b)
+
+
+def _call_compute_init_state(imgr):
+    """Call compute_init_state with args pulled from an initialized Imager."""
+    return compute_init_state(
+        imgr.obslist_next, imgr.init_next, imgr.prior_next,
+        imgr.freq_list, imgr.reffreq,
+        imgr.pol_next, imgr.mf_next, imgr.transform_next,
+        imgr.mf_order, imgr.mf_order_pol, imgr.mf_rm, imgr.mf_cm,
+        imgr.norm_init, imgr.flux_next, imgr.clipfloor_next,
+        sorted(imgr.dat_term_next.keys()), imgr._ttype,
+        imgr._full_data_weighting_params(),
+        imgr._full_fft_params(),
+    )
+
+
+def _assert_state_matches_imager(state, imgr):
+    """Field-by-field parity: ImagerInitState vs Imager._* attributes."""
+    np.testing.assert_array_equal(state.init_arr, imgr._init_arr)
+    np.testing.assert_array_equal(state.init_vec, imgr._init_vec)
+    np.testing.assert_array_equal(state.prior_arr, imgr._prior_arr)
+    np.testing.assert_array_equal(state.embed_mask, imgr._embed_mask)
+    np.testing.assert_array_equal(state.coord_matrix, imgr._coord_matrix)
+    np.testing.assert_array_equal(state.which_solve, imgr._which_solve)
+    assert state.logfreqratio_list == imgr._logfreqratio_list
+    assert state.nimage == imgr._nimage
+    assert state.reffreq == imgr.reffreq
+    assert set(state.data_tuples.keys()) == set(imgr._data_tuples.keys())
+    for key, expected in imgr._data_tuples.items():
+        for arr_a, arr_b in zip(state.data_tuples[key], expected, strict=True):
+            np.testing.assert_array_equal(arr_a, arr_b)
+
+
+class TestComputeInitState:
+    """Tests for compute_init_state (orchestrator extracted from
+    Imager.init_imager). Parity tests run init_imager first to populate
+    Imager attributes, then call compute_init_state with the same args
+    and assert field-by-field equality."""
+
+    def test_returns_imager_init_state(self, gauss_im, observe,
+                                       initialize_imager):
+        imgr, _ = initialize_imager(observe(gauss_im), gauss_im, {"vis": 1})
+        state = _call_compute_init_state(imgr)
+        assert isinstance(state, ImagerInitState)
+
+    def test_matches_imager_init_imager_stokes_i(self, gauss_im, observe,
+                                                  initialize_imager):
+        imgr, _ = initialize_imager(
+            observe(gauss_im), gauss_im, {"vis": 1, "amp": 1},
+            reg_term={"simple": 1, "tv": 10},
+        )
+        np.random.seed(0)
+        state = _call_compute_init_state(imgr)
+        _assert_state_matches_imager(state, imgr)
+
+    def test_matches_imager_init_imager_polarimetric_ip(self, gauss_im_pol,
+                                                         observe,
+                                                         initialize_imager):
+        np.random.seed(0)
+        imgr, _ = initialize_imager(
+            observe(gauss_im_pol), gauss_im_pol,
+            {"pvis": 1}, reg_term={"hw": 1}, pol="IP",
+            transform=["log", "mcv"],
+        )
+        np.random.seed(0)
+        state = _call_compute_init_state(imgr)
+        _assert_state_matches_imager(state, imgr)
+
+    def test_matches_imager_init_imager_polarimetric_iv(self, gauss_im_pol,
+                                                         observe,
+                                                         initialize_imager):
+        np.random.seed(0)
+        imgr, _ = initialize_imager(
+            observe(gauss_im_pol), gauss_im_pol,
+            {"vvis": 1}, reg_term={"l2v": 1}, pol="IV",
+            transform=["log", "vcv"],
+        )
+        np.random.seed(0)
+        state = _call_compute_init_state(imgr)
+        _assert_state_matches_imager(state, imgr)
+
+    def test_matches_imager_init_imager_multi_obs(self, gauss_im, observe,
+                                                   initialize_imager):
+        obs1 = observe(gauss_im)
+        obs2 = observe(gauss_im)
+        imgr, _ = initialize_imager([obs1, obs2], gauss_im, {"vis": 1})
+        state = _call_compute_init_state(imgr)
+        _assert_state_matches_imager(state, imgr)
+
+    @pytest.mark.parametrize("xdim,ydim", IMAGE_SHAPES)
+    def test_rect_image_shapes(self, make_rect_image, eht_array, observe,
+                                initialize_imager, xdim, ydim):
+        im = make_rect_image(xdim, ydim)
+        imgr, _ = initialize_imager(observe(im), im, {"vis": 1})
+        state = _call_compute_init_state(imgr)
+        _assert_state_matches_imager(state, imgr)
+
+    def test_compute_data_false_uses_prior_tuples(self, gauss_im, observe,
+                                                   initialize_imager):
+        imgr, _ = initialize_imager(observe(gauss_im), gauss_im, {"vis": 1})
+        sentinel = {"vis": ("dummy", "tuple", "sentinel")}
+        state = compute_init_state(
+            imgr.obslist_next, imgr.init_next, imgr.prior_next,
+            imgr.freq_list, imgr.reffreq,
+            imgr.pol_next, imgr.mf_next, imgr.transform_next,
+            imgr.mf_order, imgr.mf_order_pol, imgr.mf_rm, imgr.mf_cm,
+            imgr.norm_init, imgr.flux_next, imgr.clipfloor_next,
+            sorted(imgr.dat_term_next.keys()), imgr._ttype,
+            imgr._full_data_weighting_params(),
+            imgr._full_fft_params(),
+            compute_data=False, prior_data_tuples=sentinel,
+        )
+        assert state.data_tuples is sentinel
+
+    def test_raises_on_obslist_freq_mismatch(self, gauss_im, observe,
+                                              initialize_imager):
+        imgr, _ = initialize_imager(observe(gauss_im), gauss_im, {"vis": 1})
+        with pytest.raises(Exception, match="len\\(obslist\\) and len\\(freq_list\\)"):
+            compute_init_state(
+                imgr.obslist_next, imgr.init_next, imgr.prior_next,
+                imgr.freq_list + [230e9],  # length mismatch
+                imgr.reffreq,
+                imgr.pol_next, imgr.mf_next, imgr.transform_next,
+                imgr.mf_order, imgr.mf_order_pol, imgr.mf_rm, imgr.mf_cm,
+                imgr.norm_init, imgr.flux_next, imgr.clipfloor_next,
+                sorted(imgr.dat_term_next.keys()), imgr._ttype,
+                imgr._full_data_weighting_params(),
+                imgr._full_fft_params(),
+            )
 
 
 # ---------------------------------------------------------------------------
