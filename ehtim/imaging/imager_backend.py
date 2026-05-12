@@ -1208,10 +1208,9 @@ def compute_data_tuples(obslist, prior, embed_mask, dat_term_keys, pol,
     data_weighting_params : DataWeighting
         Per-data-term knobs forwarded to imutils.chisqdata. See the DataWeighting
         docstring for the field list.
-    fft_params : dict
-        FFT/NFFT-specific parameters. Expected keys:
-        'fft_pad_factor', 'fft_conv_func', 'fft_gridder_prad',
-        'fft_interp_order'.
+    fft_params : FourierGridParams
+        Gridding parameters for ttype='fast' / 'nfft'. See the FourierGridParams
+        docstring for the field list.
 
     Returns
     -------
@@ -1235,10 +1234,10 @@ def compute_data_tuples(obslist, prior, embed_mask, dat_term_keys, pol,
                 systematic_noise=data_weighting_params.systematic_noise,
                 systematic_cphase_noise=data_weighting_params.systematic_cphase_noise,
                 cp_uv_min=data_weighting_params.cp_uv_min,
-                order=fft_params['fft_interp_order'],
-                fft_pad_factor=fft_params['fft_pad_factor'],
-                conv_func=fft_params['fft_conv_func'],
-                p_rad=fft_params['fft_gridder_prad'],
+                order=fft_params.fft_interp_order,
+                fft_pad_factor=fft_params.fft_pad_factor,
+                conv_func=fft_params.fft_conv_func,
+                p_rad=fft_params.fft_gridder_prad,
             )
 
     return data_tuples

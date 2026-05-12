@@ -38,6 +38,7 @@ from ehtim.imaging.imager_backend import (
     DATATERMS_POL,
     POLARIZATION_MODES,
     DataWeighting,
+    FourierGridParams,
     RegParams,
     compute_chisq_dict,
     compute_chisqgrad_dict,
@@ -764,13 +765,13 @@ class Imager:
         )
 
     def _full_fft_params(self):
-        """Bundle FFT/NFFT params into a single dict for the backend."""
-        return {
-            'fft_pad_factor': self._fft_pad_factor,
-            'fft_conv_func': self._fft_conv_func,
-            'fft_gridder_prad': self._fft_gridder_prad,
-            'fft_interp_order': self._fft_interp_order,
-        }
+        """Bundle Fourier-grid params into a FourierGridParams NamedTuple for the backend."""
+        return FourierGridParams(
+            fft_pad_factor=self._fft_pad_factor,
+            fft_conv_func=self._fft_conv_func,
+            fft_gridder_prad=self._fft_gridder_prad,
+            fft_interp_order=self._fft_interp_order,
+        )
 
     def make_reg_dict(self, imcur):
         """Make a dictionary of current regularizer values
