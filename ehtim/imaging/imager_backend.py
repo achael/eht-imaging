@@ -1201,7 +1201,7 @@ def compute_chisqgrad_dict(imcur, dat_term_keys,
 def compute_reg_dict(imcur, reg_term_keys,
                      mf, pol,
                      logfreqratio_list, n_obs,
-                     priorvec, norm_reg, regparams,
+                     priorvec, norm_reg, reg_params,
                      embed_mask):
     """Compute regularizer value for each regularizer term.
 
@@ -1226,19 +1226,20 @@ def compute_reg_dict(imcur, reg_term_keys,
         initial image used for not-solved-for slots in `unpack_imarr`).
     norm_reg : bool
         Whether to apply per-regularizer normalization.
-    regparams : dict
-        Bundle of regularizer parameters: must contain `flux`, `pflux`, `vflux`,
-        `xdim`, `ydim`, `psize`, `beam_size`, and `mf_flux` (list of per-freq
-        fluxes, required when any REGULARIZERS_ALLFREQS_I term is active);
-        plus any term-specific kwargs (e.g. `major`, `minor`, `PA`, `alpha_A`,
-        `epsilon_tv`). Spread into the underlying dispatchers as **kwargs.
+    reg_params : RegParams
+        Bundle of regularizer parameters. See the RegParams docstring for the
+        field list. Forwarded into each regularizer call via
+        ``**reg_params._asdict()``.
+    embed_mask : np.ndarray of bool
+        Pixel embedding mask.
 
     Returns
     -------
     reg_dict : dict
         Mapping from regname to regularizer scalar.
     """
-    mf_flux = regparams.get('mf_flux')
+    mf_flux = reg_params.mf_flux
+    reg_kwargs = reg_params._asdict()
     reg_dict = {}
 
     for regname in reg_term_keys:
@@ -1252,7 +1253,7 @@ def compute_reg_dict(imcur, reg_term_keys,
                 prior_pol = priorvec[0:4]
                 reg = polutils.polregularizer(imcur_pol, prior_pol, embed_mask,
                                               stype=regname, norm_reg=norm_reg,
-                                              **regparams)
+                                              **reg_kwargs)
 
             # Stokes I regularizers
             elif regname in REGULARIZERS:
@@ -1273,14 +1274,14 @@ def compute_reg_dict(imcur, reg_term_keys,
 
                         regi = imutils.regularizer(imcur_nu, prior_nu, embed_mask,
                                                    stype=regname_base, norm_reg=norm_reg,
-                                                   **{**regparams, 'flux': mf_flux[i]})
+                                                   **{**reg_kwargs, 'flux': mf_flux[i]})
 
                         reg = regi if i == 0 else reg + regi
 
                 else:
                     reg = imutils.regularizer(imcur[0], priorvec[0], embed_mask,
                                               stype=regname, norm_reg=norm_reg,
-                                              **regparams)
+                                              **reg_kwargs)
 
             # Spectral regularizers
             elif regname in REGULARIZERS_SPECTRAL:
@@ -1300,7 +1301,7 @@ def compute_reg_dict(imcur, reg_term_keys,
 
                 reg = mfutils.regularizer_mf(imcur[idx], priorvec[idx], embed_mask,
                                              stype=regname, norm_reg=norm_reg,
-                                             **regparams)
+                                             **reg_kwargs)
             else:
                 raise Exception(f"regularizer term {regname} not recognized!")
 
@@ -1308,7 +1309,7 @@ def compute_reg_dict(imcur, reg_term_keys,
         elif regname in REGULARIZERS_POL:
             reg = polutils.polregularizer(imcur, priorvec, embed_mask,
                                           stype=regname, norm_reg=norm_reg,
-                                          **regparams)
+                                          **reg_kwargs)
 
         # Single-frequency, single-polarization regularizer
         elif regname in REGULARIZERS:
@@ -1321,7 +1322,7 @@ def compute_reg_dict(imcur, reg_term_keys,
 
             reg = imutils.regularizer(imcur0, prior0, embed_mask,
                                       stype=regname, norm_reg=norm_reg,
-                                      **regparams)
+                                      **reg_kwargs)
         else:
             raise Exception(f"regularizer term {regname} not recognized!")
 
@@ -1333,7 +1334,7 @@ def compute_reg_dict(imcur, reg_term_keys,
 def compute_reggrad_dict(imcur, reg_term_keys,
                          mf, pol,
                          logfreqratio_list, n_obs,
-                         priorvec, norm_reg, regparams,
+                         priorvec, norm_reg, reg_params,
                          embed_mask,
                          which_solve, nimage):
     """Compute regularizer gradient for each regularizer term.
@@ -1341,7 +1342,7 @@ def compute_reggrad_dict(imcur, reg_term_keys,
     Parameters
     ----------
     imcur, reg_term_keys, mf, pol, logfreqratio_list, n_obs,
-    priorvec, norm_reg, regparams, embed_mask : see compute_reg_dict.
+    priorvec, norm_reg, reg_params, embed_mask : see compute_reg_dict.
     which_solve : np.ndarray of bool
         Per-Stokes solve mask (used by polregularizergrad).
     nimage : int
@@ -1354,7 +1355,8 @@ def compute_reggrad_dict(imcur, reg_term_keys,
         for single-pol, (4, nimage) for pol-bundled, or
         (len(imcur), nimage) for multifrequency.
     """
-    mf_flux = regparams.get('mf_flux')
+    mf_flux = reg_params.mf_flux
+    reg_kwargs = reg_params._asdict()
     reggrad_dict = {}
 
     for regname in reg_term_keys:
@@ -1370,7 +1372,7 @@ def compute_reggrad_dict(imcur, reg_term_keys,
                 regp = polutils.polregularizergrad(imcur_pol, prior_pol, embed_mask,
                                                    stype=regname, norm_reg=norm_reg,
                                                    pol_solve=pol_solve,
-                                                   **regparams)
+                                                   **reg_kwargs)
                 reggrad = np.zeros((len(imcur), nimage))
                 reggrad[0:4] = regp
 
@@ -1393,14 +1395,14 @@ def compute_reggrad_dict(imcur, reg_term_keys,
 
                         regi = imutils.regularizergrad(imcur_nu, prior_nu, embed_mask,
                                                        stype=regname_base, norm_reg=norm_reg,
-                                                       **{**regparams, 'flux': mf_flux[i]})
+                                                       **{**reg_kwargs, 'flux': mf_flux[i]})
                         reggrad_i = mfutils.mf_all_grads_chain(regi, imcur_nu, imcur, logfreqratio)
                         reggrad = reggrad_i if i == 0 else reggrad + reggrad_i
 
                 else:
                     regi = imutils.regularizergrad(imcur[0], priorvec[0], embed_mask,
                                                    stype=regname, norm_reg=norm_reg,
-                                                   **regparams)
+                                                   **reg_kwargs)
                     reggrad = np.zeros((len(imcur), nimage))
                     reggrad[0] = regi
 
@@ -1420,7 +1422,7 @@ def compute_reggrad_dict(imcur, reg_term_keys,
 
                 regmf = mfutils.regularizergrad_mf(imcur[idx], priorvec[idx], embed_mask,
                                                    stype=regname, norm_reg=norm_reg,
-                                                   **regparams)
+                                                   **reg_kwargs)
 
                 reggrad = np.zeros((len(imcur), nimage))
                 reggrad[idx] = regmf
@@ -1433,7 +1435,7 @@ def compute_reggrad_dict(imcur, reg_term_keys,
                 reggrad = polutils.polregularizergrad(imcur, priorvec, embed_mask,
                                                       stype=regname, norm_reg=norm_reg,
                                                       pol_solve=which_solve,
-                                                      **regparams)
+                                                      **reg_kwargs)
 
             # Single-frequency, single polarization regularizer
             elif regname in REGULARIZERS:
@@ -1445,7 +1447,7 @@ def compute_reggrad_dict(imcur, reg_term_keys,
                     prior0 = priorvec
                 reggrad = imutils.regularizergrad(imcur0, prior0, embed_mask,
                                                   stype=regname, norm_reg=norm_reg,
-                                                  **regparams)
+                                                  **reg_kwargs)
 
                 if pol in POLARIZATION_MODES:
                     reggrad = np.array((reggrad,
@@ -1465,7 +1467,7 @@ def compute_objective(imvec, initvec,
                       mf, pol,
                       which_solve, data_tuples, logfreqratio_list, n_obs,
                       dat_term, reg_term,
-                      priorvec, norm_reg, regparams,
+                      priorvec, norm_reg, reg_params,
                       transforms, embed_mask, ttype):
     """Compute the scalar imaging objective: data fidelity + regularization.
 
@@ -1504,7 +1506,7 @@ def compute_objective(imvec, initvec,
         'rgauss'. Distinct from `initvec` (the optimization start point).
     norm_reg : bool
         Whether to apply per-regularizer normalization.
-    regparams : dict
+    reg_params : RegParams
         Bundle of regularizer parameters. See compute_reg_dict.
     transforms : list of str
         Image transform list (e.g. ['log', 'mcv']) applied to imcur.
@@ -1539,7 +1541,7 @@ def compute_objective(imvec, initvec,
         imcur, reg_term_keys,
         mf, pol,
         logfreqratio_list, n_obs,
-        priorvec, norm_reg, regparams,
+        priorvec, norm_reg, reg_params,
         embed_mask,
     )
 
@@ -1561,7 +1563,7 @@ def compute_objective_grad(imvec, initvec,
                            mf, pol,
                            which_solve, data_tuples, logfreqratio_list, n_obs,
                            dat_term, reg_term,
-                           priorvec, norm_reg, regparams,
+                           priorvec, norm_reg, reg_params,
                            transforms, embed_mask, ttype, nimage):
     """Compute the gradient of the imaging objective with respect to imvec.
 
@@ -1577,7 +1579,7 @@ def compute_objective_grad(imvec, initvec,
     Parameters
     ----------
     imvec, initvec, mf, pol, which_solve, data_tuples, logfreqratio_list,
-    n_obs, dat_term, reg_term, priorvec, norm_reg, regparams, transforms,
+    n_obs, dat_term, reg_term, priorvec, norm_reg, reg_params, transforms,
     embed_mask, ttype : see compute_objective.
     nimage : int
         Number of active pixels (sum of embed_mask). Used to size the
@@ -1612,7 +1614,7 @@ def compute_objective_grad(imvec, initvec,
         imcur, reg_term_keys,
         mf, pol,
         logfreqratio_list, n_obs,
-        priorvec, norm_reg, regparams,
+        priorvec, norm_reg, reg_params,
         embed_mask,
         which_solve, nimage,
     )
