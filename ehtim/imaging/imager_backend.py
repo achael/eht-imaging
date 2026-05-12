@@ -1,7 +1,7 @@
 # imager_backend.py
 # Pure functional backend for imager.py
 
-from typing import NamedTuple
+from typing import NamedTuple, Optional
 
 import numpy as np
 
@@ -731,6 +731,35 @@ class ImagerInitState(NamedTuple):
     nimage: int                  # number of active pixels = sum(embed_mask)
     which_solve: np.ndarray      # int 0/1 flags
     reffreq: float               # may be re-bound to init.rf when mf=True
+
+
+class RegParams(NamedTuple):
+    """Bundle of regularizer parameters passed to compute_reg_dict / compute_reggrad_dict.
+
+    Built once per imager run by Imager._full_regparams() and forwarded into
+    each regularizer function via ``**reg_params._asdict()``. Regularizer
+    functions take what they need from this bundle; extra fields are ignored
+    via their trailing ``**kwargs``.
+
+    Field groups:
+      Image scale          : flux, pflux, vflux
+      Image geometry       : xdim, ydim, psize, beam_size
+      Multifrequency       : mf_flux
+      Term-specific kwargs : major, minor, PA, alpha_A, epsilon_tv
+    """
+    flux: float
+    pflux: Optional[float]
+    vflux: Optional[float]
+    xdim: int
+    ydim: int
+    psize: float
+    beam_size: float
+    mf_flux: Optional[list]      # length n_obs when REGULARIZERS_ALLFREQS_I active
+    major: float
+    minor: float
+    PA: float
+    alpha_A: float
+    epsilon_tv: float
 
 
 def compute_data_tuples(obslist, prior, embed_mask, dat_term_keys, pol,
