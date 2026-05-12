@@ -37,6 +37,7 @@ from ehtim.imaging.imager_backend import (
     DATATERMS,
     DATATERMS_POL,
     POLARIZATION_MODES,
+    RegParams,
     compute_chisq_dict,
     compute_chisqgrad_dict,
     compute_init_state,
@@ -732,18 +733,22 @@ class Imager:
         )
 
     def _full_regparams(self):
-        """Bundle all regularizer params into a single dict for the backend."""
-        return {
-            'flux': self.flux_next,
-            'pflux': self.pflux_next,
-            'vflux': self.vflux_next,
-            'xdim': self.prior_next.xdim,
-            'ydim': self.prior_next.ydim,
-            'psize': self.prior_next.psize,
-            'beam_size': self.beam_size,
-            'mf_flux': self.mf_flux,
-            **self.regparams,
-        }
+        """Bundle all regularizer params into a RegParams NamedTuple for the backend."""
+        return RegParams(
+            flux=self.flux_next,
+            pflux=self.pflux_next,
+            vflux=self.vflux_next,
+            xdim=self.prior_next.xdim,
+            ydim=self.prior_next.ydim,
+            psize=self.prior_next.psize,
+            beam_size=self.beam_size,
+            mf_flux=self.mf_flux,
+            major=self.regparams['major'],
+            minor=self.regparams['minor'],
+            PA=self.regparams['PA'],
+            alpha_A=self.regparams['alpha_A'],
+            epsilon_tv=self.regparams['epsilon_tv'],
+        )
 
     def _full_data_weighting_params(self):
         """Bundle data-weighting params into a single dict for the backend."""
