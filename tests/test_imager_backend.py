@@ -10,6 +10,7 @@ import pytest
 import ehtim as eh
 from ehtim.imaging.imager_backend import (
     ImagerInitState,
+    RegParams,
     compute_chisq_dict,
     compute_chisqgrad_dict,
     compute_data_tuples,
@@ -566,22 +567,26 @@ def _call_backend_chisqgrad_dict(imgr, imcur):
 
 
 def _build_regparams(imgr, mf_flux=None):
-    """Bundle all regularizer params from an Imager into a single dict.
+    """Bundle all regularizer params from an Imager into a RegParams NamedTuple.
 
     `mf_flux` overrides imgr.mf_flux for tests that exercise the
     REGULARIZERS_ALLFREQS_I validation path.
     """
-    return {
-        'flux': imgr.flux_next,
-        'pflux': imgr.pflux_next,
-        'vflux': imgr.vflux_next,
-        'xdim': imgr.prior_next.xdim,
-        'ydim': imgr.prior_next.ydim,
-        'psize': imgr.prior_next.psize,
-        'beam_size': imgr.beam_size,
-        'mf_flux': imgr.mf_flux if mf_flux is None else mf_flux,
-        **imgr.regparams,
-    }
+    return RegParams(
+        flux=imgr.flux_next,
+        pflux=imgr.pflux_next,
+        vflux=imgr.vflux_next,
+        xdim=imgr.prior_next.xdim,
+        ydim=imgr.prior_next.ydim,
+        psize=imgr.prior_next.psize,
+        beam_size=imgr.beam_size,
+        mf_flux=imgr.mf_flux if mf_flux is None else mf_flux,
+        major=imgr.regparams['major'],
+        minor=imgr.regparams['minor'],
+        PA=imgr.regparams['PA'],
+        alpha_A=imgr.regparams['alpha_A'],
+        epsilon_tv=imgr.regparams['epsilon_tv'],
+    )
 
 
 def _call_backend_reg_dict(imgr, imcur, mf_flux=None):
