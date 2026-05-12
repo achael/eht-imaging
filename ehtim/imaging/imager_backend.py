@@ -1205,10 +1205,9 @@ def compute_data_tuples(obslist, prior, embed_mask, dat_term_keys, pol,
     pol : str
         Polarization mode of the imager (e.g. 'I', 'IP', 'IV').
     ttype : {'direct', 'fast', 'nfft'}
-    data_weighting_params : dict
-        Per-data-term knobs forwarded to imutils.chisqdata. Expected keys:
-        'maxset', 'debias', 'snrcut' (dict[dname -> float]), 'weighting',
-        'systematic_noise', 'systematic_cphase_noise', 'cp_uv_min'.
+    data_weighting_params : DataWeighting
+        Per-data-term knobs forwarded to imutils.chisqdata. See the DataWeighting
+        docstring for the field list.
     fft_params : dict
         FFT/NFFT-specific parameters. Expected keys:
         'fft_pad_factor', 'fft_conv_func', 'fft_gridder_prad',
@@ -1229,13 +1228,13 @@ def compute_data_tuples(obslist, prior, embed_mask, dat_term_keys, pol,
             data_tuples[dname_key] = compute_chisqdata_term(
                 obs, prior, embed_mask, dname,
                 ttype=ttype, pol=pol,
-                maxset=data_weighting_params['maxset'],
-                debias=data_weighting_params['debias'],
-                snrcut=data_weighting_params['snrcut'][dname],
-                weighting=data_weighting_params['weighting'],
-                systematic_noise=data_weighting_params['systematic_noise'],
-                systematic_cphase_noise=data_weighting_params['systematic_cphase_noise'],
-                cp_uv_min=data_weighting_params['cp_uv_min'],
+                maxset=data_weighting_params.maxset,
+                debias=data_weighting_params.debias,
+                snrcut=data_weighting_params.snrcut[dname],
+                weighting=data_weighting_params.weighting,
+                systematic_noise=data_weighting_params.systematic_noise,
+                systematic_cphase_noise=data_weighting_params.systematic_cphase_noise,
+                cp_uv_min=data_weighting_params.cp_uv_min,
                 order=fft_params['fft_interp_order'],
                 fft_pad_factor=fft_params['fft_pad_factor'],
                 conv_func=fft_params['fft_conv_func'],

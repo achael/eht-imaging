@@ -382,8 +382,8 @@ class TestComputeDataTuples:
     def test_unrecognized_term_raises(self, gauss_im, observe,
                                       initialize_imager):
         imgr, _ = initialize_imager(observe(gauss_im), gauss_im, {"vis": 1})
-        bogus_weighting = {**imgr._full_data_weighting_params(),
-                           'snrcut': {'bogus': 0.0}}
+        bogus_weighting = imgr._full_data_weighting_params()._replace(
+            snrcut={'bogus': 0.0})
         with pytest.raises(Exception, match="not recognized"):
             compute_data_tuples(
                 imgr.obslist_next, imgr.prior_next, imgr._embed_mask,

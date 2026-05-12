@@ -37,6 +37,7 @@ from ehtim.imaging.imager_backend import (
     DATATERMS,
     DATATERMS_POL,
     POLARIZATION_MODES,
+    DataWeighting,
     RegParams,
     compute_chisq_dict,
     compute_chisqgrad_dict,
@@ -751,16 +752,16 @@ class Imager:
         )
 
     def _full_data_weighting_params(self):
-        """Bundle data-weighting params into a single dict for the backend."""
-        return {
-            'maxset': self.maxset_next,
-            'debias': self.debias_next,
-            'snrcut': self.snrcut_next,
-            'weighting': self.weighting_next,
-            'systematic_noise': self.systematic_noise_next,
-            'systematic_cphase_noise': self.systematic_cphase_noise_next,
-            'cp_uv_min': self.cp_uv_min,
-        }
+        """Bundle data-weighting params into a DataWeighting NamedTuple for the backend."""
+        return DataWeighting(
+            maxset=self.maxset_next,
+            debias=self.debias_next,
+            snrcut=self.snrcut_next,
+            weighting=self.weighting_next,
+            systematic_noise=self.systematic_noise_next,
+            systematic_cphase_noise=self.systematic_cphase_noise_next,
+            cp_uv_min=self.cp_uv_min,
+        )
 
     def _full_fft_params(self):
         """Bundle FFT/NFFT params into a single dict for the backend."""
