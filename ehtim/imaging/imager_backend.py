@@ -1189,7 +1189,7 @@ class ImagerConfig(NamedTuple):
 
 
 def compute_data_tuples(obslist, prior, embed_mask, dat_term_keys, pol,
-                        ttype, data_weighting_params, fft_params):
+                        ttype, data_weighting, fourier_grid):
     """Pre-compute (data, sigma, A) tuples for every (data-term, observation) pair.
 
     Dispatches to polutils.polchisqdata for polarimetric terms (in
@@ -1205,10 +1205,10 @@ def compute_data_tuples(obslist, prior, embed_mask, dat_term_keys, pol,
     pol : str
         Polarization mode of the imager (e.g. 'I', 'IP', 'IV').
     ttype : {'direct', 'fast', 'nfft'}
-    data_weighting_params : DataWeighting
+    data_weighting : DataWeighting
         Per-data-term knobs forwarded to imutils.chisqdata. See the DataWeighting
         docstring for the field list.
-    fft_params : FourierGridParams
+    fourier_grid : FourierGridParams
         Gridding parameters for ttype='fast' / 'nfft'. See the FourierGridParams
         docstring for the field list.
 
@@ -1227,17 +1227,17 @@ def compute_data_tuples(obslist, prior, embed_mask, dat_term_keys, pol,
             data_tuples[dname_key] = compute_chisqdata_term(
                 obs, prior, embed_mask, dname,
                 ttype=ttype, pol=pol,
-                maxset=data_weighting_params.maxset,
-                debias=data_weighting_params.debias,
-                snrcut=data_weighting_params.snrcut[dname],
-                weighting=data_weighting_params.weighting,
-                systematic_noise=data_weighting_params.systematic_noise,
-                systematic_cphase_noise=data_weighting_params.systematic_cphase_noise,
-                cp_uv_min=data_weighting_params.cp_uv_min,
-                order=fft_params.fft_interp_order,
-                fft_pad_factor=fft_params.fft_pad_factor,
-                conv_func=fft_params.fft_conv_func,
-                p_rad=fft_params.fft_gridder_prad,
+                maxset=data_weighting.maxset,
+                debias=data_weighting.debias,
+                snrcut=data_weighting.snrcut[dname],
+                weighting=data_weighting.weighting,
+                systematic_noise=data_weighting.systematic_noise,
+                systematic_cphase_noise=data_weighting.systematic_cphase_noise,
+                cp_uv_min=data_weighting.cp_uv_min,
+                order=fourier_grid.fft_interp_order,
+                fft_pad_factor=fourier_grid.fft_pad_factor,
+                conv_func=fourier_grid.fft_conv_func,
+                p_rad=fourier_grid.fft_gridder_prad,
             )
 
     return data_tuples
@@ -1250,7 +1250,7 @@ def compute_init_state(
     mf_order, mf_order_pol, mf_rm, mf_cm,
     norm_init, flux, clipfloor,
     dat_term_keys, ttype,
-    data_weighting_params, fft_params,
+    data_weighting, fourier_grid,
     *, compute_data=True, prior_data_tuples=None,
 ):
     """Build solver-ready imager state. Pure function.
@@ -1262,7 +1262,7 @@ def compute_init_state(
 
     JAX note: when jitted, expect static_argnames=('pol', 'mf', 'transforms',
     'mf_order', 'mf_order_pol', 'mf_rm', 'mf_cm', 'ttype', 'dat_term_keys',
-    'compute_data') plus static dict-key structure on data_weighting_params.
+    'compute_data').
 
     Parameters
     ----------
@@ -1284,8 +1284,10 @@ def compute_init_state(
     dat_term_keys : iterable of str
         Sorted dat_term names. Each must be in DATATERMS or DATATERMS_POL.
     ttype : {'direct', 'fast', 'nfft'}
-    data_weighting_params, fft_params : dict
-        Forwarded to compute_data_tuples; see its docstring for required keys.
+    data_weighting : DataWeighting
+        Per-data-term knobs forwarded to compute_data_tuples.
+    fourier_grid : FourierGridParams
+        Gridding parameters forwarded to compute_data_tuples.
 
     Other Parameters
     ----------------
@@ -1358,7 +1360,7 @@ def compute_init_state(
     if compute_data:
         data_tuples = compute_data_tuples(
             obslist, prior_image, embed_mask, dat_term_keys, pol,
-            ttype, data_weighting_params, fft_params,
+            ttype, data_weighting, fourier_grid,
         )
     else:
         data_tuples = prior_data_tuples
