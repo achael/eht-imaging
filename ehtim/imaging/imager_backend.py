@@ -855,9 +855,9 @@ def compute_chisqdata_term(obs, prior, mask, dtype, ttype='direct', pol='I', **k
             raise Exception(f"cannot use dterm {dtype} with pol={pol}")
         pol = 'I'
 
-    # Standard direct + all pol leaves take mask positionally.
-    # Standard fast/nfft leaves omit it (they index uv coords from obs directly).
-    if is_pol or ttype == 'direct':
+    # Only `direct` leaves take mask positionally; fast/nfft leaves index uv
+    # coords from obs directly and ignore the embed mask.
+    if ttype == 'direct':
         return helper(obs, prior, mask, pol=pol, **kwargs)
     return helper(obs, prior, pol=pol, **kwargs)
 

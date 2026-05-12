@@ -1346,9 +1346,8 @@ def chisqdata_pvis(Obsdata, Prior, mask, **kwargs):
 
     return (vis, sigma, A)
 
-def chisqdata_pvis_nfft(Obsdata, Prior, mask, **kwargs):
-    """Return the visibilities, sigmas, and fourier matrix for an observation, prior, mask
-    """
+def chisqdata_pvis_nfft(Obsdata, Prior, **kwargs):
+    """Return the visibilities, sigmas, and fourier matrix for an observation."""
 
     # unpack keyword args
     fft_pad_factor = kwargs.get('fft_pad_factor',FFT_PAD_DEFAULT)
@@ -1383,9 +1382,8 @@ def chisqdata_m(Obsdata, Prior, mask, **kwargs):
 
     return (m, sigmam, A)
 
-def chisqdata_m_nfft(Obsdata, Prior, mask, **kwargs):
-    """Return the pol ratios, sigmas, and fourier matrix for an observation, prior, mask
-    """
+def chisqdata_m_nfft(Obsdata, Prior, **kwargs):
+    """Return the pol ratios, sigmas, and fourier matrix for an observation."""
 
     # unpack keyword args
     fft_pad_factor = kwargs.get('fft_pad_factor',FFT_PAD_DEFAULT)
@@ -1420,9 +1418,8 @@ def chisqdata_vvis(Obsdata, Prior, mask, **kwargs):
 
     return (vis, sigma, A)
 
-def chisqdata_vvis_nfft(Obsdata, Prior, mask, **kwargs):
-    """Return the visibilities, sigmas, and fourier matrix for an observation, prior, mask
-    """
+def chisqdata_vvis_nfft(Obsdata, Prior, **kwargs):
+    """Return the visibilities, sigmas, and fourier matrix for an observation."""
 
     # unpack keyword args
     fft_pad_factor = kwargs.get('fft_pad_factor',FFT_PAD_DEFAULT)

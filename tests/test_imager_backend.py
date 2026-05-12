@@ -2658,23 +2658,20 @@ class TestPolChisqdataKwargs:
 
     def test_chisqdata_pvis_nfft_still_accepts_fft_kwargs(self, gauss_im_pol, obs_nfft):
         from ehtim.imaging.pol_imager_utils import chisqdata_pvis_nfft
-        mask = self._full_mask(gauss_im_pol)
         # Standard kwargs are inert; FFT kwargs (fft_pad_factor, p_rad) still work.
-        out = chisqdata_pvis_nfft(obs_nfft, gauss_im_pol, mask,
+        out = chisqdata_pvis_nfft(obs_nfft, gauss_im_pol,
                                   pol='IP', snrcut=3.0, fft_pad_factor=2, p_rad=2)
         assert len(out) == 3  # (vis, sigma, A) triple
 
     def test_chisqdata_m_nfft_still_accepts_fft_kwargs(self, gauss_im_pol, obs_nfft):
         from ehtim.imaging.pol_imager_utils import chisqdata_m_nfft
-        mask = self._full_mask(gauss_im_pol)
-        out = chisqdata_m_nfft(obs_nfft, gauss_im_pol, mask,
+        out = chisqdata_m_nfft(obs_nfft, gauss_im_pol,
                                debias=True, fft_pad_factor=2, p_rad=2)
         assert len(out) == 3
 
     def test_chisqdata_vvis_nfft_still_accepts_fft_kwargs(self, gauss_im_pol, obs_nfft):
         from ehtim.imaging.pol_imager_utils import chisqdata_vvis_nfft
-        mask = self._full_mask(gauss_im_pol)
-        out = chisqdata_vvis_nfft(obs_nfft, gauss_im_pol, mask,
+        out = chisqdata_vvis_nfft(obs_nfft, gauss_im_pol,
                                   weighting='uniform', fft_pad_factor=2, p_rad=2)
         assert len(out) == 3
 
