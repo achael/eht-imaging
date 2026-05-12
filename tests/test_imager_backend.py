@@ -21,8 +21,15 @@ from ehtim.imaging.imager_backend import (
     compute_reg_dict,
     compute_reggrad_dict,
     compute_which_solve,
+    embed_imarr,
+    make_initarr,
+    pack_imarr,
     transform_gradients,
     transform_imarr,
+    transform_imarr_inverse,
+    unpack_imarr,
+    validate_limits,
+    validate_params,
 )
 
 # Parametrize over square, tall, and wide images
@@ -1675,4 +1682,918 @@ class TestTransformGradientsChainRule:
         assert out.shape == imarr.shape
         np.testing.assert_allclose(out[0], np.exp(imarr[0]) * gradarr[0], rtol=1e-12)
         np.testing.assert_array_equal(out[4:10], gradarr[4:10])
+
+
+class TestEmbedPackImarr:
+    """Direct unit tests for embed_imarr + pack_imarr.
+
+    embed_imarr extends a masked image array (nsolve, sum(mask)) into a full
+    grid (nsolve, len(mask)) by inserting `clipfloor` (constant or
+    `clipfloor * |N(0,1)|` if randomfloor=True) at non-mask pixels.
+
+    pack_imarr stacks the rows of (nsolve, npix) that have which_solve[k] != 0
+    into a single 1D solver vector. It does not consult the mask -- packing
+    selects across the Stokes/spectral axis, not pixels.
+
+    These two functions are not strict inverses of each other; their relation
+    to unpack_imarr is covered in TestUnpackImarr.
+    """
+
+    @staticmethod
+    def _make_mask(npix_total, npix_in, seed=0):
+        """Build a boolean mask of length npix_total with exactly npix_in True."""
+        rng = np.random.default_rng(seed)
+        idx = rng.choice(npix_total, size=npix_in, replace=False)
+        mask = np.zeros(npix_total, dtype=bool)
+        mask[idx] = True
+        return mask
+
+    # ------------------------------ embed_imarr ------------------------------
+
+    def test_embed_1d_basic(self):
+        """1D input dispatches through nsolve=1 branch and returns 1D output."""
+        mask = self._make_mask(20, 7, seed=1)
+        imvec = np.linspace(1.0, 7.0, 7)
+        out = embed_imarr(imvec, mask, clipfloor=0.0)
+        assert out.shape == (20,)
+        np.testing.assert_array_equal(out[mask], imvec)
+        np.testing.assert_array_equal(out[~mask], 0.0)
+
+    def test_embed_2d_basic(self):
+        """2D input (nsolve, npix_in) returns 2D output (nsolve, len(mask))."""
+        mask = self._make_mask(16, 5, seed=2)
+        imarr = np.arange(15, dtype=float).reshape(3, 5)
+        out = embed_imarr(imarr, mask, clipfloor=0.0)
+        assert out.shape == (3, 16)
+        np.testing.assert_array_equal(out[:, mask], imarr)
+        np.testing.assert_array_equal(out[:, ~mask], 0.0)
+
+    def test_embed_clipfloor_constant(self):
+        """Non-mask pixels get the constant clipfloor value when randomfloor=False."""
+        mask = self._make_mask(12, 4, seed=3)
+        imarr = np.array([[1.0, 2.0, 3.0, 4.0]])
+        out = embed_imarr(imarr, mask, clipfloor=0.7, randomfloor=False)
+        np.testing.assert_array_equal(out[0, ~mask], 0.7)
+        np.testing.assert_array_equal(out[0, mask], imarr[0])
+
+    def test_embed_randomfloor_seeded(self):
+        """randomfloor=True with a fixed RNG seed is reproducible."""
+        mask = self._make_mask(40, 10, seed=4)
+        imvec = np.full(10, 5.0)
+
+        np.random.seed(123)
+        out1 = embed_imarr(imvec, mask, clipfloor=0.1, randomfloor=True)
+        np.random.seed(123)
+        out2 = embed_imarr(imvec, mask, clipfloor=0.1, randomfloor=True)
+        np.testing.assert_array_equal(out1, out2)
+
+        # Off-mask values are positive (|N(0,1)| scaled by clipfloor) and not constant.
+        assert np.all(out1[~mask] >= 0.0)
+        assert np.unique(out1[~mask]).size > 1
+
+    def test_embed_all_true_mask_is_identity(self):
+        """Mask fully True -> embed equals input (all pixels in mask, no fill needed)."""
+        mask = np.ones(8, dtype=bool)
+        imvec = np.linspace(-1.0, 1.0, 8)
+        out = embed_imarr(imvec, mask, clipfloor=99.0)
+        np.testing.assert_array_equal(out, imvec)
+
+    def test_embed_wrong_imarr_dim_raises(self):
+        """3D imarr is rejected; only 1D and 2D are supported."""
+        mask = self._make_mask(10, 4, seed=5)
+        bad = np.zeros((2, 2, 4))
+        with pytest.raises(Exception, match="should have one or two dimensions"):
+            embed_imarr(bad, mask)
+
+    def test_embed_shape_mismatch_raises(self):
+        """imarr's npix axis must equal sum(mask)."""
+        mask = self._make_mask(10, 4, seed=6)
+        bad = np.zeros((2, 3))  # second axis = 3, but sum(mask) = 4
+        with pytest.raises(Exception, match="not consistent with imarr shape"):
+            embed_imarr(bad, mask)
+
+    # ------------------------------ pack_imarr -------------------------------
+
+    def test_pack_stokes_i_only(self):
+        """which_solve=[1,0,0,0] packs only row 0."""
+        imarr = np.arange(40, dtype=float).reshape(4, 10)
+        which_solve = np.array([1, 0, 0, 0])
+        vec = pack_imarr(imarr, which_solve)
+        assert vec.shape == (10,)
+        np.testing.assert_array_equal(vec, imarr[0])
+
+    def test_pack_full_iquv(self):
+        """which_solve=[1,1,1,1] packs all four rows concatenated in order."""
+        imarr = np.arange(20, dtype=float).reshape(4, 5)
+        which_solve = np.array([1, 1, 1, 1])
+        vec = pack_imarr(imarr, which_solve)
+        assert vec.shape == (20,)
+        np.testing.assert_array_equal(vec, imarr.reshape(-1))
+
+    def test_pack_mixed_solved(self):
+        """which_solve=[1,1,0,0] packs rows 0 and 1 in that order; 2 and 3 are skipped."""
+        imarr = np.arange(20, dtype=float).reshape(4, 5)
+        which_solve = np.array([1, 1, 0, 0])
+        vec = pack_imarr(imarr, which_solve)
+        np.testing.assert_array_equal(vec, np.hstack([imarr[0], imarr[1]]))
+
+    def test_pack_multifreq_pol_spectral(self):
+        """nimage=10 layout (mf+pol): which_solve picks I, mprime, alpha, beta."""
+        imarr = np.arange(60, dtype=float).reshape(10, 6)
+        which_solve = np.array([1, 1, 0, 0, 1, 1, 0, 0, 0, 0])
+        vec = pack_imarr(imarr, which_solve)
+        expected = np.hstack([imarr[0], imarr[1], imarr[4], imarr[5]])
+        np.testing.assert_array_equal(vec, expected)
+
+    def test_pack_1d_input(self):
+        """1D imarr with which_solve=[1] returns the input unchanged."""
+        imarr = np.linspace(0.0, 1.0, 7)
+        vec = pack_imarr(imarr, np.array([1]))
+        np.testing.assert_array_equal(vec, imarr)
+
+    def test_pack_no_solved_slots_returns_empty(self):
+        """which_solve all zero yields an empty 1D array."""
+        imarr = np.arange(12, dtype=float).reshape(3, 4)
+        vec = pack_imarr(imarr, np.array([0, 0, 0]))
+        assert vec.shape == (0,)
+
+    def test_pack_which_solve_length_mismatch_raises(self):
+        """which_solve length must equal imarr's nsolve dimension."""
+        imarr = np.zeros((4, 5))
+        with pytest.raises(Exception, match="inconsistent shape with which_solve"):
+            pack_imarr(imarr, np.array([1, 0, 0]))
+
+    def test_pack_wrong_dim_raises(self):
+        """3D imarr is rejected; only 1D and 2D are supported."""
+        with pytest.raises(Exception, match="should have one or two dimensions"):
+            pack_imarr(np.zeros((2, 2, 4)), np.array([1, 1]))
+
+
+class TestUnpackImarr:
+    """Direct unit tests for unpack_imarr.
+
+    unpack_imarr is the inverse of pack_imarr: it walks the rows of init_arr
+    and, for each row k, either consumes the next nimage values from vec
+    (when which_solve[k] != 0) or falls back to init_arr[k] (when 0).
+
+    The pack -> unpack round-trip is the contract checked here. It is
+    identity on solved-for rows; on unsolved rows it equals init_arr,
+    not the original imarr the vec was packed from.
+    """
+
+    def test_round_trip_stokes_i(self):
+        """Single-freq Stokes-I round-trip with which_solve=[1]."""
+        rng = np.random.default_rng(0)
+        imarr = rng.uniform(0.1, 1.0, size=(1, 16))
+        which_solve = np.array([1])
+        vec = pack_imarr(imarr, which_solve)
+        out = unpack_imarr(vec, imarr, which_solve)
+        np.testing.assert_array_equal(out, imarr)
+
+    def test_round_trip_full_iquv(self):
+        """which_solve all ones: pack/unpack is identity for any init_arr."""
+        rng = np.random.default_rng(1)
+        imarr = rng.uniform(-1.0, 1.0, size=(4, 12))
+        init_arr = rng.uniform(-5.0, 5.0, size=(4, 12))
+        which_solve = np.array([1, 1, 1, 1])
+        vec = pack_imarr(imarr, which_solve)
+        out = unpack_imarr(vec, init_arr, which_solve)
+        # All rows solved -> unsolved fallback never engaged; init_arr is ignored.
+        np.testing.assert_array_equal(out, imarr)
+
+    def test_round_trip_partial_solve_uses_init_arr(self):
+        """Unsolved rows of the output equal init_arr; solved rows equal imarr."""
+        rng = np.random.default_rng(2)
+        imarr = rng.uniform(-1.0, 1.0, size=(4, 8))
+        init_arr = rng.uniform(-5.0, 5.0, size=(4, 8))
+        which_solve = np.array([1, 1, 0, 0])  # IP-style: solve I and mprime
+        vec = pack_imarr(imarr, which_solve)
+        out = unpack_imarr(vec, init_arr, which_solve)
+        np.testing.assert_array_equal(out[0], imarr[0])
+        np.testing.assert_array_equal(out[1], imarr[1])
+        np.testing.assert_array_equal(out[2], init_arr[2])
+        np.testing.assert_array_equal(out[3], init_arr[3])
+
+    def test_round_trip_iv(self):
+        """IV-style which_solve=[1,0,0,1] picks rows 0 and 3 from vec."""
+        rng = np.random.default_rng(3)
+        imarr = rng.uniform(-1.0, 1.0, size=(4, 10))
+        init_arr = rng.uniform(-5.0, 5.0, size=(4, 10))
+        which_solve = np.array([1, 0, 0, 1])
+        vec = pack_imarr(imarr, which_solve)
+        out = unpack_imarr(vec, init_arr, which_solve)
+        np.testing.assert_array_equal(out[0], imarr[0])
+        np.testing.assert_array_equal(out[1], init_arr[1])
+        np.testing.assert_array_equal(out[2], init_arr[2])
+        np.testing.assert_array_equal(out[3], imarr[3])
+
+    def test_round_trip_multifreq_pol(self):
+        """nimage=10 (mf+pol): solve I, mprime, alpha, beta."""
+        rng = np.random.default_rng(4)
+        imarr = rng.uniform(-1.0, 1.0, size=(10, 6))
+        init_arr = rng.uniform(-5.0, 5.0, size=(10, 6))
+        which_solve = np.array([1, 1, 0, 0, 1, 1, 0, 0, 0, 0])
+        vec = pack_imarr(imarr, which_solve)
+        out = unpack_imarr(vec, init_arr, which_solve)
+        for k in (0, 1, 4, 5):
+            np.testing.assert_array_equal(out[k], imarr[k])
+        for k in (2, 3, 6, 7, 8, 9):
+            np.testing.assert_array_equal(out[k], init_arr[k])
+
+    def test_all_zero_which_solve_returns_init_arr(self):
+        """When nothing is solved for, vec is empty and output equals init_arr."""
+        init_arr = np.arange(20, dtype=float).reshape(4, 5)
+        which_solve = np.array([0, 0, 0, 0])
+        out = unpack_imarr(np.array([]), init_arr, which_solve)
+        np.testing.assert_array_equal(out, init_arr)
+
+    def test_1d_round_trip_solved(self):
+        """1D init_arr with which_solve=[1]: vec is unpacked back into 1D shape."""
+        rng = np.random.default_rng(7)
+        imarr = rng.uniform(0.1, 1.0, size=8)  # 1D
+        which_solve = np.array([1])
+        vec = pack_imarr(imarr, which_solve)
+        out = unpack_imarr(vec, imarr, which_solve)
+        assert out.shape == imarr.shape
+        np.testing.assert_array_equal(out, imarr)
+
+    def test_1d_unsolved_falls_back_to_full_init_arr(self):
+        """1D init_arr with which_solve=[0] returns init_arr unchanged.
+
+        Regression for an internal reshape that was assigning to the wrong
+        local name -- the unsolved fallback was broadcasting init_arr[0]
+        (a scalar) across the row instead of using the whole 1D init_arr.
+        """
+        init_arr = np.linspace(0.1, 1.0, 8)
+        out = unpack_imarr(np.array([]), init_arr, np.array([0]))
+        assert out.shape == init_arr.shape
+        np.testing.assert_array_equal(out, init_arr)
+
+    def test_which_solve_length_mismatch_raises(self):
+        """which_solve length must equal init_arr's nsolve dimension."""
+        init_arr = np.zeros((4, 5))
+        with pytest.raises(Exception, match="inconsistent shape with which_solve"):
+            unpack_imarr(np.zeros(5), init_arr, np.array([1, 0, 0]))
+
+
+class TestTransformImarr:
+    """Direct unit tests for transform_imarr + transform_imarr_inverse.
+
+    transform_imarr maps solver-space variables to physical Stokes-like
+    variables and transform_imarr_inverse reverses it. The four transforms
+    in production are:
+      * log         -- imarr[0] (Stokes I) <-> exp(.) / log(.)
+      * mcv         -- (mfrac_prime, vfrac) <-> (rho, psi) with mfrac in [0, 1-|v|]
+      * vcv         -- (mfrac, vfrac_prime) <-> (rho, psi) with vfrac in [-(1-|m|), 1-|m|]
+      * polcv       -- (rho_prime, psi_prime) <-> (rho, psi) with rho in (0,1), psi in (-pi/2, pi/2)
+
+    Tests cover (a) the identity / no-op case, (b) the log dispatch across
+    nimage = 1, 3, 4, 10, (c) round-trip identity for each transform on
+    valid operating points, (d) specific value checks at well-known points,
+    and (e) the mutually-exclusive transform guards.
+    """
+
+    @staticmethod
+    def _pol_solver_imarr(seed=0, n=8, mfrac_prime=None, vfrac=None,
+                          rho=None, psi=None, log_I=None):
+        """Build a (4, n) solver-space image array.
+
+        Slot meanings depend on the active transform (mcv vs vcv vs polcv);
+        the helper just sets row values in solver space. Passing a scalar
+        pins the row, None makes the row a smooth ramp -- this keeps test
+        data deterministic without needing a separate RNG fixture per case.
+        """
+        rng = np.random.default_rng(seed)
+        out = np.empty((4, n))
+        out[0] = log_I if log_I is not None else rng.uniform(-1.0, 1.0, size=n)
+        out[1] = mfrac_prime if mfrac_prime is not None else rng.uniform(-2.0, 2.0, size=n)
+        out[2] = rng.uniform(-0.5, 0.5, size=n)  # phi (passes through)
+        out[3] = vfrac if vfrac is not None else rng.uniform(-0.3, 0.3, size=n)
+        # If caller specified physical (rho, psi) instead of solver values,
+        # use those directly; the test will run inverse first.
+        if rho is not None:
+            out[1] = rho
+        if psi is not None:
+            out[3] = psi
+        return out
+
+    # --------------------------- identity / log only ---------------------------
+
+    def test_no_transform_is_identity(self):
+        """Empty transforms list returns imarr unchanged."""
+        imarr = np.arange(16, dtype=float).reshape(4, 4)
+        out = transform_imarr(imarr, [], np.array([1, 1, 1, 1]))
+        np.testing.assert_array_equal(out, imarr)
+
+    def test_log_1d_dispatch(self):
+        """nimage=1 (1D imarr): out = exp(in)."""
+        rng = np.random.default_rng(11)
+        imarr = rng.uniform(-1.0, 1.0, size=8)
+        out = transform_imarr(imarr, ["log"], np.array([1, 0, 0, 0]))
+        np.testing.assert_allclose(out, np.exp(imarr), rtol=1e-12)
+
+    def test_log_multifreq_stokes_i(self):
+        """nimage=3 (mf no-pol): only row 0 (Stokes I) is exponentiated."""
+        rng = np.random.default_rng(12)
+        imarr = rng.uniform(-1.0, 1.0, size=(3, 5))
+        out = transform_imarr(imarr, ["log"], np.array([1, 1, 1, 0]))
+        np.testing.assert_allclose(out[0], np.exp(imarr[0]), rtol=1e-12)
+        np.testing.assert_array_equal(out[1], imarr[1])
+        np.testing.assert_array_equal(out[2], imarr[2])
+
+    def test_log_single_freq_pol(self):
+        """nimage=4 (sf pol): row 0 only is exponentiated."""
+        imarr = self._pol_solver_imarr(seed=13, vfrac=0.0)
+        which_solve = np.array([1, 1, 1, 0])
+        out = transform_imarr(imarr, ["log"], which_solve)
+        np.testing.assert_allclose(out[0], np.exp(imarr[0]), rtol=1e-12)
+        np.testing.assert_array_equal(out[1:], imarr[1:])
+
+    def test_log_multifreq_pol(self):
+        """nimage=10 (mf+pol): row 0 only is exponentiated; rows 4-9 untouched."""
+        rng = np.random.default_rng(14)
+        imarr = np.empty((10, 6))
+        imarr[0] = rng.uniform(-1.0, 1.0, size=6)
+        imarr[1:4] = rng.uniform(-0.3, 0.3, size=(3, 6))
+        imarr[4:10] = rng.uniform(-0.3, 0.3, size=(6, 6))
+        which_solve = np.array([1, 1, 0, 0, 1, 1, 0, 0, 0, 0])
+        out = transform_imarr(imarr, ["log"], which_solve)
+        np.testing.assert_allclose(out[0], np.exp(imarr[0]), rtol=1e-12)
+        np.testing.assert_array_equal(out[1:], imarr[1:])
+
+    # --------------------------- round-trip identity ---------------------------
+
+    @pytest.mark.parametrize(
+        "transforms,which_solve,kwargs",
+        [
+            (["log"], np.array([1, 0, 0, 0]), {}),
+            (["log", "mcv"], np.array([1, 1, 1, 0]), {"vfrac": 0.0}),
+            (["log", "mcv"], np.array([1, 1, 0, 0]), {}),
+            (["log", "vcv"], np.array([1, 0, 0, 1]), {"mfrac_prime": 0.0}),
+            (["log", "polcv"], np.array([1, 1, 0, 1]), {}),
+            (["mcv"], np.array([0, 1, 0, 0]), {"vfrac": 0.0}),
+            (["vcv"], np.array([0, 0, 0, 1]), {"mfrac_prime": 0.0}),
+            (["polcv"], np.array([0, 1, 0, 1]), {}),
+        ],
+        ids=[
+            "log_only", "log_mcv_IP", "log_mcv_general",
+            "log_vcv_IV", "log_polcv_IPV",
+            "mcv_only", "vcv_only", "polcv_only",
+        ],
+    )
+    def test_round_trip_identity(self, transforms, which_solve, kwargs):
+        """inverse(forward(imarr)) == imarr on valid operating points."""
+        imarr = self._pol_solver_imarr(seed=42, **kwargs)
+        phys = transform_imarr(imarr, transforms, which_solve)
+        back = transform_imarr_inverse(phys, transforms, which_solve)
+        np.testing.assert_allclose(back, imarr, atol=1e-10, rtol=1e-10)
+
+    def test_round_trip_log_1d(self):
+        """log inverse on 1D imarr is the inverse of exp."""
+        rng = np.random.default_rng(21)
+        imarr = rng.uniform(-1.0, 1.0, size=8)  # solver values (log I)
+        phys = transform_imarr(imarr, ["log"], np.array([1, 0, 0, 0]))
+        back = transform_imarr_inverse(phys, ["log"], np.array([1, 0, 0, 0]))
+        np.testing.assert_allclose(back, imarr, rtol=1e-12)
+
+    # --------------------------- specific value checks -------------------------
+
+    def test_mcv_at_zero(self):
+        """mcv at (mfrac_prime=0, vfrac=0): rho=0.5, psi=0.
+
+        With mfrac_max = 1 - |vfrac| = 1 and arctan(0) = 0:
+            mfrac = 1 * (0.5 + 0/pi) = 0.5
+            rho = sqrt(0.5^2 + 0^2) = 0.5
+            psi = arcsin(0 / 0.5) = 0
+        """
+        imarr = self._pol_solver_imarr(seed=0, n=4,
+                                       mfrac_prime=0.0, vfrac=0.0)
+        phys = transform_imarr(imarr, ["mcv"], np.array([1, 1, 0, 0]))
+        np.testing.assert_allclose(phys[1], 0.5, rtol=1e-12)
+        np.testing.assert_allclose(phys[3], 0.0, atol=1e-12)
+
+    def test_vcv_at_zero(self):
+        """vcv at (mfrac=0, vfrac_prime=0): rho=0, psi=0.
+
+        With vfrac_max = 1 - |mfrac| = 1 and arctan(0) = 0:
+            vfrac = 2 * 1 * 0 / pi = 0
+            rho = sqrt(0 + 0) = 0
+            psi = arcsin(0/0) -- handled inside, expect rho=0.
+        """
+        imarr = self._pol_solver_imarr(seed=0, n=4,
+                                       mfrac_prime=0.0, vfrac=0.0)
+        # In vcv the slot meanings are (I, mfrac, phi, vfrac_prime).
+        phys = transform_imarr(imarr, ["vcv"], np.array([0, 0, 0, 1]))
+        np.testing.assert_allclose(phys[1], 0.0, atol=1e-12)
+
+    def test_polcv_at_zero(self):
+        """polcv at (rho_prime=0, psi_prime=0): rho=0.5, psi=0."""
+        imarr = self._pol_solver_imarr(seed=0, n=4,
+                                       mfrac_prime=0.0, vfrac=0.0)
+        # polcv slot meanings: (I, rho_prime, phi, psi_prime).
+        phys = transform_imarr(imarr, ["polcv"], np.array([1, 1, 0, 1]))
+        np.testing.assert_allclose(phys[1], 0.5, rtol=1e-12)
+        np.testing.assert_allclose(phys[3], 0.0, atol=1e-12)
+
+    # --------------------------- guards ---------------------------------------
+
+    def test_polcv_with_mcv_raises(self):
+        """polcv cannot be combined with mcv."""
+        imarr = self._pol_solver_imarr(seed=0)
+        with pytest.raises(Exception, match="not compatible with 'polcv'"):
+            transform_imarr(imarr, ["polcv", "mcv"], np.array([1, 1, 0, 1]))
+
+    def test_polcv_with_vcv_raises(self):
+        """polcv cannot be combined with vcv."""
+        imarr = self._pol_solver_imarr(seed=0)
+        with pytest.raises(Exception, match="not compatible with 'polcv'"):
+            transform_imarr(imarr, ["polcv", "vcv"], np.array([1, 1, 0, 1]))
+
+    def test_mcv_with_vcv_raises(self):
+        """mcv and vcv cannot be combined."""
+        imarr = self._pol_solver_imarr(seed=0)
+        with pytest.raises(Exception, match="not compatible with each other"):
+            transform_imarr(imarr, ["mcv", "vcv"], np.array([1, 1, 0, 1]))
+
+    def test_inverse_guards_match_forward(self):
+        """Same conflict checks apply on the inverse path."""
+        imarr = self._pol_solver_imarr(seed=0)
+        with pytest.raises(Exception, match="not compatible"):
+            transform_imarr_inverse(imarr, ["mcv", "vcv"], np.array([1, 1, 0, 1]))
+
+    def test_invalid_nimage_raises(self):
+        """nimage not in (1, 3, 4, 10) is rejected."""
+        bad = np.zeros((2, 5))  # nimage = 2 is not a valid layout
+        with pytest.raises(Exception, match="either 1, 3, 4, or 10"):
+            transform_imarr(bad, ["log"], np.array([1, 0, 0, 0]))
+
+
+class TestMakeInitarr:
+    """Direct unit tests for make_initarr.
+
+    Builds the initial-image array passed to the solver: a 1D Stokes-I
+    vector (single-frequency, single-polarization), a (4, npix) array
+    (single-frequency, full pol), a (3, npix) array (multifreq Stokes I),
+    or a (10, npix) array (multifreq + full pol).
+
+    The polarimetric branch optionally re-initializes rho and phi/psi from
+    `np.random.rand` when `randompol_lin` or `randompol_circ` is set;
+    those tests seed `np.random.seed(...)` directly so the assertions are
+    deterministic. JAX migration will replace this with a
+    `jax.random.PRNGKey` arg.
+    """
+
+    def test_stokes_only_no_norm(self, gauss_im):
+        """No pol, no mf, no norm: initarr is the masked Stokes-I vector."""
+        mask = np.ones(gauss_im.imvec.size, dtype=bool)
+        out = make_initarr(gauss_im, mask, norm_init=False)
+        assert out.ndim == 1
+        np.testing.assert_array_equal(out, gauss_im.imvec)
+
+    def test_stokes_only_norm_init(self, gauss_im):
+        """norm_init rescales the masked Stokes-I vector to sum exactly to `flux`."""
+        mask = np.ones(gauss_im.imvec.size, dtype=bool)
+        target_flux = 2.5
+        out = make_initarr(gauss_im, mask, norm_init=True, flux=target_flux)
+        np.testing.assert_allclose(out.sum(), target_flux, rtol=1e-12)
+
+    def test_stokes_only_with_mask(self, gauss_im):
+        """Mask selects a subset of pixels; output length matches the mask."""
+        mask = np.zeros(gauss_im.imvec.size, dtype=bool)
+        mask[: mask.size // 2] = True
+        out = make_initarr(gauss_im, mask, norm_init=False)
+        assert out.shape == (mask.sum(),)
+        np.testing.assert_array_equal(out, gauss_im.imvec[mask])
+
+    def test_pol_shape_and_rows(self, gauss_im_pol):
+        """pol=True, mf=False: returns (4, npix) with (I, rho, phi, psi).
+
+        Loaded gauss_im_pol has nonzero Q/U/V, so without random reinit
+        rho and phi are populated from image content rather than RNG.
+        """
+        mask = np.ones(gauss_im_pol.imvec.size, dtype=bool)
+        out = make_initarr(gauss_im_pol, mask, pol=True)
+        assert out.shape == (4, mask.sum())
+        # init_rho is sqrt(Q^2 + U^2 + V^2) / I; positive everywhere here.
+        assert np.all(out[1] >= 0)
+        # phi = arctan2(U, Q) in [-pi, pi].
+        assert np.all((out[2] >= -np.pi) & (out[2] <= np.pi))
+
+    def test_pol_randompol_lin_seeded(self, gauss_im_pol):
+        """randompol_lin=True with seeded RNG is deterministic."""
+        mask = np.ones(gauss_im_pol.imvec.size, dtype=bool)
+
+        np.random.seed(42)
+        out1 = make_initarr(gauss_im_pol, mask, pol=True, randompol_lin=True,
+                            meanpol=0.2, sigmapol=1e-2)
+        np.random.seed(42)
+        out2 = make_initarr(gauss_im_pol, mask, pol=True, randompol_lin=True,
+                            meanpol=0.2, sigmapol=1e-2)
+        np.testing.assert_array_equal(out1, out2)
+
+        # rho ~ meanpol * (1 + sigmapol * U[0,1]); within (meanpol, meanpol*(1+sigmapol)).
+        rho = out1[1]
+        assert np.all(rho >= 0.2)
+        assert np.all(rho <= 0.2 * (1 + 1e-2))
+
+    def test_pol_randompol_lin_different_seeds_differ(self, gauss_im_pol):
+        """Different seeds yield different random pol initializations."""
+        mask = np.ones(gauss_im_pol.imvec.size, dtype=bool)
+        np.random.seed(1)
+        out1 = make_initarr(gauss_im_pol, mask, pol=True, randompol_lin=True)
+        np.random.seed(2)
+        out2 = make_initarr(gauss_im_pol, mask, pol=True, randompol_lin=True)
+        assert not np.array_equal(out1[1], out2[1])
+
+    def test_pol_randompol_circ_seeded(self, gauss_im_pol):
+        """randompol_circ writes rho and psi (slot 3), not phi (slot 2)."""
+        mask = np.ones(gauss_im_pol.imvec.size, dtype=bool)
+        np.random.seed(7)
+        out = make_initarr(gauss_im_pol, mask, pol=True, randompol_circ=True,
+                           meanpol=0.2, sigmapol=1e-2)
+        rho = out[1]
+        psi = out[3]
+        assert np.all(rho >= 0.2)
+        assert np.all(rho <= 0.2 * (1 + 1e-2))
+        assert np.all(np.abs(psi) <= 1e-2)
+
+    def test_mf_stokes_shape(self, gauss_im):
+        """mf=True, pol=False: returns (3, npix) with (I, alpha, beta).
+
+        The base gauss_im has no specvec / curvvec, so alpha and beta
+        are filled with zeros.
+        """
+        mask = np.ones(gauss_im.imvec.size, dtype=bool)
+        out = make_initarr(gauss_im, mask, mf=True)
+        assert out.shape == (3, mask.sum())
+        np.testing.assert_array_equal(out[1], 0.0)
+        np.testing.assert_array_equal(out[2], 0.0)
+
+    def test_mf_pol_shape(self, gauss_im_pol):
+        """mf=True, pol=True: returns (10, npix) layout (I, rho, phi, psi,
+        alpha, beta, alphap, betap, rm, cm)."""
+        mask = np.ones(gauss_im_pol.imvec.size, dtype=bool)
+        out = make_initarr(gauss_im_pol, mask, mf=True, pol=True)
+        assert out.shape == (10, mask.sum())
+        # Stokes I row matches the (norm_init=False default) raw imvec.
+        np.testing.assert_array_equal(out[0], gauss_im_pol.imvec[mask])
+        # Spectral coefficients default to zero on an image with no specvec.
+        np.testing.assert_array_equal(out[4], 0.0)
+        np.testing.assert_array_equal(out[5], 0.0)
+        np.testing.assert_array_equal(out[8], 0.0)
+        np.testing.assert_array_equal(out[9], 0.0)
+
+
+class TestValidateParams:
+    """Direct unit tests for validate_params.
+
+    Pure validator extracted from Imager.check_params. Each test pins one
+    of the 24 raise paths by mutating a single field of a known-valid
+    baseline config. Exception messages are checked verbatim so any drift
+    in wording is a test failure.
+
+    Baseline: Stokes-I direct-DFT imaging with the basic data + reg terms
+    that Imager() defaults to. Each test calls _call(**overrides).
+    """
+
+    @staticmethod
+    def _baseline(prior, init=None):
+        return dict(
+            prior=prior,
+            init=init if init is not None else prior,
+            pol='I',
+            transforms=['log'],
+            dat_term_keys=['vis'],
+            reg_term_keys=['simple'],
+            ttype='direct',
+            mf=False,
+            mf_order=0,
+            mf_order_pol=0,
+            freq_list=[230e9],
+        )
+
+    @staticmethod
+    def _call(**kwargs):
+        return validate_params(**kwargs)
+
+    # Sanity: the baseline does not raise.
+    def test_baseline_ok(self, gauss_im):
+        self._call(**self._baseline(gauss_im))
+
+    # ---- image cross-checks ----
+
+    def test_dim_mismatch_raises(self, gauss_im):
+        bigger = gauss_im.regrid_image(gauss_im.fovx(), 64)
+        with pytest.raises(Exception,
+                           match="Initial image does not match dimensions of the prior image!"):
+            self._call(**self._baseline(gauss_im, init=bigger))
+
+    def test_freq_mismatch_raises(self, gauss_im):
+        other = gauss_im.copy()
+        other.rf = 345e9
+        with pytest.raises(Exception,
+                           match="Initial image does not have same frequency as prior image!"):
+            self._call(**self._baseline(gauss_im, init=other))
+
+    @staticmethod
+    def _circ_image(gauss_im):
+        """Build a polrep='circ' image with the same grid as gauss_im."""
+        circ_arr = gauss_im.imvec.reshape(gauss_im.ydim, gauss_im.xdim)
+        return eh.image.Image(
+            circ_arr, gauss_im.psize, gauss_im.ra, gauss_im.dec,
+            polrep='circ', pol_prim='RR', rf=gauss_im.rf,
+        )
+
+    def test_polrep_mismatch_raises(self, gauss_im):
+        other = self._circ_image(gauss_im)
+        with pytest.raises(Exception,
+                           match="Initial image polrep does not match prior polrep!"):
+            self._call(**self._baseline(gauss_im, init=other))
+
+    # ---- polrep × pol consistency ----
+
+    def test_circ_polrep_bad_pol_raises(self, gauss_im):
+        circ = self._circ_image(gauss_im)
+        cfg = self._baseline(circ)
+        cfg['pol'] = 'I'  # invalid for circ
+        with pytest.raises(Exception,
+                           match="polrep is 'circ': pol_next must be 'RR' or 'LL'"):
+            self._call(**cfg)
+
+    def test_stokes_polrep_bad_pol_raises(self, gauss_im):
+        cfg = self._baseline(gauss_im)
+        cfg['pol'] = 'XX'  # not a valid stokes pol_next
+        with pytest.raises(Exception,
+                           match="polrep is 'stokes': pol_next must be in"):
+            self._call(**cfg)
+
+    # ---- transform × pol consistency ----
+
+    def test_log_with_stokes_q_raises(self, gauss_im):
+        cfg = self._baseline(gauss_im)
+        cfg['pol'] = 'Q'
+        cfg['transforms'] = ['log']
+        with pytest.raises(Exception,
+                           match="Cannot image Stokes Q, U, V with log image transformation!"):
+            self._call(**cfg)
+
+    def test_gs_or_simple_reg_with_stokes_v_raises(self, gauss_im):
+        cfg = self._baseline(gauss_im)
+        cfg['pol'] = 'V'
+        cfg['transforms'] = []  # avoid the log-on-V raise above
+        cfg['reg_term_keys'] = ['simple']
+        with pytest.raises(Exception,
+                           match="'simple' and 'gs' regularizers do not work"):
+            self._call(**cfg)
+
+    # ---- ttype ----
+
+    def test_invalid_ttype_raises(self, gauss_im):
+        cfg = self._baseline(gauss_im)
+        cfg['ttype'] = 'bogus'
+        with pytest.raises(Exception,
+                           match=r"Possible ttype values are 'fast', 'direct','nfft'!"):
+            self._call(**cfg)
+
+    # ---- multifrequency ----
+
+    def test_mf_single_freq_raises(self, gauss_im):
+        cfg = self._baseline(gauss_im)
+        cfg['mf'] = True
+        cfg['freq_list'] = [230e9]  # only one freq
+        with pytest.raises(Exception,
+                           match="at least two frequencies for multifrequency imaging"):
+            self._call(**cfg)
+
+    def test_mf_order_bad_raises(self, gauss_im):
+        cfg = self._baseline(gauss_im)
+        cfg['mf'] = True
+        cfg['mf_order'] = 3
+        cfg['freq_list'] = [230e9, 345e9]
+        with pytest.raises(Exception, match=r"mf_order must be in \[0,1,2\]"):
+            self._call(**cfg)
+
+    def test_mf_pol_unsupported_pol_raises(self, gauss_im):
+        cfg = self._baseline(gauss_im)
+        cfg['mf'] = True
+        cfg['pol'] = 'IP'  # not in ['P', 'QU'] for mf pol
+        cfg['transforms'] = ['log', 'mcv']
+        cfg['ttype'] = 'direct'
+        cfg['freq_list'] = [230e9, 345e9]
+        with pytest.raises(Exception,
+                           match="only support pol_next=P for polarization multifrequency"):
+            self._call(**cfg)
+
+    def test_mf_order_pol_bad_raises(self, gauss_im):
+        cfg = self._baseline(gauss_im)
+        cfg['mf'] = True
+        cfg['pol'] = 'P'
+        cfg['transforms'] = ['mcv']
+        cfg['ttype'] = 'direct'
+        cfg['dat_term_keys'] = ['pvis']
+        cfg['reg_term_keys'] = ['msimple']
+        cfg['mf_order_pol'] = 3
+        cfg['freq_list'] = [230e9, 345e9]
+        with pytest.raises(Exception, match=r"mf_order_pol must be in \[0,1,2\]"):
+            self._call(**cfg)
+
+    # ---- pol × transform consistency ----
+
+    def test_p_without_mcv_raises(self, gauss_im):
+        cfg = self._baseline(gauss_im)
+        cfg['pol'] = 'IP'
+        cfg['transforms'] = ['log']
+        cfg['dat_term_keys'] = ['pvis']
+        cfg['reg_term_keys'] = ['msimple']
+        with pytest.raises(Exception, match=r"IP imaging requires 'mcv' transform!"):
+            self._call(**cfg)
+
+    def test_p_with_vcv_raises(self, gauss_im):
+        cfg = self._baseline(gauss_im)
+        cfg['pol'] = 'IP'
+        cfg['transforms'] = ['log', 'mcv', 'vcv']
+        cfg['dat_term_keys'] = ['pvis']
+        cfg['reg_term_keys'] = ['msimple']
+        with pytest.raises(Exception, match=r"Cannot do IP imaging with 'vcv' transform!"):
+            self._call(**cfg)
+
+    def test_p_with_polcv_raises(self, gauss_im):
+        cfg = self._baseline(gauss_im)
+        cfg['pol'] = 'IP'
+        cfg['transforms'] = ['log', 'mcv', 'polcv']
+        cfg['dat_term_keys'] = ['pvis']
+        cfg['reg_term_keys'] = ['msimple']
+        with pytest.raises(Exception,
+                           match=r"Cannot do IP imaging only with 'polcv' transform!"):
+            self._call(**cfg)
+
+    def test_v_without_vcv_raises(self, gauss_im):
+        cfg = self._baseline(gauss_im)
+        cfg['pol'] = 'IV'
+        cfg['transforms'] = ['log']
+        cfg['dat_term_keys'] = ['vvis']
+        cfg['reg_term_keys'] = ['msimple']
+        with pytest.raises(Exception, match=r"IV imaging requires 'vcv' transform!"):
+            self._call(**cfg)
+
+    def test_v_with_mcv_raises(self, gauss_im):
+        cfg = self._baseline(gauss_im)
+        cfg['pol'] = 'IV'
+        cfg['transforms'] = ['log', 'vcv', 'mcv']
+        cfg['dat_term_keys'] = ['vvis']
+        cfg['reg_term_keys'] = ['msimple']
+        with pytest.raises(Exception, match=r"Cannot do IV imaging only with 'mcv' transform!"):
+            self._call(**cfg)
+
+    def test_v_with_polcv_raises(self, gauss_im):
+        cfg = self._baseline(gauss_im)
+        cfg['pol'] = 'IV'
+        cfg['transforms'] = ['log', 'vcv', 'polcv']
+        cfg['dat_term_keys'] = ['vvis']
+        cfg['reg_term_keys'] = ['msimple']
+        with pytest.raises(Exception,
+                           match=r"Cannot do IV imaging only with 'polcv' transform!"):
+            self._call(**cfg)
+
+    def test_iquv_without_polcv_raises(self, gauss_im):
+        # IPV is in POLARIZATION_MODES but rejected by the earlier stokes-pol
+        # check (the valid-stokes list omits 'IPV'); the polcv guard is reached
+        # only via 'IQUV' for stokes-polrep images.
+        cfg = self._baseline(gauss_im)
+        cfg['pol'] = 'IQUV'
+        cfg['transforms'] = ['log']
+        cfg['dat_term_keys'] = ['pvis']
+        cfg['reg_term_keys'] = ['msimple']
+        with pytest.raises(Exception,
+                           match="Linear\\+Circular polarization imaging requires 'polcv' transform!"):
+            self._call(**cfg)
+
+    def test_pol_with_fast_ttype_raises(self, gauss_im):
+        cfg = self._baseline(gauss_im)
+        cfg['pol'] = 'IP'
+        cfg['transforms'] = ['log', 'mcv']
+        cfg['ttype'] = 'fast'
+        cfg['dat_term_keys'] = ['pvis']
+        cfg['reg_term_keys'] = ['msimple']
+        with pytest.raises(Exception,
+                           match="FFT not yet implemented in polarimetric imaging"):
+            self._call(**cfg)
+
+    # ---- data / regularizer term presence + validity ----
+
+    def test_missing_data_term_raises(self, gauss_im):
+        cfg = self._baseline(gauss_im)
+        cfg['dat_term_keys'] = []
+        with pytest.raises(Exception, match="Must have at least one data term!"):
+            self._call(**cfg)
+
+    def test_missing_reg_term_raises(self, gauss_im):
+        cfg = self._baseline(gauss_im)
+        cfg['reg_term_keys'] = []
+        with pytest.raises(Exception, match="Must have at least one regularizer term!"):
+            self._call(**cfg)
+
+    def test_invalid_data_term_raises(self, gauss_im):
+        cfg = self._baseline(gauss_im)
+        cfg['dat_term_keys'] = ['not_a_term']
+        with pytest.raises(Exception, match="Invalid data term: valid data terms are:"):
+            self._call(**cfg)
+
+    def test_invalid_reg_term_raises(self, gauss_im):
+        cfg = self._baseline(gauss_im)
+        cfg['reg_term_keys'] = ['not_a_reg']
+        with pytest.raises(Exception, match="Invalid regularizer: valid regularizers are:"):
+            self._call(**cfg)
+
+
+class TestValidateLimits:
+    """Direct unit tests for validate_limits.
+
+    Pure validator. Returns a list of warning strings instead of printing.
+    Per-observation conditions:
+      * pixel too coarse for largest baseline,
+      * FOV too small for smallest nonzero baseline,
+      * specified total flux outside [0.8, 1.2] * max(|vis amp|) (only for
+        pol in {'I', 'RR', 'LL'}).
+    """
+
+    @staticmethod
+    def _grid_copy(im, psize=None, xdim=None, ydim=None):
+        """Make a prior-shaped Image by overriding grid params on a copy."""
+        out = im.copy()
+        if psize is not None:
+            out.psize = psize
+        if xdim is not None:
+            out.xdim = xdim
+        if ydim is not None:
+            out.ydim = ydim
+        return out
+
+    @staticmethod
+    def _matched_flux(obs):
+        """Pick a flux value that won't trigger the flux warnings."""
+        return float(np.max(np.abs(obs.unpack('amp')['amp'])))
+
+    # ---- uv-resolution warnings ----
+
+    def test_no_warnings_when_grid_and_flux_match(self, gauss_im, obs_direct):
+        flux = self._matched_flux(obs_direct)
+        out = validate_limits(gauss_im, [obs_direct], 'I', flux, [])
+        assert out == []
+
+    def test_warns_when_pixel_too_coarse(self, gauss_im, obs_direct):
+        uvdists = obs_direct.unpack('uvdist')['uvdist']
+        maxbl = float(np.max(uvdists))
+        coarse = self._grid_copy(gauss_im, psize=2.0 / maxbl)  # uvmax = maxbl/2
+        flux = self._matched_flux(obs_direct)
+        out = validate_limits(coarse, [obs_direct], 'I', flux, [])
+        assert any("Pixel size is larger" in m for m in out)
+
+    def test_warns_when_fov_too_small(self, gauss_im, obs_direct):
+        uvdists = obs_direct.unpack('uvdist')['uvdist']
+        minbl = float(np.max(uvdists[uvdists > 0]))
+        tiny = self._grid_copy(gauss_im, xdim=1, ydim=1, psize=0.5 / minbl)
+        flux = self._matched_flux(obs_direct)
+        out = validate_limits(tiny, [obs_direct], 'I', flux, [])
+        assert any("Field of View is smaller" in m for m in out)
+
+    def test_multi_obs_appends_per_obs(self, gauss_im, obs_direct):
+        uvdists = obs_direct.unpack('uvdist')['uvdist']
+        maxbl = float(np.max(uvdists))
+        coarse = self._grid_copy(gauss_im, psize=2.0 / maxbl)
+        flux = self._matched_flux(obs_direct)
+        out = validate_limits(coarse, [obs_direct, obs_direct], 'I', flux, [])
+        pixel_warnings = [m for m in out if "Pixel size is larger" in m]
+        assert len(pixel_warnings) == 2
+
+    def test_empty_obslist_returns_empty(self, gauss_im):
+        assert validate_limits(gauss_im, [], 'I', 1.0, []) == []
+
+    # ---- flux warnings ----
+
+    def test_warns_when_flux_too_high(self, gauss_im, obs_direct):
+        maxamp = self._matched_flux(obs_direct)
+        out = validate_limits(gauss_im, [obs_direct], 'I', 2.0 * maxamp, [])
+        assert any("> 120%" in m for m in out)
+
+    def test_warns_when_flux_too_low(self, gauss_im, obs_direct):
+        maxamp = self._matched_flux(obs_direct)
+        out = validate_limits(gauss_im, [obs_direct], 'I', 0.5 * maxamp, [])
+        assert any("< 80%" in m for m in out)
+
+    def test_flux_check_skipped_for_polarimetric_pol(self, gauss_im, obs_direct):
+        """Flux warnings only fire for total-flux pols ('I', 'RR', 'LL')."""
+        maxamp = self._matched_flux(obs_direct)
+        out = validate_limits(gauss_im, [obs_direct], 'IP', 2.0 * maxamp, [])
+        assert all(("> 120%" not in m) and ("< 80%" not in m) for m in out)
+
+    def test_mf_flux_picks_per_obs_value(self, gauss_im, obs_direct):
+        """When len(mf_flux) == len(obslist), each obs uses its own flux."""
+        maxamp = self._matched_flux(obs_direct)
+        # First obs flux is good, second is too high.
+        mf_flux = [maxamp, 2.0 * maxamp]
+        out = validate_limits(gauss_im, [obs_direct, obs_direct], 'I',
+                              maxamp, mf_flux)
+        flux_warnings = [m for m in out if "> 120%" in m]
+        assert len(flux_warnings) == 1  # only the second obs trips
 

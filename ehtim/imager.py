@@ -37,11 +37,6 @@ from ehtim.imaging.imager_backend import (
     DATATERMS,
     DATATERMS_POL,
     POLARIZATION_MODES,
-    REGULARIZERS,
-    REGULARIZERS_ISPECTRAL,
-    REGULARIZERS_POL,
-    REGULARIZERS_POLSPECTRAL,
-    REGULARIZERS_SPECTRAL,
     compute_chisq_dict,
     compute_chisqgrad_dict,
     compute_init_state,
@@ -53,6 +48,8 @@ from ehtim.imaging.imager_backend import (
     embed_imarr,
     transform_imarr,
     unpack_imarr,
+    validate_limits,
+    validate_params,
 )
 
 MAXIT = 200  # number of iterations
@@ -548,125 +545,13 @@ class Imager:
     def check_params(self):
         """Check parameter consistency.
         """
-        if ((self.prior_next.psize != self.init_next.psize) or
-            (self.prior_next.xdim != self.init_next.xdim) or
-            (self.prior_next.ydim != self.init_next.ydim)):
-            raise Exception("Initial image does not match dimensions of the prior image!")
-
-        if (self.prior_next.rf != self.init_next.rf):
-            raise Exception("Initial image does not have same frequency as prior image!")
-
-        if (self.prior_next.polrep != self.init_next.polrep):
-            raise Exception(
-                "Initial image polrep does not match prior polrep!")
-
-        if (self.prior_next.polrep == 'circ' and self.pol_next not in ['RR', 'LL']):
-            raise Exception("Initial image polrep is 'circ': pol_next must be 'RR' or 'LL'")
-
-        if (self.prior_next.polrep == 'stokes'
-            and self.pol_next not in ['I', 'Q', 'U', 'V', 'P','IP','IQU','IV','IQUV']):
-            raise Exception(
-                "Initial image polrep is 'stokes': pol_next must be in 'I', 'Q', 'U', 'V', 'P','IP','IQU','IV','IQUV'!")
-
-        if ('log' in self.transform_next and self.pol_next in ['Q', 'U', 'V']):
-            raise Exception("Cannot image Stokes Q, U, V with log image transformation!")
-
-        if(self.pol_next in ['Q', 'U', 'V'] and
-           ('gs' in self.reg_term_next.keys() or 'simple' in self.reg_term_next.keys())):
-            raise Exception(
-                "'simple' and 'gs' regularizers do not work with Stokes Q, U, or V images!")
-
-        if self._ttype not in ['fast', 'direct', 'nfft']:
-            raise Exception("Possible ttype values are 'fast', 'direct','nfft'!")
-
-        # Catch errors in multifrequency imaging setup
-        if self.mf_next:
-            if len(set(self.freq_list)) < 2:
-                raise Exception("Must have observations at at least two frequencies for multifrequency imaging!")
-            if self.mf_order not in [0,1,2]:
-                raise Exception("mf_order must be in [0,1,2]!")
-
-            if (self.pol_next in POLARIZATION_MODES):
-                if self.pol_next not in ['P','QU']:
-                    raise Exception("Currently we only support pol_next=P for polarization multifrequency imaging!")
-                if self.mf_order_pol not in [0,1,2]:
-                    raise Exception("mf_order_pol must be in [0,1,2]!")
-
-        # Catch errors for polarimetric imaging setup
-        if self.pol_next in POLARIZATION_MODES:
-            if (self.pol_next in ['P', 'QU','IP','IQU']):
-                if 'mcv' not in self.transform_next:
-                    raise Exception(f"{self.pol_next} imaging requires 'mcv' transform!")
-                if 'vcv' in self.transform_next:
-                    raise Exception(f"Cannot do {self.pol_next} imaging with 'vcv' transform!")
-                if 'polcv' in self.transform_next:
-                    raise Exception(f"Cannot do {self.pol_next} imaging only with 'polcv' transform!")
-
-            if (self.pol_next in ['V','IV']):
-                if 'vcv' not in self.transform_next:
-                    raise Exception(f"{self.pol_next} imaging requires 'vcv' transform!")
-                if 'mcv' in self.transform_next:
-                    raise Exception(f"Cannot do {self.pol_next} imaging only with 'mcv' transform!")
-                if 'polcv' in self.transform_next:
-                    raise Exception(f"Cannot do {self.pol_next} imaging only with 'polcv' transform!")
-
-            if self.pol_next in ['IPV','IQUV']:
-                if 'polcv' not in self.transform_next:
-                    raise Exception("Linear+Circular polarization imaging requires 'polcv' transform!")
-
-            if (self._ttype not in ["direct", "nfft"]):
-                raise Exception("FFT not yet implemented in polarimetric imaging -- use NFFT!")
-
-        # catch errors in general imaging setup
-        if self.mf_next:
-            if self.pol_next in POLARIZATION_MODES:
-                if 'I' in self.pol_next:
-                    rlist = REGULARIZERS + REGULARIZERS_POL + REGULARIZERS_SPECTRAL
-                    dlist = DATATERMS + DATATERMS_POL
-                else:
-                    rlist = REGULARIZERS_POL + REGULARIZERS_POLSPECTRAL
-                    dlist = DATATERMS_POL
-            else:
-                rlist = REGULARIZERS + REGULARIZERS_ISPECTRAL
-                dlist = DATATERMS
-        else:
-            if self.pol_next in POLARIZATION_MODES:
-                if 'I' in self.pol_next:
-                    rlist = REGULARIZERS + REGULARIZERS_POL
-                    dlist = DATATERMS + DATATERMS_POL
-                else:
-                    rlist = REGULARIZERS_POL
-                    dlist = DATATERMS_POL
-            else:
-                rlist = REGULARIZERS
-                dlist = DATATERMS
-
-
-        dt_here = False
-        dt_type = True
-        for term in sorted(self.dat_term_next.keys()):
-            if (term is not None) and (term is not False):
-                dt_here = True
-            if not ((term in dlist) or (term is False)):
-                dt_type = False
-
-        st_here = False
-        st_type = True
-        for term in sorted(self.reg_term_next.keys()):
-            if (term is not None) and (term is not False):
-                st_here = True
-            if not ((term in rlist) or (term is False)):
-                st_type = False
-
-        if not dt_here:
-            raise Exception("Must have at least one data term!")
-        if not st_here:
-            raise Exception("Must have at least one regularizer term!")
-        if not dt_type:
-            raise Exception("Invalid data term: valid data terms are: " + ','.join(dlist))
-        if not st_type:
-            raise Exception("Invalid regularizer: valid regularizers are: " + ','.join(rlist))
-
+        validate_params(
+            self.prior_next, self.init_next, self.pol_next,
+            self.transform_next,
+            self.dat_term_next.keys(), self.reg_term_next.keys(),
+            self._ttype, self.mf_next, self.mf_order, self.mf_order_pol,
+            self.freq_list,
+        )
 
         # Determine if we need to recompute the saved imager parameters on the next imager run
         if self.nruns == 0:
@@ -765,32 +650,11 @@ class Imager:
     def check_limits(self):
         """Check image parameter consistency with observation.
         """
-        for i,obs in enumerate(self.obslist_next):
-            uvmax = 1.0/self.prior_next.psize
-            uvmin = 1.0/(self.prior_next.psize*np.max((self.prior_next.xdim, self.prior_next.ydim)))
-            uvdists = obs.unpack('uvdist')['uvdist']
-            maxbl = np.max(uvdists)
-            minbl = np.max(uvdists[uvdists > 0])
-
-            if uvmax < maxbl:
-                print("Warning! Pixel size is larger than smallest spatial wavelength for freq %.1f GHz!"%(obs.rf/1.e9))
-            if uvmin > minbl:
-                print("Warning! Field of View is smaller than largest nonzero spatial wavelength for freq %.1f GHz!"%(obs.rf/1.e9))
-
-            if self.pol_next in ['I', 'RR', 'LL']:
-                maxamp = np.max(np.abs(obs.unpack('amp')['amp']))
-
-                # TODO: better handling of mf fluxes
-                if len(self.mf_flux)==len(self.obslist_next):
-                    flux = self.mf_flux[i]
-                else:
-                    flux = self.flux_next
-
-                if flux > 1.2*maxamp:
-                    print(f"Warning! Specified flux {flux:.1f} is > 120% of maximum visibility amplitude for freq {obs.rf/1.e9:.1f} GHz!")
-                if flux < .8*maxamp:
-                    print(f"Warning! Specified flux {flux:.1f} is < 80% of maximum visibility amplitude for freq {obs.rf/1.e9:.1f} GHz!")
-        return
+        for msg in validate_limits(
+            self.prior_next, self.obslist_next, self.pol_next,
+            self.flux_next, self.mf_flux,
+        ):
+            print(msg)
 
 
     def init_imager(self):
