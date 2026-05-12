@@ -3858,6 +3858,8 @@ def plot_i(im, Prior, nit, chi2_dict, **kwargs):
 
 
 
+# TODO(achael): consolidate `embed` (1D, this function) and `embed_imarr`
+# (1D or 2D, below) into a single implementation -- their bodies overlap.
 def embed(imvec, mask, clipfloor=0., randomfloor=False):
     """Embeds a 1d image vector into the size of boolean embed mask
     """
