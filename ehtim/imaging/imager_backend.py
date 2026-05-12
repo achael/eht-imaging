@@ -63,6 +63,114 @@ SIGMAPOL_INIT = 1.e-2  # perturbation scale
 # unnecessary -- revisit once epsilon_tv coverage is broader.
 EMBED_RANDOMFLOOR = True
 
+# `logamp` aliases `amp` (same data product). Pol dtypes have no `fast`.
+_CHISQDATA_DISPATCH = {
+    'vis':          {'direct': imutils.chisqdata_vis,
+                     'fast':   imutils.chisqdata_vis_fft,
+                     'nfft':   imutils.chisqdata_vis_nfft},
+    'amp':          {'direct': imutils.chisqdata_amp,
+                     'fast':   imutils.chisqdata_amp_fft,
+                     'nfft':   imutils.chisqdata_amp_nfft},
+    'logamp':       {'direct': imutils.chisqdata_amp,
+                     'fast':   imutils.chisqdata_amp_fft,
+                     'nfft':   imutils.chisqdata_amp_nfft},
+    'bs':           {'direct': imutils.chisqdata_bs,
+                     'fast':   imutils.chisqdata_bs_fft,
+                     'nfft':   imutils.chisqdata_bs_nfft},
+    'cphase':       {'direct': imutils.chisqdata_cphase,
+                     'fast':   imutils.chisqdata_cphase_fft,
+                     'nfft':   imutils.chisqdata_cphase_nfft},
+    'cphase_diag':  {'direct': imutils.chisqdata_cphase_diag,
+                     'fast':   imutils.chisqdata_cphase_diag_fft,
+                     'nfft':   imutils.chisqdata_cphase_diag_nfft},
+    'camp':         {'direct': imutils.chisqdata_camp,
+                     'fast':   imutils.chisqdata_camp_fft,
+                     'nfft':   imutils.chisqdata_camp_nfft},
+    'logcamp':      {'direct': imutils.chisqdata_logcamp,
+                     'fast':   imutils.chisqdata_logcamp_fft,
+                     'nfft':   imutils.chisqdata_logcamp_nfft},
+    'logcamp_diag': {'direct': imutils.chisqdata_logcamp_diag,
+                     'fast':   imutils.chisqdata_logcamp_diag_fft,
+                     'nfft':   imutils.chisqdata_logcamp_diag_nfft},
+    'pvis':         {'direct': polutils.chisqdata_pvis,
+                     'nfft':   polutils.chisqdata_pvis_nfft},
+    'm':            {'direct': polutils.chisqdata_m,
+                     'nfft':   polutils.chisqdata_m_nfft},
+    'vvis':         {'direct': polutils.chisqdata_vvis,
+                     'nfft':   polutils.chisqdata_vvis_nfft},
+}
+
+# _diag leaves index the gridded image directly per-baseline; their `fast`
+# variants take imvec rather than the pre-FFT'd vis_arr.
+_DIAG_DTYPES = frozenset({'cphase_diag', 'logcamp_diag'})
+
+# Pol dtypes have no `fast`; entries are (chisq_fn, chisqgrad_fn).
+_CHISQ_DISPATCH = {
+    'vis':          {'is_pol': False,
+                     'direct': (imutils.chisq_vis,          imutils.chisqgrad_vis),
+                     'fast':   (imutils.chisq_vis_fft,      imutils.chisqgrad_vis_fft),
+                     'nfft':   (imutils.chisq_vis_nfft,     imutils.chisqgrad_vis_nfft)},
+    'amp':          {'is_pol': False,
+                     'direct': (imutils.chisq_amp,          imutils.chisqgrad_amp),
+                     'fast':   (imutils.chisq_amp_fft,      imutils.chisqgrad_amp_fft),
+                     'nfft':   (imutils.chisq_amp_nfft,     imutils.chisqgrad_amp_nfft)},
+    'logamp':       {'is_pol': False,
+                     'direct': (imutils.chisq_logamp,       imutils.chisqgrad_logamp),
+                     'fast':   (imutils.chisq_logamp_fft,   imutils.chisqgrad_logamp_fft),
+                     'nfft':   (imutils.chisq_logamp_nfft,  imutils.chisqgrad_logamp_nfft)},
+    'bs':           {'is_pol': False,
+                     'direct': (imutils.chisq_bs,           imutils.chisqgrad_bs),
+                     'fast':   (imutils.chisq_bs_fft,       imutils.chisqgrad_bs_fft),
+                     'nfft':   (imutils.chisq_bs_nfft,      imutils.chisqgrad_bs_nfft)},
+    'cphase':       {'is_pol': False,
+                     'direct': (imutils.chisq_cphase,       imutils.chisqgrad_cphase),
+                     'fast':   (imutils.chisq_cphase_fft,   imutils.chisqgrad_cphase_fft),
+                     'nfft':   (imutils.chisq_cphase_nfft,  imutils.chisqgrad_cphase_nfft)},
+    'cphase_diag':  {'is_pol': False,
+                     'direct': (imutils.chisq_cphase_diag,      imutils.chisqgrad_cphase_diag),
+                     'fast':   (imutils.chisq_cphase_diag_fft,  imutils.chisqgrad_cphase_diag_fft),
+                     'nfft':   (imutils.chisq_cphase_diag_nfft, imutils.chisqgrad_cphase_diag_nfft)},
+    'camp':         {'is_pol': False,
+                     'direct': (imutils.chisq_camp,         imutils.chisqgrad_camp),
+                     'fast':   (imutils.chisq_camp_fft,     imutils.chisqgrad_camp_fft),
+                     'nfft':   (imutils.chisq_camp_nfft,    imutils.chisqgrad_camp_nfft)},
+    'logcamp':      {'is_pol': False,
+                     'direct': (imutils.chisq_logcamp,      imutils.chisqgrad_logcamp),
+                     'fast':   (imutils.chisq_logcamp_fft,  imutils.chisqgrad_logcamp_fft),
+                     'nfft':   (imutils.chisq_logcamp_nfft, imutils.chisqgrad_logcamp_nfft)},
+    'logcamp_diag': {'is_pol': False,
+                     'direct': (imutils.chisq_logcamp_diag,      imutils.chisqgrad_logcamp_diag),
+                     'fast':   (imutils.chisq_logcamp_diag_fft,  imutils.chisqgrad_logcamp_diag_fft),
+                     'nfft':   (imutils.chisq_logcamp_diag_nfft, imutils.chisqgrad_logcamp_diag_nfft)},
+    'pvis':         {'is_pol': True,
+                     'direct': (polutils.chisq_p,           polutils.chisqgrad_p),
+                     'nfft':   (polutils.chisq_p_nfft,      polutils.chisqgrad_p_nfft)},
+    'm':            {'is_pol': True,
+                     'direct': (polutils.chisq_m,           polutils.chisqgrad_m),
+                     'nfft':   (polutils.chisq_m_nfft,      polutils.chisqgrad_m_nfft)},
+    'vvis':         {'is_pol': True,
+                     'direct': (polutils.chisq_vvis,        polutils.chisqgrad_vvis),
+                     'nfft':   (polutils.chisq_vvis_nfft,   polutils.chisqgrad_vvis_nfft)},
+}
+
+
+class ImagerInitState(NamedTuple):
+    """Solver-ready state produced by compute_init_state.
+
+    Each field corresponds to an Imager._* attribute consumed by
+    compute_objective / compute_objective_grad.
+    """
+    init_arr: np.ndarray         # multi-D, solver space
+    init_vec: np.ndarray         # 1D packed solver vector
+    prior_arr: np.ndarray        # multi-D, physical space
+    data_tuples: dict            # keyed by dname or f"{dname}_{i}"
+    embed_mask: np.ndarray       # boolean
+    coord_matrix: np.ndarray     # pixel-coord companion to embed_mask
+    logfreqratio_list: list      # log(nu_i / reffreq)
+    nimage: int                  # number of active pixels = sum(embed_mask)
+    which_solve: np.ndarray      # int 0/1 flags
+    reffreq: float               # may be re-bound to init.rf when mf=True
+
 
 def pack_imarr(imarr, which_solve):
     """pack image array imarr into 1D array vec for minimizaiton
@@ -693,62 +801,6 @@ def compute_which_solve(pol, mf,
     return np.array([1])
 
 
-class ImagerInitState(NamedTuple):
-    """Solver-ready state produced by compute_init_state.
-
-    Each field corresponds to an Imager._* attribute consumed by
-    compute_objective / compute_objective_grad.
-    """
-    init_arr: np.ndarray         # multi-D, solver space
-    init_vec: np.ndarray         # 1D packed solver vector
-    prior_arr: np.ndarray        # multi-D, physical space
-    data_tuples: dict            # keyed by dname or f"{dname}_{i}"
-    embed_mask: np.ndarray       # boolean
-    coord_matrix: np.ndarray     # pixel-coord companion to embed_mask
-    logfreqratio_list: list      # log(nu_i / reffreq)
-    nimage: int                  # number of active pixels = sum(embed_mask)
-    which_solve: np.ndarray      # int 0/1 flags
-    reffreq: float               # may be re-bound to init.rf when mf=True
-
-
-# `logamp` aliases `amp` (same data product). Pol dtypes have no `fast`.
-_CHISQDATA_DISPATCH = {
-    'vis':          {'direct': imutils.chisqdata_vis,
-                     'fast':   imutils.chisqdata_vis_fft,
-                     'nfft':   imutils.chisqdata_vis_nfft},
-    'amp':          {'direct': imutils.chisqdata_amp,
-                     'fast':   imutils.chisqdata_amp_fft,
-                     'nfft':   imutils.chisqdata_amp_nfft},
-    'logamp':       {'direct': imutils.chisqdata_amp,
-                     'fast':   imutils.chisqdata_amp_fft,
-                     'nfft':   imutils.chisqdata_amp_nfft},
-    'bs':           {'direct': imutils.chisqdata_bs,
-                     'fast':   imutils.chisqdata_bs_fft,
-                     'nfft':   imutils.chisqdata_bs_nfft},
-    'cphase':       {'direct': imutils.chisqdata_cphase,
-                     'fast':   imutils.chisqdata_cphase_fft,
-                     'nfft':   imutils.chisqdata_cphase_nfft},
-    'cphase_diag':  {'direct': imutils.chisqdata_cphase_diag,
-                     'fast':   imutils.chisqdata_cphase_diag_fft,
-                     'nfft':   imutils.chisqdata_cphase_diag_nfft},
-    'camp':         {'direct': imutils.chisqdata_camp,
-                     'fast':   imutils.chisqdata_camp_fft,
-                     'nfft':   imutils.chisqdata_camp_nfft},
-    'logcamp':      {'direct': imutils.chisqdata_logcamp,
-                     'fast':   imutils.chisqdata_logcamp_fft,
-                     'nfft':   imutils.chisqdata_logcamp_nfft},
-    'logcamp_diag': {'direct': imutils.chisqdata_logcamp_diag,
-                     'fast':   imutils.chisqdata_logcamp_diag_fft,
-                     'nfft':   imutils.chisqdata_logcamp_diag_nfft},
-    'pvis':         {'direct': polutils.chisqdata_pvis,
-                     'nfft':   polutils.chisqdata_pvis_nfft},
-    'm':            {'direct': polutils.chisqdata_m,
-                     'nfft':   polutils.chisqdata_m_nfft},
-    'vvis':         {'direct': polutils.chisqdata_vvis,
-                     'nfft':   polutils.chisqdata_vvis_nfft},
-}
-
-
 def compute_chisqdata_term(obs, prior, mask, dtype, ttype='direct', pol='I', **kwargs):
     """Single chisqdata dispatcher unifying chisqdata + polchisqdata.
 
@@ -808,61 +860,6 @@ def compute_chisqdata_term(obs, prior, mask, dtype, ttype='direct', pol='I', **k
     if is_pol or ttype == 'direct':
         return helper(obs, prior, mask, pol=pol, **kwargs)
     return helper(obs, prior, pol=pol, **kwargs)
-
-
-# _diag leaves index the gridded image directly per-baseline; their `fast`
-# variants take imvec rather than the pre-FFT'd vis_arr.
-_DIAG_DTYPES = frozenset({'cphase_diag', 'logcamp_diag'})
-
-
-# Pol dtypes have no `fast`; entries are (chisq_fn, chisqgrad_fn).
-_CHISQ_DISPATCH = {
-    'vis':          {'is_pol': False,
-                     'direct': (imutils.chisq_vis,          imutils.chisqgrad_vis),
-                     'fast':   (imutils.chisq_vis_fft,      imutils.chisqgrad_vis_fft),
-                     'nfft':   (imutils.chisq_vis_nfft,     imutils.chisqgrad_vis_nfft)},
-    'amp':          {'is_pol': False,
-                     'direct': (imutils.chisq_amp,          imutils.chisqgrad_amp),
-                     'fast':   (imutils.chisq_amp_fft,      imutils.chisqgrad_amp_fft),
-                     'nfft':   (imutils.chisq_amp_nfft,     imutils.chisqgrad_amp_nfft)},
-    'logamp':       {'is_pol': False,
-                     'direct': (imutils.chisq_logamp,       imutils.chisqgrad_logamp),
-                     'fast':   (imutils.chisq_logamp_fft,   imutils.chisqgrad_logamp_fft),
-                     'nfft':   (imutils.chisq_logamp_nfft,  imutils.chisqgrad_logamp_nfft)},
-    'bs':           {'is_pol': False,
-                     'direct': (imutils.chisq_bs,           imutils.chisqgrad_bs),
-                     'fast':   (imutils.chisq_bs_fft,       imutils.chisqgrad_bs_fft),
-                     'nfft':   (imutils.chisq_bs_nfft,      imutils.chisqgrad_bs_nfft)},
-    'cphase':       {'is_pol': False,
-                     'direct': (imutils.chisq_cphase,       imutils.chisqgrad_cphase),
-                     'fast':   (imutils.chisq_cphase_fft,   imutils.chisqgrad_cphase_fft),
-                     'nfft':   (imutils.chisq_cphase_nfft,  imutils.chisqgrad_cphase_nfft)},
-    'cphase_diag':  {'is_pol': False,
-                     'direct': (imutils.chisq_cphase_diag,      imutils.chisqgrad_cphase_diag),
-                     'fast':   (imutils.chisq_cphase_diag_fft,  imutils.chisqgrad_cphase_diag_fft),
-                     'nfft':   (imutils.chisq_cphase_diag_nfft, imutils.chisqgrad_cphase_diag_nfft)},
-    'camp':         {'is_pol': False,
-                     'direct': (imutils.chisq_camp,         imutils.chisqgrad_camp),
-                     'fast':   (imutils.chisq_camp_fft,     imutils.chisqgrad_camp_fft),
-                     'nfft':   (imutils.chisq_camp_nfft,    imutils.chisqgrad_camp_nfft)},
-    'logcamp':      {'is_pol': False,
-                     'direct': (imutils.chisq_logcamp,      imutils.chisqgrad_logcamp),
-                     'fast':   (imutils.chisq_logcamp_fft,  imutils.chisqgrad_logcamp_fft),
-                     'nfft':   (imutils.chisq_logcamp_nfft, imutils.chisqgrad_logcamp_nfft)},
-    'logcamp_diag': {'is_pol': False,
-                     'direct': (imutils.chisq_logcamp_diag,      imutils.chisqgrad_logcamp_diag),
-                     'fast':   (imutils.chisq_logcamp_diag_fft,  imutils.chisqgrad_logcamp_diag_fft),
-                     'nfft':   (imutils.chisq_logcamp_diag_nfft, imutils.chisqgrad_logcamp_diag_nfft)},
-    'pvis':         {'is_pol': True,
-                     'direct': (polutils.chisq_p,           polutils.chisqgrad_p),
-                     'nfft':   (polutils.chisq_p_nfft,      polutils.chisqgrad_p_nfft)},
-    'm':            {'is_pol': True,
-                     'direct': (polutils.chisq_m,           polutils.chisqgrad_m),
-                     'nfft':   (polutils.chisq_m_nfft,      polutils.chisqgrad_m_nfft)},
-    'vvis':         {'is_pol': True,
-                     'direct': (polutils.chisq_vvis,        polutils.chisqgrad_vvis),
-                     'nfft':   (polutils.chisq_vvis_nfft,   polutils.chisqgrad_vvis_nfft)},
-}
 
 
 def _pol_solve_block(which_solve, pol):
