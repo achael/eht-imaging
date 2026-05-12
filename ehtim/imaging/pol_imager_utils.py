@@ -349,11 +349,10 @@ def polchisq(imarr, A, data, sigma, dtype, ttype='direct', mask=[]):
 
     Thin shim around imager_backend.compute_chisq_term retained for backward
     compatibility. New code should call compute_chisq_term directly.
-    Returns 1 (legacy silent fallback) if `dtype` is not a polarimetric term.
     """
     from ehtim.imaging.imager_backend import compute_chisq_term
     if dtype not in DATATERMS_POL:
-        return 1
+        raise Exception(f"data term {dtype!r} is not a polarimetric data term")
     return compute_chisq_term(imarr, dtype, A, data, sigma,
                               ttype=ttype, mask=mask)
 
@@ -364,12 +363,11 @@ def polchisqgrad(imarr, A, data, sigma, dtype, ttype='direct', mask=[],
 
     Thin shim around imager_backend.compute_chisqgrad_term retained for
     backward compatibility. New code should call compute_chisqgrad_term
-    directly. Returns zeros (legacy silent fallback) if `dtype` is not a
-    polarimetric term.
+    directly.
     """
     from ehtim.imaging.imager_backend import compute_chisqgrad_term
     if dtype not in DATATERMS_POL:
-        return np.zeros(imarr.shape)
+        raise Exception(f"data term {dtype!r} is not a polarimetric data term")
     return compute_chisqgrad_term(imarr, dtype, A, data, sigma,
                                   ttype=ttype, mask=mask, pol_solve=pol_solve)
 
@@ -471,13 +469,12 @@ def polchisqdata(Obsdata, Prior, mask, dtype, **kwargs):
 
     Thin shim around imager_backend.compute_chisqdata_term retained for
     backward compatibility. New code should call compute_chisqdata_term
-    directly. Returns (False, False, False) (legacy silent fallback) if
-    `dtype` is not a polarimetric term.
+    directly.
     """
     from ehtim.imaging.imager_backend import compute_chisqdata_term
     ttype = kwargs.pop('ttype', 'direct')
     if dtype not in DATATERMS_POL:
-        return (False, False, False)
+        raise Exception(f"data term {dtype!r} is not a polarimetric data term")
     return compute_chisqdata_term(Obsdata, Prior, mask, dtype,
                                   ttype=ttype, **kwargs)
 

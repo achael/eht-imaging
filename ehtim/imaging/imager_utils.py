@@ -45,13 +45,12 @@ def chisq(imvec, A, data, sigma, dtype, ttype='direct', mask=None):
     """Return chi^2 for a standard data term.
 
     Thin shim around imager_backend.compute_chisq_term retained for backward
-    compatibility. New code should call compute_chisq_term directly. Returns
-    1 (legacy silent fallback) if `dtype` is not a standard data term.
+    compatibility. New code should call compute_chisq_term directly.
     """
     # Imported here to avoid a module-load cycle with pol_imager_utils.
     from ehtim.imaging.imager_backend import compute_chisq_term
     if dtype not in DATATERMS:
-        return 1
+        raise Exception(f"data term {dtype!r} is not a standard data term")
     return compute_chisq_term(imvec, dtype, A, data, sigma,
                               ttype=ttype, mask=mask)
 
@@ -61,12 +60,11 @@ def chisqgrad(imvec, A, data, sigma, dtype, ttype='direct', mask=None):
 
     Thin shim around imager_backend.compute_chisqgrad_term retained for
     backward compatibility. New code should call compute_chisqgrad_term
-    directly. Returns zeros (legacy silent fallback) if `dtype` is not a
-    standard data term.
+    directly.
     """
     from ehtim.imaging.imager_backend import compute_chisqgrad_term
     if dtype not in DATATERMS:
-        return np.zeros(len(imvec))
+        raise Exception(f"data term {dtype!r} is not a standard data term")
     return compute_chisqgrad_term(imvec, dtype, A, data, sigma,
                                   ttype=ttype, mask=mask)
 
@@ -226,13 +224,12 @@ def chisqdata(Obsdata, Prior, mask, dtype, pol='I', **kwargs):
 
     Thin shim around imager_backend.compute_chisqdata_term retained for
     backward compatibility. New code should call compute_chisqdata_term
-    directly. Returns (False, False, False) (legacy silent fallback) if
-    `dtype` is not a standard data term.
+    directly.
     """
     from ehtim.imaging.imager_backend import compute_chisqdata_term
     ttype = kwargs.pop('ttype', 'direct')
     if dtype not in DATATERMS:
-        return (False, False, False)
+        raise Exception(f"data term {dtype!r} is not a standard data term")
     return compute_chisqdata_term(Obsdata, Prior, mask, dtype,
                                   ttype=ttype, pol=pol, **kwargs)
 
