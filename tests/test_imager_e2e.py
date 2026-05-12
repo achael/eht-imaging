@@ -58,6 +58,21 @@ def _imager_kwargs_stokes_i(ttype):
     )
 
 
+def _imager_kwargs_stokes_i_diag(ttype):
+    """Stokes-I mix using diagonalized closure quantities.
+
+    `cphase_diag` and `logcamp_diag` consume per-timestamp diagonalized
+    closures rather than the redundant minimal-set; data + sigma + A are
+    dtype=object ragged arrays. Exercises that the full imaging pipeline
+    converges through these paths, not just the per-term chi^2 / gradient.
+    """
+    return dict(
+        data_term={"amp": 100, "cphase_diag": 100, "logcamp_diag": 50},
+        reg_term={"simple": 1, "tv": 10},
+        ttype=ttype, pol="I", maxit=100,
+    )
+
+
 def _imager_kwargs_polarimetric(ttype):
     """Same Stokes-I terms + linear-pol data terms for IP imaging."""
     return dict(
@@ -97,6 +112,43 @@ class TestEndToEndReconstruction:
         imgr = eh.imager.Imager(
             obs, prior, prior_im=prior, flux=gauss_im.total_flux(),
             **_imager_kwargs_stokes_i("nfft"),
+        )
+        out = imgr.make_image_I(niter=3, show_updates=False)
+
+        assert out.total_flux() == pytest.approx(
+            gauss_im.total_flux(), rel=FLUX_REL_TOL,
+        )
+        (errors, _, _) = out.compare_images(
+            gauss_im, metric=["nxcorr"], blur_frac=0.0,
+        )
+        assert errors[0] > STOKES_I_NXCORR_MIN
+
+    @pytest.mark.parametrize("ttype", ["direct", "fast"])
+    def test_recovers_gaussian_stokes_i_diag(self, gauss_im, observe, ttype):
+        obs = observe(gauss_im, ttype=ttype, seed=42)
+        prior = _independent_prior(gauss_im.total_flux())
+        imgr = eh.imager.Imager(
+            obs, prior, prior_im=prior, flux=gauss_im.total_flux(),
+            **_imager_kwargs_stokes_i_diag(ttype),
+        )
+        out = imgr.make_image_I(niter=3, show_updates=False)
+
+        assert out.total_flux() == pytest.approx(
+            gauss_im.total_flux(), rel=FLUX_REL_TOL,
+        )
+        (errors, _, _) = out.compare_images(
+            gauss_im, metric=["nxcorr"], blur_frac=0.0,
+        )
+        assert errors[0] > STOKES_I_NXCORR_MIN, (
+            f"diag nxcorr={errors[0]:.3f} below {STOKES_I_NXCORR_MIN} threshold")
+
+    @pytest.mark.skipif(not _has_pynfft(), reason="pyNFFT not installed")
+    def test_recovers_gaussian_stokes_i_diag_nfft(self, gauss_im, observe):
+        obs = observe(gauss_im, ttype="nfft", seed=42)
+        prior = _independent_prior(gauss_im.total_flux())
+        imgr = eh.imager.Imager(
+            obs, prior, prior_im=prior, flux=gauss_im.total_flux(),
+            **_imager_kwargs_stokes_i_diag("nfft"),
         )
         out = imgr.make_image_I(niter=3, show_updates=False)
 
