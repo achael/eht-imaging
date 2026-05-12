@@ -25,7 +25,6 @@ from ehtim.imaging.imager_backend import (
     compute_reg_dict,
     compute_reggrad_dict,
     compute_which_solve,
-    embed_imarr,
     make_initarr,
     pack_imarr,
     transform_gradients,
@@ -35,6 +34,7 @@ from ehtim.imaging.imager_backend import (
     validate_limits,
     validate_params,
 )
+from ehtim.imaging.imager_utils import embed_imarr
 
 # Parametrize over square, tall, and wide images
 IMAGE_SHAPES = [
