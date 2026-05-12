@@ -154,6 +154,251 @@ _CHISQ_DISPATCH = {
 }
 
 
+# Helpers for compound regularizers: tvlog / tv2log apply log to imvec before
+# calling stv / stv2 and adjust the gradient via the chain rule from log.
+def _tvlog_value(v, *, mask, **kw):
+    npix = kw['xdim'] * kw['ydim']
+    logflux = npix * np.abs(np.log(kw['flux'] / npix))
+    epsilon = kw.get('epsilon_tv', 0.)
+    if np.any(np.invert(mask)):
+        v = imutils.embed(v, mask, clipfloor=epsilon, randomfloor=True)
+    return -imutils.stv(np.log(v), kw['xdim'], kw['ydim'], kw['psize'], logflux,
+                        norm_reg=kw.get('norm_reg', True),
+                        beam_size=kw.get('beam_size'),
+                        epsilon=epsilon)
+
+
+def _tvlog_grad(v, *, mask, **kw):
+    npix = kw['xdim'] * kw['ydim']
+    logflux = npix * np.abs(np.log(kw['flux'] / npix))
+    epsilon = kw.get('epsilon_tv', 0.)
+    if np.any(np.invert(mask)):
+        v = imutils.embed(v, mask, clipfloor=epsilon, randomfloor=True)
+    g = -imutils.stvgrad(np.log(v), kw['xdim'], kw['ydim'], kw['psize'], logflux,
+                         norm_reg=kw.get('norm_reg', True),
+                         beam_size=kw.get('beam_size'),
+                         epsilon=epsilon)
+    return (g / v)[mask]
+
+
+def _tv2log_value(v, *, mask, **kw):
+    npix = kw['xdim'] * kw['ydim']
+    logflux = npix * np.abs(np.log(kw['flux'] / npix))
+    if np.any(np.invert(mask)):
+        v = imutils.embed(v, mask, randomfloor=True)
+    return -imutils.stv2(np.log(v), kw['xdim'], kw['ydim'], kw['psize'], logflux,
+                         norm_reg=kw.get('norm_reg', True),
+                         beam_size=kw.get('beam_size'))
+
+
+def _tv2log_grad(v, *, mask, **kw):
+    npix = kw['xdim'] * kw['ydim']
+    logflux = npix * np.abs(np.log(kw['flux'] / npix))
+    if np.any(np.invert(mask)):
+        v = imutils.embed(v, mask, randomfloor=True)
+    g = -imutils.stv2grad(np.log(v), kw['xdim'], kw['ydim'], kw['psize'], logflux,
+                          norm_reg=kw.get('norm_reg', True),
+                          beam_size=kw.get('beam_size'))
+    return (g / v)[mask]
+
+
+# Dispatch table: regname -> (value_fn, grad_fn, family).
+# value/grad signature: (imvec_or_imarr, *, mask, **kw) -> scalar / ndarray.
+# Each lambda is self-contained: handles its own embed pre-step and (for
+# spatial regs) [mask] post-slice. family is informational for compute_reg_dict
+# to decide how to slice the imcur input and how to bundle the gradient back
+# into a multi-Stokes shape when the imager runs in polarization mode.
+_REGULARIZER_DISPATCH = {
+    # Stokes-I regularizers (REGULARIZERS)
+    'flux': (
+        lambda v, *, mask, **kw: -imutils.sflux(v, kw['nprior'], kw['flux'], norm_reg=kw.get('norm_reg', True)),
+        lambda v, *, mask, **kw: -imutils.sfluxgrad(v, kw['nprior'], kw['flux'], norm_reg=kw.get('norm_reg', True)),
+        'stokes_i'),
+    'simple': (
+        lambda v, *, mask, **kw: -imutils.ssimple(v, kw['nprior'], kw['flux'], norm_reg=kw.get('norm_reg', True)),
+        lambda v, *, mask, **kw: -imutils.ssimplegrad(v, kw['nprior'], kw['flux'], norm_reg=kw.get('norm_reg', True)),
+        'stokes_i'),
+    'l1': (
+        lambda v, *, mask, **kw: -imutils.sl1(v, kw['nprior'], kw['flux'], norm_reg=kw.get('norm_reg', True)),
+        lambda v, *, mask, **kw: -imutils.sl1grad(v, kw['nprior'], kw['flux'], norm_reg=kw.get('norm_reg', True)),
+        'stokes_i'),
+    'l1w': (
+        lambda v, *, mask, **kw: -imutils.sl1w(v, kw['nprior'], kw['flux'], norm_reg=kw.get('norm_reg', True)),
+        lambda v, *, mask, **kw: -imutils.sl1wgrad(v, kw['nprior'], kw['flux'], norm_reg=kw.get('norm_reg', True)),
+        'stokes_i'),
+    'lA': (
+        lambda v, *, mask, **kw: -imutils.slA(v, kw['nprior'], kw['psize'], kw['flux'], kw.get('beam_size'), kw.get('alpha_A', 1.0), kw.get('norm_reg', True)),
+        lambda v, *, mask, **kw: -imutils.slAgrad(v, kw['nprior'], kw['psize'], kw['flux'], kw.get('beam_size'), kw.get('alpha_A', 1.0), kw.get('norm_reg', True)),
+        'stokes_i'),
+    'gs': (
+        lambda v, *, mask, **kw: -imutils.sgs(v, kw['nprior'], kw['flux'], norm_reg=kw.get('norm_reg', True)),
+        lambda v, *, mask, **kw: -imutils.sgsgrad(v, kw['nprior'], kw['flux'], norm_reg=kw.get('norm_reg', True)),
+        'stokes_i'),
+    'patch': (
+        lambda v, *, mask, **kw: -imutils.spatch(v, kw['nprior'], kw['flux'], norm_reg=kw.get('norm_reg', True)),
+        lambda v, *, mask, **kw: -imutils.spatchgrad(v, kw['nprior'], kw['flux'], norm_reg=kw.get('norm_reg', True)),
+        'stokes_i'),
+    'cm': (
+        lambda v, *, mask, **kw: -imutils.scm(v, kw['xdim'], kw['ydim'], kw['psize'], kw['flux'], mask, norm_reg=kw.get('norm_reg', True), beam_size=kw.get('beam_size')),
+        lambda v, *, mask, **kw: -imutils.scmgrad(v, kw['xdim'], kw['ydim'], kw['psize'], kw['flux'], mask, norm_reg=kw.get('norm_reg', True), beam_size=kw.get('beam_size')),
+        'stokes_i'),
+    'tv': (
+        lambda v, *, mask, **kw: -imutils.stv(
+            imutils.embed(v, mask, randomfloor=True) if np.any(np.invert(mask)) else v,
+            kw['xdim'], kw['ydim'], kw['psize'], kw['flux'],
+            norm_reg=kw.get('norm_reg', True), beam_size=kw.get('beam_size'), epsilon=kw.get('epsilon_tv', 0.)),
+        lambda v, *, mask, **kw: (-imutils.stvgrad(
+            imutils.embed(v, mask, randomfloor=True) if np.any(np.invert(mask)) else v,
+            kw['xdim'], kw['ydim'], kw['psize'], kw['flux'],
+            norm_reg=kw.get('norm_reg', True), beam_size=kw.get('beam_size'), epsilon=kw.get('epsilon_tv', 0.)))[mask],
+        'stokes_i'),
+    'tvlog': (_tvlog_value, _tvlog_grad, 'stokes_i'),
+    'tv2': (
+        lambda v, *, mask, **kw: -imutils.stv2(
+            imutils.embed(v, mask, randomfloor=True) if np.any(np.invert(mask)) else v,
+            kw['xdim'], kw['ydim'], kw['psize'], kw['flux'],
+            norm_reg=kw.get('norm_reg', True), beam_size=kw.get('beam_size')),
+        lambda v, *, mask, **kw: (-imutils.stv2grad(
+            imutils.embed(v, mask, randomfloor=True) if np.any(np.invert(mask)) else v,
+            kw['xdim'], kw['ydim'], kw['psize'], kw['flux'],
+            norm_reg=kw.get('norm_reg', True), beam_size=kw.get('beam_size')))[mask],
+        'stokes_i'),
+    'tv2log': (_tv2log_value, _tv2log_grad, 'stokes_i'),
+    'compact': (
+        lambda v, *, mask, **kw: -imutils.scompact(
+            imutils.embed(v, mask, randomfloor=True) if np.any(np.invert(mask)) else v,
+            kw['xdim'], kw['ydim'], kw['psize'], kw['flux'],
+            norm_reg=kw.get('norm_reg', True)),
+        lambda v, *, mask, **kw: (-imutils.scompactgrad(
+            imutils.embed(v, mask, randomfloor=True) if np.any(np.invert(mask)) else v,
+            kw['xdim'], kw['ydim'], kw['psize'], kw['flux'],
+            norm_reg=kw.get('norm_reg', True)))[mask],
+        'stokes_i'),
+    'compact2': (
+        lambda v, *, mask, **kw: -imutils.scompact2(
+            imutils.embed(v, mask, randomfloor=True) if np.any(np.invert(mask)) else v,
+            kw['xdim'], kw['ydim'], kw['psize'], kw['flux'],
+            norm_reg=kw.get('norm_reg', True)),
+        lambda v, *, mask, **kw: (-imutils.scompact2grad(
+            imutils.embed(v, mask, randomfloor=True) if np.any(np.invert(mask)) else v,
+            kw['xdim'], kw['ydim'], kw['psize'], kw['flux'],
+            norm_reg=kw.get('norm_reg', True)))[mask],
+        'stokes_i'),
+    'rgauss': (
+        lambda v, *, mask, **kw: -imutils.sgauss(
+            imutils.embed(v, mask, randomfloor=True) if np.any(np.invert(mask)) else v,
+            kw['xdim'], kw['ydim'], kw['psize'],
+            major=kw.get('major', 1.0), minor=kw.get('minor', 1.0), PA=kw.get('PA', 1.0)),
+        lambda v, *, mask, **kw: (-imutils.sgauss_grad(
+            imutils.embed(v, mask, randomfloor=True) if np.any(np.invert(mask)) else v,
+            kw['xdim'], kw['ydim'], kw['psize'],
+            kw.get('major', 1.0), kw.get('minor', 1.0), kw.get('PA', 1.0)))[mask],
+        'stokes_i'),
+    # Pol regularizers (REGULARIZERS_POL): operate on a (4, nimage) imarr;
+    # gradient leaves take pol_solve and return (4, nimage).
+    'msimple': (
+        lambda v, *, mask, **kw: -polutils.sm(v, kw['flux'], norm_reg=kw.get('norm_reg', True)),
+        lambda v, *, mask, **kw: -polutils.smgrad(v, kw['flux'],
+            pol_solve=kw.get('pol_solve', polutils.POL_SOLVE_DEFAULT),
+            norm_reg=kw.get('norm_reg', True)),
+        'pol'),
+    'hw': (
+        lambda v, *, mask, **kw: -polutils.shw(v, kw['flux'], norm_reg=kw.get('norm_reg', True)),
+        lambda v, *, mask, **kw: -polutils.shwgrad(v, kw['flux'],
+            pol_solve=kw.get('pol_solve', polutils.POL_SOLVE_DEFAULT),
+            norm_reg=kw.get('norm_reg', True)),
+        'pol'),
+    'ptv': (
+        lambda v, *, mask, **kw: -polutils.stv_pol(
+            imutils.embed_imarr(v, mask, randomfloor=True) if np.any(np.invert(mask)) else v,
+            kw['flux'], kw['xdim'], kw['ydim'], kw['psize'],
+            norm_reg=kw.get('norm_reg', True), beam_size=kw.get('beam_size', 1)),
+        lambda v, *, mask, **kw: _slice_pol_grad(
+            -polutils.stv_pol_grad(
+                imutils.embed_imarr(v, mask, randomfloor=True) if np.any(np.invert(mask)) else v,
+                kw['flux'], kw['xdim'], kw['ydim'], kw['psize'],
+                pol_solve=kw.get('pol_solve', polutils.POL_SOLVE_DEFAULT),
+                norm_reg=kw.get('norm_reg', True), beam_size=kw.get('beam_size', 1)),
+            mask),
+        'pol'),
+    'vflux': (
+        lambda v, *, mask, **kw: -polutils.svflux(v, kw['vflux'], norm_reg=kw.get('norm_reg', True)),
+        lambda v, *, mask, **kw: -polutils.svfluxgrad(v, kw['vflux'],
+            pol_solve=kw.get('pol_solve', polutils.POL_SOLVE_DEFAULT_V),
+            norm_reg=kw.get('norm_reg', True)),
+        'pol'),
+    'l1v': (
+        lambda v, *, mask, **kw: -polutils.sl1v(v, kw['vflux'], norm_reg=kw.get('norm_reg', True)),
+        lambda v, *, mask, **kw: -polutils.sl1vgrad(v, kw['vflux'],
+            pol_solve=kw.get('pol_solve', polutils.POL_SOLVE_DEFAULT_V),
+            norm_reg=kw.get('norm_reg', True)),
+        'pol'),
+    'l2v': (
+        lambda v, *, mask, **kw: -polutils.sl2v(v, kw['vflux'], norm_reg=kw.get('norm_reg', True)),
+        lambda v, *, mask, **kw: -polutils.sl2vgrad(v, kw['vflux'],
+            pol_solve=kw.get('pol_solve', polutils.POL_SOLVE_DEFAULT_V),
+            norm_reg=kw.get('norm_reg', True)),
+        'pol'),
+    'vtv': (
+        lambda v, *, mask, **kw: -polutils.stv_v(
+            imutils.embed_imarr(v, mask, randomfloor=True) if np.any(np.invert(mask)) else v,
+            kw['vflux'], kw['xdim'], kw['ydim'], kw['psize'],
+            norm_reg=kw.get('norm_reg', True), beam_size=kw.get('beam_size', 1)),
+        lambda v, *, mask, **kw: _slice_pol_grad(
+            -polutils.stv_v_grad(
+                imutils.embed_imarr(v, mask, randomfloor=True) if np.any(np.invert(mask)) else v,
+                kw['vflux'], kw['xdim'], kw['ydim'], kw['psize'],
+                pol_solve=kw.get('pol_solve', polutils.POL_SOLVE_DEFAULT_V),
+                norm_reg=kw.get('norm_reg', True), beam_size=kw.get('beam_size', 1)),
+            mask),
+        'pol'),
+    'vtv2': (
+        lambda v, *, mask, **kw: -polutils.stv2_v(
+            imutils.embed_imarr(v, mask, randomfloor=True) if np.any(np.invert(mask)) else v,
+            kw['vflux'], kw['xdim'], kw['ydim'], kw['psize'],
+            norm_reg=kw.get('norm_reg', True), beam_size=kw.get('beam_size', 1)),
+        lambda v, *, mask, **kw: _slice_pol_grad(
+            -polutils.stv2_v_grad(
+                imutils.embed_imarr(v, mask, randomfloor=True) if np.any(np.invert(mask)) else v,
+                kw['vflux'], kw['xdim'], kw['ydim'], kw['psize'],
+                pol_solve=kw.get('pol_solve', polutils.POL_SOLVE_DEFAULT_V),
+                norm_reg=kw.get('norm_reg', True), beam_size=kw.get('beam_size', 1)),
+            mask),
+        'pol'),
+    # Multifrequency regularizers (REGULARIZERS_SPECTRAL):
+    # l2_* call l2_spec on a 1D spectral coefficient vector;
+    # tv_* call tv_spec with a different embed (no randomfloor).
+    **{name: (
+        lambda v, *, mask, **kw: -mfutils.l2_spec(v, kw['nprior'], norm_reg=kw.get('norm_reg', True)),
+        lambda v, *, mask, **kw: -mfutils.l2_spec_grad(v, kw['nprior'], norm_reg=kw.get('norm_reg', True)),
+        'mf')
+       for name in REGULARIZERS_SPECIND + REGULARIZERS_CURV + REGULARIZERS_SPECIND_P
+                   + REGULARIZERS_CURV_P + REGULARIZERS_RM + REGULARIZERS_CM
+       if name.startswith('l2_')},
+    **{name: (
+        lambda v, *, mask, **kw: -mfutils.tv_spec(
+            imutils.embed(v, mask, clipfloor=0, randomfloor=False) if np.any(np.invert(mask)) else v,
+            kw['xdim'], kw['ydim'], kw['psize'],
+            norm_reg=kw.get('norm_reg', True), beam_size=kw.get('beam_size')),
+        lambda v, *, mask, **kw: (-mfutils.tv_spec_grad(
+            imutils.embed(v, mask, clipfloor=0, randomfloor=False) if np.any(np.invert(mask)) else v,
+            kw['xdim'], kw['ydim'], kw['psize'],
+            norm_reg=kw.get('norm_reg', True), beam_size=kw.get('beam_size')))[mask],
+        'mf')
+       for name in REGULARIZERS_SPECIND + REGULARIZERS_CURV + REGULARIZERS_SPECIND_P
+                   + REGULARIZERS_CURV_P + REGULARIZERS_RM + REGULARIZERS_CM
+       if name.startswith('tv_')},
+}
+
+
+def _slice_pol_grad(grad, mask):
+    """Apply the [:, mask] post-slice to a (4, nimage_full) pol gradient when
+    the leaf operated on an embedded image array. No-op for already-masked input."""
+    if np.any(np.invert(mask)):
+        return grad[:, mask]
+    return grad
+
+
 class ImagerInitState(NamedTuple):
     """Solver-ready state produced by compute_init_state.
 
@@ -976,6 +1221,61 @@ def compute_chisqgrad_term(imcur, dtype, A, data, sigma, ttype='direct',
         grad = grad[:, mask] if is_pol else grad[mask]
 
     return grad
+
+
+def compute_regularizer_term(imvec_or_imarr, regname, mask, **kwargs):
+    """Single regularizer-value dispatcher.
+
+    Parameters
+    ----------
+    imvec_or_imarr : np.ndarray
+        1D image vector for Stokes-I and mf regularizers; (4, nimage) array for pol regularizers.
+    regname : str
+        Regularizer name. Must be a key of _REGULARIZER_DISPATCH.
+    mask : np.ndarray of bool
+        Pixel embedding mask. Spatial regularizers embed through this before computing.
+    **kwargs
+        Per-regularizer parameters (flux, xdim, ydim, psize, beam_size, alpha_A,
+        epsilon_tv, major, minor, PA, nprior, priorarr, vflux, pflux, pol_solve).
+        Each regularizer takes what it needs and ignores the rest.
+
+    Returns
+    -------
+    float
+        Regularizer value, negated so positive values indicate a penalty to minimize.
+    """
+    if regname not in _REGULARIZER_DISPATCH:
+        raise Exception(f"regularizer term {regname} not recognized!")
+    val_fn, _, _ = _REGULARIZER_DISPATCH[regname]
+    return val_fn(imvec_or_imarr, mask=mask, **kwargs)
+
+
+def compute_regularizergrad_term(imvec_or_imarr, regname, mask, **kwargs):
+    """Single regularizer-gradient dispatcher.
+
+    Parameters
+    ----------
+    imvec_or_imarr : np.ndarray
+        1D image vector for Stokes-I and mf regularizers; (4, nimage) array for pol regularizers.
+    regname : str
+        Regularizer name. Must be a key of _REGULARIZER_DISPATCH.
+    mask : np.ndarray of bool
+        Pixel embedding mask. Spatial regularizers embed through this before computing
+        and slice the gradient back through ``mask`` after.
+    **kwargs
+        Per-regularizer parameters; see compute_regularizer_term.
+
+    Returns
+    -------
+    np.ndarray
+        Gradient with shape (nimage,) for Stokes-I and mf regularizers, or
+        (4, nimage) for pol regularizers. Bundling a Stokes-I gradient into
+        the (4, nimage) shape for pol-mode imaging is the caller's responsibility.
+    """
+    if regname not in _REGULARIZER_DISPATCH:
+        raise Exception(f"regularizer term {regname} not recognized!")
+    _, grad_fn, _ = _REGULARIZER_DISPATCH[regname]
+    return grad_fn(imvec_or_imarr, mask=mask, **kwargs)
 
 
 class RegParams(NamedTuple):

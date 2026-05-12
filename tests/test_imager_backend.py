@@ -26,6 +26,8 @@ from ehtim.imaging.imager_backend import (
     compute_objective_grad,
     compute_reg_dict,
     compute_reggrad_dict,
+    compute_regularizer_term,
+    compute_regularizergrad_term,
     compute_which_solve,
     make_initarr,
     pack_imarr,
@@ -3207,4 +3209,143 @@ class TestPolSolveBlock:
         ws = np.array([1, 0, 0, 1])
         out = _pol_solve_block(ws, pol='IV')
         np.testing.assert_array_equal(out, ws)
+
+
+class TestComputeRegularizerTerm:
+    """Parity between compute_regularizer_term and the legacy outer dispatchers."""
+
+    @pytest.fixture(scope="class")
+    def stokes_setup(self, make_rect_image):
+        im = make_rect_image(32, 48)
+        mask = im.imvec > 0
+        imvec = im.imvec
+        nprior = np.ones_like(imvec) / len(imvec)
+        flux = im.total_flux()
+        return im, imvec, nprior, mask, flux
+
+    @pytest.fixture(scope="class")
+    def pol_setup(self, make_rect_image):
+        im = make_rect_image(32, 48)
+        mask = im.imvec > 0
+        nimage = int(np.sum(mask))
+        rng = np.random.default_rng(7)
+        I = im.imvec[mask]
+        rho = np.clip(0.3 + 0.05 * rng.standard_normal(nimage), 0.05, 0.95)
+        phi = 0.5 + 0.1 * rng.standard_normal(nimage)
+        psi = 0.2 + 0.05 * rng.standard_normal(nimage)
+        imarr = np.array([I, rho, phi, psi])
+        priorarr = np.zeros_like(imarr)
+        flux = im.total_flux()
+        return im, imarr, priorarr, mask, flux
+
+    @pytest.fixture(scope="class")
+    def mf_setup(self, make_rect_image):
+        im = make_rect_image(32, 48)
+        imvec = im.imvec
+        nprior = imvec * 0.5
+        mask = imvec > 0
+        return im, imvec, nprior, mask
+
+    @pytest.mark.parametrize("rtype", ['flux', 'simple', 'l1', 'l1w', 'lA', 'gs',
+                                       'patch', 'cm', 'tv', 'tvlog', 'tv2',
+                                       'tv2log', 'compact', 'compact2', 'rgauss'])
+    def test_parity_stokes_value(self, stokes_setup, rtype):
+        im, imvec, nprior, mask, flux = stokes_setup
+        kwargs = dict(nprior=nprior, flux=flux,
+                      xdim=im.xdim, ydim=im.ydim, psize=im.psize,
+                      beam_size=20 * eh.RADPERUAS,
+                      alpha_A=5000.0, epsilon_tv=0.0,
+                      major=50 * eh.RADPERUAS, minor=60 * eh.RADPERUAS,
+                      PA=np.pi / 3, norm_reg=True)
+        from ehtim.imaging.imager_utils import regularizer
+        legacy = regularizer(imvec, nprior, mask, flux,
+                             im.xdim, im.ydim, im.psize, rtype,
+                             beam_size=kwargs['beam_size'],
+                             alpha_A=kwargs['alpha_A'],
+                             epsilon_tv=kwargs['epsilon_tv'],
+                             major=kwargs['major'], minor=kwargs['minor'],
+                             PA=kwargs['PA'], norm_reg=True)
+        new = compute_regularizer_term(imvec, rtype, mask, **kwargs)
+        np.testing.assert_allclose(new, legacy, rtol=1e-12, atol=1e-15)
+
+    @pytest.mark.parametrize("rtype", ['flux', 'simple', 'tv', 'rgauss'])
+    def test_parity_stokes_grad(self, stokes_setup, rtype):
+        im, imvec, nprior, mask, flux = stokes_setup
+        kwargs = dict(nprior=nprior, flux=flux,
+                      xdim=im.xdim, ydim=im.ydim, psize=im.psize,
+                      beam_size=20 * eh.RADPERUAS,
+                      alpha_A=5000.0, epsilon_tv=0.0,
+                      major=50 * eh.RADPERUAS, minor=60 * eh.RADPERUAS,
+                      PA=np.pi / 3, norm_reg=True)
+        from ehtim.imaging.imager_utils import regularizergrad
+        legacy = regularizergrad(imvec, nprior, mask, flux,
+                                 im.xdim, im.ydim, im.psize, rtype,
+                                 beam_size=kwargs['beam_size'],
+                                 alpha_A=kwargs['alpha_A'],
+                                 epsilon_tv=kwargs['epsilon_tv'],
+                                 major=kwargs['major'], minor=kwargs['minor'],
+                                 PA=kwargs['PA'], norm_reg=True)
+        new = compute_regularizergrad_term(imvec, rtype, mask, **kwargs)
+        np.testing.assert_allclose(new, legacy, rtol=1e-12, atol=1e-15)
+
+    @pytest.mark.parametrize("rtype", ['msimple', 'hw', 'ptv', 'vflux',
+                                       'l1v', 'l2v', 'vtv', 'vtv2'])
+    def test_parity_pol_value(self, pol_setup, rtype):
+        im, imarr, priorarr, mask, flux = pol_setup
+        kwargs = dict(flux=flux, pflux=flux, vflux=flux,
+                      xdim=im.xdim, ydim=im.ydim, psize=im.psize,
+                      beam_size=20 * eh.RADPERUAS, norm_reg=True)
+        from ehtim.imaging.pol_imager_utils import polregularizer
+        legacy = polregularizer(imarr, priorarr, mask, flux, flux, flux,
+                                im.xdim, im.ydim, im.psize, rtype,
+                                beam_size=kwargs['beam_size'], norm_reg=True)
+        new = compute_regularizer_term(imarr, rtype, mask, **kwargs)
+        np.testing.assert_allclose(new, legacy, rtol=1e-12, atol=1e-15)
+
+    @pytest.mark.parametrize("rtype", ['msimple', 'hw', 'ptv', 'vflux', 'vtv2'])
+    def test_parity_pol_grad(self, pol_setup, rtype):
+        from ehtim.imaging.pol_imager_utils import polregularizergrad
+        im, imarr, priorarr, mask, flux = pol_setup
+        # Pass pol_solve explicitly: in practice compute_reggrad_dict always
+        # forwards the imager's which_solve, so the leaf defaults are not
+        # exercised during normal imaging.
+        pol_solve = (1, 1, 1, 1)
+        kwargs = dict(flux=flux, pflux=flux, vflux=flux,
+                      xdim=im.xdim, ydim=im.ydim, psize=im.psize,
+                      beam_size=20 * eh.RADPERUAS, norm_reg=True,
+                      pol_solve=pol_solve)
+        legacy = polregularizergrad(imarr, priorarr, mask, flux, flux, flux,
+                                    im.xdim, im.ydim, im.psize, rtype,
+                                    beam_size=kwargs['beam_size'],
+                                    norm_reg=True, pol_solve=pol_solve)
+        new = compute_regularizergrad_term(imarr, rtype, mask, **kwargs)
+        np.testing.assert_allclose(new, legacy, rtol=1e-12, atol=1e-15)
+
+    @pytest.mark.parametrize("rtype", ['l2_alpha', 'l2_beta', 'l2_rm', 'l2_cm',
+                                       'tv_alpha', 'tv_beta', 'tv_rm', 'tv_cm'])
+    def test_parity_mf_value(self, mf_setup, rtype):
+        im, imvec, nprior, mask = mf_setup
+        kwargs = dict(nprior=nprior, xdim=im.xdim, ydim=im.ydim, psize=im.psize,
+                      beam_size=20 * eh.RADPERUAS, norm_reg=True)
+        from ehtim.imaging.multifreq_imager_utils import regularizer_mf
+        legacy = regularizer_mf(imvec, nprior, mask, im.xdim, im.ydim, im.psize,
+                                rtype, beam_size=kwargs['beam_size'], norm_reg=True)
+        new = compute_regularizer_term(imvec, rtype, mask, **kwargs)
+        np.testing.assert_allclose(new, legacy, rtol=1e-12, atol=1e-15)
+
+    @pytest.mark.parametrize("rtype", ['l2_alpha', 'tv_alpha', 'l2_rm', 'tv_cm'])
+    def test_parity_mf_grad(self, mf_setup, rtype):
+        from ehtim.imaging.multifreq_imager_utils import regularizergrad_mf
+        im, imvec, nprior, mask = mf_setup
+        kwargs = dict(nprior=nprior, xdim=im.xdim, ydim=im.ydim, psize=im.psize,
+                      beam_size=20 * eh.RADPERUAS, norm_reg=True)
+        legacy = regularizergrad_mf(imvec, nprior, mask, im.xdim, im.ydim, im.psize,
+                                    rtype, beam_size=kwargs['beam_size'], norm_reg=True)
+        new = compute_regularizergrad_term(imvec, rtype, mask, **kwargs)
+        np.testing.assert_allclose(new, legacy, rtol=1e-12, atol=1e-15)
+
+    def test_unknown_regname_raises(self, stokes_setup):
+        im, imvec, nprior, mask, flux = stokes_setup
+        with pytest.raises(Exception, match="not recognized"):
+            compute_regularizer_term(imvec, 'not_a_regularizer', mask)
 
