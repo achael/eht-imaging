@@ -1276,7 +1276,9 @@ class TestRegParams:
             regp.flux = 2.0
 
     def test_regparams_kwarg_override(self, gauss_im, observe):
-        """Imager(..., major=..., epsilon_tv=...) propagates into RegParams."""
+        """Imager(..., major=..., epsilon_tv=...) propagates into RegParams,
+        and the other REGPARAMS_DEFAULT fields keep their defaults."""
+        from ehtim.imager import REGPARAMS_DEFAULT
         obs = observe(gauss_im)
         custom_major = 25 * ehc.RADPERUAS
         custom_eps = 0.123
@@ -1291,6 +1293,10 @@ class TestRegParams:
         regp = imgr._full_regparams()
         assert regp.major == custom_major
         assert regp.epsilon_tv == custom_eps
+        # Unspecified REGPARAMS_DEFAULT fields keep their defaults.
+        assert regp.minor == REGPARAMS_DEFAULT["minor"]
+        assert regp.PA == REGPARAMS_DEFAULT["PA"]
+        assert regp.alpha_A == REGPARAMS_DEFAULT["alpha_A"]
 
     def test_mf_flux_propagation(self, gauss_im, observe, initialize_imager):
         """Multifrequency mf_flux list propagates into RegParams.mf_flux."""
