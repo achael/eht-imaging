@@ -214,6 +214,12 @@ _REGULARIZER_DISPATCH = {
         lambda v, *, mask, **kw: -imutils.sflux(v, kw['nprior'], kw['flux'], norm_reg=kw.get('norm_reg', True)),
         lambda v, *, mask, **kw: -imutils.sfluxgrad(v, kw['nprior'], kw['flux'], norm_reg=kw.get('norm_reg', True)),
         'stokes_i'),
+    # flux_mf shares the flux machinery; compute_reg_dict strips '_mf' and
+    # loops over frequencies, but direct callers should still resolve the name.
+    'flux_mf': (
+        lambda v, *, mask, **kw: -imutils.sflux(v, kw['nprior'], kw['flux'], norm_reg=kw.get('norm_reg', True)),
+        lambda v, *, mask, **kw: -imutils.sfluxgrad(v, kw['nprior'], kw['flux'], norm_reg=kw.get('norm_reg', True)),
+        'stokes_i'),
     'simple': (
         lambda v, *, mask, **kw: -imutils.ssimple(v, kw['nprior'], kw['flux'], norm_reg=kw.get('norm_reg', True)),
         lambda v, *, mask, **kw: -imutils.ssimplegrad(v, kw['nprior'], kw['flux'], norm_reg=kw.get('norm_reg', True)),
@@ -1669,6 +1675,27 @@ def compute_chisqgrad_dict(imcur, dat_term_keys,
     return chi2grad_dict
 
 
+def _spectral_slot(regname, n_slots):
+    """Return the imcur row index for a multifrequency spectral regularizer.
+
+    Slot layout: n_slots=3 (Stokes-I + alpha + beta) uses indices 1, 2.
+    n_slots=10 (full IPV + spectral expansion) uses 4-9.
+    """
+    if regname in REGULARIZERS_SPECIND:
+        return 4 if n_slots == 10 else 1
+    if regname in REGULARIZERS_CURV:
+        return 5 if n_slots == 10 else 2
+    if regname in REGULARIZERS_SPECIND_P:
+        return 6
+    if regname in REGULARIZERS_CURV_P:
+        return 7
+    if regname in REGULARIZERS_RM:
+        return 8
+    if regname in REGULARIZERS_CM:
+        return 9
+    raise Exception(f"regularizer term {regname!r} has no spectral slot mapping")
+
+
 def compute_reg_dict(imcur, reg_term_keys,
                      mf, pol,
                      logfreqratio_list, n_obs,
@@ -1715,85 +1742,52 @@ def compute_reg_dict(imcur, reg_term_keys,
 
     for regname in reg_term_keys:
 
-        # Multifrequency regularizers
         if mf:
-
-            # Polarimetric regularizers
             if regname in REGULARIZERS_POL:
-                imcur_pol = imcur[0:4]
-                prior_pol = priorvec[0:4]
-                reg = polutils.polregularizer(imcur_pol, prior_pol, embed_mask,
-                                              stype=regname, norm_reg=norm_reg,
-                                              **reg_kwargs)
+                reg = compute_regularizer_term(imcur[0:4], regname, embed_mask,
+                                               norm_reg=norm_reg, **reg_kwargs)
 
-            # Stokes I regularizers
             elif regname in REGULARIZERS:
-
                 if regname in REGULARIZERS_ALLFREQS_I:
-
-                    # TODO move this to checks?
                     if (not isinstance(mf_flux, list)) or len(mf_flux) != n_obs:
                         raise Exception(f"when using regularizer '{regname}', "
                                         + "mf_flux must be a list of same length as n_obs!")
 
-                    regname_base = '_'.join(regname.split('_')[:-1])  # remove the '_mf' tag
+                    regname_base = '_'.join(regname.split('_')[:-1])  # strip '_mf' tag
+                    reg = 0
                     for i in range(n_obs):
-
                         logfreqratio = logfreqratio_list[i]
                         imcur_nu = mfutils.image_at_freq(imcur, logfreqratio)
                         prior_nu = mfutils.image_at_freq(priorvec, logfreqratio)
-
-                        regi = imutils.regularizer(imcur_nu, prior_nu, embed_mask,
-                                                   stype=regname_base, norm_reg=norm_reg,
-                                                   **{**reg_kwargs, 'flux': mf_flux[i]})
-
-                        reg = regi if i == 0 else reg + regi
-
+                        reg = reg + compute_regularizer_term(
+                            imcur_nu, regname_base, embed_mask,
+                            nprior=prior_nu, norm_reg=norm_reg,
+                            **{**reg_kwargs, 'flux': mf_flux[i]})
                 else:
-                    reg = imutils.regularizer(imcur[0], priorvec[0], embed_mask,
-                                              stype=regname, norm_reg=norm_reg,
-                                              **reg_kwargs)
+                    reg = compute_regularizer_term(imcur[0], regname, embed_mask,
+                                                   nprior=priorvec[0],
+                                                   norm_reg=norm_reg, **reg_kwargs)
 
-            # Spectral regularizers
             elif regname in REGULARIZERS_SPECTRAL:
-
-                if regname in REGULARIZERS_SPECIND:
-                    idx = 4 if len(imcur) == 10 else 1
-                elif regname in REGULARIZERS_CURV:
-                    idx = 5 if len(imcur) == 10 else 2
-                elif regname in REGULARIZERS_SPECIND_P:
-                    idx = 6
-                elif regname in REGULARIZERS_CURV_P:
-                    idx = 7
-                elif regname in REGULARIZERS_RM:
-                    idx = 8
-                elif regname in REGULARIZERS_CM:
-                    idx = 9
-
-                reg = mfutils.regularizer_mf(imcur[idx], priorvec[idx], embed_mask,
-                                             stype=regname, norm_reg=norm_reg,
-                                             **reg_kwargs)
+                idx = _spectral_slot(regname, len(imcur))
+                reg = compute_regularizer_term(imcur[idx], regname, embed_mask,
+                                               nprior=priorvec[idx],
+                                               norm_reg=norm_reg, **reg_kwargs)
             else:
                 raise Exception(f"regularizer term {regname} not recognized!")
 
-        # Single-frequency polarimetric regularizer
         elif regname in REGULARIZERS_POL:
-            reg = polutils.polregularizer(imcur, priorvec, embed_mask,
-                                          stype=regname, norm_reg=norm_reg,
-                                          **reg_kwargs)
+            reg = compute_regularizer_term(imcur, regname, embed_mask,
+                                           norm_reg=norm_reg, **reg_kwargs)
 
-        # Single-frequency, single-polarization regularizer
         elif regname in REGULARIZERS:
             if pol in POLARIZATION_MODES:
-                imcur0 = imcur[0]
-                prior0 = priorvec[0]
+                imcur0, prior0 = imcur[0], priorvec[0]
             else:
-                imcur0 = imcur
-                prior0 = priorvec
-
-            reg = imutils.regularizer(imcur0, prior0, embed_mask,
-                                      stype=regname, norm_reg=norm_reg,
-                                      **reg_kwargs)
+                imcur0, prior0 = imcur, priorvec
+            reg = compute_regularizer_term(imcur0, regname, embed_mask,
+                                           nprior=prior0,
+                                           norm_reg=norm_reg, **reg_kwargs)
         else:
             raise Exception(f"regularizer term {regname} not recognized!")
 
@@ -1832,102 +1826,73 @@ def compute_reggrad_dict(imcur, reg_term_keys,
 
     for regname in reg_term_keys:
 
-        # Multifrequency regularizers
         if mf:
-
-            # Polarimetric regularizers
             if regname in REGULARIZERS_POL:
-                imcur_pol = imcur[0:4]
-                prior_pol = priorvec[0:4]
-                pol_solve = which_solve[0:4]
-                regp = polutils.polregularizergrad(imcur_pol, prior_pol, embed_mask,
-                                                   stype=regname, norm_reg=norm_reg,
-                                                   pol_solve=pol_solve,
-                                                   **reg_kwargs)
+                regp = compute_regularizergrad_term(
+                    imcur[0:4], regname, embed_mask,
+                    pol_solve=which_solve[0:4],
+                    norm_reg=norm_reg, **reg_kwargs)
                 reggrad = np.zeros((len(imcur), nimage))
                 reggrad[0:4] = regp
 
-            # Stokes I regularizers
             elif regname in REGULARIZERS:
-
                 if regname in REGULARIZERS_ALLFREQS_I:
-
-                    # TODO move this to checks?
                     if (not isinstance(mf_flux, list)) or len(mf_flux) != n_obs:
                         raise Exception(f"when using regularizer '{regname}', "
                                         + "mf_flux must be a list of same length as n_obs!")
 
-                    regname_base = '_'.join(regname.split('_')[:-1])  # remove the '_mf' tag
+                    regname_base = '_'.join(regname.split('_')[:-1])  # strip '_mf' tag
+                    reggrad = 0
                     for i in range(n_obs):
-
                         logfreqratio = logfreqratio_list[i]
                         imcur_nu = mfutils.image_at_freq(imcur, logfreqratio)
                         prior_nu = mfutils.image_at_freq(priorvec, logfreqratio)
-
-                        regi = imutils.regularizergrad(imcur_nu, prior_nu, embed_mask,
-                                                       stype=regname_base, norm_reg=norm_reg,
-                                                       **{**reg_kwargs, 'flux': mf_flux[i]})
-                        reggrad_i = mfutils.mf_all_grads_chain(regi, imcur_nu, imcur, logfreqratio)
-                        reggrad = reggrad_i if i == 0 else reggrad + reggrad_i
-
+                        regi = compute_regularizergrad_term(
+                            imcur_nu, regname_base, embed_mask,
+                            nprior=prior_nu, norm_reg=norm_reg,
+                            **{**reg_kwargs, 'flux': mf_flux[i]})
+                        reggrad = reggrad + mfutils.mf_all_grads_chain(
+                            regi, imcur_nu, imcur, logfreqratio)
                 else:
-                    regi = imutils.regularizergrad(imcur[0], priorvec[0], embed_mask,
-                                                   stype=regname, norm_reg=norm_reg,
-                                                   **reg_kwargs)
+                    regi = compute_regularizergrad_term(
+                        imcur[0], regname, embed_mask,
+                        nprior=priorvec[0], norm_reg=norm_reg, **reg_kwargs)
                     reggrad = np.zeros((len(imcur), nimage))
                     reggrad[0] = regi
 
             elif regname in REGULARIZERS_SPECTRAL:
-                if regname in REGULARIZERS_SPECIND:
-                    idx = 4 if len(imcur) == 10 else 1
-                elif regname in REGULARIZERS_CURV:
-                    idx = 5 if len(imcur) == 10 else 2
-                elif regname in REGULARIZERS_SPECIND_P:
-                    idx = 6
-                elif regname in REGULARIZERS_CURV_P:
-                    idx = 7
-                elif regname in REGULARIZERS_RM:
-                    idx = 8
-                elif regname in REGULARIZERS_CM:
-                    idx = 9
-
-                regmf = mfutils.regularizergrad_mf(imcur[idx], priorvec[idx], embed_mask,
-                                                   stype=regname, norm_reg=norm_reg,
-                                                   **reg_kwargs)
-
+                idx = _spectral_slot(regname, len(imcur))
+                regmf = compute_regularizergrad_term(
+                    imcur[idx], regname, embed_mask,
+                    nprior=priorvec[idx], norm_reg=norm_reg, **reg_kwargs)
                 reggrad = np.zeros((len(imcur), nimage))
                 reggrad[idx] = regmf
             else:
                 raise Exception(f"regularizer term {regname} not recognized!")
 
-        else:
-            # Single-frequency polarimetric regularizer
-            if regname in REGULARIZERS_POL:
-                reggrad = polutils.polregularizergrad(imcur, priorvec, embed_mask,
-                                                      stype=regname, norm_reg=norm_reg,
-                                                      pol_solve=which_solve,
-                                                      **reg_kwargs)
+        elif regname in REGULARIZERS_POL:
+            reggrad = compute_regularizergrad_term(
+                imcur, regname, embed_mask,
+                pol_solve=which_solve, norm_reg=norm_reg, **reg_kwargs)
 
-            # Single-frequency, single polarization regularizer
-            elif regname in REGULARIZERS:
-                if pol in POLARIZATION_MODES:
-                    imcur0 = imcur[0]
-                    prior0 = priorvec[0]
-                else:
-                    imcur0 = imcur
-                    prior0 = priorvec
-                reggrad = imutils.regularizergrad(imcur0, prior0, embed_mask,
-                                                  stype=regname, norm_reg=norm_reg,
-                                                  **reg_kwargs)
-
-                if pol in POLARIZATION_MODES:
-                    reggrad = np.array((reggrad,
-                                        np.zeros(nimage),
-                                        np.zeros(nimage),
-                                        np.zeros(nimage)))
-
+        elif regname in REGULARIZERS:
+            if pol in POLARIZATION_MODES:
+                imcur0, prior0 = imcur[0], priorvec[0]
             else:
-                raise Exception(f"regularizer term {regname} not recognized!")
+                imcur0, prior0 = imcur, priorvec
+            reggrad = compute_regularizergrad_term(
+                imcur0, regname, embed_mask,
+                nprior=prior0, norm_reg=norm_reg, **reg_kwargs)
+            # In polarization mode, pad the Stokes-I gradient into a (4, nimage)
+            # array with zeros for Q, U, V slots so it can be summed alongside
+            # polregularizergrad outputs.
+            if pol in POLARIZATION_MODES:
+                reggrad = np.array((reggrad,
+                                    np.zeros(nimage),
+                                    np.zeros(nimage),
+                                    np.zeros(nimage)))
+        else:
+            raise Exception(f"regularizer term {regname} not recognized!")
 
         reggrad_dict[regname] = reggrad
 
