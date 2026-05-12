@@ -57,6 +57,12 @@ REGULARIZERS_SPECTRAL = REGULARIZERS_ISPECTRAL + REGULARIZERS_POLSPECTRAL
 MEANPOL_INIT = 0.2     # mean polarization fraction
 SIGMAPOL_INIT = 1.e-2  # perturbation scale
 
+# Whether mask-embedding under fast/nfft fills non-mask pixels with random
+# noise (vs a constant clipfloor). Set True historically to break TV-regularizer
+# gradient singularities; the newer `epsilon_tv` mechanism likely makes this
+# unnecessary -- revisit once epsilon_tv coverage is broader.
+EMBED_RANDOMFLOOR = True
+
 
 def pack_imarr(imarr, which_solve):
     """pack image array imarr into 1D array vec for minimizaiton
@@ -920,13 +926,12 @@ def compute_chisq_term(imcur, dtype, A, data, sigma, ttype='direct', mask=None):
 
     imvec = imcur if (is_pol or imcur.ndim == 1) else imcur[0]
 
-    # randomfloor=True breaks TV-regularizer gradient singularities.
     if (ttype != 'direct' and mask is not None
             and len(mask) > 0 and np.any(np.invert(mask))):
         if is_pol:
-            imvec = imutils.embed_imarr(imvec, mask, randomfloor=True)
+            imvec = imutils.embed_imarr(imvec, mask, randomfloor=EMBED_RANDOMFLOOR)
         else:
-            imvec = imutils.embed(imvec, mask, randomfloor=True)
+            imvec = imutils.embed(imvec, mask, randomfloor=EMBED_RANDOMFLOOR)
 
     if ttype == 'fast' and dtype not in _DIAG_DTYPES:
         imvec = obsh.fft_imvec(imvec, A[0])
@@ -953,9 +958,9 @@ def compute_chisqgrad_term(imcur, dtype, A, data, sigma, ttype='direct',
 
     if ttype != 'direct' and has_partial_mask:
         if is_pol:
-            imvec = imutils.embed_imarr(imvec, mask, randomfloor=True)
+            imvec = imutils.embed_imarr(imvec, mask, randomfloor=EMBED_RANDOMFLOOR)
         else:
-            imvec = imutils.embed(imvec, mask, randomfloor=True)
+            imvec = imutils.embed(imvec, mask, randomfloor=EMBED_RANDOMFLOOR)
 
     if ttype == 'fast' and dtype not in _DIAG_DTYPES:
         imvec = obsh.fft_imvec(imvec, A[0])
