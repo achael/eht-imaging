@@ -53,7 +53,7 @@ RANDOMFLOOR=True
 
 NORM_REGULARIZER = True
 DATATERMS_POL = ['pvis', 'm','vvis']
-REGULARIZERS_POL = ['msimple', 'hw', 'ptv','l1v','l2v','vtv','v2tv2','vflux']
+REGULARIZERS_POL = ['msimple', 'hw', 'ptv', 'l1v', 'l2v', 'vtv', 'vtv2', 'vflux']
 
 nit = 0 # global variable to track the iteration number in the plotting callback
 
