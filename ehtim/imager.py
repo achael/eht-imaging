@@ -46,12 +46,12 @@ from ehtim.imaging.imager_backend import (
     compute_objective_grad,
     compute_reg_dict,
     compute_reggrad_dict,
-    embed_imarr,
     transform_imarr,
     unpack_imarr,
     validate_limits,
     validate_params,
 )
+from ehtim.imaging.imager_utils import embed_imarr
 
 MAXIT = 200  # number of iterations
 NHIST = 50   # number of steps to store for hessian approx

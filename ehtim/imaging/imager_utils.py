@@ -42,179 +42,31 @@ nit = 0  # global variable to track the iteration number in the plotting callbac
 
 
 def chisq(imvec, A, data, sigma, dtype, ttype='direct', mask=None):
-    """return the chi^2 for the appropriate dtype
+    """Return chi^2 for a standard data term.
+
+    Thin shim around imager_backend.compute_chisq_term retained for backward
+    compatibility. New code should call compute_chisq_term directly.
     """
-
-    if mask is None:
-        mask = []
-    chisq = 1
+    # Imported here to avoid a module-load cycle with pol_imager_utils.
+    from ehtim.imaging.imager_backend import compute_chisq_term
     if dtype not in DATATERMS:
-        return chisq
-
-    if ttype not in ['fast', 'direct', 'nfft']:
-        raise Exception("Possible ttype values are 'fast', 'direct'!, 'nfft!'")
-
-    if ttype == 'direct':
-        if dtype == 'vis':
-            chisq = chisq_vis(imvec, A, data, sigma)
-        elif dtype == 'amp':
-            chisq = chisq_amp(imvec, A, data, sigma)
-        elif dtype == 'logamp':
-            chisq = chisq_logamp(imvec, A, data, sigma)
-        elif dtype == 'bs':
-            chisq = chisq_bs(imvec, A, data, sigma)
-        elif dtype == 'cphase':
-            chisq = chisq_cphase(imvec, A, data, sigma)
-        elif dtype == 'cphase_diag':
-            chisq = chisq_cphase_diag(imvec, A, data, sigma)
-        elif dtype == 'camp':
-            chisq = chisq_camp(imvec, A, data, sigma)
-        elif dtype == 'logcamp':
-            chisq = chisq_logcamp(imvec, A, data, sigma)
-        elif dtype == 'logcamp_diag':
-            chisq = chisq_logcamp_diag(imvec, A, data, sigma)
-
-    elif ttype == 'fast':
-        if len(mask) > 0 and np.any(np.invert(mask)):
-            imvec = embed(imvec, mask, randomfloor=True)
-
-        if dtype not in ['cphase_diag', 'logcamp_diag']:
-            vis_arr = obsh.fft_imvec(imvec, A[0])
-
-        if dtype == 'vis':
-            chisq = chisq_vis_fft(vis_arr, A, data, sigma)
-        elif dtype == 'amp':
-            chisq = chisq_amp_fft(vis_arr, A, data, sigma)
-        elif dtype == 'logamp':
-            chisq = chisq_logamp_fft(vis_arr, A, data, sigma)
-        elif dtype == 'bs':
-            chisq = chisq_bs_fft(vis_arr, A, data, sigma)
-        elif dtype == 'cphase':
-            chisq = chisq_cphase_fft(vis_arr, A, data, sigma)
-        elif dtype == 'cphase_diag':
-            chisq = chisq_cphase_diag_fft(imvec, A, data, sigma)
-        elif dtype == 'camp':
-            chisq = chisq_camp_fft(vis_arr, A, data, sigma)
-        elif dtype == 'logcamp':
-            chisq = chisq_logcamp_fft(vis_arr, A, data, sigma)
-        elif dtype == 'logcamp_diag':
-            chisq = chisq_logcamp_diag_fft(imvec, A, data, sigma)
-
-    elif ttype == 'nfft':
-        if len(mask) > 0 and np.any(np.invert(mask)):
-            imvec = embed(imvec, mask, randomfloor=True)
-
-        if dtype == 'vis':
-            chisq = chisq_vis_nfft(imvec, A, data, sigma)
-        elif dtype == 'amp':
-            chisq = chisq_amp_nfft(imvec, A, data, sigma)
-        elif dtype == 'logamp':
-            chisq = chisq_logamp_nfft(imvec, A, data, sigma)
-        elif dtype == 'bs':
-            chisq = chisq_bs_nfft(imvec, A, data, sigma)
-        elif dtype == 'cphase':
-            chisq = chisq_cphase_nfft(imvec, A, data, sigma)
-        elif dtype == 'cphase_diag':
-            chisq = chisq_cphase_diag_nfft(imvec, A, data, sigma)
-        elif dtype == 'camp':
-            chisq = chisq_camp_nfft(imvec, A, data, sigma)
-        elif dtype == 'logcamp':
-            chisq = chisq_logcamp_nfft(imvec, A, data, sigma)
-        elif dtype == 'logcamp_diag':
-            chisq = chisq_logcamp_diag_nfft(imvec, A, data, sigma)
-
-    return chisq
+        raise Exception(f"data term {dtype!r} is not a standard data term")
+    return compute_chisq_term(imvec, dtype, A, data, sigma,
+                              ttype=ttype, mask=mask)
 
 
 def chisqgrad(imvec, A, data, sigma, dtype, ttype='direct', mask=None):
-    """return the chi^2 gradient for the appropriate dtype
+    """Return chi^2 gradient for a standard data term.
+
+    Thin shim around imager_backend.compute_chisqgrad_term retained for
+    backward compatibility. New code should call compute_chisqgrad_term
+    directly.
     """
-
-    if mask is None:
-        mask = []
-    chisqgrad = np.zeros(len(imvec))
+    from ehtim.imaging.imager_backend import compute_chisqgrad_term
     if dtype not in DATATERMS:
-        return chisqgrad
-
-    if ttype not in ['fast', 'direct', 'nfft']:
-        raise Exception("Possible ttype values are 'fast', 'direct', 'nfft'!")
-
-    if ttype == 'direct':
-        if dtype == 'vis':
-            chisqgrad = chisqgrad_vis(imvec, A, data, sigma)
-        elif dtype == 'amp':
-            chisqgrad = chisqgrad_amp(imvec, A, data, sigma)
-        elif dtype == 'logamp':
-            chisqgrad = chisqgrad_logamp(imvec, A, data, sigma)
-        elif dtype == 'bs':
-            chisqgrad = chisqgrad_bs(imvec, A, data, sigma)
-        elif dtype == 'cphase':
-            chisqgrad = chisqgrad_cphase(imvec, A, data, sigma)
-        elif dtype == 'cphase_diag':
-            chisqgrad = chisqgrad_cphase_diag(imvec, A, data, sigma)
-        elif dtype == 'camp':
-            chisqgrad = chisqgrad_camp(imvec, A, data, sigma)
-        elif dtype == 'logcamp':
-            chisqgrad = chisqgrad_logcamp(imvec, A, data, sigma)
-        elif dtype == 'logcamp_diag':
-            chisqgrad = chisqgrad_logcamp_diag(imvec, A, data, sigma)
-
-    elif ttype == 'fast':
-        if len(mask) > 0 and np.any(np.invert(mask)):
-            imvec = embed(imvec, mask, randomfloor=True)
-
-        if dtype not in ['cphase_diag', 'logcamp_diag']:
-            vis_arr = obsh.fft_imvec(imvec, A[0])
-
-        if dtype == 'vis':
-            chisqgrad = chisqgrad_vis_fft(vis_arr, A, data, sigma)
-        elif dtype == 'amp':
-            chisqgrad = chisqgrad_amp_fft(vis_arr, A, data, sigma)
-        elif dtype == 'logamp':
-            chisqgrad = chisqgrad_logamp_fft(vis_arr, A, data, sigma)
-        elif dtype == 'bs':
-            chisqgrad = chisqgrad_bs_fft(vis_arr, A, data, sigma)
-        elif dtype == 'cphase':
-            chisqgrad = chisqgrad_cphase_fft(vis_arr, A, data, sigma)
-        elif dtype == 'cphase_diag':
-            chisqgrad = chisqgrad_cphase_diag_fft(imvec, A, data, sigma)
-        elif dtype == 'camp':
-            chisqgrad = chisqgrad_camp_fft(vis_arr, A, data, sigma)
-        elif dtype == 'logcamp':
-            chisqgrad = chisqgrad_logcamp_fft(vis_arr, A, data, sigma)
-        elif dtype == 'logcamp_diag':
-            chisqgrad = chisqgrad_logcamp_diag_fft(imvec, A, data, sigma)
-
-        if len(mask) > 0 and np.any(np.invert(mask)):
-            chisqgrad = chisqgrad[mask]
-
-    elif ttype == 'nfft':
-        if len(mask) > 0 and np.any(np.invert(mask)):
-            imvec = embed(imvec, mask, randomfloor=True)
-
-        if dtype == 'vis':
-            chisqgrad = chisqgrad_vis_nfft(imvec, A, data, sigma)
-        elif dtype == 'amp':
-            chisqgrad = chisqgrad_amp_nfft(imvec, A, data, sigma)
-        elif dtype == 'logamp':
-            chisqgrad = chisqgrad_logamp_nfft(imvec, A, data, sigma)
-        elif dtype == 'bs':
-            chisqgrad = chisqgrad_bs_nfft(imvec, A, data, sigma)
-        elif dtype == 'cphase':
-            chisqgrad = chisqgrad_cphase_nfft(imvec, A, data, sigma)
-        elif dtype == 'cphase_diag':
-            chisqgrad = chisqgrad_cphase_diag_nfft(imvec, A, data, sigma)
-        elif dtype == 'camp':
-            chisqgrad = chisqgrad_camp_nfft(imvec, A, data, sigma)
-        elif dtype == 'logcamp':
-            chisqgrad = chisqgrad_logcamp_nfft(imvec, A, data, sigma)
-        elif dtype == 'logcamp_diag':
-            chisqgrad = chisqgrad_logcamp_diag_nfft(imvec, A, data, sigma)
-
-        if len(mask) > 0 and np.any(np.invert(mask)):
-            chisqgrad = chisqgrad[mask]
-
-    return chisqgrad
+        raise Exception(f"data term {dtype!r} is not a standard data term")
+    return compute_chisqgrad_term(imvec, dtype, A, data, sigma,
+                                  ttype=ttype, mask=mask)
 
 
 def regularizer(imvec, nprior, mask, flux, xdim, ydim, psize, stype, **kwargs):
@@ -368,69 +220,18 @@ def regularizergrad(imvec, nprior, mask, flux, xdim, ydim, psize, stype, **kwarg
 
 
 def chisqdata(Obsdata, Prior, mask, dtype, pol='I', **kwargs):
-    """Return the data, sigma, and matrices for the appropriate dtype
+    """Return (data, sigma, A) for a standard data term.
+
+    Thin shim around imager_backend.compute_chisqdata_term retained for
+    backward compatibility. New code should call compute_chisqdata_term
+    directly.
     """
-
-    ttype = kwargs.get('ttype', 'direct')
-    (data, sigma, A) = (False, False, False)
-    if ttype not in ['fast', 'direct', 'nfft']:
-        raise Exception("Possible ttype values are 'fast', 'direct', 'nfft'!")
-
-    if ttype == 'direct':
-        if dtype == 'vis':
-            (data, sigma, A) = chisqdata_vis(Obsdata, Prior, mask, pol=pol, **kwargs)
-        elif dtype == 'amp' or dtype == 'logamp':
-            (data, sigma, A) = chisqdata_amp(Obsdata, Prior, mask, pol=pol, **kwargs)
-        elif dtype == 'bs':
-            (data, sigma, A) = chisqdata_bs(Obsdata, Prior, mask, pol=pol, **kwargs)
-        elif dtype == 'cphase':
-            (data, sigma, A) = chisqdata_cphase(Obsdata, Prior, mask, pol=pol, **kwargs)
-        elif dtype == 'cphase_diag':
-            (data, sigma, A) = chisqdata_cphase_diag(Obsdata, Prior, mask, pol=pol, **kwargs)
-        elif dtype == 'camp':
-            (data, sigma, A) = chisqdata_camp(Obsdata, Prior, mask, pol=pol, **kwargs)
-        elif dtype == 'logcamp':
-            (data, sigma, A) = chisqdata_logcamp(Obsdata, Prior, mask, pol=pol, **kwargs)
-        elif dtype == 'logcamp_diag':
-            (data, sigma, A) = chisqdata_logcamp_diag(Obsdata, Prior, mask, pol=pol, **kwargs)
-
-    elif ttype == 'fast':
-        if dtype == 'vis':
-            (data, sigma, A) = chisqdata_vis_fft(Obsdata, Prior, pol=pol, **kwargs)
-        elif dtype == 'amp' or dtype == 'logamp':
-            (data, sigma, A) = chisqdata_amp_fft(Obsdata, Prior, pol=pol, **kwargs)
-        elif dtype == 'bs':
-            (data, sigma, A) = chisqdata_bs_fft(Obsdata, Prior, pol=pol, **kwargs)
-        elif dtype == 'cphase':
-            (data, sigma, A) = chisqdata_cphase_fft(Obsdata, Prior, pol=pol, **kwargs)
-        elif dtype == 'cphase_diag':
-            (data, sigma, A) = chisqdata_cphase_diag_fft(Obsdata, Prior, pol=pol, **kwargs)
-        elif dtype == 'camp':
-            (data, sigma, A) = chisqdata_camp_fft(Obsdata, Prior, pol=pol, **kwargs)
-        elif dtype == 'logcamp':
-            (data, sigma, A) = chisqdata_logcamp_fft(Obsdata, Prior, pol=pol, **kwargs)
-        elif dtype == 'logcamp_diag':
-            (data, sigma, A) = chisqdata_logcamp_diag_fft(Obsdata, Prior, pol=pol, **kwargs)
-
-    elif ttype == 'nfft':
-        if dtype == 'vis':
-            (data, sigma, A) = chisqdata_vis_nfft(Obsdata, Prior, pol=pol, **kwargs)
-        elif dtype == 'amp' or dtype == 'logamp':
-            (data, sigma, A) = chisqdata_amp_nfft(Obsdata, Prior, pol=pol, **kwargs)
-        elif dtype == 'bs':
-            (data, sigma, A) = chisqdata_bs_nfft(Obsdata, Prior, pol=pol, **kwargs)
-        elif dtype == 'cphase':
-            (data, sigma, A) = chisqdata_cphase_nfft(Obsdata, Prior, pol=pol, **kwargs)
-        elif dtype == 'cphase_diag':
-            (data, sigma, A) = chisqdata_cphase_diag_nfft(Obsdata, Prior, pol=pol, **kwargs)
-        elif dtype == 'camp':
-            (data, sigma, A) = chisqdata_camp_nfft(Obsdata, Prior, pol=pol, **kwargs)
-        elif dtype == 'logcamp':
-            (data, sigma, A) = chisqdata_logcamp_nfft(Obsdata, Prior, pol=pol, **kwargs)
-        elif dtype == 'logcamp_diag':
-            (data, sigma, A) = chisqdata_logcamp_diag_nfft(Obsdata, Prior, pol=pol, **kwargs)
-
-    return (data, sigma, A)
+    from ehtim.imaging.imager_backend import compute_chisqdata_term
+    ttype = kwargs.pop('ttype', 'direct')
+    if dtype not in DATATERMS:
+        raise Exception(f"data term {dtype!r} is not a standard data term")
+    return compute_chisqdata_term(Obsdata, Prior, mask, dtype,
+                                  ttype=ttype, pol=pol, **kwargs)
 
 
 ##################################################################################################
@@ -4057,6 +3858,8 @@ def plot_i(im, Prior, nit, chi2_dict, **kwargs):
 
 
 
+# TODO(achael): consolidate `embed` (1D, this function) and `embed_imarr`
+# (1D or 2D, below) into a single implementation -- their bodies overlap.
 def embed(imvec, mask, clipfloor=0., randomfloor=False):
     """Embeds a 1d image vector into the size of boolean embed mask
     """
@@ -4074,6 +3877,79 @@ def embed(imvec, mask, clipfloor=0., randomfloor=False):
         out[(mask-1).nonzero()] = clipfloor
 
     return out
+
+
+def embed_imarr(imarr, mask, clipfloor=0., randomfloor=False):
+    """Embed a packed image array back onto the full image grid.
+
+    Multi-row generalization of `embed`: each row of `imarr` is independently
+    embedded back into a full-grid representation using `mask`. Pixels outside
+    the mask are filled with `clipfloor` (constant) or `clipfloor * |N(0, 1)|`
+    when `randomfloor=True`.
+
+    Lives in imager_utils alongside `embed` rather than in imager_backend.py
+    to avoid a module-load cycle (pol_imager_utils -> imager_backend imports).
+
+    Parameters
+    ----------
+    imarr : np.ndarray
+        Either 1D of length `sum(mask)` (Stokes-I only), or 2D of shape
+        (nsolve, sum(mask)) where nsolve is the number of Stokes / spectral
+        slots being solved for (1 for Stokes-I only, 4 for full polarization,
+        3 or 10 for the multifrequency variants).
+    mask : np.ndarray of bool
+        Embed mask of length npix_total. Number of True entries must equal
+        the second axis of `imarr` (or its length, for 1D input).
+    clipfloor : float, optional
+        Value placed at non-mask pixels when `randomfloor=False`. Default 0.0.
+    randomfloor : bool, optional
+        If True, non-mask pixels get `clipfloor * |N(0, 1)|` instead of a
+        constant. Used to break gradient singularities in total-variation
+        regularizers. Default False.
+
+    Returns
+    -------
+    out : np.ndarray
+        Same dimensionality as `imarr` (1D or 2D), but the second axis
+        (or only axis) is extended to len(mask).
+
+    Raises
+    ------
+    Exception
+        If `imarr` is not 1D or 2D, or if its mask-axis length does not
+        equal `sum(mask)`.
+    """
+    imarrdim = len(imarr.shape)
+    if imarrdim == 2:
+        nsolve = imarr.shape[0]
+        nimage = imarr.shape[1]
+    elif imarrdim == 1:
+        nsolve = 1
+        nimage = imarr.shape[0]
+        imarr = imarr.reshape((nsolve, nimage))
+    else:
+        raise Exception("in embed_imarr, imarr should have one or two dimensions!")
+
+    if nimage != np.sum(mask):
+        raise Exception("in embed_imarr, number of masked pixels is not consistent with imarr shape!")
+
+    nimage_out = len(mask)
+    outarr = np.empty((nsolve, nimage_out))
+    # Vectorized over the nsolve axis: scatter imarr into the masked columns
+    # of outarr, then fill non-mask columns with clipfloor (or random).
+    not_mask = ~mask.astype(bool)
+    outarr[:, mask.astype(bool)] = imarr
+    if randomfloor:
+        outarr[:, not_mask] = clipfloor * np.abs(
+            np.random.normal(size=(nsolve, int(not_mask.sum())))
+        )
+    else:
+        outarr[:, not_mask] = clipfloor
+
+    if imarrdim == 1:
+        outarr = outarr[0]
+
+    return outarr
 
 
 

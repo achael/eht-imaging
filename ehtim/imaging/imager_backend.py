@@ -8,6 +8,7 @@ import numpy as np
 import ehtim.imaging.imager_utils as imutils
 import ehtim.imaging.multifreq_imager_utils as mfutils
 import ehtim.imaging.pol_imager_utils as polutils
+import ehtim.observing.obs_helpers as obsh
 
 # -----------------------------------------------------------------------------
 # Naming convention for image arguments throughout this module
@@ -56,35 +57,120 @@ REGULARIZERS_SPECTRAL = REGULARIZERS_ISPECTRAL + REGULARIZERS_POLSPECTRAL
 MEANPOL_INIT = 0.2     # mean polarization fraction
 SIGMAPOL_INIT = 1.e-2  # perturbation scale
 
+# Whether mask-embedding under fast/nfft fills non-mask pixels with random
+# noise (vs a constant clipfloor). Set True historically to break TV-regularizer
+# gradient singularities; the newer `epsilon_tv` mechanism likely makes this
+# unnecessary -- revisit once epsilon_tv coverage is broader.
+EMBED_RANDOMFLOOR = True
 
-def embed_imarr(imarr, mask, clipfloor=0., randomfloor=False):
-    """Embeds a multidimensional image array into the size of boolean embed mask
+# `logamp` aliases `amp` (same data product). Pol dtypes have no `fast`.
+_CHISQDATA_DISPATCH = {
+    'vis':          {'direct': imutils.chisqdata_vis,
+                     'fast':   imutils.chisqdata_vis_fft,
+                     'nfft':   imutils.chisqdata_vis_nfft},
+    'amp':          {'direct': imutils.chisqdata_amp,
+                     'fast':   imutils.chisqdata_amp_fft,
+                     'nfft':   imutils.chisqdata_amp_nfft},
+    'logamp':       {'direct': imutils.chisqdata_amp,
+                     'fast':   imutils.chisqdata_amp_fft,
+                     'nfft':   imutils.chisqdata_amp_nfft},
+    'bs':           {'direct': imutils.chisqdata_bs,
+                     'fast':   imutils.chisqdata_bs_fft,
+                     'nfft':   imutils.chisqdata_bs_nfft},
+    'cphase':       {'direct': imutils.chisqdata_cphase,
+                     'fast':   imutils.chisqdata_cphase_fft,
+                     'nfft':   imutils.chisqdata_cphase_nfft},
+    'cphase_diag':  {'direct': imutils.chisqdata_cphase_diag,
+                     'fast':   imutils.chisqdata_cphase_diag_fft,
+                     'nfft':   imutils.chisqdata_cphase_diag_nfft},
+    'camp':         {'direct': imutils.chisqdata_camp,
+                     'fast':   imutils.chisqdata_camp_fft,
+                     'nfft':   imutils.chisqdata_camp_nfft},
+    'logcamp':      {'direct': imutils.chisqdata_logcamp,
+                     'fast':   imutils.chisqdata_logcamp_fft,
+                     'nfft':   imutils.chisqdata_logcamp_nfft},
+    'logcamp_diag': {'direct': imutils.chisqdata_logcamp_diag,
+                     'fast':   imutils.chisqdata_logcamp_diag_fft,
+                     'nfft':   imutils.chisqdata_logcamp_diag_nfft},
+    'pvis':         {'direct': polutils.chisqdata_pvis,
+                     'nfft':   polutils.chisqdata_pvis_nfft},
+    'm':            {'direct': polutils.chisqdata_m,
+                     'nfft':   polutils.chisqdata_m_nfft},
+    'vvis':         {'direct': polutils.chisqdata_vvis,
+                     'nfft':   polutils.chisqdata_vvis_nfft},
+}
+
+# _diag leaves index the gridded image directly per-baseline; their `fast`
+# variants take imvec rather than the pre-FFT'd vis_arr.
+_DIAG_DTYPES = frozenset({'cphase_diag', 'logcamp_diag'})
+
+# Pol dtypes have no `fast`; entries are (chisq_fn, chisqgrad_fn).
+_CHISQ_DISPATCH = {
+    'vis':          {'is_pol': False,
+                     'direct': (imutils.chisq_vis,          imutils.chisqgrad_vis),
+                     'fast':   (imutils.chisq_vis_fft,      imutils.chisqgrad_vis_fft),
+                     'nfft':   (imutils.chisq_vis_nfft,     imutils.chisqgrad_vis_nfft)},
+    'amp':          {'is_pol': False,
+                     'direct': (imutils.chisq_amp,          imutils.chisqgrad_amp),
+                     'fast':   (imutils.chisq_amp_fft,      imutils.chisqgrad_amp_fft),
+                     'nfft':   (imutils.chisq_amp_nfft,     imutils.chisqgrad_amp_nfft)},
+    'logamp':       {'is_pol': False,
+                     'direct': (imutils.chisq_logamp,       imutils.chisqgrad_logamp),
+                     'fast':   (imutils.chisq_logamp_fft,   imutils.chisqgrad_logamp_fft),
+                     'nfft':   (imutils.chisq_logamp_nfft,  imutils.chisqgrad_logamp_nfft)},
+    'bs':           {'is_pol': False,
+                     'direct': (imutils.chisq_bs,           imutils.chisqgrad_bs),
+                     'fast':   (imutils.chisq_bs_fft,       imutils.chisqgrad_bs_fft),
+                     'nfft':   (imutils.chisq_bs_nfft,      imutils.chisqgrad_bs_nfft)},
+    'cphase':       {'is_pol': False,
+                     'direct': (imutils.chisq_cphase,       imutils.chisqgrad_cphase),
+                     'fast':   (imutils.chisq_cphase_fft,   imutils.chisqgrad_cphase_fft),
+                     'nfft':   (imutils.chisq_cphase_nfft,  imutils.chisqgrad_cphase_nfft)},
+    'cphase_diag':  {'is_pol': False,
+                     'direct': (imutils.chisq_cphase_diag,      imutils.chisqgrad_cphase_diag),
+                     'fast':   (imutils.chisq_cphase_diag_fft,  imutils.chisqgrad_cphase_diag_fft),
+                     'nfft':   (imutils.chisq_cphase_diag_nfft, imutils.chisqgrad_cphase_diag_nfft)},
+    'camp':         {'is_pol': False,
+                     'direct': (imutils.chisq_camp,         imutils.chisqgrad_camp),
+                     'fast':   (imutils.chisq_camp_fft,     imutils.chisqgrad_camp_fft),
+                     'nfft':   (imutils.chisq_camp_nfft,    imutils.chisqgrad_camp_nfft)},
+    'logcamp':      {'is_pol': False,
+                     'direct': (imutils.chisq_logcamp,      imutils.chisqgrad_logcamp),
+                     'fast':   (imutils.chisq_logcamp_fft,  imutils.chisqgrad_logcamp_fft),
+                     'nfft':   (imutils.chisq_logcamp_nfft, imutils.chisqgrad_logcamp_nfft)},
+    'logcamp_diag': {'is_pol': False,
+                     'direct': (imutils.chisq_logcamp_diag,      imutils.chisqgrad_logcamp_diag),
+                     'fast':   (imutils.chisq_logcamp_diag_fft,  imutils.chisqgrad_logcamp_diag_fft),
+                     'nfft':   (imutils.chisq_logcamp_diag_nfft, imutils.chisqgrad_logcamp_diag_nfft)},
+    'pvis':         {'is_pol': True,
+                     'direct': (polutils.chisq_p,           polutils.chisqgrad_p),
+                     'nfft':   (polutils.chisq_p_nfft,      polutils.chisqgrad_p_nfft)},
+    'm':            {'is_pol': True,
+                     'direct': (polutils.chisq_m,           polutils.chisqgrad_m),
+                     'nfft':   (polutils.chisq_m_nfft,      polutils.chisqgrad_m_nfft)},
+    'vvis':         {'is_pol': True,
+                     'direct': (polutils.chisq_vvis,        polutils.chisqgrad_vvis),
+                     'nfft':   (polutils.chisq_vvis_nfft,   polutils.chisqgrad_vvis_nfft)},
+}
+
+
+class ImagerInitState(NamedTuple):
+    """Solver-ready state produced by compute_init_state.
+
+    Each field corresponds to an Imager._* attribute consumed by
+    compute_objective / compute_objective_grad.
     """
+    init_arr: np.ndarray         # multi-D, solver space
+    init_vec: np.ndarray         # 1D packed solver vector
+    prior_arr: np.ndarray        # multi-D, physical space
+    data_tuples: dict            # keyed by dname or f"{dname}_{i}"
+    embed_mask: np.ndarray       # boolean
+    coord_matrix: np.ndarray     # pixel-coord companion to embed_mask
+    logfreqratio_list: list      # log(nu_i / reffreq)
+    nimage: int                  # number of active pixels = sum(embed_mask)
+    which_solve: np.ndarray      # int 0/1 flags
+    reffreq: float               # may be re-bound to init.rf when mf=True
 
-    imarrdim = len(imarr.shape)
-    if imarrdim==2:
-        nsolve = imarr.shape[0]
-        nimage = imarr.shape[1]
-    elif imarrdim==1:
-        nsolve = 1
-        nimage = imarr.shape[0]
-        imarr = imarr.reshape((nsolve,nimage))
-    else:
-        raise Exception("in embed_imarr, imarr should have one or two dimensions!")
-
-    if nimage!=np.sum(mask):
-        raise Exception("in embed_imarr, number of masked pixels is not consistent with imarr shape!")
-
-    nimage_out = len(mask)
-    outarr = np.empty((nsolve,nimage_out))
-    # TODO does this require the for loop?
-    for kk in range(nsolve):
-        outarr[kk] = imutils.embed(imarr[kk], mask, clipfloor=clipfloor, randomfloor=randomfloor)
-
-    if imarrdim==1:
-        outarr = outarr[0]
-
-    return outarr
 
 def pack_imarr(imarr, which_solve):
     """pack image array imarr into 1D array vec for minimizaiton
@@ -715,22 +801,181 @@ def compute_which_solve(pol, mf,
     return np.array([1])
 
 
-class ImagerInitState(NamedTuple):
-    """Solver-ready state produced by compute_init_state.
+def compute_chisqdata_term(obs, prior, mask, dtype, ttype='direct', pol='I', **kwargs):
+    """Single chisqdata dispatcher unifying chisqdata + polchisqdata.
 
-    Each field corresponds to an Imager._* attribute consumed by
-    compute_objective / compute_objective_grad.
+    Standard dtypes route to imutils.chisqdata_*; pol dtypes route to
+    polutils.chisqdata_*. Mask handling is asymmetric across the legacy
+    leaves (standard `fast`/`nfft` do not accept a mask param); this
+    function hides that.
+
+    Parameters
+    ----------
+    obs : ehtim.obsdata.Obsdata
+    prior : ehtim.image.Image
+    mask : np.ndarray of bool
+        Embedding mask. Passed positionally to direct + pol-nfft helpers;
+        ignored for standard fast/nfft (those helpers do not take mask).
+    dtype : str
+        Must be a key of _CHISQDATA_DISPATCH (12 dtypes).
+    ttype : {'direct', 'fast', 'nfft'}
+        'fast' is not supported for polarimetric dtypes.
+    pol : str
+        Polarization mode. Standard dtypes use this to unpack the right
+        Stokes (I/Q/U/V) data; pol dtypes absorb it via **kwargs (inert).
+    **kwargs
+        Per-dtype tuning knobs forwarded to the leaf helper. See
+        imager_utils.chisqdata for the standard kwarg list and
+        pol_imager_utils.chisqdata_pvis_nfft for the FFT-related kwargs.
+
+    Returns
+    -------
+    (data, sigma, A) tuple, same shape as the legacy chisqdata dispatchers.
     """
-    init_arr: np.ndarray         # multi-D, solver space
-    init_vec: np.ndarray         # 1D packed solver vector
-    prior_arr: np.ndarray        # multi-D, physical space
-    data_tuples: dict            # keyed by dname or f"{dname}_{i}"
-    embed_mask: np.ndarray       # boolean
-    coord_matrix: np.ndarray     # pixel-coord companion to embed_mask
-    logfreqratio_list: list      # log(nu_i / reffreq)
-    nimage: int                  # number of active pixels = sum(embed_mask)
-    which_solve: np.ndarray      # int 0/1 flags
-    reffreq: float               # may be re-bound to init.rf when mf=True
+    if ttype not in ('direct', 'fast', 'nfft'):
+        raise Exception("Possible ttype values are 'fast', 'direct', 'nfft'!")
+
+    try:
+        by_ttype = _CHISQDATA_DISPATCH[dtype]
+    except KeyError:
+        raise Exception(f"data term {dtype} not recognized!")
+
+    if ttype not in by_ttype:
+        raise Exception(f"ttype={ttype!r} not supported for dtype={dtype!r}")
+
+    helper = by_ttype[ttype]
+    is_pol = dtype in DATATERMS_POL
+
+    # Standard data terms consume a single Stokes letter ('I'/'Q'/'U'/'V'). When
+    # the imager is in a multi-Stokes mode (e.g. 'IP', 'IQUV'), the leaf needs
+    # pol='I' to unpack Stokes-I visibilities; pol modes without 'I' (e.g. 'P')
+    # are incompatible with standard data terms.
+    if not is_pol and pol in POLARIZATION_MODES:
+        if 'I' not in pol:
+            raise Exception(f"cannot use dterm {dtype} with pol={pol}")
+        pol = 'I'
+
+    # Only `direct` leaves take mask positionally; fast/nfft leaves index uv
+    # coords from obs directly and ignore the embed mask.
+    if ttype == 'direct':
+        return helper(obs, prior, mask, pol=pol, **kwargs)
+    return helper(obs, prior, pol=pol, **kwargs)
+
+
+def _pol_solve_block(which_solve, pol):
+    """Slice the polarimetric (Stokes) block from which_solve.
+
+    Multi-frequency polarimetric `which_solve` has layout
+    [I, rho, phi, psi, alpha, beta, alpha_p, beta_p, RM, CM] (10 slots);
+    pol chi^2 gradient kernels only consume the first four (the Stokes
+    block). Single-frequency polarimetric which_solve is already 4-wide,
+    so this is a no-op there.
+
+    TODO(Phase 6): replace with a `WhichSolve(stokes, spectral)` NamedTuple
+    so arbitrary spectral layouts do not need this hardcoded slice. Flagged
+    by Andrew in #227.
+    """
+    if pol in POLARIZATION_MODES and len(which_solve) > 4:
+        return which_solve[:4]
+    return which_solve
+
+
+def _lookup_chisq_entry(dtype, ttype):
+    """Look up (chisq_fn, chisqgrad_fn, is_pol) for (dtype, ttype). Raises on miss."""
+    if ttype not in ('direct', 'fast', 'nfft'):
+        raise Exception("Possible ttype values are 'fast', 'direct', 'nfft'!")
+    try:
+        entry = _CHISQ_DISPATCH[dtype]
+    except KeyError:
+        raise Exception(f"data term {dtype} not recognized!")
+    if ttype not in entry:
+        raise Exception(f"ttype={ttype!r} not supported for dtype={dtype!r}")
+    chisq_fn, chisqgrad_fn = entry[ttype]
+    return chisq_fn, chisqgrad_fn, entry['is_pol']
+
+
+def compute_chisq_term(imcur, dtype, A, data, sigma, ttype='direct', mask=None):
+    """Single chi^2 dispatcher unifying chisq + polchisq.
+
+    Parameters
+    ----------
+    imcur : np.ndarray
+        Solver-space image. Pol dtypes consume the full multi-row array
+        (1D for non-pol mode, 2D (nsolve, npix) for pol/mf-pol with
+        nsolve in {3, 4, 10}). Standard dtypes consume the Stokes-I row:
+        `imcur[0]` when 2D, `imcur` itself when 1D.
+    dtype : str
+        One of the keys of _CHISQ_DISPATCH (12 dtypes).
+    A, data, sigma
+        Per-dtype Fourier matrix or matrix-tuple, observed values, and
+        sigma values. Same shapes as the legacy leaf-helper signatures.
+    ttype : {'direct', 'fast', 'nfft'}
+        'fast' is not supported for pol dtypes.
+    mask : np.ndarray of bool, optional
+        Embedding mask used by fast / nfft leaves to expand the solver
+        image back onto the full grid. None or empty => no embedding.
+
+    Returns
+    -------
+    float
+    """
+    chisq_fn, _, is_pol = _lookup_chisq_entry(dtype, ttype)
+
+    imvec = imcur if (is_pol or imcur.ndim == 1) else imcur[0]
+
+    if (ttype != 'direct' and mask is not None
+            and len(mask) > 0 and np.any(np.invert(mask))):
+        if is_pol:
+            imvec = imutils.embed_imarr(imvec, mask, randomfloor=EMBED_RANDOMFLOOR)
+        else:
+            imvec = imutils.embed(imvec, mask, randomfloor=EMBED_RANDOMFLOOR)
+
+    if ttype == 'fast' and dtype not in _DIAG_DTYPES:
+        imvec = obsh.fft_imvec(imvec, A[0])
+
+    return chisq_fn(imvec, A, data, sigma)
+
+
+def compute_chisqgrad_term(imcur, dtype, A, data, sigma, ttype='direct',
+                           mask=None, pol_solve=None):
+    """Single chi^2-gradient dispatcher. See compute_chisq_term.
+
+    For pol dtypes, `pol_solve` (the Stokes block of which_solve) must be
+    supplied explicitly -- there is no principled default since the right
+    value depends on the imager's pol mode. Standard grad helpers ignore
+    `pol_solve`. Returned gradient is sliced back through `mask` for
+    fast / nfft to match the legacy chisqgrad / polchisqgrad return shapes:
+    pol grads are (4, n_masked); standard grads are (n_masked,).
+    """
+    _, chisqgrad_fn, is_pol = _lookup_chisq_entry(dtype, ttype)
+
+    imvec = imcur if (is_pol or imcur.ndim == 1) else imcur[0]
+    has_partial_mask = (mask is not None and len(mask) > 0
+                        and np.any(np.invert(mask)))
+
+    if ttype != 'direct' and has_partial_mask:
+        if is_pol:
+            imvec = imutils.embed_imarr(imvec, mask, randomfloor=EMBED_RANDOMFLOOR)
+        else:
+            imvec = imutils.embed(imvec, mask, randomfloor=EMBED_RANDOMFLOOR)
+
+    if ttype == 'fast' and dtype not in _DIAG_DTYPES:
+        imvec = obsh.fft_imvec(imvec, A[0])
+
+    if is_pol:
+        if pol_solve is None:
+            raise Exception(
+                f"compute_chisqgrad_term requires explicit pol_solve for "
+                f"polarimetric dtype {dtype!r}"
+            )
+        grad = chisqgrad_fn(imvec, A, data, sigma, pol_solve)
+    else:
+        grad = chisqgrad_fn(imvec, A, data, sigma)
+
+    if ttype != 'direct' and has_partial_mask:
+        grad = grad[:, mask] if is_pol else grad[mask]
+
+    return grad
 
 
 class RegParams(NamedTuple):
@@ -800,45 +1045,21 @@ def compute_data_tuples(obslist, prior, embed_mask, dat_term_keys, pol,
     for dname in dat_term_keys:
         for i, obs in enumerate(obslist):
             dname_key = dname if n_obs == 1 else f"{dname}_{i}"
-
-            if dname in DATATERMS_POL:
-                tup = polutils.polchisqdata(
-                    obs, prior, embed_mask, dname,
-                    ttype=ttype,
-                    fft_pad_factor=fft_params['fft_pad_factor'],
-                    conv_func=fft_params['fft_conv_func'],
-                    p_rad=fft_params['fft_gridder_prad'],
-                )
-
-            elif dname in DATATERMS:
-                if pol in POLARIZATION_MODES:
-                    if 'I' not in pol:
-                        raise Exception(
-                            f"cannot use dterm {dname} with pol={pol}")
-                    dterm_pol = 'I'
-                else:
-                    dterm_pol = pol
-
-                tup = imutils.chisqdata(
-                    obs, prior, embed_mask, dname,
-                    pol=dterm_pol,
-                    maxset=data_weighting_params['maxset'],
-                    debias=data_weighting_params['debias'],
-                    snrcut=data_weighting_params['snrcut'][dname],
-                    weighting=data_weighting_params['weighting'],
-                    systematic_noise=data_weighting_params['systematic_noise'],
-                    systematic_cphase_noise=data_weighting_params['systematic_cphase_noise'],
-                    cp_uv_min=data_weighting_params['cp_uv_min'],
-                    ttype=ttype,
-                    order=fft_params['fft_interp_order'],
-                    fft_pad_factor=fft_params['fft_pad_factor'],
-                    conv_func=fft_params['fft_conv_func'],
-                    p_rad=fft_params['fft_gridder_prad'],
-                )
-            else:
-                raise Exception(f"data term {dname} not recognized!")
-
-            data_tuples[dname_key] = tup
+            data_tuples[dname_key] = compute_chisqdata_term(
+                obs, prior, embed_mask, dname,
+                ttype=ttype, pol=pol,
+                maxset=data_weighting_params['maxset'],
+                debias=data_weighting_params['debias'],
+                snrcut=data_weighting_params['snrcut'][dname],
+                weighting=data_weighting_params['weighting'],
+                systematic_noise=data_weighting_params['systematic_noise'],
+                systematic_cphase_noise=data_weighting_params['systematic_cphase_noise'],
+                cp_uv_min=data_weighting_params['cp_uv_min'],
+                order=fft_params['fft_interp_order'],
+                fft_pad_factor=fft_params['fft_pad_factor'],
+                conv_func=fft_params['fft_conv_func'],
+                p_rad=fft_params['fft_gridder_prad'],
+            )
 
     return data_tuples
 
@@ -1060,41 +1281,17 @@ def compute_chisq_dict(imcur, dat_term_keys,
     """
     chi2_dict = {}
     for dname in dat_term_keys:
-        # Loop over all observations
         for i in range(n_obs):
-            if n_obs == 1:
-                dname_key = dname
-            else:
-                dname_key = dname + (f'_{i}')
-
-            # get data products
-            (data, sigma, A) = data_tuples[dname_key]
-
-            # get current multifrequency image
-            if mf:
-                logfreqratio = logfreqratio_list[i]
-                imcur_nu = mfutils.image_at_freq(imcur, logfreqratio)
-            else:
-                imcur_nu = imcur
-
-            # Polarization chi^2 terms
-            if dname in DATATERMS_POL:
-                chi2 = polutils.polchisq(imcur_nu, A, data, sigma, dname,
-                                         ttype=ttype, mask=embed_mask)
-
-            # Single Polarization chi^2 terms
-            elif dname in DATATERMS:
-                if pol in POLARIZATION_MODES:
-                    imcur_nu_I = imcur_nu[0]
-                else:
-                    imcur_nu_I = imcur_nu
-                chi2 = imutils.chisq(imcur_nu_I, A, data, sigma, dname,
-                                     ttype=ttype, mask=embed_mask)
-
-            else:
-                raise Exception(f"data term {dname} not recognized!")
-
-            chi2_dict[dname_key] = chi2
+            dname_key = dname if n_obs == 1 else f"{dname}_{i}"
+            data, sigma, A = data_tuples[dname_key]
+            imcur_nu = (
+                mfutils.image_at_freq(imcur, logfreqratio_list[i])
+                if mf else imcur
+            )
+            chi2_dict[dname_key] = compute_chisq_term(
+                imcur_nu, dname, A, data, sigma,
+                ttype=ttype, mask=embed_mask,
+            )
 
     return chi2_dict
 
@@ -1139,59 +1336,33 @@ def compute_chisqgrad_dict(imcur, dat_term_keys,
         Mapping from dname (or dname_i for multi-obs) to chi^2 gradient array.
     """
     chi2grad_dict = {}
-    # Zero row reused in the polarization-bundled Stokes-I gradient; safe to share
-    # because np.array((...)) below copies into a new (4, nimage) array each time.
+    pol_solve = _pol_solve_block(which_solve, pol)
+    # np.array((...)) below copies, so sharing zero_row across iterations is safe.
     zero_row = np.zeros(nimage)
+    is_pol_mode = pol in POLARIZATION_MODES
     for dname in dat_term_keys:
-        # Loop over all observations
         for i in range(n_obs):
-            if n_obs == 1:
-                dname_key = dname
-            else:
-                dname_key = dname + (f'_{i}')
+            dname_key = dname if n_obs == 1 else f"{dname}_{i}"
+            data, sigma, A = data_tuples[dname_key]
+            imcur_nu = (
+                mfutils.image_at_freq(imcur, logfreqratio_list[i])
+                if mf else imcur
+            )
 
-            # get data products
-            (data, sigma, A) = data_tuples[dname_key]
+            chi2grad = compute_chisqgrad_term(
+                imcur_nu, dname, A, data, sigma,
+                ttype=ttype, mask=embed_mask, pol_solve=pol_solve,
+            )
 
-            # get current multifrequency image
+            # Pad standard (nimage,) grad to (4, nimage) Stokes block so the
+            # regularizer + mf chains see a uniform layout.
+            if dname in DATATERMS and is_pol_mode:
+                chi2grad = np.array((chi2grad, zero_row, zero_row, zero_row))
+
             if mf:
-                logfreqratio = logfreqratio_list[i]
-                imcur_nu = mfutils.image_at_freq(imcur, logfreqratio)
-            else:
-                imcur_nu = imcur
-
-            # Polarimetric chi^2 gradients
-            if dname in DATATERMS_POL:
-                if mf:
-                    pol_solve = which_solve[0:4]
-                else:
-                    pol_solve = which_solve
-                chi2grad = polutils.polchisqgrad(imcur_nu, A, data, sigma, dname,
-                                                 ttype=ttype, mask=embed_mask,
-                                                 pol_solve=pol_solve)
-
-            # Single polarization chi^2 gradients
-            elif dname in DATATERMS:
-                if pol in POLARIZATION_MODES:  # polarization
-                    imcur_nu_I = imcur_nu[0]
-                else:
-                    imcur_nu_I = imcur_nu
-
-                chi2grad = imutils.chisqgrad(imcur_nu_I, A, data, sigma, dname,
-                                             ttype=ttype, mask=embed_mask)
-
-                # If imaging Stokes I with polarization simultaneously, bundle the gradient
-                if pol in POLARIZATION_MODES:
-                    chi2grad = np.array((chi2grad, zero_row, zero_row, zero_row))
-
-            else:
-                raise Exception(f"data term {dname} not recognized!")
-
-            # If multifrequency imaging,
-            # transform the image gradients for all the solved quantities
-            if mf:
-                logfreqratio = logfreqratio_list[i]
-                chi2grad = mfutils.mf_all_grads_chain(chi2grad, imcur_nu, imcur, logfreqratio)
+                chi2grad = mfutils.mf_all_grads_chain(
+                    chi2grad, imcur_nu, imcur, logfreqratio_list[i],
+                )
 
             chi2grad_dict[dname_key] = np.array(chi2grad)
 
