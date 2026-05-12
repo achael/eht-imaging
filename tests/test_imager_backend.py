@@ -8,8 +8,10 @@ import numpy as np
 import pytest
 
 import ehtim as eh
+import ehtim.const_def as ehc
 from ehtim.imaging.imager_backend import (
     ImagerInitState,
+    RegParams,
     _pol_solve_block,
     compute_chisq_dict,
     compute_chisq_term,
@@ -570,22 +572,26 @@ def _call_backend_chisqgrad_dict(imgr, imcur):
 
 
 def _build_regparams(imgr, mf_flux=None):
-    """Bundle all regularizer params from an Imager into a single dict.
+    """Bundle all regularizer params from an Imager into a RegParams NamedTuple.
 
     `mf_flux` overrides imgr.mf_flux for tests that exercise the
     REGULARIZERS_ALLFREQS_I validation path.
     """
-    return {
-        'flux': imgr.flux_next,
-        'pflux': imgr.pflux_next,
-        'vflux': imgr.vflux_next,
-        'xdim': imgr.prior_next.xdim,
-        'ydim': imgr.prior_next.ydim,
-        'psize': imgr.prior_next.psize,
-        'beam_size': imgr.beam_size,
-        'mf_flux': imgr.mf_flux if mf_flux is None else mf_flux,
-        **imgr.regparams,
-    }
+    return RegParams(
+        flux=imgr.flux_next,
+        pflux=imgr.pflux_next,
+        vflux=imgr.vflux_next,
+        xdim=imgr.prior_next.xdim,
+        ydim=imgr.prior_next.ydim,
+        psize=imgr.prior_next.psize,
+        beam_size=imgr.beam_size,
+        mf_flux=imgr.mf_flux if mf_flux is None else mf_flux,
+        major=imgr.regparams['major'],
+        minor=imgr.regparams['minor'],
+        PA=imgr.regparams['PA'],
+        alpha_A=imgr.regparams['alpha_A'],
+        epsilon_tv=imgr.regparams['epsilon_tv'],
+    )
 
 
 def _call_backend_reg_dict(imgr, imcur, mf_flux=None):
@@ -1214,6 +1220,103 @@ def test_reg_and_reggrad_share_keys(gauss_im, observe, initialize_imager):
     reg = _call_backend_reg_dict(imgr, imcur)
     reggrad = _call_backend_reggrad_dict(imgr, imcur)
     assert set(reg.keys()) == set(reggrad.keys())
+
+
+class TestRegParams:
+    """Tests for the RegParams NamedTuple bundle and Imager._full_regparams()."""
+
+    EXPECTED_FIELDS = (
+        "flux", "pflux", "vflux",
+        "xdim", "ydim", "psize", "beam_size",
+        "mf_flux",
+        "major", "minor", "PA", "alpha_A", "epsilon_tv",
+    )
+
+    def test_full_regparams_returns_namedtuple(self, gauss_im, observe,
+                                                initialize_imager):
+        """Imager._full_regparams() returns a RegParams instance."""
+        obs = observe(gauss_im)
+        imgr, _ = initialize_imager(obs, gauss_im, {"vis": 100})
+        regp = imgr._full_regparams()
+        assert isinstance(regp, RegParams)
+
+    def test_field_access_matches_imager_attrs(self, gauss_im, observe,
+                                                 initialize_imager):
+        """Every RegParams field reads back the corresponding Imager attribute."""
+        obs = observe(gauss_im)
+        imgr, _ = initialize_imager(obs, gauss_im, {"vis": 100})
+        regp = imgr._full_regparams()
+
+        assert regp.flux == imgr.flux_next
+        assert regp.pflux == imgr.pflux_next
+        assert regp.vflux == imgr.vflux_next
+        assert regp.xdim == imgr.prior_next.xdim
+        assert regp.ydim == imgr.prior_next.ydim
+        assert regp.psize == imgr.prior_next.psize
+        assert regp.beam_size == imgr.beam_size
+        assert regp.mf_flux == imgr.mf_flux
+        assert regp.major == imgr.regparams["major"]
+        assert regp.minor == imgr.regparams["minor"]
+        assert regp.PA == imgr.regparams["PA"]
+        assert regp.alpha_A == imgr.regparams["alpha_A"]
+        assert regp.epsilon_tv == imgr.regparams["epsilon_tv"]
+
+    def test_asdict_has_expected_keys(self, gauss_im, observe,
+                                       initialize_imager):
+        """_asdict() exposes exactly the documented field set; pinned so future
+        2.18/2.19 promotions don't silently drop/add a key."""
+        obs = observe(gauss_im)
+        imgr, _ = initialize_imager(obs, gauss_im, {"vis": 100})
+        keys = imgr._full_regparams()._asdict().keys()
+        assert tuple(keys) == self.EXPECTED_FIELDS
+
+    def test_immutability(self, gauss_im, observe, initialize_imager):
+        """RegParams is immutable (NamedTuple). This pins JAX-pytree-friendly
+        semantics: any update must go through ._replace(...)."""
+        obs = observe(gauss_im)
+        imgr, _ = initialize_imager(obs, gauss_im, {"vis": 100})
+        regp = imgr._full_regparams()
+        with pytest.raises(AttributeError):
+            regp.flux = 2.0
+
+    def test_regparams_kwarg_override(self, gauss_im, observe):
+        """Imager(..., major=..., epsilon_tv=...) propagates into RegParams,
+        and the other REGPARAMS_DEFAULT fields keep their defaults."""
+        from ehtim.imager import REGPARAMS_DEFAULT
+        obs = observe(gauss_im)
+        custom_major = 25 * ehc.RADPERUAS
+        custom_eps = 0.123
+        imgr = eh.imager.Imager(
+            obs, gauss_im, prior_im=gauss_im, flux=gauss_im.total_flux(),
+            data_term={"vis": 100}, ttype="direct", pol="I",
+            major=custom_major, epsilon_tv=custom_eps,
+        )
+        imgr.check_params()
+        imgr.check_limits()
+        imgr.init_imager()
+        regp = imgr._full_regparams()
+        assert regp.major == custom_major
+        assert regp.epsilon_tv == custom_eps
+        # Unspecified REGPARAMS_DEFAULT fields keep their defaults.
+        assert regp.minor == REGPARAMS_DEFAULT["minor"]
+        assert regp.PA == REGPARAMS_DEFAULT["PA"]
+        assert regp.alpha_A == REGPARAMS_DEFAULT["alpha_A"]
+
+    def test_mf_flux_propagation(self, gauss_im, observe, initialize_imager):
+        """Multifrequency mf_flux list propagates into RegParams.mf_flux."""
+        im_lo = gauss_im.copy()
+        im_lo.rf = REFFREQ_HZ
+        im_hi = gauss_im.copy()
+        im_hi.rf = MF_ALT_FREQ_HZ
+        obs_lo = observe(im_lo)
+        obs_hi = observe(im_hi)
+        imgr, _ = initialize_imager(
+            [obs_lo, obs_hi], im_lo, {"vis": 100},
+            mf=True, mf_order=1,
+            mf_flux=[1.0, 2.0],
+        )
+        regp = imgr._full_regparams()
+        assert regp.mf_flux == [1.0, 2.0]
 
 
 class TestComputeObjective:
