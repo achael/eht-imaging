@@ -70,153 +70,35 @@ def chisqgrad(imvec, A, data, sigma, dtype, ttype='direct', mask=None):
 
 
 def regularizer(imvec, nprior, mask, flux, xdim, ydim, psize, stype, **kwargs):
-    """return the regularizer value
+    """Return the regularizer value for a Stokes-I regularizer.
+
+    Thin shim around imager_backend.compute_regularizer_term retained for
+    backward compatibility. New code should call compute_regularizer_term
+    directly.
     """
-
-    norm_reg = kwargs.get('norm_reg', NORM_REGULARIZER)
-    beam_size = kwargs.get('beam_size', psize)
-    alpha_A = kwargs.get('alpha_A', 1.0)
-    epsilon = kwargs.get('epsilon_tv', 0.)
-
-    if stype == "flux":
-        s = -sflux(imvec, nprior, flux, norm_reg=norm_reg)
-    elif stype == "cm":
-        s = -scm(imvec, xdim, ydim, psize, flux, mask, norm_reg=norm_reg, beam_size=beam_size)
-    elif stype == "simple":
-        s = -ssimple(imvec, nprior, flux, norm_reg=norm_reg)
-    elif stype == "l1":
-        s = -sl1(imvec, nprior, flux, norm_reg=norm_reg)
-    elif stype == "l1w":
-        s = -sl1w(imvec, nprior, flux, norm_reg=norm_reg)
-    elif stype == "lA":
-        s = -slA(imvec, nprior, psize, flux, beam_size, alpha_A, norm_reg)
-    elif stype == "gs":
-        s = -sgs(imvec, nprior, flux, norm_reg=norm_reg)
-    elif stype == "patch":
-        s = -spatch(imvec, nprior, flux, norm_reg=norm_reg)
-    elif stype == "tv":
-        if np.any(np.invert(mask)):
-            imvec = embed(imvec, mask, randomfloor=True)
-        s = -stv(imvec, xdim, ydim, psize, flux, norm_reg=norm_reg,beam_size=beam_size, epsilon=epsilon)
-    elif stype == "tvlog":
-        if np.any(np.invert(mask)):
-            imvec = embed(imvec, mask, clipfloor=epsilon, randomfloor=True)
-        npix = xdim*ydim
-        logvec = np.log(imvec)
-        logflux = npix*np.abs(np.log(flux/npix))
-        s = -stv(logvec, xdim, ydim, psize, logflux, norm_reg=norm_reg,beam_size=beam_size, epsilon=epsilon)
-    elif stype == "tv2":
-        if np.any(np.invert(mask)):
-            imvec = embed(imvec, mask, randomfloor=True)
-        s = -stv2(imvec, xdim, ydim, psize, flux, norm_reg=norm_reg, beam_size=beam_size)
-    elif stype == "tv2log":
-        if np.any(np.invert(mask)):
-            imvec = embed(imvec, mask, randomfloor=True)
-        npix = xdim*ydim
-        logvec = np.log(imvec)
-        logflux = npix*np.abs(np.log(flux/npix))
-        s = -stv2(logvec, xdim, ydim, psize, logflux, norm_reg=norm_reg, beam_size=beam_size)
-    elif stype == "compact":
-        if np.any(np.invert(mask)):
-            imvec = embed(imvec, mask, randomfloor=True)
-        s = -scompact(imvec, xdim, ydim, psize, flux, norm_reg=norm_reg)
-    elif stype == "compact2":
-        if np.any(np.invert(mask)):
-            imvec = embed(imvec, mask, randomfloor=True)
-        s = -scompact2(imvec, xdim, ydim, psize, flux, norm_reg=norm_reg)
-    elif stype == "rgauss":
-        # additional key words for gaussian regularizer
-        major = kwargs.get('major', 1.0)
-        minor = kwargs.get('minor', 1.0)
-        PA = kwargs.get('PA', 1.0)
-
-        if np.any(np.invert(mask)):
-            imvec = embed(imvec, mask, randomfloor=True)
-        s = -sgauss(imvec, xdim, ydim, psize, major=major, minor=minor, PA=PA)
-    else:
-        s = 0
-
-    return s
+    from ehtim.imaging.imager_backend import REGULARIZERS as _BACKEND_REGS
+    from ehtim.imaging.imager_backend import compute_regularizer_term
+    if stype not in _BACKEND_REGS:
+        raise Exception(f"regularizer term {stype!r} is not a Stokes-I regularizer")
+    return compute_regularizer_term(imvec, stype, mask,
+                                    nprior=nprior, flux=flux,
+                                    xdim=xdim, ydim=ydim, psize=psize, **kwargs)
 
 
 def regularizergrad(imvec, nprior, mask, flux, xdim, ydim, psize, stype, **kwargs):
-    """return the regularizer gradient
+    """Return the regularizer gradient for a Stokes-I regularizer.
+
+    Thin shim around imager_backend.compute_regularizergrad_term retained for
+    backward compatibility. New code should call compute_regularizergrad_term
+    directly.
     """
-
-    norm_reg = kwargs.get('norm_reg', NORM_REGULARIZER)
-    beam_size = kwargs.get('beam_size', psize)
-    alpha_A = kwargs.get('alpha_A', 1.0)
-    epsilon = kwargs.get('epsilon_tv', 0.)
-
-    if stype == "flux":
-        s = -sfluxgrad(imvec, nprior, flux, norm_reg=norm_reg)
-    elif stype == "cm":
-        s = -scmgrad(imvec, xdim, ydim, psize, flux, mask, norm_reg=norm_reg, beam_size=beam_size)
-    elif stype == "simple":
-        s = -ssimplegrad(imvec, nprior, flux, norm_reg=norm_reg)
-    elif stype == "l1":
-        s = -sl1grad(imvec, nprior, flux, norm_reg=norm_reg)
-    elif stype == "l1w":
-        s = -sl1wgrad(imvec, nprior, flux, norm_reg=norm_reg)
-    elif stype == "lA":
-        s = -slAgrad(imvec, nprior, psize, flux, beam_size, alpha_A, norm_reg)
-    elif stype == "gs":
-        s = -sgsgrad(imvec, nprior, flux, norm_reg=norm_reg)
-    elif stype == "patch":
-        s = -spatchgrad(imvec, nprior, flux, norm_reg=norm_reg)
-    elif stype == "tv":
-        if np.any(np.invert(mask)):
-            imvec = embed(imvec, mask, randomfloor=True)
-        s = -stvgrad(imvec, xdim, ydim, psize, flux, norm_reg=norm_reg,
-                     beam_size=beam_size, epsilon=epsilon)
-        s = s[mask]
-    elif stype == "tvlog":
-        if np.any(np.invert(mask)):
-            imvec = embed(imvec, mask, clipfloor=epsilon, randomfloor=True)
-        npix = xdim*ydim
-        logvec = np.log(imvec)
-        logflux = npix*np.abs(np.log(flux/npix))
-        s = -stvgrad(logvec, xdim, ydim, psize, logflux, norm_reg=norm_reg,beam_size=beam_size, epsilon=epsilon)
-        s = s / imvec
-        s = s[mask]
-    elif stype == "tv2":
-        if np.any(np.invert(mask)):
-            imvec = embed(imvec, mask, randomfloor=True)
-        s = -stv2grad(imvec, xdim, ydim, psize, flux, norm_reg=norm_reg, beam_size=beam_size)
-        s = s[mask]
-    elif stype == "tv2log":
-        if np.any(np.invert(mask)):
-            imvec = embed(imvec, mask, randomfloor=True)
-        npix = xdim*ydim
-        logvec = np.log(imvec)
-        logflux = npix*np.abs(np.log(flux/npix))
-        s = -stv2grad(logvec, xdim, ydim, psize, logflux, norm_reg=norm_reg, beam_size=beam_size)
-        s = s / imvec
-        s = s[mask]
-    elif stype == "compact":
-        if np.any(np.invert(mask)):
-            imvec = embed(imvec, mask, randomfloor=True)
-        s = -scompactgrad(imvec, xdim, ydim, psize, flux, norm_reg=norm_reg)
-        s = s[mask]
-    elif stype == "compact2":
-        if np.any(np.invert(mask)):
-            imvec = embed(imvec, mask, randomfloor=True)
-        s = -scompact2grad(imvec, xdim, ydim, psize, flux, norm_reg=norm_reg)
-        s = s[mask]
-    elif stype == "rgauss":
-        # additional key words for gaussian regularizer
-        major = kwargs.get('major', 1.0)
-        minor = kwargs.get('minor', 1.0)
-        PA = kwargs.get('PA', 1.0)
-
-        if np.any(np.invert(mask)):
-            imvec = embed(imvec, mask, randomfloor=True)
-        s = -sgauss_grad(imvec, xdim, ydim, psize, major, minor, PA)
-        s = s[mask]
-    else:
-        s = np.zeros(len(imvec))
-
-    return s
+    from ehtim.imaging.imager_backend import REGULARIZERS as _BACKEND_REGS
+    from ehtim.imaging.imager_backend import compute_regularizergrad_term
+    if stype not in _BACKEND_REGS:
+        raise Exception(f"regularizer term {stype!r} is not a Stokes-I regularizer")
+    return compute_regularizergrad_term(imvec, stype, mask,
+                                        nprior=nprior, flux=flux,
+                                        xdim=xdim, ydim=ydim, psize=psize, **kwargs)
 
 
 def chisqdata(Obsdata, Prior, mask, dtype, pol='I', **kwargs):

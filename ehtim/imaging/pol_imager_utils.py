@@ -27,7 +27,6 @@ except ImportError:
     _HAS_NFFT = False
 
 from ehtim.const_def import FFT_PAD_DEFAULT, GRIDDER_P_RAD_DEFAULT, RADPERAS
-from ehtim.imaging.imager_utils import embed_imarr
 from ehtim.observing.obs_helpers import NFFTInfo, ftmatrix, ticks
 
 TANWIDTH_M = 0.5
@@ -373,95 +372,33 @@ def polchisqgrad(imarr, A, data, sigma, dtype, ttype='direct', mask=[],
 
 
 def polregularizer(imarr, priorarr, mask, flux, pflux, vflux, xdim, ydim, psize, stype, **kwargs):
-    # NOTE: priorarr is currently not used in any regularizer
+    """Return the regularizer value for a polarimetric regularizer.
 
-    norm_reg = kwargs.get('norm_reg', NORM_REGULARIZER)
-    beam_size = kwargs.get('beam_size',1)
-
-    reg = 0
+    Thin shim around imager_backend.compute_regularizer_term retained for
+    backward compatibility. New code should call compute_regularizer_term
+    directly. `priorarr` is currently not consumed by any pol regularizer.
+    """
+    from ehtim.imaging.imager_backend import compute_regularizer_term
     if stype not in REGULARIZERS_POL:
-        return reg
+        raise Exception(f"regularizer term {stype!r} is not a polarimetric regularizer")
+    return compute_regularizer_term(imarr, stype, mask,
+                                    flux=flux, pflux=pflux, vflux=vflux,
+                                    xdim=xdim, ydim=ydim, psize=psize, **kwargs)
 
-    # linear
-    if stype == "msimple":
-        reg = -sm(imarr, flux, norm_reg=norm_reg)
-    elif stype == "hw":
-        reg = -shw(imarr, flux, norm_reg=norm_reg)
-    elif stype == "ptv":
-        if np.any(np.invert(mask)):
-            imarr = embed_imarr(imarr, mask, randomfloor=RANDOMFLOOR)
-        reg = -stv_pol(imarr, flux, xdim, ydim, psize,
-                       norm_reg=norm_reg, beam_size=beam_size)
-    # circular
-    elif stype == 'vflux':
-        reg = -svflux(imarr, vflux, norm_reg=norm_reg)
-    elif stype == "l1v":
-        reg = -sl1v(imarr, vflux, norm_reg=norm_reg)
-    elif stype == "l2v":
-        reg = -sl2v(imarr, vflux, norm_reg=norm_reg)
-    elif stype == "vtv":
-        if np.any(np.invert(mask)):
-            imarr = embed_imarr(imarr, mask, randomfloor=RANDOMFLOOR)
-        reg = -stv_v(imarr, vflux, xdim, ydim, psize,
-                     norm_reg=norm_reg, beam_size=beam_size)
-    elif stype == "vtv2":
-        if np.any(np.invert(mask)):
-            imarr = embed_imarr(imarr, mask, randomfloor=RANDOMFLOOR)
-        reg = -stv2_v(imarr, vflux, xdim, ydim, psize,
-                      norm_reg=norm_reg, beam_size=beam_size)
-
-
-    return reg
 
 def polregularizergrad(imarr, priorarr, mask, flux, pflux, vflux, xdim, ydim, psize, stype, **kwargs):
-    # NOTE: priorarr is currently not used in any regularizer
+    """Return the regularizer gradient for a polarimetric regularizer.
 
-    norm_reg = kwargs.get('norm_reg', NORM_REGULARIZER)
-    beam_size = kwargs.get('beam_size',1)
-    pol_solve = kwargs.get('pol_solve', POL_SOLVE_DEFAULT)
-    reggrad = np.zeros(imarr.shape)
-
+    Thin shim around imager_backend.compute_regularizergrad_term retained for
+    backward compatibility. New code should call compute_regularizergrad_term
+    directly.
+    """
+    from ehtim.imaging.imager_backend import compute_regularizergrad_term
     if stype not in REGULARIZERS_POL:
-        return reggrad
-
-    # linear
-    if stype == "msimple":
-        reggrad = -smgrad(imarr, flux, pol_solve, norm_reg=norm_reg)
-    elif stype == "hw":
-        reggrad = -shwgrad(imarr, flux, pol_solve, norm_reg=norm_reg)
-    elif stype == "ptv":
-        if np.any(np.invert(mask)):
-            imarr = embed_imarr(imarr, mask, randomfloor=RANDOMFLOOR)
-        reggrad = -stv_pol_grad(imarr, flux, xdim, ydim, psize, pol_solve,
-                                norm_reg=norm_reg, beam_size=beam_size)
-        if np.any(np.invert(mask)):
-            reggrad = reggrad[:,mask]
-
-
-    # circular
-    elif stype == 'vflux':
-        reggrad = -svfluxgrad(imarr, vflux, pol_solve=pol_solve, norm_reg=norm_reg)
-    elif stype == "l1v":
-        reggrad = -sl1vgrad(imarr, vflux, pol_solve=pol_solve, norm_reg=norm_reg)
-    elif stype == "l2v":
-        reggrad = -sl2vgrad(imarr, vflux, pol_solve=pol_solve, norm_reg=norm_reg)
-    elif stype == "vtv":
-        if np.any(np.invert(mask)):
-            imarr = embed_imarr(imarr, mask, randomfloor=RANDOMFLOOR)
-        reggrad = -stv_v_grad(imarr, vflux, xdim, ydim, psize,
-                              pol_solve=pol_solve, norm_reg=norm_reg, beam_size=beam_size)
-        if np.any(np.invert(mask)):
-            reggrad = reggrad[:,mask]
-
-    elif stype == "vtv2":
-        if np.any(np.invert(mask)):
-            imarr = embed_imarr(imarr, mask, randomfloor=RANDOMFLOOR)
-        reggrad = -stv2_v_grad(imarr, vflux, xdim, ydim, psize,
-                               pol_solve=pol_solve, norm_reg=norm_reg, beam_size=beam_size)
-        if np.any(np.invert(mask)):
-            reggrad = reggrad[:,mask]
-
-    return reggrad
+        raise Exception(f"regularizer term {stype!r} is not a polarimetric regularizer")
+    return compute_regularizergrad_term(imarr, stype, mask,
+                                        flux=flux, pflux=pflux, vflux=vflux,
+                                        xdim=xdim, ydim=ydim, psize=psize, **kwargs)
 
 
 def polchisqdata(Obsdata, Prior, mask, dtype, **kwargs):
