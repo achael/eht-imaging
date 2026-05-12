@@ -1,7 +1,7 @@
 # imager_backend.py
 # Pure functional backend for imager.py
 
-from typing import NamedTuple, Optional
+from typing import NamedTuple
 
 import numpy as np
 
@@ -748,13 +748,13 @@ class RegParams(NamedTuple):
       Term-specific kwargs : major, minor, PA, alpha_A, epsilon_tv
     """
     flux: float
-    pflux: Optional[float]
-    vflux: Optional[float]
+    pflux: float | None
+    vflux: float | None
     xdim: int
     ydim: int
     psize: float
     beam_size: float
-    mf_flux: Optional[list]      # length n_obs when REGULARIZERS_ALLFREQS_I active
+    mf_flux: list | None         # length n_obs when REGULARIZERS_ALLFREQS_I active
     major: float
     minor: float
     PA: float
