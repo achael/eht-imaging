@@ -894,18 +894,13 @@ def _lookup_chisq_entry(dtype, ttype):
 def compute_chisq_term(imcur, dtype, A, data, sigma, ttype='direct', mask=None):
     """Single chi^2 dispatcher unifying chisq + polchisq.
 
-    Pol dtypes consume the full multi-row imcur ((4, npix) single-frequency
-    or (10, npix) multi-frequency). Standard dtypes consume the Stokes-I
-    row: `imcur[0]` if imcur is 2D (pol-mode imager solving for several
-    Stokes), or imcur itself if 1D (non-pol mode, single Stokes-I solver).
-    Mask embedding and FFT pre-computation match the legacy chisq /
-    polchisq bodies exactly.
-
     Parameters
     ----------
     imcur : np.ndarray
-        Solver-space image. 1D (npix,) in non-pol mode, 2D (nsolve, npix)
-        in pol / mf-pol mode.
+        Solver-space image. Pol dtypes consume the full multi-row array
+        (1D for non-pol mode, 2D (nsolve, npix) for pol/mf-pol with
+        nsolve in {3, 4, 10}). Standard dtypes consume the Stokes-I row:
+        `imcur[0]` when 2D, `imcur` itself when 1D.
     dtype : str
         One of the keys of _CHISQ_DISPATCH (12 dtypes).
     A, data, sigma
