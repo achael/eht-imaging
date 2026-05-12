@@ -524,8 +524,7 @@ def make_initarr(image, mask, norm_init=False, flux=1,
     return initarr
 
 
-def validate_params(prior, init, pol, transforms, dat_term_keys, reg_term_keys,
-                    ttype, mf, mf_order, mf_order_pol, freq_list):
+def validate_params(prior, init, config, dat_term_keys, reg_term_keys, freq_list):
     """Validate imager configuration. Raises Exception on bad config.
 
     Pure validator extracted from Imager.check_params. Exception messages
@@ -536,23 +535,23 @@ def validate_params(prior, init, pol, transforms, dat_term_keys, reg_term_keys,
     prior, init : ehtim.image.Image
         Prior (regularizer reference) and initial-value images. Must share
         psize / xdim / ydim / rf / polrep.
-    pol : str
-        Polarization mode. For polrep='stokes': one of 'I', 'Q', 'U', 'V',
-        'P', 'IP', 'IQU', 'IV', 'IQUV'. For polrep='circ': 'RR' or 'LL'.
-    transforms : iterable of str
-        Active solver transforms (subset of 'log', 'mcv', 'vcv', 'polcv').
+    config : ImagerConfig
+        Imager configuration bundle. See the ImagerConfig docstring for the
+        field list. Reads pol, transforms, ttype, mf, mf_config.mf_order,
+        mf_config.mf_order_pol.
     dat_term_keys, reg_term_keys : iterable of str
         Data term and regularizer term keys actually requested.
-    ttype : str
-        Fourier transform type: 'direct', 'fast', or 'nfft'.
-    mf : bool
-        Multifrequency mode flag.
-    mf_order, mf_order_pol : int
-        Multifrequency expansion orders (must be in [0, 1, 2]).
     freq_list : list of float
         Per-observation reference frequencies. For mf=True, must contain
         at least two distinct values.
     """
+    pol = config.pol
+    transforms = config.transforms
+    ttype = config.ttype
+    mf = config.mf
+    mf_order = config.mf_config.mf_order
+    mf_order_pol = config.mf_config.mf_order_pol
+
     if ((prior.psize != init.psize) or
         (prior.xdim != init.xdim) or
         (prior.ydim != init.ydim)):

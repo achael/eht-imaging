@@ -10,7 +10,9 @@ import pytest
 import ehtim as eh
 import ehtim.const_def as ehc
 from ehtim.imaging.imager_backend import (
+    ImagerConfig,
     ImagerInitState,
+    MfConfig,
     RegParams,
     _pol_solve_block,
     compute_chisq_dict,
@@ -2383,7 +2385,20 @@ class TestValidateParams:
 
     @staticmethod
     def _call(**kwargs):
-        return validate_params(**kwargs)
+        # Assemble the per-test config kwargs into an ImagerConfig, pass the rest through.
+        config = ImagerConfig(
+            pol=kwargs.pop('pol'),
+            transforms=kwargs.pop('transforms'),
+            ttype=kwargs.pop('ttype'),
+            mf=kwargs.pop('mf'),
+            mf_config=MfConfig(
+                mf_order=kwargs.pop('mf_order'),
+                mf_order_pol=kwargs.pop('mf_order_pol'),
+                mf_rm=kwargs.pop('mf_rm', 0),
+                mf_cm=kwargs.pop('mf_cm', 0),
+            ),
+        )
+        return validate_params(config=config, **kwargs)
 
     # Sanity: the baseline does not raise.
     def test_baseline_ok(self, gauss_im):

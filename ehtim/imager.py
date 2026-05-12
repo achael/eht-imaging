@@ -39,6 +39,8 @@ from ehtim.imaging.imager_backend import (
     POLARIZATION_MODES,
     DataWeighting,
     FourierGridParams,
+    ImagerConfig,
+    MfConfig,
     RegParams,
     compute_chisq_dict,
     compute_chisqgrad_dict,
@@ -549,10 +551,9 @@ class Imager:
         """Check parameter consistency.
         """
         validate_params(
-            self.prior_next, self.init_next, self.pol_next,
-            self.transform_next,
+            self.prior_next, self.init_next,
+            self._full_imager_config(),
             self.dat_term_next.keys(), self.reg_term_next.keys(),
-            self._ttype, self.mf_next, self.mf_order, self.mf_order_pol,
             self.freq_list,
         )
 
@@ -771,6 +772,21 @@ class Imager:
             fft_conv_func=self._fft_conv_func,
             fft_gridder_prad=self._fft_gridder_prad,
             fft_interp_order=self._fft_interp_order,
+        )
+
+    def _full_imager_config(self):
+        """Bundle static imager config into an ImagerConfig NamedTuple for the backend."""
+        return ImagerConfig(
+            pol=self.pol_next,
+            transforms=self.transform_next,
+            ttype=self._ttype,
+            mf=self.mf_next,
+            mf_config=MfConfig(
+                mf_order=self.mf_order,
+                mf_order_pol=self.mf_order_pol,
+                mf_rm=self.mf_rm,
+                mf_cm=self.mf_cm,
+            ),
         )
 
     def make_reg_dict(self, imcur):
