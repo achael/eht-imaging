@@ -9,7 +9,9 @@ import numpy as np
 import pytest
 
 import ehtim as eh
+import ehtim.imaging.imager_backend as ib
 import ehtim.imaging.imager_utils as iu
+import ehtim.imaging.multifreq_imager_utils as mfu
 import ehtim.imaging.pol_imager_utils as pu
 
 # Tolerances for gradient checks (calibrated on 32x48 synthetic Gaussian)
@@ -266,3 +268,95 @@ def _pol_gradient_check(polreg_setup, rtype):
 
     frac_diffs = np.array(frac_diffs)
     return float(np.median(frac_diffs)), float(np.max(frac_diffs))
+
+
+# regularizer_mf dispatches by string prefix: names starting with 'l2_'
+# compute an L2 distance from the prior; names starting with 'tv_' compute
+# spatial total variation. The 12 names in REGULARIZERS_SPECTRAL only differ
+# in which spectral coefficient slot (alpha / beta / rm / cm / _p variants)
+# the imager passes through; the computation itself is shared between them.
+
+
+@pytest.fixture(scope="module")
+def mfreg_setup(make_rect_image):
+    """32x48 spectral coefficient vector with a half-amplitude prior."""
+    im = make_rect_image(32, 48)
+    imvec = im.imvec
+    nprior = imvec * 0.5
+    mask = imvec > 0
+    return im, imvec, nprior, mask
+
+
+class TestMFRegularizerValues:
+    """REGULARIZERS_SPECTRAL regularizers return finite, non-zero values."""
+
+    @pytest.mark.parametrize("rtype", ib.REGULARIZERS_SPECTRAL)
+    @pytest.mark.parametrize("norm_reg", [True, False], ids=["normalized", "unnormalized"])
+    def test_returns_finite(self, mfreg_setup, rtype, norm_reg):
+        im, imvec, nprior, mask = mfreg_setup
+        val = mfu.regularizer_mf(
+            imvec, nprior, mask, im.xdim, im.ydim, im.psize, rtype,
+            beam_size=BEAM_SIZE, norm_reg=norm_reg,
+        )
+        assert np.isfinite(val), f"{rtype} (norm_reg={norm_reg}) returned {val}"
+
+    @pytest.mark.parametrize("rtype", ib.REGULARIZERS_SPECTRAL)
+    def test_returns_nonzero(self, mfreg_setup, rtype):
+        # A name that matches neither 'l2_' nor 'tv_' prefix silently returns 0.
+        # Guards against a future addition to REGULARIZERS_SPECTRAL that breaks
+        # the naming convention.
+        im, imvec, nprior, mask = mfreg_setup
+        val = mfu.regularizer_mf(
+            imvec, nprior, mask, im.xdim, im.ydim, im.psize, rtype,
+            beam_size=BEAM_SIZE,
+        )
+        assert val != 0, f"{rtype} returned 0 - dispatch likely missed"
+
+
+class TestMFRegularizerGradients:
+    """Analytic regularizergrad_mf matches numeric finite differences."""
+
+    @pytest.mark.parametrize("rtype", ib.REGULARIZERS_SPECTRAL)
+    def test_median_frac_diff(self, mfreg_setup, rtype):
+        median_frac, _ = _mfreg_gradient_check(mfreg_setup, rtype)
+        assert median_frac < MEDIAN_FRAC_TOL, (
+            f"{rtype} median fractional gradient diff = {median_frac:.6f}"
+        )
+
+    @pytest.mark.parametrize("rtype", ib.REGULARIZERS_SPECTRAL)
+    def test_max_frac_diff(self, mfreg_setup, rtype):
+        _, max_frac = _mfreg_gradient_check(mfreg_setup, rtype)
+        assert max_frac < MAX_FRAC_TOL, (
+            f"{rtype} max fractional gradient diff = {max_frac:.6f}"
+        )
+
+
+def _mfreg_gradient_check(mfreg_setup, rtype):
+    """Compare analytic and finite-difference gradients on N random pixels."""
+    im, imvec, nprior, mask = mfreg_setup
+    kwargs = dict(beam_size=BEAM_SIZE, norm_reg=True)
+
+    y0 = mfu.regularizer_mf(
+        imvec, nprior, mask, im.xdim, im.ydim, im.psize, rtype, **kwargs,
+    )
+    grad_exact = mfu.regularizergrad_mf(
+        imvec, nprior, mask, im.xdim, im.ydim, im.psize, rtype, **kwargs,
+    )
+
+    rng = np.random.default_rng(RNG_SEED)
+    sample_idx = rng.choice(len(imvec), size=N_GRAD_SAMPLES, replace=False)
+
+    grad_numeric = np.zeros(N_GRAD_SAMPLES)
+    for i, j in enumerate(sample_idx):
+        dx = max(GRAD_DX_REL * abs(imvec[j]), GRAD_DX_FLOOR)
+        imvec2 = imvec.copy()
+        imvec2[j] += dx
+        y1 = mfu.regularizer_mf(
+            imvec2, nprior, mask, im.xdim, im.ydim, im.psize, rtype, **kwargs,
+        )
+        grad_numeric[i] = (y1 - y0) / dx
+
+    grad_exact_sampled = grad_exact[sample_idx]
+    compare_floor = np.min(np.abs(grad_exact_sampled)) * 1e-20 + 1e-100
+    frac_diff = np.abs((grad_numeric - grad_exact_sampled) / (np.abs(grad_exact_sampled) + compare_floor))
+    return float(np.median(frac_diff)), float(np.max(frac_diff))
