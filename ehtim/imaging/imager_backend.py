@@ -754,9 +754,7 @@ def compute_logfreqratios(freq_list, reffreq):
     return [np.log(nu / reffreq) for nu in freq_list]
 
 
-def compute_which_solve(pol, mf,
-                        mf_order=0, mf_order_pol=0,
-                        mf_rm=False, mf_cm=False):
+def compute_which_solve(config):
     """Build the which-solve flag array indicating which Stokes / spectral
     parameter slots are optimized vs held fixed.
 
@@ -769,28 +767,20 @@ def compute_which_solve(pol, mf,
 
     Parameters
     ----------
-    pol : str
-        Polarization mode (e.g. 'I', 'IP', 'IV'). Polarimetric modes are those
-        listed in POLARIZATION_MODES.
-    mf : bool
-        Multi-frequency imaging flag.
-    mf_order : {0, 1, 2}, optional
-        Stokes-I spectral expansion order. 0 -> none, 1 -> alpha only,
-        2 -> alpha + beta. Only used when mf=True.
-    mf_order_pol : {0, 1, 2}, optional
-        Polarimetric spectral expansion order (alpha_p, beta_p). Only used
-        when mf=True and pol is polarimetric.
-    mf_rm : bool, optional
-        Solve for rotation measure (RM). Only used when mf=True and pol is
-        polarimetric.
-    mf_cm : bool, optional
-        Solve for conversion measure (CM). Only used when mf=True and pol is
-        polarimetric.
+    config : ImagerConfig
+        Bundled static imager config; reads pol, mf, and mf_config fields.
 
     Returns
     -------
     np.ndarray of int (0/1)
     """
+    pol = config.pol
+    mf = config.mf
+    mf_order = config.mf_config.mf_order
+    mf_order_pol = config.mf_config.mf_order_pol
+    mf_rm = config.mf_config.mf_rm
+    mf_cm = config.mf_config.mf_cm
+
     is_pol = pol in POLARIZATION_MODES
 
     if mf:
@@ -850,7 +840,7 @@ def compute_which_solve(pol, mf,
     return np.array([1])
 
 
-def compute_chisqdata_term(obs, prior, mask, dtype, ttype='direct', pol='I', **kwargs):
+def compute_chisqdata_term(obs, prior, mask, dtype, config, **kwargs):
     """Single chisqdata dispatcher unifying chisqdata + polchisqdata.
 
     Standard dtypes route to imutils.chisqdata_*; pol dtypes route to
@@ -867,11 +857,8 @@ def compute_chisqdata_term(obs, prior, mask, dtype, ttype='direct', pol='I', **k
         ignored for standard fast/nfft (those helpers do not take mask).
     dtype : str
         Must be a key of _CHISQDATA_DISPATCH (12 dtypes).
-    ttype : {'direct', 'fast', 'nfft'}
-        'fast' is not supported for polarimetric dtypes.
-    pol : str
-        Polarization mode. Standard dtypes use this to unpack the right
-        Stokes (I/Q/U/V) data; pol dtypes absorb it via **kwargs (inert).
+    config : ImagerConfig
+        Bundled imager config; reads ttype and pol fields.
     **kwargs
         Per-dtype tuning knobs forwarded to the leaf helper. See
         imager_utils.chisqdata for the standard kwarg list and
@@ -881,6 +868,9 @@ def compute_chisqdata_term(obs, prior, mask, dtype, ttype='direct', pol='I', **k
     -------
     (data, sigma, A) tuple, same shape as the legacy chisqdata dispatchers.
     """
+    ttype = config.ttype
+    pol = config.pol
+
     if ttype not in ('direct', 'fast', 'nfft'):
         raise Exception("Possible ttype values are 'fast', 'direct', 'nfft'!")
 
@@ -1187,8 +1177,8 @@ class ImagerConfig(NamedTuple):
     mf_config: MfConfig  # nested multifrequency expansion config
 
 
-def compute_data_tuples(obslist, prior, embed_mask, dat_term_keys, pol,
-                        ttype, data_weighting, fourier_grid):
+def compute_data_tuples(obslist, prior, embed_mask, dat_term_keys, config,
+                        data_weighting, fourier_grid):
     """Pre-compute (data, sigma, A) tuples for every (data-term, observation) pair.
 
     Dispatches to polutils.polchisqdata for polarimetric terms (in
@@ -1201,9 +1191,8 @@ def compute_data_tuples(obslist, prior, embed_mask, dat_term_keys, pol,
     embed_mask : np.ndarray of bool
     dat_term_keys : iterable of str
         Sorted dat_term names. Each must be in DATATERMS or DATATERMS_POL.
-    pol : str
-        Polarization mode of the imager (e.g. 'I', 'IP', 'IV').
-    ttype : {'direct', 'fast', 'nfft'}
+    config : ImagerConfig
+        Provides pol and ttype for dispatch.
     data_weighting : DataWeighting
         Per-data-term knobs forwarded to imutils.chisqdata. See the DataWeighting
         docstring for the field list.
@@ -1224,8 +1213,7 @@ def compute_data_tuples(obslist, prior, embed_mask, dat_term_keys, pol,
         for i, obs in enumerate(obslist):
             dname_key = dname if n_obs == 1 else f"{dname}_{i}"
             data_tuples[dname_key] = compute_chisqdata_term(
-                obs, prior, embed_mask, dname,
-                ttype=ttype, pol=pol,
+                obs, prior, embed_mask, dname, config,
                 maxset=data_weighting.maxset,
                 debias=data_weighting.debias,
                 snrcut=data_weighting.snrcut[dname],
@@ -1317,10 +1305,7 @@ def compute_init_state(
     reffreq_eff = init_image.rf if mf else reffreq
     logfreqratio_list = compute_logfreqratios(freq_list, reffreq_eff)
 
-    which_solve = compute_which_solve(
-        pol, mf, mf_order=mf_cfg.mf_order, mf_order_pol=mf_cfg.mf_order_pol,
-        mf_rm=mf_cfg.mf_rm, mf_cm=mf_cfg.mf_cm,
-    )
+    which_solve = compute_which_solve(config)
 
     is_pol = pol in POLARIZATION_MODES
 
@@ -1359,8 +1344,8 @@ def compute_init_state(
 
     if compute_data:
         data_tuples = compute_data_tuples(
-            obslist, prior_image, embed_mask, dat_term_keys, pol,
-            ttype, data_weighting, fourier_grid,
+            obslist, prior_image, embed_mask, dat_term_keys, config,
+            data_weighting, fourier_grid,
         )
     else:
         data_tuples = prior_data_tuples
@@ -1426,10 +1411,9 @@ def compute_embed(imvec, xdim, ydim, psize, clipfloor):
     return embed_mask, coord_matrix
 
 
-def compute_chisq_dict(imcur, dat_term_keys,
-                       mf, pol,
+def compute_chisq_dict(imcur, dat_term_keys, config,
                        data_tuples, logfreqratio_list, n_obs,
-                       ttype, embed_mask):
+                       embed_mask):
     """Compute chi^2 value for each data term across all observations.
 
     Parameters
@@ -1438,10 +1422,8 @@ def compute_chisq_dict(imcur, dat_term_keys,
         Current image array transformed to bounded values.
     dat_term_keys : list of str
         Data term names to evaluate, already sorted.
-    mf : bool
-        Whether multifrequency imaging is enabled.
-    pol : str
-        Polarization mode string.
+    config : ImagerConfig
+        Bundled imager config; reads mf, pol, ttype fields.
     data_tuples : dict
         Pre-computed data products keyed by dname or dname_i,
         each value is a (data, sigma, A) tuple.
@@ -1450,8 +1432,6 @@ def compute_chisq_dict(imcur, dat_term_keys,
     n_obs : int
         Number of observations (frequencies/epochs). Must equal
         len(logfreqratio_list); validated by Imager.init_imager.
-    ttype : str
-        Transform type ('direct', 'fast', 'nfft').
     embed_mask : np.ndarray of bool
         Pixel embedding mask.
 
@@ -1460,6 +1440,9 @@ def compute_chisq_dict(imcur, dat_term_keys,
     chi2_dict : dict
         Mapping from dname (or dname_i for multi-obs) to chi^2 scalar.
     """
+    mf = config.mf
+    ttype = config.ttype
+
     chi2_dict = {}
     for dname in dat_term_keys:
         for i in range(n_obs):
@@ -1477,10 +1460,9 @@ def compute_chisq_dict(imcur, dat_term_keys,
     return chi2_dict
 
 
-def compute_chisqgrad_dict(imcur, dat_term_keys,
-                           mf, pol,
+def compute_chisqgrad_dict(imcur, dat_term_keys, config,
                            data_tuples, logfreqratio_list, n_obs,
-                           ttype, embed_mask,
+                           embed_mask,
                            which_solve, nimage):
     """Compute chi^2 gradient for each data term across all observations.
 
@@ -1490,10 +1472,8 @@ def compute_chisqgrad_dict(imcur, dat_term_keys,
         Current image array transformed to bounded values.
     dat_term_keys : list of str
         Data term names to evaluate, already sorted.
-    mf : bool
-        Whether multifrequency imaging is enabled.
-    pol : str
-        Polarization mode string.
+    config : ImagerConfig
+        Bundled imager config; reads mf, pol, ttype fields.
     data_tuples : dict
         Pre-computed data products keyed by dname or dname_i,
         each value is a (data, sigma, A) tuple.
@@ -1502,8 +1482,6 @@ def compute_chisqgrad_dict(imcur, dat_term_keys,
     n_obs : int
         Number of observations (frequencies/epochs). Must equal
         len(logfreqratio_list); validated by Imager.init_imager.
-    ttype : str
-        Transform type ('direct', 'fast', 'nfft').
     embed_mask : np.ndarray of bool
         Pixel embedding mask.
     which_solve : np.ndarray of int
@@ -1516,6 +1494,10 @@ def compute_chisqgrad_dict(imcur, dat_term_keys,
     chi2grad_dict : dict
         Mapping from dname (or dname_i for multi-obs) to chi^2 gradient array.
     """
+    mf = config.mf
+    pol = config.pol
+    ttype = config.ttype
+
     chi2grad_dict = {}
     pol_solve = _pol_solve_block(which_solve, pol)
     # np.array((...)) below copies, so sharing zero_row across iterations is safe.
@@ -1550,8 +1532,7 @@ def compute_chisqgrad_dict(imcur, dat_term_keys,
     return chi2grad_dict
 
 
-def compute_reg_dict(imcur, reg_term_keys,
-                     mf, pol,
+def compute_reg_dict(imcur, reg_term_keys, config,
                      logfreqratio_list, n_obs,
                      priorvec, norm_reg, reg_params,
                      embed_mask):
@@ -1563,10 +1544,8 @@ def compute_reg_dict(imcur, reg_term_keys,
         Current image array transformed to bounded values.
     reg_term_keys : list of str
         Regularizer term names to evaluate, already sorted.
-    mf : bool
-        Whether multifrequency imaging is enabled.
-    pol : str
-        Polarization mode string.
+    config : ImagerConfig
+        Bundled imager config; reads mf and pol fields.
     logfreqratio_list : list of float
         Log frequency ratios log(nu_i/reffreq); one per obs.
     n_obs : int
@@ -1590,6 +1569,9 @@ def compute_reg_dict(imcur, reg_term_keys,
     reg_dict : dict
         Mapping from regname to regularizer scalar.
     """
+    mf = config.mf
+    pol = config.pol
+
     mf_flux = reg_params.mf_flux
     reg_kwargs = reg_params._asdict()
     reg_dict = {}
@@ -1650,8 +1632,7 @@ def compute_reg_dict(imcur, reg_term_keys,
     return reg_dict
 
 
-def compute_reggrad_dict(imcur, reg_term_keys,
-                         mf, pol,
+def compute_reggrad_dict(imcur, reg_term_keys, config,
                          logfreqratio_list, n_obs,
                          priorvec, norm_reg, reg_params,
                          embed_mask,
@@ -1660,7 +1641,7 @@ def compute_reggrad_dict(imcur, reg_term_keys,
 
     Parameters
     ----------
-    imcur, reg_term_keys, mf, pol, logfreqratio_list, n_obs,
+    imcur, reg_term_keys, config, logfreqratio_list, n_obs,
     priorvec, norm_reg, reg_params, embed_mask : see compute_reg_dict.
     which_solve : np.ndarray of bool
         Per-Stokes solve mask (used by polregularizergrad).
@@ -1674,6 +1655,9 @@ def compute_reggrad_dict(imcur, reg_term_keys,
         for single-pol, (4, nimage) for pol-bundled, or
         (len(imcur), nimage) for multifrequency.
     """
+    mf = config.mf
+    pol = config.pol
+
     mf_flux = reg_params.mf_flux
     reg_kwargs = reg_params._asdict()
     reggrad_dict = {}
@@ -1753,12 +1737,11 @@ def compute_reggrad_dict(imcur, reg_term_keys,
     return reggrad_dict
 
 
-def compute_objective(imvec, initvec,
-                      mf, pol,
+def compute_objective(imvec, initvec, config,
                       which_solve, data_tuples, logfreqratio_list, n_obs,
                       dat_term, reg_term,
                       priorvec, norm_reg, reg_params,
-                      transforms, embed_mask, ttype):
+                      embed_mask):
     """Compute the scalar imaging objective: data fidelity + regularization.
 
     Pure-functional version of Imager.objfunc. Unpacks the 1D solver vector
@@ -1776,10 +1759,8 @@ def compute_objective(imvec, initvec,
         Initial-image array (unwrapped, multi-D); used by `unpack_imarr` to
         fill any not-solved-for slots. Distinct from `priorvec` (the
         regularizer prior).
-    mf : bool
-        Multifrequency-imaging flag.
-    pol : str
-        Polarization mode (e.g. 'I', 'P', 'IP', 'V', 'IV', ...).
+    config : ImagerConfig
+        Bundled imager config; reads pol, mf, transforms, ttype fields.
     which_solve : np.ndarray of int
         Per-Stokes / per-spectral-term solve mask.
     data_tuples : dict
@@ -1798,12 +1779,8 @@ def compute_objective(imvec, initvec,
         Whether to apply per-regularizer normalization.
     reg_params : RegParams
         Bundle of regularizer parameters. See compute_reg_dict.
-    transforms : list of str
-        Image transform list (e.g. ['log', 'mcv']) applied to imcur.
     embed_mask : np.ndarray of bool
         Pixel embedding mask.
-    ttype : str
-        Fourier-transform type ('direct', 'fast', 'nfft').
 
     Returns
     -------
@@ -1811,6 +1788,7 @@ def compute_objective(imvec, initvec,
         Scalar objective value, sum of weighted chi^2 deviations and
         regularizer contributions.
     """
+    transforms = config.transforms
 
     dat_term_keys = sorted(dat_term.keys())
     reg_term_keys = sorted(reg_term.keys())
@@ -1822,14 +1800,12 @@ def compute_objective(imvec, initvec,
     imcur = transform_imarr(imcur, transforms, which_solve)
 
     chi2_dict = compute_chisq_dict(
-        imcur, dat_term_keys,
-        mf, pol,
+        imcur, dat_term_keys, config,
         data_tuples, logfreqratio_list, n_obs,
-        ttype, embed_mask,
+        embed_mask,
     )
     reg_dict = compute_reg_dict(
-        imcur, reg_term_keys,
-        mf, pol,
+        imcur, reg_term_keys, config,
         logfreqratio_list, n_obs,
         priorvec, norm_reg, reg_params,
         embed_mask,
@@ -1849,12 +1825,11 @@ def compute_objective(imvec, initvec,
     return datterm + regterm
 
 
-def compute_objective_grad(imvec, initvec,
-                           mf, pol,
+def compute_objective_grad(imvec, initvec, config,
                            which_solve, data_tuples, logfreqratio_list, n_obs,
                            dat_term, reg_term,
                            priorvec, norm_reg, reg_params,
-                           transforms, embed_mask, ttype, nimage):
+                           embed_mask, nimage):
     """Compute the gradient of the imaging objective with respect to imvec.
 
     Pure-functional version of Imager.objgrad. Computes the chi^2 and
@@ -1868,9 +1843,9 @@ def compute_objective_grad(imvec, initvec,
 
     Parameters
     ----------
-    imvec, initvec, mf, pol, which_solve, data_tuples, logfreqratio_list,
-    n_obs, dat_term, reg_term, priorvec, norm_reg, reg_params, transforms,
-    embed_mask, ttype : see compute_objective.
+    imvec, initvec, config, which_solve, data_tuples, logfreqratio_list,
+    n_obs, dat_term, reg_term, priorvec, norm_reg, reg_params,
+    embed_mask : see compute_objective.
     nimage : int
         Number of active pixels (sum of embed_mask). Used to size the
         pre-pack gradient array.
@@ -1881,6 +1856,7 @@ def compute_objective_grad(imvec, initvec,
         1D gradient vector (same length as imvec), suitable as the `jac`
         argument to scipy.optimize.minimize.
     """
+    transforms = config.transforms
 
     dat_term_keys = sorted(dat_term.keys())
     reg_term_keys = sorted(reg_term.keys())
@@ -1893,16 +1869,14 @@ def compute_objective_grad(imvec, initvec,
     imcur = transform_imarr(imcur, transforms, which_solve)
 
     chi2grad_dict = compute_chisqgrad_dict(
-        imcur, dat_term_keys,
-        mf, pol,
+        imcur, dat_term_keys, config,
         data_tuples, logfreqratio_list, n_obs,
-        ttype, embed_mask,
+        embed_mask,
         which_solve, nimage,
     )
 
     reggrad_dict = compute_reggrad_dict(
-        imcur, reg_term_keys,
-        mf, pol,
+        imcur, reg_term_keys, config,
         logfreqratio_list, n_obs,
         priorvec, norm_reg, reg_params,
         embed_mask,

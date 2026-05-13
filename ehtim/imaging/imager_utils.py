@@ -108,12 +108,17 @@ def chisqdata(Obsdata, Prior, mask, dtype, pol='I', **kwargs):
     backward compatibility. New code should call compute_chisqdata_term
     directly.
     """
-    from ehtim.imaging.imager_backend import compute_chisqdata_term
+    from ehtim.imaging.imager_backend import (
+        compute_chisqdata_term, ImagerConfig, MfConfig,
+    )
     ttype = kwargs.pop('ttype', 'direct')
     if dtype not in DATATERMS:
         raise Exception(f"data term {dtype!r} is not a standard data term")
-    return compute_chisqdata_term(Obsdata, Prior, mask, dtype,
-                                  ttype=ttype, pol=pol, **kwargs)
+    config = ImagerConfig(
+        pol=pol, transforms=[], ttype=ttype, mf=False,
+        mf_config=MfConfig(mf_order=0, mf_order_pol=0, mf_rm=0, mf_cm=0),
+    )
+    return compute_chisqdata_term(Obsdata, Prior, mask, dtype, config, **kwargs)
 
 
 ##################################################################################################

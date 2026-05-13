@@ -7,9 +7,31 @@ import pytest
 import ehtim as eh
 from ehtim.imaging.imager_backend import (
     POLARIZATION_MODES,
+    ImagerConfig,
+    MfConfig,
     transform_imarr,
     unpack_imarr,
 )
+
+
+@pytest.fixture(scope="session")
+def make_test_config():
+    """Factory fixture: construct an ImagerConfig for backend-call tests.
+
+    Replaces the previous pattern of passing individual pol/mf/ttype/transforms
+    kwargs to backend functions. Tests call as
+    ``make_test_config(pol="IP", mf=True, mf_order=2)``.
+    """
+    def _factory(pol="I", transforms=("log", "mcv"), ttype="direct",
+                 mf=False, mf_order=0, mf_order_pol=0, mf_rm=0, mf_cm=0):
+        return ImagerConfig(
+            pol=pol, transforms=list(transforms), ttype=ttype, mf=mf,
+            mf_config=MfConfig(
+                mf_order=mf_order, mf_order_pol=mf_order_pol,
+                mf_rm=mf_rm, mf_cm=mf_cm,
+            ),
+        )
+    return _factory
 
 # ---------------------------------------------------------------------------
 # Paths

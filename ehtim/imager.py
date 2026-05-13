@@ -716,10 +716,9 @@ class Imager:
            input is image array transformed to bounded values
         """
         return compute_chisq_dict(
-            imcur, sorted(self.dat_term_next.keys()),
-            self.mf_next, self.pol_next,
+            imcur, sorted(self.dat_term_next.keys()), self._full_imager_config(),
             self._data_tuples, self._logfreqratio_list, len(self.obslist_next),
-            self._ttype, self._embed_mask,
+            self._embed_mask,
         )
 
     def make_chisqgrad_dict(self, imcur):
@@ -727,10 +726,9 @@ class Imager:
            input is image array transformed to bounded values
         """
         return compute_chisqgrad_dict(
-            imcur, sorted(self.dat_term_next.keys()),
-            self.mf_next, self.pol_next,
+            imcur, sorted(self.dat_term_next.keys()), self._full_imager_config(),
             self._data_tuples, self._logfreqratio_list, len(self.obslist_next),
-            self._ttype, self._embed_mask,
+            self._embed_mask,
             self._which_solve, self._nimage,
         )
 
@@ -793,8 +791,7 @@ class Imager:
            input is image array transformed to bounded values
         """
         return compute_reg_dict(
-            imcur, sorted(self.reg_term_next.keys()),
-            self.mf_next, self.pol_next,
+            imcur, sorted(self.reg_term_next.keys()), self._full_imager_config(),
             self._logfreqratio_list, len(self.obslist_next),
             self._prior_arr, self.norm_reg, self._full_regparams(),
             self._embed_mask,
@@ -805,8 +802,7 @@ class Imager:
            input is image array transformed to bounded values
         """
         return compute_reggrad_dict(
-            imcur, sorted(self.reg_term_next.keys()),
-            self.mf_next, self.pol_next,
+            imcur, sorted(self.reg_term_next.keys()), self._full_imager_config(),
             self._logfreqratio_list, len(self.obslist_next),
             self._prior_arr, self.norm_reg, self._full_regparams(),
             self._embed_mask,
@@ -816,25 +812,23 @@ class Imager:
     def objfunc(self, imvec):
         """Current objective function."""
         return compute_objective(
-            imvec, self._init_arr,
-            self.mf_next, self.pol_next,
+            imvec, self._init_arr, self._full_imager_config(),
             self._which_solve, self._data_tuples,
             self._logfreqratio_list, len(self.obslist_next),
             self.dat_term_next, self.reg_term_next,
             self._prior_arr, self.norm_reg, self._full_regparams(),
-            self.transform_next, self._embed_mask, self._ttype,
+            self._embed_mask,
         )
 
     def objgrad(self, imvec):
         """Current objective function gradient."""
         return compute_objective_grad(
-            imvec, self._init_arr,
-            self.mf_next, self.pol_next,
+            imvec, self._init_arr, self._full_imager_config(),
             self._which_solve, self._data_tuples,
             self._logfreqratio_list, len(self.obslist_next),
             self.dat_term_next, self.reg_term_next,
             self._prior_arr, self.norm_reg, self._full_regparams(),
-            self.transform_next, self._embed_mask, self._ttype, self._nimage,
+            self._embed_mask, self._nimage,
         )
 
     def plotcur(self, imvec, **kwargs):
