@@ -216,6 +216,11 @@ class Imager:
         self._change_imgr_params = True
         self.nruns = 0
 
+        # Bundled static config consumed by the backend. Must be (re)built any
+        # time make_image() mutates pol / mf / mf_order / mf_order_pol / mf_rm /
+        # mf_cm — see the _replace() call in make_image() below.
+        self._config = self._full_imager_config()
+
         # Set embedding matrices and prepare imager
         self.check_params()
         self.check_limits()
@@ -446,11 +451,14 @@ class Imager:
         print(f"Imager run {int(self.nruns)+1} ")
 
         # multifrequency parameters
-        self.mf_next = mf
-        self.mf_order = kwargs.get('mf_order', self.mf_order)
-        self.mf_order_pol = kwargs.get('mf_order_pol', self.mf_order_pol)
-        self.mf_rm = kwargs.get('mf_rm', self.mf_rm)
-        self.mf_cm = kwargs.get('mf_cm', self.mf_cm)
+        mf_cfg = self._config.mf_config
+        new_mf_cfg = mf_cfg._replace(
+            mf_order=kwargs.get('mf_order', mf_cfg.mf_order),
+            mf_order_pol=kwargs.get('mf_order_pol', mf_cfg.mf_order_pol),
+            mf_rm=kwargs.get('mf_rm', mf_cfg.mf_rm),
+            mf_cm=kwargs.get('mf_cm', mf_cfg.mf_cm),
+        )
+        self._config = self._config._replace(mf=mf, mf_config=new_mf_cfg)
         if kwargs.get('mf_which_solve') is not None:
             raise Exception("'mf_which_solve' argument for multifrequency imaging is deprecated -- use 'mf_order' instead!")
         if kwargs.get('reg_all_freq_mf') is not None:
@@ -458,13 +466,13 @@ class Imager:
 
         # polarization parameters
         if pol is None:
-            pol_prim = self.pol_next
+            pol_prim = self._config.pol
         else:
-            self.pol_next = pol
+            self._config = self._config._replace(pol=pol)
             pol_prim = pol
 
         # For polarimetric imaging, we must switch polrep to Stokes
-        if self.pol_next in POLARIZATION_MODES:
+        if self._config.pol in POLARIZATION_MODES:
             print("Imaging Polarization: switching image polrep to Stokes!")
             self.prior_next = self.prior_next.switch_polrep(polrep_out='stokes', pol_prim_out='I')
             self.init_next = self.init_next.switch_polrep(polrep_out='stokes', pol_prim_out='I')
@@ -509,7 +517,7 @@ class Imager:
         outarr = unpack_imarr(out, self._init_arr, self._which_solve)
 
         # apply image transform to bounded values
-        outarr = transform_imarr(outarr, self.transform_next, self._which_solve)
+        outarr = transform_imarr(outarr, self._config.transforms, self._which_solve)
 
         # get and print final statistics
         outstr = ""
@@ -551,8 +559,7 @@ class Imager:
         """Check parameter consistency.
         """
         validate_params(
-            self.prior_next, self.init_next,
-            self._full_imager_config(),
+            self.prior_next, self.init_next, self._config,
             self.dat_term_next.keys(), self.reg_term_next.keys(),
             self.freq_list,
         )
@@ -561,7 +568,7 @@ class Imager:
         if self.nruns == 0:
             return
 
-        if self.pol_next != self.pol_last():
+        if self._config.pol != self.pol_last():
             print("changed polarization!")
             self._change_imgr_params = True
             return
@@ -628,23 +635,23 @@ class Imager:
             print("changed refrence frequency!")
             self._change_imgr_params = True
             return
-        if self.mf_next != self.mf_last():
+        if self._config.mf != self.mf_last():
             print("changed multifrequncy strategy!")
             self._change_imgr_params = True
             return
-        if self.mf_order != self.mf_order_last():
+        if self._config.mf_config.mf_order != self.mf_order_last():
             print("changed multifrequncy order!")
             self._change_imgr_params = True
             return
-        if self.mf_order_pol != self.mf_order_pol_last():
+        if self._config.mf_config.mf_order_pol != self.mf_order_pol_last():
             print("changed pol. multifrequncy order!")
             self._change_imgr_params = True
             return
-        if self.mf_rm != self.mf_rm_last():
+        if self._config.mf_config.mf_rm != self.mf_rm_last():
             print("changed pol. rm imaging order!")
             self._change_imgr_params = True
             return
-        if self.mf_cm != self.mf_cm_last():
+        if self._config.mf_config.mf_cm != self.mf_cm_last():
             print("changed pol. cm imaging order!")
             self._change_imgr_params = True
             return
@@ -655,7 +662,7 @@ class Imager:
         """Check image parameter consistency with observation.
         """
         for msg in validate_limits(
-            self.prior_next, self.obslist_next, self.pol_next,
+            self.prior_next, self.obslist_next, self._config.pol,
             self.flux_next, self.mf_flux,
         ):
             print(msg)
@@ -688,8 +695,7 @@ class Imager:
 
         state = compute_init_state(
             self.obslist_next, self.init_next, self.prior_next,
-            self.freq_list, self.reffreq,
-            self._full_imager_config(),
+            self.freq_list, self.reffreq, self._config,
             self.norm_init, self.flux_next, self.clipfloor_next,
             sorted(self.dat_term_next.keys()),
             self._full_data_weighting_params(), self._full_fft_params(),
@@ -716,7 +722,7 @@ class Imager:
            input is image array transformed to bounded values
         """
         return compute_chisq_dict(
-            imcur, sorted(self.dat_term_next.keys()), self._full_imager_config(),
+            imcur, sorted(self.dat_term_next.keys()), self._config,
             self._data_tuples, self._logfreqratio_list, len(self.obslist_next),
             self._embed_mask,
         )
@@ -726,7 +732,7 @@ class Imager:
            input is image array transformed to bounded values
         """
         return compute_chisqgrad_dict(
-            imcur, sorted(self.dat_term_next.keys()), self._full_imager_config(),
+            imcur, sorted(self.dat_term_next.keys()), self._config,
             self._data_tuples, self._logfreqratio_list, len(self.obslist_next),
             self._embed_mask,
             self._which_solve, self._nimage,
@@ -791,7 +797,7 @@ class Imager:
            input is image array transformed to bounded values
         """
         return compute_reg_dict(
-            imcur, sorted(self.reg_term_next.keys()), self._full_imager_config(),
+            imcur, sorted(self.reg_term_next.keys()), self._config,
             self._logfreqratio_list, len(self.obslist_next),
             self._prior_arr, self.norm_reg, self._full_regparams(),
             self._embed_mask,
@@ -802,7 +808,7 @@ class Imager:
            input is image array transformed to bounded values
         """
         return compute_reggrad_dict(
-            imcur, sorted(self.reg_term_next.keys()), self._full_imager_config(),
+            imcur, sorted(self.reg_term_next.keys()), self._config,
             self._logfreqratio_list, len(self.obslist_next),
             self._prior_arr, self.norm_reg, self._full_regparams(),
             self._embed_mask,
@@ -812,7 +818,7 @@ class Imager:
     def objfunc(self, imvec):
         """Current objective function."""
         return compute_objective(
-            imvec, self._init_arr, self._full_imager_config(),
+            imvec, self._init_arr, self._config,
             self._which_solve, self._data_tuples,
             self._logfreqratio_list, len(self.obslist_next),
             self.dat_term_next, self.reg_term_next,
@@ -823,7 +829,7 @@ class Imager:
     def objgrad(self, imvec):
         """Current objective function gradient."""
         return compute_objective_grad(
-            imvec, self._init_arr, self._full_imager_config(),
+            imvec, self._init_arr, self._config,
             self._which_solve, self._data_tuples,
             self._logfreqratio_list, len(self.obslist_next),
             self.dat_term_next, self.reg_term_next,
@@ -842,7 +848,7 @@ class Imager:
 
                 # apply image transform to bounded values
                 imcur_prime = imcur.copy()
-                imcur = transform_imarr(imcur, self.transform_next, self._which_solve)
+                imcur = transform_imarr(imcur, self._config.transforms, self._which_solve)
 
                 # Get chi^2 and regularizer
                 chi2_term_dict = self.make_chisq_dict(imcur)
@@ -875,18 +881,18 @@ class Imager:
                     outstr += f"{regname} : {rval:0.1f} "
 
                 # Embed and plot the image
-                if not self.mf_next: # TODO plot multi-frequency?
+                if not self._config.mf: # TODO plot multi-frequency?
                     if np.any(np.invert(self._embed_mask)):
                         implot = embed_imarr(imcur, self._embed_mask)
                     else:
                         implot = imcur
 
-                    if self.pol_next in POLARIZATION_MODES:
+                    if self._config.pol in POLARIZATION_MODES:
                         polutils.plot_m(implot, self.prior_next, self._nit, chi2_term_dict, **kwargs)
 
                     else:
                         imutils.plot_i(implot, self.prior_next, self._nit,
-                                       chi2_term_dict, pol=self.pol_next, **kwargs)
+                                       chi2_term_dict, pol=self._config.pol, **kwargs)
 
                 if self._nit == 0:
                     print()
@@ -902,9 +908,9 @@ class Imager:
         if np.any(np.invert(self._embed_mask)):
             outarr = embed_imarr(outarr, self._embed_mask)
 
-        if self.mf_next:
+        if self._config.mf:
             # multi-frequency polarization
-            if self.pol_next in POLARIZATION_MODES:
+            if self._config.pol in POLARIZATION_MODES:
                 iimage_out = outarr[0]
                 polarr_out = (outarr[0], outarr[1], outarr[2], outarr[3])
                 specind_out = outarr[4]
@@ -925,7 +931,7 @@ class Imager:
                 curv_out = outarr[2]
         else:
             # single frequency polarization
-            if self.pol_next in POLARIZATION_MODES:
+            if self._config.pol in POLARIZATION_MODES:
                 iimage_out = outarr[0]
                 polarr_out = (outarr[0], outarr[1], outarr[2], outarr[3])
 
@@ -951,11 +957,11 @@ class Imager:
                 continue
 
             # Did we solve for polarimeric image or are we copying over old polarization data?
-            if self.pol_next in POLARIZATION_MODES and pol2 == 'Q':
+            if self._config.pol in POLARIZATION_MODES and pol2 == 'Q':
                 polvec = qimage_out
-            elif self.pol_next in POLARIZATION_MODES and pol2 == 'U':
+            elif self._config.pol in POLARIZATION_MODES and pol2 == 'U':
                 polvec = uimage_out
-            elif self.pol_next in POLARIZATION_MODES and pol2 == 'V':
+            elif self._config.pol in POLARIZATION_MODES and pol2 == 'V':
                 polvec = vimage_out
             else:
                 polvec = self.init_next._imdict[pol2]
@@ -966,12 +972,12 @@ class Imager:
 
         # Copy over spectral information to the output image
         outim._mflist = copy.deepcopy(self.init_next._mflist)
-        if self.mf_next:
+        if self._config.mf:
             outim._mflist[0] = specind_out
             outim._mflist[1] = curv_out
 
             # polarization multi-frequency
-            if self.pol_next in POLARIZATION_MODES:
+            if self._config.pol in POLARIZATION_MODES:
                 outim._mflist[2] = specind_out_pol
                 outim._mflist[3] = curv_out_pol
                 outim._mflist[4] = rm_out
@@ -992,7 +998,7 @@ class Imager:
             dat_term=self.dat_term_next,
             maxit=self.maxit_next,
             stop=self.stop_next,
-            pol=self.pol_next,
+            pol=self._config.pol,
             flux=self.flux_next,
             pflux=self.pflux_next,
             vflux=self.vflux_next,
@@ -1001,16 +1007,16 @@ class Imager:
             debias=self.debias_next,
             systematic_noise=self.systematic_noise_next,
             systematic_cphase_noise=self.systematic_cphase_noise_next,
-            transform=self.transform_next,
+            transform=self._config.transforms,
             weighting=self.weighting_next,
             maxset=self.maxset_next,
             cp_uv_min=self.cp_uv_min,
             reffreq=self.reffreq,
-            mf=self.mf_next,
-            mf_order=self.mf_order,
-            mf_order_pol=self.mf_order_pol,
-            mf_rm=self.mf_rm,
-            mf_cm=self.mf_cm,
+            mf=self._config.mf,
+            mf_order=self._config.mf_config.mf_order,
+            mf_order_pol=self._config.mf_config.mf_order_pol,
+            mf_rm=self._config.mf_config.mf_rm,
+            mf_cm=self._config.mf_config.mf_cm,
         ))
 
 
