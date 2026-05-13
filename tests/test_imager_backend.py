@@ -308,7 +308,7 @@ class TestComputeWhichSolve:
         imgr.init_imager()
         np.testing.assert_array_equal(
             imgr._which_solve,
-            compute_which_solve(imgr._full_imager_config()),
+            compute_which_solve(imgr._config),
         )
 
     def test_matches_imager_init_imager_polarimetric(self, gauss_im_pol, observe):
@@ -328,7 +328,7 @@ class TestComputeWhichSolve:
         imgr.init_imager()
         np.testing.assert_array_equal(
             imgr._which_solve,
-            compute_which_solve(imgr._full_imager_config()),
+            compute_which_solve(imgr._config),
         )
 
 
@@ -336,7 +336,7 @@ def _call_compute_data_tuples(imgr):
     """Call compute_data_tuples with the args init_imager would pass."""
     return compute_data_tuples(
         imgr.obslist_next, imgr.prior_next, imgr._embed_mask,
-        sorted(imgr.dat_term_next.keys()), imgr._full_imager_config(),
+        sorted(imgr.dat_term_next.keys()), imgr._config,
         imgr._full_data_weighting_params(),
         imgr._full_fft_params(),
     )
@@ -394,7 +394,7 @@ class TestComputeDataTuples:
         with pytest.raises(Exception, match="not recognized"):
             compute_data_tuples(
                 imgr.obslist_next, imgr.prior_next, imgr._embed_mask,
-                ["bogus"], imgr._full_imager_config(),
+                ["bogus"], imgr._config,
                 bogus_weighting, imgr._full_fft_params(),
             )
 
@@ -430,7 +430,7 @@ def _call_compute_init_state(imgr):
     return compute_init_state(
         imgr.obslist_next, imgr.init_next, imgr.prior_next,
         imgr.freq_list, imgr.reffreq,
-        imgr._full_imager_config(),
+        imgr._config,
         imgr.norm_init, imgr.flux_next, imgr.clipfloor_next,
         sorted(imgr.dat_term_next.keys()),
         imgr._full_data_weighting_params(),
@@ -526,7 +526,7 @@ class TestComputeInitState:
         state = compute_init_state(
             imgr.obslist_next, imgr.init_next, imgr.prior_next,
             imgr.freq_list, imgr.reffreq,
-            imgr._full_imager_config(),
+            imgr._config,
             imgr.norm_init, imgr.flux_next, imgr.clipfloor_next,
             sorted(imgr.dat_term_next.keys()),
             imgr._full_data_weighting_params(),
@@ -543,7 +543,7 @@ class TestComputeInitState:
                 imgr.obslist_next, imgr.init_next, imgr.prior_next,
                 imgr.freq_list + [230e9],  # length mismatch
                 imgr.reffreq,
-                imgr._full_imager_config(),
+                imgr._config,
                 imgr.norm_init, imgr.flux_next, imgr.clipfloor_next,
                 sorted(imgr.dat_term_next.keys()),
                 imgr._full_data_weighting_params(),
@@ -559,7 +559,7 @@ class TestComputeInitState:
 def _call_backend_chisq_dict(imgr, imcur):
     """Call compute_chisq_dict with args pulled from an initialized Imager."""
     return compute_chisq_dict(
-        imcur, sorted(imgr.dat_term_next.keys()), imgr._full_imager_config(),
+        imcur, sorted(imgr.dat_term_next.keys()), imgr._config,
         imgr._data_tuples, imgr._logfreqratio_list, len(imgr.obslist_next),
         imgr._embed_mask,
     )
@@ -568,7 +568,7 @@ def _call_backend_chisq_dict(imgr, imcur):
 def _call_backend_chisqgrad_dict(imgr, imcur):
     """Call compute_chisqgrad_dict with args pulled from an initialized Imager."""
     return compute_chisqgrad_dict(
-        imcur, sorted(imgr.dat_term_next.keys()), imgr._full_imager_config(),
+        imcur, sorted(imgr.dat_term_next.keys()), imgr._config,
         imgr._data_tuples, imgr._logfreqratio_list, len(imgr.obslist_next),
         imgr._embed_mask,
         imgr._which_solve, imgr._nimage,
@@ -601,7 +601,7 @@ def _build_regparams(imgr, mf_flux=None):
 def _call_backend_reg_dict(imgr, imcur, mf_flux=None):
     """Call compute_reg_dict with args pulled from an initialized Imager."""
     return compute_reg_dict(
-        imcur, sorted(imgr.reg_term_next.keys()), imgr._full_imager_config(),
+        imcur, sorted(imgr.reg_term_next.keys()), imgr._config,
         imgr._logfreqratio_list, len(imgr.obslist_next),
         imgr._prior_arr, imgr.norm_reg, _build_regparams(imgr, mf_flux=mf_flux),
         imgr._embed_mask,
@@ -611,7 +611,7 @@ def _call_backend_reg_dict(imgr, imcur, mf_flux=None):
 def _call_backend_reggrad_dict(imgr, imcur, mf_flux=None):
     """Call compute_reggrad_dict with args pulled from an initialized Imager."""
     return compute_reggrad_dict(
-        imcur, sorted(imgr.reg_term_next.keys()), imgr._full_imager_config(),
+        imcur, sorted(imgr.reg_term_next.keys()), imgr._config,
         imgr._logfreqratio_list, len(imgr.obslist_next),
         imgr._prior_arr, imgr.norm_reg, _build_regparams(imgr, mf_flux=mf_flux),
         imgr._embed_mask,
@@ -622,7 +622,7 @@ def _call_backend_reggrad_dict(imgr, imcur, mf_flux=None):
 def _call_backend_objective(imgr, imvec):
     """Call compute_objective with args pulled from an initialized Imager."""
     return compute_objective(
-        imvec, imgr._init_arr, imgr._full_imager_config(),
+        imvec, imgr._init_arr, imgr._config,
         imgr._which_solve, imgr._data_tuples,
         imgr._logfreqratio_list, len(imgr.obslist_next),
         imgr.dat_term_next, imgr.reg_term_next,
@@ -634,7 +634,7 @@ def _call_backend_objective(imgr, imvec):
 def _call_backend_objective_grad(imgr, imvec):
     """Call compute_objective_grad with args pulled from an initialized Imager."""
     return compute_objective_grad(
-        imvec, imgr._init_arr, imgr._full_imager_config(),
+        imvec, imgr._init_arr, imgr._config,
         imgr._which_solve, imgr._data_tuples,
         imgr._logfreqratio_list, len(imgr.obslist_next),
         imgr.dat_term_next, imgr.reg_term_next,
@@ -749,7 +749,7 @@ class TestComputeChisqDict:
         imgr, imcur = initialize_imager(
             [obs_lo, obs_hi], im_lo, {"vis": 100}, mf=True, mf_order=1,
         )
-        assert imgr.mf_next is True
+        assert imgr._config.mf is True
         assert len(imgr._logfreqratio_list) == 2
 
         result = _call_backend_chisq_dict(imgr, imcur)
@@ -900,7 +900,7 @@ class TestComputeChisqgradDict:
         imgr, imcur = initialize_imager(
             [obs_lo, obs_hi], im_lo, {"vis": 100}, mf=True, mf_order=1,
         )
-        assert imgr.mf_next is True
+        assert imgr._config.mf is True
 
         result = _call_backend_chisqgrad_dict(imgr, imcur)
         assert set(result.keys()) == {"vis_0", "vis_1"}
@@ -1039,7 +1039,7 @@ class TestComputeRegDict:
         # Bypass Imager.check_params by passing reg_term_keys directly.
         with pytest.raises(Exception, match="not recognized"):
             compute_reg_dict(
-                imcur, ["not_a_regularizer"], imgr._full_imager_config(),
+                imcur, ["not_a_regularizer"], imgr._config,
                 imgr._logfreqratio_list, len(imgr.obslist_next),
                 imgr._prior_arr, imgr.norm_reg, _build_regparams(imgr),
                 imgr._embed_mask,
@@ -1166,7 +1166,7 @@ class TestComputeReggradDict:
         imgr, imcur = initialize_imager(obs, gauss_im, {"vis": 100})
         with pytest.raises(Exception, match="not recognized"):
             compute_reggrad_dict(
-                imcur, ["not_a_regularizer"], imgr._full_imager_config(),
+                imcur, ["not_a_regularizer"], imgr._config,
                 imgr._logfreqratio_list, len(imgr.obslist_next),
                 imgr._prior_arr, imgr.norm_reg, _build_regparams(imgr),
                 imgr._embed_mask,

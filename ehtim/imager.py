@@ -159,10 +159,9 @@ class Imager:
         self.pflux_next = kwargs.get('pflux', flux)
         self.vflux_next = kwargs.get('vflux', flux)
 
-        # Polarization and image transforms
-        self.pol_next = kwargs.get('pol', self.init_next.pol_prim)
-        self.transform_next = kwargs.get('transform', ['log','mcv'])
-        self.transform_next = np.array([self.transform_next]).flatten() #so we can handle multiple transforms
+        # Polarization and image transforms (consumed by the backend via self._config)
+        pol = kwargs.get('pol', self.init_next.pol_prim)
+        transforms = np.array([kwargs.get('transform', ['log', 'mcv'])]).flatten()
 
         # Weighting/debiasing/snr cut/systematic noise
         self.debias_next = kwargs.get('debias', False)
@@ -191,21 +190,16 @@ class Imager:
         self.beam_size = self.obslist_next[0].res()
         self.regparams = {k: kwargs.get(k, REGPARAMS_DEFAULT[k]) for k in REGPARAMS_DEFAULT.keys()}
 
-        # FFT parameters
-        self._ttype = kwargs.get('ttype', 'nfft')
+        # FFT / Fourier-grid parameters (consumed by the backend via self._full_fft_params())
+        ttype = kwargs.get('ttype', 'nfft')
         self._fft_gridder_prad = kwargs.get('fft_gridder_prad', GRIDDER_P_RAD_DEFAULT)
         self._fft_conv_func = kwargs.get('fft_conv_func', GRIDDER_CONV_FUNC_DEFAULT)
         self._fft_pad_factor = kwargs.get('fft_pad_factor', FFT_PAD_DEFAULT)
         self._fft_interp_order = kwargs.get('fft_interp_order', FFT_INTERP_DEFAULT)
 
         # multifrequency
-        self.mf_next = kwargs.get('mf',False)
-
-        self.mf_order = kwargs.get('mf_order',0)
-        self.mf_order_pol = kwargs.get('mf_order_pol',0)
-        self.mf_rm = kwargs.get('mf_rm',0)
-        self.mf_cm = kwargs.get('mf_cm',0)
-        self.mf_flux = kwargs.get('mf_flux',[self.flux_next]) # TODO: merge these
+        mf = kwargs.get('mf', False)
+        self.mf_flux = kwargs.get('mf_flux', [self.flux_next])  # TODO: merge these
 
         if kwargs.get('mf_which_solve') is not None:
             raise Exception("'mf_which_solve' argument for multifrequency imaging is deprecated -- use 'mf_order' instead!")
@@ -216,10 +210,17 @@ class Imager:
         self._change_imgr_params = True
         self.nruns = 0
 
-        # Bundled static config consumed by the backend. Must be (re)built any
-        # time make_image() mutates pol / mf / mf_order / mf_order_pol / mf_rm /
-        # mf_cm — see the _replace() call in make_image() below.
-        self._config = self._full_imager_config()
+        # Bundled static config consumed by the backend. Must be rebuilt via
+        # _replace() any time make_image() overrides pol / mf / mf_*.
+        self._config = ImagerConfig(
+            pol=pol, transforms=transforms, ttype=ttype, mf=mf,
+            mf_config=MfConfig(
+                mf_order=kwargs.get('mf_order', 0),
+                mf_order_pol=kwargs.get('mf_order_pol', 0),
+                mf_rm=kwargs.get('mf_rm', 0),
+                mf_cm=kwargs.get('mf_cm', 0),
+            ),
+        )
 
         # Set embedding matrices and prepare imager
         self.check_params()
@@ -775,21 +776,6 @@ class Imager:
             fft_conv_func=self._fft_conv_func,
             fft_gridder_prad=self._fft_gridder_prad,
             fft_interp_order=self._fft_interp_order,
-        )
-
-    def _full_imager_config(self):
-        """Bundle static imager config into an ImagerConfig NamedTuple for the backend."""
-        return ImagerConfig(
-            pol=self.pol_next,
-            transforms=self.transform_next,
-            ttype=self._ttype,
-            mf=self.mf_next,
-            mf_config=MfConfig(
-                mf_order=self.mf_order,
-                mf_order_pol=self.mf_order_pol,
-                mf_rm=self.mf_rm,
-                mf_cm=self.mf_cm,
-            ),
         )
 
     def make_reg_dict(self, imcur):

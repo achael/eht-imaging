@@ -223,6 +223,6 @@ def initialize_imager():
         imgr.init_imager()
 
         imcur = unpack_imarr(imgr._init_vec, imgr._init_arr, imgr._which_solve)
-        imcur = transform_imarr(imcur, imgr.transform_next, imgr._which_solve)
+        imcur = transform_imarr(imcur, imgr._config.transforms, imgr._which_solve)
         return imgr, imcur
     return _factory
