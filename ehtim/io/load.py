@@ -1430,6 +1430,8 @@ def load_obs_uvfits(filename, polrep='stokes', flipbl=False,
         rlsig = (1. / np.sqrt(rl_totweight))[mask]
         lrsig = (1. / np.sqrt(lr_totweight))[mask]
     else:
+        print("Warning! invvar_channel_avg==False in load_obs_uvfits")
+        print("can lead to artifically low SNRs when channel weights are not equal") 
         rr = np.nanmean(np.nanmean(rr_2d, axis=2), axis=1)[mask]
         ll = np.nanmean(np.nanmean(ll_2d, axis=2), axis=1)[mask]
         rl = np.nanmean(np.nanmean(rl_2d, axis=2), axis=1)[mask]
