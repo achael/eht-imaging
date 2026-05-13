@@ -1033,7 +1033,7 @@ class Image(object):
 
         return frac
 
-    def betamodes(self, ms=[2], r_min=0, r_max=None, verbose=True):
+    def betamodes(self, ms=[2], r_min=0, r_max=None, output_fluxes=False, verbose=True):
         """Return Palumbo+2020 linear beta_m modes integrated between image radius r_min, r_max
            Does not center the image
            
@@ -1042,6 +1042,7 @@ class Image(object):
                 r_min (float): minimum image radius for calculation (in rad)
                 r_max (float): maximum image radius for calculation (in rad). 
                                if None, use the full image
+                output_fluxes (bool): return ring fluxes
                 verbose (bool): print details
            Returns:
                 (list) : beta_m modes matching input list ms
@@ -1075,6 +1076,8 @@ class Image(object):
         
         # total flux in annulus
         flux = np.abs(np.sum(iarr[mask])) 
+        pflux = np.abs(np.sum(np.abs(parr[mask])))
+        area = (self.psize)**2 * (np.sum(mask))
         
         # compute beta modes
         outlist = []
@@ -1086,8 +1089,12 @@ class Image(object):
             integrand = (parr*np.exp(-1j*m*imangle))[mask]
             coeff = np.sum(integrand)/flux
             outlist.append(coeff)
-            
-        return outlist
+        
+        if output_fluxes:
+            out = [outlist, flux, pflux, area]
+        else:
+            out = outlist
+        return out
 
 
     def center(self, pol=None):
