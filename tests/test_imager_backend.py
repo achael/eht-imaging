@@ -10,6 +10,8 @@ import pytest
 import ehtim as eh
 import ehtim.const_def as ehc
 from ehtim.imaging.imager_backend import (
+    DataWeighting,
+    FourierGridParams,
     ImagerConfig,
     ImagerInitState,
     MfConfig,
@@ -1315,6 +1317,265 @@ class TestRegParams:
         )
         regp = imgr._full_regparams()
         assert regp.mf_flux == [1.0, 2.0]
+
+
+class TestDataWeighting:
+    """Pins the DataWeighting bundle returned by Imager._full_data_weighting_params():
+    field set, immutability, parity with Imager attrs, and kwarg overrides /
+    defaults landing in the right slots."""
+
+    EXPECTED_FIELDS = (
+        "maxset", "debias", "snrcut", "weighting",
+        "systematic_noise", "systematic_cphase_noise", "cp_uv_min",
+    )
+
+    def test_full_data_weighting_returns_namedtuple(self, gauss_im, observe,
+                                                     initialize_imager):
+        imgr, _ = initialize_imager(observe(gauss_im), gauss_im, {"vis": 100})
+        assert isinstance(imgr._full_data_weighting_params(), DataWeighting)
+
+    def test_field_access_matches_imager_attrs(self, gauss_im, observe,
+                                                 initialize_imager):
+        imgr, _ = initialize_imager(observe(gauss_im), gauss_im, {"vis": 100})
+        dw = imgr._full_data_weighting_params()
+        assert dw.maxset == imgr.maxset_next
+        assert dw.debias == imgr.debias_next
+        assert dw.snrcut == imgr.snrcut_next
+        assert dw.weighting == imgr.weighting_next
+        assert dw.systematic_noise == imgr.systematic_noise_next
+        assert dw.systematic_cphase_noise == imgr.systematic_cphase_noise_next
+        assert dw.cp_uv_min == imgr.cp_uv_min
+
+    def test_asdict_has_expected_keys(self, gauss_im, observe, initialize_imager):
+        imgr, _ = initialize_imager(observe(gauss_im), gauss_im, {"vis": 100})
+        assert tuple(imgr._full_data_weighting_params()._asdict().keys()) == self.EXPECTED_FIELDS
+
+    def test_immutability(self, gauss_im, observe, initialize_imager):
+        imgr, _ = initialize_imager(observe(gauss_im), gauss_im, {"vis": 100})
+        dw = imgr._full_data_weighting_params()
+        with pytest.raises(AttributeError):
+            dw.maxset = True
+
+    def test_kwarg_override(self, gauss_im, observe):
+        obs = observe(gauss_im)
+        imgr = eh.imager.Imager(
+            obs, gauss_im, prior_im=gauss_im, flux=gauss_im.total_flux(),
+            data_term={"vis": 100}, ttype="direct", pol="I",
+            debias=True, weighting="uniform", systematic_noise=0.05,
+        )
+        imgr.check_params(); imgr.check_limits(); imgr.init_imager()
+        dw = imgr._full_data_weighting_params()
+        assert dw.debias is True
+        assert dw.weighting == "uniform"
+        assert dw.systematic_noise == 0.05
+
+    def test_defaults_preserved(self, gauss_im, observe, initialize_imager):
+        imgr, _ = initialize_imager(observe(gauss_im), gauss_im, {"vis": 100})
+        dw = imgr._full_data_weighting_params()
+        assert dw.maxset is False
+        assert dw.debias is False
+        assert dw.weighting == "natural"
+        assert dw.systematic_noise == 0.0
+        assert dw.systematic_cphase_noise == 0.0
+
+
+class TestFourierGridParams:
+    """Pins the FourierGridParams bundle returned by Imager._full_fft_params():
+    field set, immutability, parity with the underlying _fft_* attrs, and
+    kwarg overrides / defaults landing in the right slots."""
+
+    EXPECTED_FIELDS = (
+        "fft_pad_factor", "fft_conv_func", "fft_gridder_prad", "fft_interp_order",
+    )
+
+    def test_full_fft_returns_namedtuple(self, gauss_im, observe, initialize_imager):
+        imgr, _ = initialize_imager(observe(gauss_im), gauss_im, {"vis": 100})
+        assert isinstance(imgr._full_fft_params(), FourierGridParams)
+
+    def test_field_access_matches_imager_attrs(self, gauss_im, observe,
+                                                 initialize_imager):
+        imgr, _ = initialize_imager(observe(gauss_im), gauss_im, {"vis": 100})
+        fp = imgr._full_fft_params()
+        assert fp.fft_pad_factor == imgr._fft_pad_factor
+        assert fp.fft_conv_func == imgr._fft_conv_func
+        assert fp.fft_gridder_prad == imgr._fft_gridder_prad
+        assert fp.fft_interp_order == imgr._fft_interp_order
+
+    def test_asdict_has_expected_keys(self, gauss_im, observe, initialize_imager):
+        imgr, _ = initialize_imager(observe(gauss_im), gauss_im, {"vis": 100})
+        assert tuple(imgr._full_fft_params()._asdict().keys()) == self.EXPECTED_FIELDS
+
+    def test_immutability(self, gauss_im, observe, initialize_imager):
+        imgr, _ = initialize_imager(observe(gauss_im), gauss_im, {"vis": 100})
+        fp = imgr._full_fft_params()
+        with pytest.raises(AttributeError):
+            fp.fft_pad_factor = 4
+
+    def test_kwarg_override(self, gauss_im, observe):
+        obs = observe(gauss_im)
+        imgr = eh.imager.Imager(
+            obs, gauss_im, prior_im=gauss_im, flux=gauss_im.total_flux(),
+            data_term={"vis": 100}, ttype="direct", pol="I",
+            fft_pad_factor=4, fft_conv_func="pillbox", fft_gridder_prad=3,
+            fft_interp_order=5,
+        )
+        imgr.check_params(); imgr.check_limits(); imgr.init_imager()
+        fp = imgr._full_fft_params()
+        assert fp.fft_pad_factor == 4
+        assert fp.fft_conv_func == "pillbox"
+        assert fp.fft_gridder_prad == 3
+        assert fp.fft_interp_order == 5
+
+    def test_defaults_preserved(self, gauss_im, observe, initialize_imager):
+        from ehtim.imager import (
+            FFT_INTERP_DEFAULT, FFT_PAD_DEFAULT,
+            GRIDDER_CONV_FUNC_DEFAULT, GRIDDER_P_RAD_DEFAULT,
+        )
+        imgr, _ = initialize_imager(observe(gauss_im), gauss_im, {"vis": 100})
+        fp = imgr._full_fft_params()
+        assert fp.fft_pad_factor == FFT_PAD_DEFAULT
+        assert fp.fft_conv_func == GRIDDER_CONV_FUNC_DEFAULT
+        assert fp.fft_gridder_prad == GRIDDER_P_RAD_DEFAULT
+        assert fp.fft_interp_order == FFT_INTERP_DEFAULT
+
+
+class TestMfConfig:
+    """Pins the MfConfig bundle nested inside ImagerConfig: field set,
+    immutability, _replace() semantics, and defaults."""
+
+    EXPECTED_FIELDS = ("mf_order", "mf_order_pol", "mf_rm", "mf_cm")
+
+    def test_returns_namedtuple(self, make_test_config):
+        cfg = make_test_config(mf=True, mf_order=1)
+        assert isinstance(cfg.mf_config, MfConfig)
+
+    def test_field_access(self, make_test_config):
+        cfg = make_test_config(mf=True, mf_order=2, mf_order_pol=1, mf_rm=1, mf_cm=0)
+        assert cfg.mf_config.mf_order == 2
+        assert cfg.mf_config.mf_order_pol == 1
+        assert cfg.mf_config.mf_rm == 1
+        assert cfg.mf_config.mf_cm == 0
+
+    def test_asdict_keys(self, make_test_config):
+        cfg = make_test_config()
+        assert tuple(cfg.mf_config._asdict().keys()) == self.EXPECTED_FIELDS
+
+    def test_immutability(self, make_test_config):
+        cfg = make_test_config()
+        with pytest.raises(AttributeError):
+            cfg.mf_config.mf_order = 2
+
+    def test_replace_returns_new_instance(self, make_test_config):
+        cfg = make_test_config(mf_order=0)
+        new_mf = cfg.mf_config._replace(mf_order=2)
+        assert new_mf.mf_order == 2
+        assert cfg.mf_config.mf_order == 0  # original unchanged
+
+    def test_defaults_preserved(self, make_test_config):
+        cfg = make_test_config()
+        assert cfg.mf_config.mf_order == 0
+        assert cfg.mf_config.mf_order_pol == 0
+        assert cfg.mf_config.mf_rm == 0
+        assert cfg.mf_config.mf_cm == 0
+
+
+class TestImagerConfig:
+    """Pins the ImagerConfig bundle assigned to Imager._config: field set,
+    immutability, kwarg propagation, and nested _replace() semantics that
+    Imager.make_image() relies on for parameter overrides."""
+
+    EXPECTED_FIELDS = ("pol", "transforms", "ttype", "mf", "mf_config")
+
+    def test_returns_namedtuple(self, gauss_im, observe, initialize_imager):
+        imgr, _ = initialize_imager(observe(gauss_im), gauss_im, {"vis": 100})
+        assert isinstance(imgr._config, ImagerConfig)
+
+    def test_field_access_matches_kwargs(self, gauss_im, observe):
+        obs = observe(gauss_im)
+        imgr = eh.imager.Imager(
+            obs, gauss_im, prior_im=gauss_im, flux=gauss_im.total_flux(),
+            data_term={"vis": 100}, ttype="direct", pol="I",
+            transform=["log", "mcv"], mf=False,
+        )
+        assert imgr._config.pol == "I"
+        assert imgr._config.ttype == "direct"
+        assert imgr._config.mf is False
+        assert list(imgr._config.transforms) == ["log", "mcv"]
+
+    def test_asdict_keys(self, gauss_im, observe, initialize_imager):
+        imgr, _ = initialize_imager(observe(gauss_im), gauss_im, {"vis": 100})
+        assert tuple(imgr._config._asdict().keys()) == self.EXPECTED_FIELDS
+
+    def test_immutability(self, gauss_im, observe, initialize_imager):
+        imgr, _ = initialize_imager(observe(gauss_im), gauss_im, {"vis": 100})
+        with pytest.raises(AttributeError):
+            imgr._config.pol = "IP"
+
+    def test_replace_nested_mf_config(self, make_test_config):
+        """_replace() semantics for nested updates — the make_image() override path."""
+        cfg = make_test_config(pol="I", mf=False, mf_order=0)
+        new_cfg = cfg._replace(
+            pol="IV",
+            mf_config=cfg.mf_config._replace(mf_order=2),
+        )
+        assert new_cfg.pol == "IV"
+        assert new_cfg.mf_config.mf_order == 2
+        # Original unchanged.
+        assert cfg.pol == "I"
+        assert cfg.mf_config.mf_order == 0
+
+    def test_mf_kwarg_propagation(self, gauss_im, observe, initialize_imager):
+        """Multifrequency kwargs land in mf_config nested fields."""
+        im_lo = gauss_im.copy()
+        im_lo.rf = REFFREQ_HZ
+        im_hi = gauss_im.copy()
+        im_hi.rf = MF_ALT_FREQ_HZ
+        imgr, _ = initialize_imager(
+            [observe(im_lo), observe(im_hi)], im_lo, {"vis": 100},
+            mf=True, mf_order=1,
+        )
+        assert imgr._config.mf is True
+        assert imgr._config.mf_config.mf_order == 1
+
+
+class TestMakeImageOverride:
+    """Regression tests for Imager.make_image(pol=..., mf_order=...) kwarg
+    overrides — under the NamedTuple refactor these update self._config via
+    NamedTuple._replace() instead of mutating the dropped pol_next /
+    mf_order attrs."""
+
+    def test_pol_override_updates_config(self, gauss_im_pol, observe):
+        """imgr.make_image(pol='IV') updates self._config.pol via _replace().
+
+        Uses transform=['log','vcv'] up front so post-override check_params accepts
+        IV — IV requires vcv (and vcv is mutually exclusive with mcv).
+        """
+        obs = observe(gauss_im_pol)
+        imgr = eh.imager.Imager(
+            obs, gauss_im_pol, prior_im=gauss_im_pol, flux=gauss_im_pol.total_flux(),
+            data_term={"amp": 1}, reg_term={"simple": 1},
+            ttype="direct", pol="I", maxit=1,
+            transform=["log", "vcv"],
+        )
+        imgr.make_image(pol="IV", show_updates=False)
+        assert imgr._config.pol == "IV"
+
+    def test_mf_order_override_updates_config(self, gauss_im, observe):
+        """imgr.make_image(mf=True, mf_order=2) updates self._config.mf_config via nested _replace()."""
+        im_lo = gauss_im.copy()
+        im_lo.rf = REFFREQ_HZ
+        im_hi = gauss_im.copy()
+        im_hi.rf = MF_ALT_FREQ_HZ
+        obs_lo = observe(im_lo)
+        obs_hi = observe(im_hi)
+        imgr = eh.imager.Imager(
+            [obs_lo, obs_hi], im_lo, prior_im=im_lo, flux=im_lo.total_flux(),
+            data_term={"amp": 1}, reg_term={"simple": 1},
+            ttype="direct", pol="I", maxit=1, mf_flux=[1.0, 1.0],
+        )
+        imgr.make_image(mf=True, mf_order=2, show_updates=False)
+        assert imgr._config.mf is True
+        assert imgr._config.mf_config.mf_order == 2
 
 
 class TestComputeObjective:
