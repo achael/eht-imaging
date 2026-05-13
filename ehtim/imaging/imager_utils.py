@@ -17,22 +17,13 @@
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-from __future__ import division
-from __future__ import print_function
 
-from builtins import str
-from builtins import range
-from builtins import object
 
-import time
-import numpy as np
-import scipy.optimize as opt
 import matplotlib.pyplot as plt
+import numpy as np
 
-import ehtim.image as image
-import ehtim.observing.obs_helpers as obsh
 import ehtim.const_def as ehc
-
+import ehtim.observing.obs_helpers as obsh
 
 ##################################################################################################
 # Constants & Definitions
@@ -51,179 +42,31 @@ nit = 0  # global variable to track the iteration number in the plotting callbac
 
 
 def chisq(imvec, A, data, sigma, dtype, ttype='direct', mask=None):
-    """return the chi^2 for the appropriate dtype
+    """Return chi^2 for a standard data term.
+
+    Thin shim around imager_backend.compute_chisq_term retained for backward
+    compatibility. New code should call compute_chisq_term directly.
     """
-
-    if mask is None:
-        mask = []
-    chisq = 1
+    # Imported here to avoid a module-load cycle with pol_imager_utils.
+    from ehtim.imaging.imager_backend import compute_chisq_term
     if dtype not in DATATERMS:
-        return chisq
-
-    if ttype not in ['fast', 'direct', 'nfft']:
-        raise Exception("Possible ttype values are 'fast', 'direct'!, 'nfft!'")
-
-    if ttype == 'direct':
-        if dtype == 'vis':
-            chisq = chisq_vis(imvec, A, data, sigma)
-        elif dtype == 'amp':
-            chisq = chisq_amp(imvec, A, data, sigma)
-        elif dtype == 'logamp':
-            chisq = chisq_logamp(imvec, A, data, sigma)
-        elif dtype == 'bs':
-            chisq = chisq_bs(imvec, A, data, sigma)
-        elif dtype == 'cphase':
-            chisq = chisq_cphase(imvec, A, data, sigma)
-        elif dtype == 'cphase_diag':
-            chisq = chisq_cphase_diag(imvec, A, data, sigma)
-        elif dtype == 'camp':
-            chisq = chisq_camp(imvec, A, data, sigma)
-        elif dtype == 'logcamp':
-            chisq = chisq_logcamp(imvec, A, data, sigma)
-        elif dtype == 'logcamp_diag':
-            chisq = chisq_logcamp_diag(imvec, A, data, sigma)
-
-    elif ttype == 'fast':
-        if len(mask) > 0 and np.any(np.invert(mask)):
-            imvec = embed(imvec, mask, randomfloor=True)
-
-        if dtype not in ['cphase_diag', 'logcamp_diag']:
-            vis_arr = obsh.fft_imvec(imvec, A[0])
-
-        if dtype == 'vis':
-            chisq = chisq_vis_fft(vis_arr, A, data, sigma)
-        elif dtype == 'amp':
-            chisq = chisq_amp_fft(vis_arr, A, data, sigma)
-        elif dtype == 'logamp':
-            chisq = chisq_logamp_fft(vis_arr, A, data, sigma)
-        elif dtype == 'bs':
-            chisq = chisq_bs_fft(vis_arr, A, data, sigma)
-        elif dtype == 'cphase':
-            chisq = chisq_cphase_fft(vis_arr, A, data, sigma)
-        elif dtype == 'cphase_diag':
-            chisq = chisq_cphase_diag_fft(imvec, A, data, sigma)
-        elif dtype == 'camp':
-            chisq = chisq_camp_fft(vis_arr, A, data, sigma)
-        elif dtype == 'logcamp':
-            chisq = chisq_logcamp_fft(vis_arr, A, data, sigma)
-        elif dtype == 'logcamp_diag':
-            chisq = chisq_logcamp_diag_fft(imvec, A, data, sigma)
-
-    elif ttype == 'nfft':
-        if len(mask) > 0 and np.any(np.invert(mask)):
-            imvec = embed(imvec, mask, randomfloor=True)
-
-        if dtype == 'vis':
-            chisq = chisq_vis_nfft(imvec, A, data, sigma)
-        elif dtype == 'amp':
-            chisq = chisq_amp_nfft(imvec, A, data, sigma)
-        elif dtype == 'logamp':
-            chisq = chisq_logamp_nfft(imvec, A, data, sigma)
-        elif dtype == 'bs':
-            chisq = chisq_bs_nfft(imvec, A, data, sigma)
-        elif dtype == 'cphase':
-            chisq = chisq_cphase_nfft(imvec, A, data, sigma)
-        elif dtype == 'cphase_diag':
-            chisq = chisq_cphase_diag_nfft(imvec, A, data, sigma)
-        elif dtype == 'camp':
-            chisq = chisq_camp_nfft(imvec, A, data, sigma)
-        elif dtype == 'logcamp':
-            chisq = chisq_logcamp_nfft(imvec, A, data, sigma)
-        elif dtype == 'logcamp_diag':
-            chisq = chisq_logcamp_diag_nfft(imvec, A, data, sigma)
-
-    return chisq
+        raise Exception(f"data term {dtype!r} is not a standard data term")
+    return compute_chisq_term(imvec, dtype, A, data, sigma,
+                              ttype=ttype, mask=mask)
 
 
 def chisqgrad(imvec, A, data, sigma, dtype, ttype='direct', mask=None):
-    """return the chi^2 gradient for the appropriate dtype
+    """Return chi^2 gradient for a standard data term.
+
+    Thin shim around imager_backend.compute_chisqgrad_term retained for
+    backward compatibility. New code should call compute_chisqgrad_term
+    directly.
     """
-
-    if mask is None:
-        mask = []
-    chisqgrad = np.zeros(len(imvec))
+    from ehtim.imaging.imager_backend import compute_chisqgrad_term
     if dtype not in DATATERMS:
-        return chisqgrad
-
-    if ttype not in ['fast', 'direct', 'nfft']:
-        raise Exception("Possible ttype values are 'fast', 'direct', 'nfft'!")
-
-    if ttype == 'direct':
-        if dtype == 'vis':
-            chisqgrad = chisqgrad_vis(imvec, A, data, sigma)
-        elif dtype == 'amp':
-            chisqgrad = chisqgrad_amp(imvec, A, data, sigma)
-        elif dtype == 'logamp':
-            chisqgrad = chisqgrad_logamp(imvec, A, data, sigma)
-        elif dtype == 'bs':
-            chisqgrad = chisqgrad_bs(imvec, A, data, sigma)
-        elif dtype == 'cphase':
-            chisqgrad = chisqgrad_cphase(imvec, A, data, sigma)
-        elif dtype == 'cphase_diag':
-            chisqgrad = chisqgrad_cphase_diag(imvec, A, data, sigma)
-        elif dtype == 'camp':
-            chisqgrad = chisqgrad_camp(imvec, A, data, sigma)
-        elif dtype == 'logcamp':
-            chisqgrad = chisqgrad_logcamp(imvec, A, data, sigma)
-        elif dtype == 'logcamp_diag':
-            chisqgrad = chisqgrad_logcamp_diag(imvec, A, data, sigma)
-
-    elif ttype == 'fast':
-        if len(mask) > 0 and np.any(np.invert(mask)):
-            imvec = embed(imvec, mask, randomfloor=True)
-
-        if dtype not in ['cphase_diag', 'logcamp_diag']:
-            vis_arr = obsh.fft_imvec(imvec, A[0])
-
-        if dtype == 'vis':
-            chisqgrad = chisqgrad_vis_fft(vis_arr, A, data, sigma)
-        elif dtype == 'amp':
-            chisqgrad = chisqgrad_amp_fft(vis_arr, A, data, sigma)
-        elif dtype == 'logamp':
-            chisqgrad = chisqgrad_logamp_fft(vis_arr, A, data, sigma)
-        elif dtype == 'bs':
-            chisqgrad = chisqgrad_bs_fft(vis_arr, A, data, sigma)
-        elif dtype == 'cphase':
-            chisqgrad = chisqgrad_cphase_fft(vis_arr, A, data, sigma)
-        elif dtype == 'cphase_diag':
-            chisqgrad = chisqgrad_cphase_diag_fft(imvec, A, data, sigma)
-        elif dtype == 'camp':
-            chisqgrad = chisqgrad_camp_fft(vis_arr, A, data, sigma)
-        elif dtype == 'logcamp':
-            chisqgrad = chisqgrad_logcamp_fft(vis_arr, A, data, sigma)
-        elif dtype == 'logcamp_diag':
-            chisqgrad = chisqgrad_logcamp_diag_fft(imvec, A, data, sigma)
-
-        if len(mask) > 0 and np.any(np.invert(mask)):
-            chisqgrad = chisqgrad[mask]
-
-    elif ttype == 'nfft':
-        if len(mask) > 0 and np.any(np.invert(mask)):
-            imvec = embed(imvec, mask, randomfloor=True)
-
-        if dtype == 'vis':
-            chisqgrad = chisqgrad_vis_nfft(imvec, A, data, sigma)
-        elif dtype == 'amp':
-            chisqgrad = chisqgrad_amp_nfft(imvec, A, data, sigma)
-        elif dtype == 'logamp':
-            chisqgrad = chisqgrad_logamp_nfft(imvec, A, data, sigma)
-        elif dtype == 'bs':
-            chisqgrad = chisqgrad_bs_nfft(imvec, A, data, sigma)
-        elif dtype == 'cphase':
-            chisqgrad = chisqgrad_cphase_nfft(imvec, A, data, sigma)
-        elif dtype == 'cphase_diag':
-            chisqgrad = chisqgrad_cphase_diag_nfft(imvec, A, data, sigma)
-        elif dtype == 'camp':
-            chisqgrad = chisqgrad_camp_nfft(imvec, A, data, sigma)
-        elif dtype == 'logcamp':
-            chisqgrad = chisqgrad_logcamp_nfft(imvec, A, data, sigma)
-        elif dtype == 'logcamp_diag':
-            chisqgrad = chisqgrad_logcamp_diag_nfft(imvec, A, data, sigma)
-
-        if len(mask) > 0 and np.any(np.invert(mask)):
-            chisqgrad = chisqgrad[mask]
-
-    return chisqgrad
+        raise Exception(f"data term {dtype!r} is not a standard data term")
+    return compute_chisqgrad_term(imvec, dtype, A, data, sigma,
+                                  ttype=ttype, mask=mask)
 
 
 def regularizer(imvec, nprior, mask, flux, xdim, ydim, psize, stype, **kwargs):
@@ -255,7 +98,7 @@ def regularizer(imvec, nprior, mask, flux, xdim, ydim, psize, stype, **kwargs):
         if np.any(np.invert(mask)):
             imvec = embed(imvec, mask, randomfloor=True)
         s = -stv(imvec, xdim, ydim, psize, flux, norm_reg=norm_reg,beam_size=beam_size, epsilon=epsilon)
-    elif stype == "tvlog": 
+    elif stype == "tvlog":
         if np.any(np.invert(mask)):
             imvec = embed(imvec, mask, clipfloor=epsilon, randomfloor=True)
         npix = xdim*ydim
@@ -268,7 +111,7 @@ def regularizer(imvec, nprior, mask, flux, xdim, ydim, psize, stype, **kwargs):
         s = -stv2(imvec, xdim, ydim, psize, flux, norm_reg=norm_reg, beam_size=beam_size)
     elif stype == "tv2log":
         if np.any(np.invert(mask)):
-            imvec = embed(imvec, mask, randomfloor=True)      
+            imvec = embed(imvec, mask, randomfloor=True)
         npix = xdim*ydim
         logvec = np.log(imvec)
         logflux = npix*np.abs(np.log(flux/npix))
@@ -335,7 +178,7 @@ def regularizergrad(imvec, nprior, mask, flux, xdim, ydim, psize, stype, **kwarg
         logflux = npix*np.abs(np.log(flux/npix))
         s = -stvgrad(logvec, xdim, ydim, psize, logflux, norm_reg=norm_reg,beam_size=beam_size, epsilon=epsilon)
         s = s / imvec
-        s = s[mask]        
+        s = s[mask]
     elif stype == "tv2":
         if np.any(np.invert(mask)):
             imvec = embed(imvec, mask, randomfloor=True)
@@ -349,7 +192,7 @@ def regularizergrad(imvec, nprior, mask, flux, xdim, ydim, psize, stype, **kwarg
         logflux = npix*np.abs(np.log(flux/npix))
         s = -stv2grad(logvec, xdim, ydim, psize, logflux, norm_reg=norm_reg, beam_size=beam_size)
         s = s / imvec
-        s = s[mask]        
+        s = s[mask]
     elif stype == "compact":
         if np.any(np.invert(mask)):
             imvec = embed(imvec, mask, randomfloor=True)
@@ -377,69 +220,18 @@ def regularizergrad(imvec, nprior, mask, flux, xdim, ydim, psize, stype, **kwarg
 
 
 def chisqdata(Obsdata, Prior, mask, dtype, pol='I', **kwargs):
-    """Return the data, sigma, and matrices for the appropriate dtype
+    """Return (data, sigma, A) for a standard data term.
+
+    Thin shim around imager_backend.compute_chisqdata_term retained for
+    backward compatibility. New code should call compute_chisqdata_term
+    directly.
     """
-
-    ttype = kwargs.get('ttype', 'direct')
-    (data, sigma, A) = (False, False, False)
-    if ttype not in ['fast', 'direct', 'nfft']:
-        raise Exception("Possible ttype values are 'fast', 'direct', 'nfft'!")
-
-    if ttype == 'direct':
-        if dtype == 'vis':
-            (data, sigma, A) = chisqdata_vis(Obsdata, Prior, mask, pol=pol, **kwargs)
-        elif dtype == 'amp' or dtype == 'logamp':
-            (data, sigma, A) = chisqdata_amp(Obsdata, Prior, mask, pol=pol, **kwargs)
-        elif dtype == 'bs':
-            (data, sigma, A) = chisqdata_bs(Obsdata, Prior, mask, pol=pol, **kwargs)
-        elif dtype == 'cphase':
-            (data, sigma, A) = chisqdata_cphase(Obsdata, Prior, mask, pol=pol, **kwargs)
-        elif dtype == 'cphase_diag':
-            (data, sigma, A) = chisqdata_cphase_diag(Obsdata, Prior, mask, pol=pol, **kwargs)
-        elif dtype == 'camp':
-            (data, sigma, A) = chisqdata_camp(Obsdata, Prior, mask, pol=pol, **kwargs)
-        elif dtype == 'logcamp':
-            (data, sigma, A) = chisqdata_logcamp(Obsdata, Prior, mask, pol=pol, **kwargs)
-        elif dtype == 'logcamp_diag':
-            (data, sigma, A) = chisqdata_logcamp_diag(Obsdata, Prior, mask, pol=pol, **kwargs)
-
-    elif ttype == 'fast':
-        if dtype == 'vis':
-            (data, sigma, A) = chisqdata_vis_fft(Obsdata, Prior, pol=pol, **kwargs)
-        elif dtype == 'amp' or dtype == 'logamp':
-            (data, sigma, A) = chisqdata_amp_fft(Obsdata, Prior, pol=pol, **kwargs)
-        elif dtype == 'bs':
-            (data, sigma, A) = chisqdata_bs_fft(Obsdata, Prior, pol=pol, **kwargs)
-        elif dtype == 'cphase':
-            (data, sigma, A) = chisqdata_cphase_fft(Obsdata, Prior, pol=pol, **kwargs)
-        elif dtype == 'cphase_diag':
-            (data, sigma, A) = chisqdata_cphase_diag_fft(Obsdata, Prior, pol=pol, **kwargs)
-        elif dtype == 'camp':
-            (data, sigma, A) = chisqdata_camp_fft(Obsdata, Prior, pol=pol, **kwargs)
-        elif dtype == 'logcamp':
-            (data, sigma, A) = chisqdata_logcamp_fft(Obsdata, Prior, pol=pol, **kwargs)
-        elif dtype == 'logcamp_diag':
-            (data, sigma, A) = chisqdata_logcamp_diag_fft(Obsdata, Prior, pol=pol, **kwargs)
-
-    elif ttype == 'nfft':
-        if dtype == 'vis':
-            (data, sigma, A) = chisqdata_vis_nfft(Obsdata, Prior, pol=pol, **kwargs)
-        elif dtype == 'amp' or dtype == 'logamp':
-            (data, sigma, A) = chisqdata_amp_nfft(Obsdata, Prior, pol=pol, **kwargs)
-        elif dtype == 'bs':
-            (data, sigma, A) = chisqdata_bs_nfft(Obsdata, Prior, pol=pol, **kwargs)
-        elif dtype == 'cphase':
-            (data, sigma, A) = chisqdata_cphase_nfft(Obsdata, Prior, pol=pol, **kwargs)
-        elif dtype == 'cphase_diag':
-            (data, sigma, A) = chisqdata_cphase_diag_nfft(Obsdata, Prior, pol=pol, **kwargs)
-        elif dtype == 'camp':
-            (data, sigma, A) = chisqdata_camp_nfft(Obsdata, Prior, pol=pol, **kwargs)
-        elif dtype == 'logcamp':
-            (data, sigma, A) = chisqdata_logcamp_nfft(Obsdata, Prior, pol=pol, **kwargs)
-        elif dtype == 'logcamp_diag':
-            (data, sigma, A) = chisqdata_logcamp_diag_nfft(Obsdata, Prior, pol=pol, **kwargs)
-
-    return (data, sigma, A)
+    from ehtim.imaging.imager_backend import compute_chisqdata_term
+    ttype = kwargs.pop('ttype', 'direct')
+    if dtype not in DATATERMS:
+        raise Exception(f"data term {dtype!r} is not a standard data term")
+    return compute_chisqdata_term(Obsdata, Prior, mask, dtype,
+                                  ttype=ttype, pol=pol, **kwargs)
 
 
 ##################################################################################################
@@ -487,7 +279,7 @@ def chisq_bs(imvec, Amatrices, bis, sigma):
     bisamples = (np.dot(Amatrices[0], imvec) *
                  np.dot(Amatrices[1], imvec) *
                  np.dot(Amatrices[2], imvec))
-    chisq = np.sum(np.abs(((bis - bisamples)/sigma))**2)/(2.*len(bis))
+    chisq = np.sum(np.abs((bis - bisamples)/sigma)**2)/(2.*len(bis))
     return chisq
 
 
@@ -503,7 +295,7 @@ def chisqgrad_bs(imvec, Amatrices, bis, sigma):
     pt2 = wdiff * np.dot(Amatrices[0], imvec) * np.dot(Amatrices[2], imvec)
     pt3 = wdiff * np.dot(Amatrices[0], imvec) * np.dot(Amatrices[1], imvec)
     out = (np.dot(pt1, Amatrices[0]) +
-           np.dot(pt2, Amatrices[1]) + 
+           np.dot(pt2, Amatrices[1]) +
            np.dot(pt3, Amatrices[2]))
 
     out = -np.real(out) / len(bis)
@@ -592,7 +384,7 @@ def chisqgrad_cphase_diag(imvec, Amatrices, clphase_diag, sigma):
                                (clphase_diag_sigma**2.0)), (tform_mats[iA]/i3)), A3[2])
         deriv += -2.0*np.imag(term1 + term2 + term3)
 
-    deriv *= 1.0/np.float(len(np.concatenate(clphase_diag)))
+    deriv *= 1.0/float(len(np.concatenate(clphase_diag)))
 
     return deriv
 
@@ -624,7 +416,7 @@ def chisqgrad_camp(imvec, Amatrices, clamp, sigma):
     pt2 = pp/i2
     pt3 = -pp/i3
     pt4 = -pp/i4
-            
+
     out = (np.dot(pt1, Amatrices[0]) +
            np.dot(pt2, Amatrices[1]) +
            np.dot(pt3, Amatrices[2]) +
@@ -654,7 +446,7 @@ def chisqgrad_logcamp(imvec, Amatrices, log_clamp, sigma):
     i3 = np.dot(Amatrices[2], imvec)
     i4 = np.dot(Amatrices[3], imvec)
     log_clamp_samples = (np.log(np.abs(i1)) +
-                         np.log(np.abs(i2)) - 
+                         np.log(np.abs(i2)) -
                          np.log(np.abs(i3)) -
                          np.log(np.abs(i4)))
 
@@ -729,7 +521,7 @@ def chisqgrad_logcamp_diag(imvec, Amatrices, log_clamp_diag, sigma):
                                (log_clamp_diag_sigma**2.0)), (tform_mats[iA]/i4)), A4[3])
         deriv += -2.0*np.real(term1 + term2 - term3 - term4)
 
-    deriv *= 1.0/np.float(len(np.concatenate(log_clamp_diag)))
+    deriv *= 1.0/float(len(np.concatenate(log_clamp_diag)))
 
     return deriv
 
@@ -755,7 +547,7 @@ def chisqgrad_logamp(imvec, A, amp, sigma):
     i1 = np.dot(A, imvec)
     amp_samples = np.abs(i1)
 
-    pp = ((np.log(amp) - np.log(amp_samples))) / (logsigma**2) / i1
+    pp = (np.log(amp) - np.log(amp_samples)) / (logsigma**2) / i1
     out = (-2.0/len(amp)) * np.real(np.dot(pp, A))
     return out
 
@@ -793,9 +585,8 @@ def chisqgrad_vis_fft(vis_arr, A, vis, sigma):
     grad_arr = grad_arr * (im_info.npad * im_info.npad)
 
     # extract relevant cells and flatten
-    # TODO or is x<-->y??
-    out = np.real(grad_arr[im_info.padvalx1:-im_info.padvalx2,
-                           im_info.padvaly1:-im_info.padvaly2].flatten())
+    out = np.real(grad_arr[im_info.padvaly1:-im_info.padvaly2,
+                           im_info.padvalx1:-im_info.padvalx2].flatten())
 
     return out
 
@@ -831,9 +622,8 @@ def chisqgrad_amp_fft(vis_arr, A, amp, sigma):
     grad_arr = grad_arr * (im_info.npad * im_info.npad)
 
     # extract relevent cells and flatten
-    # TODO or is x<-->y??
-    out = np.real(grad_arr[im_info.padvalx1:-im_info.padvalx2,
-                           im_info.padvaly1:-im_info.padvaly2].flatten())
+    out = np.real(grad_arr[im_info.padvaly1:-im_info.padvaly2,
+                           im_info.padvalx1:-im_info.padvalx2].flatten())
 
     return out
 
@@ -844,7 +634,7 @@ def chisq_bs_fft(vis_arr, A, bis, sigma):
     im_info, sampler_info_list, gridder_info_list = A
     bisamples = obsh.sampler(vis_arr, sampler_info_list, sample_type="bs")
 
-    return np.sum(np.abs(((bis - bisamples)/sigma))**2)/(2.*len(bis))
+    return np.sum(np.abs((bis - bisamples)/sigma)**2)/(2.*len(bis))
 
 
 def chisqgrad_bs_fft(vis_arr, A, bis, sigma):
@@ -869,9 +659,8 @@ def chisqgrad_bs_fft(vis_arr, A, bis, sigma):
     grad_arr = grad_arr * (im_info.npad * im_info.npad)
 
     # extract relevant cells and flatten
-    # TODO or is x<-->y??
-    out = np.real(grad_arr[im_info.padvalx1:-im_info.padvalx2,
-                           im_info.padvaly1:-im_info.padvaly2].flatten())
+    out = np.real(grad_arr[im_info.padvaly1:-im_info.padvaly2,
+                           im_info.padvalx1:-im_info.padvalx2].flatten())
     return out
 
 
@@ -913,9 +702,8 @@ def chisqgrad_cphase_fft(vis_arr, A, clphase, sigma):
     grad_arr = grad_arr * (im_info.npad * im_info.npad)
 
     # extract relevant cells and flatten
-    # TODO or is x<-->y??
-    out = np.imag(grad_arr[im_info.padvalx1:-im_info.padvalx2,
-                           im_info.padvaly1:-im_info.padvaly2].flatten())
+    out = np.imag(grad_arr[im_info.padvaly1:-im_info.padvaly2,
+                           im_info.padvalx1:-im_info.padvalx2].flatten())
 
     return out
 
@@ -991,9 +779,9 @@ def chisqgrad_cphase_diag_fft(imvec, A, clphase_diag, sigma):
     grad_arr = grad_arr * (im_info.npad * im_info.npad)
 
     # extract relevant cells and flatten
-    deriv = np.imag(grad_arr[im_info.padvalx1:-im_info.padvalx2,
-                             im_info.padvaly1:-im_info.padvaly2].flatten())
-    deriv *= 1.0/np.float(len(clphase_diag))
+    deriv = np.imag(grad_arr[im_info.padvaly1:-im_info.padvaly2,
+                             im_info.padvalx1:-im_info.padvalx2].flatten())
+    deriv *= 1.0/float(len(clphase_diag))
 
     return deriv
 
@@ -1034,9 +822,8 @@ def chisqgrad_camp_fft(vis_arr, A, clamp, sigma):
     grad_arr = grad_arr * (im_info.npad * im_info.npad)
 
     # extract relevant cells and flatten
-    # TODO or is x<-->y??
-    out = np.real(grad_arr[im_info.padvalx1:-im_info.padvalx2,
-                           im_info.padvaly1:-im_info.padvaly2].flatten())
+    out = np.real(grad_arr[im_info.padvaly1:-im_info.padvaly2,
+                           im_info.padvalx1:-im_info.padvalx2].flatten())
 
     return out
 
@@ -1080,9 +867,8 @@ def chisqgrad_logcamp_fft(vis_arr, A, log_clamp, sigma):
     grad_arr = grad_arr * (im_info.npad * im_info.npad)
 
     # extract relevant cells and flatten
-    # TODO or is x<-->y??
-    out = np.real(grad_arr[im_info.padvalx1:-im_info.padvalx2,
-                           im_info.padvaly1:-im_info.padvaly2].flatten())
+    out = np.real(grad_arr[im_info.padvaly1:-im_info.padvaly2,
+                           im_info.padvalx1:-im_info.padvalx2].flatten())
 
     return out
 
@@ -1161,9 +947,9 @@ def chisqgrad_logcamp_diag_fft(imvec, A, log_clamp_diag, sigma):
     grad_arr = grad_arr * (im_info.npad * im_info.npad)
 
     # extract relevant cells and flatten
-    deriv = np.real(grad_arr[im_info.padvalx1:-im_info.padvalx2,
-                             im_info.padvaly1:-im_info.padvaly2].flatten())
-    deriv *= 1.0/np.float(len(log_clamp_diag))
+    deriv = np.real(grad_arr[im_info.padvaly1:-im_info.padvaly2,
+                             im_info.padvalx1:-im_info.padvalx2].flatten())
+    deriv *= 1.0/float(len(log_clamp_diag))
 
     return deriv
 
@@ -1195,7 +981,7 @@ def chisqgrad_logamp_fft(vis_arr, A, amp, sigma):
     # gradient FT
     logsigma = sigma / amp
     pulsefac = sampler_info_list[0].pulsefac
-    wdiff_vec = (-2.0/len(amp)*((np.log(amp) - np.log(amp_samples))) /
+    wdiff_vec = (-2.0/len(amp)*(np.log(amp) - np.log(amp_samples)) /
                  (logsigma**2) / samples.conj()) * pulsefac.conj()
 
     # Setup and perform the inverse FFT
@@ -1204,9 +990,8 @@ def chisqgrad_logamp_fft(vis_arr, A, amp, sigma):
     grad_arr = grad_arr * (im_info.npad * im_info.npad)
 
     # extract relevent cells and flatten
-    # TODO or is x<-->y??
-    out = np.real(grad_arr[im_info.padvalx1:-im_info.padvalx2,
-                           im_info.padvaly1:-im_info.padvaly2].flatten())
+    out = np.real(grad_arr[im_info.padvaly1:-im_info.padvaly2,
+                           im_info.padvalx1:-im_info.padvalx2].flatten())
 
     return out
 
@@ -1334,7 +1119,7 @@ def chisq_bs_nfft(imvec, A, bis, sigma):
 
     # compute chi^2
     bisamples = samples1*samples2*samples3
-    chisq = np.sum(np.abs(((bis - bisamples)/sigma))**2)/(2.*len(bis))
+    chisq = np.sum(np.abs((bis - bisamples)/sigma)**2)/(2.*len(bis))
     return chisq
 
 
@@ -1611,7 +1396,7 @@ def chisqgrad_cphase_diag_nfft(imvec, A, clphase_diag, sigma):
     out3 = np.imag((plan3.f_hat.copy().T).reshape(nfft_info3.xdim*nfft_info3.ydim))
 
     deriv = out1 + out2 + out3
-    deriv *= 1.0/np.float(len(clphase_diag))
+    deriv *= 1.0/float(len(clphase_diag))
 
     return deriv
 
@@ -1989,7 +1774,7 @@ def chisqgrad_logcamp_diag_nfft(imvec, A, log_clamp_diag, sigma):
     out4 = np.real((plan4.f_hat.copy().T).reshape(nfft_info4.xdim*nfft_info4.ydim))
 
     deriv = out1 + out2 + out3 + out4
-    deriv *= 1.0/np.float(len(log_clamp_diag))
+    deriv *= 1.0/float(len(log_clamp_diag))
 
     return deriv
 
@@ -2036,7 +1821,7 @@ def chisqgrad_logamp_nfft(imvec, A, amp, sigma):
 
     # gradient vec for adjoint FT
     logsigma = sigma / amp
-    wdiff_vec = (-2.0/len(amp)*((np.log(amp) - np.log(amp_samples))) /
+    wdiff_vec = (-2.0/len(amp)*(np.log(amp) - np.log(amp_samples)) /
                  (logsigma**2) / samples.conj()) * pulsefac.conj()
     plan.f = wdiff_vec
     plan.adjoint()
@@ -2457,8 +2242,8 @@ def scompactgrad(imvec, nx, ny, psize, flux, norm_reg=NORM_REGULARIZER, beam_siz
     x0 = np.sum(np.sum(im * xxpsize))/flux
     y0 = np.sum(np.sum(im * yypsize))/flux
 
-    term1 = np.sum(np.sum(im * ((xxpsize - x0))))
-    term2 = np.sum(np.sum(im * ((yypsize - y0))))
+    term1 = np.sum(np.sum(im * (xxpsize - x0)))
+    term2 = np.sum(np.sum(im * (yypsize - y0)))
 
     grad = -2*xxpsize*term1 - 2*yypsize*term2 + (xxpsize - x0)**2 + (yypsize - y0)**2
 
@@ -2529,7 +2314,7 @@ def sgauss(imvec, xdim, ydim, psize, major, minor, PA):
     sigxy_prime = (lambda2 - lambda1)*np.cos(phi)*np.sin(phi)
 
     # we get the dimensions and image vector
-    im = imvec.reshape(xdim, ydim)
+    im = imvec.reshape(ydim, xdim)
     xlist, ylist = np.meshgrid(range(xdim), range(ydim))
     xlist = xlist - (xdim-1)/2.0
     ylist = ylist - (ydim-1)/2.0
@@ -2571,7 +2356,7 @@ def sgauss_grad(imvec, xdim, ydim, psize, major, minor, PA):
     sigxy_prime = (lambda2 - lambda1)*np.cos(phi)*np.sin(phi)
 
     # we get the dimensions and image vector
-    im = imvec.reshape(xdim, ydim)
+    im = imvec.reshape(ydim, xdim)
     xlist, ylist = np.meshgrid(range(xdim), range(ydim))
     xlist = xlist - (xdim-1)/2.0
     ylist = ylist - (ydim-1)/2.0
@@ -2588,17 +2373,13 @@ def sgauss_grad(imvec, xdim, ydim, psize, major, minor, PA):
     sigyy = (np.sum((yy - y0)**2.*im)/np.sum(im))
     sigxy = (np.sum((xx - x0)*(yy - y0)*im)/np.sum(im))
 
-    # now we compute the gradients of all quantities
-    # gradient of centroid
-    dx0 = (xx - x0) / np.sum(im)
-    dy0 = (yy - y0) / np.sum(im)
-
     # gradients of covariance matrix elements
-    dxx = (((xx - x0)**2. - 2.*(xx - x0)*dx0*im) - sigxx) / np.sum(im)
-
-    dyy = (((yy - y0)**2. - 2.*(yy - y0)*dx0*im) - sigyy) / np.sum(im)
-
-    dxy = (((xx - x0)*(yy - y0) - (yy - y0)*dx0*im - (xx - x0)*dy0*im) - sigxy) / np.sum(im)
+    # d(sig_ab)/d(im_k) = [(a_k - a0)(b_k - b0) - sig_ab] / sum(im)
+    # cross-term through centroid dependence sums to zero by definition of centroid
+    S = np.sum(im)
+    dxx = ((xx - x0)**2. - sigxx) / S
+    dyy = ((yy - y0)**2. - sigyy) / S
+    dxy = ((xx - x0)*(yy - y0) - sigxy) / S
 
     # gradient of the regularizer #this line was CHANGED
     drgauss = (2.*(sigxx - sigxx_prime)*dxx +
@@ -2673,7 +2454,7 @@ def chisqdata_vis(Obsdata, Prior, mask, pol='I', **kwargs):
     # unpack keyword args
     systematic_noise = kwargs.get('systematic_noise', 0.)
     snrcut = kwargs.get('snrcut', 0.)
-    debias = kwargs.get('debias', True)
+    debias = kwargs.get('debias', False)
     weighting = kwargs.get('weighting', 'natural')
 
     # unpack data
@@ -2700,7 +2481,7 @@ def chisqdata_amp(Obsdata, Prior, mask, pol='I', **kwargs):
     # unpack keyword args
     systematic_noise = kwargs.get('systematic_noise', 0.)
     snrcut = kwargs.get('snrcut', 0.)
-    debias = kwargs.get('debias', True)
+    debias = kwargs.get('debias', False)
     weighting = kwargs.get('weighting', 'natural')
 
     # unpack data
@@ -2712,7 +2493,7 @@ def chisqdata_amp(Obsdata, Prior, mask, pol='I', **kwargs):
 
     else:  # TODO -- pre-computed  with not stokes I?
         print("Using pre-computed amplitude table in amplitude chi^2!")
-        if not type(Obsdata.amp) in [np.ndarray, np.recarray]:
+        if type(Obsdata.amp) not in [np.ndarray, np.recarray]:
             raise Exception("pre-computed amplitude table is not a numpy rec array!")
         data_arr = Obsdata.amp
 
@@ -2752,7 +2533,7 @@ def chisqdata_bs(Obsdata, Prior, mask, pol='I', **kwargs):
 
     else:  # TODO -- pre-computed  with not stokes I?
         print("Using pre-computed bispectrum table in cphase chi^2!")
-        if not type(Obsdata.bispec) in [np.ndarray, np.recarray]:
+        if type(Obsdata.bispec) not in [np.ndarray, np.recarray]:
             raise Exception("pre-computed bispectrum table is not a numpy rec array!")
         biarr = Obsdata.bispec
         # reduce to a minimal set
@@ -2804,7 +2585,7 @@ def chisqdata_cphase(Obsdata, Prior, mask, pol='I', **kwargs):
                                       count=count, uv_min=uv_min, snrcut=snrcut)
     else:  # TODO precomputed with not Stokes I
         print("Using pre-computed cphase table in cphase chi^2!")
-        if not type(Obsdata.cphase) in [np.ndarray, np.recarray]:
+        if type(Obsdata.cphase) not in [np.ndarray, np.recarray]:
             raise Exception("pre-computed closure phase table is not a numpy rec array!")
         clphasearr = Obsdata.cphase
         # reduce to a minimal set
@@ -2884,10 +2665,12 @@ def chisqdata_cphase_diag(Obsdata, Prior, mask, pol='I', **kwargs):
         # get transformation matrix for this timestamp
         tform_mats.append(cl[4].astype('float'))
 
-    # combine Fourier and transformation matrices into tuple for outputting
-    Amatrices = (np.array(A3_diag), np.array(tform_mats))
+    # combine Fourier and transformation matrices into tuple for outputting.
+    # Per-timestamp baseline counts vary, so the outer arrays are ragged --
+    # NumPy >= 1.24 requires explicit dtype=object for inhomogeneous shape.
+    Amatrices = (np.array(A3_diag, dtype=object), np.array(tform_mats, dtype=object))
 
-    return (np.array(clphase_diag), np.array(sigma_diag), Amatrices)
+    return (np.array(clphase_diag, dtype=object), np.array(sigma_diag, dtype=object), Amatrices)
 
 
 def chisqdata_camp(Obsdata, Prior, mask, pol='I', **kwargs):
@@ -2901,7 +2684,7 @@ def chisqdata_camp(Obsdata, Prior, mask, pol='I', **kwargs):
         count = 'min'
 
     snrcut = kwargs.get('snrcut', 0.)
-    debias = kwargs.get('debias', True)
+    debias = kwargs.get('debias', False)
     weighting = kwargs.get('weighting', 'natural')
 
     # unpack data & mask low snr points
@@ -2911,7 +2694,7 @@ def chisqdata_camp(Obsdata, Prior, mask, pol='I', **kwargs):
                                         vtype=vtype, ctype='camp', debias=debias, snrcut=snrcut)
     else:  # TODO -- pre-computed  with not stokes I?
         print("Using pre-computed closure amplitude table in closure amplitude chi^2!")
-        if not type(Obsdata.camp) in [np.ndarray, np.recarray]:
+        if type(Obsdata.camp) not in [np.ndarray, np.recarray]:
             raise Exception("pre-computed closure amplitude table is not a numpy rec array!")
         clamparr = Obsdata.camp
         # reduce to a minimal set
@@ -2950,7 +2733,7 @@ def chisqdata_logcamp(Obsdata, Prior, mask, pol='I', **kwargs):
         count = 'min'
 
     snrcut = kwargs.get('snrcut', 0.)
-    debias = kwargs.get('debias', True)
+    debias = kwargs.get('debias', False)
     weighting = kwargs.get('weighting', 'natural')
 
     # unpack data & mask low snr points
@@ -2960,7 +2743,7 @@ def chisqdata_logcamp(Obsdata, Prior, mask, pol='I', **kwargs):
                                         vtype=vtype, ctype='logcamp', debias=debias, snrcut=snrcut)
     else:  # TODO -- pre-computed  with not stokes I?
         print("Using pre-computed log closure amplitude table in log closure amplitude chi^2!")
-        if not type(Obsdata.logcamp) in [np.ndarray, np.recarray]:
+        if type(Obsdata.logcamp) not in [np.ndarray, np.recarray]:
             raise Exception("pre-computed log closure amplitude table is not a numpy rec array!")
         clamparr = Obsdata.logcamp
         # reduce to a minimal set
@@ -2999,7 +2782,7 @@ def chisqdata_logcamp_diag(Obsdata, Prior, mask, pol='I', **kwargs):
         count = 'min'
 
     snrcut = kwargs.get('snrcut', 0.)
-    debias = kwargs.get('debias', True)
+    debias = kwargs.get('debias', False)
 
     # unpack data & mask low snr points
     vtype = ehc.vis_poldict[pol]
@@ -3044,10 +2827,12 @@ def chisqdata_logcamp_diag(Obsdata, Prior, mask, pol='I', **kwargs):
         # get transformation matrix for this timestamp
         tform_mats.append(cl[4].astype('float'))
 
-    # combine Fourier and transformation matrices into tuple for outputting
-    Amatrices = (np.array(A4_diag), np.array(tform_mats))
+    # combine Fourier and transformation matrices into tuple for outputting.
+    # Per-timestamp baseline counts vary, so the outer arrays are ragged --
+    # NumPy >= 1.24 requires explicit dtype=object for inhomogeneous shape.
+    Amatrices = (np.array(A4_diag, dtype=object), np.array(tform_mats, dtype=object))
 
-    return (np.array(clamp_diag), np.array(sigma_diag), Amatrices)
+    return (np.array(clamp_diag, dtype=object), np.array(sigma_diag, dtype=object), Amatrices)
 
 ##################################################################################################
 # FFT Chi^2 Data functions
@@ -3061,7 +2846,7 @@ def chisqdata_vis_fft(Obsdata, Prior, pol='I', **kwargs):
     # unpack keyword args
     systematic_noise = kwargs.get('systematic_noise', 0.)
     snrcut = kwargs.get('snrcut', 0.)
-    debias = kwargs.get('debias', True)
+    debias = kwargs.get('debias', False)
     weighting = kwargs.get('weighting', 'natural')
     fft_pad_factor = kwargs.get('fft_pad_factor', ehc.FFT_PAD_DEFAULT)
     conv_func = kwargs.get('conv_func', ehc.GRIDDER_CONV_FUNC_DEFAULT)
@@ -3099,7 +2884,7 @@ def chisqdata_amp_fft(Obsdata, Prior, pol='I', **kwargs):
     # unpack keyword args
     systematic_noise = kwargs.get('systematic_noise', 0.)
     snrcut = kwargs.get('snrcut', 0.)
-    debias = kwargs.get('debias', True)
+    debias = kwargs.get('debias', False)
     weighting = kwargs.get('weighting', 'natural')
     fft_pad_factor = kwargs.get('fft_pad_factor', ehc.FFT_PAD_DEFAULT)
     conv_func = kwargs.get('conv_func', ehc.GRIDDER_CONV_FUNC_DEFAULT)
@@ -3114,7 +2899,7 @@ def chisqdata_amp_fft(Obsdata, Prior, pol='I', **kwargs):
         data_arr = Obsdata.unpack(['t1', 't2', 'u', 'v', vtype, atype, etype], debias=debias)
     else:  # TODO -- pre-computed  with not stokes I?
         print("Using pre-computed amplitude table in amplitude chi^2!")
-        if not type(Obsdata.amp) in [np.ndarray, np.recarray]:
+        if type(Obsdata.amp) not in [np.ndarray, np.recarray]:
             raise Exception("pre-computed amplitude table is not a numpy rec array!")
         data_arr = Obsdata.amp
 
@@ -3163,7 +2948,7 @@ def chisqdata_bs_fft(Obsdata, Prior, pol='I', **kwargs):
         biarr = Obsdata.bispectra(mode="all", vtype=vtype, count=count, snrcut=snrcut)
     else:  # TODO -- pre-computed  with not stokes I?
         print("Using pre-computed bispectrum table in cphase chi^2!")
-        if not type(Obsdata.bispec) in [np.ndarray, np.recarray]:
+        if type(Obsdata.bispec) not in [np.ndarray, np.recarray]:
             raise Exception("pre-computed bispectrum table is not a numpy rec array!")
         biarr = Obsdata.bispec
         # reduce to a minimal set
@@ -3226,7 +3011,7 @@ def chisqdata_cphase_fft(Obsdata, Prior, pol='I', **kwargs):
                                       count=count, uv_min=uv_min, snrcut=snrcut)
     else:  # TODO precomputed with not Stokes I
         print("Using pre-computed cphase table in cphase chi^2!")
-        if not type(Obsdata.cphase) in [np.ndarray, np.recarray]:
+        if type(Obsdata.cphase) not in [np.ndarray, np.recarray]:
             raise Exception("pre-computed closure phase table is not a numpy rec array!")
         clphasearr = Obsdata.cphase
         # reduce to a minimal set
@@ -3338,10 +3123,11 @@ def chisqdata_cphase_diag_fft(Obsdata, Prior, pol='I', **kwargs):
     gridder_info_list = [gs_info1[1], gs_info2[1], gs_info3[1]]
     A3 = (im_info, sampler_info_list, gridder_info_list)
 
-    # combine Fourier and transformation matrices into tuple for outputting
-    Amatrices = (A3, np.array(tform_mats))
+    # Per-timestamp transform matrices have varying shapes; NumPy >= 1.24
+    # requires explicit dtype=object for inhomogeneous arrays.
+    Amatrices = (A3, np.array(tform_mats, dtype=object))
 
-    return (np.array(clphase_diag), np.array(sigma_diag), Amatrices)
+    return (np.array(clphase_diag, dtype=object), np.array(sigma_diag, dtype=object), Amatrices)
 
 
 def chisqdata_camp_fft(Obsdata, Prior, pol='I', **kwargs):
@@ -3356,7 +3142,7 @@ def chisqdata_camp_fft(Obsdata, Prior, pol='I', **kwargs):
         count = 'min'
 
     snrcut = kwargs.get('snrcut', 0.)
-    debias = kwargs.get('debias', True)
+    debias = kwargs.get('debias', False)
     weighting = kwargs.get('weighting', 'natural')
     fft_pad_factor = kwargs.get('fft_pad_factor', ehc.FFT_PAD_DEFAULT)
     conv_func = kwargs.get('conv_func', ehc.GRIDDER_CONV_FUNC_DEFAULT)
@@ -3370,7 +3156,7 @@ def chisqdata_camp_fft(Obsdata, Prior, pol='I', **kwargs):
                                         vtype=vtype, ctype='camp', debias=debias, snrcut=snrcut)
     else:  # TODO -- pre-computed  with not stokes I?
         print("Using pre-computed closure amplitude table in closure amplitude chi^2!")
-        if not type(Obsdata.camp) in [np.ndarray, np.recarray]:
+        if type(Obsdata.camp) not in [np.ndarray, np.recarray]:
             raise Exception("pre-computed closure amplitude table is not a numpy rec array!")
         clamparr = Obsdata.camp
         # reduce to a minimal set
@@ -3418,7 +3204,7 @@ def chisqdata_logcamp_fft(Obsdata, Prior, pol='I', **kwargs):
         count = 'min'
 
     snrcut = kwargs.get('snrcut', 0.)
-    debias = kwargs.get('debias', True)
+    debias = kwargs.get('debias', False)
     weighting = kwargs.get('weighting', 'natural')
     fft_pad_factor = kwargs.get('fft_pad_factor', ehc.FFT_PAD_DEFAULT)
     conv_func = kwargs.get('conv_func', ehc.GRIDDER_CONV_FUNC_DEFAULT)
@@ -3432,7 +3218,7 @@ def chisqdata_logcamp_fft(Obsdata, Prior, pol='I', **kwargs):
                                         vtype=vtype, ctype='logcamp', debias=debias, snrcut=snrcut)
     else:  # TODO -- pre-computed  with not stokes I?
         print("Using pre-computed log closure amplitude table in log closure amplitude chi^2!")
-        if not type(Obsdata.logcamp) in [np.ndarray, np.recarray]:
+        if type(Obsdata.logcamp) not in [np.ndarray, np.recarray]:
             raise Exception("pre-computed log closure amplitude table is not a numpy rec array!")
         clamparr = Obsdata.logcamp
         # reduce to a minimal set
@@ -3480,7 +3266,7 @@ def chisqdata_logcamp_diag_fft(Obsdata, Prior, pol='I', **kwargs):
         count = 'min'
 
     snrcut = kwargs.get('snrcut', 0.)
-    debias = kwargs.get('debias', True)
+    debias = kwargs.get('debias', False)
     fft_pad_factor = kwargs.get('fft_pad_factor', ehc.FFT_PAD_DEFAULT)
     conv_func = kwargs.get('conv_func', ehc.GRIDDER_CONV_FUNC_DEFAULT)
     p_rad = kwargs.get('p_rad', ehc.GRIDDER_P_RAD_DEFAULT)
@@ -3554,10 +3340,11 @@ def chisqdata_logcamp_diag_fft(Obsdata, Prior, pol='I', **kwargs):
     gridder_info_list = [gs_info1[1], gs_info2[1], gs_info3[1], gs_info4[1]]
     A = (im_info, sampler_info_list, gridder_info_list)
 
-    # combine Fourier and transformation matrices into tuple for outputting
-    Amatrices = (A, np.array(tform_mats))
+    # Per-timestamp transform matrices have varying shapes; NumPy >= 1.24
+    # requires explicit dtype=object for inhomogeneous arrays.
+    Amatrices = (A, np.array(tform_mats, dtype=object))
 
-    return (np.array(clamp_diag), np.array(sigma_diag), Amatrices)
+    return (np.array(clamp_diag, dtype=object), np.array(sigma_diag, dtype=object), Amatrices)
 
 ##################################################################################################
 # NFFT Chi^2 Data functions
@@ -3573,7 +3360,7 @@ def chisqdata_vis_nfft(Obsdata, Prior, pol='I', **kwargs):
     # unpack keyword args
     systematic_noise = kwargs.get('systematic_noise', 0.)
     snrcut = kwargs.get('snrcut', 0.)
-    debias = kwargs.get('debias', True)
+    debias = kwargs.get('debias', False)
     weighting = kwargs.get('weighting', 'natural')
     fft_pad_factor = kwargs.get('fft_pad_factor', ehc.FFT_PAD_DEFAULT)
     p_rad = kwargs.get('p_rad', ehc.GRIDDER_P_RAD_DEFAULT)
@@ -3606,7 +3393,7 @@ def chisqdata_amp_nfft(Obsdata, Prior, pol='I', **kwargs):
     # unpack keyword args
     systematic_noise = kwargs.get('systematic_noise', 0.)
     snrcut = kwargs.get('snrcut', 0.)
-    debias = kwargs.get('debias', True)
+    debias = kwargs.get('debias', False)
     weighting = kwargs.get('weighting', 'natural')
     fft_pad_factor = kwargs.get('fft_pad_factor', ehc.FFT_PAD_DEFAULT)
     p_rad = kwargs.get('p_rad', ehc.GRIDDER_P_RAD_DEFAULT)
@@ -3619,7 +3406,7 @@ def chisqdata_amp_nfft(Obsdata, Prior, pol='I', **kwargs):
         data_arr = Obsdata.unpack(['t1', 't2', 'u', 'v', vtype, atype, etype], debias=debias)
     else:  # TODO -- pre-computed  with not stokes I?
         print("Using pre-computed amplitude table in amplitude chi^2!")
-        if not type(Obsdata.amp) in [np.ndarray, np.recarray]:
+        if type(Obsdata.amp) not in [np.ndarray, np.recarray]:
             raise Exception("pre-computed amplitude table is not a numpy rec array!")
         data_arr = Obsdata.amp
 
@@ -3645,7 +3432,7 @@ def chisqdata_bs_nfft(Obsdata, Prior, pol='I', **kwargs):
         raise Exception("NFFT doesn't work with odd image dimensions!")
 
     # unpack keyword args
-    # systematic_noise = kwargs.get('systematic_noise',0.) 
+    # systematic_noise = kwargs.get('systematic_noise',0.)
     maxset = kwargs.get('maxset', False)
     if maxset:
         count = 'max'
@@ -3663,7 +3450,7 @@ def chisqdata_bs_nfft(Obsdata, Prior, pol='I', **kwargs):
         biarr = Obsdata.bispectra(mode="all", vtype=vtype, count=count, snrcut=snrcut)
     else:  # TODO -- pre-computed  with not stokes I?
         print("Using pre-computed bispectrum table in cphase chi^2!")
-        if not type(Obsdata.bispec) in [np.ndarray, np.recarray]:
+        if type(Obsdata.bispec) not in [np.ndarray, np.recarray]:
             raise Exception("pre-computed bispectrum table is not a numpy rec array!")
         biarr = Obsdata.bispec
         # reduce to a minimal set
@@ -3720,7 +3507,7 @@ def chisqdata_cphase_nfft(Obsdata, Prior, pol='I', **kwargs):
                                       count=count, uv_min=uv_min, snrcut=snrcut)
     else:  # TODO precomputed with not Stokes I
         print("Using pre-computed cphase table in cphase chi^2!")
-        if not type(Obsdata.cphase) in [np.ndarray, np.recarray]:
+        if type(Obsdata.cphase) not in [np.ndarray, np.recarray]:
             raise Exception("pre-computed closure phase table is not a numpy rec array!")
         clphasearr = Obsdata.cphase
         # reduce to a minimal set
@@ -3819,10 +3606,11 @@ def chisqdata_cphase_diag_nfft(Obsdata, Prior, pol='I', **kwargs):
     A3 = obsh.NFFTInfo(Prior.xdim, Prior.ydim, Prior.psize, Prior.pulse, npad, p_rad, uv3)
     A = [A1, A2, A3]
 
-    # combine Fourier and transformation matrices into tuple for outputting
-    Amatrices = (A, np.array(tform_mats))
+    # Per-timestamp transform matrices have varying shapes; NumPy >= 1.24
+    # requires explicit dtype=object for inhomogeneous arrays.
+    Amatrices = (A, np.array(tform_mats, dtype=object))
 
-    return (np.array(clphase_diag), np.array(sigma_diag), Amatrices)
+    return (np.array(clphase_diag, dtype=object), np.array(sigma_diag, dtype=object), Amatrices)
 
 
 def chisqdata_camp_nfft(Obsdata, Prior, pol='I', **kwargs):
@@ -3839,7 +3627,7 @@ def chisqdata_camp_nfft(Obsdata, Prior, pol='I', **kwargs):
         count = 'min'
 
     snrcut = kwargs.get('snrcut', 0.)
-    debias = kwargs.get('debias', True)
+    debias = kwargs.get('debias', False)
     weighting = kwargs.get('weighting', 'natural')
     fft_pad_factor = kwargs.get('fft_pad_factor', ehc.FFT_PAD_DEFAULT)
     p_rad = kwargs.get('p_rad', ehc.GRIDDER_P_RAD_DEFAULT)
@@ -3851,7 +3639,7 @@ def chisqdata_camp_nfft(Obsdata, Prior, pol='I', **kwargs):
                                         vtype=vtype, ctype='camp', debias=debias, snrcut=snrcut)
     else:  # TODO -- pre-computed  with not stokes I?
         print("Using pre-computed closure amplitude table in closure amplitude chi^2!")
-        if not type(Obsdata.camp) in [np.ndarray, np.recarray]:
+        if type(Obsdata.camp) not in [np.ndarray, np.recarray]:
             raise Exception("pre-computed closure amplitude table is not a numpy rec array!")
         clamparr = Obsdata.camp
         # reduce to a minimal set
@@ -3894,7 +3682,7 @@ def chisqdata_logcamp_nfft(Obsdata, Prior, pol='I', **kwargs):
         count = 'min'
 
     snrcut = kwargs.get('snrcut', 0.)
-    debias = kwargs.get('debias', True)
+    debias = kwargs.get('debias', False)
     weighting = kwargs.get('weighting', 'natural')
     fft_pad_factor = kwargs.get('fft_pad_factor', ehc.FFT_PAD_DEFAULT)
     p_rad = kwargs.get('p_rad', ehc.GRIDDER_P_RAD_DEFAULT)
@@ -3906,7 +3694,7 @@ def chisqdata_logcamp_nfft(Obsdata, Prior, pol='I', **kwargs):
                                         vtype=vtype, ctype='logcamp', debias=debias, snrcut=snrcut)
     else:  # TODO -- pre-computed  with not stokes I?
         print("Using pre-computed log closure amplitude table in log closure amplitude chi^2!")
-        if not type(Obsdata.logcamp) in [np.ndarray, np.recarray]:
+        if type(Obsdata.logcamp) not in [np.ndarray, np.recarray]:
             raise Exception("pre-computed log closure amplitude table is not a numpy rec array!")
         clamparr = Obsdata.logcamp
         # reduce to a minimal set
@@ -3949,7 +3737,7 @@ def chisqdata_logcamp_diag_nfft(Obsdata, Prior, pol='I', **kwargs):
         count = 'min'
 
     snrcut = kwargs.get('snrcut', 0.)
-    debias = kwargs.get('debias', True)
+    debias = kwargs.get('debias', False)
     fft_pad_factor = kwargs.get('fft_pad_factor', ehc.FFT_PAD_DEFAULT)
     p_rad = kwargs.get('p_rad', ehc.GRIDDER_P_RAD_DEFAULT)
 
@@ -4012,10 +3800,11 @@ def chisqdata_logcamp_diag_nfft(Obsdata, Prior, pol='I', **kwargs):
     A4 = obsh.NFFTInfo(Prior.xdim, Prior.ydim, Prior.psize, Prior.pulse, npad, p_rad, uv4)
     A = [A1, A2, A3, A4]
 
-    # combine Fourier and transformation matrices into tuple for outputting
-    Amatrices = (A, np.array(tform_mats))
+    # Per-timestamp transform matrices have varying shapes; NumPy >= 1.24
+    # requires explicit dtype=object for inhomogeneous arrays.
+    Amatrices = (A, np.array(tform_mats, dtype=object))
 
-    return (np.array(clamp_diag), np.array(sigma_diag), Amatrices)
+    return (np.array(clamp_diag, dtype=object), np.array(sigma_diag, dtype=object), Amatrices)
 
 ##################################################################################################
 # Plotting Functions
@@ -4057,9 +3846,9 @@ def plot_i(im, Prior, nit, chi2_dict, **kwargs):
     plt.yticks(yticks[0], yticks[1])
     plt.xlabel(r'Relative RA ($\mu$as)')
     plt.ylabel(r'Relative Dec ($\mu$as)')
-    plotstr = str(pol) + " : step: %i  " % nit
+    plotstr = str(pol) + f" : step: {nit}  "
     for key in chi2_dict.keys():
-        plotstr += r"$\chi^2_{%s}$: %0.2f  " % (key, chi2_dict[key])
+        plotstr += rf"$\chi^2_{{{key}}}$: {chi2_dict[key]:0.2f}  "
     plt.title(plotstr, fontsize=18)
 
 ##################################################################################################
@@ -4069,6 +3858,8 @@ def plot_i(im, Prior, nit, chi2_dict, **kwargs):
 
 
 
+# TODO(achael): consolidate `embed` (1D, this function) and `embed_imarr`
+# (1D or 2D, below) into a single implementation -- their bodies overlap.
 def embed(imvec, mask, clipfloor=0., randomfloor=False):
     """Embeds a 1d image vector into the size of boolean embed mask
     """
@@ -4088,6 +3879,79 @@ def embed(imvec, mask, clipfloor=0., randomfloor=False):
     return out
 
 
-    
+def embed_imarr(imarr, mask, clipfloor=0., randomfloor=False):
+    """Embed a packed image array back onto the full image grid.
+
+    Multi-row generalization of `embed`: each row of `imarr` is independently
+    embedded back into a full-grid representation using `mask`. Pixels outside
+    the mask are filled with `clipfloor` (constant) or `clipfloor * |N(0, 1)|`
+    when `randomfloor=True`.
+
+    Lives in imager_utils alongside `embed` rather than in imager_backend.py
+    to avoid a module-load cycle (pol_imager_utils -> imager_backend imports).
+
+    Parameters
+    ----------
+    imarr : np.ndarray
+        Either 1D of length `sum(mask)` (Stokes-I only), or 2D of shape
+        (nsolve, sum(mask)) where nsolve is the number of Stokes / spectral
+        slots being solved for (1 for Stokes-I only, 4 for full polarization,
+        3 or 10 for the multifrequency variants).
+    mask : np.ndarray of bool
+        Embed mask of length npix_total. Number of True entries must equal
+        the second axis of `imarr` (or its length, for 1D input).
+    clipfloor : float, optional
+        Value placed at non-mask pixels when `randomfloor=False`. Default 0.0.
+    randomfloor : bool, optional
+        If True, non-mask pixels get `clipfloor * |N(0, 1)|` instead of a
+        constant. Used to break gradient singularities in total-variation
+        regularizers. Default False.
+
+    Returns
+    -------
+    out : np.ndarray
+        Same dimensionality as `imarr` (1D or 2D), but the second axis
+        (or only axis) is extended to len(mask).
+
+    Raises
+    ------
+    Exception
+        If `imarr` is not 1D or 2D, or if its mask-axis length does not
+        equal `sum(mask)`.
+    """
+    imarrdim = len(imarr.shape)
+    if imarrdim == 2:
+        nsolve = imarr.shape[0]
+        nimage = imarr.shape[1]
+    elif imarrdim == 1:
+        nsolve = 1
+        nimage = imarr.shape[0]
+        imarr = imarr.reshape((nsolve, nimage))
+    else:
+        raise Exception("in embed_imarr, imarr should have one or two dimensions!")
+
+    if nimage != np.sum(mask):
+        raise Exception("in embed_imarr, number of masked pixels is not consistent with imarr shape!")
+
+    nimage_out = len(mask)
+    outarr = np.empty((nsolve, nimage_out))
+    # Vectorized over the nsolve axis: scatter imarr into the masked columns
+    # of outarr, then fill non-mask columns with clipfloor (or random).
+    not_mask = ~mask.astype(bool)
+    outarr[:, mask.astype(bool)] = imarr
+    if randomfloor:
+        outarr[:, not_mask] = clipfloor * np.abs(
+            np.random.normal(size=(nsolve, int(not_mask.sum())))
+        )
+    else:
+        outarr[:, not_mask] = clipfloor
+
+    if imarrdim == 1:
+        outarr = outarr[0]
+
+    return outarr
+
+
+
 
 

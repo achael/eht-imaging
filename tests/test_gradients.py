@@ -1,97 +1,186 @@
-#!/usr/bin/env python
+"""Tests for analytic gradient correctness via numeric finite differences.
 
-# This is a rough script to verify the consistency of Fourier transform types and to check gradients of the various image regularization options
-
-from __future__ import division
-from __future__ import print_function
+Verifies that analytic chi-squared gradients and regularizer gradients
+match numeric finite differences computed element-wise. All tests use a
+32x48 image so xdim != ydim exercises the rectangular-image code paths.
+"""
 
 import numpy as np
+import pytest
+
 import ehtim as eh
-from ehtim.imaging.imager_utils import chisqdata, chisq, chisqgrad
-
-#path = eh.__path__[0]
-path = './tests'
-im = eh.image.load_txt(path + '/../models/jason_mad_eofn.txt')
-eht = eh.array.load_txt(path + '/../arrays/EHT2017.txt')
-
-tint_sec = 5
-tadv_sec = 600
-tstart_hr = 0
-tstop_hr = 24
-bw_hz = 4e9
-obs_dft = im.observe(eht, tint_sec, tadv_sec, tstart_hr, tstop_hr, bw_hz, sgrscat=False, ampcal=True, phasecal=True, ttype='direct', add_th_noise=False)
-obs_nfft = im.observe(eht, tint_sec, tadv_sec, tstart_hr, tstop_hr, bw_hz, sgrscat=False, ampcal=True, phasecal=True, ttype='nfft', add_th_noise=False)
-
-prior = im.copy().regrid_image(im.fovx(),50)
-im2 = prior.copy() # This is our test image
-
-# Add random noise to the image
-for j in range(len(im2.imvec)):
-    im2.imvec[j] *= (1.0 + (np.random.rand()-0.5)/10.0)
-    im2.imvec[j] += (1.0 + (np.random.rand()-0.5)/10.0) * np.mean(im2.imvec)
-
-# mask
-mask = (im2.imvec > 0.5*np.median(im2.imvec))
-
-#mask=[]
-test_imvec = im2.imvec
-
-if len(mask) >0 and np.any(np.invert(mask)):
-    print("unmasked size %i"%len(test_imvec))
-    test_imvec = test_imvec[mask]
-    print("masked size %i"%len(test_imvec))
-
-# Testing the chi^2
-for dtype in ['vis', 'bs', 'amp', 'cphase',  'camp', 'logcamp']:#'cphase_diag', 'logcamp_diag']:
-    print('\nTesting chi^2 dtype:',dtype)
-    chisqdata_dft = chisqdata(obs_dft, prior, mask, dtype, ttype='direct')
-    chisqdata_nfft = chisqdata(obs_nfft, prior, mask, dtype, ttype='nfft')
-    chisq_dft = chisq(test_imvec, chisqdata_dft[2], chisqdata_dft[0], chisqdata_dft[1], dtype, ttype='direct', mask=mask)
-    chisq_nfft = chisq(test_imvec, chisqdata_nfft[2], chisqdata_nfft[0], chisqdata_nfft[1], dtype, ttype='nfft', mask=mask)
-    print("chisq_dft: %f" % chisq_dft)
-    print("chisq_nfft: %f" % chisq_nfft)
-
-# Testing the gradient of chi^2
-for dtype in ['vis', 'bs', 'amp', 'cphase',  'camp', 'logcamp']:#'cphase_diag', 'logcamp_diag']:
-    print('\nTesting chi^2 gradient dtype:',dtype)
-    chisqdata_dft = chisqdata(obs_dft, prior, mask, dtype, ttype='direct')
-    chisqdata_nfft = chisqdata(obs_nfft, prior, mask, dtype, ttype='nfft')
-    chisq_dft_grad = chisqgrad(test_imvec, chisqdata_dft[2], chisqdata_dft[0], chisqdata_dft[1], dtype, ttype='direct', mask=mask)
-    chisq_nfft_grad = chisqgrad(test_imvec, chisqdata_nfft[2], chisqdata_nfft[0], chisqdata_nfft[1], dtype, ttype='nfft', mask=mask)
-    compare_floor = 1.0
-    print("Median Fractional Difference of DTFT/NFFT for chi^2 gradient of " + dtype, np.median(np.abs((chisq_dft_grad - chisq_nfft_grad)/(np.abs(chisq_dft_grad)+compare_floor))))
-
-    dx = 1.e-12
-   #y0 = chisq(test_imvec, chisqdata_dft[2], chisqdata_dft[0], chisqdata_dft[1], dtype, ttype='direct', mask=mask)
-    y0 = chisq(test_imvec, chisqdata_nfft[2], chisqdata_nfft[0], chisqdata_nfft[1], dtype, ttype='nfft', mask=mask)
-    grad_n = np.zeros(len(test_imvec))
-    for j in range(len(test_imvec)):
-        test_imvec2 = test_imvec.copy()
-        test_imvec2[j] += dx
-        #y1 = chisq(test_imvec2, chisqdata_dft[2], chisqdata_dft[0], chisqdata_dft[1], dtype, ttype='direct', mask=mask)
-        y1 = chisq(test_imvec2, chisqdata_nfft[2], chisqdata_nfft[0], chisqdata_nfft[1], dtype, ttype='nfft', mask=mask)
-        grad_n[j] = (y1-y0)/dx
-
-    compare_floor = np.min(np.abs(chisq_nfft_grad))*1.e-20 + 1.e-100
-    print("Median Fractional Gradient Difference %0.4f"% np.median(np.abs((grad_n - chisq_nfft_grad)/(np.abs(chisq_nfft_grad)+compare_floor))))    
-    print("Maximum Fractional Gradient Difference %0.4f"% np.max(np.abs((grad_n - chisq_nfft_grad)/(np.abs(chisq_nfft_grad)+compare_floor))))    
-    #print("\nMedian Fractional Gradient Difference for " + dtype + ":",np.median(np.abs((grad_n-chisq_dft_grad)/chisq_dft_grad)))
-    #print("Maximal Fractional Gradient Difference for " + dtype + ":",np.max(np.abs((grad_n-chisq_dft_grad)/chisq_dft_grad)),'\n')       
-    
-# Testing the gradients of image regularization functions
 import ehtim.imaging.imager_utils as iu
-prior = test_imvec * 0.0 + 1.0
-prior = prior * np.sum(test_imvec)/np.sum(prior)
-#mask = [True,] * len(test_imvec)
-for reg in ['simple', 'gs', 'l1', 'tv', 'tv2']:
-    dx = 1.e-12
-    y0 = iu.regularizer(test_imvec, prior, mask, 1.0, im2.xdim, im2.ydim, im2.psize, reg)
-    grad_exact = iu.regularizergrad(test_imvec, prior, mask, 1.0, im2.xdim, im2.ydim, im2.psize, reg)
-    grad = np.zeros(len(test_imvec))
-    for j in range(len(test_imvec)):
-        test_imvec2 = test_imvec.copy()
-        test_imvec2[j] += dx
-        y1 = iu.regularizer(test_imvec2, prior, mask, 1.0, im2.xdim, im2.ydim, im2.psize, reg)
-        grad[j] = (y1-y0)/dx
-    print("\nMedian Fractional Gradient Difference for " + reg + ":",np.median(np.abs((grad-grad_exact)/grad_exact)))
-    print("Maximal Fractional Gradient Difference for " + reg + ":",np.max(np.abs((grad-grad_exact)/grad_exact)))       
+from ehtim.imaging.imager_utils import chisq, chisqdata, chisqgrad
+
+# Data types, regularizers, and transform types to test
+DATATERMS = ["vis", "bs", "amp", "cphase", "camp", "logcamp"]
+REGULARIZERS = ["simple", "gs", "l1w", "tv", "tv2"]
+TTYPES = ["direct"]  # expand to ["direct", "fast", "nfft"] to test other transforms
+
+# Tolerances (calibrated on 32x48 synthetic Gaussian with relative step size)
+CHISQ_GRAD_MEDIAN_TOL = 0.001
+CHISQ_GRAD_MAX_TOL = 0.01
+REG_GRAD_MEDIAN_TOL = 0.01
+REG_GRAD_MAX_TOL = 0.10
+
+# ---------------------------------------------------------------------------
+# Numeric gradient parameters
+# ---------------------------------------------------------------------------
+N_GRAD_SAMPLES = 100
+RNG_SEED = 4
+GRAD_DX_REL = 1e-8    # relative step size per pixel
+GRAD_DX_FLOOR = 1e-12  # absolute minimum step size
+
+# ---------------------------------------------------------------------------
+# Regularizer optional parameters
+# ---------------------------------------------------------------------------
+BEAM_SIZE = 20.0 * eh.RADPERUAS
+ALPHA_A = 5000.0
+EPSILON_TV = 0.0
+
+# ---------------------------------------------------------------------------
+# Observation parameters
+# ---------------------------------------------------------------------------
+TINT_SEC = 5
+TADV_SEC = 600
+TSTART_HR = 0
+TSTOP_HR = 24
+BW_HZ = 4e9
+
+
+@pytest.fixture(scope="module")
+def grad_setup(eht_array, make_rect_image):
+    """Set up observation and test image from 32x48 synthetic Gaussian.
+
+    Uses xdim != ydim so the rectangular-image code paths are exercised.
+    """
+    im = make_rect_image(32, 48)
+    im.imvec = im.imvec * 2.0 / im.total_flux()  # normalize to 2 Jy
+
+    obs = im.observe(
+        eht_array, TINT_SEC, TADV_SEC, TSTART_HR, TSTOP_HR, BW_HZ,
+        sgrscat=False, ampcal=True, phasecal=True,
+        ttype="direct", add_th_noise=False,
+    )
+
+    prior = im.copy()
+    im2 = prior.copy()
+
+    rng = np.random.default_rng(RNG_SEED)
+    im2.imvec *= 1.0 + (rng.random(len(im2.imvec)) - 0.5) / 10.0
+    im2.imvec += (1.0 + (rng.random(len(im2.imvec)) - 0.5) / 10.0) * np.mean(im2.imvec)
+
+    mask = im2.imvec > 0.5 * np.median(im2.imvec)
+    test_imvec = im2.imvec[mask] if np.any(~mask) else im2.imvec
+
+    return {
+        "obs": obs,
+        "prior": prior,
+        "test_imvec": test_imvec,
+        "mask": mask,
+        "im": im,
+    }
+
+
+class TestChisqGradientFiniteDiff:
+    """Analytic chi-squared gradients match numeric finite differences."""
+
+    @pytest.mark.parametrize("dtype", DATATERMS)
+    @pytest.mark.parametrize("ttype", TTYPES)
+    def test_median_frac_diff(self, grad_setup, dtype, ttype):
+        if ttype == "nfft":
+            pytest.importorskip("pynfft")
+        median_frac, _ = _chisq_gradient_check(grad_setup, dtype, ttype)
+        assert median_frac < CHISQ_GRAD_MEDIAN_TOL, (
+            f"{dtype} ({ttype}) median fractional gradient diff = {median_frac:.6f}"
+        )
+
+    @pytest.mark.parametrize("dtype", DATATERMS)
+    @pytest.mark.parametrize("ttype", TTYPES)
+    def test_max_frac_diff(self, grad_setup, dtype, ttype):
+        if ttype == "nfft":
+            pytest.importorskip("pynfft")
+        _, max_frac = _chisq_gradient_check(grad_setup, dtype, ttype)
+        assert max_frac < CHISQ_GRAD_MAX_TOL, (
+            f"{dtype} ({ttype}) max fractional gradient diff = {max_frac:.6f}"
+        )
+
+
+class TestRegularizerGradientFiniteDiff:
+    """Analytic regularizer gradients match numeric finite differences."""
+
+    @pytest.mark.parametrize("rtype", REGULARIZERS)
+    def test_median_frac_diff(self, grad_setup, rtype):
+        median_frac, _ = _reg_gradient_check(grad_setup, rtype)
+        assert median_frac < REG_GRAD_MEDIAN_TOL, (
+            f"{rtype} median fractional gradient diff = {median_frac:.6f}"
+        )
+
+    @pytest.mark.parametrize("rtype", REGULARIZERS)
+    def test_max_frac_diff(self, grad_setup, rtype):
+        _, max_frac = _reg_gradient_check(grad_setup, rtype)
+        assert max_frac < REG_GRAD_MAX_TOL, (
+            f"{rtype} max fractional gradient diff = {max_frac:.6f}"
+        )
+
+
+def _chisq_gradient_check(grad_setup, dtype, ttype):
+    """Compare analytic vs numeric chi-squared gradient on subsampled pixels."""
+    obs = grad_setup["obs"]
+    prior = grad_setup["prior"]
+    mask = grad_setup["mask"]
+    test_imvec = grad_setup["test_imvec"]
+
+    cdata = chisqdata(obs, prior, mask, dtype, ttype=ttype)
+    grad_exact = chisqgrad(test_imvec, cdata[2], cdata[0], cdata[1], dtype, ttype=ttype, mask=mask)
+    y0 = chisq(test_imvec, cdata[2], cdata[0], cdata[1], dtype, ttype=ttype, mask=mask)
+
+    rng = np.random.default_rng(RNG_SEED)
+    sample_idx = rng.choice(len(test_imvec), size=N_GRAD_SAMPLES, replace=False)
+
+    grad_numeric = np.zeros(N_GRAD_SAMPLES)
+    for i, j in enumerate(sample_idx):
+        dx = max(GRAD_DX_REL * abs(test_imvec[j]), GRAD_DX_FLOOR)
+        imvec2 = test_imvec.copy()
+        imvec2[j] += dx
+        y1 = chisq(imvec2, cdata[2], cdata[0], cdata[1], dtype, ttype=ttype, mask=mask)
+        grad_numeric[i] = (y1 - y0) / dx
+
+    grad_sampled = grad_exact[sample_idx]
+    compare_floor = np.min(np.abs(grad_sampled)) * 1e-20 + 1e-100
+    frac_diff = np.abs((grad_numeric - grad_sampled) / (np.abs(grad_sampled) + compare_floor))
+    return np.median(frac_diff), np.max(frac_diff)
+
+
+def _reg_gradient_check(grad_setup, rtype):
+    """Compare analytic vs numeric regularizer gradient on subsampled pixels."""
+    test_imvec = grad_setup["test_imvec"]
+    im = grad_setup["im"]
+
+    nprior = np.ones_like(test_imvec)
+    nprior = nprior * np.sum(test_imvec) / np.sum(nprior)
+    mask = grad_setup["mask"]
+    flux = np.sum(test_imvec)
+
+    kwargs = dict(
+        beam_size=BEAM_SIZE, alpha_A=ALPHA_A, epsilon_tv=EPSILON_TV, norm_reg=True,
+    )
+
+    y0 = iu.regularizer(test_imvec, nprior, mask, flux, im.xdim, im.ydim, im.psize, rtype, **kwargs)
+    grad_exact = iu.regularizergrad(test_imvec, nprior, mask, flux, im.xdim, im.ydim, im.psize, rtype, **kwargs)
+
+    rng = np.random.default_rng(RNG_SEED)
+    sample_idx = rng.choice(len(test_imvec), size=N_GRAD_SAMPLES, replace=False)
+
+    grad_numeric = np.zeros(N_GRAD_SAMPLES)
+    for i, j in enumerate(sample_idx):
+        dx = max(GRAD_DX_REL * abs(test_imvec[j]), GRAD_DX_FLOOR)
+        imvec2 = test_imvec.copy()
+        imvec2[j] += dx
+        y1 = iu.regularizer(imvec2, nprior, mask, flux, im.xdim, im.ydim, im.psize, rtype, **kwargs)
+        grad_numeric[i] = (y1 - y0) / dx
+
+    grad_sampled = grad_exact[sample_idx]
+    compare_floor = np.min(np.abs(grad_sampled)) * 1e-20 + 1e-100
+    frac_diff = np.abs((grad_numeric - grad_sampled) / (np.abs(grad_sampled) + compare_floor))
+    return np.median(frac_diff), np.max(frac_diff)

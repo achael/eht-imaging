@@ -27,9 +27,9 @@ Installing with pip will update most of the required libraries automatically (`n
 
 NFFT Installation
 -----------------
-**If you want to use fast fourier transforms, you will also need to separately install** `NFFT <https://github.com/NFFT/nfft>`_ **and its** `pyNFFT wrapper <https://github.com/ghisvail/pyNFFT/>`__. 
+**If you want to use fast fourier transforms, you will also need to separately install** `NFFT <https://github.com/NFFT/nfft>`_ **and its** `pyNFFT wrapper <https://github.com/ghisvail/pyNFFT/>`__.
 
-**Note that, unfortunately, pyNFFT is only supported for python versions <=3.11  and numpy versions <=1.26.4** 
+**Note that, unfortunately, pyNFFT is only supported for python versions <=3.11  and numpy versions <=1.26.4**
 
 A new eht-imaging version 2.0 replacing pynfft with the actively maintained `finufft <https://github.com/flatironinstitute/finufft>`__ library is in active development.
 

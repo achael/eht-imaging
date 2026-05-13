@@ -16,36 +16,31 @@
 #    You should have received a copy of the GNU General Public License
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-from __future__ import division
-from __future__ import print_function
 
-from builtins import str
-from builtins import range
-from builtins import object
 
 try:
-    from sgp4.api import Satrec, WGS72
     import skyfield.api
+    from sgp4.api import WGS72, Satrec
 except ImportError:
     print("Warning: skyfield not installed: cannot simulate space VLBI")
-    
+
 try:
     from pynfft.nfft import NFFT
 except ImportError:
     print("Warning: No NFFT installed!")
 
-import astropy.time as at
-import astropy.coordinates as coords
-import numpy as np
+import copy
 import itertools as it
+import sys
+import warnings
+
+import astropy.time as at
+import numpy as np
 import scipy.ndimage as nd
 import scipy.spatial.distance
-import copy
-import sys
 
 import ehtim.const_def as ehc
 
-import warnings
 warnings.filterwarnings("ignore", message="divide by zero encountered in double_scalars")
 
 ##################################################################################################
@@ -56,7 +51,7 @@ warnings.filterwarnings("ignore", message="divide by zero encountered in double_
 def compute_uv_coordinates(array, site1, site2, time, mjd, ra, dec, rf, timetype='UTC',
                            elevmin=ehc.ELEV_LOW,  elevmax=ehc.ELEV_HIGH, no_elevcut_space=False,
                            fix_theta_GMST=False, earthshadow_space=True):
-                           
+
     """Compute u,v coordinates for an array at a given time for a source at a given ra,dec,rf
     """
 
@@ -74,10 +69,10 @@ def compute_uv_coordinates(array, site1, site2, time, mjd, ra, dec, rf, timetype
         raise Exception("site1, site2, and time not the same dimension in compute_uv_coordinates!")
 
     if ra>24 or ra<0:
-        raise Exception('RA %.2f in compute_uv_coordinates should be in decimal hours from 0 to 24!'%ra)
+        raise Exception(f'RA {ra:.2f} in compute_uv_coordinates should be in decimal hours from 0 to 24!')
     if dec>180 or dec<-180:
-        raise Exception('DEC %.2f in compute_uv_coordinates should be in decimal degrees from -180 to 180!'%dec)
-                
+        raise Exception(f'DEC {dec:.2f} in compute_uv_coordinates should be in decimal degrees from -180 to 180!')
+
     # Source vector
     sourcevec = np.array([np.cos(dec*ehc.DEGREE), 0, np.sin(dec*ehc.DEGREE)])
     projU = np.cross(np.array([0, 0, 1]), sourcevec)
@@ -99,7 +94,7 @@ def compute_uv_coordinates(array, site1, site2, time, mjd, ra, dec, rf, timetype
     fracmjd = np.floor(mjd) + time/24.
     dto = (at.Time(fracmjd, format='mjd')).datetime
     theta = np.mod((time_sidereal - ra)*ehc.HOUR, 2*np.pi)
-    if type(fix_theta_GMST) != bool:
+    if not isinstance(fix_theta_GMST, bool):
         theta = np.mod((fix_theta_GMST - ra)*ehc.HOUR, 2*np.pi)
 
     i1 = np.array([array.tkey[site] for site in site1])
@@ -119,13 +114,13 @@ def compute_uv_coordinates(array, site1, site2, time, mjd, ra, dec, rf, timetype
     for satname in satnames:
         sat = satdict[satname]
 
-        mask1 = (site1==satname)    
-        c1 = orbit_skyfield(sat, fracmjd[mask1], whichout='itrs')          
+        mask1 = (site1==satname)
+        c1 = orbit_skyfield(sat, fracmjd[mask1], whichout='itrs')
         coord1[mask1] = c1.T
-        mask2 = (site2==satname)    
+        mask2 = (site2==satname)
         c2 = orbit_skyfield(sat, fracmjd[mask2], whichout='itrs')
         coord2[mask2] = c2.T
-         
+
     # Satellites: old method
     """
     if np.any(spacemask1):
@@ -136,10 +131,10 @@ def compute_uv_coordinates(array, site1, site2, time, mjd, ra, dec, rf, timetype
         site1space_fracmjdlist = fracmjd[spacemask1]
         site1space_dtolist = dto[spacemask1]
         coord1space = []
-        
+
         for k in range(len(site1space_list)):
 
-            
+
             # old method with pyephem
 
             site1space = site1space_list[k]
@@ -154,7 +149,7 @@ def compute_uv_coordinates(array, site1, site2, time, mjd, ra, dec, rf, timetype
             c1 = coords.EarthLocation.from_geodetic(lon, lat, elev, ellipsoid=None)
             c1 = np.array((c1.x.value, c1.y.value, c1.z.value))
             coord1space.append(c1)
-            
+
         coord1space = np.array(coord1space)
         coord1[spacemask1] = coord1space
 
@@ -182,12 +177,12 @@ def compute_uv_coordinates(array, site1, site2, time, mjd, ra, dec, rf, timetype
             # pyephem doesn't use an ellipsoid earth model!
             c2 = coords.EarthLocation.from_geodetic(lon, lat, elev, ellipsoid=None)
             c2 = np.array((c2.x.value, c2.y.value, c2.z.value))
-            coord2space.append(c2)            
+            coord2space.append(c2)
 
         coord2space = np.array(coord2space)
         coord2[spacemask2] = coord2space
     """
-    
+
     # rotate the station coordinates with the earth
     coord1 = earthrot(coord1, theta)
     coord2 = earthrot(coord2, theta)
@@ -197,19 +192,19 @@ def compute_uv_coordinates(array, site1, site2, time, mjd, ra, dec, rf, timetype
     v = np.dot((coord1 - coord2)/wvl, projV)  # v (lambda)
 
     # mask out below elevation cut
-    mask_elev_1 = elevcut(coord1, sourcevec, elevmin=elevmin, elevmax=elevmax) 
+    mask_elev_1 = elevcut(coord1, sourcevec, elevmin=elevmin, elevmax=elevmax)
     mask_elev_2 = elevcut(coord2, sourcevec, elevmin=elevmin, elevmax=elevmax)
-    
+
     # do NOT apply elevation cut for space orbiters
-    if no_elevcut_space:    
+    if no_elevcut_space:
         mask_elev_1[spacemask1] = 1
         mask_elev_2[spacemask2] = 1
-    
+
 
 
     # apply elevation mask
     mask = mask_elev_1 * mask_elev_2
-    
+
     if earthshadow_space:
         spacevecs1 = coord1[spacemask1]
         spacevecs2 = coord2[spacemask2]
@@ -371,7 +366,7 @@ def make_closure_amplitude(blue1, blue2, red1, red2, vtype,
        vtype is the  visibility type
     """
 
-    if not (ctype in ['camp', 'logcamp']):
+    if ctype not in ['camp', 'logcamp']:
         raise Exception("closure amplitude type must be 'camp' or 'logcamp'!")
 
     if polrep == 'stokes':
@@ -830,7 +825,7 @@ def ticks(axisdim, psize, nticks=8):
         axisdim += 1
     if nticks % 2:
         nticks -= 1
-    tickspacing = float((axisdim-1))/nticks
+    tickspacing = float(axisdim-1)/nticks
     ticklocs = np.arange(0, axisdim+1, tickspacing) - 0.5
     ticklabels = np.around(psize * np.arange((axisdim-1)/2.0, -
                                              (axisdim)/2.0, -tickspacing), decimals=1)
@@ -945,7 +940,7 @@ def rastring(ra):
     h = int(ra)
     m = int((ra-h)*60.)
     s = (ra-h-m/60.)*3600.
-    out = "%2i h %2i m %2.4f s" % (h, m, s)
+    out = f"{h:2d} h {m:2d} m {s:2.4f} s"
 
     return out
 
@@ -957,7 +952,7 @@ def decstring(dec):
     deg = int(dec)
     m = int((abs(dec)-abs(deg))*60.)
     s = (abs(dec)-abs(deg)-m/60.)*3600.
-    out = "%2i deg %2i m %2.4f s" % (deg, m, s)
+    out = f"{deg:2d} deg {m:2d} m {s:2.4f} s"
 
     return out
 
@@ -971,7 +966,7 @@ def gmtstring(gmt):
     h = int(gmt)
     m = int((gmt-h)*60.)
     s = (gmt-h-m/60.)*3600.
-    out = "%02i:%02i:%2.4f" % (h, m, s)
+    out = f"{h:02d}:{m:02d}:{s:2.4f}"
 
     return out
 
@@ -1170,7 +1165,7 @@ def reduce_tri_minimal(obs, datarr):
     """
 
     # time sort or not
-    if not (type(datarr) is list):
+    if type(datarr) is not list:
         datalist = []
         dtype = datarr.dtype
         for key, group in it.groupby(datarr, lambda x: x['time']):
@@ -1222,7 +1217,7 @@ def reduce_quad_minimal(obs, datarr, ctype='camp'):
         raise Exception("ctype must be 'camp' or 'logcamp'")
 
     # time sort or not
-    if not (type(datarr) is list):
+    if type(datarr) is not list:
         datalist = []
         dtype = datarr.dtype
         for key, group in it.groupby(datarr, lambda x: x['time']):
@@ -1333,7 +1328,7 @@ def uimage(iimage, mimage, chiimage):
 ##################################################################################################
 # FFT & NFFT helper functions
 ##################################################################################################
-class NFFTInfo(object):
+class NFFTInfo:
     def __init__(self, xdim, ydim, psize, pulse, npad, p_rad, uv):
         self.xdim = int(xdim)
         self.ydim = int(ydim)
@@ -1358,14 +1353,14 @@ class NFFTInfo(object):
                               for i in range(self.uvdim)), 'c16')
         self.pulsefac = (pulses*phases)
 
-class SamplerInfo(object):
+class SamplerInfo:
     def __init__(self, order, uv, pulsefac):
         self.order = int(order)
         self.uv = uv
         self.pulsefac = pulsefac
 
 
-class GridderInfo(object):
+class GridderInfo:
     def __init__(self, npad, func, p_rad, coords, weights):
         self.npad = int(npad)
         self.conv_func = func
@@ -1374,7 +1369,7 @@ class GridderInfo(object):
         self.weights = weights
 
 
-class ImInfo(object):
+class ImInfo:
     def __init__(self, xdim, ydim, npad, psize, pulse):
         self.xdim = int(xdim)
         self.ydim = int(ydim)
@@ -1448,7 +1443,9 @@ def fft_imvec(imvec, im_info):
     padvaly2 = im_info.padvaly2
 
     imarr = imvec.reshape(ydim, xdim)
-    imarr = np.pad(imarr, ((padvalx1, padvalx2), (padvaly1, padvaly2)),
+    # imarr.shape is (ydim, xdim). First axis (rows) is y, second (cols) is x.
+    # So padvaly pads the y-axis and padvalx pads the x-axis.
+    imarr = np.pad(imarr, ((padvaly1, padvaly2), (padvalx1, padvalx2)),
                    'constant', constant_values=0.0)
 
     if imarr.shape[0] != imarr.shape[1]:
@@ -1539,7 +1536,7 @@ def make_gridder_and_sampler_info(im_info, uv, conv_func=ehc.GRIDDER_CONV_FUNC_D
     p_rad is the pixel radius inside wich the conv_func is nonzero
     """
 
-    if not (conv_func in ['pillbox', 'gaussian', 'cubic']):
+    if conv_func not in ['pillbox', 'gaussian', 'cubic']:
         raise Exception("conv_func must be either 'pillbox', 'gaussian', or, 'cubic'")
 
     npad = im_info.npad
@@ -1682,7 +1679,7 @@ def prog_msg(nscan, totscans, msgtype='bar', nscan_last=0):
         if progress > progress_last:
             for i in range(progress_last+1, progress+1):
                 message_line = ''.join(message_all[i])
-                message_line = '%03i' % int(complete_percent) + message_line
+                message_line = f'{int(complete_percent):03d}' + message_line
                 print(message_line)
 
     elif msgtype == 'eht':
@@ -1693,7 +1690,7 @@ def prog_msg(nscan, totscans, msgtype='bar', nscan_last=0):
         if progress > progress_last:
             for i in range(progress_last+1, progress+1):
                 message_line = ''.join(message_all[i])
-                message_line = '%03i' % int(complete_percent) + message_line
+                message_line = f'{int(complete_percent):03d}' + message_line
                 print(message_line)
 
     elif msgtype == 'dots':
@@ -1705,41 +1702,41 @@ def prog_msg(nscan, totscans, msgtype='bar', nscan_last=0):
         printstr = "\rScan %0"+ndigit+"i/%i : %i%% done . . ."
         sys.stdout.write(printstr % barparams)
         sys.stdout.flush()
-        
-def sat_skyfield_from_elements(satname, epoch_mjd, perigee_mjd, 
+
+def sat_skyfield_from_elements(satname, epoch_mjd, perigee_mjd,
                                period_days, eccentricity,
                                inclination, arg_perigee, long_ascending):
-                              
+
     """skyfield EarthSatellite object from keplerian orbital elements
        perfect keplerian orbit is assumed, no derivatives
        epoch, pericenter given in mjd
        period given in days
        inclination, arg_perigee, long_ascending given in degrees
     """
-    
-    if not(0<=eccentricity<1): 
+
+    if not(0<=eccentricity<1):
         raise Exception("eccentricity must be between 0 and 1")
-    if not(0<=inclination<=180): 
+    if not(0<=inclination<=180):
         raise Exception("inclination must be between 0 and 180")
-    if not(0<=arg_perigee<=180): 
+    if not(0<=arg_perigee<=180):
         raise Exception("arg_perigee must be between 0 and 180")
-    if not(0<=long_ascending<=360): 
+    if not(0<=long_ascending<=360):
         raise Exception("arg_perigee must be between 0 and 360")
 
     satrec = Satrec()
-    ts = skyfield.api.load.timescale()                                
+    ts = skyfield.api.load.timescale()
     ref_mjd = 33281. # mjd 1949 December 31 00:00 UT
     epoch_wrt_ref = epoch_mjd - ref_mjd
 
     inclination_rad = inclination*ehc.DEGREE
-    arg_perigee_rad = arg_perigee*ehc.DEGREE 
+    arg_perigee_rad = arg_perigee*ehc.DEGREE
     long_ascending_rad = long_ascending*ehc.DEGREE
-    
+
     mean_motion = 2*np.pi/(period_days*24.*60.) # radians/minute
 
     mean_anomaly = mean_motion*(epoch_mjd - perigee_mjd)
     mean_anomaly = np.mod(mean_anomaly, 2*np.pi)
-    
+
     satrec.sgp4init(
         WGS72,           # gravity model
         'i',             # 'a' = old AFSPC mode, 'i' = improved mode
@@ -1756,9 +1753,9 @@ def sat_skyfield_from_elements(satname, epoch_mjd, perigee_mjd,
         long_ascending_rad,    # nodeo: right ascension of ascending node (radians)
     )
     sat_skyfield = skyfield.api.EarthSatellite.from_satrec(satrec, ts)
-            
+
     return sat_skyfield
-    
+
 def sat_skyfield_from_tle(satname, line1, line2):
     ts = skyfield.api.load.timescale()
     sat_skyfield = skyfield.api.EarthSatellite(line1, line2, satname, ts)
@@ -1767,17 +1764,17 @@ def sat_skyfield_from_tle(satname, line1, line2):
 def sat_skyfield_from_ephementry(satname, ephem, epoch_mjd):
     if len(ephem[satname])==3: # TLE
         line1 = ephem[satname][1]
-        line2 = ephem[satname][2]            
+        line2 = ephem[satname][2]
         sat = sat_skyfield_from_tle(satname, line1, line2)
     elif len(ephem[satname])==6: #keplerian elements
         elements = ephem[satname]
         sat = sat_skyfield_from_elements(satname, epoch_mjd,
                                          elements[0],elements[1],elements[2],elements[3],elements[4],elements[5])
     else:
-        raise Exception("ephemeris format not recognized for %s"%satellite)    
+        raise Exception(f"ephemeris format not recognized for {satname}")
 
     return sat
-                                                                         
+
 def orbit_skyfield(sat, fracmjds, whichout='itrs'):
 
     """uses skyfield to propagate a earth satellite orbit and return x,y,z coordinates in co-rotating earth frame
@@ -1785,7 +1782,7 @@ def orbit_skyfield(sat, fracmjds, whichout='itrs'):
        times is a list of fractional mjds
        whichout is 'itrs' (co-rotating) or 'gcrs' (fixed x-axis to equinox)
     """
-    
+
     #fractional days of orbit in jd
     mjd_to_jd = 2400000.5
     ts = skyfield.api.load.timescale()
@@ -1793,18 +1790,18 @@ def orbit_skyfield(sat, fracmjds, whichout='itrs'):
 
     # propagate orbit
     time_data = sat.at(t)
-    
+
     if whichout=='gcrs':
         # GCRS coordinates in km
         positions = time_data.xyz.m
-        
+
     elif whichout=='itrs':
         # get coordinates in earth frame (WGS84 ellipsiod)
         geographic_position = skyfield.api.wgs84.geographic_position_of(time_data)
         positions = geographic_position.itrs_xyz.m
 
     else:
-        raise Excption("orbit_skyfield whichout must be 'itrs' or 'gcrs'")
-        
-    return positions        
+        raise Exception("orbit_skyfield whichout must be 'itrs' or 'gcrs'")
+
+    return positions
 
