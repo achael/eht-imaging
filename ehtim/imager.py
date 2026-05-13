@@ -190,7 +190,7 @@ class Imager:
         self.beam_size = self.obslist_next[0].res()
         self.regparams = {k: kwargs.get(k, REGPARAMS_DEFAULT[k]) for k in REGPARAMS_DEFAULT.keys()}
 
-        # FFT / Fourier-grid parameters (consumed by the backend via self._full_fft_params())
+        # FFT / Fourier-grid parameters (consumed by the backend via self._fft_params())
         ttype = kwargs.get('ttype', 'nfft')
         self._fft_gridder_prad = kwargs.get('fft_gridder_prad', GRIDDER_P_RAD_DEFAULT)
         self._fft_conv_func = kwargs.get('fft_conv_func', GRIDDER_CONV_FUNC_DEFAULT)
@@ -699,7 +699,7 @@ class Imager:
             self.freq_list, self.reffreq, self._config,
             self.norm_init, self.flux_next, self.clipfloor_next,
             sorted(self.dat_term_next.keys()),
-            self._full_data_weighting_params(), self._full_fft_params(),
+            self._data_weighting_params(), self._fft_params(),
             compute_data=self._change_imgr_params,
             prior_data_tuples=getattr(self, "_data_tuples", None),
         )
@@ -739,7 +739,7 @@ class Imager:
             self._which_solve, self._nimage,
         )
 
-    def _full_regparams(self):
+    def _regparams(self):
         """Bundle all regularizer params into a RegParams NamedTuple for the backend."""
         return RegParams(
             flux=self.flux_next,
@@ -757,7 +757,7 @@ class Imager:
             epsilon_tv=self.regparams['epsilon_tv'],
         )
 
-    def _full_data_weighting_params(self):
+    def _data_weighting_params(self):
         """Bundle data-weighting params into a DataWeighting NamedTuple for the backend."""
         return DataWeighting(
             maxset=self.maxset_next,
@@ -769,7 +769,7 @@ class Imager:
             cp_uv_min=self.cp_uv_min,
         )
 
-    def _full_fft_params(self):
+    def _fft_params(self):
         """Bundle Fourier-grid params into a FourierGridParams NamedTuple for the backend."""
         return FourierGridParams(
             fft_pad_factor=self._fft_pad_factor,
@@ -785,7 +785,7 @@ class Imager:
         return compute_reg_dict(
             imcur, sorted(self.reg_term_next.keys()), self._config,
             self._logfreqratio_list, len(self.obslist_next),
-            self._prior_arr, self.norm_reg, self._full_regparams(),
+            self._prior_arr, self.norm_reg, self._regparams(),
             self._embed_mask,
         )
 
@@ -796,7 +796,7 @@ class Imager:
         return compute_reggrad_dict(
             imcur, sorted(self.reg_term_next.keys()), self._config,
             self._logfreqratio_list, len(self.obslist_next),
-            self._prior_arr, self.norm_reg, self._full_regparams(),
+            self._prior_arr, self.norm_reg, self._regparams(),
             self._embed_mask,
             self._which_solve, self._nimage,
         )
@@ -808,7 +808,7 @@ class Imager:
             self._which_solve, self._data_tuples,
             self._logfreqratio_list, len(self.obslist_next),
             self.dat_term_next, self.reg_term_next,
-            self._prior_arr, self.norm_reg, self._full_regparams(),
+            self._prior_arr, self.norm_reg, self._regparams(),
             self._embed_mask,
         )
 
@@ -819,7 +819,7 @@ class Imager:
             self._which_solve, self._data_tuples,
             self._logfreqratio_list, len(self.obslist_next),
             self.dat_term_next, self.reg_term_next,
-            self._prior_arr, self.norm_reg, self._full_regparams(),
+            self._prior_arr, self.norm_reg, self._regparams(),
             self._embed_mask, self._nimage,
         )
 

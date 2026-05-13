@@ -223,6 +223,118 @@ class ImagerInitState(NamedTuple):
     reffreq: float               # may be re-bound to init.rf when mf=True
 
 
+class RegParams(NamedTuple):
+    """Bundle of regularizer parameters passed to compute_reg_dict / compute_reggrad_dict.
+
+    Built once per imager run by Imager._regparams() and forwarded into each
+    regularizer function via ``**reg_params._asdict()``. Regularizer functions
+    take what they need from this bundle; extra fields are ignored via their
+    trailing ``**kwargs``.
+
+    Field groups:
+      Image scale          : flux, pflux, vflux
+      Image geometry       : xdim, ydim, psize, beam_size
+      Multifrequency       : mf_flux
+      Term-specific kwargs : major, minor, PA, alpha_A, epsilon_tv
+    """
+    flux: float
+    pflux: float | None
+    vflux: float | None
+    xdim: int
+    ydim: int
+    psize: float
+    beam_size: float
+    mf_flux: list | None         # length n_obs when REGULARIZERS_ALLFREQS_I active
+    major: float
+    minor: float
+    PA: float
+    alpha_A: float
+    epsilon_tv: float
+
+
+class DataWeighting(NamedTuple):
+    """Bundle of data-weighting parameters passed to compute_data_tuples.
+
+    Built once per imager run by Imager._data_weighting_params() and forwarded
+    into compute_data_tuples, which reads its fields directly.
+
+    Field groups:
+      Closure-set selection   : maxset
+      Noise corrections       : debias, systematic_noise, systematic_cphase_noise
+      SNR filtering           : snrcut
+      Weighting scheme        : weighting
+      UV closure-phase filter : cp_uv_min
+    """
+    maxset: bool                    # use the maximal independent set of closure quantities
+    debias: bool                    # apply noise-bias correction to visibility amplitudes
+    snrcut: dict                    # per-data-term SNR threshold (dname -> float)
+    weighting: str                  # baseline weighting scheme ('natural', 'uniform')
+    systematic_noise: float         # fractional sys-noise added in quadrature to amplitudes
+    systematic_cphase_noise: float  # absolute sys-noise added in quadrature to closure phases (deg)
+    cp_uv_min: float | bool         # minimum UV-separation cut on closure phases (False = no cut)
+
+
+class FourierGridParams(NamedTuple):
+    """Bundle of Fourier-grid parameters used by ttype='fast' and ttype='nfft'.
+
+    These configure the gridding kernel + grid padding + interpolation order
+    shared between the FFT and NFFT transform paths. Built once per imager
+    run by Imager._fft_params() and passed into compute_data_tuples.
+
+    Field groups:
+      Grid           : fft_pad_factor
+      Gridding kernel: fft_conv_func, fft_gridder_prad
+      Interpolation  : fft_interp_order
+    """
+    fft_pad_factor: float    # zero-padding factor for the Fourier grid (typical: 2)
+    fft_conv_func: str       # gridding convolution kernel ('gaussian', 'pillbox', ...)
+    fft_gridder_prad: float  # gridding kernel half-support in pixels
+    fft_interp_order: int    # interpolation order for grid-sample lookups
+
+
+class MfConfig(NamedTuple):
+    """Multifrequency solver configuration bundled inside ImagerConfig.
+
+    Carries the spectral-expansion orders read by compute_which_solve and
+    related multifrequency dispatch code paths. Unused when ImagerConfig.mf
+    is False, but always populated with defaults.
+
+    Field groups:
+      Spectral expansion : mf_order, mf_order_pol
+      RM / CM solves     : mf_rm, mf_cm
+    """
+    mf_order: int      # spectral-index expansion order for Stokes I (0=off, 1=alpha, 2=alpha+beta)
+    mf_order_pol: int  # spectral-index expansion order for polarization (0 / 1 / 2)
+    mf_rm: int         # solve for Faraday rotation measure (0=off, 1=on)
+    mf_cm: int         # solve for Faraday conversion measure (0=off, 1=on)
+
+
+class ImagerConfig(NamedTuple):
+    """Static imaging configuration bundled at Imager construction.
+
+    Replaces the flat self.pol_next / self.transform_next / self._ttype /
+    self.mf_next / self.mf_* attrs on the Imager class. Crosses into every
+    backend function that previously took these as individual args.
+
+    Field groups:
+      Polarization   : pol, transforms
+      Transform type : ttype
+      Multifrequency : mf, mf_config (nested MfConfig)
+
+    JAX note: this bundle is a *static* pytree, not a traced one. The string
+    leaves (pol, ttype, transform names) and the dict leaf in the sibling
+    DataWeighting bundle (snrcut) aren't valid JAX traceable values. When
+    jitting backend functions that take a config, pass it as a
+    ``static_argname='config'`` so the structure participates in cache keying
+    rather than tracing.
+    """
+    pol: str                       # imager polarization mode ('I', 'IP', 'IV', 'IPV', 'QU', ...)
+    transforms: Sequence[str]      # bounded-value transform stack applied to imcur (e.g. ['log', 'mcv'])
+    ttype: str                     # Fourier transform type ('direct', 'fast', 'nfft')
+    mf: bool                       # multifrequency-imaging master flag
+    mf_config: MfConfig            # nested multifrequency expansion config
+
+
 def pack_imarr(imarr, which_solve):
     """pack image array imarr into 1D array vec for minimizaiton
        ignore quantities not solved for
@@ -1071,118 +1183,6 @@ def compute_regularizergrad_term(imvec_or_imarr, regname, mask, **kwargs):
         raise Exception(f"regularizer term {regname} not recognized!")
     _, grad_fn, _ = _REGULARIZER_DISPATCH[regname]
     return grad_fn(imvec_or_imarr, mask=mask, **kwargs)
-
-
-class RegParams(NamedTuple):
-    """Bundle of regularizer parameters passed to compute_reg_dict / compute_reggrad_dict.
-
-    Built once per imager run by Imager._full_regparams() and forwarded into
-    each regularizer function via ``**reg_params._asdict()``. Regularizer
-    functions take what they need from this bundle; extra fields are ignored
-    via their trailing ``**kwargs``.
-
-    Field groups:
-      Image scale          : flux, pflux, vflux
-      Image geometry       : xdim, ydim, psize, beam_size
-      Multifrequency       : mf_flux
-      Term-specific kwargs : major, minor, PA, alpha_A, epsilon_tv
-    """
-    flux: float
-    pflux: float | None
-    vflux: float | None
-    xdim: int
-    ydim: int
-    psize: float
-    beam_size: float
-    mf_flux: list | None         # length n_obs when REGULARIZERS_ALLFREQS_I active
-    major: float
-    minor: float
-    PA: float
-    alpha_A: float
-    epsilon_tv: float
-
-
-class DataWeighting(NamedTuple):
-    """Bundle of data-weighting parameters passed to compute_data_tuples.
-
-    Built once per imager run by Imager._full_data_weighting_params() and
-    forwarded into compute_data_tuples, which reads its fields directly.
-
-    Field groups:
-      Closure-set selection   : maxset
-      Noise corrections       : debias, systematic_noise, systematic_cphase_noise
-      SNR filtering           : snrcut
-      Weighting scheme        : weighting
-      UV closure-phase filter : cp_uv_min
-    """
-    maxset: bool                    # use the maximal independent set of closure quantities
-    debias: bool                    # apply noise-bias correction to visibility amplitudes
-    snrcut: dict                    # per-data-term SNR threshold (dname -> float)
-    weighting: str                  # baseline weighting scheme ('natural', 'uniform')
-    systematic_noise: float         # fractional sys-noise added in quadrature to amplitudes
-    systematic_cphase_noise: float  # absolute sys-noise added in quadrature to closure phases (deg)
-    cp_uv_min: float | bool         # minimum UV-separation cut on closure phases (False = no cut)
-
-
-class FourierGridParams(NamedTuple):
-    """Bundle of Fourier-grid parameters used by ttype='fast' and ttype='nfft'.
-
-    These configure the gridding kernel + grid padding + interpolation order
-    shared between the FFT and NFFT transform paths. Built once per imager
-    run by Imager._full_fft_params() and passed into compute_data_tuples.
-
-    Field groups:
-      Grid           : fft_pad_factor
-      Gridding kernel: fft_conv_func, fft_gridder_prad
-      Interpolation  : fft_interp_order
-    """
-    fft_pad_factor: float    # zero-padding factor for the Fourier grid (typical: 2)
-    fft_conv_func: str       # gridding convolution kernel ('gaussian', 'pillbox', ...)
-    fft_gridder_prad: float  # gridding kernel half-support in pixels
-    fft_interp_order: int    # interpolation order for grid-sample lookups
-
-
-class MfConfig(NamedTuple):
-    """Multifrequency solver configuration bundled inside ImagerConfig.
-
-    Carries the spectral-expansion orders read by compute_which_solve and
-    related multifrequency dispatch code paths. Unused when ImagerConfig.mf
-    is False, but always populated with defaults.
-
-    Field groups:
-      Spectral expansion : mf_order, mf_order_pol
-      RM / CM solves     : mf_rm, mf_cm
-    """
-    mf_order: int      # spectral-index expansion order for Stokes I (0=off, 1=alpha, 2=alpha+beta)
-    mf_order_pol: int  # spectral-index expansion order for polarization (0 / 1 / 2)
-    mf_rm: int         # solve for Faraday rotation measure (0=off, 1=on)
-    mf_cm: int         # solve for Faraday conversion measure (0=off, 1=on)
-
-
-class ImagerConfig(NamedTuple):
-    """Static imaging configuration bundled at Imager construction.
-
-    Replaces the flat self.pol_next / self.transform_next / self._ttype /
-    self.mf_next / self.mf_* attrs on the Imager class. Crosses into every
-    backend function that previously took these as individual args.
-
-    Field groups:
-      Polarization   : pol, transforms
-      Transform type : ttype
-      Multifrequency : mf, mf_config (nested MfConfig)
-
-    JAX note: this bundle is a *static* pytree, not a traced one. The string
-    leaves (pol, ttype, transform names) and the dict leaf in the sibling
-    DataWeighting bundle (snrcut) aren't valid JAX traceable values. When
-    jitting backend functions that take a config, pass it as a
-    ``static_argname='config'`` so the structure participates in cache keying
-    rather than tracing.
-    """
-    pol: str                       # imager polarization mode ('I', 'IP', 'IV', 'IPV', 'QU', ...)
-    transforms: Sequence[str]      # bounded-value transform stack applied to imcur (e.g. ['log', 'mcv'])
-    ttype: str                     # Fourier transform type ('direct', 'fast', 'nfft')
-    mf: bool                       # multifrequency-imaging master flag
-    mf_config: MfConfig            # nested multifrequency expansion config
 
 
 def compute_data_tuples(obslist, prior, embed_mask, dat_term_keys, config,

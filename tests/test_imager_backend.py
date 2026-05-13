@@ -339,8 +339,8 @@ def _call_compute_data_tuples(imgr):
     return compute_data_tuples(
         imgr.obslist_next, imgr.prior_next, imgr._embed_mask,
         sorted(imgr.dat_term_next.keys()), imgr._config,
-        imgr._full_data_weighting_params(),
-        imgr._full_fft_params(),
+        imgr._data_weighting_params(),
+        imgr._fft_params(),
     )
 
 
@@ -391,13 +391,13 @@ class TestComputeDataTuples:
     def test_unrecognized_term_raises(self, gauss_im, observe,
                                       initialize_imager):
         imgr, _ = initialize_imager(observe(gauss_im), gauss_im, {"vis": 1})
-        bogus_weighting = imgr._full_data_weighting_params()._replace(
+        bogus_weighting = imgr._data_weighting_params()._replace(
             snrcut={'bogus': 0.0})
         with pytest.raises(Exception, match="not recognized"):
             compute_data_tuples(
                 imgr.obslist_next, imgr.prior_next, imgr._embed_mask,
                 ["bogus"], imgr._config,
-                bogus_weighting, imgr._full_fft_params(),
+                bogus_weighting, imgr._fft_params(),
             )
 
     def test_matches_imager_init_imager(self, gauss_im, observe,
@@ -435,8 +435,8 @@ def _call_compute_init_state(imgr):
         imgr._config,
         imgr.norm_init, imgr.flux_next, imgr.clipfloor_next,
         sorted(imgr.dat_term_next.keys()),
-        imgr._full_data_weighting_params(),
-        imgr._full_fft_params(),
+        imgr._data_weighting_params(),
+        imgr._fft_params(),
     )
 
 
@@ -531,8 +531,8 @@ class TestComputeInitState:
             imgr._config,
             imgr.norm_init, imgr.flux_next, imgr.clipfloor_next,
             sorted(imgr.dat_term_next.keys()),
-            imgr._full_data_weighting_params(),
-            imgr._full_fft_params(),
+            imgr._data_weighting_params(),
+            imgr._fft_params(),
             compute_data=False, prior_data_tuples=sentinel,
         )
         assert state.data_tuples is sentinel
@@ -548,8 +548,8 @@ class TestComputeInitState:
                 imgr._config,
                 imgr.norm_init, imgr.flux_next, imgr.clipfloor_next,
                 sorted(imgr.dat_term_next.keys()),
-                imgr._full_data_weighting_params(),
-                imgr._full_fft_params(),
+                imgr._data_weighting_params(),
+                imgr._fft_params(),
             )
 
 
@@ -1223,7 +1223,7 @@ def test_reg_and_reggrad_share_keys(gauss_im, observe, initialize_imager):
 
 
 class TestRegParams:
-    """Tests for the RegParams NamedTuple bundle and Imager._full_regparams()."""
+    """Tests for the RegParams NamedTuple bundle and Imager._regparams()."""
 
     EXPECTED_FIELDS = (
         "flux", "pflux", "vflux",
@@ -1232,12 +1232,12 @@ class TestRegParams:
         "major", "minor", "PA", "alpha_A", "epsilon_tv",
     )
 
-    def test_full_regparams_returns_namedtuple(self, gauss_im, observe,
+    def test_regparams_returns_namedtuple(self, gauss_im, observe,
                                                 initialize_imager):
-        """Imager._full_regparams() returns a RegParams instance."""
+        """Imager._regparams() returns a RegParams instance."""
         obs = observe(gauss_im)
         imgr, _ = initialize_imager(obs, gauss_im, {"vis": 100})
-        regp = imgr._full_regparams()
+        regp = imgr._regparams()
         assert isinstance(regp, RegParams)
 
     def test_field_access_matches_imager_attrs(self, gauss_im, observe,
@@ -1245,7 +1245,7 @@ class TestRegParams:
         """Every RegParams field reads back the corresponding Imager attribute."""
         obs = observe(gauss_im)
         imgr, _ = initialize_imager(obs, gauss_im, {"vis": 100})
-        regp = imgr._full_regparams()
+        regp = imgr._regparams()
 
         assert regp.flux == imgr.flux_next
         assert regp.pflux == imgr.pflux_next
@@ -1267,7 +1267,7 @@ class TestRegParams:
         2.18/2.19 promotions don't silently drop/add a key."""
         obs = observe(gauss_im)
         imgr, _ = initialize_imager(obs, gauss_im, {"vis": 100})
-        keys = imgr._full_regparams()._asdict().keys()
+        keys = imgr._regparams()._asdict().keys()
         assert tuple(keys) == self.EXPECTED_FIELDS
 
     def test_immutability(self, gauss_im, observe, initialize_imager):
@@ -1275,7 +1275,7 @@ class TestRegParams:
         semantics: any update must go through ._replace(...)."""
         obs = observe(gauss_im)
         imgr, _ = initialize_imager(obs, gauss_im, {"vis": 100})
-        regp = imgr._full_regparams()
+        regp = imgr._regparams()
         with pytest.raises(AttributeError):
             regp.flux = 2.0
 
@@ -1294,7 +1294,7 @@ class TestRegParams:
         imgr.check_params()
         imgr.check_limits()
         imgr.init_imager()
-        regp = imgr._full_regparams()
+        regp = imgr._regparams()
         assert regp.major == custom_major
         assert regp.epsilon_tv == custom_eps
         # Unspecified REGPARAMS_DEFAULT fields keep their defaults.
@@ -1315,12 +1315,12 @@ class TestRegParams:
             mf=True, mf_order=1,
             mf_flux=[1.0, 2.0],
         )
-        regp = imgr._full_regparams()
+        regp = imgr._regparams()
         assert regp.mf_flux == [1.0, 2.0]
 
 
 class TestDataWeighting:
-    """Pins the DataWeighting bundle returned by Imager._full_data_weighting_params():
+    """Pins the DataWeighting bundle returned by Imager._data_weighting_params():
     field set, immutability, parity with Imager attrs, and kwarg overrides /
     defaults landing in the right slots."""
 
@@ -1332,12 +1332,12 @@ class TestDataWeighting:
     def test_full_data_weighting_returns_namedtuple(self, gauss_im, observe,
                                                      initialize_imager):
         imgr, _ = initialize_imager(observe(gauss_im), gauss_im, {"vis": 100})
-        assert isinstance(imgr._full_data_weighting_params(), DataWeighting)
+        assert isinstance(imgr._data_weighting_params(), DataWeighting)
 
     def test_field_access_matches_imager_attrs(self, gauss_im, observe,
                                                  initialize_imager):
         imgr, _ = initialize_imager(observe(gauss_im), gauss_im, {"vis": 100})
-        dw = imgr._full_data_weighting_params()
+        dw = imgr._data_weighting_params()
         assert dw.maxset == imgr.maxset_next
         assert dw.debias == imgr.debias_next
         assert dw.snrcut == imgr.snrcut_next
@@ -1348,11 +1348,11 @@ class TestDataWeighting:
 
     def test_asdict_has_expected_keys(self, gauss_im, observe, initialize_imager):
         imgr, _ = initialize_imager(observe(gauss_im), gauss_im, {"vis": 100})
-        assert tuple(imgr._full_data_weighting_params()._asdict().keys()) == self.EXPECTED_FIELDS
+        assert tuple(imgr._data_weighting_params()._asdict().keys()) == self.EXPECTED_FIELDS
 
     def test_immutability(self, gauss_im, observe, initialize_imager):
         imgr, _ = initialize_imager(observe(gauss_im), gauss_im, {"vis": 100})
-        dw = imgr._full_data_weighting_params()
+        dw = imgr._data_weighting_params()
         with pytest.raises(AttributeError):
             dw.maxset = True
 
@@ -1366,14 +1366,14 @@ class TestDataWeighting:
         imgr.check_params()
         imgr.check_limits()
         imgr.init_imager()
-        dw = imgr._full_data_weighting_params()
+        dw = imgr._data_weighting_params()
         assert dw.debias is True
         assert dw.weighting == "uniform"
         assert dw.systematic_noise == 0.05
 
     def test_defaults_preserved(self, gauss_im, observe, initialize_imager):
         imgr, _ = initialize_imager(observe(gauss_im), gauss_im, {"vis": 100})
-        dw = imgr._full_data_weighting_params()
+        dw = imgr._data_weighting_params()
         assert dw.maxset is False
         assert dw.debias is False
         assert dw.weighting == "natural"
@@ -1382,7 +1382,7 @@ class TestDataWeighting:
 
 
 class TestFourierGridParams:
-    """Pins the FourierGridParams bundle returned by Imager._full_fft_params():
+    """Pins the FourierGridParams bundle returned by Imager._fft_params():
     field set, immutability, parity with the underlying _fft_* attrs, and
     kwarg overrides / defaults landing in the right slots."""
 
@@ -1392,12 +1392,12 @@ class TestFourierGridParams:
 
     def test_full_fft_returns_namedtuple(self, gauss_im, observe, initialize_imager):
         imgr, _ = initialize_imager(observe(gauss_im), gauss_im, {"vis": 100})
-        assert isinstance(imgr._full_fft_params(), FourierGridParams)
+        assert isinstance(imgr._fft_params(), FourierGridParams)
 
     def test_field_access_matches_imager_attrs(self, gauss_im, observe,
                                                  initialize_imager):
         imgr, _ = initialize_imager(observe(gauss_im), gauss_im, {"vis": 100})
-        fp = imgr._full_fft_params()
+        fp = imgr._fft_params()
         assert fp.fft_pad_factor == imgr._fft_pad_factor
         assert fp.fft_conv_func == imgr._fft_conv_func
         assert fp.fft_gridder_prad == imgr._fft_gridder_prad
@@ -1405,11 +1405,11 @@ class TestFourierGridParams:
 
     def test_asdict_has_expected_keys(self, gauss_im, observe, initialize_imager):
         imgr, _ = initialize_imager(observe(gauss_im), gauss_im, {"vis": 100})
-        assert tuple(imgr._full_fft_params()._asdict().keys()) == self.EXPECTED_FIELDS
+        assert tuple(imgr._fft_params()._asdict().keys()) == self.EXPECTED_FIELDS
 
     def test_immutability(self, gauss_im, observe, initialize_imager):
         imgr, _ = initialize_imager(observe(gauss_im), gauss_im, {"vis": 100})
-        fp = imgr._full_fft_params()
+        fp = imgr._fft_params()
         with pytest.raises(AttributeError):
             fp.fft_pad_factor = 4
 
@@ -1424,7 +1424,7 @@ class TestFourierGridParams:
         imgr.check_params()
         imgr.check_limits()
         imgr.init_imager()
-        fp = imgr._full_fft_params()
+        fp = imgr._fft_params()
         assert fp.fft_pad_factor == 4
         assert fp.fft_conv_func == "pillbox"
         assert fp.fft_gridder_prad == 3
@@ -1438,7 +1438,7 @@ class TestFourierGridParams:
             GRIDDER_P_RAD_DEFAULT,
         )
         imgr, _ = initialize_imager(observe(gauss_im), gauss_im, {"vis": 100})
-        fp = imgr._full_fft_params()
+        fp = imgr._fft_params()
         assert fp.fft_pad_factor == FFT_PAD_DEFAULT
         assert fp.fft_conv_func == GRIDDER_CONV_FUNC_DEFAULT
         assert fp.fft_gridder_prad == GRIDDER_P_RAD_DEFAULT
