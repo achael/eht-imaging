@@ -1,6 +1,7 @@
 # imager_backend.py
 # Pure functional backend for imager.py
 
+from collections.abc import Sequence
 from typing import NamedTuple
 
 import numpy as np
@@ -1169,12 +1170,19 @@ class ImagerConfig(NamedTuple):
       Polarization   : pol, transforms
       Transform type : ttype
       Multifrequency : mf, mf_config (nested MfConfig)
+
+    JAX note: this bundle is a *static* pytree, not a traced one. The string
+    leaves (pol, ttype, transform names) and the dict leaf in the sibling
+    DataWeighting bundle (snrcut) aren't valid JAX traceable values. When
+    jitting backend functions that take a config, pass it as a
+    ``static_argname='config'`` so the structure participates in cache keying
+    rather than tracing.
     """
-    pol: str             # imager polarization mode ('I', 'IP', 'IV', 'IPV', 'QU', ...)
-    transforms: list     # bounded-value transform stack applied to imcur (e.g. ['log', 'mcv'])
-    ttype: str           # Fourier transform type ('direct', 'fast', 'nfft')
-    mf: bool             # multifrequency-imaging master flag
-    mf_config: MfConfig  # nested multifrequency expansion config
+    pol: str                       # imager polarization mode ('I', 'IP', 'IV', 'IPV', 'QU', ...)
+    transforms: Sequence[str]      # bounded-value transform stack applied to imcur (e.g. ['log', 'mcv'])
+    ttype: str                     # Fourier transform type ('direct', 'fast', 'nfft')
+    mf: bool                       # multifrequency-imaging master flag
+    mf_config: MfConfig            # nested multifrequency expansion config
 
 
 def compute_data_tuples(obslist, prior, embed_mask, dat_term_keys, config,
