@@ -1268,6 +1268,128 @@ def stv2_v_grad(imarr, vflux, nx, ny, psize, pol_solve=POL_SOLVE_DEFAULT_V,
 
     return gradout/norm
 
+
+##################################################################################################
+# Imager-backend wrappers
+#
+# Same pattern as `reg_X` / `reggrad_X` in `imager_utils.py`: each wrapper adapts
+# a pol regularizer above to the uniform `(imarr, mask, **kwargs)` signature used
+# by `_REGULARIZER_DISPATCH`. Pol spatial regularizers use `embed_imarr` (not
+# `embed`) for the pre-step and slice the gradient as `g[:, mask]` because the
+# pol gradient is shaped (4, nimage) — one row per Stokes component.
+##################################################################################################
+
+
+def reg_msimple(imarr, mask, **kwargs):
+    return -sm(imarr, kwargs['flux'], norm_reg=kwargs.get('norm_reg', True))
+
+
+def reggrad_msimple(imarr, mask, **kwargs):
+    return -smgrad(imarr, kwargs['flux'],
+                   pol_solve=kwargs.get('pol_solve', POL_SOLVE_DEFAULT),
+                   norm_reg=kwargs.get('norm_reg', True))
+
+
+def reg_hw(imarr, mask, **kwargs):
+    return -shw(imarr, kwargs['flux'], norm_reg=kwargs.get('norm_reg', True))
+
+
+def reggrad_hw(imarr, mask, **kwargs):
+    return -shwgrad(imarr, kwargs['flux'],
+                    pol_solve=kwargs.get('pol_solve', POL_SOLVE_DEFAULT),
+                    norm_reg=kwargs.get('norm_reg', True))
+
+
+def reg_ptv(imarr, mask, **kwargs):
+    from ehtim.imaging.imager_utils import embed_imarr
+    if np.any(np.invert(mask)):
+        imarr = embed_imarr(imarr, mask, randomfloor=True)
+    return -stv_pol(imarr, kwargs['flux'], kwargs['xdim'], kwargs['ydim'], kwargs['psize'],
+                    norm_reg=kwargs.get('norm_reg', True),
+                    beam_size=kwargs.get('beam_size', 1))
+
+
+def reggrad_ptv(imarr, mask, **kwargs):
+    from ehtim.imaging.imager_utils import embed_imarr
+    if np.any(np.invert(mask)):
+        imarr = embed_imarr(imarr, mask, randomfloor=True)
+    g = -stv_pol_grad(imarr, kwargs['flux'], kwargs['xdim'], kwargs['ydim'], kwargs['psize'],
+                      pol_solve=kwargs.get('pol_solve', POL_SOLVE_DEFAULT),
+                      norm_reg=kwargs.get('norm_reg', True),
+                      beam_size=kwargs.get('beam_size', 1))
+    return g[:, mask] if np.any(np.invert(mask)) else g
+
+
+def reg_vflux(imarr, mask, **kwargs):
+    return -svflux(imarr, kwargs['vflux'], norm_reg=kwargs.get('norm_reg', True))
+
+
+def reggrad_vflux(imarr, mask, **kwargs):
+    return -svfluxgrad(imarr, kwargs['vflux'],
+                       pol_solve=kwargs.get('pol_solve', POL_SOLVE_DEFAULT_V),
+                       norm_reg=kwargs.get('norm_reg', True))
+
+
+def reg_l1v(imarr, mask, **kwargs):
+    return -sl1v(imarr, kwargs['vflux'], norm_reg=kwargs.get('norm_reg', True))
+
+
+def reggrad_l1v(imarr, mask, **kwargs):
+    return -sl1vgrad(imarr, kwargs['vflux'],
+                     pol_solve=kwargs.get('pol_solve', POL_SOLVE_DEFAULT_V),
+                     norm_reg=kwargs.get('norm_reg', True))
+
+
+def reg_l2v(imarr, mask, **kwargs):
+    return -sl2v(imarr, kwargs['vflux'], norm_reg=kwargs.get('norm_reg', True))
+
+
+def reggrad_l2v(imarr, mask, **kwargs):
+    return -sl2vgrad(imarr, kwargs['vflux'],
+                     pol_solve=kwargs.get('pol_solve', POL_SOLVE_DEFAULT_V),
+                     norm_reg=kwargs.get('norm_reg', True))
+
+
+def reg_vtv(imarr, mask, **kwargs):
+    from ehtim.imaging.imager_utils import embed_imarr
+    if np.any(np.invert(mask)):
+        imarr = embed_imarr(imarr, mask, randomfloor=True)
+    return -stv_v(imarr, kwargs['vflux'], kwargs['xdim'], kwargs['ydim'], kwargs['psize'],
+                  norm_reg=kwargs.get('norm_reg', True),
+                  beam_size=kwargs.get('beam_size', 1))
+
+
+def reggrad_vtv(imarr, mask, **kwargs):
+    from ehtim.imaging.imager_utils import embed_imarr
+    if np.any(np.invert(mask)):
+        imarr = embed_imarr(imarr, mask, randomfloor=True)
+    g = -stv_v_grad(imarr, kwargs['vflux'], kwargs['xdim'], kwargs['ydim'], kwargs['psize'],
+                    pol_solve=kwargs.get('pol_solve', POL_SOLVE_DEFAULT_V),
+                    norm_reg=kwargs.get('norm_reg', True),
+                    beam_size=kwargs.get('beam_size', 1))
+    return g[:, mask] if np.any(np.invert(mask)) else g
+
+
+def reg_vtv2(imarr, mask, **kwargs):
+    from ehtim.imaging.imager_utils import embed_imarr
+    if np.any(np.invert(mask)):
+        imarr = embed_imarr(imarr, mask, randomfloor=True)
+    return -stv2_v(imarr, kwargs['vflux'], kwargs['xdim'], kwargs['ydim'], kwargs['psize'],
+                   norm_reg=kwargs.get('norm_reg', True),
+                   beam_size=kwargs.get('beam_size', 1))
+
+
+def reggrad_vtv2(imarr, mask, **kwargs):
+    from ehtim.imaging.imager_utils import embed_imarr
+    if np.any(np.invert(mask)):
+        imarr = embed_imarr(imarr, mask, randomfloor=True)
+    g = -stv2_v_grad(imarr, kwargs['vflux'], kwargs['xdim'], kwargs['ydim'], kwargs['psize'],
+                     pol_solve=kwargs.get('pol_solve', POL_SOLVE_DEFAULT_V),
+                     norm_reg=kwargs.get('norm_reg', True),
+                     beam_size=kwargs.get('beam_size', 1))
+    return g[:, mask] if np.any(np.invert(mask)) else g
+
+
 ##################################################################################################
 # Chi^2 Data functions
 ##################################################################################################

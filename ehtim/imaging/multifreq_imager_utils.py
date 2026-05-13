@@ -154,6 +154,35 @@ def mf_all_grads_chain(funcgrad, image_cur, mfarr, log_freqratio):
 # Mulitfrequency regularizers
 ##################################################################################################
 
+def spectral_slot(regname, n_slots):
+    """Return the imcur row index for a multifrequency spectral regularizer.
+
+    Slot layout: n_slots=3 (Stokes-I + alpha + beta) uses indices 1, 2.
+    n_slots=10 (full IPV + spectral expansion) uses 4-9.
+    """
+    from ehtim.imaging.imager_backend import (
+        REGULARIZERS_CM,
+        REGULARIZERS_CURV,
+        REGULARIZERS_CURV_P,
+        REGULARIZERS_RM,
+        REGULARIZERS_SPECIND,
+        REGULARIZERS_SPECIND_P,
+    )
+    if regname in REGULARIZERS_SPECIND:
+        return 4 if n_slots == 10 else 1
+    if regname in REGULARIZERS_CURV:
+        return 5 if n_slots == 10 else 2
+    if regname in REGULARIZERS_SPECIND_P:
+        return 6
+    if regname in REGULARIZERS_CURV_P:
+        return 7
+    if regname in REGULARIZERS_RM:
+        return 8
+    if regname in REGULARIZERS_CM:
+        return 9
+    raise Exception(f"regularizer term {regname!r} has no spectral slot mapping")
+
+
 def regularizer_mf(imvec, nprior, mask, xdim, ydim, psize, stype, **kwargs):
     """Return the regularizer value for a multifrequency regularizer.
 
@@ -265,6 +294,43 @@ def tv_spec_grad(imvec, nx, ny, psize, norm_reg=NORM_REGULARIZER, beam_size=None
     # add terms together and return
     out= -(g1 + g2 + g3).flatten()
     return out/norm
+
+
+##################################################################################################
+# Imager-backend wrappers
+#
+# Same pattern as `reg_X` / `reggrad_X` in `imager_utils.py`: each wrapper adapts
+# `l2_spec` / `tv_spec` to the uniform `(imvec, mask, **kwargs)` signature used by
+# `_REGULARIZER_DISPATCH`. tv_spec uses clipfloor=0 (not the default) and
+# randomfloor=False for embed since spectral-index images can be negative.
+##################################################################################################
+
+
+def reg_l2_spec(imvec, mask, **kwargs):
+    return -l2_spec(imvec, kwargs['nprior'], norm_reg=kwargs.get('norm_reg', True))
+
+
+def reggrad_l2_spec(imvec, mask, **kwargs):
+    return -l2_spec_grad(imvec, kwargs['nprior'], norm_reg=kwargs.get('norm_reg', True))
+
+
+def reg_tv_spec(imvec, mask, **kwargs):
+    from ehtim.imaging.imager_utils import embed
+    if np.any(np.invert(mask)):
+        imvec = embed(imvec, mask, clipfloor=0, randomfloor=False)
+    return -tv_spec(imvec, kwargs['xdim'], kwargs['ydim'], kwargs['psize'],
+                    norm_reg=kwargs.get('norm_reg', True),
+                    beam_size=kwargs.get('beam_size'))
+
+
+def reggrad_tv_spec(imvec, mask, **kwargs):
+    from ehtim.imaging.imager_utils import embed
+    if np.any(np.invert(mask)):
+        imvec = embed(imvec, mask, clipfloor=0, randomfloor=False)
+    g = -tv_spec_grad(imvec, kwargs['xdim'], kwargs['ydim'], kwargs['psize'],
+                      norm_reg=kwargs.get('norm_reg', True),
+                      beam_size=kwargs.get('beam_size'))
+    return g[mask]
 
 
 

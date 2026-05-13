@@ -2050,6 +2050,51 @@ def stv2grad(imvec, nx, ny, psize, flux, norm_reg=NORM_REGULARIZER, beam_size=No
     return out/norm
 
 
+def stvlog(imvec, nx, ny, psize, flux, norm_reg=NORM_REGULARIZER, beam_size=None, epsilon=0.):
+    """Total variation regularizer applied to log(imvec).
+
+    Forwards to stv with the log-transformed image and a transformed flux
+    `logflux = npix * |log(flux/npix)|` so the regularizer has a sensible
+    norm when norm_reg=True.
+    """
+    npix = nx * ny
+    logflux = npix * np.abs(np.log(flux / npix))
+    return stv(np.log(imvec), nx, ny, psize, logflux,
+               norm_reg=norm_reg, beam_size=beam_size, epsilon=epsilon)
+
+
+def stvloggrad(imvec, nx, ny, psize, flux, norm_reg=NORM_REGULARIZER, beam_size=None, epsilon=0.):
+    """Gradient of stvlog: applies stvgrad to log(imvec), then chain rule 1/imvec.
+    """
+    npix = nx * ny
+    logflux = npix * np.abs(np.log(flux / npix))
+    g = stvgrad(np.log(imvec), nx, ny, psize, logflux,
+                norm_reg=norm_reg, beam_size=beam_size, epsilon=epsilon)
+    return g / imvec
+
+
+def stv2log(imvec, nx, ny, psize, flux, norm_reg=NORM_REGULARIZER, beam_size=None):
+    """Squared total variation regularizer applied to log(imvec).
+
+    Forwards to stv2 with the log-transformed image and the transformed flux
+    used by stvlog.
+    """
+    npix = nx * ny
+    logflux = npix * np.abs(np.log(flux / npix))
+    return stv2(np.log(imvec), nx, ny, psize, logflux,
+                norm_reg=norm_reg, beam_size=beam_size)
+
+
+def stv2loggrad(imvec, nx, ny, psize, flux, norm_reg=NORM_REGULARIZER, beam_size=None):
+    """Gradient of stv2log: applies stv2grad to log(imvec), then chain rule 1/imvec.
+    """
+    npix = nx * ny
+    logflux = npix * np.abs(np.log(flux / npix))
+    g = stv2grad(np.log(imvec), nx, ny, psize, logflux,
+                 norm_reg=norm_reg, beam_size=beam_size)
+    return g / imvec
+
+
 def spatch(imvec, priorvec, flux, norm_reg=NORM_REGULARIZER):
     """Patch prior regularizer
     """
@@ -2272,6 +2317,230 @@ def sgauss_grad(imvec, xdim, ydim, psize, major, minor, PA):
     drgauss = drgauss/(major**2. * minor**2.)
 
     return -drgauss.reshape(-1)
+
+
+##################################################################################################
+# Imager-backend wrappers
+#
+# Each `reg_X` / `reggrad_X` adapts an `sX` / `sXgrad` regularizer above to the
+# uniform `(imvec, mask, **kwargs)` signature used by the `_REGULARIZER_DISPATCH`
+# table in `imager_backend.py`. The wrappers add the sign convention (the
+# imager minimizes `-regularizer`), unpack kwargs into the leaf's positional
+# args, and handle the embed-pre / mask-post-slice pattern for spatial regs.
+##################################################################################################
+
+
+def reg_flux(imvec, mask, **kwargs):
+    return -sflux(imvec, kwargs['nprior'], kwargs['flux'],
+                  norm_reg=kwargs.get('norm_reg', True))
+
+
+def reggrad_flux(imvec, mask, **kwargs):
+    return -sfluxgrad(imvec, kwargs['nprior'], kwargs['flux'],
+                      norm_reg=kwargs.get('norm_reg', True))
+
+
+def reg_simple(imvec, mask, **kwargs):
+    return -ssimple(imvec, kwargs['nprior'], kwargs['flux'],
+                    norm_reg=kwargs.get('norm_reg', True))
+
+
+def reggrad_simple(imvec, mask, **kwargs):
+    return -ssimplegrad(imvec, kwargs['nprior'], kwargs['flux'],
+                        norm_reg=kwargs.get('norm_reg', True))
+
+
+def reg_l1(imvec, mask, **kwargs):
+    return -sl1(imvec, kwargs['nprior'], kwargs['flux'],
+                norm_reg=kwargs.get('norm_reg', True))
+
+
+def reggrad_l1(imvec, mask, **kwargs):
+    return -sl1grad(imvec, kwargs['nprior'], kwargs['flux'],
+                    norm_reg=kwargs.get('norm_reg', True))
+
+
+def reg_l1w(imvec, mask, **kwargs):
+    return -sl1w(imvec, kwargs['nprior'], kwargs['flux'],
+                 norm_reg=kwargs.get('norm_reg', True))
+
+
+def reggrad_l1w(imvec, mask, **kwargs):
+    return -sl1wgrad(imvec, kwargs['nprior'], kwargs['flux'],
+                     norm_reg=kwargs.get('norm_reg', True))
+
+
+def reg_lA(imvec, mask, **kwargs):
+    return -slA(imvec, kwargs['nprior'], kwargs['psize'], kwargs['flux'],
+                kwargs.get('beam_size'), kwargs.get('alpha_A', 1.0),
+                kwargs.get('norm_reg', True))
+
+
+def reggrad_lA(imvec, mask, **kwargs):
+    return -slAgrad(imvec, kwargs['nprior'], kwargs['psize'], kwargs['flux'],
+                    kwargs.get('beam_size'), kwargs.get('alpha_A', 1.0),
+                    kwargs.get('norm_reg', True))
+
+
+def reg_gs(imvec, mask, **kwargs):
+    return -sgs(imvec, kwargs['nprior'], kwargs['flux'],
+                norm_reg=kwargs.get('norm_reg', True))
+
+
+def reggrad_gs(imvec, mask, **kwargs):
+    return -sgsgrad(imvec, kwargs['nprior'], kwargs['flux'],
+                    norm_reg=kwargs.get('norm_reg', True))
+
+
+def reg_patch(imvec, mask, **kwargs):
+    return -spatch(imvec, kwargs['nprior'], kwargs['flux'],
+                   norm_reg=kwargs.get('norm_reg', True))
+
+
+def reggrad_patch(imvec, mask, **kwargs):
+    return -spatchgrad(imvec, kwargs['nprior'], kwargs['flux'],
+                       norm_reg=kwargs.get('norm_reg', True))
+
+
+# scm / scmgrad take the embed mask as a positional and handle masking internally,
+# so these wrappers skip the embed-pre / mask-post pattern used by other spatial regs.
+def reg_cm(imvec, mask, **kwargs):
+    return -scm(imvec, kwargs['xdim'], kwargs['ydim'], kwargs['psize'],
+                kwargs['flux'], mask,
+                norm_reg=kwargs.get('norm_reg', True),
+                beam_size=kwargs.get('beam_size'))
+
+
+def reggrad_cm(imvec, mask, **kwargs):
+    return -scmgrad(imvec, kwargs['xdim'], kwargs['ydim'], kwargs['psize'],
+                    kwargs['flux'], mask,
+                    norm_reg=kwargs.get('norm_reg', True),
+                    beam_size=kwargs.get('beam_size'))
+
+
+def reg_tv(imvec, mask, **kwargs):
+    if np.any(np.invert(mask)):
+        imvec = embed(imvec, mask, randomfloor=True)
+    return -stv(imvec, kwargs['xdim'], kwargs['ydim'], kwargs['psize'], kwargs['flux'],
+                norm_reg=kwargs.get('norm_reg', True),
+                beam_size=kwargs.get('beam_size'),
+                epsilon=kwargs.get('epsilon_tv', 0.))
+
+
+def reggrad_tv(imvec, mask, **kwargs):
+    if np.any(np.invert(mask)):
+        imvec = embed(imvec, mask, randomfloor=True)
+    g = -stvgrad(imvec, kwargs['xdim'], kwargs['ydim'], kwargs['psize'], kwargs['flux'],
+                 norm_reg=kwargs.get('norm_reg', True),
+                 beam_size=kwargs.get('beam_size'),
+                 epsilon=kwargs.get('epsilon_tv', 0.))
+    return g[mask]
+
+
+# tvlog / tv2log use clipfloor=epsilon_tv (not the default 0) so the log
+# transform inside stvlog / stv2log stays defined where mask filled in values.
+def reg_tvlog(imvec, mask, **kwargs):
+    epsilon = kwargs.get('epsilon_tv', 0.)
+    if np.any(np.invert(mask)):
+        imvec = embed(imvec, mask, clipfloor=epsilon, randomfloor=True)
+    return -stvlog(imvec, kwargs['xdim'], kwargs['ydim'], kwargs['psize'], kwargs['flux'],
+                   norm_reg=kwargs.get('norm_reg', True),
+                   beam_size=kwargs.get('beam_size'),
+                   epsilon=epsilon)
+
+
+def reggrad_tvlog(imvec, mask, **kwargs):
+    epsilon = kwargs.get('epsilon_tv', 0.)
+    if np.any(np.invert(mask)):
+        imvec = embed(imvec, mask, clipfloor=epsilon, randomfloor=True)
+    g = -stvloggrad(imvec, kwargs['xdim'], kwargs['ydim'], kwargs['psize'], kwargs['flux'],
+                    norm_reg=kwargs.get('norm_reg', True),
+                    beam_size=kwargs.get('beam_size'),
+                    epsilon=epsilon)
+    return g[mask]
+
+
+def reg_tv2(imvec, mask, **kwargs):
+    if np.any(np.invert(mask)):
+        imvec = embed(imvec, mask, randomfloor=True)
+    return -stv2(imvec, kwargs['xdim'], kwargs['ydim'], kwargs['psize'], kwargs['flux'],
+                 norm_reg=kwargs.get('norm_reg', True),
+                 beam_size=kwargs.get('beam_size'))
+
+
+def reggrad_tv2(imvec, mask, **kwargs):
+    if np.any(np.invert(mask)):
+        imvec = embed(imvec, mask, randomfloor=True)
+    g = -stv2grad(imvec, kwargs['xdim'], kwargs['ydim'], kwargs['psize'], kwargs['flux'],
+                  norm_reg=kwargs.get('norm_reg', True),
+                  beam_size=kwargs.get('beam_size'))
+    return g[mask]
+
+
+def reg_tv2log(imvec, mask, **kwargs):
+    if np.any(np.invert(mask)):
+        imvec = embed(imvec, mask, randomfloor=True)
+    return -stv2log(imvec, kwargs['xdim'], kwargs['ydim'], kwargs['psize'], kwargs['flux'],
+                    norm_reg=kwargs.get('norm_reg', True),
+                    beam_size=kwargs.get('beam_size'))
+
+
+def reggrad_tv2log(imvec, mask, **kwargs):
+    if np.any(np.invert(mask)):
+        imvec = embed(imvec, mask, randomfloor=True)
+    g = -stv2loggrad(imvec, kwargs['xdim'], kwargs['ydim'], kwargs['psize'], kwargs['flux'],
+                     norm_reg=kwargs.get('norm_reg', True),
+                     beam_size=kwargs.get('beam_size'))
+    return g[mask]
+
+
+def reg_compact(imvec, mask, **kwargs):
+    if np.any(np.invert(mask)):
+        imvec = embed(imvec, mask, randomfloor=True)
+    return -scompact(imvec, kwargs['xdim'], kwargs['ydim'], kwargs['psize'], kwargs['flux'],
+                     norm_reg=kwargs.get('norm_reg', True))
+
+
+def reggrad_compact(imvec, mask, **kwargs):
+    if np.any(np.invert(mask)):
+        imvec = embed(imvec, mask, randomfloor=True)
+    g = -scompactgrad(imvec, kwargs['xdim'], kwargs['ydim'], kwargs['psize'], kwargs['flux'],
+                      norm_reg=kwargs.get('norm_reg', True))
+    return g[mask]
+
+
+def reg_compact2(imvec, mask, **kwargs):
+    if np.any(np.invert(mask)):
+        imvec = embed(imvec, mask, randomfloor=True)
+    return -scompact2(imvec, kwargs['xdim'], kwargs['ydim'], kwargs['psize'], kwargs['flux'],
+                      norm_reg=kwargs.get('norm_reg', True))
+
+
+def reggrad_compact2(imvec, mask, **kwargs):
+    if np.any(np.invert(mask)):
+        imvec = embed(imvec, mask, randomfloor=True)
+    g = -scompact2grad(imvec, kwargs['xdim'], kwargs['ydim'], kwargs['psize'], kwargs['flux'],
+                       norm_reg=kwargs.get('norm_reg', True))
+    return g[mask]
+
+
+def reg_rgauss(imvec, mask, **kwargs):
+    if np.any(np.invert(mask)):
+        imvec = embed(imvec, mask, randomfloor=True)
+    return -sgauss(imvec, kwargs['xdim'], kwargs['ydim'], kwargs['psize'],
+                   major=kwargs.get('major', 1.0),
+                   minor=kwargs.get('minor', 1.0),
+                   PA=kwargs.get('PA', 1.0))
+
+
+def reggrad_rgauss(imvec, mask, **kwargs):
+    if np.any(np.invert(mask)):
+        imvec = embed(imvec, mask, randomfloor=True)
+    g = -sgauss_grad(imvec, kwargs['xdim'], kwargs['ydim'], kwargs['psize'],
+                     kwargs.get('major', 1.0),
+                     kwargs.get('minor', 1.0),
+                     kwargs.get('PA', 1.0))
+    return g[mask]
 
 
 ##################################################################################################
