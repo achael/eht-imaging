@@ -409,7 +409,9 @@ def polchisqdata(Obsdata, Prior, mask, dtype, **kwargs):
     directly.
     """
     from ehtim.imaging.imager_backend import (
-        compute_chisqdata_term, ImagerConfig, MfConfig,
+        ImagerConfig,
+        MfConfig,
+        compute_chisqdata_term,
     )
     ttype = kwargs.pop('ttype', 'direct')
     pol = kwargs.pop('pol', 'I')

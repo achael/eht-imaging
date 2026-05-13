@@ -1363,7 +1363,9 @@ class TestDataWeighting:
             data_term={"vis": 100}, ttype="direct", pol="I",
             debias=True, weighting="uniform", systematic_noise=0.05,
         )
-        imgr.check_params(); imgr.check_limits(); imgr.init_imager()
+        imgr.check_params()
+        imgr.check_limits()
+        imgr.init_imager()
         dw = imgr._full_data_weighting_params()
         assert dw.debias is True
         assert dw.weighting == "uniform"
@@ -1419,7 +1421,9 @@ class TestFourierGridParams:
             fft_pad_factor=4, fft_conv_func="pillbox", fft_gridder_prad=3,
             fft_interp_order=5,
         )
-        imgr.check_params(); imgr.check_limits(); imgr.init_imager()
+        imgr.check_params()
+        imgr.check_limits()
+        imgr.init_imager()
         fp = imgr._full_fft_params()
         assert fp.fft_pad_factor == 4
         assert fp.fft_conv_func == "pillbox"
@@ -1428,8 +1432,10 @@ class TestFourierGridParams:
 
     def test_defaults_preserved(self, gauss_im, observe, initialize_imager):
         from ehtim.imager import (
-            FFT_INTERP_DEFAULT, FFT_PAD_DEFAULT,
-            GRIDDER_CONV_FUNC_DEFAULT, GRIDDER_P_RAD_DEFAULT,
+            FFT_INTERP_DEFAULT,
+            FFT_PAD_DEFAULT,
+            GRIDDER_CONV_FUNC_DEFAULT,
+            GRIDDER_P_RAD_DEFAULT,
         )
         imgr, _ = initialize_imager(observe(gauss_im), gauss_im, {"vis": 100})
         fp = imgr._full_fft_params()
