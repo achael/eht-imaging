@@ -42,7 +42,7 @@ RANDOMFLOOR=True
 
 NORM_REGULARIZER = True
 DATATERMS_POL = ['pvis', 'm','vvis']
-REGULARIZERS_POL = ['msimple', 'hw', 'ptv','l1v','l2v','vtv','v2tv2','vflux']
+REGULARIZERS_POL = ['msimple', 'hw', 'ptv', 'l1v', 'l2v', 'vtv', 'vtv2', 'vflux']
 
 nit = 0 # global variable to track the iteration number in the plotting callback
 
@@ -974,44 +974,47 @@ def stv_pol_grad(imarr, flux, nx, ny, psize, pol_solve=POL_SOLVE_DEFAULT,
     im_r1 = np.roll(impad, 1, axis=0)[1:ny+1, 1:nx+1]
     im_r2 = np.roll(impad, 1, axis=1)[1:ny+1, 1:nx+1]
     im_r1l2 = np.roll(np.roll(impad, 1, axis=0), -1, axis=1)[1:ny+1, 1:nx+1]
-    im_l1r2 = np.roll(np.roll(impad, 1, axis=0), -1, axis=1)[1:ny+1, 1:nx+1]
+    im_l1r2 = np.roll(np.roll(impad, -1, axis=0), 1, axis=1)[1:ny+1, 1:nx+1]
 
     # Denominators
     d1 = np.sqrt(np.abs(im_l1 - im)**2 + np.abs(im_l2 - im)**2)
     d2 = np.sqrt(np.abs(im_r1 - im)**2 + np.abs(im_r1l2 - im_r1)**2)
     d3 = np.sqrt(np.abs(im_r2 - im)**2 + np.abs(im_l1r2 - im_r2)**2)
 
+    # Numerators use cos/sin of the single-angle difference between neighbors,
+    # from d|P_l1 - P|^2 / d|P| = 2|P| - 2|P_l1|*cos(angle(P_l1) - angle(P)).
+
     # dS/dI Numerators
     if pol_solve[0]!=0:
-        m1 = 2*np.abs(im*im) - np.abs(im*im_l1)*np.cos(2*(np.angle(im_l1) - np.angle(im))) - np.abs(im*im_l2)*np.cos(2*(np.angle(im_l2) - np.angle(im)))
-        m2 = np.abs(im*im) - np.abs(im*im_r1)*np.cos(2*(np.angle(im) - np.angle(im_r1)))
-        m3 = np.abs(im*im) - np.abs(im*im_r2)*np.cos(2*(np.angle(im) - np.angle(im_r2)))
+        m1 = 2*np.abs(im*im) - np.abs(im*im_l1)*np.cos(np.angle(im_l1) - np.angle(im)) - np.abs(im*im_l2)*np.cos(np.angle(im_l2) - np.angle(im))
+        m2 = np.abs(im*im) - np.abs(im*im_r1)*np.cos(np.angle(im) - np.angle(im_r1))
+        m3 = np.abs(im*im) - np.abs(im*im_r2)*np.cos(np.angle(im) - np.angle(im_r2))
         gradi = -(1./iimage)*(m1/d1 + m2/d2 + m3/d3).flatten()
         gradout[0] = gradi
 
     # dS/dm numerators
     if pol_solve[1]!=0:
-        m1 = 2*np.abs(im) - np.abs(im_l1)*np.cos(2*(np.angle(im_l1) - np.angle(im))) - np.abs(im_l2)*np.cos(2*(np.angle(im_l2) - np.angle(im)))
-        m2 = np.abs(im) - np.abs(im_r1)*np.cos(2*(np.angle(im) - np.angle(im_r1)))
-        m3 = np.abs(im) - np.abs(im_r2)*np.cos(2*(np.angle(im) - np.angle(im_r2)))
+        m1 = 2*np.abs(im) - np.abs(im_l1)*np.cos(np.angle(im_l1) - np.angle(im)) - np.abs(im_l2)*np.cos(np.angle(im_l2) - np.angle(im))
+        m2 = np.abs(im) - np.abs(im_r1)*np.cos(np.angle(im) - np.angle(im_r1))
+        m3 = np.abs(im) - np.abs(im_r2)*np.cos(np.angle(im) - np.angle(im_r2))
         gradm = -iimage*(m1/d1 + m2/d2 + m3/d3).flatten()
         gradrho = gradm * np.cos(psiimage)
         gradout[1] = gradrho
 
-    # dS/dchi numerators
+    # dS/dphi numerators (\phi=2\chi)
     if pol_solve[2]!=0:
-        c1 = -2*np.abs(im*im_l1)*np.sin(2*(np.angle(im_l1) - np.angle(im))) - 2*np.abs(im*im_l2)*np.sin(2*(np.angle(im_l2) - np.angle(im)))
-        c2 = 2*np.abs(im*im_r1)*np.sin(2*(np.angle(im) - np.angle(im_r1)))
-        c3 = 2*np.abs(im*im_r2)*np.sin(2*(np.angle(im) - np.angle(im_r2)))
+        c1 = -2*np.abs(im*im_l1)*np.sin(np.angle(im_l1) - np.angle(im)) - 2*np.abs(im*im_l2)*np.sin(np.angle(im_l2) - np.angle(im))
+        c2 = 2*np.abs(im*im_r1)*np.sin(np.angle(im) - np.angle(im_r1))
+        c3 = 2*np.abs(im*im_r2)*np.sin(np.angle(im) - np.angle(im_r2))
         gradchi = -(c1/d1 + c2/d2 + c3/d3).flatten()
         gradphi = 0.5*gradchi
         gradout[2] = gradphi
 
     # dS/dpsi
     if pol_solve[3]!=0:
-        m1 = 2*np.abs(im) - np.abs(im_l1)*np.cos(2*(np.angle(im_l1) - np.angle(im))) - np.abs(im_l2)*np.cos(2*(np.angle(im_l2) - np.angle(im)))
-        m2 = np.abs(im) - np.abs(im_r1)*np.cos(2*(np.angle(im) - np.angle(im_r1)))
-        m3 = np.abs(im) - np.abs(im_r2)*np.cos(2*(np.angle(im) - np.angle(im_r2)))
+        m1 = 2*np.abs(im) - np.abs(im_l1)*np.cos(np.angle(im_l1) - np.angle(im)) - np.abs(im_l2)*np.cos(np.angle(im_l2) - np.angle(im))
+        m2 = np.abs(im) - np.abs(im_r1)*np.cos(np.angle(im) - np.angle(im_r1))
+        m3 = np.abs(im) - np.abs(im_r2)*np.cos(np.angle(im) - np.angle(im_r2))
         gradm = -iimage*(m1/d1 + m2/d2 + m3/d3).flatten()
         gradpsi = gradm * (-mimage*np.tan(psiimage))
         gradout[3] = gradpsi
