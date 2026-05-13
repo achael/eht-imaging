@@ -689,10 +689,9 @@ class Imager:
         state = compute_init_state(
             self.obslist_next, self.init_next, self.prior_next,
             self.freq_list, self.reffreq,
-            self.pol_next, self.mf_next, self.transform_next,
-            self.mf_order, self.mf_order_pol, self.mf_rm, self.mf_cm,
+            self._full_imager_config(),
             self.norm_init, self.flux_next, self.clipfloor_next,
-            sorted(self.dat_term_next.keys()), self._ttype,
+            sorted(self.dat_term_next.keys()),
             self._full_data_weighting_params(), self._full_fft_params(),
             compute_data=self._change_imgr_params,
             prior_data_tuples=getattr(self, "_data_tuples", None),

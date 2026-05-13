@@ -1245,10 +1245,9 @@ def compute_data_tuples(obslist, prior, embed_mask, dat_term_keys, pol,
 def compute_init_state(
     obslist, init_image, prior_image,
     freq_list, reffreq,
-    pol, mf, transforms,
-    mf_order, mf_order_pol, mf_rm, mf_cm,
+    config,
     norm_init, flux, clipfloor,
-    dat_term_keys, ttype,
+    dat_term_keys,
     data_weighting, fourier_grid,
     *, compute_data=True, prior_data_tuples=None,
 ):
@@ -1259,9 +1258,8 @@ def compute_init_state(
     into the single state bundle consumed by compute_objective /
     compute_objective_grad.
 
-    JAX note: when jitted, expect static_argnames=('pol', 'mf', 'transforms',
-    'mf_order', 'mf_order_pol', 'mf_rm', 'mf_cm', 'ttype', 'dat_term_keys',
-    'compute_data').
+    JAX note: when jitted, expect static_argnames=('config', 'dat_term_keys',
+    'compute_data') with config as a frozen pytree.
 
     Parameters
     ----------
@@ -1272,17 +1270,14 @@ def compute_init_state(
         Reference frequencies (Hz) of each obs in obslist.
     reffreq : float
         Reference frequency (Hz) of the multi-frequency expansion. When
-        mf=True this is overridden by init_image.rf.
-    pol, mf, transforms : str, bool, list of str
-        Polarization mode, multi-frequency flag, transform stack
-        (e.g. ['log', 'mcv']).
-    mf_order, mf_order_pol, mf_rm, mf_cm :
-        Multi-frequency expansion orders + RM/CM solve flags.
+        config.mf=True this is overridden by init_image.rf.
+    config : ImagerConfig
+        Static imager configuration. Provides pol, transforms, ttype, mf,
+        and the nested mf_config bundle.
     norm_init : bool
     flux, clipfloor : float
     dat_term_keys : iterable of str
         Sorted dat_term names. Each must be in DATATERMS or DATATERMS_POL.
-    ttype : {'direct', 'fast', 'nfft'}
     data_weighting : DataWeighting
         Per-data-term knobs forwarded to compute_data_tuples.
     fourier_grid : FourierGridParams
@@ -1300,6 +1295,12 @@ def compute_init_state(
     -------
     ImagerInitState
     """
+    pol = config.pol
+    mf = config.mf
+    transforms = config.transforms
+    ttype = config.ttype
+    mf_cfg = config.mf_config
+
     n_obs = len(obslist)
     if len(freq_list) != n_obs:
         raise Exception(
@@ -1317,8 +1318,8 @@ def compute_init_state(
     logfreqratio_list = compute_logfreqratios(freq_list, reffreq_eff)
 
     which_solve = compute_which_solve(
-        pol, mf, mf_order=mf_order, mf_order_pol=mf_order_pol,
-        mf_rm=mf_rm, mf_cm=mf_cm,
+        pol, mf, mf_order=mf_cfg.mf_order, mf_order_pol=mf_cfg.mf_order_pol,
+        mf_rm=mf_cfg.mf_rm, mf_cm=mf_cfg.mf_cm,
     )
 
     is_pol = pol in POLARIZATION_MODES

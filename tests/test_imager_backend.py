@@ -425,10 +425,9 @@ def _call_compute_init_state(imgr):
     return compute_init_state(
         imgr.obslist_next, imgr.init_next, imgr.prior_next,
         imgr.freq_list, imgr.reffreq,
-        imgr.pol_next, imgr.mf_next, imgr.transform_next,
-        imgr.mf_order, imgr.mf_order_pol, imgr.mf_rm, imgr.mf_cm,
+        imgr._full_imager_config(),
         imgr.norm_init, imgr.flux_next, imgr.clipfloor_next,
-        sorted(imgr.dat_term_next.keys()), imgr._ttype,
+        sorted(imgr.dat_term_next.keys()),
         imgr._full_data_weighting_params(),
         imgr._full_fft_params(),
     )
@@ -522,10 +521,9 @@ class TestComputeInitState:
         state = compute_init_state(
             imgr.obslist_next, imgr.init_next, imgr.prior_next,
             imgr.freq_list, imgr.reffreq,
-            imgr.pol_next, imgr.mf_next, imgr.transform_next,
-            imgr.mf_order, imgr.mf_order_pol, imgr.mf_rm, imgr.mf_cm,
+            imgr._full_imager_config(),
             imgr.norm_init, imgr.flux_next, imgr.clipfloor_next,
-            sorted(imgr.dat_term_next.keys()), imgr._ttype,
+            sorted(imgr.dat_term_next.keys()),
             imgr._full_data_weighting_params(),
             imgr._full_fft_params(),
             compute_data=False, prior_data_tuples=sentinel,
@@ -540,10 +538,9 @@ class TestComputeInitState:
                 imgr.obslist_next, imgr.init_next, imgr.prior_next,
                 imgr.freq_list + [230e9],  # length mismatch
                 imgr.reffreq,
-                imgr.pol_next, imgr.mf_next, imgr.transform_next,
-                imgr.mf_order, imgr.mf_order_pol, imgr.mf_rm, imgr.mf_cm,
+                imgr._full_imager_config(),
                 imgr.norm_init, imgr.flux_next, imgr.clipfloor_next,
-                sorted(imgr.dat_term_next.keys()), imgr._ttype,
+                sorted(imgr.dat_term_next.keys()),
                 imgr._full_data_weighting_params(),
                 imgr._full_fft_params(),
             )
