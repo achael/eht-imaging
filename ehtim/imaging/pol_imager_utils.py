@@ -1041,7 +1041,7 @@ def stv_pol_grad(imarr, flux, nx, ny, psize, pol_solve=POL_SOLVE_DEFAULT,
         gradrho = gradm * np.cos(psiimage)        
         gradout[1] = gradrho
 
-    # dS/dphi numerators
+    # dS/dphi numerators (\phi=2\chi)
     if pol_solve[2]!=0:
         c1 = -2*np.abs(im*im_l1)*np.sin(np.angle(im_l1) - np.angle(im)) - 2*np.abs(im*im_l2)*np.sin(np.angle(im_l2) - np.angle(im))
         c2 = 2*np.abs(im*im_r1)*np.sin(np.angle(im) - np.angle(im_r1))
