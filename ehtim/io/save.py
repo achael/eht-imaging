@@ -831,14 +831,48 @@ def save_obs_uvfits(obs, fname=None, force_singlepol=None, polrep_out='circ'):
     return hdulist_new.copy()
 
 
-def save_dtype_txt(obs, fname, dtype='cphase'):
-    """Save the data product of type 'dtype' in a text file.
+_DTYPE_TXT_SPECS = {
+    'cphase':  (ehc.DTCPHASE,
+                "time (hr)     T1     T2      T3        U1 (lambda)     V1 (lambda)     U2 (lambda)     V2 (lambda)         U3 (lambda)     V3 (lambda)         Cphase (d) Sigmacp",
+                "%011.8f %6s %6s  %6s  %16.4f %16.4f  %16.4f  %16.4f  %16.4f  %16.4f  %10.4f  %10.8f"),
+    'logcamp': (ehc.DTCAMP,
+                "time (hr)     T1     T2      T3     T4     U1 (lambda)     V1 (lambda)      U2 (lambda)      V2 (lambda)         U3 (lambda)     V3 (lambda)       U4 (lambda)      V4 (lambda)           Logcamp     Sigmalogca",
+                "%011.8f %6s %6s  %6s %6s  %16.4f %16.4f  %16.4f  %16.4f  %16.4f %16.4f  %16.4f  %16.4f  %10.4f  %10.8f"),
+    'camp':    (ehc.DTCAMP,
+                "time (hr)     T1     T2      T3     T4     U1 (lambda)     V1 (lambda)      U2 (lambda)      V2 (lambda)         U3 (lambda)     V3 (lambda)       U4 (lambda)      V4 (lambda)           Camp     Sigmaca",
+                "%011.8f %6s %6s  %6s %6s  %16.4f %16.4f  %16.4f  %16.4f  %16.4f %16.4f  %16.4f  %16.4f  %10.4f  %10.8f"),
+    'bs':      (ehc.DTBIS,
+                "time (hr)     T1     T2      T3        U1 (lambda)     V1 (lambda)     U2 (lambda)     V2 (lambda)         U3 (lambda)     V3 (lambda)          Bispec   Sigmab",
+                "%011.8f %6s %6s  %6s  %16.4f %16.4f  %16.4f  %16.4f  %16.4f  %16.4f  %10.4f  %10.8f"),
+    'amp':     (ehc.DTAMP,
+                "time (hr) tint     T1     T2       U (lambda)     V (lambda)       Amp (Jy)     Ampsigma",
+                "%011.8f %4.2f %6s %6s  %16.4f %16.4f  %10.8f  %10.8f"),
+}
+
+
+def save_dtype_txt(obs, fname, data, dtype='cphase'):
+    """Save a derived data product as text. The header is taken from obs;
+       the table is passed in explicitly (typically the output of
+       obs.bispectra(), obs.c_phases(), or obs.c_amplitudes()).
+
        Args:
-            obs (Obsdata): obsdata object
+            obs (Obsdata): obsdata object (header info only)
             fname (str): path to output text file
-            dtype (str): desired data type
+            data (np.recarray): the closure / amplitude table to save;
+                                its dtype must match the expected schema
+                                for `dtype` (see const_def.py: DTCPHASE,
+                                DTCAMP, DTBIS, DTAMP).
+            dtype (str): one of 'cphase', 'logcamp', 'camp', 'bs', 'amp'
        Returns:
     """
+
+    if dtype not in _DTYPE_TXT_SPECS:
+        raise Exception(dtype + ' is not a possible data type!')
+    expected_dtype, col_header, fmts = _DTYPE_TXT_SPECS[dtype]
+    if list(data.dtype.descr) != list(np.dtype(expected_dtype).descr):
+        raise Exception(
+            "save_dtype_txt: data.dtype does not match the schema expected "
+            "for dtype='%s' (see const_def.py)." % dtype)
 
     head = ("SRC: %s \n" % obs.source +
             "RA: " + obsh.rastring(obs.ra) + "\n" + "DEC: " + obsh.decstring(obs.dec) + "\n" +
@@ -867,48 +901,9 @@ def save_dtype_txt(obs, fname, dtype='cphase'):
                   (obs.tarr[i]['dl']).real, (obs.tarr[i]['dl']).imag
                   ))
 
-    if dtype == 'cphase':
-        outdata = obs.cphase
-        head += (
-            "----------------------------------------------------------------------" +
-            "------------------------------------------------------------------\n" +
-            "time (hr)     T1     T2      T3        U1 (lambda)     V1 (lambda)     U2 (lambda)     V2 (lambda)         U3 (lambda)     V3 (lambda)         Cphase (d) Sigmacp")
-        fmts = ("%011.8f %6s %6s  %6s  %16.4f %16.4f  %16.4f  %16.4f  %16.4f  %16.4f  %10.4f  %10.8f")
+    head += ("----------------------------------------------------------------------"
+             "------------------------------------------------------------------\n" +
+             col_header)
 
-    elif dtype == 'logcamp':
-        outdata = obs.logcamp
-        head += (
-            "----------------------------------------------------------------------" +
-            "------------------------------------------------------------------\n" +
-            "time (hr)     T1     T2      T3     T4     U1 (lambda)     V1 (lambda)      U2 (lambda)      V2 (lambda)         U3 (lambda)     V3 (lambda)       U4 (lambda)      V4 (lambda)           Logcamp     Sigmalogca")
-        fmts = ("%011.8f %6s %6s  %6s %6s  %16.4f %16.4f  %16.4f  %16.4f  %16.4f %16.4f  %16.4f  %16.4f  %10.4f  %10.8f")
-
-    elif dtype == 'camp':
-        outdata = obs.camp
-        head += (
-            "----------------------------------------------------------------------" +
-            "------------------------------------------------------------------\n" +
-            "time (hr)     T1     T2      T3     T4     U1 (lambda)     V1 (lambda)      U2 (lambda)      V2 (lambda)         U3 (lambda)     V3 (lambda)       U4 (lambda)      V4 (lambda)           Camp     Sigmaca")
-        fmts = ("%011.8f %6s %6s  %6s %6s  %16.4f %16.4f  %16.4f  %16.4f  %16.4f %16.4f  %16.4f  %16.4f  %10.4f  %10.8f")
-
-    elif dtype == 'bs':
-        outdata = obs.bispec
-        head += (
-            "----------------------------------------------------------------------" +
-            "------------------------------------------------------------------\n" +
-            "time (hr)     T1     T2      T3        U1 (lambda)     V1 (lambda)     U2 (lambda)     V2 (lambda)         U3 (lambda)     V3 (lambda)          Bispec   Sigmab")
-        fmts = ("%011.8f %6s %6s  %6s  %16.4f %16.4f  %16.4f  %16.4f  %16.4f  %16.4f  %10.4f  %10.8f")
-
-    elif dtype == 'amp':
-        outdata = obs.amp
-        head += (
-            "----------------------------------------------------------------------" +
-            "------------------------------------------------------------------\n" +
-            "time (hr) tint     T1     T2       U (lambda)     V (lambda)       Amp (Jy)     Ampsigma")
-        fmts = ("%011.8f %4.2f %6s %6s  %16.4f %16.4f  %10.8f  %10.8f")
-
-    else:
-        raise Exception(dtype + ' is not a possible data type!')
-
-    np.savetxt(fname, outdata, header=head, fmt=fmts)
+    np.savetxt(fname, data, header=head, fmt=fmts)
     return

@@ -1635,31 +1635,24 @@ def load_obs_maps(arrfile, obsspec, ifile, qfile=0, ufile=0, vfile=0,
     return ehtim.obsdata.Obsdata(ra, dec, rf, bw, datatable, tdata,
                                  source=src, mjd=mjd, polrep='stokes')
 
-def load_dtype_txt(obs, filename, dtype='cphase'):
+def load_dtype_txt(filename, dtype='cphase'):
 
-    """Load the dtype data in a text file and put it in the already-created obs object
+    """Load a derived-data text file produced by save_dtype_txt.
+
        Args:
-            obs (Obsdata): obsdata object
-            filename (str): path to output text file
-            dtype (str): desired data type
+            filename (str): path to text file
+            dtype (str): one of 'cphase', 'logcamp', 'camp', 'bs', 'amp'.
+                         The returned recarray's dtype matches the
+                         corresponding ehtim.const_def schema
+                         (DTCPHASE, DTCAMP, DTBIS, DTAMP).
        Returns:
+            (np.ndarray): recarray of the requested closure / amplitude
+                          table. The header parameters in the file are
+                          ignored; callers should already have an Obsdata
+                          object if they need RA/dec/mjd/etc.
     """
 
     print("Loading text observation: ", filename)
-
-    # Read the header parameters
-    file = open(filename)
-    src = ' '.join(file.readline().split()[2:])
-    ra = file.readline().split()
-    ra = float(ra[2]) + float(ra[4]) / 60.0 + float(ra[6]) / 3600.0
-    dec = file.readline().split()
-    dec = np.sign(float(dec[2])) * (abs(float(dec[2])) +
-                                    float(dec[4]) / 60.0 + float(dec[6]) / 3600.0)
-    mjd = float(file.readline().split()[2])
-    rf = float(file.readline().split()[2]) * 1e9
-    bw = float(file.readline().split()[2]) * 1e9
-    phasecal = bool(file.readline().split()[2])
-    ampcal = bool(file.readline().split()[2])
 
     # Load the data, convert to list format, return object
     datatable = np.loadtxt(filename, dtype=bytes).astype(str)
@@ -1681,7 +1674,7 @@ def load_dtype_txt(obs, filename, dtype='cphase'):
             sigmacp = float(row[11])
             datatable2.append(np.array((time, t1, t2, t3, u1, v1, u2, v2,
                                         u3, v3, cphase, sigmacp), dtype=ehc.DTCPHASE))
-        obs.cphase = np.array(datatable2)
+        return np.array(datatable2)
 
     elif dtype == 'logcamp':
         datatable2 = []
@@ -1703,7 +1696,7 @@ def load_dtype_txt(obs, filename, dtype='cphase'):
             sigmalogcamp = float(row[14])
             datatable2.append(np.array((time, t1, t2, t3, t4, u1, v1, u2, v2, u3,
                                         v3, u4, v4, logcamp, sigmalogcamp), dtype=ehc.DTCAMP))
-        obs.logcamp = np.array(datatable2)
+        return np.array(datatable2)
 
     elif dtype == 'camp':
         datatable2 = []
@@ -1725,7 +1718,7 @@ def load_dtype_txt(obs, filename, dtype='cphase'):
             sigmacamp = float(row[14])
             datatable2.append(np.array((time, t1, t2, t3, t4, u1, v1, u2, v2,
                                         u3, v3, u4, v4, camp, sigmacamp), dtype=ehc.DTCAMP))
-        obs.camp = np.array(datatable2)
+        return np.array(datatable2)
 
     elif dtype == 'bs':
         datatable2 = []
@@ -1744,7 +1737,7 @@ def load_dtype_txt(obs, filename, dtype='cphase'):
             sigmab = float(row[11])
             datatable2.append(np.array((time, t1, t2, t3, u1, v1, u2,
                                         v2, u3, v3, bispec, sigmab), dtype=ehc.DTBIS))
-        obs.bispec = np.array(datatable2)
+        return np.array(datatable2)
 
     elif dtype == 'amp':
         datatable2 = []
@@ -1758,9 +1751,7 @@ def load_dtype_txt(obs, filename, dtype='cphase'):
             amp = float(row[6])
             sigmaamp = float(row[7])
             datatable2.append(np.array((time, tint, t1, t2, u, v, amp, sigmaamp), dtype=ehc.DTAMP))
-        obs.amp = np.array(datatable2)
+        return np.array(datatable2)
 
     else:
         raise Exception(dtype + ' is not a possible data type!')
-
-    return
