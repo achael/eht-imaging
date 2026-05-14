@@ -26,6 +26,7 @@ DIRECT_STANDARD_DTYPES = [
     "camp", "logcamp", "logcamp_diag",
 ]
 DIRECT_POL_DTYPES = ["pvis", "m", "vvis"]
+FAST_STANDARD_DTYPES = DIRECT_STANDARD_DTYPES
 
 
 class TestComputeEmbedJax:
@@ -170,11 +171,18 @@ class TestPackImarrJax:
 
 
 class TestComputeChisqTermDirectJax:
-    """Direct chi^2 parity tests for compute_chisq_term."""
+    """Direct and fast chi^2 parity tests for compute_chisq_term."""
 
     @staticmethod
     def _full_mask(im):
         return np.ones(im.imvec.size, dtype=bool)
+
+    @staticmethod
+    def _partial_mask(im, frac=0.7):
+        mask = np.zeros(im.imvec.size, dtype=bool)
+        cutoff = np.quantile(im.imvec, 1.0 - frac)
+        mask[im.imvec >= cutoff] = True
+        return mask
 
     @staticmethod
     def _imcur_pol(gauss_im_pol):
@@ -190,9 +198,9 @@ class TestComputeChisqTermDirectJax:
         return np.array([iimage, rho, phi, psi])
 
     @staticmethod
-    def _data_tuple(obs, prior, mask, dtype, pol):
+    def _data_tuple(obs, prior, mask, dtype, pol, ttype="direct", order=3):
         data, sigma, A = backend_np.compute_chisqdata_term(
-            obs, prior, mask, dtype, ttype="direct", pol=pol,
+            obs, prior, mask, dtype, ttype=ttype, pol=pol, order=order,
         )
         return A, data, sigma
 
@@ -240,6 +248,28 @@ class TestComputeChisqTermDirectJax:
             np.asarray(result), expected, rtol=1e-12, atol=1e-15,
         )
 
+    @pytest.mark.parametrize("dtype", FAST_STANDARD_DTYPES)
+    def test_parity_fast_standard_order1(self, gauss_im, obs_fast, dtype):
+        """Fast standard data terms match the NumPy backend for linear sampling."""
+        mask = self._partial_mask(gauss_im)
+        A, data, sigma = self._data_tuple(
+            obs_fast, gauss_im, mask, dtype, pol="I", ttype="fast", order=1,
+        )
+        imvec = gauss_im.imvec[mask]
+        imcur = np.array([imvec])
+
+        expected = backend_np.compute_chisq_term(
+            imcur, dtype, A, data, sigma, ttype="fast", mask=mask,
+        )
+        result = backend_jax.compute_chisq_term(
+            jnp.asarray(imcur), dtype, A, data, sigma, ttype="fast",
+            mask=jnp.asarray(mask),
+        )
+
+        np.testing.assert_allclose(
+            np.asarray(result), expected, rtol=1e-10, atol=1e-12,
+        )
+
     def test_direct_vis_jit_with_static_dispatch(self, gauss_im, obs_direct):
         """A closed-over direct vis loss compiles when dispatch stays static."""
         mask = self._full_mask(gauss_im)
@@ -259,17 +289,21 @@ class TestComputeChisqTermDirectJax:
             np.asarray(result), expected, rtol=1e-12, atol=1e-15,
         )
 
-    def test_fast_not_implemented(self, gauss_im):
-        """Only direct losses are implemented in this pass."""
-        with pytest.raises(NotImplementedError, match="direct"):
+    def test_fast_order3_not_implemented(self, gauss_im, obs_fast):
+        """JAX map_coordinates does not support the backend's default cubic sampler."""
+        mask = self._full_mask(gauss_im)
+        A, data, sigma = self._data_tuple(
+            obs_fast, gauss_im, mask, "vis", pol="I", ttype="fast", order=3,
+        )
+        with pytest.raises(NotImplementedError, match="order <= 1"):
             backend_jax.compute_chisq_term(
-                jnp.asarray(gauss_im.imvec), "vis", None, None, None,
-                ttype="fast",
+                jnp.asarray(gauss_im.imvec), "vis", A, data, sigma,
+                ttype="fast", mask=jnp.asarray(mask),
             )
 
     def test_nfft_not_implemented(self, gauss_im):
-        """Only direct losses are implemented in this pass."""
-        with pytest.raises(NotImplementedError, match="direct"):
+        """NFFT losses are not implemented in this pass."""
+        with pytest.raises(NotImplementedError, match="not supported"):
             backend_jax.compute_chisq_term(
                 jnp.asarray(gauss_im.imvec), "vis", None, None, None,
                 ttype="nfft",

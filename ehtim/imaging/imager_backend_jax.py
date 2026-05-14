@@ -20,6 +20,7 @@ import jax.numpy as jnp
 
 import ehtim.imaging.imager_utils_jax as imutils
 import ehtim.imaging.pol_imager_utils_jax as polutils
+import ehtim.observing.obs_helpers_jax as obsh
 
 
 # Data term and polarization-mode names recognized by the chi^2 dispatchers.
@@ -45,17 +46,38 @@ REGULARIZERS_ISPECTRAL = REGULARIZERS_SPECIND + REGULARIZERS_CURV
 REGULARIZERS_POLSPECTRAL = REGULARIZERS_SPECIND_P + REGULARIZERS_CURV_P + REGULARIZERS_RM + REGULARIZERS_CM
 REGULARIZERS_SPECTRAL = REGULARIZERS_ISPECTRAL + REGULARIZERS_POLSPECTRAL
 
+EMBED_RANDOMFLOOR = True
+_DIAG_DTYPES = frozenset({'cphase_diag', 'logcamp_diag'})
+
 
 _CHISQ_DISPATCH = {
-    'vis':          {'is_pol': False, 'direct': imutils.chisq_vis},
-    'amp':          {'is_pol': False, 'direct': imutils.chisq_amp},
-    'logamp':       {'is_pol': False, 'direct': imutils.chisq_logamp},
-    'bs':           {'is_pol': False, 'direct': imutils.chisq_bs},
-    'cphase':       {'is_pol': False, 'direct': imutils.chisq_cphase},
-    'cphase_diag':  {'is_pol': False, 'direct': imutils.chisq_cphase_diag},
-    'camp':         {'is_pol': False, 'direct': imutils.chisq_camp},
-    'logcamp':      {'is_pol': False, 'direct': imutils.chisq_logcamp},
-    'logcamp_diag': {'is_pol': False, 'direct': imutils.chisq_logcamp_diag},
+    'vis':          {'is_pol': False,
+                     'direct': imutils.chisq_vis,
+                     'fast': imutils.chisq_vis_fft},
+    'amp':          {'is_pol': False,
+                     'direct': imutils.chisq_amp,
+                     'fast': imutils.chisq_amp_fft},
+    'logamp':       {'is_pol': False,
+                     'direct': imutils.chisq_logamp,
+                     'fast': imutils.chisq_logamp_fft},
+    'bs':           {'is_pol': False,
+                     'direct': imutils.chisq_bs,
+                     'fast': imutils.chisq_bs_fft},
+    'cphase':       {'is_pol': False,
+                     'direct': imutils.chisq_cphase,
+                     'fast': imutils.chisq_cphase_fft},
+    'cphase_diag':  {'is_pol': False,
+                     'direct': imutils.chisq_cphase_diag,
+                     'fast': imutils.chisq_cphase_diag_fft},
+    'camp':         {'is_pol': False,
+                     'direct': imutils.chisq_camp,
+                     'fast': imutils.chisq_camp_fft},
+    'logcamp':      {'is_pol': False,
+                     'direct': imutils.chisq_logcamp,
+                     'fast': imutils.chisq_logcamp_fft},
+    'logcamp_diag': {'is_pol': False,
+                     'direct': imutils.chisq_logcamp_diag,
+                     'fast': imutils.chisq_logcamp_diag_fft},
     'pvis':         {'is_pol': True,  'direct': polutils.chisq_p},
     'm':            {'is_pol': True,  'direct': polutils.chisq_m},
     'vvis':         {'is_pol': True,  'direct': polutils.chisq_vvis},
@@ -96,8 +118,7 @@ def _lookup_chisq_entry(dtype, ttype):
         raise Exception(f"data term {dtype} not recognized!")
     if ttype not in entry:
         raise NotImplementedError(
-            "imager_backend_jax.compute_chisq_term currently supports "
-            "ttype='direct' only"
+            f"ttype={ttype!r} not supported for dtype={dtype!r}"
         )
     return entry[ttype], entry['is_pol']
 
@@ -107,6 +128,24 @@ def compute_chisq_term(imcur, dtype, A, data, sigma, ttype='direct', mask=None):
     chisq_fn, is_pol = _lookup_chisq_entry(dtype, ttype)
     imcur = jnp.asarray(imcur)
     imvec = imcur if (is_pol or imcur.ndim == 1) else imcur[0]
+
+    if ttype != 'direct':
+        has_partial_mask = (
+            mask is not None and len(mask) > 0 and
+            bool(jnp.any(jnp.logical_not(jnp.asarray(mask, dtype=bool))))
+        )
+        if has_partial_mask:
+            if is_pol:
+                raise NotImplementedError(
+                    "imager_backend_jax.compute_chisq_term does not yet support "
+                    "fast/nfft polarimetric mask embedding"
+                )
+            imvec = imutils.embed(
+                imvec, mask, randomfloor=EMBED_RANDOMFLOOR,
+            )
+
+    if ttype == 'fast' and dtype not in _DIAG_DTYPES:
+        imvec = obsh.fft_imvec(imvec, A[0])
 
     return chisq_fn(imvec, A, data, sigma)
 
