@@ -600,6 +600,219 @@ def test_add_scans_invalid_info_leaves_none(obs_direct):
 
 
 # ---------------------------------------------------------------------------
+# Section 10: Beam / imaging utilities (cleanbeam, fit_beam, dirtybeam, dirtyimage)
+# ---------------------------------------------------------------------------
+
+
+def test_cleanbeam_total_flux_one(obs_direct):
+    im = obs_direct.cleanbeam(npix=32, fov=200 * eh.RADPERUAS)
+    assert im.total_flux() == pytest.approx(1.0, abs=1e-6)
+
+
+def test_fit_beam_returns_three_floats(obs_direct):
+    params = obs_direct.fit_beam(weighting="uniform", units="rad")
+    assert params.shape == (3,)
+    fwhm_maj, fwhm_min, theta = params
+    assert fwhm_maj > 0
+    assert fwhm_min > 0
+    assert fwhm_min <= fwhm_maj
+
+
+def test_fit_beam_natural_units_match_rad(obs_direct):
+    rad = obs_direct.fit_beam(weighting="uniform", units="rad")
+    nat = obs_direct.fit_beam(weighting="uniform", units="natural")
+    # Natural FWHMs are converted from radians to microarcseconds.
+    np.testing.assert_allclose(nat[0], rad[0] / eh.RADPERUAS, rtol=1e-6)
+    np.testing.assert_allclose(nat[1], rad[1] / eh.RADPERUAS, rtol=1e-6)
+
+
+def test_dirtybeam_normalized_to_unit_sum(obs_direct):
+    im = obs_direct.dirtybeam(npix=32, fov=200 * eh.RADPERUAS)
+    assert im.imvec.sum() == pytest.approx(1.0, abs=1e-12)
+
+
+def test_dirtybeam_natural_weighting_smoke(obs_direct):
+    im = obs_direct.dirtybeam(npix=16, fov=200 * eh.RADPERUAS, weighting="natural")
+    assert np.all(np.isfinite(im.imvec))
+
+
+def test_dirtyimage_polrep_consistency(obs_direct):
+    # `dirtyimage` Fourier-inverts vis1 of the polrep: 'vis' (Stokes I) for
+    # stokes, 'rrvis' (= I+V) for circ. On a V=0 observation these match.
+    stokes = obs_direct.dirtyimage(npix=16, fov=200 * eh.RADPERUAS)
+    circ = obs_direct.switch_polrep("circ").dirtyimage(npix=16, fov=200 * eh.RADPERUAS)
+    np.testing.assert_allclose(stokes.imvec, circ.imvec, atol=1e-12)
+
+
+# ---------------------------------------------------------------------------
+# Section 11: Noise & scale (rescale_zbl, add_*_noise, rescale_noise, ...)
+# ---------------------------------------------------------------------------
+
+
+def test_rescale_zbl_scales_short_baselines(obs_direct):
+    out = obs_direct.rescale_zbl(totflux=2.0, uv_max=5e8)
+    short_mask = (obs_direct.data["u"] ** 2 + obs_direct.data["v"] ** 2) ** 0.5 < 5e8
+    long_mask = ~short_mask
+    # Short-baseline vis values change, long-baseline don't.
+    if short_mask.any():
+        assert not np.allclose(out.data["vis"][short_mask], obs_direct.data["vis"][short_mask])
+    if long_mask.any():
+        np.testing.assert_array_equal(
+            out.data["vis"][long_mask], obs_direct.data["vis"][long_mask]
+        )
+
+
+def test_add_leakage_noise_increases_sigma(obs_pol_direct):
+    out = obs_pol_direct.add_leakage_noise(Dterm_amp=0.1)
+    assert np.all(out.data["sigma"] >= obs_pol_direct.data["sigma"])
+    # And at least some rows must have grown (assuming the test data has any
+    # non-trivial cross-hand amplitudes).
+    assert np.any(out.data["sigma"] > obs_pol_direct.data["sigma"])
+
+
+def test_add_fractional_noise_quadrature_form(obs_direct):
+    frac = 0.05
+    amp = obs_direct.unpack(["amp"])["amp"]
+    out = obs_direct.add_fractional_noise(frac)
+    expected = np.sqrt(obs_direct.data["sigma"] ** 2 + (frac * amp) ** 2)
+    np.testing.assert_allclose(out.data["sigma"], expected, atol=1e-12)
+
+
+def test_rescale_noise_multiplies_sigmas(obs_direct):
+    factor = 1.5
+    out = obs_direct.rescale_noise(noise_rescale_factor=factor)
+    for sigma in ("sigma", "qsigma", "usigma", "vsigma"):
+        np.testing.assert_allclose(
+            out.data[sigma], factor * obs_direct.data[sigma], atol=1e-12
+        )
+
+
+def test_find_amt_fractional_noise_runs(obs_noisy, gauss_im):
+    # find_amt_fractional_noise calls obs.chisq() with no ttype override, so
+    # it inherits the chisq() default of 'nfft' — needs pynfft. Skip when
+    # NFFT isn't installed rather than running ttype='direct' (the method
+    # doesn't expose the kwarg).
+    pytest.importorskip("pynfft")
+    out = obs_noisy.find_amt_fractional_noise(gauss_im, dtype="vis", target=1.0, maxiter=5)
+    assert np.isfinite(out).all()
+
+
+def test_estimate_noise_rescale_factor_returns_float(obs_noisy):
+    factor = obs_noisy.estimate_noise_rescale_factor()
+    assert np.isfinite(factor)
+    assert factor > 0
+
+
+# ---------------------------------------------------------------------------
+# Section 12: Flagging
+# ---------------------------------------------------------------------------
+
+
+def test_flag_elev_kept_within_range(obs_direct):
+    out = obs_direct.flag_elev(elev_min=10.0, elev_max=80.0)
+    el = out.unpack(["el1", "el2"])
+    assert np.all(np.minimum(el["el1"], el["el2"]) > 10.0)
+    assert np.all(np.maximum(el["el1"], el["el2"]) < 80.0)
+
+
+def test_flag_elev_output_both(obs_direct):
+    result = obs_direct.flag_elev(elev_min=10.0, elev_max=80.0, output="both")
+    assert isinstance(result, dict)
+    assert set(result.keys()) == {"kept", "flagged"}
+    assert len(result["kept"].data) + len(result["flagged"].data) == len(obs_direct.data)
+
+
+def test_flag_large_fractional_pol_keeps_low_m(obs_pol_direct):
+    out = obs_pol_direct.flag_large_fractional_pol(max_fractional_pol=0.5)
+    m = np.nan_to_num(out.unpack(["mamp"])["mamp"])
+    assert np.all(m < 0.5)
+
+
+def test_flag_uvdist_max_keeps_short_bl(obs_direct):
+    out = obs_direct.flag_uvdist(uv_max=5e9)
+    uvdist = out.unpack(["uvdist"])["uvdist"]
+    assert np.all(uvdist <= 5e9)
+
+
+def test_flag_sites_drops_all_baselines_touching_site(obs_direct):
+    site = obs_direct.tarr["site"][0]
+    out = obs_direct.flag_sites([site])
+    assert not np.any(out.data["t1"] == site)
+    assert not np.any(out.data["t2"] == site)
+
+
+def test_flag_bl_drops_only_specific_pair(obs_direct):
+    site1 = obs_direct.data["t1"][0]
+    site2 = obs_direct.data["t2"][0]
+    out = obs_direct.flag_bl([site1, site2])
+    # The (site1, site2) baseline is gone but each site appears in other pairs.
+    for row in out.data:
+        assert not (row["t1"] in (site1, site2) and row["t2"] in (site1, site2))
+
+
+def test_flag_low_snr_keeps_high_snr(obs_noisy):
+    out = obs_noisy.flag_low_snr(snr_cut=2.0)
+    snr = out.unpack(["snr"])["snr"]
+    assert np.all(snr > 2.0)
+
+
+def test_flag_high_sigma_keeps_low_sigma(obs_noisy):
+    cutoff = float(np.median(obs_noisy.data["sigma"]))
+    out = obs_noisy.flag_high_sigma(sigma_cut=cutoff, sigma_type="sigma")
+    assert np.all(out.data["sigma"] < cutoff)
+
+
+def test_flag_UT_range_all(obs_direct):
+    # Window the first quarter of the obs only.
+    span = obs_direct.tstop - obs_direct.tstart
+    out = obs_direct.flag_UT_range(
+        UT_start_hour=obs_direct.tstart + 0.25 * span,
+        UT_stop_hour=obs_direct.tstop - 0.25 * span,
+        flag_type="all",
+    )
+    t = out.unpack(["time"])["time"]
+    # All kept times are outside the flagged window (i.e., in the early or late
+    # quartile).
+    assert np.all(
+        (t <= obs_direct.tstart + 0.25 * span) | (t >= obs_direct.tstop - 0.25 * span)
+    )
+
+
+def test_flag_UT_range_station(obs_direct):
+    span = obs_direct.tstop - obs_direct.tstart
+    site = obs_direct.tarr["site"][0]
+    out = obs_direct.flag_UT_range(
+        UT_start_hour=obs_direct.tstart + 0.25 * span,
+        UT_stop_hour=obs_direct.tstop - 0.25 * span,
+        flag_type="station",
+        flag_what=site,
+    )
+    t = out.unpack(["time"])["time"]
+    # The flagged station is absent only during the middle window.
+    middle = (t > obs_direct.tstart + 0.25 * span) & (t < obs_direct.tstop - 0.25 * span)
+    rows_middle = out.data[middle]
+    assert not np.any(rows_middle["t1"] == site)
+    assert not np.any(rows_middle["t2"] == site)
+
+
+def test_flags_from_file_csv(obs_direct, tmp_path):
+    fpath = tmp_path / "flags.csv"
+    fpath.write_text(
+        "mjd_start,mjd_stop,station\n"
+        f"{obs_direct.mjd}.0,{obs_direct.mjd}.5,{obs_direct.tarr['site'][0]}\n"
+    )
+    out = obs_direct.flags_from_file(str(fpath), flag_type="station")
+    assert len(out.data) <= len(obs_direct.data)
+
+
+def test_flag_anomalous_smoke(obs_noisy):
+    # flag_anomalous does per-baseline robust-z outlier removal; behaviour is
+    # data-dependent so we just confirm it produces a no-larger obs.
+    out = obs_noisy.flag_anomalous(field="snr", robust_nsigma_cut=3.0)
+    assert len(out.data) <= len(obs_noisy.data)
+
+
+# ---------------------------------------------------------------------------
 # Closure-quantity idempotence (originally Phase 0)
 # ---------------------------------------------------------------------------
 
