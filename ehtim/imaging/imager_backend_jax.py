@@ -1,5 +1,6 @@
 # imager_backend_jax.py
-#
+# A JAX backend for imager.py which will be used for GPU-acceleration and differentiability of ehtim's imaging tools.
+
 #    Copyright (C) 2018 Andrew Chael
 #
 #    This program is free software: you can redistribute it and/or modify
@@ -16,6 +17,9 @@
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import jax.numpy as jnp
+
+import ehtim.imaging.imager_utils_jax as imutils
+import ehtim.imaging.pol_imager_utils_jax as polutils
 
 
 # Data term and polarization-mode names recognized by the chi^2 dispatchers.
@@ -42,6 +46,22 @@ REGULARIZERS_POLSPECTRAL = REGULARIZERS_SPECIND_P + REGULARIZERS_CURV_P + REGULA
 REGULARIZERS_SPECTRAL = REGULARIZERS_ISPECTRAL + REGULARIZERS_POLSPECTRAL
 
 
+_CHISQ_DISPATCH = {
+    'vis':          {'is_pol': False, 'direct': imutils.chisq_vis},
+    'amp':          {'is_pol': False, 'direct': imutils.chisq_amp},
+    'logamp':       {'is_pol': False, 'direct': imutils.chisq_logamp},
+    'bs':           {'is_pol': False, 'direct': imutils.chisq_bs},
+    'cphase':       {'is_pol': False, 'direct': imutils.chisq_cphase},
+    'cphase_diag':  {'is_pol': False, 'direct': imutils.chisq_cphase_diag},
+    'camp':         {'is_pol': False, 'direct': imutils.chisq_camp},
+    'logcamp':      {'is_pol': False, 'direct': imutils.chisq_logcamp},
+    'logcamp_diag': {'is_pol': False, 'direct': imutils.chisq_logcamp_diag},
+    'pvis':         {'is_pol': True,  'direct': polutils.chisq_p},
+    'm':            {'is_pol': True,  'direct': polutils.chisq_m},
+    'vvis':         {'is_pol': True,  'direct': polutils.chisq_vvis},
+}
+
+
 def pack_imarr(imarr, which_solve):
     """pack image array imarr into 1D array vec for minimizaiton
        ignore quantities not solved for
@@ -65,6 +85,30 @@ def pack_imarr(imarr, which_solve):
     if not rows:
         return jnp.array([], dtype=imarr.dtype)
     return jnp.concatenate(rows)
+
+
+def _lookup_chisq_entry(dtype, ttype):
+    if ttype not in ('direct', 'fast', 'nfft'):
+        raise Exception("Possible ttype values are 'fast', 'direct', 'nfft'!")
+    try:
+        entry = _CHISQ_DISPATCH[dtype]
+    except KeyError:
+        raise Exception(f"data term {dtype} not recognized!")
+    if ttype not in entry:
+        raise NotImplementedError(
+            "imager_backend_jax.compute_chisq_term currently supports "
+            "ttype='direct' only"
+        )
+    return entry[ttype], entry['is_pol']
+
+
+def compute_chisq_term(imcur, dtype, A, data, sigma, ttype='direct', mask=None):
+    """Single chi^2 dispatcher."""
+    chisq_fn, is_pol = _lookup_chisq_entry(dtype, ttype)
+    imcur = jnp.asarray(imcur)
+    imvec = imcur if (is_pol or imcur.ndim == 1) else imcur[0]
+
+    return chisq_fn(imvec, A, data, sigma)
 
 
 def compute_embed(imvec, xdim, ydim, psize, clipfloor):
