@@ -2490,9 +2490,8 @@ class Image(object):
 
         # calculate the amount of flux to include in the Gaussian
         obs_zerobl = obs.flag_uvdist(uv_max=uv_min)
-        obs_zerobl.add_amp(debias=debias)
-        orig_totflux = np.sum(obs_zerobl.amp['amp'] * (1 / obs_zerobl.amp['sigma']**2))
-        orig_totflux /= np.sum(1 / obs_zerobl.amp['sigma']**2)
+        amps = obs_zerobl.unpack(['amp', 'sigma'], debias=debias)
+        orig_totflux = np.sum(amps['amp'] / amps['sigma']**2) / np.sum(1 / amps['sigma']**2)
 
         if zblval is None:
             addedflux = orig_totflux - np.sum(self.imvec)
