@@ -16,32 +16,25 @@
 #    You should have received a copy of the GNU General Public License
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-from __future__ import division
-from __future__ import print_function
 
-from builtins import str
-from builtins import range
-from builtins import object
-
-import numpy as np
-import matplotlib.pyplot as plt
-import os
 import copy
+import os
+
+import matplotlib.pyplot as plt
+import numpy as np
 import scipy.interpolate
 
-import ehtim.io.save
-import ehtim.io.load
-
 import ehtim.const_def as ehc
+import ehtim.io.load
+import ehtim.io.save
 import ehtim.observing.obs_helpers as obsh
-
 
 ##################################################################################################
 # Caltable object
 ##################################################################################################
 
 
-class Caltable(object):
+class Caltable:
     """
        Attributes:
            source (str): The source name
@@ -122,13 +115,13 @@ class Caltable(object):
                label (str) : title for plot
                legend (bool) : add telescope legend or not
                clist (list) : list of colors for different stations
-               rangex (list) : lower and upper x-axis limits  
-               rangey (list) : lower and upper y-axis limits 
+               rangex (list) : lower and upper x-axis limits
+               rangey (list) : lower and upper y-axis limits
                markersize (float) : marker size
                show (bool) : display the plot or not
                grid (bool) : add a grid to the plot or not
-               export_pdf (str) : save a pdf file to this path 
-               
+               export_pdf (str) : save a pdf file to this path
+
            Returns:
                matplotlib.axes
         """
@@ -138,10 +131,10 @@ class Caltable(object):
 
         if isinstance(sites,str):
             sites = [sites]
-            
+
         if len(sites)==0:
             sites = list(self.data.keys())
-                  
+
         keys = [self.tkey[site] for site in sites]
 
         axes = plot_tarr_dterms(self.tarr, keys=keys, label=label, legend=legend, clist=clist,
@@ -211,7 +204,7 @@ class Caltable(object):
             sites = [sites]
 
         if len(sites)==0:
-            sites = sorted(list(self.data.keys()))       
+            sites = sorted(list(self.data.keys()))
 
         if len(markersize) == 1:
             markersize = markersize * np.ones(len(sites))
@@ -275,7 +268,7 @@ class Caltable(object):
         if axislabels:
             x.set_xlabel(self.timetype + ' (hr)')
             x.set_ylabel(ylabel)
-            plt.title('Caltable gains for %s on day %s' % (self.source, self.mjd))
+            plt.title(f'Caltable gains for {self.source} on day {self.mjd}')
 
         if legend:
             plt.legend()
@@ -429,7 +422,7 @@ class Caltable(object):
                         source=self.source, mjd=self.mjd, timetype=self.timetype)
 
     def applycal(self, obs, interp='linear', extrapolate=None,
-                 force_singlepol=False, copy_closure_tables=True):
+                 force_singlepol=False):
         """Apply the calibration table to an observation.
 
            Args:
@@ -450,7 +443,6 @@ class Caltable(object):
         else:
             fill_value = extrapolate
 
-        obs_orig = obs.copy()  # Need to do this before switch_polrep to keep tables
         orig_polrep = obs.polrep
         obs = obs.switch_polrep('circ')
 
@@ -464,7 +456,7 @@ class Caltable(object):
                 self.data[site]
             except KeyError:
                 skipsites.append(site)
-                print("No Calibration  Data for %s !" % site)
+                print(f"No Calibration  Data for {site} !")
                 continue
 
             time_mjd = self.data[site]['time'] / 24.0 + self.mjd
@@ -526,11 +518,6 @@ class Caltable(object):
                                        opacitycal=obs.opacitycal, dcal=obs.dcal,
                                        frcal=obs.frcal, timetype=obs.timetype)
         calobs = calobs.switch_polrep(orig_polrep)
-
-        if copy_closure_tables:
-            calobs.camp = obs_orig.camp
-            calobs.logcamp = obs_orig.logcamp
-            calobs.cphase = obs_orig.cphase
 
         return calobs
 
@@ -633,7 +620,7 @@ class Caltable(object):
            Args:
                obs (ehtim.Obsdata) : input observation
                incoherent (bool) : True to average gain amps, False to average amps+phase
-               
+
            Returns:
                (Caltable): the averaged Caltable object
         """
@@ -719,11 +706,11 @@ def load_caltable(obs, datadir, sqrt_gains=False):
         filename = os.path.join(datadir, obs.source + '_' + site + '.txt')
         try:
             data = np.loadtxt(filename, dtype=bytes).astype(str)
-        except IOError:
+        except OSError:
             try:
                 filename = datadir + site + '.txt'
                 data = np.loadtxt(filename, dtype=bytes).astype(str)
-            except IOError:
+            except OSError:
                 continue
 
 
@@ -751,7 +738,7 @@ def load_caltable(obs, datadir, sqrt_gains=False):
         caltable = Caltable(obs.ra, obs.dec, obs.rf, obs.bw, datatables, tarr,
                             source=obs.source, mjd=obs.mjd, timetype=obs.timetype)
     else:
-        print("COULD NOT FIND CALTABLE IN DIRECTORY %s" % datadir)
+        print(f"COULD NOT FIND CALTABLE IN DIRECTORY {datadir}")
         caltable = False
     return caltable
 
@@ -950,7 +937,7 @@ def plot_compare_gains(caltab1, caltab2, obs, sites='all', pol='R', gain_type='a
 
     if len(sites)==0:
         sites = list(set(caltab1.data.keys()).intersection(caltab2.data.keys()))
-        
+
     if site_name_dict is None:
         print('hi')
         site_name_dict = {}

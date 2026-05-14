@@ -16,21 +16,16 @@
 #    You should have received a copy of the GNU General Public License
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-from __future__ import division
-from __future__ import print_function
 
-from builtins import str
-from builtins import range
-from builtins import object
+import copy
+import itertools as it
 
+import matplotlib.pyplot as plt
 import numpy as np
 import numpy.matlib as matlib
-import matplotlib.pyplot as plt
-import itertools as it
-import copy
 
-from ehtim.obsdata import merge_obs
 import ehtim.const_def as ehc
+from ehtim.obsdata import merge_obs
 
 COLORLIST = ehc.SCOLORS
 
@@ -174,7 +169,7 @@ def plot_bl_compare(obslist, imlist, site1, site2, field,
 
 
 def plot_cphase_compare(obslist, imlist, site1, site2, site3,
-                        vtype='vis', cphases=[], force_recompute=False,
+                        vtype='vis', cphases=[],
                         ang_unit='deg', timetype='UTC', ttype='nfft',
                         axis=False, rangex=False, rangey=False, snrcut=0.,
                         clist=COLORLIST, legendlabels=None, markersize=ehc.MARKERSIZE,
@@ -191,7 +186,6 @@ def plot_cphase_compare(obslist, imlist, site1, site2, site3,
 
            vtype (str): The visibilty type ('vis','qvis','uvis','vvis','pvis')
            cphases (list): optionally pass in a list of cphases so they don't have to be recomputed
-           force_recompute (bool): if True, recompute closure phases instead of using stored data
 
            ang_unit (str): phase unit 'deg' or 'rad'
            timetype (str): 'GMST' or 'UTC'
@@ -226,28 +220,19 @@ def plot_cphase_compare(obslist, imlist, site1, site2, site3,
     if len(cphases) != len(obslist):
         raise Exception("cphases list must be same length as obslist!")
 
-    cphases_back = []
-    for i in range(len(obslist)):
-        cphases_back.append(obslist[i].cphase)
-        obslist[i].cphase = cphases[i]
-
     prepdata = prep_plot_lists(obslist, imlist, clist=clist, legendlabels=legendlabels,
                                sgrscat=False, ttype=ttype)
     (obslist_plot, clist_plot, legendlabels_plot, markers) = prepdata
     for i in range(len(obslist_plot)):
         obs = obslist_plot[i]
         axis = obs.plot_cphase(site1, site2, site3,
-                               vtype=vtype, force_recompute=force_recompute,
+                               vtype=vtype, cphases=cphases[i],
                                ang_unit=ang_unit, timetype=timetype,
                                axis=axis, rangex=rangex, rangey=rangey,
                                grid=grid, ebar=ebar, axislabels=axislabels,
                                show=False, legend=False, snrcut=snrcut,
                                label=legendlabels_plot[i], color=clist_plot[i % len(clist_plot)],
                                marker=markers[i], markersize=markersize)
-
-    # return to original cphase attribute
-    for i in range(len(obslist)):
-        obslist[i].cphase = cphases_back[i]
 
     if legend:
         plt.legend()
@@ -263,7 +248,7 @@ def plot_cphase_compare(obslist, imlist, site1, site2, site3,
 
 
 def plot_camp_compare(obslist, imlist, site1, site2, site3, site4,
-                      vtype='vis', ctype='camp', camps=[], force_recompute=False,
+                      vtype='vis', ctype='camp', camps=[],
                       debias=False, sgrscat=False, timetype='UTC', ttype='nfft',
                       axis=False, rangex=False, rangey=False, snrcut=0.,
                       clist=COLORLIST, legendlabels=None, markersize=ehc.MARKERSIZE,
@@ -282,7 +267,6 @@ def plot_camp_compare(obslist, imlist, site1, site2, site3, site4,
            vtype (str): The visibilty type ('vis','qvis','uvis','vvis','pvis')
            ctype (str): The closure amplitude type ('camp' or 'logcamp')
            camps (list): optionally pass in a list of camp so they don't have to be recomputed
-           force_recompute (bool): if True, recompute closure phases instead of using stored data
 
            debias (bool): If True, debias amplitudes.
            sgrscat (bool): if True, the visibilites will be blurred by the Sgr A* scattering kernel
@@ -320,15 +304,6 @@ def plot_camp_compare(obslist, imlist, site1, site2, site3, site4,
     if len(camps) != len(obslist):
         raise Exception("camps list must be same length as obslist!")
 
-    camps_back = []
-    for i in range(len(obslist)):
-        if ctype == 'camp':
-            camps_back.append(obslist[i].camp)
-            obslist[i].camp = camps[i]
-        elif ctype == 'logcamp':
-            camps_back.append(obslist[i].logcamp)
-            obslist[i].logcamp = camps[i]
-
     prepdata = prep_plot_lists(obslist, imlist, clist=clist, legendlabels=legendlabels,
                                sgrscat=sgrscat, ttype=ttype)
     (obslist_plot, clist_plot, legendlabels_plot, markers) = prepdata
@@ -336,19 +311,13 @@ def plot_camp_compare(obslist, imlist, site1, site2, site3, site4,
     for i in range(len(obslist_plot)):
         obs = obslist_plot[i]
         axis = obs.plot_camp(site1, site2, site3, site4,
-                             vtype=vtype, ctype=ctype, force_recompute=force_recompute,
+                             vtype=vtype, ctype=ctype, camps=camps[i],
                              debias=debias, timetype=timetype,
                              axis=axis, rangex=rangex, rangey=rangey,
                              grid=grid, ebar=ebar, axislabels=axislabels,
                              show=False, legend=False, snrcut=0.,
                              label=legendlabels_plot[i], color=clist_plot[i % len(clist_plot)],
                              marker=markers[i], markersize=markersize)
-
-    for i in range(len(obslist)):
-        if ctype == 'camp':
-            obslist[i].camp = camps_back[i]
-        elif ctype == 'logcamp':
-            obslist[i].logcamp = camps_back[i]
 
     if legend:
         plt.legend()
@@ -525,7 +494,6 @@ def plot_cphase_obs_compare(obslist,  site1, site2, site3, **kwargs):
 
            vtype (str): The visibilty type ('vis','qvis','uvis','vvis','pvis')
            cphases (list): optionally pass in a list of cphases so they don't have to be recomputed
-           force_recompute (bool): if True, recompute closure phases instead of using stored data
 
            ang_unit (str): phase unit 'deg' or 'rad'
            timetype (str): 'GMST' or 'UTC'
@@ -565,7 +533,6 @@ def plot_cphase_obs_im_compare(obslist, imlist, site1, site2, site3, **kwargs):
 
            vtype (str): The visibilty type ('vis','qvis','uvis','vvis','pvis')
            cphases (list): optionally pass in a list of cphases so they don't have to be recomputed
-           force_recompute (bool): if True, recompute closure phases instead of using stored data
 
            ang_unit (str): phase unit 'deg' or 'rad'
            timetype (str): 'GMST' or 'UTC'
@@ -606,7 +573,6 @@ def plot_camp_obs_compare(obslist,  site1, site2, site3, site4, **kwargs):
            vtype (str): The visibilty type ('vis','qvis','uvis','vvis','pvis')
            ctype (str): The closure amplitude type ('camp' or 'logcamp')
            camps (list): optionally pass in a list of camps so they don't have to be recomputed
-           force_recompute (bool): if True, recompute closure phases instead of using stored data
 
            debias (bool): If True, debias amplitudes.
            sgrscat (bool): if True, the visibilites will be blurred by the Sgr A* scattering kernel
@@ -650,7 +616,6 @@ def plot_camp_obs_im_compare(obslist,  imlist, site1, site2, site3, site4, **kwa
            vtype (str): The visibilty type ('vis','qvis','uvis','vvis','pvis')
            ctype (str): The closure amplitude type ('camp' or 'logcamp')
            camps (list): optionally pass in a list of camps so they don't have to be recomputed
-           force_recompute (bool): if True, recompute closure phases instead of using stored data
 
            debias (bool): If True, debias amplitudes.
            sgrscat (bool): if True, the visibilites will be blurred by the Sgr A* scattering kernel
@@ -755,14 +720,13 @@ def plotall_obs_im_cphases(obs, imlist,
     nplot = 0
     for c in range(0, len(uniqueclosure_tri)):
         cphases_obs_tri = obs.cphase_tri(uniqueclosure_tri[c][0],
-                                         uniqueclosure_tri[cs][1],
+                                         uniqueclosure_tri[c][1],
                                          uniqueclosure_tri[c][2],
                                          vtype=vtype, ang_unit='deg', cphases=cphases_obs)
 
         if len(cphases_obs_tri) > 0:
             if print_chisqs:
-                printstr = "%s %s %s :" % (
-                    uniqueclosure_tri[c][0], uniqueclosure_tri[c][1], uniqueclosure_tri[c][2])
+                printstr = f"{uniqueclosure_tri[c][0]} {uniqueclosure_tri[c][1]} {uniqueclosure_tri[c][2]} :"
                 for i in range(1, len(obs_all)):
                     cphases_model_tri = obs_all[i].cphase_tri(uniqueclosure_tri[c][0],
                                                               uniqueclosure_tri[c][1],
@@ -773,7 +737,7 @@ def plotall_obs_im_cphases(obs, imlist,
                     chisq_tri = np.sum((1.0 - np.cos(resids)) /
                                        ((cphases_obs_tri['sigmacp']*ehc.DEGREE)**2))
                     chisq_tri *= (2.0/len(cphases_obs_tri))
-                    printstr += " chisq%i: %0.2f" % (i, chisq_tri)
+                    printstr += f" chisq{i}: {chisq_tri:0.2f}"
                 print(printstr)
 
             if display_mode == 'individual':
@@ -825,7 +789,7 @@ def prep_plot_lists(obslist, imlist, clist=ehc.SCOLORS, legendlabels=None,
     if not((len(imlist) == len(obslist)) or len(imlist) <= 1 or len(obslist) <= 1):
         raise Exception("imlist and obslist must be the same length, or either must have length 1")
 
-    if not (legendlabels is None) and (len(legendlabels) != max(len(imlist), len(obslist))):
+    if legendlabels is not None and (len(legendlabels) != max(len(imlist), len(obslist))):
         raise Exception("legendlabels should be the same length of the longer of imlist, obslist!")
 
     if legendlabels is None:

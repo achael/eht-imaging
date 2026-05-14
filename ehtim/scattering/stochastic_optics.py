@@ -1,5 +1,6 @@
 # Michael Johnson, 2/15/2017
 # See http://adsabs.harvard.edu/abs/2016ApJ...833...74J for details about this module
+# TODO >> remove ruff exceptions in pyproject.toml after cleaning up this file
 
 from __future__ import print_function
 from builtins import range

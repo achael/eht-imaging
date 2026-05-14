@@ -16,44 +16,38 @@
 #    You should have received a copy of the GNU General Public License
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-from __future__ import division
-from __future__ import print_function
 
-from builtins import str
-from builtins import range
-from builtins import object
-
-import sys
 import copy
 import math
-import numpy as np
-import numpy.matlib as matlib
+
 import matplotlib as mpl
 import matplotlib.pyplot as plt
+import numpy as np
+import numpy.matlib as matlib
+import scipy.interpolate
+import scipy.ndimage.filters as filt
 import scipy.optimize as opt
 import scipy.signal
-import scipy.ndimage.filters as filt
-import scipy.interpolate
 from scipy import ndimage as ndi
 
+import ehtim.const_def as ehc
+import ehtim.imaging.pol_imager_utils as polutils
+import ehtim.io.load
+import ehtim.io.save
+import ehtim.observing.obs_helpers as obsh
 import ehtim.observing.obs_simulate as simobs
 import ehtim.observing.pulses as pulses
-import ehtim.io.save
-import ehtim.io.load
-import ehtim.const_def as ehc
-import ehtim.observing.obs_helpers as obsh
-import ehtim.imaging.pol_imager_utils as polutils
 
 # TODO : add time to all images
 # TODO : add arbitrary center location
-
 from ehtim.imaging.multifreq_imager_utils import DD_RHOPOL
+
 ###################################################################################################
 # Image object
 ###################################################################################################
 
 
-class Image(object):
+class Image:
 
     """A polarimetric image (in units of Jy/pixel).
 
@@ -138,12 +132,12 @@ class Image(object):
         # multifrequency spectral index, curvature arrays
         # TODO -- higher orders?
         # TODO -- don't initialize to zero?
-        avec = np.array([]) 
+        avec = np.array([])
         bvec = np.array([])
-        avec_pol = np.array([]) 
+        avec_pol = np.array([])
         bvec_pol = np.array([])
         rmvec = np.array([])
-        cmvec = np.array([])        
+        cmvec = np.array([])
         self._mflist = [avec, bvec, avec_pol, bvec_pol, rmvec, cmvec]
 
         # Save the image dimension data
@@ -237,7 +231,7 @@ class Image(object):
         if len(vec) != self.xdim * self.ydim:
             raise Exception("vec size is not consistent with xdim*ydim!")
         self._mflist[4] = vec
-        
+
     @property
     def cmvec(self):
         cmvec = self._mflist[5]
@@ -248,7 +242,7 @@ class Image(object):
         if len(vec) != self.xdim * self.ydim:
             raise Exception("vec size is not consistent with xdim*ydim!")
         self._mflist[5] = vec
-        
+
     @property
     def ivec(self):
         ivec = np.array([])
@@ -466,7 +460,7 @@ class Image(object):
         """Return the circular Poincare angle"""
         psivec = np.arctan2(self.vvec , self.pvec)
         return psivec
-               
+
 
     @property
     def evec(self):
@@ -599,7 +593,7 @@ class Image(object):
 
         # Copy over spectral information
         newim._mflist = copy.deepcopy(self._mflist)
-                
+
         return newim
 
     def copy_pol_images(self, old_image):
@@ -631,9 +625,8 @@ class Image(object):
             raise Exception("new pol in add_pol_image is the same as pol_prim!")
         if image.shape != (self.ydim, self.xdim):
             raise Exception("add_pol_image image shapes incompatible with primary image!")
-        if not (pol in list(self._imdict.keys())):
-            raise Exception("for polrep==%s, pol in add_pol_image in " %
-                            self.polrep + ",".join(list(self._imdict.keys())))
+        if pol not in list(self._imdict.keys()):
+            raise Exception(f"for polrep=={self.polrep}, pol in add_pol_image in " + ",".join(list(self._imdict.keys())))
 
         if self.polrep == 'stokes':
             if pol == 'I':
@@ -755,8 +748,7 @@ class Image(object):
         # Assemble the new image
         imvec = imdict[pol_prim_out]
         if len(imvec) == 0:
-            raise Exception("for switch_polrep to %s with pol_prim_out=%s, \n" %
-                            (polrep_out, pol_prim_out) + "output image is not defined")
+            raise Exception(f"for switch_polrep to {polrep_out} with pol_prim_out={pol_prim_out}, \n" + "output image is not defined")
 
         arglist, argdict = self.image_args()
         arglist[0] = imvec.reshape(self.ydim, self.xdim)
@@ -799,7 +791,7 @@ class Image(object):
     def get_image_mf(self, nu):
         """Get image at a given frequency given the spectral information in self._mflist
            NOTE: Only to 2nd order at the moment!!
-           
+
            Args:
                nu (float): frequency in Hz
 
@@ -818,67 +810,67 @@ class Image(object):
             if mfvec.size:
                 log_imvec += mfvec * (log_nufrac**(n + 1))
         imvec = np.exp(log_imvec)
-        
+
         arglist, argdict = self.image_args()
         arglist[0] = imvec.reshape(self.ydim, self.xdim)
         argdict['rf'] = nu
         outim = Image(*arglist, **argdict)
 
-        
+
         # Polarization
         do_mf_pol=False
         for n in range(4):
-            if self._mflist[n+2].size: 
+            if self._mflist[n+2].size:
                 do_mf_pol=True
-           
+
         if do_mf_pol and not(self.qvec.size and self.uvec.size and self.vvec.size):
             print("WARNING: polarization multifrequency terms exist but not all Stokes parameters are defined""")
             print("Cannot apply spectral terms to polarization in get_image_mf")
             do_mf_pol=False
-        
+
         if do_mf_pol:
             outim = outim.switch_polrep(polrep_out='stokes')
             im_stokes = self.switch_polrep(polrep_out='stokes')
             rhovec = im_stokes.rhovec
             phivec = im_stokes.phivec
             psivec = im_stokes.psivec
-            
-            if self.specvec_pol.size: 
+
+            if self.specvec_pol.size:
                 alpha_pol = self.specvec_pol
             else:
                 alpha_pol = 0
-            if self.curvvec_pol.size: 
+            if self.curvvec_pol.size:
                 beta_pol = self.curvvec_pol
             else:
                 beta_pol = 0
-            if self.rmvec.size: 
+            if self.rmvec.size:
                 rm = self.rmvec
             else:
-                rm = 0         
-            if self.cmvec.size: 
+                rm = 0
+            if self.cmvec.size:
                 print("WARNING: cmvec exists, but Stokes V spectral behavior is not implemented yet!")
             else:
                 cm = 0
-            
+
             # TODO: can we use the same function as multifreq_imager_utils.image_at_freq??
             logrhovec_prime = np.log(rhovec) + alpha_pol*log_nufrac + beta_pol*log_nufrac*log_nufrac
             rhovec_prime = np.exp(logrhovec_prime)
-            
+
             # transformation of rhovec to ensure it is always < 1 at any frequency
             rhovec = (rhovec_prime**(-DD_RHOPOL) + 1)**(-1/DD_RHOPOL)
-            
-            # we use dimensionless rm scaled by lambda0^2 = c^2/nu0^2   
-            phivec = phivec + rm*(np.exp(-2*log_nufrac)-1)                               
+
+            # we use dimensionless rm scaled by lambda0^2 = c^2/nu0^2
+            phivec = phivec + rm*(np.exp(-2*log_nufrac)-1)
             psivec = psivec # Stokes V spectral behavior not implemented yet
-            
+
             polarr_out = np.array((imvec, rhovec, phivec, psivec))
             qimage_out = polutils.make_q_image(polarr_out)
             uimage_out = polutils.make_u_image(polarr_out)
             vimage_out = polutils.make_v_image(polarr_out)
-            outim.add_pol_image(qimage_out.reshape(outim.ydim, outim.xdim), 'Q')  
-            outim.add_pol_image(uimage_out.reshape(outim.ydim, outim.xdim), 'U')            
-            outim.add_pol_image(vimage_out.reshape(outim.ydim, outim.xdim), 'V') 
-            outim = outim.switch_polrep(polrep_out=self.polrep)           
+            outim.add_pol_image(qimage_out.reshape(outim.ydim, outim.xdim), 'Q')
+            outim.add_pol_image(uimage_out.reshape(outim.ydim, outim.xdim), 'U')
+            outim.add_pol_image(vimage_out.reshape(outim.ydim, outim.xdim), 'V')
+            outim = outim.switch_polrep(polrep_out=self.polrep)
 
         else:
             outim.copy_pol_images(self)
@@ -987,7 +979,7 @@ class Image(object):
             frac = np.angle(np.sum(self.rlvec))
 
         return frac
-        
+
     def circ_polfrac(self):
         """Return the total fractional circular polarized flux
 
@@ -1036,11 +1028,11 @@ class Image(object):
     def betamodes(self, ms=[2], r_min=0, r_max=None, output_fluxes=False, verbose=True):
         """Return Palumbo+2020 linear beta_m modes integrated between image radius r_min, r_max
            Does not center the image
-           
+
            Args:
                 ms : list of integers m to compute beta modes for
                 r_min (float): minimum image radius for calculation (in rad)
-                r_max (float): maximum image radius for calculation (in rad). 
+                r_max (float): maximum image radius for calculation (in rad).
                                if None, use the full image
                 output_fluxes (bool): return ring fluxes
                 verbose (bool): print details
@@ -1049,7 +1041,7 @@ class Image(object):
         """
         if not (isinstance(ms, np.ndarray) or isinstance(ms, list)):
             ms = [ms]
-        
+
         if self.polrep == 'stokes':
             parr = (self.qvec + 1j*self.uvec).reshape(self.ydim, self.xdim)
             iarr = self.imvec.reshape(self.ydim, self.xdim)
@@ -1062,34 +1054,35 @@ class Image(object):
                            np.flip(np.fft.fftshift(np.fft.fftfreq(self.ydim, d=1.0 / self.ydim))))
         s = s + .5  # .5 offset to reference to pixel center
         t = t + .5  # .5 offset to reference to pixel center
-        
+
         imdist = np.sqrt(s**2 + t**2) # distance from the center in pixels
         imangle = np.arctan2(s, t)
         imangle[imangle<0.] += 2.*np.pi
 
         # define masked region
         if (r_min is not None) and (r_max is not None):
-            if verbose: print ("restricting betamodes to annulus between %.2f to %.2f uas!"%(r_min/ehc.RADPERUAS, r_max/ehc.RADPERUAS))
+            if verbose:
+                print(f"restricting betamodes to annulus between {r_min/ehc.RADPERUAS:.2f} to {r_max/ehc.RADPERUAS:.2f} uas!")
             mask = (imdist<=(r_max/self.psize)) * (imdist>=(r_min/self.psize))
         else:
             mask = np.ones(iarr.shape).astype(bool)
-        
+
         # total flux in annulus
-        flux = np.abs(np.sum(iarr[mask])) 
+        flux = np.abs(np.sum(iarr[mask]))
         pflux = np.abs(np.sum(np.abs(parr[mask])))
         area = (self.psize)**2 * (np.sum(mask))
-        
+
         # compute beta modes
         outlist = []
         for m in ms:
-            
+
             if not isinstance(m,int):
                 raise Exception("each element of 'ms' should be an integer in betamodes!")
-                 
+
             integrand = (parr*np.exp(-1j*m*imangle))[mask]
             coeff = np.sum(integrand)/flux
             outlist.append(coeff)
-        
+
         if output_fluxes:
             out = [outlist, flux, pflux, area]
         else:
@@ -1132,7 +1125,7 @@ class Image(object):
             y0 = np.sum(np.outer(ylist, 0.0 * xlist + 1.0).ravel() * imvec) / np.sum(imvec)
             centroid = np.array([x0, y0])
         else:
-            raise Exception("No %s image found!" % pol)
+            raise Exception(f"No {pol} image found!")
 
         return centroid
 
@@ -1371,7 +1364,7 @@ class Image(object):
             return imarr_rot
 
         # pol_prim needs to be RR,LL,I,or V for a simple rotation to work!
-        if(not (self.pol_prim in ['RR', 'LL', 'I', 'V'])):
+        if(self.pol_prim not in ['RR', 'LL', 'I', 'V']):
             raise Exception("im.pol_prim must be a scalar ('I','V','RR','LL') for simple rotation!")
 
         # Make new image
@@ -1594,8 +1587,8 @@ class Image(object):
            Args:
                fwhm_i (float): circular beam size for Stokes I  blurring in  radian
                fwhm_pol (float): circular beam size for Stokes Q,U,V  blurring in  radian
-               filttype (str): "gauss" or "butter" 
-               
+               filttype (str): "gauss" or "butter"
+
            Returns:
                (Image): output image
         """
@@ -1604,7 +1597,7 @@ class Image(object):
         sigmap = sigma / self.psize
         fwhmp = fwhm_i / self.psize
         fwhmp_pol = fwhm_pol / self.psize
-        
+
         # Define a convolution function
         def blur_gauss(imarr, fwhm):
             sigma = fwhmp / (2. * np.sqrt(2. * np.log(2.)))
@@ -1612,33 +1605,33 @@ class Image(object):
                 return blur(np.real(imarr), sigma) + 1j * blur(np.imag(imarr), sigma)
             imarr_blur = filt.gaussian_filter(imarr, (sigma, sigma))
             return imarr_blur
-            
+
         def blur_butter(imarr, size):
 
             if size==0:
                 return imarr
-            
-            cutoff = 1/size    
+
+            cutoff = 1/size
             Nx = self.xdim
             Ny = self.ydim
 
             s, t = np.meshgrid(np.fft.fftfreq(Nx, d=1.0 ), np.fft.fftfreq(Ny, d=1.0 ))
             r = np.sqrt(s**2 + t**2)
-            
+
             bfilt = 1./np.sqrt(1 + (r/cutoff)**4)
 
             imarr = self.imvec.reshape((Ny, Nx))
             imarr_filt = np.real(np.fft.ifft2(np.fft.fft2(imarr) * bfilt))
             return imarr_filt
-            
-            
+
+
         if filttype=='gauss':
             blur = blur_gauss
         elif filttype=='butter':
             blur = blur_butter
         else:
             raise Exception("filttype not recognized in blur_circ!")
-            
+
         # Blur the primary image
         imarr = self.imvec.reshape(self.ydim, self.xdim)
         imarr_blur = blur(imarr, fwhmp)
@@ -1680,62 +1673,62 @@ class Image(object):
 
            Args:
                freqs (float): Frequencies to include in the blurring & spectral index fit
-               fwhm (float): circular beam size 
+               fwhm (float): circular beam size
                fit_order (int): how many orders to fit spectrum: 1 or 2
-               filttype (str): "gauss" or "butter" 
-               
+               filttype (str): "gauss" or "butter"
+
            Returns:
-               (Image): output image          
-           
+               (Image): output image
+
         """
-        if fit_order not in [1,2]: 
+        if fit_order not in [1,2]:
             raise Exception("fit_order must be 1 or 2 in blur_mf!")
-           
+
         reffreq = self.rf
 
-        # remove any zeros in the images               
+        # remove any zeros in the images
         imlist = [self.get_image_mf(rf).blur_circ(fwhm, fwhm, filttype=filttype) for rf in freqs]
         imvecs = np.array([im.imvec for im in imlist])
-        
+
         if np.any(imvecs<=0):
             imvecs[imvecs<=0] = np.min(imvecs[imvecs<=0])
-        
+
         # total intensity
         xfit = np.log(np.array(freqs)/reffreq)
         yfit = np.log(imvecs)
-        
+
         if fit_order == 2:
             coeffs = np.polyfit(xfit,yfit,2)
             beta = coeffs[0]
-            alpha = coeffs[1]    
+            alpha = coeffs[1]
         elif fit_order == 1:
             coeffs = np.polyfit(xfit,yfit,1)
-            alpha = coeffs[0]    
+            alpha = coeffs[0]
             beta = 0*alpha
         else:
             alpha = 0*yfit
             beta = 0*yfit
-            
+
         # base image
         outim = self.blur_circ(fwhm, fwhm, filttype=filttype)
         outim.specvec = alpha
         outim.curvvec = beta
-                
+
         # polarization
         do_mf_pol=False
         for n in range(4):
-            if self._mflist[n+2].size: 
+            if self._mflist[n+2].size:
                 do_mf_pol=True
-           
+
         if do_mf_pol and not(self.qvec.size and self.uvec.size and self.vvec.size):
             print("WARNING: polarization multifrequency terms exist but not all Stokes parameters are defined""")
             print("Cannot apply spectral terms to polarization in get_image_mf")
             do_mf_pol=False
-        
+
         if do_mf_pol: # blur mulitfrequency polarizaiton
 
             rhovecs = np.array([im.rhovec for im in imlist])
-            phivecs = np.array([im.phivec for im in imlist])                    
+            phivecs = np.array([im.phivec for im in imlist])
             if np.any(rhovecs<=0):
                 rhovecs[rhovecs<=0] = np.min(rhovecs[imvecs<=0])
 
@@ -1745,30 +1738,30 @@ class Image(object):
             if fit_order_pol == 2:
                 coeffs = np.polyfit(xfit,yfit,2)
                 betap = coeffs[0]
-                alphap = coeffs[1]    
+                alphap = coeffs[1]
             elif fit_order_pol == 1:
                 coeffs = np.polyfit(xfit,yfit,1)
-                alphap = coeffs[0]    
+                alphap = coeffs[0]
                 betap = 0*alpha
             else:
                 alphap = 0*yfit
-                betap = 0*yfit                        
+                betap = 0*yfit
             outim.specvec_pol = alphap
             outim.curvvec_pol = betap
- 
-            # fit rm           
-            # TODO what about phase wraps? 
+
+            # fit rm
+            # TODO what about phase wraps?
             xfit = np.exp(-2*np.log(np.array(freqs)/reffreq))-1
             yfit = phivecs
             coeffs = np.polyfit(xfit,yfit,1)
-            rm = coeffs[0]    
+            rm = coeffs[0]
             outim.rmvec = rm
-            
+
             # TODO: no multifrequency V/\psi allowed
             outim.cmvec = np.zeros(outim.imvec.shape)
 
         return outim
-        
+
     def grad(self, gradtype='abs'):
         """Return the gradient image
 
@@ -1967,11 +1960,10 @@ class Image(object):
 
         if pol is None:
             pol = self.pol_prim
-        if not (pol in list(self._imdict.keys())):
-            raise Exception("for polrep==%s, pol must be in " %
-                            self.polrep + ",".join(list(self._imdict.keys())))
+        if pol not in list(self._imdict.keys()):
+            raise Exception(f"for polrep=={self.polrep}, pol must be in " + ",".join(list(self._imdict.keys())))
         if not len(self._imdict[pol]):
-            raise Exception("no image for pol %s" % pol)
+            raise Exception(f"no image for pol {pol}")
 
         # Make a flat image array
         flatarr = ((flux / float(len(self.imvec))) * np.ones(len(self.imvec)))
@@ -2016,11 +2008,10 @@ class Image(object):
 
         if pol is None:
             pol = self.pol_prim
-        if not (pol in list(self._imdict.keys())):
-            raise Exception("for polrep==%s, pol must be in " %
-                            self.polrep + ",".join(list(self._imdict.keys())))
+        if pol not in list(self._imdict.keys()):
+            raise Exception(f"for polrep=={self.polrep}, pol must be in " + ",".join(list(self._imdict.keys())))
         if not len(self._imdict[pol]):
-            raise Exception("no image for pol %s" % pol)
+            raise Exception(f"no image for pol {pol}")
 
         # Make a tophat image array
         xlist = np.arange(0, -self.xdim, -1) * self.psize + \
@@ -2074,11 +2065,10 @@ class Image(object):
 
         if pol is None:
             pol = self.pol_prim
-        if not (pol in list(self._imdict.keys())):
-            raise Exception("for polrep==%s, pol must be in " %
-                            self.polrep + ",".join(list(self._imdict.keys())))
+        if pol not in list(self._imdict.keys()):
+            raise Exception(f"for polrep=={self.polrep}, pol must be in " + ",".join(list(self._imdict.keys())))
         if not len(self._imdict[pol]):
-            raise Exception("no image for pol %s" % pol)
+            raise Exception(f"no image for pol {pol}")
 
         # Make a Gaussian image
         try:
@@ -2150,11 +2140,10 @@ class Image(object):
 
         if pol is None:
             pol = self.pol_prim
-        if not (pol in list(self._imdict.keys())):
-            raise Exception("for polrep==%s, pol must be in " %
-                            self.polrep + ",".join(list(self._imdict.keys())))
+        if pol not in list(self._imdict.keys()):
+            raise Exception(f"for polrep=={self.polrep}, pol must be in " + ",".join(list(self._imdict.keys())))
         if not len(self._imdict[pol]):
-            raise Exception("no image for pol %s" % pol)
+            raise Exception(f"no image for pol {pol}")
 
         # Make a crescent image
         xlist = np.arange(0, -self.xdim, -1) * self.psize + \
@@ -2215,11 +2204,10 @@ class Image(object):
 
         if pol is None:
             pol = self.pol_prim
-        if not (pol in list(self._imdict.keys())):
-            raise Exception("for polrep==%s, pol must be in " %
-                            self.polrep + ",".join(list(self._imdict.keys())))
+        if pol not in list(self._imdict.keys()):
+            raise Exception(f"for polrep=={self.polrep}, pol must be in " + ",".join(list(self._imdict.keys())))
         if not len(self._imdict[pol]):
-            raise Exception("no image for pol %s" % pol)
+            raise Exception(f"no image for pol {pol}")
 
         # Make a ring image
         flux = I0 - 0.5 * I1
@@ -2421,7 +2409,7 @@ class Image(object):
                beta_pol (float): polarization fraction spectral curvature
                rm (float): rotation measure (dimensionless at reference freq)
                cm (float): conversion measure (not yet implemented)
-               
+
            Returns:
                 (Image): output image with constant mf information added
         """
@@ -2438,7 +2426,7 @@ class Image(object):
             bpvec = beta_pol* np.ones(len(self.imvec))
         else:
             bpvec = np.array([])
-            
+
         if rm is not None:
             rmvec = rm* np.ones(len(self.imvec))
         else:
@@ -2448,7 +2436,7 @@ class Image(object):
             cmvec = cm* np.ones(len(self.imvec))
         else:
             cmvec = np.array([])
-                                            
+
         # create the new image object
         outim = self.copy()
         outim._mflist = [avec, bvec, apvec,bpvec,rmvec,cmvec ]
@@ -2490,9 +2478,8 @@ class Image(object):
 
         # calculate the amount of flux to include in the Gaussian
         obs_zerobl = obs.flag_uvdist(uv_max=uv_min)
-        obs_zerobl.add_amp(debias=debias)
-        orig_totflux = np.sum(obs_zerobl.amp['amp'] * (1 / obs_zerobl.amp['sigma']**2))
-        orig_totflux /= np.sum(1 / obs_zerobl.amp['sigma']**2)
+        amps = obs_zerobl.unpack(['amp', 'sigma'], debias=debias)
+        orig_totflux = np.sum(amps['amp'] / amps['sigma']**2) / np.sum(1 / amps['sigma']**2)
 
         if zblval is None:
             addedflux = orig_totflux - np.sum(self.imvec)
@@ -2564,9 +2551,10 @@ class Image(object):
             raise Exception("Image frequency is not the same as observation frequency!")
 
         if (ttype == 'direct' or ttype == 'fast' or ttype == 'nfft'):
-            if verbose: print("Producing clean visibilities from image with " + ttype + " FT . . . ")
+            if verbose:
+                print("Producing clean visibilities from image with " + ttype + " FT . . . ")
         else:
-            raise Exception("ttype=%s, options for ttype are 'direct', 'fast', 'nfft'" % ttype)
+            raise Exception(f"ttype={ttype}, options for ttype are 'direct', 'fast', 'nfft'")
 
         # Copy data to be safe
         obsdata = copy.deepcopy(obs.data)
@@ -2580,16 +2568,16 @@ class Image(object):
         # put visibilities into the obsdata
         if obs.polrep == 'stokes':
             obsdata['vis'] = data[0]
-            if not(data[1] is None):
+            if data[1] is not None:
                 obsdata['qvis'] = data[1]
                 obsdata['uvis'] = data[2]
                 obsdata['vvis'] = data[3]
 
         elif obs.polrep == 'circ':
             obsdata['rrvis'] = data[0]
-            if not(data[1] is None):
+            if data[1] is not None:
                 obsdata['llvis'] = data[1]
-            if not(data[2] is None):
+            if data[2] is not None:
                 obsdata['rlvis'] = data[2]
                 obsdata['lrvis'] = data[3]
 
@@ -2747,7 +2735,7 @@ class Image(object):
     def observe(self, array, tint, tadv, tstart, tstop, bw,
                 mjd=None, timetype='UTC', polrep_obs=None,
                 elevmin=ehc.ELEV_LOW, elevmax=ehc.ELEV_HIGH,
-                no_elevcut_space=False,                
+                no_elevcut_space=False,
                 ttype='nfft', fft_pad_factor=2, fix_theta_GMST=False,
                 sgrscat=False, add_th_noise=True,
                 jones=False, inv_jones=False,
@@ -2778,7 +2766,7 @@ class Image(object):
                elevmin (float): station minimum elevation in degrees
                elevmax (float): station maximum elevation in degrees
                no_elevcut_space (bool): if True, do not apply elevation cut to orbiters
-           
+
                ttype (str): "fast", "nfft" or "dtft"
                fft_pad_factor (float): zero pad the image to fft_pad_factor * image size in the FFT
                fix_theta_GMST (bool): if True, stops earth rotation to sample fixed u,v
@@ -2799,7 +2787,7 @@ class Image(object):
                stabilize_scan_phase (bool): if True, random phase errors are constant over scans
                stabilize_scan_amp (bool): if True, random amplitude errors are constant over scans
                neggains (bool): if True, force the applied gains to be <1
-               
+
                tau (float): the base opacity at all sites, or a dict giving one opacity per site
                taup (float): the fractional std. dev. of the random error on the opacities
                gainp (float): the fractional std. dev. of the random error on the gains
@@ -2839,7 +2827,8 @@ class Image(object):
         """
 
         # Generate empty observation
-        if verbose: print("Generating empty observation file . . . ")
+        if verbose:
+            print("Generating empty observation file . . . ")
 
         if mjd is None:
             mjd = self.mjd
@@ -2847,9 +2836,9 @@ class Image(object):
             polrep_obs = self.polrep
 
         obs = array.obsdata(self.ra, self.dec, self.rf, bw, tint, tadv, tstart, tstop, mjd=mjd,
-                            polrep=polrep_obs, tau=tau, 
-                            elevmin=elevmin, elevmax=elevmax, 
-                            no_elevcut_space=no_elevcut_space,                            
+                            polrep=polrep_obs, tau=tau,
+                            elevmin=elevmin, elevmax=elevmax,
+                            no_elevcut_space=no_elevcut_space,
                             timetype=timetype, fix_theta_GMST=fix_theta_GMST)
 
         # Observe on the same baselines as the empty observation and add noise
@@ -3072,7 +3061,7 @@ class Image(object):
         if 'nxcorr' in metric:
             error.append(xcorr[idx[0], idx[1]] / (im1_pad.xdim * im1_pad.ydim))
         if 'nrmse' in metric:
-            error.append(np.sqrt(np.sum((np.abs(imvec1 - imvec2)**2 * im1_pad.psize**2)) /
+            error.append(np.sqrt(np.sum(np.abs(imvec1 - imvec2)**2 * im1_pad.psize**2) /
                                  np.sum((imvec1)**2 * im1_pad.psize**2)))
         if 'rssd' in metric:
             error.append(np.sqrt(np.sum(np.abs(imvec1 - imvec2)**2) * im1_pad.psize**2))
@@ -3324,7 +3313,7 @@ class Image(object):
                 contour_im=False, power=0, beamcolor='w',
                 export_pdf="", show=True, beamparams=None, cbar_orientation="vertical",
                 scale_lw=1, beam_lw=1, cbar_fontsize=12, axis=None, scale_fontsize=12):
-        """Display the image in a contour plot.
+        r"""Display the image in a contour plot.
 
            Args:
                contour_levels (arr): the fractional contour levels relative to the max flux plotted
@@ -3438,9 +3427,9 @@ class Image(object):
         count = 0.
 
         for level in contour_levels:
-            if not(contour_cfun is None):
+            if contour_cfun is not None:
                 rgbval = contour_cfun(count / len(contour_levels))
-                rgbstring = '#%02x%02x%02x' % (rgbval[0] * 256, rgbval[1] * 256, rgbval[2] * 256)
+                rgbstring = f'#{rgbval[0] * 256:02x}{rgbval[1] * 256:02x}{rgbval[2] * 256:02x}'
             else:
                 rgbstring = color
             cs = plt.contour(x, y, z, levels=[level * maxz], colors=rgbstring, cmap=None)
@@ -3452,7 +3441,7 @@ class Image(object):
         if show:
             #plt.show(block=False)
             ehc.show_noblock()
-            
+
         if export_pdf != "":
             ax.savefig(export_pdf, bbox_inches='tight', pad_inches=0)
 
@@ -3471,10 +3460,10 @@ class Image(object):
                 export_pdf="", pdf_pad_inches=0.0, show=True, beamparams=None,
                 cbar_orientation="vertical", scinot=False,
                 scale_lw=1, beam_lw=1, cbar_fontsize=12, axis=None,
-                scale_fontsize=12, 
-                power=0, 
+                scale_fontsize=12,
+                power=0,
                 beamcolor='w', beampos='right', scalecolor='w',dpi=500):
-        """Display the image.
+        r"""Display the image.
 
            Args:
                pol (str): which polarization image to plot. Default is self.pol_prim
@@ -3493,13 +3482,13 @@ class Image(object):
                nvec (int): number of polarimetric vectors to plot
                vec_cfun (str): color function for vectors colored by lin pol frac
                vec_cbar_lims (tuple): lower and upper limit of the fractional polarization colormap
-               
+
                scut (float): minimum fractional stokes I value for displaying spectral index
                pcut (float): minimum fractional stokes I value for displaying polarimetric vectors
                mcut (float): minimum fractional polarization value for displaying vectors
                scale_ticks (bool): if True, scale polarization ticks by linear polarization magnitude
-               
-               
+
+
                label_type (string): specifies the type of axes labeling: 'ticks', 'scale', 'none'
                has_title (bool): True if you want a title on the plot
                has_cbar (bool): True if you want a colorbar on the plot
@@ -3519,7 +3508,7 @@ class Image(object):
 
                power (float): Passed to colorbar for division of ticks by 1e(power)
                beamcolor (str): color of the beam overlay
-               scalecolor (str): color of the scale label overlay            
+               scalecolor (str): color of the scale label overlay
            Returns:
                (matplotlib.figure.Figure): figure object with image
 
@@ -3624,7 +3613,7 @@ class Image(object):
             raise ValueError('cbar_unit ' + cbar_unit[1] + ' is not a possible option')
 
         # Plot a single polarization image
-        if not plotp:  
+        if not plotp:
             cbar_lims_p = ()
 
             if pol.lower() == 'spec':
@@ -3689,7 +3678,7 @@ class Image(object):
                             im2 = self.switch_polrep('stokes')
                         imvec = np.array(im2._imdict[pol]).reshape(-1) / (10.**power)
                     except KeyError:
-                        raise Exception("Cannot make pol %s image in display()!" % pol)
+                        raise Exception(f"Cannot make pol {pol} image in display()!")
 
                 unit = fluxunit
                 if areaunit != '':
@@ -3729,7 +3718,7 @@ class Image(object):
                 imarr[imarr < cbar_lims[0]] = cbar_lims[0]
 
             if has_title:
-                plt.title("%s %.2f GHz %s" % (self.source, self.rf / 1e9, pol), fontsize=16)
+                plt.title(f"{self.source} {self.rf / 1e9:.2f} GHz {pol}", fontsize=16)
 
             if not cfun:
                 cfun = cfun_p
@@ -3748,7 +3737,7 @@ class Image(object):
                                   +.4 * self.fovx(), -.4 * self.fovy()]
                 else:
                     beamparams = [beamparams[0], beamparams[1], beamparams[2],
-                                  -.35 * self.fovx(), -.35 * self.fovy()]                              
+                                  -.35 * self.fovx(), -.35 * self.fovy()]
                 beamimage = self.copy()
                 beamimage.imvec *= 0
                 beamimage = beamimage.add_gauss(1, beamparams)
@@ -3773,9 +3762,9 @@ class Image(object):
                     cb.update_ticks()
 
         # plot polarization with ticks!
-        else:  
+        else:
 
-                    
+
             im_stokes = self.switch_polrep(polrep_out='stokes')
             imvec = np.array(im_stokes.imvec).reshape(-1) / (10**power)
             qvec = np.array(im_stokes.qvec).reshape(-1) / (10**power)
@@ -3818,7 +3807,7 @@ class Image(object):
             if scale == 'gamma':
                 #if (imarr2 < 0.0).any():
                 #    print('clipping values leq 0 in display')
-                #    imarr2[imarr2 <= 0.0] = 1.e-16*np.min(imarr2[imarr2>0]) #0 
+                #    imarr2[imarr2 <= 0.0] = 1.e-16*np.min(imarr2[imarr2>0]) #0
                 imarr2 = (imarr2 + np.max(imarr2) / dynamic_range)**(gamma)
                 unit = '(' + unit + ')^gamma'
 
@@ -4015,12 +4004,12 @@ class Image(object):
 
                 if not vec_cbar_lims:
                     vec_cbar_lims = (0,1)
-                    
-                plt.clim(vec_cbar_lims[0],vec_cbar_lims[1])                
-                mcbar = plt.colorbar(pad=0.04,fraction=0.046, orientation="horizontal") 
+
+                plt.clim(vec_cbar_lims[0],vec_cbar_lims[1])
+                mcbar = plt.colorbar(pad=0.04,fraction=0.046, orientation="horizontal")
                 mcbar.set_label(r'Fractional Linear Polarization $|m|$', fontsize=cbar_fontsize)
-                mcbar.ax.tick_params(labelsize=cbar_fontsize) 
-                            
+                mcbar.ax.tick_params(labelsize=cbar_fontsize)
+
             if not(beamparams is None or beamparams is False):
                 beamparams = [beamparams[0], beamparams[1], beamparams[2],
                               -.35 * self.fovx(), -.35 * self.fovy()]
@@ -4039,9 +4028,7 @@ class Image(object):
                 if cbar_lims:
                     plt.clim(cbar_lims[0], cbar_lims[1])
             if has_title:
-                plt.title("%s %.1f GHz : m=%.1f%% , v=%.1f%%" % (self.source, self.rf / 1e9,
-                                                                 self.lin_polfrac() * 100,
-                                                                 self.circ_polfrac() * 100),
+                plt.title(f"{self.source} {self.rf / 1e9:.1f} GHz : m={self.lin_polfrac() * 100:.1f}% , v={self.circ_polfrac() * 100:.1f}%",
                           fontsize=12)
             f.subplots_adjust(hspace=.1, wspace=0.3)
 
@@ -4085,7 +4072,7 @@ class Image(object):
         if show:
             #plt.show(block=False)
             ehc.show_noblock()
-            
+
         if export_pdf != "":
             f.savefig(export_pdf, bbox_inches='tight', pad_inches=pdf_pad_inches, dpi=dpi)
 
@@ -4181,7 +4168,7 @@ class Image(object):
             composite_img = composite_img / np.max(np.max(np.max(composite_img)))
 
         plt.subplot(111)
-        plt.title('%s   MJD %i  %.2f GHz' % (self.source, self.mjd, self.rf / 1e9), fontsize=20)
+        plt.title(f'{self.source}   MJD {self.mjd:d}  {self.rf / 1e9:.2f} GHz', fontsize=20)
         plt.imshow(composite_img, interpolation=interp)
         xticks = obsh.ticks(im0_pad.xdim, im0_pad.psize / ehc.RADPERAS / 1e-6)
         yticks = obsh.ticks(im0_pad.ydim, im0_pad.psize / ehc.RADPERAS / 1e-6)
@@ -4309,7 +4296,7 @@ def load_image(image, display=False, aipscc=False):
             im = ehtim.io.load.load_im_hdf5(image)
         else:
             print("Image format is not recognized. Was expecting .fits, .txt, or Image.")
-            print(" Got <.{0}>. Returning False.".format(image.split('.')[-1]))
+            print(" Got <.{}>. Returning False.".format(image.split('.')[-1]))
             return False
 
     elif isinstance(image, ehtim.image.Image):
@@ -4317,7 +4304,7 @@ def load_image(image, display=False, aipscc=False):
 
     else:
         print("Image format is not recognized. Was expecting .fits, .txt, or Image.")
-        print(" Got {0}. Returning False.".format(type(image)))
+        print(f" Got {type(image)}. Returning False.")
         return False
 
     if display:
@@ -4362,7 +4349,7 @@ def load_fits(fname, aipscc=False, pulse=ehc.PULSE_DEFAULT,
 
     return ehtim.io.load.load_im_fits(fname, aipscc=aipscc, pulse=pulse,
                                       polrep=polrep, pol_prim=pol_prim, zero_pol=zero_pol)
-                                      
+
 def avg_imlist(imlist):
     """Average a list of images.
 
@@ -4372,7 +4359,7 @@ def avg_imlist(imlist):
        Returns:
            (Image): average image object
     """
-    
+
     imavg = imlist[0]
 
     if np.any(np.array([im.polrep for im in imlist]) != imavg.polrep):
@@ -4381,9 +4368,9 @@ def avg_imlist(imlist):
         raise Exception("im.source in all images are not the same in avg_imlist!")
     if np.any(np.array([im.rf for im in imlist]) != imavg.rf):
         raise Exception("im.rf in all images are not the same in avg_imlist!")
-           
+
     keys = imavg._imdict.keys()
-                
+
     for im in imlist[1:]:
         for key in keys:
             imavg._imdict[key] += im._imdict[key]
@@ -4391,7 +4378,7 @@ def avg_imlist(imlist):
     for key in keys:
         imavg._imdict[key] /= float(len(imlist))
 
-    
+
     return imavg
 
 def get_specim(imlist, reffreq, fit_order=2):
@@ -4401,7 +4388,7 @@ def get_specim(imlist, reffreq, fit_order=2):
     # remove any zeros in the images
     for im in imlist:
         im.imvec[im.imvec<=0] = np.min(im.imvec[im.imvec!=0])
-    
+
     # fit
     xfit = np.log(np.array(freqs)/reffreq)
     yfit = np.log(np.array([im.imvec for im in imlist]))
@@ -4409,21 +4396,21 @@ def get_specim(imlist, reffreq, fit_order=2):
     if fit_order == 2:
         coeffs = np.polyfit(xfit,yfit,2)
         beta = coeffs[0]
-        alpha = coeffs[1] 
-        imvec = np.exp(coeffs[2])   
+        alpha = coeffs[1]
+        imvec = np.exp(coeffs[2])
     elif fit_order == 1:
         coeffs = np.polyfit(xfit,yfit,1)
-        alpha = coeffs[0]    
+        alpha = coeffs[0]
         beta = 0*alpha
         imvec = np.exp(coeffs[1])
     else:
         raise Exception()
-        
+
     outim = imlist[0].copy() #TODO no polarization
     outim.imvec = imvec
     outim.rf = reffreq
     outim.specvec = alpha
     outim.curvvec = beta
-    
+
     return outim
 
