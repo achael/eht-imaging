@@ -4,13 +4,11 @@
 # Note: must import ehtim outside the ehtim directory
 # either in parent eht-imaging directory or after installing with setuptools
 
-from __future__ import division
-from __future__ import print_function
 
-import matplotlib.pyplot as plt
 import numpy as np
+
 import ehtim as eh
-from   ehtim.calibrating import self_cal as sc
+
 #from  ehtim.plotting import self_cal as sc
 
 # Load the image and the array

@@ -8,7 +8,6 @@ recomputes from scratch, so they must be deterministic.
 import numpy as np
 import pytest
 
-
 # ---------------------------------------------------------------------------
 # Closure-quantity idempotence (Phase 0)
 # ---------------------------------------------------------------------------

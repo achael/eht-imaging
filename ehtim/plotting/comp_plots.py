@@ -16,21 +16,16 @@
 #    You should have received a copy of the GNU General Public License
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-from __future__ import division
-from __future__ import print_function
 
-from builtins import str
-from builtins import range
-from builtins import object
+import copy
+import itertools as it
 
+import matplotlib.pyplot as plt
 import numpy as np
 import numpy.matlib as matlib
-import matplotlib.pyplot as plt
-import itertools as it
-import copy
 
-from ehtim.obsdata import merge_obs
 import ehtim.const_def as ehc
+from ehtim.obsdata import merge_obs
 
 COLORLIST = ehc.SCOLORS
 
@@ -725,14 +720,13 @@ def plotall_obs_im_cphases(obs, imlist,
     nplot = 0
     for c in range(0, len(uniqueclosure_tri)):
         cphases_obs_tri = obs.cphase_tri(uniqueclosure_tri[c][0],
-                                         uniqueclosure_tri[cs][1],
+                                         uniqueclosure_tri[c][1],
                                          uniqueclosure_tri[c][2],
                                          vtype=vtype, ang_unit='deg', cphases=cphases_obs)
 
         if len(cphases_obs_tri) > 0:
             if print_chisqs:
-                printstr = "%s %s %s :" % (
-                    uniqueclosure_tri[c][0], uniqueclosure_tri[c][1], uniqueclosure_tri[c][2])
+                printstr = f"{uniqueclosure_tri[c][0]} {uniqueclosure_tri[c][1]} {uniqueclosure_tri[c][2]} :"
                 for i in range(1, len(obs_all)):
                     cphases_model_tri = obs_all[i].cphase_tri(uniqueclosure_tri[c][0],
                                                               uniqueclosure_tri[c][1],
@@ -743,7 +737,7 @@ def plotall_obs_im_cphases(obs, imlist,
                     chisq_tri = np.sum((1.0 - np.cos(resids)) /
                                        ((cphases_obs_tri['sigmacp']*ehc.DEGREE)**2))
                     chisq_tri *= (2.0/len(cphases_obs_tri))
-                    printstr += " chisq%i: %0.2f" % (i, chisq_tri)
+                    printstr += f" chisq{i}: {chisq_tri:0.2f}"
                 print(printstr)
 
             if display_mode == 'individual':
@@ -795,7 +789,7 @@ def prep_plot_lists(obslist, imlist, clist=ehc.SCOLORS, legendlabels=None,
     if not((len(imlist) == len(obslist)) or len(imlist) <= 1 or len(obslist) <= 1):
         raise Exception("imlist and obslist must be the same length, or either must have length 1")
 
-    if not (legendlabels is None) and (len(legendlabels) != max(len(imlist), len(obslist))):
+    if legendlabels is not None and (len(legendlabels) != max(len(imlist), len(obslist))):
         raise Exception("legendlabels should be the same length of the longer of imlist, obslist!")
 
     if legendlabels is None:
