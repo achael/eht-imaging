@@ -429,7 +429,7 @@ class Caltable(object):
                         source=self.source, mjd=self.mjd, timetype=self.timetype)
 
     def applycal(self, obs, interp='linear', extrapolate=None,
-                 force_singlepol=False, copy_closure_tables=True):
+                 force_singlepol=False):
         """Apply the calibration table to an observation.
 
            Args:
@@ -450,7 +450,6 @@ class Caltable(object):
         else:
             fill_value = extrapolate
 
-        obs_orig = obs.copy()  # Need to do this before switch_polrep to keep tables
         orig_polrep = obs.polrep
         obs = obs.switch_polrep('circ')
 
@@ -526,11 +525,6 @@ class Caltable(object):
                                        opacitycal=obs.opacitycal, dcal=obs.dcal,
                                        frcal=obs.frcal, timetype=obs.timetype)
         calobs = calobs.switch_polrep(orig_polrep)
-
-        if copy_closure_tables:
-            calobs.camp = obs_orig.camp
-            calobs.logcamp = obs_orig.logcamp
-            calobs.cphase = obs_orig.cphase
 
         return calobs
 

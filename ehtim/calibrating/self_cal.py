@@ -50,12 +50,11 @@ STOP = 1e-6  # convergence criterion
 ###################################################################################################
 
 
-def self_cal(obs, im, sites=[], pol='I', apply_singlepol=False, method="both", 
+def self_cal(obs, im, sites=[], pol='I', apply_singlepol=False, method="both",
              minimizer_method='BFGS',
              pad_amp=0., gain_tol=.2, solution_interval=0.0, scan_solutions=False,
              ttype='direct', fft_pad_factor=2, caltable=False,
              debias=True, apply_dterms=False,
-             copy_closure_tables=False,
              processes=-1, show_solution=False, msgtype='bar',
              use_grad=False):
     """Self-calibrate a dataset to an image.
@@ -206,10 +205,6 @@ def self_cal(obs, im, sites=[], pol='I', apply_singlepol=False, method="both",
         arglist, argdict = obs.obsdata_args()
         arglist[4] = np.concatenate(scans_cal)
         out = ehtim.obsdata.Obsdata(*arglist, **argdict)
-        if copy_closure_tables:
-            out.camp = obs.camp
-            out.logcamp = obs.logcamp
-            out.cphase = obs.cphase
 
     # close multiprocessing jobs
     if processes >= 0:
