@@ -17,6 +17,7 @@
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 ## TODO ##
+# >> remove ruff exceptions in pyproject.toml after cleaning up this file
 # >> return jonesdict for all data types <- requires significant modification to eht-imaging
 # >> Deal with nans in fitting (mask chisqdata) <- mostly done
 # >> Add optional transform for leakage and gains
