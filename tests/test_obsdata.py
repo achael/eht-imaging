@@ -70,7 +70,7 @@ def test_cphase_tri_idempotent(obs_pol_direct, vtype):
 
 @pytest.mark.parametrize("ctype", ["camp", "logcamp"])
 @pytest.mark.parametrize("vtype", ["vis", "qvis", "uvis", "vvis"])
-def test_camp_quad_idempotent(obs_pol_direct, vtype):
+def test_camp_quad_idempotent(obs_pol_direct, vtype, ctype):
     sites = list(obs_pol_direct.tarr['site'][:4])
     a = obs_pol_direct.camp_quad(*sites, vtype=vtype, ctype=ctype)
     b = obs_pol_direct.camp_quad(*sites, vtype=vtype, ctype=ctype)
