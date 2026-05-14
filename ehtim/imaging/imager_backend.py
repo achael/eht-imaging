@@ -1,6 +1,7 @@
 # imager_backend.py
 # Pure functional backend for imager.py
 
+from collections.abc import Sequence
 from typing import NamedTuple
 
 import numpy as np
@@ -220,6 +221,118 @@ class ImagerInitState(NamedTuple):
     nimage: int                  # number of active pixels = sum(embed_mask)
     which_solve: np.ndarray      # int 0/1 flags
     reffreq: float               # may be re-bound to init.rf when mf=True
+
+
+class RegParams(NamedTuple):
+    """Bundle of regularizer parameters passed to compute_reg_dict / compute_reggrad_dict.
+
+    Built once per imager run by Imager._regparams() and forwarded into each
+    regularizer function via ``**reg_params._asdict()``. Regularizer functions
+    take what they need from this bundle; extra fields are ignored via their
+    trailing ``**kwargs``.
+
+    Field groups:
+      Image scale          : flux, pflux, vflux
+      Image geometry       : xdim, ydim, psize, beam_size
+      Multifrequency       : mf_flux
+      Term-specific kwargs : major, minor, PA, alpha_A, epsilon_tv
+    """
+    flux: float
+    pflux: float | None
+    vflux: float | None
+    xdim: int
+    ydim: int
+    psize: float
+    beam_size: float
+    mf_flux: list | None         # length n_obs when REGULARIZERS_ALLFREQS_I active
+    major: float
+    minor: float
+    PA: float
+    alpha_A: float
+    epsilon_tv: float
+
+
+class DataWeighting(NamedTuple):
+    """Bundle of data-weighting parameters passed to compute_data_tuples.
+
+    Built once per imager run by Imager._data_weighting_params() and forwarded
+    into compute_data_tuples, which reads its fields directly.
+
+    Field groups:
+      Closure-set selection   : maxset
+      Noise corrections       : debias, systematic_noise, systematic_cphase_noise
+      SNR filtering           : snrcut
+      Weighting scheme        : weighting
+      UV closure-phase filter : cp_uv_min
+    """
+    maxset: bool                    # use the maximal independent set of closure quantities
+    debias: bool                    # apply noise-bias correction to visibility amplitudes
+    snrcut: dict                    # per-data-term SNR threshold (dname -> float)
+    weighting: str                  # baseline weighting scheme ('natural', 'uniform')
+    systematic_noise: float         # fractional sys-noise added in quadrature to amplitudes
+    systematic_cphase_noise: float  # absolute sys-noise added in quadrature to closure phases (deg)
+    cp_uv_min: float | bool         # minimum UV-separation cut on closure phases (False = no cut)
+
+
+class FourierGridParams(NamedTuple):
+    """Bundle of Fourier-grid parameters used by ttype='fast' and ttype='nfft'.
+
+    These configure the gridding kernel + grid padding + interpolation order
+    shared between the FFT and NFFT transform paths. Built once per imager
+    run by Imager._fft_params() and passed into compute_data_tuples.
+
+    Field groups:
+      Grid           : fft_pad_factor
+      Gridding kernel: fft_conv_func, fft_gridder_prad
+      Interpolation  : fft_interp_order
+    """
+    fft_pad_factor: float    # zero-padding factor for the Fourier grid (typical: 2)
+    fft_conv_func: str       # gridding convolution kernel ('gaussian', 'pillbox', ...)
+    fft_gridder_prad: float  # gridding kernel half-support in pixels
+    fft_interp_order: int    # interpolation order for grid-sample lookups
+
+
+class MfConfig(NamedTuple):
+    """Multifrequency solver configuration bundled inside ImagerConfig.
+
+    Carries the spectral-expansion orders read by compute_which_solve and
+    related multifrequency dispatch code paths. Unused when ImagerConfig.mf
+    is False, but always populated with defaults.
+
+    Field groups:
+      Spectral expansion : mf_order, mf_order_pol
+      RM / CM solves     : mf_rm, mf_cm
+    """
+    mf_order: int      # spectral-index expansion order for Stokes I (0=off, 1=alpha, 2=alpha+beta)
+    mf_order_pol: int  # spectral-index expansion order for polarization (0 / 1 / 2)
+    mf_rm: int         # solve for Faraday rotation measure (0=off, 1=on)
+    mf_cm: int         # solve for Faraday conversion measure (0=off, 1=on)
+
+
+class ImagerConfig(NamedTuple):
+    """Static imaging configuration bundled at Imager construction.
+
+    Replaces the flat self.pol_next / self.transform_next / self._ttype /
+    self.mf_next / self.mf_* attrs on the Imager class. Crosses into every
+    backend function that previously took these as individual args.
+
+    Field groups:
+      Polarization   : pol, transforms
+      Transform type : ttype
+      Multifrequency : mf, mf_config (nested MfConfig)
+
+    JAX note: this bundle is a *static* pytree, not a traced one. The string
+    leaves (pol, ttype, transform names) and the dict leaf in the sibling
+    DataWeighting bundle (snrcut) aren't valid JAX traceable values. When
+    jitting backend functions that take a config, pass it as a
+    ``static_argname='config'`` so the structure participates in cache keying
+    rather than tracing.
+    """
+    pol: str                       # imager polarization mode ('I', 'IP', 'IV', 'IPV', 'QU', ...)
+    transforms: Sequence[str]      # bounded-value transform stack applied to imcur (e.g. ['log', 'mcv'])
+    ttype: str                     # Fourier transform type ('direct', 'fast', 'nfft')
+    mf: bool                       # multifrequency-imaging master flag
+    mf_config: MfConfig            # nested multifrequency expansion config
 
 
 def pack_imarr(imarr, which_solve):
@@ -524,8 +637,7 @@ def make_initarr(image, mask, norm_init=False, flux=1,
     return initarr
 
 
-def validate_params(prior, init, pol, transforms, dat_term_keys, reg_term_keys,
-                    ttype, mf, mf_order, mf_order_pol, freq_list):
+def validate_params(prior, init, config, dat_term_keys, reg_term_keys, freq_list):
     """Validate imager configuration. Raises Exception on bad config.
 
     Pure validator extracted from Imager.check_params. Exception messages
@@ -536,23 +648,23 @@ def validate_params(prior, init, pol, transforms, dat_term_keys, reg_term_keys,
     prior, init : ehtim.image.Image
         Prior (regularizer reference) and initial-value images. Must share
         psize / xdim / ydim / rf / polrep.
-    pol : str
-        Polarization mode. For polrep='stokes': one of 'I', 'Q', 'U', 'V',
-        'P', 'IP', 'IQU', 'IV', 'IQUV'. For polrep='circ': 'RR' or 'LL'.
-    transforms : iterable of str
-        Active solver transforms (subset of 'log', 'mcv', 'vcv', 'polcv').
+    config : ImagerConfig
+        Imager configuration bundle. See the ImagerConfig docstring for the
+        field list. Reads pol, transforms, ttype, mf, mf_config.mf_order,
+        mf_config.mf_order_pol.
     dat_term_keys, reg_term_keys : iterable of str
         Data term and regularizer term keys actually requested.
-    ttype : str
-        Fourier transform type: 'direct', 'fast', or 'nfft'.
-    mf : bool
-        Multifrequency mode flag.
-    mf_order, mf_order_pol : int
-        Multifrequency expansion orders (must be in [0, 1, 2]).
     freq_list : list of float
         Per-observation reference frequencies. For mf=True, must contain
         at least two distinct values.
     """
+    pol = config.pol
+    transforms = config.transforms
+    ttype = config.ttype
+    mf = config.mf
+    mf_order = config.mf_config.mf_order
+    mf_order_pol = config.mf_config.mf_order_pol
+
     if ((prior.psize != init.psize) or
         (prior.xdim != init.xdim) or
         (prior.ydim != init.ydim)):
@@ -755,9 +867,7 @@ def compute_logfreqratios(freq_list, reffreq):
     return [np.log(nu / reffreq) for nu in freq_list]
 
 
-def compute_which_solve(pol, mf,
-                        mf_order=0, mf_order_pol=0,
-                        mf_rm=False, mf_cm=False):
+def compute_which_solve(config):
     """Build the which-solve flag array indicating which Stokes / spectral
     parameter slots are optimized vs held fixed.
 
@@ -770,28 +880,20 @@ def compute_which_solve(pol, mf,
 
     Parameters
     ----------
-    pol : str
-        Polarization mode (e.g. 'I', 'IP', 'IV'). Polarimetric modes are those
-        listed in POLARIZATION_MODES.
-    mf : bool
-        Multi-frequency imaging flag.
-    mf_order : {0, 1, 2}, optional
-        Stokes-I spectral expansion order. 0 -> none, 1 -> alpha only,
-        2 -> alpha + beta. Only used when mf=True.
-    mf_order_pol : {0, 1, 2}, optional
-        Polarimetric spectral expansion order (alpha_p, beta_p). Only used
-        when mf=True and pol is polarimetric.
-    mf_rm : bool, optional
-        Solve for rotation measure (RM). Only used when mf=True and pol is
-        polarimetric.
-    mf_cm : bool, optional
-        Solve for conversion measure (CM). Only used when mf=True and pol is
-        polarimetric.
+    config : ImagerConfig
+        Bundled static imager config; reads pol, mf, and mf_config fields.
 
     Returns
     -------
     np.ndarray of int (0/1)
     """
+    pol = config.pol
+    mf = config.mf
+    mf_order = config.mf_config.mf_order
+    mf_order_pol = config.mf_config.mf_order_pol
+    mf_rm = config.mf_config.mf_rm
+    mf_cm = config.mf_config.mf_cm
+
     is_pol = pol in POLARIZATION_MODES
 
     if mf:
@@ -851,7 +953,7 @@ def compute_which_solve(pol, mf,
     return np.array([1])
 
 
-def compute_chisqdata_term(obs, prior, mask, dtype, ttype='direct', pol='I', **kwargs):
+def compute_chisqdata_term(obs, prior, mask, dtype, config, **kwargs):
     """Single chisqdata dispatcher unifying chisqdata + polchisqdata.
 
     Standard dtypes route to imutils.chisqdata_*; pol dtypes route to
@@ -868,11 +970,8 @@ def compute_chisqdata_term(obs, prior, mask, dtype, ttype='direct', pol='I', **k
         ignored for standard fast/nfft (those helpers do not take mask).
     dtype : str
         Must be a key of _CHISQDATA_DISPATCH (12 dtypes).
-    ttype : {'direct', 'fast', 'nfft'}
-        'fast' is not supported for polarimetric dtypes.
-    pol : str
-        Polarization mode. Standard dtypes use this to unpack the right
-        Stokes (I/Q/U/V) data; pol dtypes absorb it via **kwargs (inert).
+    config : ImagerConfig
+        Bundled imager config; reads ttype and pol fields.
     **kwargs
         Per-dtype tuning knobs forwarded to the leaf helper. See
         imager_utils.chisqdata for the standard kwarg list and
@@ -882,6 +981,9 @@ def compute_chisqdata_term(obs, prior, mask, dtype, ttype='direct', pol='I', **k
     -------
     (data, sigma, A) tuple, same shape as the legacy chisqdata dispatchers.
     """
+    ttype = config.ttype
+    pol = config.pol
+
     if ttype not in ('direct', 'fast', 'nfft'):
         raise Exception("Possible ttype values are 'fast', 'direct', 'nfft'!")
 
@@ -1083,37 +1185,8 @@ def compute_regularizergrad_term(imvec_or_imarr, regname, mask, **kwargs):
     return grad_fn(imvec_or_imarr, mask=mask, **kwargs)
 
 
-class RegParams(NamedTuple):
-    """Bundle of regularizer parameters passed to compute_reg_dict / compute_reggrad_dict.
-
-    Built once per imager run by Imager._full_regparams() and forwarded into
-    each regularizer function via ``**reg_params._asdict()``. Regularizer
-    functions take what they need from this bundle; extra fields are ignored
-    via their trailing ``**kwargs``.
-
-    Field groups:
-      Image scale          : flux, pflux, vflux
-      Image geometry       : xdim, ydim, psize, beam_size
-      Multifrequency       : mf_flux
-      Term-specific kwargs : major, minor, PA, alpha_A, epsilon_tv
-    """
-    flux: float
-    pflux: float | None
-    vflux: float | None
-    xdim: int
-    ydim: int
-    psize: float
-    beam_size: float
-    mf_flux: list | None         # length n_obs when REGULARIZERS_ALLFREQS_I active
-    major: float
-    minor: float
-    PA: float
-    alpha_A: float
-    epsilon_tv: float
-
-
-def compute_data_tuples(obslist, prior, embed_mask, dat_term_keys, pol,
-                        ttype, data_weighting_params, fft_params):
+def compute_data_tuples(obslist, prior, embed_mask, dat_term_keys, config,
+                        data_weighting, fourier_grid):
     """Pre-compute (data, sigma, A) tuples for every (data-term, observation) pair.
 
     Dispatches to polutils.polchisqdata for polarimetric terms (in
@@ -1126,17 +1199,14 @@ def compute_data_tuples(obslist, prior, embed_mask, dat_term_keys, pol,
     embed_mask : np.ndarray of bool
     dat_term_keys : iterable of str
         Sorted dat_term names. Each must be in DATATERMS or DATATERMS_POL.
-    pol : str
-        Polarization mode of the imager (e.g. 'I', 'IP', 'IV').
-    ttype : {'direct', 'fast', 'nfft'}
-    data_weighting_params : dict
-        Per-data-term knobs forwarded to imutils.chisqdata. Expected keys:
-        'maxset', 'debias', 'snrcut' (dict[dname -> float]), 'weighting',
-        'systematic_noise', 'systematic_cphase_noise', 'cp_uv_min'.
-    fft_params : dict
-        FFT/NFFT-specific parameters. Expected keys:
-        'fft_pad_factor', 'fft_conv_func', 'fft_gridder_prad',
-        'fft_interp_order'.
+    config : ImagerConfig
+        Provides pol and ttype for dispatch.
+    data_weighting : DataWeighting
+        Per-data-term knobs forwarded to imutils.chisqdata. See the DataWeighting
+        docstring for the field list.
+    fourier_grid : FourierGridParams
+        Gridding parameters for ttype='fast' / 'nfft'. See the FourierGridParams
+        docstring for the field list.
 
     Returns
     -------
@@ -1151,19 +1221,18 @@ def compute_data_tuples(obslist, prior, embed_mask, dat_term_keys, pol,
         for i, obs in enumerate(obslist):
             dname_key = dname if n_obs == 1 else f"{dname}_{i}"
             data_tuples[dname_key] = compute_chisqdata_term(
-                obs, prior, embed_mask, dname,
-                ttype=ttype, pol=pol,
-                maxset=data_weighting_params['maxset'],
-                debias=data_weighting_params['debias'],
-                snrcut=data_weighting_params['snrcut'][dname],
-                weighting=data_weighting_params['weighting'],
-                systematic_noise=data_weighting_params['systematic_noise'],
-                systematic_cphase_noise=data_weighting_params['systematic_cphase_noise'],
-                cp_uv_min=data_weighting_params['cp_uv_min'],
-                order=fft_params['fft_interp_order'],
-                fft_pad_factor=fft_params['fft_pad_factor'],
-                conv_func=fft_params['fft_conv_func'],
-                p_rad=fft_params['fft_gridder_prad'],
+                obs, prior, embed_mask, dname, config,
+                maxset=data_weighting.maxset,
+                debias=data_weighting.debias,
+                snrcut=data_weighting.snrcut[dname],
+                weighting=data_weighting.weighting,
+                systematic_noise=data_weighting.systematic_noise,
+                systematic_cphase_noise=data_weighting.systematic_cphase_noise,
+                cp_uv_min=data_weighting.cp_uv_min,
+                order=fourier_grid.fft_interp_order,
+                fft_pad_factor=fourier_grid.fft_pad_factor,
+                conv_func=fourier_grid.fft_conv_func,
+                p_rad=fourier_grid.fft_gridder_prad,
             )
 
     return data_tuples
@@ -1172,11 +1241,10 @@ def compute_data_tuples(obslist, prior, embed_mask, dat_term_keys, pol,
 def compute_init_state(
     obslist, init_image, prior_image,
     freq_list, reffreq,
-    pol, mf, transforms,
-    mf_order, mf_order_pol, mf_rm, mf_cm,
+    config,
     norm_init, flux, clipfloor,
-    dat_term_keys, ttype,
-    data_weighting_params, fft_params,
+    dat_term_keys,
+    data_weighting, fourier_grid,
     *, compute_data=True, prior_data_tuples=None,
 ):
     """Build solver-ready imager state. Pure function.
@@ -1186,9 +1254,8 @@ def compute_init_state(
     into the single state bundle consumed by compute_objective /
     compute_objective_grad.
 
-    JAX note: when jitted, expect static_argnames=('pol', 'mf', 'transforms',
-    'mf_order', 'mf_order_pol', 'mf_rm', 'mf_cm', 'ttype', 'dat_term_keys',
-    'compute_data') plus static dict-key structure on data_weighting_params.
+    JAX note: when jitted, expect static_argnames=('config', 'dat_term_keys',
+    'compute_data') with config as a frozen pytree.
 
     Parameters
     ----------
@@ -1199,19 +1266,18 @@ def compute_init_state(
         Reference frequencies (Hz) of each obs in obslist.
     reffreq : float
         Reference frequency (Hz) of the multi-frequency expansion. When
-        mf=True this is overridden by init_image.rf.
-    pol, mf, transforms : str, bool, list of str
-        Polarization mode, multi-frequency flag, transform stack
-        (e.g. ['log', 'mcv']).
-    mf_order, mf_order_pol, mf_rm, mf_cm :
-        Multi-frequency expansion orders + RM/CM solve flags.
+        config.mf=True this is overridden by init_image.rf.
+    config : ImagerConfig
+        Static imager configuration. Provides pol, transforms, ttype, mf,
+        and the nested mf_config bundle.
     norm_init : bool
     flux, clipfloor : float
     dat_term_keys : iterable of str
         Sorted dat_term names. Each must be in DATATERMS or DATATERMS_POL.
-    ttype : {'direct', 'fast', 'nfft'}
-    data_weighting_params, fft_params : dict
-        Forwarded to compute_data_tuples; see its docstring for required keys.
+    data_weighting : DataWeighting
+        Per-data-term knobs forwarded to compute_data_tuples.
+    fourier_grid : FourierGridParams
+        Gridding parameters forwarded to compute_data_tuples.
 
     Other Parameters
     ----------------
@@ -1225,6 +1291,12 @@ def compute_init_state(
     -------
     ImagerInitState
     """
+    pol = config.pol
+    mf = config.mf
+    transforms = config.transforms
+    ttype = config.ttype
+    mf_cfg = config.mf_config
+
     n_obs = len(obslist)
     if len(freq_list) != n_obs:
         raise Exception(
@@ -1241,10 +1313,7 @@ def compute_init_state(
     reffreq_eff = init_image.rf if mf else reffreq
     logfreqratio_list = compute_logfreqratios(freq_list, reffreq_eff)
 
-    which_solve = compute_which_solve(
-        pol, mf, mf_order=mf_order, mf_order_pol=mf_order_pol,
-        mf_rm=mf_rm, mf_cm=mf_cm,
-    )
+    which_solve = compute_which_solve(config)
 
     is_pol = pol in POLARIZATION_MODES
 
@@ -1283,8 +1352,8 @@ def compute_init_state(
 
     if compute_data:
         data_tuples = compute_data_tuples(
-            obslist, prior_image, embed_mask, dat_term_keys, pol,
-            ttype, data_weighting_params, fft_params,
+            obslist, prior_image, embed_mask, dat_term_keys, config,
+            data_weighting, fourier_grid,
         )
     else:
         data_tuples = prior_data_tuples
@@ -1350,10 +1419,9 @@ def compute_embed(imvec, xdim, ydim, psize, clipfloor):
     return embed_mask, coord_matrix
 
 
-def compute_chisq_dict(imcur, dat_term_keys,
-                       mf, pol,
+def compute_chisq_dict(imcur, dat_term_keys, config,
                        data_tuples, logfreqratio_list, n_obs,
-                       ttype, embed_mask):
+                       embed_mask):
     """Compute chi^2 value for each data term across all observations.
 
     Parameters
@@ -1362,10 +1430,8 @@ def compute_chisq_dict(imcur, dat_term_keys,
         Current image array transformed to bounded values.
     dat_term_keys : list of str
         Data term names to evaluate, already sorted.
-    mf : bool
-        Whether multifrequency imaging is enabled.
-    pol : str
-        Polarization mode string.
+    config : ImagerConfig
+        Bundled imager config; reads mf, pol, ttype fields.
     data_tuples : dict
         Pre-computed data products keyed by dname or dname_i,
         each value is a (data, sigma, A) tuple.
@@ -1374,8 +1440,6 @@ def compute_chisq_dict(imcur, dat_term_keys,
     n_obs : int
         Number of observations (frequencies/epochs). Must equal
         len(logfreqratio_list); validated by Imager.init_imager.
-    ttype : str
-        Transform type ('direct', 'fast', 'nfft').
     embed_mask : np.ndarray of bool
         Pixel embedding mask.
 
@@ -1384,6 +1448,9 @@ def compute_chisq_dict(imcur, dat_term_keys,
     chi2_dict : dict
         Mapping from dname (or dname_i for multi-obs) to chi^2 scalar.
     """
+    mf = config.mf
+    ttype = config.ttype
+
     chi2_dict = {}
     for dname in dat_term_keys:
         for i in range(n_obs):
@@ -1401,10 +1468,9 @@ def compute_chisq_dict(imcur, dat_term_keys,
     return chi2_dict
 
 
-def compute_chisqgrad_dict(imcur, dat_term_keys,
-                           mf, pol,
+def compute_chisqgrad_dict(imcur, dat_term_keys, config,
                            data_tuples, logfreqratio_list, n_obs,
-                           ttype, embed_mask,
+                           embed_mask,
                            which_solve, nimage):
     """Compute chi^2 gradient for each data term across all observations.
 
@@ -1414,10 +1480,8 @@ def compute_chisqgrad_dict(imcur, dat_term_keys,
         Current image array transformed to bounded values.
     dat_term_keys : list of str
         Data term names to evaluate, already sorted.
-    mf : bool
-        Whether multifrequency imaging is enabled.
-    pol : str
-        Polarization mode string.
+    config : ImagerConfig
+        Bundled imager config; reads mf, pol, ttype fields.
     data_tuples : dict
         Pre-computed data products keyed by dname or dname_i,
         each value is a (data, sigma, A) tuple.
@@ -1426,8 +1490,6 @@ def compute_chisqgrad_dict(imcur, dat_term_keys,
     n_obs : int
         Number of observations (frequencies/epochs). Must equal
         len(logfreqratio_list); validated by Imager.init_imager.
-    ttype : str
-        Transform type ('direct', 'fast', 'nfft').
     embed_mask : np.ndarray of bool
         Pixel embedding mask.
     which_solve : np.ndarray of int
@@ -1440,6 +1502,10 @@ def compute_chisqgrad_dict(imcur, dat_term_keys,
     chi2grad_dict : dict
         Mapping from dname (or dname_i for multi-obs) to chi^2 gradient array.
     """
+    mf = config.mf
+    pol = config.pol
+    ttype = config.ttype
+
     chi2grad_dict = {}
     pol_solve = _pol_solve_block(which_solve, pol)
     # np.array((...)) below copies, so sharing zero_row across iterations is safe.
@@ -1474,8 +1540,7 @@ def compute_chisqgrad_dict(imcur, dat_term_keys,
     return chi2grad_dict
 
 
-def compute_reg_dict(imcur, reg_term_keys,
-                     mf, pol,
+def compute_reg_dict(imcur, reg_term_keys, config,
                      logfreqratio_list, n_obs,
                      priorvec, norm_reg, reg_params,
                      embed_mask):
@@ -1487,10 +1552,8 @@ def compute_reg_dict(imcur, reg_term_keys,
         Current image array transformed to bounded values.
     reg_term_keys : list of str
         Regularizer term names to evaluate, already sorted.
-    mf : bool
-        Whether multifrequency imaging is enabled.
-    pol : str
-        Polarization mode string.
+    config : ImagerConfig
+        Bundled imager config; reads mf and pol fields.
     logfreqratio_list : list of float
         Log frequency ratios log(nu_i/reffreq); one per obs.
     n_obs : int
@@ -1514,6 +1577,9 @@ def compute_reg_dict(imcur, reg_term_keys,
     reg_dict : dict
         Mapping from regname to regularizer scalar.
     """
+    mf = config.mf
+    pol = config.pol
+
     mf_flux = reg_params.mf_flux
     reg_kwargs = reg_params._asdict()
     reg_dict = {}
@@ -1574,8 +1640,7 @@ def compute_reg_dict(imcur, reg_term_keys,
     return reg_dict
 
 
-def compute_reggrad_dict(imcur, reg_term_keys,
-                         mf, pol,
+def compute_reggrad_dict(imcur, reg_term_keys, config,
                          logfreqratio_list, n_obs,
                          priorvec, norm_reg, reg_params,
                          embed_mask,
@@ -1584,7 +1649,7 @@ def compute_reggrad_dict(imcur, reg_term_keys,
 
     Parameters
     ----------
-    imcur, reg_term_keys, mf, pol, logfreqratio_list, n_obs,
+    imcur, reg_term_keys, config, logfreqratio_list, n_obs,
     priorvec, norm_reg, reg_params, embed_mask : see compute_reg_dict.
     which_solve : np.ndarray of bool
         Per-Stokes solve mask (used by polregularizergrad).
@@ -1598,6 +1663,9 @@ def compute_reggrad_dict(imcur, reg_term_keys,
         for single-pol, (4, nimage) for pol-bundled, or
         (len(imcur), nimage) for multifrequency.
     """
+    mf = config.mf
+    pol = config.pol
+
     mf_flux = reg_params.mf_flux
     reg_kwargs = reg_params._asdict()
     reggrad_dict = {}
@@ -1677,12 +1745,11 @@ def compute_reggrad_dict(imcur, reg_term_keys,
     return reggrad_dict
 
 
-def compute_objective(imvec, initvec,
-                      mf, pol,
+def compute_objective(imvec, initvec, config,
                       which_solve, data_tuples, logfreqratio_list, n_obs,
                       dat_term, reg_term,
                       priorvec, norm_reg, reg_params,
-                      transforms, embed_mask, ttype):
+                      embed_mask):
     """Compute the scalar imaging objective: data fidelity + regularization.
 
     Pure-functional version of Imager.objfunc. Unpacks the 1D solver vector
@@ -1700,10 +1767,8 @@ def compute_objective(imvec, initvec,
         Initial-image array (unwrapped, multi-D); used by `unpack_imarr` to
         fill any not-solved-for slots. Distinct from `priorvec` (the
         regularizer prior).
-    mf : bool
-        Multifrequency-imaging flag.
-    pol : str
-        Polarization mode (e.g. 'I', 'P', 'IP', 'V', 'IV', ...).
+    config : ImagerConfig
+        Bundled imager config; reads pol, mf, transforms, ttype fields.
     which_solve : np.ndarray of int
         Per-Stokes / per-spectral-term solve mask.
     data_tuples : dict
@@ -1722,12 +1787,8 @@ def compute_objective(imvec, initvec,
         Whether to apply per-regularizer normalization.
     reg_params : RegParams
         Bundle of regularizer parameters. See compute_reg_dict.
-    transforms : list of str
-        Image transform list (e.g. ['log', 'mcv']) applied to imcur.
     embed_mask : np.ndarray of bool
         Pixel embedding mask.
-    ttype : str
-        Fourier-transform type ('direct', 'fast', 'nfft').
 
     Returns
     -------
@@ -1735,6 +1796,7 @@ def compute_objective(imvec, initvec,
         Scalar objective value, sum of weighted chi^2 deviations and
         regularizer contributions.
     """
+    transforms = config.transforms
 
     dat_term_keys = sorted(dat_term.keys())
     reg_term_keys = sorted(reg_term.keys())
@@ -1746,14 +1808,12 @@ def compute_objective(imvec, initvec,
     imcur = transform_imarr(imcur, transforms, which_solve)
 
     chi2_dict = compute_chisq_dict(
-        imcur, dat_term_keys,
-        mf, pol,
+        imcur, dat_term_keys, config,
         data_tuples, logfreqratio_list, n_obs,
-        ttype, embed_mask,
+        embed_mask,
     )
     reg_dict = compute_reg_dict(
-        imcur, reg_term_keys,
-        mf, pol,
+        imcur, reg_term_keys, config,
         logfreqratio_list, n_obs,
         priorvec, norm_reg, reg_params,
         embed_mask,
@@ -1773,12 +1833,11 @@ def compute_objective(imvec, initvec,
     return datterm + regterm
 
 
-def compute_objective_grad(imvec, initvec,
-                           mf, pol,
+def compute_objective_grad(imvec, initvec, config,
                            which_solve, data_tuples, logfreqratio_list, n_obs,
                            dat_term, reg_term,
                            priorvec, norm_reg, reg_params,
-                           transforms, embed_mask, ttype, nimage):
+                           embed_mask, nimage):
     """Compute the gradient of the imaging objective with respect to imvec.
 
     Pure-functional version of Imager.objgrad. Computes the chi^2 and
@@ -1792,9 +1851,9 @@ def compute_objective_grad(imvec, initvec,
 
     Parameters
     ----------
-    imvec, initvec, mf, pol, which_solve, data_tuples, logfreqratio_list,
-    n_obs, dat_term, reg_term, priorvec, norm_reg, reg_params, transforms,
-    embed_mask, ttype : see compute_objective.
+    imvec, initvec, config, which_solve, data_tuples, logfreqratio_list,
+    n_obs, dat_term, reg_term, priorvec, norm_reg, reg_params,
+    embed_mask : see compute_objective.
     nimage : int
         Number of active pixels (sum of embed_mask). Used to size the
         pre-pack gradient array.
@@ -1805,6 +1864,7 @@ def compute_objective_grad(imvec, initvec,
         1D gradient vector (same length as imvec), suitable as the `jac`
         argument to scipy.optimize.minimize.
     """
+    transforms = config.transforms
 
     dat_term_keys = sorted(dat_term.keys())
     reg_term_keys = sorted(reg_term.keys())
@@ -1817,16 +1877,14 @@ def compute_objective_grad(imvec, initvec,
     imcur = transform_imarr(imcur, transforms, which_solve)
 
     chi2grad_dict = compute_chisqgrad_dict(
-        imcur, dat_term_keys,
-        mf, pol,
+        imcur, dat_term_keys, config,
         data_tuples, logfreqratio_list, n_obs,
-        ttype, embed_mask,
+        embed_mask,
         which_solve, nimage,
     )
 
     reggrad_dict = compute_reggrad_dict(
-        imcur, reg_term_keys,
-        mf, pol,
+        imcur, reg_term_keys, config,
         logfreqratio_list, n_obs,
         priorvec, norm_reg, reg_params,
         embed_mask,

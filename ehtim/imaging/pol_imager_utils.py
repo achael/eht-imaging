@@ -408,12 +408,20 @@ def polchisqdata(Obsdata, Prior, mask, dtype, **kwargs):
     backward compatibility. New code should call compute_chisqdata_term
     directly.
     """
-    from ehtim.imaging.imager_backend import compute_chisqdata_term
+    from ehtim.imaging.imager_backend import (
+        ImagerConfig,
+        MfConfig,
+        compute_chisqdata_term,
+    )
     ttype = kwargs.pop('ttype', 'direct')
+    pol = kwargs.pop('pol', 'I')
     if dtype not in DATATERMS_POL:
         raise Exception(f"data term {dtype!r} is not a polarimetric data term")
-    return compute_chisqdata_term(Obsdata, Prior, mask, dtype,
-                                  ttype=ttype, **kwargs)
+    config = ImagerConfig(
+        pol=pol, transforms=[], ttype=ttype, mf=False,
+        mf_config=MfConfig(mf_order=0, mf_order_pol=0, mf_rm=0, mf_cm=0),
+    )
+    return compute_chisqdata_term(Obsdata, Prior, mask, dtype, config, **kwargs)
 
 
 ##################################################################################################
