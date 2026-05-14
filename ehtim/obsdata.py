@@ -185,16 +185,7 @@ class Obsdata(object):
         if self.tstop < self.tstart:
             self.tstop += 24.0
 
-        # Saved closure quantity arrays
-        self.amp = None
-        self.bispec = None
-        self.cphase = None
-        self.cphase_diag = None
-        self.camp = None
-        self.logcamp = None
-        self.logcamp_diag = None
-
-    @property 
+    @property
     def tarr(self):
         return self._tarr
         
@@ -1301,328 +1292,6 @@ class Obsdata(object):
 
         return out
 
-    def add_amp(self, avg_time=0, scan_avg=False, debias=True, err_type='predicted',
-                return_type='rec', round_s=0.1, snrcut=0.):
-        """Adds attribute self.amp: aan amplitude table with incoherently averaged amplitudes
-
-           Args:
-               avg_time (float): incoherent integration time in seconds
-               scan_avg (bool): if True, average over scans in self.scans instead of intime
-               debias (bool): if True then apply debiasing
-               err_type (str): 'predicted' or 'measured'
-               return_type: data frame ('df') or recarray ('rec')
-               round_s (float): accuracy of datetime object in seconds
-               snrcut (float): flag amplitudes with snr lower than this
-
-        """
-
-        # Get the spacing between datapoints in seconds
-        if len(set([x[0] for x in list(self.unpack('time'))])) > 1:
-            tint0 = np.min(np.diff(np.asarray(sorted(list(set(
-                           [x[0] for x in list(self.unpack('time'))])))))) * 3600.
-        else:
-            tint0 = 0.0
-
-        if avg_time <= tint0:
-            adf = ehdf.make_amp(self, debias=debias, round_s=round_s)
-            if return_type == 'rec':
-                adf = ehdf.df_to_rec(adf, 'amp')
-            print("Updated self.amp: no averaging")
-        else:
-            adf = ehdf.incoh_avg_vis(self, dt=avg_time, debias=debias, scan_avg=scan_avg,
-                                     return_type=return_type, rec_type='amp', err_type=err_type)
-
-        # snr cut
-        adf = adf[adf['amp'] / adf['sigma'] > snrcut]
-        self.amp = adf
-        print("Updated self.amp: avg_time %f s\n" % avg_time)
-
-        return
-
-    def add_bispec(self, avg_time=0, return_type='rec', count='max', snrcut=0.,
-                   err_type='predicted', num_samples=1000, round_s=0.1, uv_min=False):
-        """Adds attribute self.bispec: bispectra table with bispectra averaged for dt
-
-           Args:
-               avg_time (float): bispectrum averaging timescale
-               return_type: data frame ('df') or recarray ('rec')
-               count (str): If 'min', return minimal set of bispectra,
-                            if 'max' return all bispectra up to reordering
-               err_type (str): 'predicted' or 'measured'
-               num_samples: number of bootstrap (re)samples if measuring error
-               round_s (float): accuracy of datetime object in seconds
-               snrcut (float): flag bispectra with snr lower than this
-
-        """
-
-        # Get spacing between datapoints in seconds
-        if len(set([x[0] for x in list(self.unpack('time'))])) > 1:
-            tint0 = np.min(np.diff(np.asarray(sorted(list(set(
-                           [x[0] for x in list(self.unpack('time'))])))))) * 3600.
-        else:
-            tint0 = 0
-
-        if avg_time > tint0:
-            cdf = ehdf.make_bsp_df(self, mode='all', round_s=round_s, count=count,
-                                   snrcut=0., uv_min=uv_min)
-            cdf = ehdf.average_bispectra(cdf, avg_time, return_type=return_type,
-                                         num_samples=num_samples, snrcut=snrcut)
-        else:
-            cdf = ehdf.make_bsp_df(self, mode='all', round_s=round_s, count=count,
-                                   snrcut=snrcut, uv_min=uv_min)
-            print("Updated self.bispec: no averaging")
-            if return_type == 'rec':
-                cdf = ehdf.df_to_rec(cdf, 'bispec')
-
-        self.bispec = cdf
-        print("Updated self.bispec: avg_time %f s\n" % avg_time)
-
-        return
-
-    def add_cphase(self, avg_time=0, return_type='rec', count='max', snrcut=0.,
-                   err_type='predicted', num_samples=1000, round_s=0.1, uv_min=False):
-        """Adds attribute self.cphase: cphase table averaged for dt
-
-           Args:
-               avg_time (float): closure phase averaging timescale
-               return_type: data frame ('df') or recarray ('rec')
-               count (str): If 'min', return minimal set of phases,
-                            if 'max' return all closure phases up to reordering
-               err_type (str): 'predicted' or 'measured'
-               num_samples: number of bootstrap (re)samples if measuring error
-               round_s (float): accuracy of datetime object in seconds
-               snrcut (float): flag closure phases with snr lower than this
-
-        """
-
-        # Get spacing between datapoints in seconds
-        if len(set([x[0] for x in list(self.unpack('time'))])) > 1:
-            tint0 = np.min(np.diff(np.asarray(sorted(list(set(
-                           [x[0] for x in list(self.unpack('time'))])))))) * 3600.
-        else:
-            tint0 = 0
-
-        if avg_time > tint0:
-            cdf = ehdf.make_cphase_df(self, mode='all', round_s=round_s, count=count,
-                                      snrcut=0., uv_min=uv_min)
-            cdf = ehdf.average_cphases(cdf, avg_time, return_type=return_type, err_type=err_type,
-                                       num_samples=num_samples, snrcut=snrcut)
-        else:
-            cdf = ehdf.make_cphase_df(self, mode='all', round_s=round_s, count=count,
-                                      snrcut=snrcut, uv_min=uv_min)
-            if return_type == 'rec':
-                cdf = ehdf.df_to_rec(cdf, 'cphase')
-            print("Updated self.cphase: no averaging")
-
-        self.cphase = cdf
-        print("updated self.cphase: avg_time %f s\n" % avg_time)
-
-        return
-
-    def add_cphase_diag(self, avg_time=0, return_type='rec', vtype='vis', count='min', snrcut=0.,
-                        err_type='predicted', num_samples=1000, round_s=0.1, uv_min=False):
-        """Adds attribute self.cphase_diag: cphase_diag table averaged for dt
-
-           Args:
-               avg_time (float): closure phase averaging timescale
-               return_type: data frame ('df') or recarray ('rec')
-               vtype (str): Visibility type (e.g., 'vis', 'llvis', 'rrvis', etc.)
-               count (str): If 'min', return minimal set of phases,
-                            If 'max' return all closure phases up to reordering
-               err_type (str): 'predicted' or 'measured'
-               num_samples: number of bootstrap (re)samples if measuring error
-               round_s (float): accuracy of datetime object in seconds
-               snrcut (float): flag closure phases with snr lower than this
-
-        """
-
-        # Get spacing between datapoints in seconds
-        if len(set([x[0] for x in list(self.unpack('time'))])) > 1:
-            tint0 = np.min(np.diff(np.asarray(sorted(list(set(
-                           [x[0] for x in list(self.unpack('time'))]))))))
-            tint0 *= 3600
-        else:
-            tint0 = 0
-
-        # Dom TODO: implement averaging during diagonal closure phase creation
-        if avg_time > tint0:
-            print("Averaging while creating diagonal closure phases is not yet implemented!")
-            print("Proceeding for now without averaging.")
-            cdf = ehdf.make_cphase_diag_df(self, vtype=vtype, round_s=round_s,
-                                           count=count, snrcut=snrcut, uv_min=uv_min)
-        else:
-            cdf = ehdf.make_cphase_diag_df(self, vtype=vtype, round_s=round_s,
-                                           count=count, snrcut=snrcut, uv_min=uv_min)
-            if return_type == 'rec':
-                cdf = ehdf.df_to_rec(cdf, 'cphase_diag')
-            print("Updated self.cphase_diag: no averaging")
-
-        self.cphase_diag = cdf
-        print("updated self.cphase_diag: avg_time %f s\n" % avg_time)
-
-        return
-
-    def add_camp(self, avg_time=0, return_type='rec', ctype='camp',
-                 count='max', debias=True, snrcut=0.,
-                 err_type='predicted', num_samples=1000, round_s=0.1):
-        """Adds attribute self.camp or self.logcamp: closure amplitudes table
-
-           Args:
-               avg_time (float): closure amplitude averaging timescale
-               return_type: data frame ('df') or recarray ('rec')
-               ctype (str): The closure amplitude type ('camp' or 'logcamp')
-               debias (bool): If True, debias the closure amplitude
-               count (str): If 'min', return minimal set of amplitudes,
-                            if 'max' return all closure amplitudes up to inverses
-               err_type (str): 'predicted' or 'measured'
-               num_samples: number of bootstrap (re)samples if measuring error
-               round_s (float): accuracy of datetime object in seconds
-               snrcut (float): flag closure amplitudes with snr lower than this
-        """
-
-        # Get spacing between datapoints in seconds
-        if len(set([x[0] for x in list(self.unpack('time'))])) > 1:
-            tint0 = np.min(np.diff(np.asarray(sorted(list(set(
-                           [x[0] for x in list(self.unpack('time'))]))))))
-            tint0 *= 3600
-        else:
-            tint0 = 0
-
-        if avg_time > tint0:
-            foo = self.avg_incoherent(avg_time, debias=debias, err_type=err_type)
-        else:
-            foo = self
-        cdf = ehdf.make_camp_df(foo, ctype=ctype, debias=False,
-                                count=count, round_s=round_s, snrcut=snrcut)
-
-        if ctype == 'logcamp':
-            print("updated self.lcamp: no averaging")
-        elif ctype == 'camp':
-            print("updated self.camp: no averaging")
-        if return_type == 'rec':
-            cdf = ehdf.df_to_rec(cdf, 'camp')
-
-        if ctype == 'logcamp':
-            self.logcamp = cdf
-            print("updated self.logcamp: avg_time %f s\n" % avg_time)
-        elif ctype == 'camp':
-            self.camp = cdf
-            print("updated self.camp: avg_time %f s\n" % avg_time)
-
-        return
-
-    def add_logcamp(self, avg_time=0, return_type='rec', ctype='camp',
-                    count='max', debias=True, snrcut=0.,
-                    err_type='predicted', num_samples=1000, round_s=0.1):
-        """Adds attribute self.logcamp: closure amplitudes table
-
-           Args:
-               avg_time (float): closure amplitude averaging timescale
-               return_type: data frame ('df') or recarray ('rec')
-               ctype (str): The closure amplitude type ('camp' or 'logcamp')
-               debias (bool): If True, debias the closure amplitude
-               count (str): If 'min', return minimal set of amplitudes,
-                            if 'max' return all closure amplitudes up to inverses
-               err_type (str): 'predicted' or 'measured'
-               num_samples: number of bootstrap (re)samples if measuring error
-               round_s (float): accuracy of datetime object in seconds
-               snrcut (float): flag closure amplitudes with snr lower than this
-
-        """
-
-        self.add_camp(return_type=return_type, ctype='logcamp',
-                      count=count, debias=debias, snrcut=snrcut,
-                      avg_time=avg_time, err_type=err_type,
-                      num_samples=num_samples, round_s=round_s)
-
-        return
-
-    def add_logcamp_diag(self, avg_time=0, return_type='rec', count='min', snrcut=0.,
-                         debias=True, err_type='predicted', num_samples=1000, round_s=0.1):
-        """Adds attribute self.logcamp_diag: logcamp_diag table averaged for dt
-
-           Args:
-               avg_time (float): diagonal log closure amplitude averaging timescale
-               return_type: data frame ('df') or recarray ('rec')
-               debias (bool): If True, debias the diagonal log closure amplitude
-               count (str): If 'min', return minimal set of amplitudes,
-                            If 'max' return all diagonal log closure amplitudes up to inverses
-               err_type (str): 'predicted' or 'measured'
-               num_samples: number of bootstrap (re)samples if measuring error
-               round_s (float): accuracy of datetime object in seconds
-               snrcut (float): flag diagonal log closure amplitudes with snr lower than this
-
-        """
-
-        # Get spacing between datapoints in seconds
-        if len(set([x[0] for x in list(self.unpack('time'))])) > 1:
-            tint0 = np.min(np.diff(np.asarray(sorted(list(set(
-                           [x[0] for x in list(self.unpack('time'))]))))))
-            tint0 *= 3600
-        else:
-            tint0 = 0
-
-        if avg_time > tint0:
-            foo = self.avg_incoherent(avg_time, debias=debias, err_type=err_type)
-            cdf = ehdf.make_logcamp_diag_df(foo, debias='False', count=count,
-                                            round_s=round_s, snrcut=snrcut)
-        else:
-            foo = self
-            cdf = ehdf.make_logcamp_diag_df(foo, debias=debias, count=count,
-                                            round_s=round_s, snrcut=snrcut)
-
-        if return_type == 'rec':
-            cdf = ehdf.df_to_rec(cdf, 'logcamp_diag')
-
-        self.logcamp_diag = cdf
-        print("updated self.logcamp_diag: avg_time %f s\n" % avg_time)
-
-        return
-
-    def add_all(self, avg_time=0, return_type='rec',
-                count='max', debias=True, snrcut=0.,
-                err_type='predicted', num_samples=1000, round_s=0.1):
-        """Adds tables of all all averaged derived quantities
-           self.amp,self.bispec,self.cphase,self.camp,self.logcamp
-
-           Args:
-               avg_time (float): closure amplitude averaging timescale
-               return_type: data frame ('df') or recarray ('rec')
-               debias (bool): If True, debias the closure amplitude
-               count (str): If 'min', return minimal set of closure quantities,
-                            if 'max' return all closure quantities
-               err_type (str): 'predicted' or 'measured'
-               num_samples: number of bootstrap (re)samples if measuring error
-               round_s (float): accuracy of datetime object in seconds
-               snrcut (float): flag closure amplitudes with snr lower than this
-
-        """
-
-        self.add_amp(return_type=return_type, avg_time=avg_time, debias=debias, err_type=err_type)
-        self.add_bispec(return_type=return_type, count=count,
-                        avg_time=avg_time, snrcut=snrcut, err_type=err_type,
-                        num_samples=num_samples, round_s=round_s)
-        self.add_cphase(return_type=return_type, count=count,
-                        avg_time=avg_time, snrcut=snrcut, err_type=err_type,
-                        num_samples=num_samples, round_s=round_s)
-        self.add_cphase_diag(return_type=return_type, count='min',
-                             avg_time=avg_time, snrcut=snrcut, err_type=err_type,
-                             num_samples=num_samples, round_s=round_s)
-        self.add_camp(return_type=return_type, ctype='camp',
-                      count=count, debias=debias, snrcut=snrcut,
-                      avg_time=avg_time, err_type=err_type,
-                      num_samples=num_samples, round_s=round_s)
-        self.add_camp(return_type=return_type, ctype='logcamp',
-                      count=count, debias=debias, snrcut=snrcut,
-                      avg_time=avg_time, err_type=err_type,
-                      num_samples=num_samples, round_s=round_s)
-        self.add_logcamp_diag(return_type=return_type, count='min',
-                              debias=debias, avg_time=avg_time,
-                              snrcut=snrcut, err_type=err_type,
-                              num_samples=num_samples, round_s=round_s)
-
-        return
-
     def add_scans(self, info='self', filepath='', dt=0.0165, margin=0.0001,split_subarray=False):
         """Compute scans and add self.scans to Obsdata object.
 
@@ -1878,9 +1547,8 @@ class Obsdata(object):
 
         # estimate the original total flux
         obs_zerobl = self.flag_uvdist(uv_max=uv_max)
-        obs_zerobl.add_amp(debias=True)
-        orig_totflux = np.sum(obs_zerobl.amp['amp'] * (1 / obs_zerobl.amp['sigma']**2))
-        orig_totflux /= np.sum(1 / obs_zerobl.amp['sigma']**2)
+        amps = obs_zerobl.unpack(['amp', 'sigma'], debias=debias)
+        orig_totflux = np.sum(amps['amp'] / amps['sigma']**2) / np.sum(1 / amps['sigma']**2)
 
         print('Rescaling zero baseline by ' + str(orig_totflux - totflux) + ' Jy' +
               ' to ' + str(totflux) + ' Jy')
@@ -3113,9 +2781,9 @@ class Obsdata(object):
         print("\n")
         return out
 
-    def bispectra_tri(self, site1, site2, site3, 
-                      vtype='vis', timetype=False, snrcut=0., method='from_maxset', 
-                      bs=[], force_recompute=False):
+    def bispectra_tri(self, site1, site2, site3,
+                      vtype='vis', timetype=False, snrcut=0., method='from_maxset',
+                      bs=[]):
 
         """Return complex bispectrum  over time on a triangle (1-2-3).
 
@@ -3131,7 +2799,6 @@ class Obsdata(object):
 
                method (str): 'from_maxset' (old, default), 'from_vis' (new, more robust)
                bs (list): optionally pass in the precomputed, time-sorted bispectra
-               force_recompute (bool): if True, recompute bispectra instead of using saved data
 
            Returns:
                (numpy.recarry): A recarray of the bispectra on this triangle with datatype DTBIS
@@ -3151,10 +2818,7 @@ class Obsdata(object):
         # TODO: verify consistency/performance of from_vis, and delete this method
         if method=='from_maxset':
 
-            if ((len(bs) == 0) and not (self.bispec is None) and not (len(self.bispec) == 0) and
-                    not force_recompute):
-                bs = self.bispec
-            elif (len(bs) == 0) or force_recompute:
+            if len(bs) == 0:
                 bs = self.bispectra(mode='all', count='max', vtype=vtype,
                                     timetype=timetype, snrcut=snrcut)
 
@@ -3290,8 +2954,8 @@ class Obsdata(object):
         return outdata
 
     def cphase_tri(self, site1, site2, site3, vtype='vis', ang_unit='deg',
-                   timetype=False, snrcut=0., method='from_maxset', 
-                   cphases=[], force_recompute=False):
+                   timetype=False, snrcut=0., method='from_maxset',
+                   cphases=[]):
         """Return closure phase  over time on a triangle (1-2-3).
 
            Args:
@@ -3307,7 +2971,6 @@ class Obsdata(object):
 
                method (str): 'from_maxset' (old, default), 'from_vis' (new, more robust)
                cphases (list): optionally pass in the precomputed time-sorted cphases
-               force_recompute (bool): if True, do not use save closure phase tables
 
            Returns:
                (numpy.recarry): A recarray of the closure phases with datatype DTCPHASE
@@ -3327,13 +2990,9 @@ class Obsdata(object):
         # get selected closure phases from the maximal set
         # TODO: verify consistency/performance of from_vis, and delete this method
         if method=='from_maxset':
-                
-            # Get closure phases (maximal set)
-            if ((len(cphases) == 0) and not (self.cphase is None) and not (len(self.cphase) == 0) and
-                    not force_recompute):
-                cphases = self.cphase
 
-            elif (len(cphases) == 0) or force_recompute:
+            # Get closure phases (maximal set)
+            if len(cphases) == 0:
                 cphases = self.c_phases(mode='all', count='max', vtype=vtype, ang_unit=ang_unit,
                                         timetype=timetype, snrcut=snrcut)
 
@@ -3747,10 +3406,10 @@ class Obsdata(object):
         print("\n")
         return out
 
-    def camp_quad(self, site1, site2, site3, site4, 
+    def camp_quad(self, site1, site2, site3, site4,
                   vtype='vis', ctype='camp', debias=True, timetype=False, snrcut=0.,
                   method='from_maxset',
-                  camps=[], force_recompute=False):
+                  camps=[]):
         """Return closure phase over time on a quadrange (1-2)(3-4)/(1-4)(2-3).
 
            Args:
@@ -3768,7 +3427,6 @@ class Obsdata(object):
 
                method (str): 'from_maxset' (old, default), 'from_vis' (new, more robust)
                camps (list): optionally pass in the time-sorted, precomputed camps
-               force_recompute (bool): if True, do not use save closure amplitude data
 
            Returns:
                (numpy.recarry): A recarray of the closure amplitudes with datatype DTCAMP
@@ -3789,13 +3447,7 @@ class Obsdata(object):
         # get selected closure amplitudes from the maximal set
         # TODO: verify consistency/performance of from_vis, and delete this method
         if method=='from_maxset':
-            if (((ctype == 'camp') and (len(camps) == 0)) and not (self.camp is None) and
-                    not (len(self.camp) == 0) and not force_recompute):
-                camps = self.camp
-            elif (((ctype == 'logcamp') and (len(camps) == 0)) and not (self.logcamp is None) and
-                  not (len(self.logcamp) == 0) and not force_recompute):
-                camps = self.logcamp
-            elif (len(camps) == 0) or force_recompute:
+            if len(camps) == 0:
                 camps = self.c_amplitudes(mode='all', count='max', vtype=vtype, ctype=ctype,
                                           debias=debias, timetype=timetype, snrcut=snrcut)
 
@@ -4051,9 +3703,6 @@ class Obsdata(object):
         if (field1 not in ehc.FIELDS) and (field2 not in ehc.FIELDS):
             raise Exception("valid fields are " + ' '.join(ehc.FIELDS))
 
-        if 'amp' in [field1, field2] and not (self.amp is None):
-            print("Warning: plotall is not using amplitudes in Obsdata.amp array!")
-
         # Label individual baselines
         # ANDREW TODO this is way too slow, make  it faster??
         if tag_bl:
@@ -4277,9 +3926,6 @@ class Obsdata(object):
             timetype = self.timetype
 
         field = field.lower()
-        if field == 'amp' and not (self.amp is None):
-            print("Warning: plot_bl is not using amplitudes in Obsdata.amp array!")
-
         if label is None:
             label = str(self.source)
         else:
@@ -4372,7 +4018,7 @@ class Obsdata(object):
         return x
 
     def plot_cphase(self, site1, site2, site3,
-                    vtype='vis', cphases=[], force_recompute=False,
+                    vtype='vis', cphases=[],
                     ang_unit='deg', timetype=False, snrcut=0.,
                     axis=False, rangex=False, rangey=False,
                     color=ehc.SCOLORS[0], marker='o', markersize=ehc.MARKERSIZE, label=None,
@@ -4388,7 +4034,6 @@ class Obsdata(object):
                vtype (str): The visibilty type from which to assemble closure phases
                             ('vis','qvis','uvis','vvis','pvis')
                cphases (list): optionally pass in the prcomputed, time-sorted closure phases
-               force_recompute (bool): if True, do not use stored closure phase able
                snrcut (float): flag closure amplitudes with snr lower than this
 
                ang_unit (str): phase unit 'deg' or 'rad'
@@ -4426,12 +4071,8 @@ class Obsdata(object):
         else:
             label = str(label)
 
-        # Get closure phases (maximal set)
-        if (len(cphases) == 0) and (self.cphase is not None) and not force_recompute:
-            cphases = self.cphase
-
         cpdata = self.cphase_tri(site1, site2, site3, vtype=vtype, timetype=timetype,
-                                 cphases=cphases, force_recompute=force_recompute, snrcut=snrcut)
+                                 cphases=cphases, snrcut=snrcut)
         plotdata = np.array([[obs['time'], obs['cphase'] * angle, obs['sigmacp']]
                              for obs in cpdata])
 
@@ -4498,7 +4139,7 @@ class Obsdata(object):
         return x
 
     def plot_camp(self, site1, site2, site3, site4,
-                  vtype='vis', ctype='camp', camps=[], force_recompute=False,
+                  vtype='vis', ctype='camp', camps=[],
                   debias=False, timetype=False, snrcut=0.,
                   axis=False, rangex=False, rangey=False,
                   color=ehc.SCOLORS[0], marker='o', markersize=ehc.MARKERSIZE, label=None,
@@ -4516,7 +4157,6 @@ class Obsdata(object):
                             ('vis','qvis','uvis','vvis','pvis')
                ctype (str): The closure amplitude type ('camp' or 'logcamp')
                camps (list): optionally pass in camps so they don't have to be recomputed
-               force_recompute (bool): if True, recompute camps instead of using stored data
                snrcut (float): flag closure amplitudes with snr lower than this
 
                debias (bool): If True, debias the closure amplitude
@@ -4551,18 +4191,10 @@ class Obsdata(object):
             label = str(label)
 
         # Get closure amplitudes (maximal set)
-        if ((ctype == 'camp') and (len(camps) == 0) and (self.camp is not None) and
-                not (len(self.camp) == 0) and not force_recompute):
-            camps = self.camp
-        elif ((ctype == 'logcamp') and (len(camps) == 0) and (self.logcamp is not None) and
-              not (len(self.logcamp) == 0) and not force_recompute):
-            camps = self.logcamp
-
-        # Get closure amplitudes (maximal set)
         cpdata = self.camp_quad(site1, site2, site3, site4,
                                 vtype=vtype, ctype=ctype, snrcut=snrcut,
                                 debias=debias, timetype=timetype,
-                                camps=camps, force_recompute=force_recompute)
+                                camps=camps)
 
         if len(cpdata) == 0:
             print('No closure amplitudes on this triangle!')
