@@ -129,6 +129,12 @@ def obs_pol_direct(gauss_im_pol, eht_array):
 
 
 @pytest.fixture(scope="session")
+def obs_gmst(obs_direct):
+    """`obs_direct` switched to GMST timetype. Used by tests that exercise GMST branches."""
+    return obs_direct.switch_timetype("GMST")
+
+
+@pytest.fixture(scope="session")
 def gauss_prior(gauss_im):
     """A blurred copy of the Gaussian image suitable for use as a prior."""
     return gauss_im.blur_circ(30 * eh.RADPERUAS)
