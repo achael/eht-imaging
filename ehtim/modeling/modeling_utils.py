@@ -2346,16 +2346,8 @@ def chisqdata_amp(Obsdata, pol='I',**kwargs):
     vtype=vis_poldict[pol]
     atype=amp_poldict[pol]
     etype=sig_poldict[pol]
-    if (Obsdata.amp is None) or (len(Obsdata.amp)==0) or pol!='I':
-        data_arr = Obsdata.unpack(['time','t1','t2','u','v',vtype,atype,etype,'el1','el2','par_ang1','par_ang2'], debias=debias)
+    data_arr = Obsdata.unpack(['time','t1','t2','u','v',vtype,atype,etype,'el1','el2','par_ang1','par_ang2'], debias=debias)
 
-    else: # TODO -- pre-computed  with not stokes I? 
-        print("Using pre-computed amplitude table in amplitude chi^2!")
-        if not type(Obsdata.amp) in [np.ndarray, np.recarray]:
-            raise Exception("pre-computed amplitude table is not a numpy rec array!")
-        data_arr = Obsdata.amp
-
-   
     # apply systematic noise and SNR cut
     # TODO -- after pre-computed??
     (uv, vis, amp, sigma) = apply_systematic_noise_snrcut(data_arr, systematic_noise, snrcut, pol)
@@ -2384,17 +2376,7 @@ def chisqdata_bs(Obsdata, pol='I',**kwargs):
 
     # unpack data
     vtype=vis_poldict[pol]
-    if (Obsdata.bispec is None) or (len(Obsdata.bispec)==0) or pol!='I':
-        biarr = Obsdata.bispectra(mode="all", vtype=vtype, count=count,snrcut=snrcut)
-
-    else: # TODO -- pre-computed  with not stokes I? 
-        print("Using pre-computed bispectrum table in cphase chi^2!")
-        if not type(Obsdata.bispec) in [np.ndarray, np.recarray]:
-            raise Exception("pre-computed bispectrum table is not a numpy rec array!")
-        biarr = Obsdata.bispec
-        # reduce to a minimal set 
-        if count!='max':   
-            biarr = reduce_tri_minimal(Obsdata, biarr)
+    biarr = Obsdata.bispectra(mode="all", vtype=vtype, count=count,snrcut=snrcut)
 
     uv1 = np.hstack((biarr['u1'].reshape(-1,1), biarr['v1'].reshape(-1,1)))
     uv2 = np.hstack((biarr['u2'].reshape(-1,1), biarr['v2'].reshape(-1,1)))
@@ -2427,16 +2409,7 @@ def chisqdata_cphase(Obsdata, pol='I',**kwargs):
 
     # unpack data
     vtype=vis_poldict[pol]
-    if (Obsdata.cphase is None) or (len(Obsdata.cphase)==0) or pol!='I':
-        clphasearr = Obsdata.c_phases(mode="all", vtype=vtype, count=count, uv_min=uv_min, snrcut=snrcut)
-    else: #TODO precomputed with not Stokes I
-        print("Using pre-computed cphase table in cphase chi^2!")
-        if not type(Obsdata.cphase) in [np.ndarray, np.recarray]:
-            raise Exception("pre-computed closure phase table is not a numpy rec array!")
-        clphasearr = Obsdata.cphase
-        # reduce to a minimal set
-        if count!='max':       
-            clphasearr = reduce_tri_minimal(Obsdata, clphasearr)
+    clphasearr = Obsdata.c_phases(mode="all", vtype=vtype, count=count, uv_min=uv_min, snrcut=snrcut)
 
     uv1 = np.hstack((clphasearr['u1'].reshape(-1,1), clphasearr['v1'].reshape(-1,1)))
     uv2 = np.hstack((clphasearr['u2'].reshape(-1,1), clphasearr['v2'].reshape(-1,1)))
@@ -2522,16 +2495,7 @@ def chisqdata_camp(Obsdata, pol='I',**kwargs):
 
     # unpack data & mask low snr points
     vtype=vis_poldict[pol]
-    if (Obsdata.camp is None) or (len(Obsdata.camp)==0) or pol!='I':
-        clamparr = Obsdata.c_amplitudes(mode='all', count=count, ctype='camp', debias=debias, snrcut=snrcut)
-    else: # TODO -- pre-computed  with not stokes I? 
-        print("Using pre-computed closure amplitude table in closure amplitude chi^2!")
-        if not type(Obsdata.camp) in [np.ndarray, np.recarray]:
-            raise Exception("pre-computed closure amplitude table is not a numpy rec array!")
-        clamparr = Obsdata.camp
-        # reduce to a minimal set
-        if count!='max':       
-            clamparr = reduce_quad_minimal(Obsdata, clamparr, ctype='camp')
+    clamparr = Obsdata.c_amplitudes(mode='all', count=count, ctype='camp', debias=debias, snrcut=snrcut)
 
     uv1 = np.hstack((clamparr['u1'].reshape(-1,1), clamparr['v1'].reshape(-1,1)))
     uv2 = np.hstack((clamparr['u2'].reshape(-1,1), clamparr['v2'].reshape(-1,1)))
@@ -2560,16 +2524,7 @@ def chisqdata_logcamp(Obsdata, pol='I', **kwargs):
 
     # unpack data & mask low snr points
     vtype=vis_poldict[pol]
-    if (Obsdata.logcamp is None) or (len(Obsdata.logcamp)==0)  or pol!='I':
-        clamparr = Obsdata.c_amplitudes(mode='all', count=count, vtype=vtype, ctype='logcamp', debias=debias, snrcut=snrcut)
-    else: # TODO -- pre-computed  with not stokes I? 
-        print("Using pre-computed log closure amplitude table in log closure amplitude chi^2!")
-        if not type(Obsdata.logcamp) in [np.ndarray, np.recarray]:
-            raise Exception("pre-computed log closure amplitude table is not a numpy rec array!")
-        clamparr = Obsdata.logcamp
-        # reduce to a minimal set
-        if count!='max':       
-            clamparr = reduce_quad_minimal(Obsdata, clamparr, ctype='logcamp')
+    clamparr = Obsdata.c_amplitudes(mode='all', count=count, vtype=vtype, ctype='logcamp', debias=debias, snrcut=snrcut)
 
     uv1 = np.hstack((clamparr['u1'].reshape(-1,1), clamparr['v1'].reshape(-1,1)))
     uv2 = np.hstack((clamparr['u2'].reshape(-1,1), clamparr['v2'].reshape(-1,1)))
