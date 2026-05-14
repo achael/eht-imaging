@@ -26,7 +26,7 @@ im.display()
 # bw_hz is the  bandwidth in Hz
 # sgrscat=True blurs the visibilities with the Sgr A* scattering kernel for the appropriate image frequency
 # ampcal and phasecal determine if gain variations and phase errors are included
-tint_sec = 5
+tint_sec = 30
 tadv_sec = 30
 tstart_hr = 0
 tstop_hr = 24
@@ -55,15 +55,7 @@ gaussprior = emptyprior.add_gauss(zbl, (prior_fwhm, prior_fwhm, 0, 0, 0))
 gaussprior = gaussprior.add_const_pol(.1, np.pi/3, 0, 1)
 gausspriorc = gaussprior.switch_polrep('circ')
 
-# Average the closure quantities and add them to the obsdata object
-avg_time = 600
-#obs.add_bispec(avg_time=avg_time)
-obs.add_amp(avg_time=avg_time)
-obs.add_cphase(avg_time=avg_time)
-obs.add_camp(avg_time=avg_time)
-obs.add_logcamp(avg_time=avg_time)
-
-# Image directly with these averaged data
+# Image directly with the unaveraged averaged data
 flux = zbl
 imgr  = eh.imager.Imager(obs, gaussprior, gaussprior, flux,
                           data_term={'amp':50, 'cphase':100},
