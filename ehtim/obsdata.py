@@ -20,7 +20,6 @@
 
 import copy
 import itertools as it
-import string
 import sys
 
 import matplotlib.pyplot as plt
@@ -453,7 +452,7 @@ class Obsdata:
             print("WARNING: removing duplicate/conjuagte points in reorder_baselines!")
             deletemask = np.ones(len(dat)).astype(bool)
 
-            for j in len(uniqdat):
+            for j in range(len(uniqdat)):
                 idxs = np.argwhere(uniqdatinv==j)[:,0]
                 for idx in idxs[1:]: # delete all but first occurance
                     deletemask[idx] = False
@@ -2317,7 +2316,7 @@ class Obsdata:
             ker = obsh.sgra_kernel_uv(self.rf, u[i], v[i])
             vis1[i] = vis1[i] / ker
             vis2[i] = vis2[i] / ker
-            vis2[i] = vis3[i] / ker
+            vis3[i] = vis3[i] / ker
             vis4[i] = vis4[i] / ker
             sigma1[i] = sigma1[i] / ker
             sigma2[i] = sigma2[i] / ker
@@ -3923,7 +3922,7 @@ class Obsdata:
 
         # Determine if fields are valid
         if field not in ehc.FIELDS:
-            raise Exception("valid fields are " + string.join(ehc.FIELDS))
+            raise Exception("valid fields are " + ' '.join(ehc.FIELDS))
 
         plotdata = self.unpack_bl(site1, site2, field, ang_unit=ang_unit,
                                   debias=debias, timetype=timetype)
