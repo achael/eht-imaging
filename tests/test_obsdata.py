@@ -53,3 +53,35 @@ def test_c_amplitudes_idempotent(obs_pol_direct, vtype, ctype):
     assert len(a) == len(b)
     for field in a.dtype.names:
         np.testing.assert_array_equal(a[field], b[field], err_msg=f"field={field}")
+
+@pytest.mark.parametrize("vtype", ["vis", "qvis", "uvis", "vvis"])
+def test_bispectra_tri_idempotent(obs_pol_direct, vtype):
+    sites = list(obs_pol_direct.tarr['site'][:3])
+    a = obs_pol_direct.bispectra_tri(*sites, vtype=vtype)
+    b = obs_pol_direct.bispectra_tri(*sites, vtype=vtype)
+    np.testing.assert_array_equal(a, b)
+
+@pytest.mark.parametrize("vtype", ["vis", "qvis", "uvis", "vvis"])
+def test_cphase_tri_idempotent(obs_pol_direct, vtype):
+    sites = list(obs_pol_direct.tarr['site'][:3])
+    a = obs_pol_direct.cphase_tri(*sites, vtype=vtype)
+    b = obs_pol_direct.cphase_tri(*sites, vtype=vtype)
+    np.testing.assert_array_equal(a, b)
+
+@pytest.mark.parametrize("ctype", ["camp", "logcamp"])
+@pytest.mark.parametrize("vtype", ["vis", "qvis", "uvis", "vvis"])
+def test_camp_quad_idempotent(obs_pol_direct, vtype):
+    sites = list(obs_pol_direct.tarr['site'][:4])
+    a = obs_pol_direct.camp_quad(*sites, vtype=vtype, ctype=ctype)
+    b = obs_pol_direct.camp_quad(*sites, vtype=vtype, ctype=ctype)
+    np.testing.assert_array_equal(a, b)
+
+def test_save_load_cphase_roundtrip(tmp_path, obs_pol_direct):
+    from ehtim.io.save import save_dtype_txt
+    from ehtim.io.load import load_dtype_txt
+    cph = obs_pol_direct.c_phases(mode='all', count='max', vtype='vis')
+    fname = str(tmp_path / "cph.txt")
+    save_dtype_txt(obs_pol_direct, fname, data=cph, dtype='cphase')
+    loaded = load_dtype_txt(fname, dtype='cphase')
+    assert loaded.dtype == cph.dtype
+    np.testing.assert_array_almost_equal(loaded['cphase'], cph['cphase'])
