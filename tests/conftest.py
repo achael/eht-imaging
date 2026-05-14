@@ -142,6 +142,15 @@ def obs_noisy(gauss_im, eht_array):
 
 
 @pytest.fixture(scope="session")
+def obs_pol_direct(gauss_im_pol, eht_array):
+    """Noise-free observation of the polarized Gaussian image using direct FT."""
+    return gauss_im_pol.observe(
+        eht_array, TINT_SEC, TADV_SEC, TSTART_HR, TSTOP_HR, BW_HZ,
+        ampcal=True, phasecal=True, ttype="direct", add_th_noise=False,
+    )
+
+
+@pytest.fixture(scope="session")
 def gauss_prior(gauss_im):
     """A blurred copy of the Gaussian image suitable for use as a prior."""
     return gauss_im.blur_circ(30 * eh.RADPERUAS)

@@ -17,27 +17,21 @@
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-from __future__ import division
-from __future__ import print_function
 
-from builtins import str
-from builtins import range
-from builtins import object
+import copy
+import time
+import warnings
+from multiprocessing import Pool, cpu_count
 
 import numpy as np
 import scipy.optimize as opt
-import time
-import copy
-from multiprocessing import cpu_count, Pool
 
-import ehtim.obsdata
-import ehtim.parloop as parloop
-from . import cal_helpers as calh
-from ehtim.observing.obs_simulate import add_jones_and_noise
-import ehtim.observing.obs_helpers as obsh
 import ehtim.const_def as ehc
+import ehtim.obsdata
+import ehtim.observing.obs_helpers as obsh
+import ehtim.parloop as parloop
+from ehtim.observing.obs_simulate import add_jones_and_noise
 
-import warnings
 warnings.filterwarnings("ignore", message="divide by zero encountered in log")
 
 MAXIT = 10000  # maximum number of iterations in self-cal minimizer
@@ -50,12 +44,11 @@ STOP = 1e-6  # convergence criterion
 ###################################################################################################
 
 
-def self_cal(obs, im, sites=[], pol='I', apply_singlepol=False, method="both", 
+def self_cal(obs, im, sites=[], pol='I', apply_singlepol=False, method="both",
              minimizer_method='BFGS',
              pad_amp=0., gain_tol=.2, solution_interval=0.0, scan_solutions=False,
              ttype='direct', fft_pad_factor=2, caltable=False,
              debias=True, apply_dterms=False,
-             copy_closure_tables=False,
              processes=-1, show_solution=False, msgtype='bar',
              use_grad=False):
     """Self-calibrate a dataset to an image.
@@ -67,10 +60,10 @@ def self_cal(obs, im, sites=[], pol='I', apply_singlepol=False, method="both",
                          empty list calibrates all sites
 
            pol (str): which image polarization to self-calibrate visibilities to
-           apply_singlepol (str): if calibrating to pol='RR' or pol='LL', 
+           apply_singlepol (str): if calibrating to pol='RR' or pol='LL',
                                   apply solution only to the single polarization
 
-           method (str): chooses what to calibrate, 'amp', 'phase', or 'both'           
+           method (str): chooses what to calibrate, 'amp', 'phase', or 'both'
            minimizer_method (str): Method for scipy.optimize.minimize (e.g., 'CG', 'BFGS')
 
            pad_amp (float): adds fractional uncertainty to amplitude sigmas in quadrature
@@ -93,7 +86,7 @@ def self_cal(obs, im, sites=[], pol='I', apply_singlepol=False, method="both",
            show_solution (bool): if True, display the solution as it is calculated
            msgtype (str): type of progress message to be printed, default is 'bar'
            use_grad (bool): if True, use gradients in minimizer
-           
+
        Returns:
            (Obsdata): the calibrated observation, if caltable==False
            (Caltable): the derived calibration table, if caltable==True
@@ -111,10 +104,10 @@ def self_cal(obs, im, sites=[], pol='I', apply_singlepol=False, method="both",
         im = im.switch_polrep('circ', pol)
     else:
         raise Exception("Can only self-calibrate to I, Q, U, V, RR, or LL images!")
-        
+
     if apply_singlepol and obs.polrep!='circ':
         raise Exception("apply_singlepol must be False unless self-calibrating to 'RR' or 'LL'")
-                
+
     # V = model visibility, V' = measured visibility, G_i = site gain
     # G_i * conj(G_j) * V_ij = V'_ij
     if len(sites) == 0:
@@ -128,12 +121,12 @@ def self_cal(obs, im, sites=[], pol='I', apply_singlepol=False, method="both",
     # apply dterms
     # TODO check!
     if apply_dterms:
-        print("Applying dterms in obs.tarr to clean visibilities before selfcal!")    
-        obsdata_dterms = add_jones_and_noise(obs_clean, 
+        print("Applying dterms in obs.tarr to clean visibilities before selfcal!")
+        obsdata_dterms = add_jones_and_noise(obs_clean,
                          add_th_noise=False, ampcal=True, phasecal=True, opacitycal=True,
                          dcal=False, frcal=True, dterm_offset=0.0)
         obs_clean.data = obsdata_dterms
-                
+
     # Partition the list of observed visibilities into scans
     scans = obs.tlist(t_gather=solution_interval, scan_gather=scan_solutions)
     scans_cal = copy.copy(scans)
@@ -145,12 +138,12 @@ def self_cal(obs, im, sites=[], pol='I', apply_singlepol=False, method="both",
     # Make the pool for parallel processing
     if processes > 0:
         counter = parloop.Counter(initval=0, maxval=len(scans))
-        print("Using Multiprocessing with %d Processes" % processes)
+        print(f"Using Multiprocessing with {processes} Processes")
         pool = Pool(processes=processes, initializer=init, initargs=(counter,))
     elif processes == 0:
         counter = parloop.Counter(initval=0, maxval=len(scans))
         processes = int(cpu_count())
-        print("Using Multiprocessing with %d Processes" % processes)
+        print(f"Using Multiprocessing with {processes} Processes")
         pool = Pool(processes=processes, initializer=init, initargs=(counter,))
     else:
         print("Not Using Multiprocessing")
@@ -174,8 +167,8 @@ def self_cal(obs, im, sites=[], pol='I', apply_singlepol=False, method="both",
             scans_cal[i] = self_cal_scan(scans[i], im, V_scan=V_scans[i], sites=sites,
                                          polrep=obs.polrep, pol=pol, apply_singlepol=apply_singlepol,
                                          method=method, minimizer_method=minimizer_method,
-                                         show_solution=show_solution, 
-                                         pad_amp=pad_amp, gain_tol=gain_tol, 
+                                         show_solution=show_solution,
+                                         pad_amp=pad_amp, gain_tol=gain_tol,
                                          debias=debias, caltable=caltable,
                                          use_grad=use_grad)
 
@@ -206,10 +199,6 @@ def self_cal(obs, im, sites=[], pol='I', apply_singlepol=False, method="both",
         arglist, argdict = obs.obsdata_args()
         arglist[4] = np.concatenate(scans_cal)
         out = ehtim.obsdata.Obsdata(*arglist, **argdict)
-        if copy_closure_tables:
-            out.camp = obs.camp
-            out.logcamp = obs.logcamp
-            out.cphase = obs.cphase
 
     # close multiprocessing jobs
     if processes >= 0:
@@ -234,9 +223,9 @@ def self_cal_scan(scan, im, V_scan=[], sites=[], polrep='stokes', pol='I', apply
 
            polrep (str): 'stokes' or 'circ' to specify the  polarization products in scan
            pol (str): which image polarization to self-calibrate visibilities to
-           apply_singlepol (str): if calibrating to pol='RR' or pol='LL', 
+           apply_singlepol (str): if calibrating to pol='RR' or pol='LL',
                                   apply solution only to the single polarization
-           
+
            method (str): chooses what to calibrate, 'amp', 'phase', or 'both'
            minimizer_method (str): Method for scipy.optimize.minimize
                                   (e.g., 'CG', 'BFGS', 'Nelder-Mead', etc.)
@@ -249,15 +238,15 @@ def self_cal_scan(scan, im, V_scan=[], sites=[], polrep='stokes', pol='I', apply
            caltable (bool): if True, returns a Caltable instead of an Obsdata
            show_solution (bool): if True, display the solution as it is calculated
            use_grad (bool): if True, use gradients in minimizer
-           
+
        Returns:
            (Obsdata): the calibrated observation, if caltable==False
            (Caltable): the derived calibration table, if caltable==True
     """
-    
+
     if use_grad and (method=='phase' or method=='amp'):
         raise Exception("errfunc_grad in self_cal only works with method=='both'!")
-        
+
     if len(sites) == 0:
         print("No stations specified in self cal: defaulting to calibrating all !")
         sites = list(set(scan['t1']).union(set(scan['t2'])))
@@ -273,7 +262,7 @@ def self_cal_scan(scan, im, V_scan=[], sites=[], polrep='stokes', pol='I', apply
         gain_tol = {'default':gain_tol}
     # convert any 1-sided tolerance to 2-sided tolerance parameterization
     for (key, val) in gain_tol.items():
-        if type(val) == float or type(val) == int:
+        if isinstance(val, (float, int)):
             gain_tol[key] = [val, val]
 
     # create a dictionary to keep track of gains
@@ -326,13 +315,13 @@ def self_cal_scan(scan, im, V_scan=[], sites=[], polrep='stokes', pol='I', apply
                    'ftol': STOP, 'gtol': STOP,
                    'maxcor': NHIST, 'maxls': MAXLS}
     else:
-        optdict = {'maxiter': MAXIT}  
-        
-    if use_grad:                   
+        optdict = {'maxiter': MAXIT}
+
+    if use_grad:
         res = opt.minimize(errfunc, gpar_guess, method=minimizer_method, options=optdict, jac=errfunc_grad)
     else:
         res = opt.minimize(errfunc, gpar_guess, method=minimizer_method, options=optdict)
-        
+
     # save the solution
     g_fit = res.x.view(np.complex128)
 
@@ -365,7 +354,7 @@ def self_cal_scan(scan, im, V_scan=[], sites=[], polrep='stokes', pol='I', apply
                     rscale = g_fit[site_key]**-1
                     lscale = np.ones(g_fit[site_key].shape)
                 elif pol=='LL':
-                    rscale = np.ones(g_fit[site_key].shape)                
+                    rscale = np.ones(g_fit[site_key].shape)
                     lscale = g_fit[site_key]**-1
             else:
                 rscale = g_fit[site_key]**-1
@@ -387,43 +376,43 @@ def self_cal_scan(scan, im, V_scan=[], sites=[], polrep='stokes', pol='I', apply
             g1_fit = g_fit[g1_keys]
             g2_fit = g_fit[g2_keys]
             gij_inv = (g1_fit * g2_fit.conj())**(-1)
-        
+
             # scale visibilities
             for vistype in ['vis', 'qvis', 'uvis', 'vvis']:
                 scan[vistype] *= gij_inv
             # scale sigmas
             for sigtype in ['sigma', 'qsigma', 'usigma', 'vsigma']:
                 scan[sigtype] *= np.abs(gij_inv)
-                
+
         elif polrep == 'circ':
             if apply_singlepol: #scale only solved polarization
                 if pol=='RR':
                     grr_inv = (g1_fit * g2_fit.conj())**(-1)
                     gll_inv = np.ones(g1_fit.shape)
                     grl_inv = (g1_fit)**(-1)
-                    glr_inv = (g2_fit.conj())**(-1)                        
-                                                        
+                    glr_inv = (g2_fit.conj())**(-1)
+
                 elif pol=='LL':
-                    grr_inv = np.ones(g1_fit.shape)                
+                    grr_inv = np.ones(g1_fit.shape)
                     gll_inv = (g1_fit * g2_fit.conj())**(-1)
                     grl_inv = (g2_fit.conj())**(-1)
-                    glr_inv = (g1_fit)**(-1) 
-                       
-                # scale visibilities    
-                scan['rrvis'] *= grr_inv  
-                scan['llvis'] *= gll_inv  
-                scan['rlvis'] *= grl_inv  
-                scan['lrvis'] *= glr_inv  
+                    glr_inv = (g1_fit)**(-1)
 
-                # scale sigmas    
-                scan['rrsigma'] *= np.abs(grr_inv)  
-                scan['llsigma'] *= np.abs(gll_inv) 
-                scan['rlsigma'] *= np.abs(grl_inv) 
-                scan['lrsigma'] *= np.abs(glr_inv)   
-                                                                                                 
+                # scale visibilities
+                scan['rrvis'] *= grr_inv
+                scan['llvis'] *= gll_inv
+                scan['rlvis'] *= grl_inv
+                scan['lrvis'] *= glr_inv
+
+                # scale sigmas
+                scan['rrsigma'] *= np.abs(grr_inv)
+                scan['llsigma'] *= np.abs(gll_inv)
+                scan['rlsigma'] *= np.abs(grl_inv)
+                scan['lrsigma'] *= np.abs(glr_inv)
+
             else: #scale both polarizations
-                gij_inv = (g1_fit * g2_fit.conj())**(-1)          
-                                                                          
+                gij_inv = (g1_fit * g2_fit.conj())**(-1)
+
                 # scale visibilities
                 for vistype in ['rrvis', 'llvis', 'rlvis', 'lrvis']:
                     scan[vistype] *= gij_inv
@@ -457,7 +446,7 @@ def get_selfcal_scan_cal2(i, n, scan, im, V_scan, sites, polrep, pol, apply_sing
                          show_solution=show_solution,
                          pad_amp=pad_amp, gain_tol=gain_tol, debias=debias, caltable=caltable,
                          use_grad=use_grad)
-                         
+
 # error function
 def errfunc_full(gpar, vis, v_scan, sigma_inv, gain_tol, sites, g1_keys, g2_keys, method):
     # all the forward site gains (complex)
@@ -493,30 +482,30 @@ def errfunc_full(gpar, vis, v_scan, sigma_inv, gain_tol, sites, g1_keys, g2_keys
     # don't count the last (default missing site) gain dummy value
     tolsq = ((np.abs(g[:-1]) > 1) * tol0 + (np.abs(g[:-1]) <= 1) * tol1)**2
     chisq_g = np.sum(np.log(np.abs(g[:-1]))**2 / tolsq)
-    
+
     # total chi^2
     chisqtot = chisq + chisq_g
     return chisqtot
-                                 
+
 def errfunc_grad_full(gpar, vis, v_scan, sigma_inv, gain_tol, sites, g1_keys, g2_keys, method):
     # does not work for method=='phase' or method=='amp'
     if method=='phase' or method=='amp':
         raise Exception("errfunc_grad in self_cal only works with method=='both'!")
-        
+
     # all the forward site gains (complex)
     g = gpar.astype(np.float64).view(dtype=np.complex128)
     gr = np.real(g)
     gi = np.imag(g)
-    
+
     # build site specific tolerance parameters
     tol0 = np.array([gain_tol.get(s, gain_tol['default'])[0] for s in sites])
     tol1 = np.array([gain_tol.get(s, gain_tol['default'])[1] for s in sites])
-       
+
     # append the default values to g for missing gains
-    g = np.append(g, 1.)    
+    g = np.append(g, 1.)
     g1 = g[g1_keys]
     g2 = g[g2_keys]
-    
+
     g1r = np.real(g1)
     g1i = np.imag(g1)
     g2r = np.real(g2)
@@ -527,59 +516,59 @@ def errfunc_grad_full(gpar, vis, v_scan, sigma_inv, gain_tol, sites, g1_keys, g2
     g2sq = g2*(g2.conj())
 
     ###################################
-    # data term chi^2 derivitive    
+    # data term chi^2 derivitive
     ###################################
-        
+
     # chi^2 term gradients
     dchisq_dg1r = (-g2.conj()*vis.conj()*v_scan - g2*vis*v_scan.conj() + 2*g1r*g2sq*v_scan_sq)
     dchisq_dg1i = (-1j*g2.conj()*vis.conj()*v_scan + 1j*g2*vis*v_scan.conj() + 2*g1i*g2sq*v_scan_sq)
-   
+
     dchisq_dg2r = (-g1*vis.conj()*v_scan - g1.conj()*vis*v_scan.conj() + 2*g2r*g1sq*v_scan_sq)
-    dchisq_dg2i = (1j*g1*vis.conj()*v_scan - 1j*g1.conj()*vis*v_scan.conj() + 2*g2i*g1sq*v_scan_sq)  
+    dchisq_dg2i = (1j*g1*vis.conj()*v_scan - 1j*g1.conj()*vis*v_scan.conj() + 2*g2i*g1sq*v_scan_sq)
 
 
     dchisq_dg1r *= ((sigma_inv)**2)
     dchisq_dg1i *= ((sigma_inv)**2)
     dchisq_dg2r *= ((sigma_inv)**2)
-    dchisq_dg2i *= ((sigma_inv)**2)    
+    dchisq_dg2i *= ((sigma_inv)**2)
 
     # same masking function as in errfunc
     # preserve length of dchisq arrays
     verr = vis - g1 * g2.conj() * v_scan
     nan_mask = np.isnan(verr)
-    
+
     dchisq_dg1r[nan_mask] = 0
     dchisq_dg1i[nan_mask] = 0
     dchisq_dg2r[nan_mask] = 0
     dchisq_dg2i[nan_mask] = 0
-    
-    # derivitives of real and imaginary gains                
-    dchisq_dgr = np.zeros(len(gpar)//2) #len(gpar) must be even 
-    dchisq_dgi = np.zeros(len(gpar)//2)    
-    
-    # TODO faster than a for loop?     
+
+    # derivitives of real and imaginary gains
+    dchisq_dgr = np.zeros(len(gpar)//2) #len(gpar) must be even
+    dchisq_dgi = np.zeros(len(gpar)//2)
+
+    # TODO faster than a for loop?
     for i in range(len(gpar)//2):
         g1idx = np.argwhere(np.array(g1_keys)==i)
         g2idx = np.argwhere(np.array(g2_keys)==i)
-        
-        dchisq_dgr[i] = np.sum(dchisq_dg1r[g1idx]) + np.sum(dchisq_dg2r[g2idx])                
+
+        dchisq_dgr[i] = np.sum(dchisq_dg1r[g1idx]) + np.sum(dchisq_dg2r[g2idx])
         dchisq_dgi[i] = np.sum(dchisq_dg1i[g1idx]) + np.sum(dchisq_dg2i[g2idx])
-                
-    ###################################                        
-    # prior term chi^2 derivitive 
+
     ###################################
-        
+    # prior term chi^2 derivitive
+    ###################################
+
     # NOTE this derivitive doesn't account for possible sharp change in tol at g=1
     gsq = np.abs(g[:-1])**2 # don't count default missing site dummy value
     tolsq = ((np.abs(g[:-1]) > 1) * tol0 + (np.abs(g[:-1]) <= 1) * tol1)**2
-    
+
     dchisqg_dgr = gr*np.log(gsq)/gsq/tolsq
     dchisqg_dgi = gi*np.log(gsq)/gsq/tolsq
-    
+
     # total derivative
     dchisqtot_dgr = dchisq_dgr + dchisqg_dgr
     dchisqtot_dgi = dchisq_dgi + dchisqg_dgi
-    
+
     # interleave final derivs
     dchisqtot_dgpar = np.zeros(len(gpar))
     dchisqtot_dgpar[0::2] = dchisqtot_dgr
@@ -587,8 +576,8 @@ def errfunc_grad_full(gpar, vis, v_scan, sigma_inv, gain_tol, sites, g1_keys, g2
 
     # any imaginary parts??? should all be real
     dchisqtot_dgpar = np.real(dchisqtot_dgpar)
-    
+
     return dchisqtot_dgpar
-                     
-                     
-                         
+
+
+
