@@ -980,6 +980,7 @@ def dd_clean_amp_cphase(Obsdata, InitIm, niter=1, clipfloor=-1, loop_gain=.1, lo
 
     imvec_current = imvec_init.copy()
     vis_current = vis_init.copy()
+    amp2_current = np.abs(vis_init)**2
     vis1_current = vis1_init.copy()
     vis2_current = vis2_init.copy()
     vis3_current = vis3_init.copy()
