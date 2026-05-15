@@ -114,15 +114,19 @@ def test_switch_timetype_shifts_data_time(obs_direct):
     assert not np.allclose(out.data["time"], obs_direct.data["time"])
 
 
-def test_switch_timetype_roundtrip_approximate(obs_direct):
-    """UTC↔GMST roundtrip drifts by a few minutes over 24h because
-    `gmst_to_utc` uses a constant sidereal-rate approximation while
-    `utc_to_gmst` calls astropy per-sample. Loose tolerance documents the
-    limitation; tighten if the helpers are fixed."""
+@pytest.mark.xfail(
+    reason=(
+        "obs_helpers.gmst_to_utc uses a constant sidereal-rate approximation "
+        "while utc_to_gmst calls astropy per-sample, so the roundtrip drifts "
+        "by a few minutes over a 24h obs. See obs_helpers.py:976."
+    ),
+    strict=True,
+)
+def test_switch_timetype_roundtrip_utc_gmst(obs_direct):
     rt = obs_direct.switch_timetype("GMST").switch_timetype("UTC")
     diff = (rt.data["time"] - obs_direct.data["time"]) % 24.0
     diff = np.minimum(diff, 24.0 - diff)
-    assert np.max(diff) < 0.1  # 6 minutes
+    np.testing.assert_allclose(diff, 0.0, atol=1e-9)
 
 
 def test_switch_timetype_noop(obs_direct):
