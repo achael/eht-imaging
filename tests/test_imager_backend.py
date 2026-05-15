@@ -3442,7 +3442,9 @@ class TestComputeChisqgradTerm(_ChisqTermFixtures):
         new = compute_chisqgrad_term(imcur, dtype, A, data, sigma,
                                      ttype='nfft', mask=mask,
                                      pol_solve=pol_solve)
-        np.testing.assert_allclose(new, legacy, rtol=1e-12, atol=1e-15)
+        # atol relaxed from 1e-15: multi-threaded finufft reductions are
+        # not bit-deterministic across calls; noise floor is ~1e-13.
+        np.testing.assert_allclose(new, legacy, rtol=1e-12, atol=1e-12)
 
     def test_pol_grad_missing_pol_solve_raises(self, gauss_im_pol, obs_direct):
         """Pol grad requires explicit pol_solve; no hidden default."""
