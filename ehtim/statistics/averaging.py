@@ -14,7 +14,7 @@ All three propagate visibility errors via the inverse-variance combination
 .. math:: \\sigma_{\\rm avg} = 1 / \\sqrt{\\sum_i 1/\\sigma_i^2}.
 
 This matches the channel/IF averaging in :func:`ehtim.io.load.load_obs_uvfits`
-(see PR #230) and replaces the historical ``sqrt(mean(sigma_i**2))`` formula in
+and replaces the historical ``sqrt(mean(sigma_i**2))`` formula in
 ``dataframes.py`` which underestimated errors and inflated SNRs.
 """
 
