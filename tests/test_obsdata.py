@@ -14,6 +14,9 @@ import pytest
 import ehtim as eh
 import ehtim.const_def as ehc
 
+from ehtim.io.save import save_dtype_txt
+from ehtim.io.load import load_dtype_txt
+
 # ---------------------------------------------------------------------------
 # Section 1: Construction & basic state (__init__, tarr setter, obsdata_args, copy)
 # ---------------------------------------------------------------------------
@@ -1093,8 +1096,6 @@ def test_camp_quad_idempotent(obs_pol_direct, vtype, ctype):
     np.testing.assert_array_equal(a, b)
 
 def test_save_load_cphase_roundtrip(tmp_path, obs_pol_direct):
-    from ehtim.io.save import save_dtype_txt
-    from ehtim.io.load import load_dtype_txt
     cph = obs_pol_direct.c_phases(mode='all', count='max', vtype='vis')
     fname = str(tmp_path / "cph.txt")
     save_dtype_txt(obs_pol_direct, fname, data=cph, dtype='cphase')
