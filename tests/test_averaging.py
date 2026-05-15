@@ -305,3 +305,78 @@ def test_parity_incoh_avg_vis_amplitude_matches_legacy(obs_direct, _legacy_ehdf)
     # Real parts hold the (debiased) amplitude.
     np.testing.assert_allclose(new_s["vis"].real, old_s["vis"].real,
                                rtol=1e-8, atol=1e-10)
+
+
+# ---------------------------------------------------------------------------
+# Section 7: additional coverage — scan_avg, polrep='circ', moving-avg sigma,
+# err_type='measured'
+# ---------------------------------------------------------------------------
+
+
+def test_coh_avg_vis_scan_avg_groups_per_scan():
+    """scan_avg=True puts samples into one bin per scan; rows outside any
+    scan are dropped."""
+    # Five samples at 0, 5, 10, 60, 70 seconds.  Scans: [0, 15s] and [55s, 75s].
+    times = np.array([0.0, 5.0 / 3600.0, 10.0 / 3600.0,
+                      60.0 / 3600.0, 70.0 / 3600.0])
+    obs = _make_obs(times_hr=times)
+    obs.scans = np.array([[0.0, 15.0 / 3600.0],
+                          [55.0 / 3600.0, 75.0 / 3600.0]])
+    out = coh_avg_vis(obs, dt=0, scan_avg=True)
+    # Two scans, two output rows.
+    assert len(out) == 2
+    # tint per scan: scan 1 has 3 samples × 1s, scan 2 has 2 samples × 1s.
+    tints = sorted(out["tint"])
+    assert tints == [2.0, 3.0]
+
+
+def test_coh_avg_vis_polrep_circ():
+    """coh_avg_vis on a circular-polrep obs produces DTPOL_CIRC output."""
+    times = np.array([0.0, 5.0 / 3600.0])
+    obs = _make_obs(times_hr=times,
+                    vis_fn=lambda t, t1, t2: 1.0 + 0.0j if t == 0.0 else 3.0 + 0.0j,
+                    polrep="circ")
+    out = coh_avg_vis(obs, dt=60.0)
+    assert len(out) == 1
+    assert out.dtype == ehc.DTPOL_CIRC
+    # All four circ visibility fields receive the same complex mean.
+    for vf in ("rrvis", "llvis", "rlvis", "lrvis"):
+        assert out[vf][0] == pytest.approx(2.0 + 0.0j)
+
+
+def test_coh_moving_avg_vis_inverse_variance_sigma():
+    """Sliding-window sigma combines via inverse variance, not mean-of-squares.
+
+    Two samples within a 120 s window with sigmas (0.1, 0.2) should reduce to
+    1/sqrt(1/0.01 + 1/0.04) ≈ 0.0894 at both row positions.
+    """
+    times = np.array([0.0, 1.0 / 3600.0])  # 1 s apart
+    obs = _make_obs(times_hr=times)
+    obs.data["sigma"] = np.array([0.1, 0.2])
+    obs.data["qsigma"] = np.array([0.1, 0.2])
+    obs.data["usigma"] = np.array([0.1, 0.2])
+    obs.data["vsigma"] = np.array([0.1, 0.2])
+
+    out = coh_moving_avg_vis(obs, dt=120.0)
+    expected = 1.0 / np.sqrt(1.0 / 0.1**2 + 1.0 / 0.2**2)
+    np.testing.assert_allclose(out["sigma"], expected, rtol=1e-12)
+
+
+def test_coh_avg_vis_err_type_measured_smoke():
+    """The bootstrap err_type='measured' path runs end-to-end."""
+    rng = np.random.default_rng(42)
+    n = 8
+    times = np.linspace(0.0, 7.0 / 3600.0, n)  # 8 samples within 60 s
+    # Visibility = 1+0j with Gaussian noise of std 0.05.
+    real_noise = rng.normal(0.0, 0.05, size=n)
+    imag_noise = rng.normal(0.0, 0.05, size=n)
+
+    def vis_fn(t, t1, t2):
+        i = int(round(t * 3600.0))  # back to seconds index
+        return (1.0 + real_noise[i]) + 1j * imag_noise[i]
+
+    obs = _make_obs(times_hr=times, vis_fn=vis_fn, sigma=0.05)
+    out = coh_avg_vis(obs, dt=60.0, err_type="measured", num_samples=200)
+    assert len(out) == 1
+    # Bootstrap sigma should be a positive finite number.
+    assert np.isfinite(out["sigma"][0]) and out["sigma"][0] > 0

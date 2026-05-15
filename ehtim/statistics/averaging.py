@@ -1,7 +1,6 @@
 """Visibility time-averaging.
 
-Pure-NumPy implementations of the three averaging routines historically
-provided by ``ehtim.statistics.dataframes``:
+Pure-NumPy implementations of three averaging routines:
 
 - :func:`coh_avg_vis` — coherent (complex) averaging into fixed time bins
   or per scan.
@@ -12,10 +11,6 @@ provided by ``ehtim.statistics.dataframes``:
 All three propagate visibility errors via the inverse-variance combination
 
 .. math:: \\sigma_{\\rm avg} = 1 / \\sqrt{\\sum_i 1/\\sigma_i^2}.
-
-This matches the channel/IF averaging in :func:`ehtim.io.load.load_obs_uvfits`
-and replaces the historical ``sqrt(mean(sigma_i**2))`` formula in
-``dataframes.py`` which underestimated errors and inflated SNRs.
 """
 
 import numpy as np
@@ -75,12 +70,12 @@ def _group_ids(*keys):
 
 
 def _first_index_per_group(gids, n_groups):
-    """Return an array of length n_groups giving one representative row index
-    (the first occurrence) for each group."""
-    out = np.full(n_groups, -1, dtype=np.int64)
-    for i, g in enumerate(gids):
-        if out[g] == -1:
-            out[g] = i
+    """Return an array of length n_groups giving the first-occurrence row
+    index for each group.  Vectorised via ``np.unique(..., return_index=True)``.
+    """
+    unique_groups, first_idx = np.unique(gids, return_index=True)
+    out = np.empty(n_groups, dtype=np.int64)
+    out[unique_groups] = first_idx
     return out
 
 
@@ -98,6 +93,35 @@ def _inverse_variance_sigma(sig_per_row, gids, n_groups):
     out = np.full(n_groups, np.nan)
     out[sums > 0] = 1.0 / np.sqrt(sums[sums > 0])
     return out
+
+
+def _amplitude_per_group(amps_per_row, sigs_per_row, gids, n_groups,
+                         debias, err_type, num_samples):
+    """Reduce per-row (amplitude, sigma) pairs to per-group (mean_amp, sigma)."""
+    amp_out = np.full(n_groups, np.nan)
+    sig_out = np.full(n_groups, np.nan)
+    for g in range(n_groups):
+        mask = gids == g
+        pairs = list(zip(amps_per_row[mask], sigs_per_row[mask]))
+        if not pairs:
+            continue
+        if err_type == "predicted":
+            a, s = mean_incoh_avg(pairs, debias=debias)
+            amp_out[g] = a
+            sig_out[g] = s
+        else:
+            amps = np.abs(np.asarray([y[0] for y in pairs]))
+            amps = amps[np.isfinite(amps)]
+            if len(amps) >= 2:
+                centre, (lo, hi) = bootstrap(amps, np.mean,
+                                             num_samples=num_samples,
+                                             wrapping_variable=False)
+                amp_out[g] = centre
+                sig_out[g] = 0.5 * (hi - lo)
+            elif len(amps) == 1:
+                amp_out[g] = amps[0]
+                sig_out[g] = sigs_per_row[mask][0]
+    return amp_out, sig_out
 
 
 def _mean_complex(vis_per_row, gids, n_groups):
@@ -377,29 +401,10 @@ def incoh_avg_vis(obs, dt=0, debias=True, scan_avg=False, return_type="rec",
 
     # Per-group amplitude + sigma via mean_incoh_avg / bootstrap.
     for vf, sf in zip(amp_fields, sig_fields):
-        amp_out = np.full(n_groups, np.nan)
-        sig_out = np.full(n_groups, np.nan)
-        for g in range(n_groups):
-            mask = gids == g
-            pairs = list(zip(np.abs(data[vf][mask]), data[sf][mask]))
-            if not pairs:
-                continue
-            if err_type == "predicted":
-                a, s = mean_incoh_avg(pairs, debias=debias)
-                amp_out[g] = a
-                sig_out[g] = s
-            else:
-                amps = np.abs(np.asarray([y[0] for y in pairs]))
-                amps = amps[np.isfinite(amps)]
-                if len(amps) >= 2:
-                    centre, (lo, hi) = bootstrap(amps, np.mean,
-                                                 num_samples=num_samples,
-                                                 wrapping_variable=False)
-                    amp_out[g] = centre
-                    sig_out[g] = 0.5 * (hi - lo)
-                elif len(amps) == 1:
-                    amp_out[g] = amps[0]
-                    sig_out[g] = data[sf][mask][0]
+        amp_out, sig_out = _amplitude_per_group(
+            np.abs(data[vf]), data[sf], gids, n_groups,
+            debias=debias, err_type=err_type, num_samples=num_samples,
+        )
         if rec_type == "vis":
             out[vf] = amp_out  # cast to complex implicitly via dtype
         else:

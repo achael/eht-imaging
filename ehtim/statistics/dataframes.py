@@ -24,17 +24,25 @@ from builtins import range
 
 import numpy as np
 
-# pandas is imported lazily inside the closure-quantity functions below.  The
-# three averaging routines (`coh_avg_vis`, `coh_moving_avg_vis`,
-# `incoh_avg_vis`) historically lived here but were moved to
-# `ehtim.statistics.averaging` (pandas-free).  This module is kept only for
-# the closure-quantity `make_*_df` / `average_*` helpers that the soon-to-be-
-# removed `Obsdata.add_*` methods still depend on (see PR #246 on
-# dev-backend).  Once #246 syncs to `dev` this whole file is deleted.
+# pandas is required for the closure-quantity helpers in this module but is
+# otherwise optional for ehtim — visibility averaging lives in
+# `ehtim.statistics.averaging` and is pandas-free.  Make the import lazy: on
+# ImportError, substitute a stub that raises a clear message on first use, so
+# `import ehtim` keeps working without pandas installed.
+class _PandasStub:
+    def __getattr__(self, name):
+        raise ImportError(
+            "pandas is required for closure-quantity helpers in "
+            "ehtim.statistics.dataframes; install via `pip install pandas`. "
+            "Visibility averaging routines live in ehtim.statistics.averaging "
+            "and do not need pandas.")
+
+
 try:
     import pandas as pd
 except ImportError:
-    pd = None
+    pd = _PandasStub()
+
 
 import datetime as datetime
 from astropy.time import Time
