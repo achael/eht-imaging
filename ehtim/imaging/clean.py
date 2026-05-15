@@ -19,15 +19,14 @@
 
 
 import time
-from builtins import range
 
 import matplotlib.pyplot as plt
 import numpy as np
 import numpy.polynomial.polynomial as p
 
-from ehtim.const_def import *
-from ehtim.imaging.imager_utils import *
-from ehtim.observing.obs_helpers import *
+from ehtim.const_def import RADPERAS, RADPERUAS
+from ehtim.imaging.imager_utils import embed
+from ehtim.observing.obs_helpers import NFFTInfo, ticks
 
 ##################################################################################################
 # Constants & Definitions
@@ -67,7 +66,7 @@ def plot_i(Image, nit, chi2, fig=1, cmap='afmhot'):
     plt.yticks(yticks[0], yticks[1])
     plt.xlabel(r'Relative RA ($\mu$as)')
     plt.ylabel(r'Relative Dec ($\mu$as)')
-    plt.title(r"step: %i  $\chi^2$: %f " % (nit, chi2), fontsize=20)
+    plt.title(rf"step: {nit:d}  $\chi^2$: {chi2:f} ", fontsize=20)
 
 def dd_clean_vis(Obsdata, InitIm, niter=1, clipfloor=-1, ttype="direct", loop_gain=1, method='min_chisq', weighting='uniform',
                  fft_pad_factor=FFT_PAD_DEFAULT, p_rad=NFFT_KERSIZE_DEFAULT, show_updates=False):
@@ -421,7 +420,8 @@ def dd_clean_bispec_full(Obsdata, InitIm, niter=1, clipfloor=-1, loop_gain=.1,
                 delta = 0
                 for j in range(len(allroots)):
                     root = allroots[j]
-                    if np.imag(root)!=0: continue
+                    if np.imag(root) != 0:
+                        continue
 
                     trialchisq = chisq_current + P[i]*root + 0.5*Q[i]*root**2 + (1./3.)*R[i]*root**3 + 0.25*S[i]*root**4 + 0.2*T[i]*root**5 + (1./6.)*U[i]*root**6
                     if trialchisq < newchisq:
@@ -460,7 +460,7 @@ def dd_clean_bispec_full(Obsdata, InitIm, niter=1, clipfloor=-1, loop_gain=.1,
         chisq_current = np.sum(weights*np.abs(bs - bs_current)**2)
         rchisq_current = np.sum(weights_nat*np.abs(bs - bs_current)**2)/(2*len(weights_nat))
 
-        print("it %i: %f (%.2f , %.2f) %.4f" % (it+1, component_strength, component_loc_x/RADPERUAS, component_loc_y/RADPERUAS, chisq_current))
+        print(f"it {it+1:d}: {component_strength:f} ({component_loc_x/RADPERUAS:.2f} , {component_loc_y/RADPERUAS:.2f}) {chisq_current:.4f}")
 
         OutputIm.imvec = imvec_current
         if show_updates:
@@ -804,7 +804,8 @@ def dd_clean_bispec_imweight(Obsdata, InitIm, niter=1, clipfloor=-1, ttype="dire
                     delta = 0
                     for j in range(len(allroots)):
                         root = allroots[j]
-                        if np.imag(root)!=0: continue
+                        if np.imag(root) != 0:
+                            continue
 
                         trialchisq = chisq_current + P[i]*root + 0.5*Q[i]*root**2 + (1./3.)*R[i]*root**3 + 0.25*S[i]*root**4 + 0.2*T[i]*root**5 + (1./6.)*U[i]*root**6
                         if trialchisq < newchisq:
@@ -848,7 +849,7 @@ def dd_clean_bispec_imweight(Obsdata, InitIm, niter=1, clipfloor=-1, ttype="dire
         chisq_current = np.sum(weights*np.abs(bs - bs_current)**2)
         rchisq_current = np.sum(weights_nat*np.abs(bs - bs_current)**2)/(2*len(weights_nat))
 
-        print("it %i: %f (%.2f , %.2f) %.4f" % (it+1, component_strength, component_loc_x/RADPERUAS, component_loc_y/RADPERUAS, chisq_current))
+        print(f"it {it+1:d}: {component_strength:f} ({component_loc_x/RADPERUAS:.2f} , {component_loc_y/RADPERUAS:.2f}) {chisq_current:.4f}")
 
         OutputIm.imvec = imvec_current
         if show_updates:
@@ -1168,8 +1169,10 @@ def dd_clean_amp_cphase(Obsdata, InitIm, niter=1, clipfloor=-1, loop_gain=.1, lo
                     delta = 0
                     for j in range(len(allroots)):
                         root = allroots[j]
-                        if np.imag(root)!=0: continue
-                        if (no_neg_comps and root<0):continue
+                        if np.imag(root) != 0:
+                            continue
+                        if no_neg_comps and root < 0:
+                            continue
                         trialchisq = chisq_current + coeffs[0]*root + 0.5*coeffs[1]*root**2 + (1./3.)*coeffs[2]*root**3 + 0.25*coeffs[3]*root**4 + 0.2*coeffs[4]*root**5 + (1./6.)*coeffs[5]*root**6
                         if trialchisq < newchisq:
                             delta = root
@@ -1217,7 +1220,7 @@ def dd_clean_amp_cphase(Obsdata, InitIm, niter=1, clipfloor=-1, loop_gain=.1, lo
 
         chisq_current = chisq_amp2_current + phaseweight*chisq_bs_current
 
-        print("it %i| %.4e (%.1f , %.1f) | %.4e %.4e | %.4e" % (it+1, component_strength, component_loc_x/RADPERUAS, component_loc_y/RADPERUAS, chisq_amp2_current, chisq_bs_current, chisq_current))
+        print(f"it {it+1:d}| {component_strength:.4e} ({component_loc_x/RADPERUAS:.1f} , {component_loc_y/RADPERUAS:.1f}) | {chisq_amp2_current:.4e} {chisq_bs_current:.4e} | {chisq_current:.4e}")
 
         OutputIm.imvec = imvec_current
         if show_updates:
