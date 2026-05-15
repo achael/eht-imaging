@@ -813,6 +813,214 @@ def test_flag_anomalous_smoke(obs_noisy):
 
 
 # ---------------------------------------------------------------------------
+# Section 13: Taper / deblur / reweight / fit_gauss
+# ---------------------------------------------------------------------------
+
+
+def test_reverse_taper_inverse_of_taper(obs_direct):
+    fwhm = 30.0 * eh.RADPERUAS
+    rt = obs_direct.taper(fwhm).reverse_taper(fwhm)
+    np.testing.assert_allclose(rt.data["vis"], obs_direct.data["vis"], atol=1e-12)
+    np.testing.assert_allclose(rt.data["sigma"], obs_direct.data["sigma"], atol=1e-12)
+
+
+def test_taper_attenuates_long_baseline_amp(obs_direct):
+    fwhm = 30.0 * eh.RADPERUAS
+    out = obs_direct.taper(fwhm)
+    uvdist = (obs_direct.data["u"] ** 2 + obs_direct.data["v"] ** 2) ** 0.5
+    long_mask = uvdist > np.median(uvdist)
+    assert np.all(
+        np.abs(out.data["vis"][long_mask]) <= np.abs(obs_direct.data["vis"][long_mask]) + 1e-12
+    )
+
+
+def test_deblur_changes_visibilities(obs_direct):
+    out = obs_direct.deblur()
+    assert not np.allclose(out.data["vis"], obs_direct.data["vis"])
+    # All four polarization slots remain finite (regression for the vis3-slot
+    # bug fixed in fix/obsdata-latent-bugs).
+    for field in ("vis", "qvis", "uvis", "vvis"):
+        assert np.all(np.isfinite(out.data[field]))
+
+
+def test_reweight_preserves_npoints(obs_direct):
+    out = obs_direct.reweight(uv_radius=5e8)
+    assert len(out.data) == len(obs_direct.data)
+
+
+def test_fit_gauss_smoke(obs_direct):
+    # The fitter is wobbly per its in-code TODO; we just check the call
+    # returns finite parameters of the expected shape.
+    params = obs_direct.fit_gauss()
+    assert params.shape == (3,)
+    assert np.all(np.isfinite(params))
+
+
+# ---------------------------------------------------------------------------
+# Section 14: Closure quantities (bispectra, c_phases, c_amplitudes, *_tri/quad,
+#                                 *_diag). Idempotence tests are below.
+# ---------------------------------------------------------------------------
+
+
+def test_bispectra_invalid_mode_raises(obs_direct):
+    with pytest.raises(Exception, match="mode"):
+        obs_direct.bispectra(mode="banana")
+
+
+def test_bispectra_invalid_count_raises(obs_direct):
+    with pytest.raises(Exception, match="count"):
+        obs_direct.bispectra(count="banana")
+
+
+def test_bispectra_invalid_vtype_raises(obs_direct):
+    with pytest.raises(Exception, match="vtype"):
+        obs_direct.bispectra(vtype="banana")
+
+
+def test_bispectra_min_subset_of_max(obs_direct):
+    bs_max = obs_direct.bispectra(mode="all", count="max")
+    bs_min = obs_direct.bispectra(mode="all", count="min")
+    max_triangles = {
+        (row["time"], frozenset((row["t1"], row["t2"], row["t3"]))) for row in bs_max
+    }
+    min_triangles = {
+        (row["time"], frozenset((row["t1"], row["t2"], row["t3"]))) for row in bs_min
+    }
+    assert min_triangles <= max_triangles
+    assert len(bs_min) <= len(bs_max)
+
+
+def test_bispectra_uv_min_drops_short_baselines(obs_direct):
+    bs = obs_direct.bispectra(mode="all", count="max", uv_min=5e8)
+    for row in bs:
+        for (u, v) in [(row["u1"], row["v1"]), (row["u2"], row["v2"]), (row["u3"], row["v3"])]:
+            assert np.hypot(u, v) >= 5e8
+
+
+def test_c_phases_in_minus_pi_pi_radians(obs_direct):
+    cp = obs_direct.c_phases(mode="all", count="max", ang_unit="rad")
+    assert np.all(cp["cphase"] >= -np.pi - 1e-9)
+    assert np.all(cp["cphase"] <= np.pi + 1e-9)
+
+
+def test_c_phases_deg_vs_rad_consistency(obs_direct):
+    cp_deg = obs_direct.c_phases(mode="all", count="max", ang_unit="deg")
+    cp_rad = obs_direct.c_phases(mode="all", count="max", ang_unit="rad")
+    np.testing.assert_allclose(cp_deg["cphase"], np.degrees(cp_rad["cphase"]), atol=1e-9)
+
+
+def test_c_phases_diag_returns_per_time_tuples(obs_pol_direct):
+    diag = obs_pol_direct.c_phases_diag(count="min")
+    assert len(diag) > 0
+    cparr, tris, us, vs, tform = diag[0]
+    assert cparr.dtype.names == ("time", "cphase", "sigmacp")
+    assert tform.shape[0] == tform.shape[1]
+
+
+def test_c_phases_diag_transform_matrix_orthogonal(obs_pol_direct):
+    diag = obs_pol_direct.c_phases_diag(count="min")
+    for _, _, _, _, tform in diag[:3]:
+        mat = tform.astype(np.float64)
+        prod = mat @ mat.T
+        np.testing.assert_allclose(prod, np.eye(mat.shape[0]), atol=1e-9)
+
+
+def test_bispectra_tri_from_vis_matches_from_maxset(obs_direct):
+    sites = obs_direct.tarr["site"][:3].tolist()
+    a = obs_direct.bispectra_tri(*sites, method="from_maxset")
+    b = obs_direct.bispectra_tri(*sites, method="from_vis")
+    assert len(a) == len(b)
+    np.testing.assert_allclose(a["bispec"], b["bispec"], atol=1e-9)
+
+
+def test_cphase_tri_signs_flip_with_reordering(obs_direct):
+    sites = obs_direct.tarr["site"][:3].tolist()
+    forward = obs_direct.cphase_tri(*sites, ang_unit="rad", method="from_vis")
+    reversed_ = obs_direct.cphase_tri(sites[0], sites[2], sites[1],
+                                      ang_unit="rad", method="from_vis")
+    assert len(forward) == len(reversed_)
+    np.testing.assert_allclose(forward["cphase"], -reversed_["cphase"], atol=1e-9)
+
+
+def test_c_amplitudes_invalid_ctype_raises(obs_direct):
+    with pytest.raises(Exception, match="closure amplitude type"):
+        obs_direct.c_amplitudes(ctype="banana")
+
+
+def test_c_amplitudes_logcamp_equals_log_camp(obs_direct):
+    # Without debiasing, logcamp must equal log(camp) on the same quadrangles.
+    # (With debiasing, camp and logcamp use different correction formulas.)
+    camp = obs_direct.c_amplitudes(mode="all", count="max", ctype="camp", debias=False)
+    logcamp = obs_direct.c_amplitudes(mode="all", count="max", ctype="logcamp", debias=False)
+    assert len(camp) == len(logcamp)
+    np.testing.assert_allclose(logcamp["camp"], np.log(camp["camp"]), atol=1e-9)
+
+
+def test_c_log_amplitudes_diag_smoke(obs_pol_direct):
+    diag = obs_pol_direct.c_log_amplitudes_diag(count="min")
+    assert len(diag) > 0
+    lcaarr, quads, us, vs, tform = diag[0]
+    assert lcaarr.dtype.names == ("time", "camp", "sigmaca")
+    assert tform.shape[0] == tform.shape[1]
+
+
+def test_camp_quad_inverse_relation(obs_direct):
+    # camp(A,B,C,D) = |V_AB V_CD| / |V_AD V_BC|; the (A,D,C,B) reordering is
+    # the reciprocal. The product must equal 1 exactly — but only with
+    # debias=False, since `camp_debias` corrects the numerator and denominator
+    # asymmetrically and breaks the algebraic identity.
+    s = obs_direct.tarr["site"][:4].tolist()
+    forward = obs_direct.camp_quad(*s, ctype="camp", method="from_vis", debias=False)
+    inverse = obs_direct.camp_quad(s[0], s[3], s[2], s[1], ctype="camp",
+                                   method="from_vis", debias=False)
+    if len(forward) == 0 or len(inverse) == 0:
+        pytest.skip("no quadrangle data for the chosen four sites")
+    np.testing.assert_allclose(forward["camp"] * inverse["camp"], 1.0, atol=1e-9)
+
+
+# ---------------------------------------------------------------------------
+# Section 15: Plot methods — smoke tests only
+# ---------------------------------------------------------------------------
+
+
+def test_plotall_smoke(obs_direct):
+    import matplotlib
+    matplotlib.use("Agg")
+    ax = obs_direct.plotall("uvdist", "amp", show=False)
+    assert ax is not None
+
+
+def test_plot_bl_smoke(obs_direct):
+    import matplotlib
+    matplotlib.use("Agg")
+    site1, site2 = obs_direct.data["t1"][0], obs_direct.data["t2"][0]
+    ax = obs_direct.plot_bl(site1, site2, "amp", show=False)
+    assert ax is not None
+
+
+def test_plot_bl_invalid_field_raises(obs_direct):
+    # Regression for the `string.join` bug fixed in fix/obsdata-latent-bugs;
+    # the error path is now reachable.
+    site1, site2 = obs_direct.data["t1"][0], obs_direct.data["t2"][0]
+    with pytest.raises(Exception, match="valid fields"):
+        obs_direct.plot_bl(site1, site2, "banana", show=False)
+
+
+def test_plot_cphase_smoke(obs_direct):
+    import matplotlib
+    matplotlib.use("Agg")
+    sites = obs_direct.tarr["site"][:3].tolist()
+    obs_direct.plot_cphase(*sites, show=False)
+
+
+def test_plot_camp_smoke(obs_direct):
+    import matplotlib
+    matplotlib.use("Agg")
+    sites = obs_direct.tarr["site"][:4].tolist()
+    obs_direct.plot_camp(*sites, show=False)
+
+
+# ---------------------------------------------------------------------------
 # Closure-quantity idempotence (originally Phase 0)
 # ---------------------------------------------------------------------------
 
