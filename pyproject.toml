@@ -28,6 +28,7 @@ dependencies = [
     "scipy>=1.9.3",
     "astropy>=5.0.4",
     "matplotlib>=3.7.3",
+    "finufft>=2.2",
     "skyfield",
     "h5py",
     "pandas",
