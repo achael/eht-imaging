@@ -77,6 +77,41 @@ class TestFINUFFTPlan:
 
         np.testing.assert_allclose(out_from_real, out_from_complex, rtol=1e-12, atol=1e-12)
 
+    def test_plan_reuse_no_stale_state(self, psize, asymmetric_uv):
+        """A single plan reused for many calls returns input-only-dependent output.
+
+        Each NFFTInfo is built once and called thousands of times during
+        imaging; a stateful cache that survives across calls would corrupt
+        iterative imaging silently.
+        """
+        xdim, ydim = 64, 48
+        uv_finufft = 2 * np.pi * asymmetric_uv * psize
+        plan = FINUFFTPlan(xdim, ydim, uv_finufft, eps=1e-12)
+        rng = _rng(3)
+
+        img_a = (rng.standard_normal((xdim, ydim))
+                 + 1j * rng.standard_normal((xdim, ydim))).astype("complex128")
+        img_b = (rng.standard_normal((xdim, ydim))
+                 + 1j * rng.standard_normal((xdim, ydim))).astype("complex128")
+        residual = (rng.standard_normal(len(asymmetric_uv))
+                    + 1j * rng.standard_normal(len(asymmetric_uv))).astype("complex128")
+
+        plan.f_hat = img_a
+        plan.trafo()
+        out_a_first = plan.f.copy()
+
+        plan.f_hat = img_b
+        plan.trafo()  # write-then-read cycle on a different image
+
+        plan.f = residual
+        plan.adjoint()  # interleave the opposite direction
+
+        plan.f_hat = img_a
+        plan.trafo()
+        out_a_second = plan.f.copy()
+
+        np.testing.assert_allclose(out_a_second, out_a_first, rtol=1e-12, atol=1e-12)
+
 
 class TestNFFTInfo:
     """End-to-end tests of NFFTInfo against analytic Fourier transforms."""
