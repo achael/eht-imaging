@@ -24,17 +24,13 @@ try:
 except ImportError:
     print("Warning: skyfield not installed: cannot simulate space VLBI")
 
-try:
-    from pynfft.nfft import NFFT
-except ImportError:
-    print("Warning: No NFFT installed!")
-
 import copy
 import itertools as it
 import sys
 import warnings
 
 import astropy.time as at
+import finufft
 import numpy as np
 import scipy.ndimage as nd
 import scipy.spatial.distance
@@ -1328,30 +1324,67 @@ def uimage(iimage, mimage, chiimage):
 ##################################################################################################
 # FFT & NFFT helper functions
 ##################################################################################################
+class FINUFFTPlan:
+    """Stateful 2D NFFT at fixed nonuniform (u, v) points.
+
+    Set .f_hat (shape (xdim, ydim), complex128) and call .trafo() for the
+    forward transform; the result lands in .f. Set .f (length len(uv),
+    complex128) and call .adjoint(); the result lands in .f_hat.
+    """
+
+    def __init__(self, xdim, ydim, uv_finufft, eps=1e-9):
+        x = np.ascontiguousarray(uv_finufft[:, 0])
+        y = np.ascontiguousarray(uv_finufft[:, 1])
+        self._fwd = finufft.Plan(2, (xdim, ydim), n_trans=1, eps=eps,
+                                 isign=-1, dtype='complex128')
+        self._fwd.setpts(x, y)
+        self._adj = finufft.Plan(1, (xdim, ydim), n_trans=1, eps=eps,
+                                 isign=+1, dtype='complex128')
+        self._adj.setpts(x, y)
+        self.f_hat = None
+        self.f = None
+
+    def trafo(self):
+        # pynfft silently promoted real f_hat to complex; finufft requires
+        # matching dtype, so cast here.
+        self.f = self._fwd.execute(np.ascontiguousarray(self.f_hat, dtype='complex128'))
+
+    def adjoint(self):
+        self.f_hat = self._adj.execute(np.ascontiguousarray(self.f, dtype='complex128'))
+
+
 class NFFTInfo:
-    def __init__(self, xdim, ydim, psize, pulse, npad, p_rad, uv):
+    """Precomputed NFFT plan + per-point pulse/centering factor.
+
+    eps is the requested relative accuracy of the NFFT. Default 1e-9 is
+    safe for high-dynamic-range imaging (ALMA polarimetry, SKA-scale
+    arrays). Tighten to 1e-12 for ~1e6 dynamic range; relax to 1e-6 for
+    faster low-SNR work where data noise dominates.
+
+    npad and p_rad are accepted for backward compatibility but unused:
+    finufft chooses its own oversampling and kernel width from eps.
+    """
+
+    def __init__(self, xdim, ydim, psize, pulse, npad, p_rad, uv, eps=1e-9):
         self.xdim = int(xdim)
         self.ydim = int(ydim)
         self.psize = psize
         self.pulse = pulse
-
         self.npad = int(npad)
         self.p_rad = int(p_rad)
         self.uv = uv
         self.uvdim = len(uv)
 
-        # set nfft plan
-        uv_scaled = uv*psize
-        nfft_plan = NFFT([xdim, ydim], self.uvdim, m=p_rad, n=[npad, npad])
-        nfft_plan.x = uv_scaled
-        nfft_plan.precompute()
-        self.plan = nfft_plan
+        # uv in (-0.5, 0.5] is used by the centering phase below;
+        # (-pi, pi] form is what FINUFFTPlan expects.
+        uv_scaled = uv * psize
+        uv_finufft = 2 * np.pi * uv_scaled
+        self.plan = FINUFFTPlan(self.xdim, self.ydim, uv_finufft, eps=eps)
 
-        # compute phase and pulsefac
-        phases = np.exp(-1j*np.pi*(uv_scaled[:, 0]+uv_scaled[:, 1]))
+        phases = np.exp(-1j*np.pi*(uv_scaled[:, 0] + uv_scaled[:, 1]))
         pulses = np.fromiter((pulse(2*np.pi*uv_scaled[i, 0], 2*np.pi*uv_scaled[i, 1], 1., dom="F")
                               for i in range(self.uvdim)), 'c16')
-        self.pulsefac = (pulses*phases)
+        self.pulsefac = pulses * phases
 
 class SamplerInfo:
     def __init__(self, order, uv, pulsefac):
