@@ -18,30 +18,16 @@
 
 
 
-from __future__ import division
-from __future__ import print_function
-from __future__ import absolute_import
+import time
 from builtins import range
 
-import string
-import time
-import numpy as np
-import scipy.optimize as opt
-import scipy.ndimage as nd
-import scipy.ndimage.filters as filt
 import matplotlib.pyplot as plt
-try:
-    from pynfft.nfft import NFFT
-except ImportError:
-    pass
-    #print("Warning: No NFFT installed!")
+import numpy as np
 import numpy.polynomial.polynomial as p
 
-import ehtim.image as image
-
 from ehtim.const_def import *
-from ehtim.observing.obs_helpers import *
 from ehtim.imaging.imager_utils import *
+from ehtim.observing.obs_helpers import *
 
 ##################################################################################################
 # Constants & Definitions
@@ -79,9 +65,9 @@ def plot_i(Image, nit, chi2, fig=1, cmap='afmhot'):
     yticks = ticks(Image.ydim, Image.psize/RADPERAS/1e-6)
     plt.xticks(xticks[0], xticks[1])
     plt.yticks(yticks[0], yticks[1])
-    plt.xlabel('Relative RA ($\mu$as)')
-    plt.ylabel('Relative Dec ($\mu$as)')
-    plt.title("step: %i  $\chi^2$: %f " % (nit, chi2), fontsize=20)
+    plt.xlabel(r'Relative RA ($\mu$as)')
+    plt.ylabel(r'Relative Dec ($\mu$as)')
+    plt.title(r"step: %i  $\chi^2$: %f " % (nit, chi2), fontsize=20)
 
 def dd_clean_vis(Obsdata, InitIm, niter=1, clipfloor=-1, ttype="direct", loop_gain=1, method='min_chisq', weighting='uniform',
                  fft_pad_factor=FFT_PAD_DEFAULT, p_rad=NFFT_KERSIZE_DEFAULT, show_updates=False):
