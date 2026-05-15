@@ -974,13 +974,28 @@ def gmtstring(gmt):
 
 
 def gmst_to_utc(gmst, mjd):
-    """Convert gmst times in hours to utc hours using astropy
+    """Convert gmst times in hours to utc hours using astropy.
+
+    Inverse of :func:`utc_to_gmst` on the canonical solar day of ``mjd``:
+    returns UTC in [0, 24). The local sidereal rate is sampled directly
+    from astropy across that day (mean GMST is polynomial in UT, so
+    within a day it's linear to ~1e-14 hours -- no iteration needed).
+
+    Note: an obs that spans > ~23.93 solar hours aliases in GMST and
+    cannot be uniquely round-tripped through this inverse; callers
+    must keep their obs inside a single sidereal day.
     """
 
     mjd = int(mjd)
-    time_obj_ref = at.Time(mjd, format='mjd', scale='utc')
-    time_sidereal_ref = time_obj_ref.sidereal_time('mean', 'greenwich').hour
-    time_utc = (gmst - time_sidereal_ref) * 0.9972695601848
+    t0 = at.Time(mjd, format='mjd', scale='utc')
+    t1 = at.Time(mjd + 1, format='mjd', scale='utc')
+    s0 = t0.sidereal_time('mean', 'greenwich').hour
+    s1 = t1.sidereal_time('mean', 'greenwich').hour
+    # Sidereal hours elapsed in 24 solar hours (~24.0657)
+    sidereal_per_day = ((s1 - s0) % 24.0) + 24.0
+    # Wrap into [0, 24) sidereal so utc lands in [0, 24) of mjd
+    delta_sidereal = (gmst - s0) % 24.0
+    time_utc = delta_sidereal * 24.0 / sidereal_per_day
 
     return time_utc
 
