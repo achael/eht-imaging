@@ -13,9 +13,8 @@ import pytest
 
 import ehtim as eh
 import ehtim.const_def as ehc
-
-from ehtim.io.save import save_dtype_txt
 from ehtim.io.load import load_dtype_txt
+from ehtim.io.save import save_dtype_txt
 
 # ---------------------------------------------------------------------------
 # Section 1: Construction & basic state (__init__, tarr setter, obsdata_args, copy)
@@ -695,11 +694,8 @@ def test_rescale_noise_multiplies_sigmas(obs_direct):
 
 
 def test_find_amt_fractional_noise_runs(obs_noisy, gauss_im):
-    # find_amt_fractional_noise calls obs.chisq() with no ttype override, so
-    # it inherits the chisq() default of 'nfft' — needs pynfft. Skip when
-    # NFFT isn't installed rather than running ttype='direct' (the method
-    # doesn't expose the kwarg).
-    pytest.importorskip("pynfft")
+    # find_amt_fractional_noise calls obs.chisq() with no ttype override,
+    # so it inherits the chisq() default of 'nfft'.
     out = obs_noisy.find_amt_fractional_noise(gauss_im, dtype="vis", target=1.0, maxiter=5)
     assert np.isfinite(out).all()
 

@@ -17,8 +17,6 @@ Covers all three transform types (direct / fast / nfft) and both
 Stokes-I and polarimetric (IP) imaging.
 """
 
-import importlib.util
-
 import numpy as np
 import pytest
 
@@ -35,10 +33,6 @@ PRIOR_FWHM_UAS = 80
 # 0.80 is a sanity-check floor that still catches real wiring regressions.
 STOKES_I_NXCORR_MIN = 0.80
 FLUX_REL_TOL = 0.05
-
-
-def _has_pynfft():
-    return importlib.util.find_spec("pynfft") is not None
 
 
 def _independent_prior(total_flux, fwhm_uas=PRIOR_FWHM_UAS):
@@ -105,7 +99,6 @@ class TestEndToEndReconstruction:
         assert errors[0] > STOKES_I_NXCORR_MIN, (
             f"nxcorr={errors[0]:.3f} below {STOKES_I_NXCORR_MIN} threshold")
 
-    @pytest.mark.skipif(not _has_pynfft(), reason="pyNFFT not installed")
     def test_recovers_gaussian_stokes_i_nfft(self, gauss_im, observe):
         obs = observe(gauss_im, ttype="nfft", seed=42)
         prior = _independent_prior(gauss_im.total_flux())
@@ -142,7 +135,6 @@ class TestEndToEndReconstruction:
         assert errors[0] > STOKES_I_NXCORR_MIN, (
             f"diag nxcorr={errors[0]:.3f} below {STOKES_I_NXCORR_MIN} threshold")
 
-    @pytest.mark.skipif(not _has_pynfft(), reason="pyNFFT not installed")
     def test_recovers_gaussian_stokes_i_diag_nfft(self, gauss_im, observe):
         obs = observe(gauss_im, ttype="nfft", seed=42)
         prior = _independent_prior(gauss_im.total_flux())

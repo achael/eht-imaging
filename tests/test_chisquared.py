@@ -132,8 +132,6 @@ class TestChisqConsistency:
     @pytest.mark.parametrize("pair", TTYPE_PAIRS, ids=lambda p: f"{p[0]}-{p[1]}")
     def test_chisq_values(self, chisq_setup, dtype, pair):
         ttype_a, ttype_b = pair
-        if "nfft" in (ttype_a, ttype_b):
-            pytest.importorskip("pynfft")
         obs = chisq_setup["obs"]
         prior = chisq_setup["prior"]
         mask = chisq_setup["mask"]
@@ -181,8 +179,6 @@ class TestChisqGradConsistency:
 def _gradient_comparison(chisq_setup, dtype, pair):
     """Compute median and max fractional gradient diff between two ttypes."""
     ttype_a, ttype_b = pair
-    if "nfft" in (ttype_a, ttype_b):
-        pytest.importorskip("pynfft")
     obs = chisq_setup["obs"]
     prior = chisq_setup["prior"]
     mask = chisq_setup["mask"]

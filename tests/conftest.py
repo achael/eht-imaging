@@ -124,7 +124,6 @@ def obs_fast(gauss_im, eht_array):
 @pytest.fixture(scope="session")
 def obs_nfft(gauss_im, eht_array):
     """Noise-free observation of Gaussian image using NFFT."""
-    pytest.importorskip("pynfft")
     return gauss_im.observe(
         eht_array, TINT_SEC, TADV_SEC, TSTART_HR, TSTOP_HR, BW_HZ,
         ampcal=True, phasecal=True, ttype="nfft", add_th_noise=False,

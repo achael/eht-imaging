@@ -791,8 +791,6 @@ class TestComputeChisqDict:
     @pytest.mark.parametrize("ttype", ["direct", "fast", "nfft"])
     def test_all_ttypes(self, gauss_im, observe, initialize_imager, ttype):
         """Backend works for all three transform types."""
-        if ttype == "nfft":
-            pytest.importorskip("pynfft")
         obs = observe(gauss_im, ttype=ttype)
         imgr, imcur = initialize_imager(obs, gauss_im, {"vis": 100}, ttype=ttype)
         result = _call_backend_chisq_dict(imgr, imcur)
@@ -939,8 +937,6 @@ class TestComputeChisqgradDict:
     @pytest.mark.parametrize("ttype", ["direct", "fast", "nfft"])
     def test_all_ttypes(self, gauss_im, observe, initialize_imager, ttype):
         """Backend works for all three transform types."""
-        if ttype == "nfft":
-            pytest.importorskip("pynfft")
         obs = observe(gauss_im, ttype=ttype)
         imgr, imcur = initialize_imager(obs, gauss_im, {"vis": 100}, ttype=ttype)
         result = _call_backend_chisqgrad_dict(imgr, imcur)
