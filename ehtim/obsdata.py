@@ -42,6 +42,7 @@ import ehtim.image
 import ehtim.io.load
 import ehtim.io.save
 import ehtim.observing.obs_helpers as obsh
+import ehtim.statistics.averaging as ehavg
 import ehtim.statistics.dataframes as ehdf
 
 warnings.filterwarnings("ignore",
@@ -1266,10 +1267,10 @@ class Obsdata:
             return self.copy()
 
         if moving:
-            vis_avg = ehdf.coh_moving_avg_vis(self, dt=inttime, return_type='rec')
+            vis_avg = ehavg.coh_moving_avg_vis(self, dt=inttime, return_type='rec')
         else:
-            vis_avg = ehdf.coh_avg_vis(self, dt=inttime, return_type='rec',
-                                       err_type='predicted', scan_avg=scan_avg)
+            vis_avg = ehavg.coh_avg_vis(self, dt=inttime, return_type='rec',
+                                        err_type='predicted', scan_avg=scan_avg)
 
         arglist, argdict = self.obsdata_args()
         arglist[DATPOS] = vis_avg
@@ -1291,8 +1292,8 @@ class Obsdata:
         """
 
         print('Incoherently averaging data, putting phases to zero!')
-        amp_rec = ehdf.incoh_avg_vis(self, dt=inttime, debias=debias, scan_avg=scan_avg,
-                                     return_type='rec', rec_type='vis', err_type=err_type)
+        amp_rec = ehavg.incoh_avg_vis(self, dt=inttime, debias=debias, scan_avg=scan_avg,
+                                      return_type='rec', rec_type='vis', err_type=err_type)
         arglist, argdict = self.obsdata_args()
         arglist[DATPOS] = amp_rec
         out = Obsdata(*arglist, **argdict)

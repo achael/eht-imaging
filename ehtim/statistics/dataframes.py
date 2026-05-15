@@ -22,13 +22,19 @@ from builtins import str
 from builtins import map
 from builtins import range
 
-import numpy as np 
+import numpy as np
 
+# pandas is imported lazily inside the closure-quantity functions below.  The
+# three averaging routines (`coh_avg_vis`, `coh_moving_avg_vis`,
+# `incoh_avg_vis`) historically lived here but were moved to
+# `ehtim.statistics.averaging` (pandas-free).  This module is kept only for
+# the closure-quantity `make_*_df` / `average_*` helpers that the soon-to-be-
+# removed `Obsdata.add_*` methods still depend on (see PR #246 on
+# dev-backend).  Once #246 syncs to `dev` this whole file is deleted.
 try:
     import pandas as pd
 except ImportError:
-    print("Warning: pandas not installed!")
-    print("Please install pandas to use statistics package!")
+    pd = None
 
 import datetime as datetime
 from astropy.time import Time
