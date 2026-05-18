@@ -15,7 +15,6 @@ import ehtim.const_def as ehc
 import ehtim.obsdata as eo
 import ehtim.warnings as ehw
 
-
 # Legacy (pre-Phase-1) dtypes — used to verify upgrade plumbing.
 _LEGACY_DTARR = [('site', 'U32'), ('x', 'f8'), ('y', 'f8'), ('z', 'f8'),
                  ('sefdr', 'f8'), ('sefdl', 'f8'), ('dr', 'c16'), ('dl', 'c16'),
