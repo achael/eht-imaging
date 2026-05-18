@@ -234,6 +234,18 @@ class Obsdata:
         if timetype_out == 'UTC':
             out.data['time'] = obsh.gmst_to_utc(out.data['time'], out.mjd)
         if timetype_out == 'GMST':
+            # GMST values from astropy wrap into [0, 24), so any obs spanning
+            # longer than one sidereal day aliases here -- and the aliasing
+            # cannot be detected once we are already in GMST, so warn now.
+            span = float(out.data['time'].max() - out.data['time'].min())
+            if span > 23.9345:
+                warnings.warn(
+                    f"Obsdata spans {span:.3f} hours, more than one sidereal "
+                    "day (~23.9345 h); UTC->GMST conversion will alias and "
+                    "cannot be uniquely inverted. Split the obs by day before "
+                    "converting timetype.",
+                    stacklevel=2,
+                )
             out.data['time'] = obsh.utc_to_gmst(out.data['time'], out.mjd)
 
         out.timetype = timetype_out
@@ -1184,7 +1196,8 @@ class Obsdata:
         ivec = imstokes.imvec
         rhovec = np.sqrt(imstokes.qvec**2 + imstokes.uvec**2 + imstokes.vvec**2) / ivec
         phivec = np.angle(imstokes.qvec + 1j * imstokes.uvec)
-        psivec = np.arcsin(imstokes.vvec/ivec)
+        psivec = np.where(rhovec > 0, np.arcsin(np.clip(imstokes.vvec / (ivec * rhovec), -1, 1)), 0.0)
+
         if len(mask) > 0 and np.any(np.invert(mask)):
             ivec = ivec[mask]
             rhovec = rhovec[mask]

@@ -8,14 +8,15 @@ All tests use the session-scoped observation fixtures from conftest.py
 expensive `Image.observe` calls are amortised across the whole module.
 """
 
+import warnings
+
 import numpy as np
 import pytest
 
 import ehtim as eh
 import ehtim.const_def as ehc
-
-from ehtim.io.save import save_dtype_txt
 from ehtim.io.load import load_dtype_txt
+from ehtim.io.save import save_dtype_txt
 
 # ---------------------------------------------------------------------------
 # Section 1: Construction & basic state (__init__, tarr setter, obsdata_args, copy)
@@ -117,19 +118,38 @@ def test_switch_timetype_shifts_data_time(obs_direct):
     assert not np.allclose(out.data["time"], obs_direct.data["time"])
 
 
-@pytest.mark.xfail(
-    reason=(
-        "obs_helpers.gmst_to_utc uses a constant sidereal-rate approximation "
-        "while utc_to_gmst calls astropy per-sample, so the roundtrip drifts "
-        "by a few minutes over a 24h obs. See obs_helpers.py:976."
-    ),
-    strict=True,
-)
 def test_switch_timetype_roundtrip_utc_gmst(obs_direct):
     rt = obs_direct.switch_timetype("GMST").switch_timetype("UTC")
     diff = (rt.data["time"] - obs_direct.data["time"]) % 24.0
     diff = np.minimum(diff, 24.0 - diff)
     np.testing.assert_allclose(diff, 0.0, atol=1e-9)
+
+
+def test_switch_timetype_warns_on_multi_day_to_gmst(obs_direct):
+    """UTC->GMST on an obs spanning > 1 sidereal day must warn (aliases)."""
+    multi_day = obs_direct.copy()
+    # Stretch the obs to span ~30h by pushing later rows past 24h.
+    times = multi_day.data["time"].copy()
+    times[len(times) // 2:] += 12.0
+    multi_day.data["time"] = times
+    with pytest.warns(UserWarning, match="more than one sidereal day"):
+        multi_day.switch_timetype("GMST")
+
+
+def test_switch_timetype_no_warn_on_single_day(obs_direct):
+    """A normal <24h obs must not trigger the multi-day warning."""
+    with warnings.catch_warnings():
+        warnings.simplefilter("error", UserWarning)
+        obs_direct.switch_timetype("GMST")
+
+
+def test_switch_timetype_no_warn_on_gmst_to_utc(obs_direct):
+    """GMST->UTC has no informative span signal; must not warn even if
+    the underlying obs was originally multi-day."""
+    gmst_obs = obs_direct.switch_timetype("GMST")
+    with warnings.catch_warnings():
+        warnings.simplefilter("error", UserWarning)
+        gmst_obs.switch_timetype("UTC")
 
 
 def test_switch_timetype_noop(obs_direct):
@@ -530,15 +550,6 @@ def test_polchisq_invalid_dtype_raises(obs_pol_direct, gauss_im_pol):
         obs_pol_direct.polchisq(gauss_im_pol, dtype="banana", ttype="direct")
 
 
-@pytest.mark.xfail(
-    reason=(
-        "Obsdata.polchisq packs the (I, m, phi, psi) parametrization with "
-        "psi = arcsin(V/I), but pol_imager_utils.make_v_image defines "
-        "V = I*m*sin(psi), so psi should be arcsin(V/(I*m)). The mismatch "
-        "produces an O(1e-2) self-consistency residue. See obsdata.py:1187."
-    ),
-    strict=True,
-)
 def test_polchisq_self_consistency(obs_pol_direct, gauss_im_pol):
     chisq = obs_pol_direct.polchisq(gauss_im_pol, dtype="pvis", ttype="direct")
     assert chisq == pytest.approx(0.0, abs=1e-6)
@@ -1102,3 +1113,5 @@ def test_save_load_cphase_roundtrip(tmp_path, obs_pol_direct):
     loaded = load_dtype_txt(fname, dtype='cphase')
     assert loaded.dtype == cph.dtype
     np.testing.assert_array_almost_equal(loaded['cphase'], cph['cphase'])
+
+
