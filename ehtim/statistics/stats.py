@@ -1,5 +1,5 @@
 # stats.py
-# variety of statistical functions useful for 
+# variety of statistical functions useful for
 #
 #    Copyright (C) 2018 Maciek Wielgus
 #
@@ -16,17 +16,9 @@
 #    You should have received a copy of the GNU General Public License
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-from __future__ import division
-from __future__ import print_function
-from builtins import str
-from builtins import map
-from builtins import range
-
 import numpy as np
 import numpy.random as npr
-import sys
 
-from ehtim.const_def import *
 
 def circular_mean(theta, unit='deg'):
     '''circular mean for averaging angular quantities
@@ -103,7 +95,7 @@ def mean_incoh_amp(amp,sigma,debias=True,err_type='predicted',num_samples=int(1e
     """
     if (not hasattr(amp, "__len__")):
         amp = [amp]
-    amp = np.asarray(amp, dtype=np.float32) 
+    amp = np.asarray(amp, dtype=np.float32)
     N = len(amp)
     if (not hasattr(sigma, "__len__")):
         sigma = sigma*np.ones(N)
@@ -117,12 +109,13 @@ def mean_incoh_amp(amp,sigma,debias=True,err_type='predicted',num_samples=int(1e
         amp_clean=amp[(amp==amp)&(sigma==sigma)&(sigma>0)&(amp>0)]
         sigma_clean=sigma[(amp==amp)&(sigma==sigma)&(sigma>0)&(amp>0)]
         #eq. 9.86 from Thompson et al.
-        if debias==True:
+        if debias:
             amp0sq = ( np.mean(amp_clean**2 - (2. - 1./N)*sigma_clean**2) )
-        else: amp0sq = np.mean(amp_clean**2)
+        else:
+            amp0sq = np.mean(amp_clean**2)
         amp0sq = np.maximum(amp0sq,0.)
         amp0 = np.sqrt(amp0sq)
-        
+
         #getting errors
         if err_type=='predicted':
             sigma0 = np.sqrt(np.sum(sigma_clean**2)/len(sigma_clean)**2)
@@ -142,7 +135,7 @@ def mean_incoh_amp_from_vis(vis,sigma,debias=True,err_type='predicted',num_sampl
     """
     if (not hasattr(vis, "__len__")):
         vis = [vis]
-    vis= np.asarray(vis) 
+    vis= np.asarray(vis)
     vis= vis[vis==vis]
     amp=np.abs(vis)
 
@@ -163,10 +156,12 @@ def mean_incoh_amp_from_vis(vis,sigma,debias=True,err_type='predicted',num_sampl
             return None, None
         else:
             #eq. 9.86 from Thompson et al.
-            if debias==True:
+            if debias:
                 amp0sq = ( np.mean(amp_clean**2 - (2. - 1./Nc)*sigma_clean**2) )
-            else: amp0sq = np.mean(amp_clean**2)
-            if (amp0sq!=amp0sq): amp0sq=0.
+            else:
+                amp0sq = np.mean(amp_clean**2)
+            if amp0sq != amp0sq:
+                amp0sq = 0.
             amp0sq = np.maximum(amp0sq,0.)
             amp0 = np.sqrt(amp0sq)
             #getting errors
@@ -204,7 +199,7 @@ def bootstrap(data, statistic, num_samples=int(1e3), alpha='1sig',wrapping_varia
         alpha=0.0027
     stat = np.zeros(num_samples)
     data = np.asarray(data)
-    if wrapping_variable==True:
+    if wrapping_variable:
         m=statistic(data)
     else:
         m=0
@@ -234,9 +229,9 @@ def mean_incoh_avg(x,debias=True):
         amp0 = amp[0]
         sig0 = sig[0]
     else:
-        if debias==True:
+        if debias:
             amp0 = deb_amp(amp,sig)
-        else: 
+        else:
             amp0= np.sqrt(np.maximum(np.mean(amp**2),0.))
         sig0 = inc_sig(amp,sig)
         #sig0 = coh_sig(amp,sig)
@@ -262,7 +257,8 @@ def inc_sig(amp,sig):
     snrA = 1./(np.sqrt(1. + 2./np.sqrt(Nc)*(1./snr0)*np.sqrt(1.+1./snr0**2)) - 1.)
     if snrA>0:
         sigma0=amp0/snrA
-    else: sigma0=coh_sig(amp,sig)
+    else:
+        sigma0=coh_sig(amp,sig)
     return sigma0
 
 def coh_sig(amp, sig):
@@ -289,7 +285,7 @@ def dicts_TV_report(obs,snr_cut=2.):
     amptv = {}
     for cou,quad in enumerate(baselines):
         amptv[quad] = np.mean(np.abs(np.diff(np.abs(amp[(amp['t1']==baselines[cou][0])&(amp['t2']==baselines[cou][1])]['vis']))))
-      
+
     cp = obs.c_phases()
     obs = obs.flag_low_snr(snr_cut=snr_cut)
     triangles = list(set([(x[0],x[1],x[2]) for x in cp[['t1','t2','t3']]]))
@@ -297,12 +293,12 @@ def dicts_TV_report(obs,snr_cut=2.):
     for cou,tri in enumerate(triangles):
         cptv[tri] = np.mean(np.abs(np.diff(cp[(cp['t1']==triangles[cou][0])&(cp['t2']==triangles[cou][1])&(cp['t3']==triangles[cou][2])]['cphase'])))
 
-    lca = obs.c_amplitudes(ctype='logcamp')   
+    lca = obs.c_amplitudes(ctype='logcamp')
     quadrangles = list(set([(x[0],x[1],x[2],x[3]) for x in lca[['t1','t2','t3','t4']]]))
     lcatv = {}
     for cou,quad in enumerate(quadrangles):
         lcatv[quad] = np.mean(np.abs(np.diff(lca[(lca['t1']==quadrangles[cou][0])&(lca['t2']==quadrangles[cou][1])&(lca['t3']==quadrangles[cou][2])&(lca['t4']==quadrangles[cou][3])]['camp'])))
-  
+
     return amptv, cptv, lcatv
 
 def compare_TV(obs,obsref,snr_cut=2.,output=''):
@@ -320,17 +316,17 @@ def compare_TV(obs,obsref,snr_cut=2.,output=''):
         """
     amptv, cptv, lcatv = dicts_TV_report(obs,snr_cut=snr_cut)
     ampref, cpref, lcaref = dicts_TV_report(obsref,snr_cut=snr_cut)
-    
+
     cprel = {key: (cptv[key] - cpref[key])/cpref[key] for key in cptv.keys() if key in set(cpref.keys())}
     amprel = {key: (amptv[key] - ampref[key])/ampref[key] for key in amptv.keys() if key in set(ampref.keys())}
     lcarel = {key: (lcatv[key] - lcaref[key])/lcaref[key] for key in lcatv.keys() if key in set(lcaref.keys())}
     amprel = {key:amprel[key] for key in amprel.keys() if amprel[key]==amprel[key]}
     cprel = {key:cprel[key] for key in cprel.keys() if cprel[key]==cprel[key]}
     lcarel = {key:lcarel[key] for key in lcarel.keys() if lcarel[key]==lcarel[key]}
-    
+
     if output=='Full':
         return amprel, cprel, lcarel
-    else: 
+    else:
         ampmed =np.median([amprel[key] for key in amprel.keys() if amprel[key]==amprel[key]])
         cpmed =np.median([cprel[key] for key in cprel.keys() if cprel[key]==cprel[key]])
         lcamed =np.median([lcarel[key] for key in lcarel.keys() if lcarel[key]==lcarel[key]])

@@ -46,6 +46,10 @@ except ImportError:
 
 import datetime as datetime
 from astropy.time import Time
+from ehtim.const_def import (
+    DTAMP, DTBIS, DTCAMP, DTCPHASE, DTCPHASEDIAG, DTLOGCAMPDIAG,
+    DTPOL_CIRC, DTPOL_STOKES, EP,
+)
 from ehtim.statistics.stats import *
 
 def make_df(obs,polarization='unknown',band='unknown',round_s=0.1):
