@@ -23,6 +23,8 @@ from builtins import str
 from builtins import range
 from builtins import object
 
+import functools
+
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 from packaging import version
@@ -79,9 +81,14 @@ FFT_PAD_DEFAULT = 2
 FFT_INTERP_DEFAULT = 3
 
 # Observation recarray datatypes
+# DTARR uses generic names primary because it is a single shared dtype across
+# all stations; legacy names are title aliases. Per-Obsdata/Caltable dtypes
+# (DTPOL_*, DTCAL_*) invert this — physical names primary, generic alias.
 DTARR = [('site', 'U32'), ('x', 'f8'), ('y', 'f8'), ('z', 'f8'),
-         ('sefdr', 'f8'), ('sefdl', 'f8'), ('dr', 'c16'), ('dl', 'c16'),
-         ('fr_par', 'f8'), ('fr_elev', 'f8'), ('fr_off', 'f8')]
+         (('sefdr', 'sefd_p1'), 'f8'), (('sefdl', 'sefd_p2'), 'f8'),
+         (('dr', 'd_p1'), 'c16'), (('dl', 'd_p2'), 'c16'),
+         ('fr_par', 'f8'), ('fr_elev', 'f8'), ('fr_off', 'f8'),
+         ('feed_type', 'U2')]
 
 DTPOL_STOKES = [('time', 'f8'), ('tint', 'f8'),
                 ('t1', 'U32'), ('t2', 'U32'),
@@ -94,8 +101,29 @@ DTPOL_CIRC = [('time', 'f8'), ('tint', 'f8'),
               ('t1', 'U32'), ('t2', 'U32'),
               ('tau1', 'f8'), ('tau2', 'f8'),
               ('u', 'f8'), ('v', 'f8'),
-              ('rrvis', 'c16'), ('llvis', 'c16'), ('rlvis', 'c16'), ('lrvis', 'c16'),
-              ('rrsigma', 'f8'), ('llsigma', 'f8'), ('rlsigma', 'f8'), ('lrsigma', 'f8')]
+              (('p1p1vis', 'rrvis'), 'c16'), (('p2p2vis', 'llvis'), 'c16'),
+              (('p1p2vis', 'rlvis'), 'c16'), (('p2p1vis', 'lrvis'), 'c16'),
+              (('p1p1sigma', 'rrsigma'), 'f8'), (('p2p2sigma', 'llsigma'), 'f8'),
+              (('p1p2sigma', 'rlsigma'), 'f8'), (('p2p1sigma', 'lrsigma'), 'f8')]
+
+DTPOL_LIN = [('time', 'f8'), ('tint', 'f8'),
+             ('t1', 'U32'), ('t2', 'U32'),
+             ('tau1', 'f8'), ('tau2', 'f8'),
+             ('u', 'f8'), ('v', 'f8'),
+             (('p1p1vis', 'xxvis'), 'c16'), (('p2p2vis', 'yyvis'), 'c16'),
+             (('p1p2vis', 'xyvis'), 'c16'), (('p2p1vis', 'yxvis'), 'c16'),
+             (('p1p1sigma', 'xxsigma'), 'f8'), (('p2p2sigma', 'yysigma'), 'f8'),
+             (('p1p2sigma', 'xysigma'), 'f8'), (('p2p1sigma', 'yxsigma'), 'f8')]
+
+DTPOL_MIXED = [('time', 'f8'), ('tint', 'f8'),
+               ('t1', 'U32'), ('t2', 'U32'),
+               ('tau1', 'f8'), ('tau2', 'f8'),
+               ('u', 'f8'), ('v', 'f8'),
+               ('p1p1vis', 'c16'), ('p2p2vis', 'c16'),
+               ('p1p2vis', 'c16'), ('p2p1vis', 'c16'),
+               ('p1p1sigma', 'f8'), ('p2p2sigma', 'f8'),
+               ('p1p2sigma', 'f8'), ('p2p1sigma', 'f8'),
+               ('polbasis', 'U2')]
 
 DTAMP = [('time', 'f8'), ('tint', 'f8'),
          ('t1', 'U32'), ('t2', 'U32'),
@@ -121,15 +149,120 @@ DTCPHASEDIAG = [('time', 'f8'), ('cphase', 'f8'), ('sigmacp', 'f8'),
 DTLOGCAMPDIAG = [('time', 'f8'), ('camp', 'f8'), ('sigmaca', 'f8'),
                  ('quadrangles', 'O'), ('u', 'O'), ('v', 'O'), ('tform_matrix', 'O')]
 
-DTCAL = [('time', 'f8'), ('rscale', 'c16'), ('lscale', 'c16')]
+DTCAL_CIRC = [('time', 'f8'),
+              (('p1scale', 'rscale'), 'c16'), (('p2scale', 'lscale'), 'c16'),
+              (('d_p1', 'dr'), 'c16'), (('d_p2', 'dl'), 'c16')]
+
+DTCAL_LIN = [('time', 'f8'),
+             (('p1scale', 'xscale'), 'c16'), (('p2scale', 'yscale'), 'c16'),
+             ('d_p1', 'c16'), ('d_p2', 'c16')]
+
+DTCAL = DTCAL_CIRC  # legacy alias
 
 DTSCANS = [('time', 'f8'), ('interval', 'f8'), ('startvis', 'f8'), ('endvis', 'f8')]
+
+
+# TODO (Phase 3b): the feed_dtype_for_polrep / feed_poldict / upgrade_*
+# helpers below should migrate to ehtim/observing/pol_conventions.py when
+# that module is created.
+
+def feed_dtype_for_polrep(polrep):
+    """Return the DTPOL_* field-spec list for a given polrep."""
+    try:
+        return {'stokes': DTPOL_STOKES, 'circ': DTPOL_CIRC,
+                'lin': DTPOL_LIN, 'mixed': DTPOL_MIXED}[polrep]
+    except KeyError:
+        raise ValueError("polrep must be one of "
+                         "{'stokes', 'circ', 'lin', 'mixed'}, got %r" % polrep)
+
+
+def upgrade_tarr(tarr):
+    """Upgrade a legacy DTARR recarray (no feed_type) to the current DTARR.
+
+    Idempotent. Fills feed_type='rl' for legacy data. Used by Array,
+    Obsdata, and Caltable constructors / __setstate__ to keep backwards
+    compatibility with pickled or user-supplied recarrays.
+    """
+    import numpy as _np
+    if tarr is None:
+        return tarr
+    if tarr.dtype.names is not None and 'feed_type' in tarr.dtype.names:
+        return tarr
+    new = _np.zeros(len(tarr), dtype=DTARR)
+    for name in ('site', 'x', 'y', 'z',
+                 'sefdr', 'sefdl', 'dr', 'dl',
+                 'fr_par', 'fr_elev', 'fr_off'):
+        new[name] = tarr[name]
+    new['feed_type'] = 'rl'
+    return new
+
+
+def upgrade_dtpol_circ(data):
+    """Zero-copy view-cast of a legacy DTPOL_CIRC recarray to add title aliases.
+
+    Idempotent. Bytes are identical between legacy and new layouts; only
+    the dtype object adds the generic p1p1vis/... aliases. Returns the
+    input unchanged for non-CIRC dtypes.
+    """
+    import numpy as _np
+    target = _np.dtype(DTPOL_CIRC)
+    if data.dtype == target:
+        return data
+    if data.dtype.itemsize == target.itemsize and data.dtype.names == target.names:
+        return data.view(target)
+    return data
+
+
+def upgrade_dtcal_circ(data):
+    """Upgrade a legacy DTCAL recarray (time, rscale, lscale) to DTCAL_CIRC.
+
+    Legacy DTCAL has no D-term fields; the upgrade allocates a new recarray
+    and zero-fills dr/dl. Idempotent.
+    """
+    import numpy as _np
+    target = _np.dtype(DTCAL_CIRC)
+    if data.dtype == target:
+        return data
+    names = data.dtype.names or ()
+    if 'rscale' in names and 'dr' not in names:
+        new = _np.zeros(len(data), dtype=target)
+        for name in ('time', 'rscale', 'lscale'):
+            new[name] = data[name]
+        return new
+    return data
+
+
+@functools.lru_cache(maxsize=16)
+def feed_poldict(t1_feed, t2_feed):
+    """Return the four field names for a baseline with given feed types.
+
+    Slot convention: vis1 = (p1 of t1) x (p1 of t2), vis2 = p2 x p2,
+    vis3 = p1 x p2, vis4 = p2 x p1. Returns the *physical* slot labels
+    (e.g. 'rrvis' for ('rl','rl'); 'rxvis' for ('rl','xy')). Used at
+    construction time; '??' raises rather than silently defaulting.
+    """
+    if t1_feed == '??' or t2_feed == '??':
+        raise ValueError("feed_poldict: unknown feed_type '??' "
+                         "(t1=%r, t2=%r)" % (t1_feed, t2_feed))
+    p1a, p2a = t1_feed[0], t1_feed[1]
+    p1b, p2b = t2_feed[0], t2_feed[1]
+    return {'vis1': '%s%svis' % (p1a, p1b),
+            'vis2': '%s%svis' % (p2a, p2b),
+            'vis3': '%s%svis' % (p1a, p2b),
+            'vis4': '%s%svis' % (p2a, p1b),
+            'sigma1': '%s%ssigma' % (p1a, p1b),
+            'sigma2': '%s%ssigma' % (p2a, p2b),
+            'sigma3': '%s%ssigma' % (p1a, p2b),
+            'sigma4': '%s%ssigma' % (p2a, p1b)}
+
 
 # Dictionaries for keeping track of polarization fields
 POLDICT_STOKES = {'vis1': 'vis', 'vis2': 'qvis', 'vis3': 'uvis', 'vis4': 'vvis',
                   'sigma1': 'sigma', 'sigma2': 'qsigma', 'sigma3': 'usigma', 'sigma4': 'vsigma'}
 POLDICT_CIRC = {'vis1': 'rrvis', 'vis2': 'llvis', 'vis3': 'rlvis', 'vis4': 'lrvis',
                 'sigma1': 'rrsigma', 'sigma2': 'llsigma', 'sigma3': 'rlsigma', 'sigma4': 'lrsigma'}
+POLDICT_LIN = {'vis1': 'xxvis', 'vis2': 'yyvis', 'vis3': 'xyvis', 'vis4': 'yxvis',
+               'sigma1': 'xxsigma', 'sigma2': 'yysigma', 'sigma3': 'xysigma', 'sigma4': 'yxsigma'}
 vis_poldict = {'I': 'vis', 'Q': 'qvis', 'U': 'uvis', 'V': 'vvis',
                'RR': 'rrvis', 'LL': 'llvis', 'RL': 'rlvis', 'LR': 'lrvis'}
 amp_poldict = {'I': 'amp', 'Q': 'qamp', 'U': 'uamp', 'V': 'vamp',
