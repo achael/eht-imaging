@@ -265,12 +265,13 @@ def inc_sig(amp,sig):
     else: sigma0=coh_sig(amp,sig)
     return sigma0
 
-def coh_sig(amp,sig):
-    amp = np.abs(np.asarray(amp))
+def coh_sig(amp, sig):
+    """Inverse-variance combined sigma: 1 / sqrt(sum_i 1/sig_i^2)."""
     sig = np.asarray(sig)
-    Nc = len(amp)
-    sigma0 = np.sqrt(np.sum(sig**2)/Nc**2)
-    return sigma0
+    finite = np.isfinite(sig) & (sig > 0)
+    if not np.any(finite):
+        return np.nan
+    return 1.0 / np.sqrt(np.sum(1.0 / sig[finite] ** 2))
 
 
 def dicts_TV_report(obs,snr_cut=2.):
@@ -284,7 +285,7 @@ def dicts_TV_report(obs,snr_cut=2.):
             lcatv: dictionary of quadrangle mean TV
         """
     amp = obs.data
-    baselines = list(set([(x[0],x[1]) for x in lca[['t1','t2']]]))
+    baselines = list(set([(x[0],x[1]) for x in amp[['t1','t2']]]))
     amptv = {}
     for cou,quad in enumerate(baselines):
         amptv[quad] = np.mean(np.abs(np.diff(np.abs(amp[(amp['t1']==baselines[cou][0])&(amp['t2']==baselines[cou][1])]['vis']))))
@@ -317,8 +318,8 @@ def compare_TV(obs,obsref,snr_cut=2.,output=''):
             cprel / cpmed: dictionary of triangle relative differences in mean TV / median of triangle relative differences in mean TV
             lcarel / lcamed: dictionary of quadrangle relative differences in mean TV / median of quadrangle relative differences in mean TV
         """
-    amptv, cptv, lcatv = dicts_TV(obs,snr_cut=snr_cut)
-    ampref, cpref, lcaref = dicts_TV(obsref,snr_cut=snr_cut)
+    amptv, cptv, lcatv = dicts_TV_report(obs,snr_cut=snr_cut)
+    ampref, cpref, lcaref = dicts_TV_report(obsref,snr_cut=snr_cut)
     
     cprel = {key: (cptv[key] - cpref[key])/cpref[key] for key in cptv.keys() if key in set(cpref.keys())}
     amprel = {key: (amptv[key] - ampref[key])/ampref[key] for key in amptv.keys() if key in set(ampref.keys())}
