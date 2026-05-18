@@ -251,15 +251,19 @@ class Array:
 
         try:
             tarr_new = np.delete(tarr_old.copy(), self.tkey[site])
-            if site in ephem_old.keys():
+        except IndexError:
+            raise Exception(f"could not find site {site} to delete from Array.tarr!")
+
+        if site in ephem_old.keys():
+            try:
                 ephem_new.pop(site)
-        except:
-            raise Exception(f"could not find site {site} to delete from Array!")
+            except KeyError:
+                raise Exception(f"could not find ephemeris for site {site} to delete from Array.ephem!")
 
         arr_out = Array(tarr_new, ephem_new)
         return arr_out
 
-    def add_satellite_tle(self, tlelist, sefd=10000):
+    def add_satellite_tle(self, tlearr, sefd=10000):
 
         """Add an earth-orbiting satellite to the array from a TLE
 
@@ -321,8 +325,10 @@ class Array:
         satellites = self.ephem.keys()
         for i,satellite in enumerate(satellites):
 
-            if i==0: color='k'
-            else: color=ehc.SCOLORS[i-1]
+            if i==0:
+                color='k'
+            else:
+                color=ehc.SCOLORS[i-1]
 
             # get skyfield satelllite object
             if len(self.ephem[satellite])==3: # TLE
