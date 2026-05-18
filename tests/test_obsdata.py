@@ -15,9 +15,8 @@ import pytest
 
 import ehtim as eh
 import ehtim.const_def as ehc
-
-from ehtim.io.save import save_dtype_txt
 from ehtim.io.load import load_dtype_txt
+from ehtim.io.save import save_dtype_txt
 
 # ---------------------------------------------------------------------------
 # Section 1: Construction & basic state (__init__, tarr setter, obsdata_args, copy)
