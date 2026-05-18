@@ -17,18 +17,14 @@
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-from __future__ import division
-from __future__ import print_function
 
-from builtins import str
+import os
+import re
 from builtins import range
-from builtins import object
 
 import numpy as np
-import re
-
 from astropy.time import Time
-import os
+
 import ehtim.array
 import ehtim.const_def as ehc
 
@@ -37,7 +33,7 @@ import ehtim.const_def as ehc
 ###################################################################################################
 
 
-class Vex(object):
+class Vex:
     """Read in observing schedule data from .vex files.
        Assumes there is only 1 MODE in vex file
 
