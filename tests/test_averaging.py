@@ -8,8 +8,12 @@ inverse-variance combination
 
     sigma_avg = 1 / sqrt(sum(1/sigma_i**2)).
 
+Visibility values are also combined with inverse-variance weights by default
+(``invvar_avg=True``); ``invvar_avg=False`` reproduces the legacy direct
+(unweighted) complex mean.
+
 This file pins both the migration (pandas-free, matching record-array
-contracts) and the inverse-variance fix.
+contracts) and the two weighting modes.
 """
 
 import numpy as np
@@ -255,8 +259,15 @@ def _legacy_ehdf():
 
 
 def test_parity_coh_avg_vis_complex_mean_matches_legacy(obs_direct, _legacy_ehdf):
-    """Averaged visibility values match the legacy pandas implementation."""
-    new = coh_avg_vis(obs_direct, dt=60.0)
+    """Direct (invvar_avg=False) complex mean matches the legacy pandas
+    implementation row-for-row, independently of how sigmas are distributed.
+
+    obs_direct has uniform sigma within each (baseline, time-bucket) bin, so
+    invvar_avg=True would also pass here by coincidence -- but invvar_avg=False
+    is the genuinely equivalent comparison. The varied-sigma case is covered
+    by test_parity_coh_avg_vis_varied_sigma below.
+    """
+    new = coh_avg_vis(obs_direct, dt=60.0, invvar_avg=False)
     old = _legacy_ehdf.coh_avg_vis(obs_direct, dt=60.0, return_type='rec')
     assert len(new) == len(old)
     # Sort both by (t1, t2, time) for an order-independent comparison.
@@ -266,6 +277,44 @@ def test_parity_coh_avg_vis_complex_mean_matches_legacy(obs_direct, _legacy_ehdf
     for vf in ("vis", "qvis", "uvis", "vvis"):
         np.testing.assert_allclose(new_s[vf], old_s[vf], rtol=1e-10, atol=1e-12,
                                    err_msg=f"vis mismatch in field {vf!r}")
+
+
+def test_parity_coh_avg_vis_varied_sigma(_legacy_ehdf):
+    """With varied intra-bin sigmas, invvar_avg=False matches the legacy
+    direct mean exactly, while invvar_avg=True diverges as expected.
+
+    Four samples in one 60 s bin on one baseline with varying vis values
+    and varying sigmas exercise the weighting branch.
+    """
+    times = np.array([0.0, 10.0 / 3600.0, 20.0 / 3600.0, 30.0 / 3600.0])
+    obs = _make_obs(times_hr=times,
+                    vis_fn=lambda t, t1, t2: 1.0 + (t * 3600.0) * 0.01)
+    obs.data["sigma"] = np.array([0.1, 0.4, 0.1, 0.4])
+    obs.data["qsigma"] = np.array([0.1, 0.4, 0.1, 0.4])
+    obs.data["usigma"] = np.array([0.1, 0.4, 0.1, 0.4])
+    obs.data["vsigma"] = np.array([0.1, 0.4, 0.1, 0.4])
+
+    new_direct = coh_avg_vis(obs, dt=60.0, invvar_avg=False)
+    new_invvar = coh_avg_vis(obs, dt=60.0, invvar_avg=True)
+    old = _legacy_ehdf.coh_avg_vis(obs, dt=60.0, return_type='rec')
+
+    # Direct mean: bit-for-bit equal to legacy.
+    np.testing.assert_allclose(
+        new_direct["vis"], old["vis"], rtol=1e-12, atol=1e-14,
+        err_msg="invvar_avg=False should match legacy on varied sigmas",
+    )
+
+    # Direct mean of vis values [1.0, 1.1, 1.2, 1.3] is 1.15.
+    assert new_direct["vis"][0].real == pytest.approx(1.15, rel=1e-12)
+
+    # Inverse-variance weighted mean: weights [100, 6.25, 100, 6.25] →
+    # <V> = (1.0*100 + 1.1*6.25 + 1.2*100 + 1.3*6.25) / 212.5 ≈ 1.1.
+    w = np.array([1/0.1**2, 1/0.4**2, 1/0.1**2, 1/0.4**2])
+    expected_invvar = np.sum(np.array([1.0, 1.1, 1.2, 1.3]) * w) / np.sum(w)
+    assert new_invvar["vis"][0].real == pytest.approx(expected_invvar, rel=1e-12)
+
+    # The two means genuinely differ on varied-sigma data.
+    assert abs(new_invvar["vis"][0] - new_direct["vis"][0]) > 1e-3
 
 
 def test_parity_coh_avg_vis_sigma_differs_by_inverse_variance(_legacy_ehdf):
@@ -295,8 +344,13 @@ def test_parity_coh_avg_vis_sigma_differs_by_inverse_variance(_legacy_ehdf):
 
 
 def test_parity_incoh_avg_vis_amplitude_matches_legacy(obs_direct, _legacy_ehdf):
-    """Incoherently-averaged amplitudes match the legacy implementation."""
-    new = incoh_avg_vis(obs_direct, dt=60.0, debias=True)
+    """Direct-mean (invvar_avg=False) incoherent amplitude matches legacy.
+
+    Same caveat as the coherent parity test: with uniform intra-bin sigmas
+    the invvar branch would also pass coincidentally. invvar_avg=False is
+    the genuine equivalence.
+    """
+    new = incoh_avg_vis(obs_direct, dt=60.0, debias=True, invvar_avg=False)
     old = _legacy_ehdf.incoh_avg_vis(obs_direct, dt=60.0, debias=True, return_type='rec')
     assert len(new) == len(old)
     new_key = np.argsort(new, order=("t1", "t2", "time"))
@@ -315,19 +369,25 @@ def test_parity_incoh_avg_vis_amplitude_matches_legacy(obs_direct, _legacy_ehdf)
 
 def test_coh_avg_vis_scan_avg_groups_per_scan():
     """scan_avg=True puts samples into one bin per scan; rows outside any
-    scan are dropped."""
-    # Five samples at 0, 5, 10, 60, 70 seconds.  Scans: [0, 15s] and [55s, 75s].
-    times = np.array([0.0, 5.0 / 3600.0, 10.0 / 3600.0,
-                      60.0 / 3600.0, 70.0 / 3600.0])
+    scan are dropped.
+
+    Scan intervals follow pandas.cut semantics: ``(tstart, tstop]`` (open on
+    the left, closed on the right), so a sample exactly on a scan boundary
+    lands in the LATER scan only, not both.
+    """
+    # Six samples at 2, 5, 10, 15, 60, 75 seconds. Scans: (0, 15s] and (55s, 75s].
+    # Sample at t=15s lands in scan 1 (right-inclusive); sample at t=75s in scan 2.
+    times = np.array([2.0 / 3600.0, 5.0 / 3600.0, 10.0 / 3600.0,
+                      15.0 / 3600.0, 60.0 / 3600.0, 75.0 / 3600.0])
     obs = _make_obs(times_hr=times)
     obs.scans = np.array([[0.0, 15.0 / 3600.0],
                           [55.0 / 3600.0, 75.0 / 3600.0]])
     out = coh_avg_vis(obs, dt=0, scan_avg=True)
     # Two scans, two output rows.
     assert len(out) == 2
-    # tint per scan: scan 1 has 3 samples × 1s, scan 2 has 2 samples × 1s.
+    # tint per scan: scan 1 has 4 samples × 1s, scan 2 has 2 samples × 1s.
     tints = sorted(out["tint"])
-    assert tints == [2.0, 3.0]
+    assert tints == [2.0, 4.0]
 
 
 def test_coh_avg_vis_polrep_circ():

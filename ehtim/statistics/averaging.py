@@ -8,9 +8,31 @@ Pure-NumPy implementations of three averaging routines:
 - :func:`incoh_avg_vis` — incoherent (amplitude) averaging with Rice
   debiasing.
 
-All three propagate visibility errors via the inverse-variance combination
+Sigma propagation uses the inverse-variance combination
 
 .. math:: \\sigma_{\\rm avg} = 1 / \\sqrt{\\sum_i 1/\\sigma_i^2}.
+
+With ``invvar_avg=True`` (default) visibility values are also combined with
+inverse-variance weights, ``<V> = sum_i(V_i/\\sigma_i^2) / sum_i(1/\\sigma_i^2)``.
+``invvar_avg=False`` reproduces the legacy direct (unweighted) mean.
+
+Conventions worth flagging for future readers:
+  - Fixed-dt bins set the output ``time`` to the bin midpoint; ``scan_avg``
+    uses the earliest sample time in each scan (matches the legacy code).
+  - Output ``(u, v)`` is the per-bin mean.
+  - ``err_type='measured'`` bootstraps the visibility-amplitude dispersion;
+    sigma is returned as half the 68% bootstrap interval width. Convention
+    inherited from the legacy code, not a standard estimator.
+  - For incoherent averaging with ``err_type='predicted'``, the per-bin
+    sigma comes from :func:`stats.inc_sig` (eq 9.86 of Thompson et al.,
+    Interferometry and Synthesis in Radio Astronomy). It is an analytic
+    Rician-SNR estimator that returns the noise level which would produce
+    the equivalent SNR penalty after Rice-debiased averaging — neither
+    stddev nor pure inverse variance.
+  - ``tau1`` / ``tau2`` (per-site opacities) are copied through from the
+    first row in each bin. They are not used as grouping keys: they are
+    basically always zero in practice, and using them would needlessly
+    fragment bins if a site's opacity drifted within a window.
 """
 
 import numpy as np
@@ -27,35 +49,51 @@ __all__ = ["coh_avg_vis", "coh_moving_avg_vis", "incoh_avg_vis"]
 
 
 def _polrep_fields(polrep):
-    """Return (vis_fields, sig_fields, out_dtype) for a given polrep."""
+    """Return (vis_fields, sig_fields, out_dtype) for a given polrep.
+
+    Field names are taken from ``ehc.POLDICT_STOKES`` / ``ehc.POLDICT_CIRC``
+    so a future mixed-pol basis can plug in by adding the corresponding
+    POLDICT entry in ``const_def`` rather than editing this module.
+    """
     if polrep == "stokes":
-        return (
-            ("vis", "qvis", "uvis", "vvis"),
-            ("sigma", "qsigma", "usigma", "vsigma"),
-            ehc.DTPOL_STOKES,
-        )
-    if polrep == "circ":
-        return (
-            ("rrvis", "llvis", "rlvis", "lrvis"),
-            ("rrsigma", "llsigma", "rlsigma", "lrsigma"),
-            ehc.DTPOL_CIRC,
-        )
-    raise ValueError(f"unsupported polrep {polrep!r}")
+        d = ehc.POLDICT_STOKES
+        out_dtype = ehc.DTPOL_STOKES
+    elif polrep == "circ":
+        d = ehc.POLDICT_CIRC
+        out_dtype = ehc.DTPOL_CIRC
+    else:
+        raise ValueError(f"unsupported polrep {polrep!r}")
+    vis = tuple(d[f"vis{i}"] for i in range(1, 5))
+    sig = tuple(d[f"sigma{i}"] for i in range(1, 5))
+    return vis, sig, out_dtype
 
 
 def _assign_scan_bin(times_hr, scans):
-    """Assign each row in `times_hr` to a scan index (or -1 if outside)."""
+    """Assign each row in `times_hr` to a scan index (or -1 if outside).
+
+    Matches the ``pandas.cut`` semantics used by the legacy code: scan
+    intervals are ``(tstart, tstop]`` (open on the left, closed on the
+    right) so a sample exactly on a scan boundary lands in the later scan
+    only, not both.
+    """
     out = np.full(len(times_hr), -1, dtype=np.int64)
     for idx, scan in enumerate(scans):
         tstart, tstop = scan[0], scan[1]
-        out[(times_hr >= tstart) & (times_hr <= tstop)] = idx
+        out[(times_hr > tstart) & (times_hr <= tstop)] = idx
     return out
 
 
 def _group_ids(*keys):
     """Map a row's tuple of key values to a contiguous group index.
 
-    Returns ``(gids, n_groups)`` where ``gids[i]`` is the group index of row i.
+    Given N input arrays of length n each (one per key column), return
+    ``(gids, n_groups)`` where ``gids[i]`` is a contiguous integer label
+    for the unique key-tuple at row i.
+
+    Example: with ``keys = (np.array(["a", "a", "b"]), np.array([0, 1, 0]))``
+    the unique tuples are ``("a", 0), ("a", 1), ("b", 0)`` and the result
+    is ``(array([0, 1, 2]), 3)`` (or another permutation; only the
+    grouping is defined, not the label order).
     """
     n = len(keys[0])
     if n == 0:
@@ -96,8 +134,19 @@ def _inverse_variance_sigma(sig_per_row, gids, n_groups):
 
 
 def _amplitude_per_group(amps_per_row, sigs_per_row, gids, n_groups,
-                         debias, err_type, num_samples):
-    """Reduce per-row (amplitude, sigma) pairs to per-group (mean_amp, sigma)."""
+                         debias, err_type, num_samples, invvar_avg):
+    """Reduce per-row (amplitude, sigma) pairs to per-group (mean_amp, sigma).
+
+    err_type:
+      - 'predicted': use the per-row sigmas. mean_incoh_avg applies Rice
+        debiasing to the amplitudes and returns the analytic Rician-SNR
+        sigma (see module docstring). When invvar_avg=True the per-group
+        amplitude mean is inverse-variance weighted; the returned sigma
+        still comes from inc_sig (predicted by the per-row sigmas).
+      - 'measured': bootstrap the amplitude dispersion within each group.
+        The reported sigma is half the 68% bootstrap interval width — a
+        convention inherited from the legacy code, not stddev.
+    """
     amp_out = np.full(n_groups, np.nan)
     sig_out = np.full(n_groups, np.nan)
     for g in range(n_groups):
@@ -107,6 +156,14 @@ def _amplitude_per_group(amps_per_row, sigs_per_row, gids, n_groups,
             continue
         if err_type == "predicted":
             a, s = mean_incoh_avg(pairs, debias=debias)
+            if invvar_avg:
+                amps_g = np.abs(amps_per_row[mask])
+                sigs_g = sigs_per_row[mask]
+                finite = (np.isfinite(amps_g) & np.isfinite(sigs_g)
+                          & (sigs_g > 0))
+                if np.any(finite):
+                    w = 1.0 / sigs_g[finite] ** 2
+                    a = np.sum(amps_g[finite] * w) / np.sum(w)
             amp_out[g] = a
             sig_out[g] = s
         else:
@@ -125,9 +182,9 @@ def _amplitude_per_group(amps_per_row, sigs_per_row, gids, n_groups,
 
 
 def _mean_complex(vis_per_row, gids, n_groups):
-    """Reduce a per-row complex visibility array to per-group complex mean.
+    """Per-group complex mean (direct, unweighted). NaN-safe.
 
-    Skips NaN entries.  Groups with no finite rows get ``NaN + NaN*1j``.
+    Groups with no finite rows get ``NaN + NaN*1j``.
     """
     finite = np.isfinite(vis_per_row.real) & np.isfinite(vis_per_row.imag)
     re = np.where(finite, vis_per_row.real, 0.0)
@@ -142,13 +199,35 @@ def _mean_complex(vis_per_row, gids, n_groups):
     return out
 
 
+def _invvar_mean_complex(vis_per_row, sig_per_row, gids, n_groups):
+    """Per-group inverse-variance weighted complex mean. NaN-safe.
+
+    ``<V>_g = sum_i (V_i / sigma_i^2) / sum_i (1 / sigma_i^2)`` over rows
+    i in group g with finite V and finite positive sigma. Groups with no
+    valid rows get ``NaN + NaN*1j``.
+    """
+    finite = (np.isfinite(vis_per_row.real) & np.isfinite(vis_per_row.imag)
+              & np.isfinite(sig_per_row) & (sig_per_row > 0))
+    inv_var = np.where(finite, 1.0 / np.maximum(sig_per_row, 1e-300) ** 2, 0.0)
+    re_w = np.where(finite, vis_per_row.real * inv_var, 0.0)
+    im_w = np.where(finite, vis_per_row.imag * inv_var, 0.0)
+    sums_re = np.bincount(gids, weights=re_w, minlength=n_groups)
+    sums_im = np.bincount(gids, weights=im_w, minlength=n_groups)
+    sums_w = np.bincount(gids, weights=inv_var, minlength=n_groups)
+    out = np.full(n_groups, np.nan + 1j * np.nan, dtype=np.complex128)
+    valid = sums_w > 0
+    out.real[valid] = sums_re[valid] / sums_w[valid]
+    out.imag[valid] = sums_im[valid] / sums_w[valid]
+    return out
+
+
 # ---------------------------------------------------------------------------
 # Public API
 # ---------------------------------------------------------------------------
 
 
-def coh_avg_vis(obs, dt=0, scan_avg=False, return_type="rec",
-                err_type="predicted", num_samples=int(1e3)):
+def coh_avg_vis(obs, dt=0, scan_avg=False, err_type="predicted",
+                num_samples=int(1e3), invvar_avg=True):
     """Coherently average visibilities into fixed time bins or per scan.
 
     Parameters
@@ -158,21 +237,20 @@ def coh_avg_vis(obs, dt=0, scan_avg=False, return_type="rec",
         Bin width in seconds.  Ignored when ``scan_avg=True``.
     scan_avg : bool
         If True, average each scan into a single bin.  Requires ``obs.scans``.
-    return_type : {'rec'}
-        Output format.  Only 'rec' is supported here; the legacy 'df' route
-        is gone.
     err_type : {'predicted', 'measured'}
         'predicted' propagates the per-row sigmas via inverse variance.
         'measured' bootstraps the dispersion of the visibility samples.
     num_samples : int
         Bootstrap resample size when ``err_type='measured'``.
+    invvar_avg : bool
+        When True (default), combine visibilities with inverse-variance
+        weights ``<V> = sum_i(V_i/sig_i^2) / sum_i(1/sig_i^2)``. When False
+        use the legacy direct (unweighted) complex mean.
 
     Returns
     -------
     np.recarray of dtype DTPOL_STOKES or DTPOL_CIRC matching ``obs.polrep``.
     """
-    if return_type != "rec":
-        raise ValueError("only return_type='rec' is supported")
     if err_type not in ("predicted", "measured"):
         raise ValueError(f"err_type must be 'predicted' or 'measured', got {err_type!r}")
     if dt <= 0 and not scan_avg:
@@ -196,7 +274,11 @@ def coh_avg_vis(obs, dt=0, scan_avg=False, return_type="rec",
     if len(data) == 0:
         return np.empty(0, dtype=out_dtype)
 
-    keys = (data["t1"], data["t2"], data["tau1"], data["tau2"], bin_id)
+    # Group on baseline + bin only. tau1/tau2 (per-site opacities) are
+    # carried through (first-row copy) but not used as grouping keys --
+    # they are basically always zero and grouping on them would fragment
+    # bins when a site's opacity drifts within a window.
+    keys = (data["t1"], data["t2"], bin_id)
     gids, n_groups = _group_ids(*keys)
     first = _first_index_per_group(gids, n_groups)
 
@@ -207,10 +289,11 @@ def coh_avg_vis(obs, dt=0, scan_avg=False, return_type="rec",
     out["tau2"] = data["tau2"][first]
     out["tint"] = np.bincount(gids, weights=data["tint"], minlength=n_groups)
     counts = np.bincount(gids, minlength=n_groups).astype(np.float64)
+    # (u, v) are averaged within each bin.
     out["u"] = np.bincount(gids, weights=data["u"], minlength=n_groups) / counts
     out["v"] = np.bincount(gids, weights=data["v"], minlength=n_groups) / counts
 
-    # Time of the bin: midpoint for fixed-dt, scan min for scan_avg.
+    # Output time: midpoint of the dt window, or earliest sample in the scan.
     if scan_avg:
         time_min = np.full(n_groups, np.inf)
         np.minimum.at(time_min, gids, data["time"])
@@ -219,14 +302,21 @@ def coh_avg_vis(obs, dt=0, scan_avg=False, return_type="rec",
         bin_id_per_group = bin_id[first]
         out["time"] = (bin_id_per_group * dt + dt / 2.0) / 3600.0
 
-    # Visibilities (complex mean) and sigmas (inverse-variance).
-    for vf in vis_fields:
-        out[vf] = _mean_complex(data[vf], gids, n_groups)
+    # Visibilities: inverse-variance weighted (default) or direct mean.
+    for vf, sf in zip(vis_fields, sig_fields):
+        if invvar_avg:
+            out[vf] = _invvar_mean_complex(data[vf], data[sf], gids, n_groups)
+        else:
+            out[vf] = _mean_complex(data[vf], gids, n_groups)
 
+    # Sigmas.
     if err_type == "predicted":
         for sf in sig_fields:
             out[sf] = _inverse_variance_sigma(data[sf], gids, n_groups)
-    else:  # 'measured': bootstrap the visibility-amplitude dispersion per group.
+    else:
+        # 'measured': bootstrap the per-bin visibility-amplitude dispersion.
+        # The returned sigma is half the 68% bootstrap interval width --
+        # a convention from the legacy code, not stddev.
         for vf, sf in zip(vis_fields, sig_fields):
             sig_out = np.full(n_groups, np.nan)
             for g in range(n_groups):
@@ -241,7 +331,7 @@ def coh_avg_vis(obs, dt=0, scan_avg=False, return_type="rec",
     return out
 
 
-def coh_moving_avg_vis(obs, dt=50, return_type="rec"):
+def coh_moving_avg_vis(obs, dt=50, invvar_avg=True):
     """Coherent moving-window average over time, per baseline.
 
     For each row at time ``t``, average over rows in the same baseline whose
@@ -253,15 +343,15 @@ def coh_moving_avg_vis(obs, dt=50, return_type="rec"):
     obs : ehtim.obsdata.Obsdata
     dt : float
         Window full-width in seconds.
-    return_type : {'rec'}
-        Output format.  Only 'rec' is supported.
+    invvar_avg : bool
+        When True (default), combine visibilities within each window with
+        inverse-variance weights. When False use the direct (unweighted)
+        complex mean (legacy behavior).
 
     Returns
     -------
     np.recarray of dtype DTPOL_STOKES or DTPOL_CIRC matching ``obs.polrep``.
     """
-    if return_type != "rec":
-        raise ValueError("only return_type='rec' is supported")
     if dt <= 0:
         raise ValueError("dt must be positive")
 
@@ -274,7 +364,8 @@ def coh_moving_avg_vis(obs, dt=50, return_type="rec"):
     half = dt / 2.0 / 3600.0  # half-width in hours
     out = data.copy()
 
-    # Group rows by baseline (t1, t2).
+    # Group rows by baseline (t1, t2). tau1/tau2 are NOT grouped on; see
+    # the module docstring.
     bl_keys = (data["t1"], data["t2"])
     bl_ids, _ = _group_ids(*bl_keys)
 
@@ -290,15 +381,32 @@ def coh_moving_avg_vis(obs, dt=50, return_type="rec"):
         left = np.searchsorted(sorted_times, sorted_times - half, side="left")
         right = np.searchsorted(sorted_times, sorted_times + half, side="right")
 
-        for vf in vis_fields:
+        for vf, sf in zip(vis_fields, sig_fields):
             vals = data[vf][sorted_rows]
-            re_cs = np.concatenate(([0.0], np.cumsum(np.where(np.isfinite(vals), vals.real, 0.0))))
-            im_cs = np.concatenate(([0.0], np.cumsum(np.where(np.isfinite(vals), vals.imag, 0.0))))
-            cnt_cs = np.concatenate(([0.0], np.cumsum(np.isfinite(vals).astype(np.float64))))
-            cnt = cnt_cs[right] - cnt_cs[left]
-            re_mean = np.where(cnt > 0, (re_cs[right] - re_cs[left]) / np.maximum(cnt, 1.0), np.nan)
-            im_mean = np.where(cnt > 0, (im_cs[right] - im_cs[left]) / np.maximum(cnt, 1.0), np.nan)
-            out[vf][sorted_rows] = re_mean + 1j * im_mean
+            sigs = data[sf][sorted_rows]
+            if invvar_avg:
+                finite_v = np.isfinite(vals.real) & np.isfinite(vals.imag)
+                finite_s = np.isfinite(sigs) & (sigs > 0)
+                finite = finite_v & finite_s
+                inv_var = np.where(finite, 1.0 / np.maximum(sigs, 1e-300) ** 2, 0.0)
+                re_w = np.where(finite, vals.real * inv_var, 0.0)
+                im_w = np.where(finite, vals.imag * inv_var, 0.0)
+                re_cs = np.concatenate(([0.0], np.cumsum(re_w)))
+                im_cs = np.concatenate(([0.0], np.cumsum(im_w)))
+                w_cs = np.concatenate(([0.0], np.cumsum(inv_var)))
+                w = w_cs[right] - w_cs[left]
+                re_mean = np.where(w > 0, (re_cs[right] - re_cs[left]) / np.maximum(w, 1e-300), np.nan)
+                im_mean = np.where(w > 0, (im_cs[right] - im_cs[left]) / np.maximum(w, 1e-300), np.nan)
+                out[vf][sorted_rows] = re_mean + 1j * im_mean
+            else:
+                finite = np.isfinite(vals.real) & np.isfinite(vals.imag)
+                re_cs = np.concatenate(([0.0], np.cumsum(np.where(finite, vals.real, 0.0))))
+                im_cs = np.concatenate(([0.0], np.cumsum(np.where(finite, vals.imag, 0.0))))
+                cnt_cs = np.concatenate(([0.0], np.cumsum(finite.astype(np.float64))))
+                cnt = cnt_cs[right] - cnt_cs[left]
+                re_mean = np.where(cnt > 0, (re_cs[right] - re_cs[left]) / np.maximum(cnt, 1.0), np.nan)
+                im_mean = np.where(cnt > 0, (im_cs[right] - im_cs[left]) / np.maximum(cnt, 1.0), np.nan)
+                out[vf][sorted_rows] = re_mean + 1j * im_mean
 
         for sf in sig_fields:
             vals = data[sf][sorted_rows]
@@ -311,37 +419,39 @@ def coh_moving_avg_vis(obs, dt=50, return_type="rec"):
     return out
 
 
-def incoh_avg_vis(obs, dt=0, debias=True, scan_avg=False, return_type="rec",
-                  rec_type="vis", err_type="predicted", num_samples=int(1e3)):
+def incoh_avg_vis(obs, dt=0, debias=True, scan_avg=False, rec_type="vis",
+                  err_type="predicted", num_samples=int(1e3), invvar_avg=True):
     """Incoherently (amplitude) average visibilities, with optional Rice debias.
 
     Parameters
     ----------
     obs : ehtim.obsdata.Obsdata
-        Must be polrep='stokes'.
+        Must be polrep='stokes' (the rec_type='vis' / 'amp' field names below
+        and the Rice-debiasing helpers are written for Stokes I, Q, U, V).
     dt : float
         Bin width in seconds.  Ignored when ``scan_avg=True``.
     debias : bool
         Apply Rice debiasing to per-bin mean amplitude.
     scan_avg : bool
         If True, average each scan into a single bin.
-    return_type : {'rec'}
-        Output format.  Only 'rec' is supported.
     rec_type : {'vis', 'amp'}
         Output recarray dtype.  ``'vis'`` returns DTPOL_STOKES (the I,Q,U,V
         amplitudes packed into the real parts of the vis fields);
         ``'amp'`` returns DTAMP.
     err_type : {'predicted', 'measured'}
-        Sigma propagation method.
+        Sigma propagation method. See module docstring.
     num_samples : int
         Bootstrap resample size when ``err_type='measured'``.
+    invvar_avg : bool
+        When True (default) and ``err_type='predicted'``, the per-bin
+        amplitude mean is inverse-variance weighted by the per-row sigmas
+        before Rice debiasing reuses the analytic Rician-SNR estimator for
+        the output sigma. When False, falls back to the legacy direct mean.
 
     Returns
     -------
     np.recarray
     """
-    if return_type != "rec":
-        raise ValueError("only return_type='rec' is supported")
     if err_type not in ("predicted", "measured"):
         raise ValueError(f"err_type must be 'predicted' or 'measured', got {err_type!r}")
     if rec_type not in ("vis", "amp"):
@@ -363,6 +473,9 @@ def incoh_avg_vis(obs, dt=0, debias=True, scan_avg=False, return_type="rec",
     else:
         bin_id = np.floor(data["time"] * 3600.0 / dt).astype(np.int64)
 
+    # Field names: Stokes I, Q, U, V for rec_type='vis'; just the I
+    # amplitude for rec_type='amp'. obs.polrep is enforced to 'stokes'
+    # above; this list does not generalize to other bases.
     if rec_type == "vis":
         out_dtype = ehc.DTPOL_STOKES
         amp_fields = ("vis", "qvis", "uvis", "vvis")
@@ -375,7 +488,9 @@ def incoh_avg_vis(obs, dt=0, debias=True, scan_avg=False, return_type="rec",
     if len(data) == 0:
         return np.empty(0, dtype=out_dtype)
 
-    keys = (data["t1"], data["t2"], data["tau1"], data["tau2"], bin_id)
+    # Group on baseline + bin only. See coh_avg_vis / module docstring on
+    # why tau1, tau2 are carried through but not grouping keys.
+    keys = (data["t1"], data["t2"], bin_id)
     gids, n_groups = _group_ids(*keys)
     first = _first_index_per_group(gids, n_groups)
 
@@ -384,9 +499,11 @@ def incoh_avg_vis(obs, dt=0, debias=True, scan_avg=False, return_type="rec",
     out["t2"] = data["t2"][first]
     out["tint"] = np.bincount(gids, weights=data["tint"], minlength=n_groups)
     counts = np.bincount(gids, minlength=n_groups).astype(np.float64)
+    # (u, v) are averaged within each bin.
     out["u"] = np.bincount(gids, weights=data["u"], minlength=n_groups) / counts
     out["v"] = np.bincount(gids, weights=data["v"], minlength=n_groups) / counts
 
+    # Output time: bin midpoint for fixed dt, earliest sample in the scan.
     if scan_avg:
         time_min = np.full(n_groups, np.inf)
         np.minimum.at(time_min, gids, data["time"])
@@ -404,6 +521,7 @@ def incoh_avg_vis(obs, dt=0, debias=True, scan_avg=False, return_type="rec",
         amp_out, sig_out = _amplitude_per_group(
             np.abs(data[vf]), data[sf], gids, n_groups,
             debias=debias, err_type=err_type, num_samples=num_samples,
+            invvar_avg=invvar_avg,
         )
         if rec_type == "vis":
             out[vf] = amp_out  # cast to complex implicitly via dtype

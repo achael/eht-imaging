@@ -1267,9 +1267,9 @@ class Obsdata:
             return self.copy()
 
         if moving:
-            vis_avg = ehavg.coh_moving_avg_vis(self, dt=inttime, return_type='rec')
+            vis_avg = ehavg.coh_moving_avg_vis(self, dt=inttime)
         else:
-            vis_avg = ehavg.coh_avg_vis(self, dt=inttime, return_type='rec',
+            vis_avg = ehavg.coh_avg_vis(self, dt=inttime,
                                         err_type='predicted', scan_avg=scan_avg)
 
         arglist, argdict = self.obsdata_args()
@@ -1293,7 +1293,7 @@ class Obsdata:
 
         print('Incoherently averaging data, putting phases to zero!')
         amp_rec = ehavg.incoh_avg_vis(self, dt=inttime, debias=debias, scan_avg=scan_avg,
-                                      return_type='rec', rec_type='vis', err_type=err_type)
+                                      rec_type='vis', err_type=err_type)
         arglist, argdict = self.obsdata_args()
         arglist[DATPOS] = amp_rec
         out = Obsdata(*arglist, **argdict)
