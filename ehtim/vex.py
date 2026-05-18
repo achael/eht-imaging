@@ -319,7 +319,7 @@ def vexdate_to_MJD_hr(vexdate):
     time = re.findall(r"[-+]?\d+[\.]?\d*", vexdate)
     year = int(time[0])
     date = int(time[1])
-    yeardatetime = "{:04d}".format(year) + ':' + "{:03d}".format(date) + ":00:00:00.000"
+    yeardatetime = f"{year:04d}" + ':' + f"{date:03d}" + ":00:00:00.000"
     t = Time(yeardatetime, format='yday')
     mjd = t.mjd
     hour = int(time[2]) + float(time[3]) / 60. + float(time[4]) / 60. / 60.
