@@ -16,12 +16,7 @@
 #    You should have received a copy of the GNU General Public License
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-from __future__ import division
-from __future__ import print_function
 
-from builtins import str
-from builtins import range
-from builtins import object
 
 import functools
 
@@ -319,7 +314,7 @@ def show_noblock(pause=0.001):
         plt.pause(pause)
         plt.draw()
         plt.pause(pause)
-                
+
 FIELD_LABELS = {'time': 'Time',
                 'time_utc': 'Time (UTC)',
                 'time_gmst': 'Time (GMST)',
