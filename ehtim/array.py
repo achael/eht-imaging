@@ -53,7 +53,7 @@ class Array(object):
     """
 
     def __init__(self, tarr, ephem={}):
-        self.tarr = tarr
+        self.tarr = ehc.upgrade_tarr(tarr)
         self.ephem = ephem
 
         # check to see if ephemeris is correct
@@ -70,11 +70,19 @@ class Array(object):
         # Dictionary of array indices for site names
         self.tkey = {self.tarr[i]['site']: i for i in range(len(self.tarr))}
 
-    @property 
+    def __setstate__(self, state):
+        # Silently upgrade legacy pickles to the current mixedpol schema.
+        if 'tarr' in state:
+            state['tarr'] = ehc.upgrade_tarr(state['tarr'])
+        if '_tarr' in state:
+            state['_tarr'] = ehc.upgrade_tarr(state['_tarr'])
+        self.__dict__.update(state)
+
+    @property
     def tarr(self):
         return self._tarr
-        
-    @tarr.setter 
+
+    @tarr.setter
     def tarr(self, tarr):
         self._tarr = tarr
         self.tkey = {tarr[i]['site']: i for i in range(len(tarr))}
@@ -215,21 +223,24 @@ class Array(object):
 
         return axes
 
-    def add_site(self, site, coords, sefd=10000, 
-                 fr_par=0, fr_elev=0, fr_off=0, 
+    def add_site(self, site, coords, sefd=10000,
+                 fr_par=0, fr_elev=0, fr_off=0,
                  dr=0.+0.j, dl=0.+0.j):
-    
+
         """Add a ground station to the array
-             
+
+           TODO (Phase 2 mixed-pol): extend signature with `feed_type='rl'` and
+           per-feed sefd/d-term kwargs (sefd_p1/sefd_p2/d_p1/d_p2). Phase 1
+           hardcodes feed_type='rl' so legacy circular workflows are unchanged.
         """
         tarr_old = self.tarr.copy()
         ephem_old = self.ephem.copy()
-        
-        
-        tarr_newline = np.array((str(site), float(coords[0]), float(coords[1]), float(coords[2]), 
-                                 float(sefd), float(sefd), 
-                                 dr, dl, 
-                                 float(fr_par), float(fr_elev), float(fr_off)), dtype=ehc.DTARR)
+
+
+        tarr_newline = np.array((str(site), float(coords[0]), float(coords[1]), float(coords[2]),
+                                 float(sefd), float(sefd),
+                                 dr, dl,
+                                 float(fr_par), float(fr_elev), float(fr_off), 'rl'), dtype=ehc.DTARR)
         tarr_new = np.append(tarr_old, tarr_newline)
         
         arr_out = Array(tarr_new, ephem_old)
@@ -256,18 +267,20 @@ class Array(object):
     def add_satellite_tle(self, tlelist, sefd=10000):
     
         """Add an earth-orbiting satellite to the array from a TLE
-        
-           Args: 
+
+           Args:
              tlearr (str) : 3 element list with [name, tle line 1, tle line 2] as strings
-             sefd (float) : assumed sefd for the array file (assumes sefdl = sefdr)     
+             sefd (float) : assumed sefd for the array file (assumes sefdl = sefdr)
+
+           TODO (Phase 2 mixed-pol): extend signature with feed_type kwarg.
         """
         satname = tlearr[0]
         tarr_new = self.tarr.copy()
         ephem_new = self.ephem.copy()
-        
+
         tarr_newline = np.array((str(satname), 0., 0., 0.,
-                                 float(sefd), float(sefd), 
-                                 0., 0., 0., 0., 0.), dtype=ehc.DTARR)
+                                 float(sefd), float(sefd),
+                                 0., 0., 0., 0., 0., 'rl'), dtype=ehc.DTARR)
         tarr_new = np.append(tarr_new, tarr_newline)
         ephem_new[satname] = tlearr
         arr_out = Array(tarr_new, ephem_new)
@@ -281,19 +294,21 @@ class Array(object):
                                sefd=10000):
         """Add an earth-orbiting satellite to the array from simple keplerian elements
            perfect keplerian orbit is assumed, no derivatives
-                   
-           Args: 
+
+           Args:
                perigee time given in mjd
                period given in days
                inclination, arg_perigee, long_ascending given in degrees
+
+           TODO (Phase 2 mixed-pol): extend signature with feed_type kwarg.
         """
 
         tarr_new = self.tarr.copy()
         ephem_new = self.ephem.copy()
-        
+
         tarr_newline = np.array((str(satname), 0., 0., 0.,
-                                 float(sefd), float(sefd), 
-                                 0., 0., 0., 0., 0.), dtype=ehc.DTARR)
+                                 float(sefd), float(sefd),
+                                 0., 0., 0., 0., 0., 'rl'), dtype=ehc.DTARR)
         tarr_new = np.append(tarr_new, tarr_newline)
         
         ephem_new[satname] = [perigee_mjd, period_days, eccentricity, inclination, arg_perigee, long_ascending]

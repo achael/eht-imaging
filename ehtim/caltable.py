@@ -87,11 +87,24 @@ class Caltable:
         self.timetype = timetype
 
         # Dictionary of array indices for site names
-        self.tarr = tarr
+        self.tarr = ehc.upgrade_tarr(tarr)
         self.tkey = {self.tarr[i]['site']: i for i in range(len(self.tarr))}
 
-        # Save the data
-        self.data = datadict
+        # Save the data (upgrade per-site DTCAL recarrays as needed)
+        if isinstance(datadict, dict):
+            self.data = {site: ehc.upgrade_dtcal_circ(d)
+                         for site, d in datadict.items()}
+        else:
+            self.data = datadict
+
+    def __setstate__(self, state):
+        # Silently upgrade legacy pickles to the current mixedpol schema.
+        if 'tarr' in state:
+            state['tarr'] = ehc.upgrade_tarr(state['tarr'])
+        if 'data' in state and isinstance(state['data'], dict):
+            state['data'] = {site: ehc.upgrade_dtcal_circ(d)
+                             for site, d in state['data'].items()}
+        self.__dict__.update(state)
 
     def copy(self):
         """Copy the observation object.

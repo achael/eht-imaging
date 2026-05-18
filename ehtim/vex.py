@@ -172,7 +172,7 @@ class Vex(object):
         # mimic the function "load_array(filename)"
         # TODO this does not store d-term and pol cal. information!
         tdataout = [np.array((x[0], float(x[1]), float(x[2]), float(x[3]), float(x[4]), float(x[4]),
-                              0.0, 0.0, 0.0, 0.0, 0.0),
+                              0.0, 0.0, 0.0, 0.0, 0.0, 'rl'),
                              dtype=ehc.DTARR) for x in sites]
 
         tdataout = np.array(tdataout)
