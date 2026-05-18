@@ -1430,7 +1430,7 @@ class TestFourierGridParams:
         assert fp.nfft_eps == 1e-12
 
     def test_defaults_preserved(self, gauss_im, observe, initialize_imager):
-        from ehtim.imager import (
+        from ehtim.const_def import (
             FFT_INTERP_DEFAULT,
             FFT_PAD_DEFAULT,
             GRIDDER_CONV_FUNC_DEFAULT,

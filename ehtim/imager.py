@@ -33,6 +33,13 @@ import ehtim.const_def as ehc
 import ehtim.image
 import ehtim.imaging.imager_utils as imutils
 import ehtim.imaging.pol_imager_utils as polutils
+from ehtim.const_def import (
+    FFT_INTERP_DEFAULT,
+    FFT_PAD_DEFAULT,
+    GRIDDER_CONV_FUNC_DEFAULT,
+    GRIDDER_P_RAD_DEFAULT,
+    NFFT_EPS_DEFAULT,
+)
 from ehtim.imaging.imager_backend import (
     DATATERMS,
     DATATERMS_POL,
@@ -62,12 +69,6 @@ NHIST = 50   # number of steps to store for hessian approx
 MAXLS = 40   # maximum number of line search steps in BFGS-B
 STOP = 1e-6  # convergence criterion
 EPS = 1e-8
-
-GRIDDER_P_RAD_DEFAULT = 2
-GRIDDER_CONV_FUNC_DEFAULT = 'gaussian'
-FFT_PAD_DEFAULT = 2
-FFT_INTERP_DEFAULT = 3
-NFFT_EPS_DEFAULT = 1e-9
 
 REG_DEFAULT = {'simple': 1}
 DAT_DEFAULT = {'vis': 100}
