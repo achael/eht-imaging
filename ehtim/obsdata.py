@@ -1196,8 +1196,8 @@ class Obsdata:
         ivec = imstokes.imvec
         rhovec = np.sqrt(imstokes.qvec**2 + imstokes.uvec**2 + imstokes.vvec**2) / ivec
         phivec = np.angle(imstokes.qvec + 1j * imstokes.uvec)
-        # V = I*rho*sin(psi) per pol_imager_utils.make_v_image, not V = I*sin(psi).
-        psivec = np.arcsin(imstokes.vvec / (ivec * rhovec))
+        psivec = np.where(rhovec > 0, np.arcsin(np.clip(imstokes.vvec / (ivec * rhovec), -1, 1)), 0.0)
+
         if len(mask) > 0 and np.any(np.invert(mask)):
             ivec = ivec[mask]
             rhovec = rhovec[mask]
