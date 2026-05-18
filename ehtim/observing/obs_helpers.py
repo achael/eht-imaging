@@ -1330,9 +1330,13 @@ class FINUFFTPlan:
     Set .f_hat (shape (xdim, ydim), complex128) and call .trafo() for the
     forward transform; the result lands in .f. Set .f (length len(uv),
     complex128) and call .adjoint(); the result lands in .f_hat.
+
+    The .f_hat / .f / .trafo() / .adjoint() API surface is preserved for
+    backwards compatibility with the old pynfft.NFFT implementation, so
+    every existing NFFT consumer in the codebase stays untouched.
     """
 
-    def __init__(self, xdim, ydim, uv_finufft, eps=1e-9):
+    def __init__(self, xdim, ydim, uv_finufft, eps=ehc.NFFT_EPS_DEFAULT):
         x = np.ascontiguousarray(uv_finufft[:, 0])
         y = np.ascontiguousarray(uv_finufft[:, 1])
         self._fwd = finufft.Plan(2, (xdim, ydim), n_trans=1, eps=eps,
@@ -1361,11 +1365,13 @@ class NFFTInfo:
     arrays). Tighten to 1e-12 for ~1e6 dynamic range; relax to 1e-6 for
     faster low-SNR work where data noise dominates.
 
-    npad and p_rad are accepted for backward compatibility but unused:
-    finufft chooses its own oversampling and kernel width from eps.
+    npad and p_rad are accepted for backwards compatibility with the
+    old pynfft.NFFT implementation but are unused under finufft, which
+    chooses its own oversampling and kernel width from eps.
     """
 
-    def __init__(self, xdim, ydim, psize, pulse, npad, p_rad, uv, eps=1e-9):
+    def __init__(self, xdim, ydim, psize, pulse, npad, p_rad, uv,
+                 eps=ehc.NFFT_EPS_DEFAULT):
         self.xdim = int(xdim)
         self.ydim = int(ydim)
         self.psize = psize
