@@ -18,7 +18,6 @@
 
 
 import copy
-from builtins import range, str
 
 import matplotlib
 import matplotlib.pyplot as plt
@@ -59,9 +58,9 @@ class Array:
                 try:
                     elen = len(ephem[sitename])
                 except NameError:
-                    raise Exception('no ephemeris for site %s !' % sitename)
+                    raise Exception(f'no ephemeris for site {sitename} !')
                 if elen != 3:
-                    raise Exception('wrong ephemeris format for site %s !' % sitename)
+                    raise Exception(f'wrong ephemeris format for site {sitename} !')
 
         # Dictionary of array indices for site names
         self.tkey = {self.tarr[i]['site']: i for i in range(len(self.tarr))}
@@ -136,7 +135,7 @@ class Array:
                no_elevcut_space (bool): if True, do not apply elevation cut to orbiters
                tau (float): the base opacity at all sites, or a dict giving one opacity per site
                fix_theta_GMST (bool): if True, stops earth rotation to sample fixed u,v points
-               
+
            Returns:
                Obsdata: an observation object with no data
 
@@ -191,13 +190,13 @@ class Array:
                label (str) : title for plot
                legend (bool) : add telescope legend or not
                clist (list) : list of colors for different stations
-               rangex (list) : lower and upper x-axis limits  
-               rangey (list) : lower and upper y-axis limits 
+               rangex (list) : lower and upper x-axis limits
+               rangey (list) : lower and upper y-axis limits
                markersize (float) : marker size
                show (bool) : display the plot or not
                grid (bool) : add a grid to the plot or not
-               export_pdf (str) : save a pdf file to this path 
-               
+               export_pdf (str) : save a pdf file to this path
+
            Returns:
                matplotlib.axes
         """
@@ -244,7 +243,7 @@ class Array:
 
     def remove_site(self, site):
         """Remove a site from the array
-           
+
         """
         tarr_old = self.tarr.copy()
         ephem_old = self.ephem.copy()
@@ -255,7 +254,7 @@ class Array:
             if site in ephem_old.keys():
                 ephem_new.pop(site)
         except:
-            raise Exception("could not find site %s to delete from Array!"%site)
+            raise Exception(f"could not find site {site} to delete from Array!")
 
         arr_out = Array(tarr_new, ephem_new)
         return arr_out
@@ -335,7 +334,7 @@ class Array:
                 sat = obsh.sat_skyfield_from_elements(satellite, tstart_mjd,
                                                       elements[0],elements[1],elements[2],elements[3],elements[4],elements[5])
             else:
-                raise Exception("ephemeris format not recognized for %s"%satellite)
+                raise Exception(f"ephemeris format not recognized for {satellite}")
 
             # get GCRS positions
             fracmjds = np.linspace(tstart_mjd, tstop_mjd, npoints)
