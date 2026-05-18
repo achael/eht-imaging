@@ -20,7 +20,6 @@
 
 import os
 import re
-from builtins import range
 
 import numpy as np
 from astropy.time import Time
@@ -230,7 +229,7 @@ class Vex:
         for i in range(len(self.metalist)):
             if sname in self.metalist[i][0]:
                 return self.metalist[i]
-        print('No sector named %s' % sname)
+        print(f'No sector named {sname}')
         return False
 
     # Function to get a value of 'vname' in a line which has format of
@@ -283,7 +282,7 @@ class Vex:
         for i in range(len(sites)):
             if sites[i].split()[0] == station:
                 return float(re.findall(r"[-+]?\d+[\.]?\d*", sites[i])[3])
-        print('No station named %s' % station)
+        print(f'No station named {station}')
         return 10000.  # some arbitrary value
 
     # Find the time that any station starts observing the source in MJD.
@@ -320,7 +319,7 @@ def vexdate_to_MJD_hr(vexdate):
     time = re.findall(r"[-+]?\d+[\.]?\d*", vexdate)
     year = int(time[0])
     date = int(time[1])
-    yeardatetime = ("%04i" % year) + ':' + ("%03i" % date) + ":00:00:00.000"
+    yeardatetime = "{:04d}".format(year) + ':' + "{:03d}".format(date) + ":00:00:00.000"
     t = Time(yeardatetime, format='yday')
     mjd = t.mjd
     hour = int(time[2]) + float(time[3]) / 60. + float(time[4]) / 60. / 60.
