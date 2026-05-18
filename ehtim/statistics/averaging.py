@@ -133,6 +133,23 @@ def _inverse_variance_sigma(sig_per_row, gids, n_groups):
     return out
 
 
+def _legacy_sigma(sig_per_row, gids, n_groups):
+    """Reduce per-row sigma to per-group ``sqrt(sum_i sigma_i^2) / N``.
+
+    The legacy formula used by ``dataframes.coh_avg_vis``. NOT inverse
+    variance; kept here only so ``invvar_avg=False`` reproduces legacy
+    output bit-for-bit. Groups with no finite rows get ``NaN``.
+    """
+    finite = np.isfinite(sig_per_row) & (sig_per_row > 0)
+    sq = np.where(finite, sig_per_row ** 2, 0.0)
+    sums = np.bincount(gids, weights=sq, minlength=n_groups)
+    counts = np.bincount(gids, weights=finite.astype(np.float64), minlength=n_groups)
+    out = np.full(n_groups, np.nan)
+    valid = counts > 0
+    out[valid] = np.sqrt(sums[valid]) / counts[valid]
+    return out
+
+
 def _amplitude_per_group(amps_per_row, sigs_per_row, gids, n_groups,
                          debias, err_type, num_samples, invvar_avg):
     """Reduce per-row (amplitude, sigma) pairs to per-group (mean_amp, sigma).
@@ -309,10 +326,13 @@ def coh_avg_vis(obs, dt=0, scan_avg=False, err_type="predicted",
         else:
             out[vf] = _mean_complex(data[vf], gids, n_groups)
 
-    # Sigmas.
+    # Sigmas. invvar_avg gates the predicted-sigma branch so
+    # invvar_avg=False reproduces the legacy sqrt(sum(sig^2))/N formula
+    # bit-for-bit. The bootstrap branch is unchanged either way.
     if err_type == "predicted":
+        sigma_fn = _inverse_variance_sigma if invvar_avg else _legacy_sigma
         for sf in sig_fields:
-            out[sf] = _inverse_variance_sigma(data[sf], gids, n_groups)
+            out[sf] = sigma_fn(data[sf], gids, n_groups)
     else:
         # 'measured': bootstrap the per-bin visibility-amplitude dispersion.
         # The returned sigma is half the 68% bootstrap interval width --
@@ -411,10 +431,23 @@ def coh_moving_avg_vis(obs, dt=50, invvar_avg=True):
         for sf in sig_fields:
             vals = data[sf][sorted_rows]
             finite = np.isfinite(vals) & (vals > 0)
-            inv_var = np.where(finite, 1.0 / np.maximum(vals, 1e-300) ** 2, 0.0)
-            inv_var_cs = np.concatenate(([0.0], np.cumsum(inv_var)))
-            sums = inv_var_cs[right] - inv_var_cs[left]
-            out[sf][sorted_rows] = np.where(sums > 0, 1.0 / np.sqrt(np.maximum(sums, 1e-300)), np.nan)
+            if invvar_avg:
+                inv_var = np.where(finite, 1.0 / np.maximum(vals, 1e-300) ** 2, 0.0)
+                inv_var_cs = np.concatenate(([0.0], np.cumsum(inv_var)))
+                sums = inv_var_cs[right] - inv_var_cs[left]
+                out[sf][sorted_rows] = np.where(
+                    sums > 0, 1.0 / np.sqrt(np.maximum(sums, 1e-300)), np.nan,
+                )
+            else:
+                # Legacy: sqrt(sum(sig_i^2)) / N within the window.
+                sq = np.where(finite, vals ** 2, 0.0)
+                sq_cs = np.concatenate(([0.0], np.cumsum(sq)))
+                cnt_cs = np.concatenate(([0.0], np.cumsum(finite.astype(np.float64))))
+                sums = sq_cs[right] - sq_cs[left]
+                cnt = cnt_cs[right] - cnt_cs[left]
+                out[sf][sorted_rows] = np.where(
+                    cnt > 0, np.sqrt(sums) / np.maximum(cnt, 1.0), np.nan,
+                )
 
     return out
 

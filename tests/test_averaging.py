@@ -317,12 +317,16 @@ def test_parity_coh_avg_vis_varied_sigma(_legacy_ehdf):
     assert abs(new_invvar["vis"][0] - new_direct["vis"][0]) > 1e-3
 
 
-def test_parity_coh_avg_vis_sigma_differs_by_inverse_variance(_legacy_ehdf):
-    """Sigma values intentionally differ — the new code fixes the bug.
+def test_parity_coh_avg_vis_sigma_invvar_vs_legacy(_legacy_ehdf):
+    """invvar_avg gates the predicted-sigma branch as well as the vis mean.
 
-    For two equal-time-bin samples with sigmas (0.1, 0.2), the new
-    inverse-variance value is 1/sqrt(125) ≈ 0.0894; the legacy formula
-    sqrt((0.01 + 0.04)/4) ≈ 0.1118.
+    - invvar_avg=False : reproduces the legacy sqrt(sum(sig_i^2))/N formula
+      bit-for-bit, so new vs legacy is a true parity check.
+    - invvar_avg=True (default): uses 1/sqrt(sum(1/sig_i^2)) — analytically
+      the correct error on the inverse-variance mean.
+
+    With sigmas [0.1, 0.2] the two formulas differ by ~25%, so the
+    divergence assertion is strict.
     """
     times = np.array([0.0, 1.0 / 3600.0])
     obs = _make_obs(times_hr=times)
@@ -331,16 +335,21 @@ def test_parity_coh_avg_vis_sigma_differs_by_inverse_variance(_legacy_ehdf):
     obs.data["usigma"] = np.array([0.1, 0.2])
     obs.data["vsigma"] = np.array([0.1, 0.2])
 
-    new = coh_avg_vis(obs, dt=60.0)
+    new_legacy = coh_avg_vis(obs, dt=60.0, invvar_avg=False)
+    new_default = coh_avg_vis(obs, dt=60.0)  # invvar_avg=True
     old = _legacy_ehdf.coh_avg_vis(obs, dt=60.0, return_type='rec')
 
-    expected_new = 1.0 / np.sqrt(1.0 / 0.1**2 + 1.0 / 0.2**2)
-    expected_old = np.sqrt((0.1**2 + 0.2**2) / 4)
+    # invvar_avg=False matches legacy on all four pol sigmas.
+    for sf in ("sigma", "qsigma", "usigma", "vsigma"):
+        assert new_legacy[sf][0] == pytest.approx(old[sf][0], rel=1e-12), \
+            f"invvar_avg=False should reproduce legacy {sf} exactly"
 
-    assert new["sigma"][0] == pytest.approx(expected_new, rel=1e-12)
-    assert old["sigma"][0] == pytest.approx(expected_old, rel=1e-12)
-    # And the two formulas must genuinely disagree on non-uniform sigmas.
-    assert abs(new["sigma"][0] - old["sigma"][0]) > 1e-4
+    # invvar_avg=True returns the analytic inverse-variance sigma.
+    expected_invvar = 1.0 / np.sqrt(1.0 / 0.1**2 + 1.0 / 0.2**2)
+    assert new_default["sigma"][0] == pytest.approx(expected_invvar, rel=1e-12)
+
+    # And the two modes genuinely disagree on non-uniform sigmas.
+    assert abs(new_default["sigma"][0] - new_legacy["sigma"][0]) > 1e-4
 
 
 def test_parity_incoh_avg_vis_amplitude_matches_legacy(obs_direct, _legacy_ehdf):
