@@ -168,7 +168,7 @@ def feed_dtype_for_polrep(polrep):
                 'lin': DTPOL_LIN, 'mixed': DTPOL_MIXED}[polrep]
     except KeyError:
         raise ValueError("polrep must be one of "
-                         "{'stokes', 'circ', 'lin', 'mixed'}, got %r" % polrep)
+                         f"{{'stokes', 'circ', 'lin', 'mixed'}}, got {polrep!r}")
 
 
 def upgrade_tarr(tarr):
@@ -238,17 +238,17 @@ def feed_poldict(t1_feed, t2_feed):
     """
     if t1_feed == '??' or t2_feed == '??':
         raise ValueError("feed_poldict: unknown feed_type '??' "
-                         "(t1=%r, t2=%r)" % (t1_feed, t2_feed))
+                         f"(t1={t1_feed!r}, t2={t2_feed!r})")
     p1a, p2a = t1_feed[0], t1_feed[1]
     p1b, p2b = t2_feed[0], t2_feed[1]
-    return {'vis1': '%s%svis' % (p1a, p1b),
-            'vis2': '%s%svis' % (p2a, p2b),
-            'vis3': '%s%svis' % (p1a, p2b),
-            'vis4': '%s%svis' % (p2a, p1b),
-            'sigma1': '%s%ssigma' % (p1a, p1b),
-            'sigma2': '%s%ssigma' % (p2a, p2b),
-            'sigma3': '%s%ssigma' % (p1a, p2b),
-            'sigma4': '%s%ssigma' % (p2a, p1b)}
+    return {'vis1': f'{p1a}{p1b}vis',
+            'vis2': f'{p2a}{p2b}vis',
+            'vis3': f'{p1a}{p2b}vis',
+            'vis4': f'{p2a}{p1b}vis',
+            'sigma1': f'{p1a}{p1b}sigma',
+            'sigma2': f'{p2a}{p2b}sigma',
+            'sigma3': f'{p1a}{p2b}sigma',
+            'sigma4': f'{p2a}{p1b}sigma'}
 
 
 # Dictionaries for keeping track of polarization fields
