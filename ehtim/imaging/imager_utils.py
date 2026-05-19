@@ -1747,9 +1747,8 @@ def sfluxgrad(imvec, priorvec, flux, norm_reg=NORM_REGULARIZER):
     return out / norm
 
 
-def scm(imvec, nx, ny, psize, flux, embed_mask, norm_reg=NORM_REGULARIZER, beam_size=None):
-    """Center-of-mass constraint
-    """
+def scm(imvec, nx, ny, psize, flux, norm_reg=NORM_REGULARIZER, beam_size=None):
+    """Center-of-mass constraint on a full-grid imvec of length ``nx*ny``."""
     if beam_size is None:
         beam_size = psize
     if norm_reg:
@@ -1758,16 +1757,14 @@ def scm(imvec, nx, ny, psize, flux, embed_mask, norm_reg=NORM_REGULARIZER, beam_
         norm = 1
 
     xx, yy = np.meshgrid(range(nx//2, -nx//2, -1), range(ny//2, -ny//2, -1))
-    xx = psize*xx.flatten()[embed_mask]
-    yy = psize*yy.flatten()[embed_mask]
+    xx = psize * xx.flatten()
+    yy = psize * yy.flatten()
 
-    out = -(np.sum(imvec*xx)**2 + np.sum(imvec*yy)**2)
-    return out/norm
+    return -(np.sum(imvec*xx)**2 + np.sum(imvec*yy)**2) / norm
 
 
-def scmgrad(imvec, nx, ny, psize, flux, embed_mask, norm_reg=NORM_REGULARIZER, beam_size=None):
-    """Center-of-mass constraint gradient
-    """
+def scmgrad(imvec, nx, ny, psize, flux, norm_reg=NORM_REGULARIZER, beam_size=None):
+    """Gradient of the center-of-mass constraint on a full-grid imvec."""
     if beam_size is None:
         beam_size = psize
     if norm_reg:
@@ -1776,11 +1773,10 @@ def scmgrad(imvec, nx, ny, psize, flux, embed_mask, norm_reg=NORM_REGULARIZER, b
         norm = 1
 
     xx, yy = np.meshgrid(range(nx//2, -nx//2, -1), range(ny//2, -ny//2, -1))
-    xx = psize*xx.flatten()[embed_mask]
-    yy = psize*yy.flatten()[embed_mask]
+    xx = psize * xx.flatten()
+    yy = psize * yy.flatten()
 
-    out = -2*(np.sum(imvec*xx)*xx + np.sum(imvec*yy)*yy)
-    return out/norm
+    return -2 * (np.sum(imvec*xx)*xx + np.sum(imvec*yy)*yy) / norm
 
 
 def ssimple(imvec, priorvec, flux, norm_reg=NORM_REGULARIZER):
@@ -2409,20 +2405,21 @@ def reggrad_patch(imvec, mask, **kwargs):
                        norm_reg=kwargs.get('norm_reg', True))
 
 
-# scm / scmgrad take the embed mask as a positional and handle masking internally,
-# so these wrappers skip the embed-pre / mask-post pattern used by other spatial regs.
 def reg_cm(imvec, mask, **kwargs):
-    return -scm(imvec, kwargs['xdim'], kwargs['ydim'], kwargs['psize'],
-                kwargs['flux'], mask,
+    if np.any(np.invert(mask)):
+        imvec = embed(imvec, mask, randomfloor=True)
+    return -scm(imvec, kwargs['xdim'], kwargs['ydim'], kwargs['psize'], kwargs['flux'],
                 norm_reg=kwargs.get('norm_reg', True),
                 beam_size=kwargs.get('beam_size'))
 
 
 def reggrad_cm(imvec, mask, **kwargs):
-    return -scmgrad(imvec, kwargs['xdim'], kwargs['ydim'], kwargs['psize'],
-                    kwargs['flux'], mask,
-                    norm_reg=kwargs.get('norm_reg', True),
-                    beam_size=kwargs.get('beam_size'))
+    if np.any(np.invert(mask)):
+        imvec = embed(imvec, mask, randomfloor=True)
+    g = -scmgrad(imvec, kwargs['xdim'], kwargs['ydim'], kwargs['psize'], kwargs['flux'],
+                 norm_reg=kwargs.get('norm_reg', True),
+                 beam_size=kwargs.get('beam_size'))
+    return g[mask]
 
 
 def reg_tv(imvec, mask, **kwargs):
