@@ -123,8 +123,10 @@ class TestCenterOfMassRegularizer:
         h = 1e-6
         sample_idx = rng.choice(imvec.size, size=10, replace=False)
         for i in sample_idx:
-            ep = imvec.copy(); ep[i] += h
-            em = imvec.copy(); em[i] -= h
+            ep = imvec.copy()
+            ep[i] += h
+            em = imvec.copy()
+            em[i] -= h
             fd = (ib.compute_regularizer_term(ep, 'cm', mask, **kw)
                   - ib.compute_regularizer_term(em, 'cm', mask, **kw)) / (2 * h)
             np.testing.assert_allclose(grad_analytic[i], fd, rtol=1e-4, atol=1e-12)
