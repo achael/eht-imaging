@@ -21,34 +21,28 @@
 # Contact Michael Johnson (mjohnson@cfa.harvard.edu) with any questions
 # The methods/techniques used in this are described in http://adsabs.harvard.edu/abs/2017ApJ...850..172J
 
-import time
-import numpy as np
-
-import scipy.optimize as opt
-import scipy.ndimage.filters as filt
-import scipy.signal
-
-import matplotlib.pyplot as plt
-
-import itertools as it
-
-from ehtim.const_def import * #Note: C is m/s rather than cm/s.
-from ehtim.observing.obs_helpers import *
-import ehtim.obsdata as obsdata
-import ehtim.image as image
-import ehtim.movie as movie
-from ehtim.imaging.imager_utils import *
-
-import ehtim.scattering as so
-
-from multiprocessing import Pool
-from functools import partial
-
 #imports from the blazarFileDownloader
 import calendar
-import requests
 import os
+import time
 from html.parser import HTMLParser
+from multiprocessing import Pool
+
+import matplotlib.pyplot as plt
+import numpy as np
+import requests
+import scipy.ndimage.filters as filt
+import scipy.optimize as opt
+import scipy.signal
+
+import ehtim.image as image
+import ehtim.movie as movie
+import ehtim.obsdata as obsdata
+import ehtim.scattering as so
+from ehtim.const_def import *  #Note: C is m/s rather than cm/s.
+from ehtim.imaging.imager_utils import *
+from ehtim.observing.obs_helpers import *
+
 #from HTMLParser import HTMLParser
 
 Fast_Convolve = True # This option will not wrap the convolution around the image
@@ -137,8 +131,8 @@ def export_multipanel_movie(im_List_Set, out='movie.mp4', fps=10, dpi=120, scale
     # Example: di.export_multipanel_movie([im_List,im_List_2],scale='log',xlim=[1000,-1000],ylim=[-3000,500],dynamic_range=[1000,5000], titles = ['43 GHz (BU)','15 GHz (MOJAVE)'])
     import matplotlib
     matplotlib.use('agg')
-    import matplotlib.pyplot as plt
     import matplotlib.animation as animation
+    import matplotlib.pyplot as plt
 
     fig = plt.figure()
 
@@ -194,7 +188,7 @@ def export_multipanel_movie(im_List_Set, out='movie.mp4', fps=10, dpi=120, scale
 
     def update_img(n):
         if verbose:
-            print ("processing frame {0} of {1}".format(n, len(im_List)*pad_factor))
+            print (f"processing frame {n} of {len(im_List)*pad_factor}")
         for j in range(N_set):
             plt_im[j].set_data(im_data(j, n))
 
@@ -214,8 +208,8 @@ def export_multipanel_movie(im_List_Set, out='movie.mp4', fps=10, dpi=120, scale
 def export_movie(im_List, out='movie.mp4', fps=10, dpi=120, scale='linear', cbar_unit = 'Jy', gamma=0.5, dynamic_range=1000.0, pad_factor=1, verbose=False):
     import matplotlib
     matplotlib.use('agg')
-    import matplotlib.pyplot as plt
     import matplotlib.animation as animation
+    import matplotlib.pyplot as plt
 
     mjd_range = im_List[-1].mjd - im_List[0].mjd    
 
@@ -267,7 +261,7 @@ def export_movie(im_List, out='movie.mp4', fps=10, dpi=120, scale='linear', cbar
 
     def update_img(n):
         if verbose:
-            print ("processing frame {0} of {1}".format(n, len(im_List)*pad_factor))
+            print (f"processing frame {n} of {len(im_List)*pad_factor}")
         plt_im.set_data(im_data(n))
         if mjd_range != 0:
             fig.suptitle('MJD: ' + str(im_List[int((n-n%pad_factor)//pad_factor)].mjd))
@@ -993,7 +987,7 @@ ttype = 'nfft', fft_pad_factor=2):
                     + np.concatenate([embed(chisq_grad[i,1], embed_mask_List[i]) for i in range(N_frame)])/N_frame*alpha_d2
                     + np.concatenate([embed(chisq_grad[i,2], embed_mask_List[i]) for i in range(N_frame)])/N_frame*alpha_d3)
 
-        return (np.concatenate((s1 + s2 + (s_dynamic_grad + chisq_grad)[embed_mask_All]))*J_factor)
+        return (np.concatenate(s1 + s2 + (s_dynamic_grad + chisq_grad)[embed_mask_All])*J_factor)
 
     # Plotting function for each iteration
     global nit
@@ -1977,8 +1971,8 @@ maxit=200, J_factor = 0.001, stop=1.0e-10, ipynb=False, refresh_interval = 1000,
             Frames[i] = np.exp(log_Frames[i])*(embed_mask_List[i].reshape((N_ypix, N_xpix)))
             init_i += cur_len
 
-        s1 = s2 = s_dS = s_dF = np.zeros((N_freq*N_frame*cur_len))
-        s_dynamic_grad = cm_grad = flux_grad = np.zeros((N_freq*N_frame*N_xpix*N_ypix))
+        s1 = s2 = s_dS = s_dF = np.zeros(N_freq*N_frame*cur_len)
+        s_dynamic_grad = cm_grad = flux_grad = np.zeros(N_freq*N_frame*N_xpix*N_ypix)
         s_multifreq = 0.0
 
         # Multifrequency part
