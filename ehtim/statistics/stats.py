@@ -238,7 +238,18 @@ def mean_incoh_avg(x,debias=True):
     return amp0,sig0
 
 def deb_amp(amp,sig):
-    #eq. 9.86 from Thompson et al.
+    """Rice-debiased visibility amplitude from N noisy samples.
+
+    Implements eq. (9.86) of Thompson, Moran & Swenson (Interferometry and
+    Synthesis in Radio Astronomy, 3rd ed.):
+
+        |V|_e = [ mean(amp_i^2) - (2 - 1/N) * sigma^2 ]^(1/2)
+
+    The (2 - 1/N) coefficient (rather than the naive 2 of the squared-
+    amplitude estimator, eq. 9.81) is the second-order bias correction for
+    estimating |V| instead of |V|^2 (eqs. 9.84-9.85). Derived for equal-
+    variance samples; assumes a single sigma scale across the N samples.
+    """
     amp = np.abs(np.asarray(amp))
     sig = np.asarray(sig)
     Nc = len(amp)
@@ -248,6 +259,18 @@ def deb_amp(amp,sig):
     return amp0
 
 def inc_sig(amp,sig):
+    """Noise on the Rice-debiased amplitude (deb_amp) from N samples.
+
+    Returns the sigma that reproduces the analytic incoherent-averaging
+    SNR of eq. (9.88) of Thompson, Moran & Swenson:
+
+        R_sn = sqrt(N)/(2 sigma^2) * |V|^2 / sqrt(1 + |V|^2/sigma^2)
+
+    so that sigma_out = |V|_e * (sqrt(1 + 1/R_sn) - 1). At very low SNR
+    (snrA <= 0, where the Rician approximation breaks down) it falls back
+    to coh_sig. Like deb_amp, assumes a single sigma scale (uses the
+    median of sig).
+    """
     amp = np.abs(np.asarray(amp))
     sig = np.asarray(sig)
     Nc = len(amp)

@@ -1247,13 +1247,16 @@ class Obsdata:
 
         return out
 
-    def avg_coherent(self, inttime, scan_avg=False, moving=False):
+    def avg_coherent(self, inttime, scan_avg=False, moving=False, invvar_avg=True):
         """Coherently average data along u,v tracks in chunks of length inttime (sec)
 
            Args:
                 inttime (float): coherent integration time in seconds
                 scan_avg (bool): if True, average over scans in self.scans instead of intime
                 moving (bool): averaging with moving window (boxcar width in seconds)
+                invvar_avg (bool): if True (default), combine visibilities and sigmas with
+                    inverse-variance weights; if False, use the legacy unweighted mean and
+                    sqrt(sum sig^2)/N sigma
            Returns:
                 (Obsdata): Obsdata object containing averaged data
         """
@@ -1267,10 +1270,10 @@ class Obsdata:
             return self.copy()
 
         if moving:
-            vis_avg = ehavg.coh_moving_avg_vis(self, dt=inttime)
+            vis_avg = ehavg.coh_moving_avg_vis(self, dt=inttime, invvar_avg=invvar_avg)
         else:
-            vis_avg = ehavg.coh_avg_vis(self, dt=inttime,
-                                        err_type='predicted', scan_avg=scan_avg)
+            vis_avg = ehavg.coh_avg_vis(self, dt=inttime, err_type='predicted',
+                                        scan_avg=scan_avg, invvar_avg=invvar_avg)
 
         arglist, argdict = self.obsdata_args()
         arglist[DATPOS] = vis_avg
@@ -1278,7 +1281,8 @@ class Obsdata:
 
         return out
 
-    def avg_incoherent(self, inttime, scan_avg=False, debias=True, err_type='predicted'):
+    def avg_incoherent(self, inttime, scan_avg=False, debias=True, err_type='predicted',
+                       invvar_avg=True):
         """Incoherently average data along u,v tracks in chunks of length inttime (sec)
 
            Args:
@@ -1286,6 +1290,9 @@ class Obsdata:
                 scan_avg (bool): if True, average over scans in self.scans instead of intime
                 debias (bool): if True, debias the averaged amplitudes
                 err_type (str): 'predicted' or 'measured'
+                invvar_avg (bool): if True (default) and err_type='predicted', use the
+                    inverse-variance weighted amplitude + sigma; if False, the legacy
+                    deb_amp + inc_sig pair. No effect when err_type='measured'.
 
            Returns:
                 (Obsdata): Obsdata object containing averaged data
@@ -1293,7 +1300,7 @@ class Obsdata:
 
         print('Incoherently averaging data, putting phases to zero!')
         amp_rec = ehavg.incoh_avg_vis(self, dt=inttime, debias=debias, scan_avg=scan_avg,
-                                      rec_type='vis', err_type=err_type)
+                                      rec_type='vis', err_type=err_type, invvar_avg=invvar_avg)
         arglist, argdict = self.obsdata_args()
         arglist[DATPOS] = amp_rec
         out = Obsdata(*arglist, **argdict)

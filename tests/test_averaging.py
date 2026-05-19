@@ -234,6 +234,43 @@ def test_avg_incoherent_through_obs_wrapper(obs_direct):
     assert len(out.data) <= len(obs_direct.data)
 
 
+def test_avg_coherent_wrapper_invvar_flag_forwarded():
+    """Obsdata.avg_coherent forwards invvar_avg to the backend: on varied
+    intra-bin sigmas the two modes give different averaged visibilities,
+    and invvar_avg=False matches the standalone backend call.
+    """
+    times = np.array([0.0, 10.0 / 3600.0, 20.0 / 3600.0, 30.0 / 3600.0])
+    obs = _make_obs(times_hr=times,
+                    vis_fn=lambda t, t1, t2: 1.0 + (t * 3600.0) * 0.01)
+    obs.data["sigma"] = np.array([0.1, 0.4, 0.1, 0.4])
+    obs.data["qsigma"] = np.array([0.1, 0.4, 0.1, 0.4])
+    obs.data["usigma"] = np.array([0.1, 0.4, 0.1, 0.4])
+    obs.data["vsigma"] = np.array([0.1, 0.4, 0.1, 0.4])
+
+    out_invvar = obs.avg_coherent(60.0, invvar_avg=True)
+    out_direct = obs.avg_coherent(60.0, invvar_avg=False)
+    assert abs(out_invvar.data["vis"][0] - out_direct.data["vis"][0]) > 1e-3
+
+    # invvar_avg=False through the wrapper == the standalone backend call.
+    backend = coh_avg_vis(obs, dt=60.0, invvar_avg=False)
+    np.testing.assert_allclose(out_direct.data["vis"], backend["vis"],
+                               rtol=1e-12, atol=1e-14)
+
+
+def test_avg_incoherent_wrapper_invvar_flag_forwarded():
+    """Obsdata.avg_incoherent forwards invvar_avg to the backend: the two
+    modes give different sigmas on varied intra-bin sigmas.
+    """
+    times = np.array([0.0, 10.0 / 3600.0, 20.0 / 3600.0, 30.0 / 3600.0])
+    obs = _make_obs(times_hr=times,
+                    vis_fn=lambda t, t1, t2: 1.0 + (t * 3600.0) * 0.01)
+    obs.data["sigma"] = np.array([0.1, 0.4, 0.1, 0.4])
+
+    out_invvar = obs.avg_incoherent(60.0, invvar_avg=True)
+    out_direct = obs.avg_incoherent(60.0, invvar_avg=False)
+    assert abs(out_invvar.data["sigma"][0] - out_direct.data["sigma"][0]) > 1e-4
+
+
 # ---------------------------------------------------------------------------
 # Section 6: parity vs the legacy pandas implementations in dataframes.py
 #
