@@ -39,7 +39,7 @@ import ehtim.image as image
 import ehtim.movie as movie
 import ehtim.obsdata as obsdata
 import ehtim.scattering as so
-from ehtim.const_def import C, RADPERAS, RADPERUAS
+from ehtim.const_def import RADPERAS, RADPERUAS, C
 from ehtim.imaging.imager_utils import (
     chisq,
     chisqdata,
@@ -153,7 +153,7 @@ def export_multipanel_movie(im_List_Set, out='movie.mp4', fps=10, dpi=120, scale
     maxi   = np.zeros(N_set)
     plt_im = [None,]*N_set
 
-    if type(dynamic_range) == float or type(dynamic_range) == int:
+    if isinstance(dynamic_range, (float, int)):
         dynamic_range = np.zeros(N_set) + dynamic_range
 
     for j in range(N_set):
@@ -201,7 +201,7 @@ def export_multipanel_movie(im_List_Set, out='movie.mp4', fps=10, dpi=120, scale
             fig.suptitle('MJD: ' + str(im_List_Set[0][int((n-n%pad_factor)//pad_factor)].mjd), verticalalignment='center')
         else:
             time = im_List_Set[0][int((n-n%pad_factor)//pad_factor)].time
-            time_str = ("%d:%02d.%02d" % (int(time), (time*60) % 60, (time*3600) % 60))
+            time_str = f"{int(time)}:{(time*60) % 60:02.0f}.{(time*3600) % 60:02.0f}"
             fig.suptitle(time_str)
 
         return plt_im
@@ -272,7 +272,7 @@ def export_movie(im_List, out='movie.mp4', fps=10, dpi=120, scale='linear', cbar
             fig.suptitle('MJD: ' + str(im_List[int((n-n%pad_factor)//pad_factor)].mjd))
         else:
             time = im_List[int((n-n%pad_factor)//pad_factor)].time
-            time_str = ("%d:%02d.%02d" % (int(time), (time*60) % 60, (time*3600) % 60))
+            time_str = f"{int(time)}:{(time*60) % 60:02.0f}.{(time*3600) % 60:02.0f}"
             fig.suptitle(time_str)
 
         return plt_im
@@ -937,7 +937,8 @@ ttype = 'nfft', fft_pad_factor=2):
 
         s_dynamic = 0.0
 
-        if R_dt['alpha'] != 0.0: s_dynamic += Rdt(Frames, B_dt, **R_dt)*R_dt['alpha']
+        if R_dt['alpha'] != 0.0:
+            s_dynamic += Rdt(Frames, B_dt, **R_dt)*R_dt['alpha']
 
         chisq = np.array([get_chisq(j, Frames[j].ravel()[embed_mask_List[j]], d1, d2, d3, ttype, embed_mask_List[j]) for j in range(N_frame)])
 
@@ -966,7 +967,8 @@ ttype = 'nfft', fft_pad_factor=2):
             s2 = static_regularizer_gradient(Frames, nprior_embed_List, embed_mask_List, Prior.total_flux(), Prior.psize, entropy2, norm_reg=norm_reg, beam_size=beam_size, alpha_A=alpha_A, xdim=Prior.xdim, ydim=Prior.ydim)*alpha_s2
 
         s_dynamic_grad = 0.0
-        if R_dt['alpha'] != 0.0: s_dynamic_grad += Rdt_gradient(Frames, B_dt, **R_dt)*R_dt['alpha']
+        if R_dt['alpha'] != 0.0:
+            s_dynamic_grad += Rdt_gradient(Frames, B_dt, **R_dt)*R_dt['alpha']
 
 
         chisq_grad = np.array([get_chisqgrad(j, Frames[j].ravel()[embed_mask_List[j]], d1, d2, d3, ttype, embed_mask_List[j]) for j in range(N_frame)])
@@ -991,7 +993,7 @@ ttype = 'nfft', fft_pad_factor=2):
         nit += 1
 
         if nit%update_interval == 0 or final:
-            print ("iteration %d" % nit)
+            print(f"iteration {nit}")
 
             Frames = np.zeros((N_frame, N_ypix, N_xpix))
             log_Frames = np.zeros((N_frame, N_ypix, N_xpix))
@@ -1015,7 +1017,8 @@ ttype = 'nfft', fft_pad_factor=2):
 
             s_dynamic = 0.0
 
-            if R_dt['alpha'] != 0.0: s_dynamic += Rdt(Frames, B_dt, **R_dt)*R_dt['alpha']
+            if R_dt['alpha'] != 0.0:
+                s_dynamic += Rdt(Frames, B_dt, **R_dt)*R_dt['alpha']
 
             chisq = np.array([get_chisq(j, Frames[j].ravel()[embed_mask_List[j]],
                               d1, d2, d3, ttype, embed_mask_List[j]) for j in range(N_frame)])
@@ -1029,23 +1032,37 @@ ttype = 'nfft', fft_pad_factor=2):
             chisq1_max = np.max(chisq1_List)
             chisq2_max = np.max(chisq2_List)
             chisq3_max = np.max(chisq3_List)
-            if d1: print (f"chi2_1: {chisq1:f}")
-            if d2: print (f"chi2_2: {chisq2:f}")
-            if d3: print (f"chi2_3: {chisq3:f}")
-            if d1: print ("weighted chi2_1: %f" % (chisq1 * alpha_d1))
-            if d2: print ("weighted chi2_2: %f" % (chisq2 * alpha_d2))
-            if d3: print ("weighted chi2_3: %f" % (chisq3 * alpha_d3))
-            if d1: print (f"Max Frame chi2_1: {chisq1_max:f}")
-            if d2: print (f"Max Frame chi2_2: {chisq2_max:f}")
-            if d3: print (f"Max Frame chi2_3: {chisq3_max:f}")
+            if d1:
+                print (f"chi2_1: {chisq1:f}")
+            if d2:
+                print (f"chi2_2: {chisq2:f}")
+            if d3:
+                print (f"chi2_3: {chisq3:f}")
+            if d1:
+                print ("weighted chi2_1: %f" % (chisq1 * alpha_d1))
+            if d2:
+                print ("weighted chi2_2: %f" % (chisq2 * alpha_d2))
+            if d3:
+                print ("weighted chi2_3: %f" % (chisq3 * alpha_d3))
+            if d1:
+                print (f"Max Frame chi2_1: {chisq1_max:f}")
+            if d2:
+                print (f"Max Frame chi2_2: {chisq2_max:f}")
+            if d3:
+                print (f"Max Frame chi2_3: {chisq3_max:f}")
 
             if final:
-                if d1: print ("All chisq1:",chisq1_List)
-                if d2: print ("All chisq2:",chisq2_List)
-                if d3: print ("All chisq3:",chisq3_List)
+                if d1:
+                    print ("All chisq1:",chisq1_List)
+                if d2:
+                    print ("All chisq2:",chisq2_List)
+                if d3:
+                    print ("All chisq3:",chisq3_List)
 
-            if s1 != 0.0: print (f"weighted s1: {s1:f}")
-            if s2 != 0.0: print (f"weighted s2: {s2:f}")
+            if s1 != 0.0:
+                print (f"weighted s1: {s1:f}")
+            if s2 != 0.0:
+                print (f"weighted s2: {s2:f}")
             print (f"weighted s_dynamic: {s_dynamic:f}")
 
             if nit%refresh_interval == 0:
@@ -1156,13 +1173,13 @@ minimizer_method = 'L-BFGS-B', update_interval = 1
     global A1_List, A2_List, A3_List, data1_List, data2_List, data3_List, sigma1_List, sigma2_List, sigma3_List
 
     # Make a list of frames if a movie is passed
-    if type(init_ims) == list:
+    if isinstance(init_ims, list):
         InitIm_List = init_ims
     else:
         InitIm_List = init_ims.im_list()
 
     # Make a list of observations if a single Obsdata object is passed
-    if type(obs_input) == list:
+    if isinstance(obs_input, list):
         Obsdata_List = obs_input
     else:
         # Create one obsdata object for every frame
@@ -1178,12 +1195,12 @@ minimizer_method = 'L-BFGS-B', update_interval = 1
             Obsdata_List[j].mjd  = InitIm_List[j].mjd
             try:
                 Obsdata_List[j].data = np.concatenate(tlist[[x == j for x in idx_list]])
-            except:
+            except Exception:
                 Obsdata_List[j].data = []
                 c = c + 1
                 pass
         if c > 0:
-            print("%d/%d frames have no data"%(c,len(frame_mjds)))
+            print(f"{c}/{len(frame_mjds)} frames have no data")
 
     N_frame = len(Obsdata_List)
     N_xpix, N_ypix = Prior.xdim, Prior.ydim  # per-frame pixel dimensions
@@ -1302,15 +1319,15 @@ minimizer_method = 'L-BFGS-B', update_interval = 1
             # Try to create the chisqdata. These can throw errors, for instance when no closure quantities exist in a frame with data
             try:
                 (data1_List[i], sigma1_List[i], A1_List[i]) = chisqdata(Obsdata_List[i], Prior, embed_mask_List[i], d1, ttype=ttype, fft_pad_factor=fft_pad_factor, systematic_noise=systematic_noise1)
-            except:
+            except Exception:
                 pass
             try:
                 (data2_List[i], sigma2_List[i], A2_List[i]) = chisqdata(Obsdata_List[i], Prior, embed_mask_List[i], d2, ttype=ttype, fft_pad_factor=fft_pad_factor, systematic_noise=systematic_noise2)
-            except:
+            except Exception:
                 pass
             try:
                 (data3_List[i], sigma3_List[i], A3_List[i]) = chisqdata(Obsdata_List[i], Prior, embed_mask_List[i], d3, ttype=ttype, fft_pad_factor=fft_pad_factor, systematic_noise=systematic_noise3)
-            except:
+            except Exception:
                 pass
 
     # Coordinate matrix for COM constraint
@@ -1324,7 +1341,7 @@ minimizer_method = 'L-BFGS-B', update_interval = 1
         pool = Pool(processes=processes)
     elif processes == 0:
         processes = int(cpu_count())
-        print("Using Multiprocessing with %d Processes" % processes)
+        print(f"Using Multiprocessing with {processes} Processes")
         pool = Pool(processes=processes)
     else:
         print("Not Using Multiprocessing")
@@ -1365,15 +1382,21 @@ minimizer_method = 'L-BFGS-B', update_interval = 1
 
         s_dynamic = cm = flux = s_dS = s_dF = 0.0
 
-        if R_dI['alpha'] != 0.0: s_dynamic += RdI(Frames, **R_dI)*R_dI['alpha']
-        if R_dt['alpha'] != 0.0: s_dynamic += Rdt(Frames, B_dt, **R_dt)*R_dt['alpha']
+        if R_dI['alpha'] != 0.0:
+            s_dynamic += RdI(Frames, **R_dI)*R_dI['alpha']
+        if R_dt['alpha'] != 0.0:
+            s_dynamic += Rdt(Frames, B_dt, **R_dt)*R_dt['alpha']
 
-        if alpha_dS1 != 0.0: s_dS += RdS(Frames, nprior_embed_List, embed_mask_List, entropy1, norm_reg, beam_size=beam_size, alpha_A=alpha_A)*alpha_dS1
-        if alpha_dS2 != 0.0: s_dS += RdS(Frames, nprior_embed_List, embed_mask_List, entropy2, norm_reg, beam_size=beam_size, alpha_A=alpha_A)*alpha_dS2
+        if alpha_dS1 != 0.0:
+            s_dS += RdS(Frames, nprior_embed_List, embed_mask_List, entropy1, norm_reg, beam_size=beam_size, alpha_A=alpha_A)*alpha_dS1
+        if alpha_dS2 != 0.0:
+            s_dS += RdS(Frames, nprior_embed_List, embed_mask_List, entropy2, norm_reg, beam_size=beam_size, alpha_A=alpha_A)*alpha_dS2
 
-        if alpha_dF != 0.0: s_dF += RdF_clip(Frames, embed_mask_List)*alpha_dF
+        if alpha_dF != 0.0:
+            s_dF += RdF_clip(Frames, embed_mask_List)*alpha_dF
 
-        if alpha_centroid != 0.0: cm = centroid(Frames, coord) * alpha_centroid
+        if alpha_centroid != 0.0:
+            cm = centroid(Frames, coord) * alpha_centroid
 
         if alpha_flux > 0.0:
             flux = alpha_flux * movie_flux_constraint(Frames, flux_List)
@@ -1440,15 +1463,21 @@ minimizer_method = 'L-BFGS-B', update_interval = 1
             s2 = static_regularizer_gradient(Frames, nprior_embed_List, embed_mask_List, Prior.total_flux(), Prior.psize, entropy2, norm_reg=norm_reg, beam_size=beam_size, alpha_A=alpha_A, xdim=Prior.xdim, ydim=Prior.ydim, **kwargs)*alpha_s2
 
         s_dynamic_grad = cm_grad = flux_grad = s_dS = s_dF = 0.0
-        if R_dI['alpha'] != 0.0: s_dynamic_grad += RdI_gradient(Frames,**R_dI)*R_dI['alpha']
-        if R_dt['alpha'] != 0.0: s_dynamic_grad += Rdt_gradient(Frames, B_dt, **R_dt)*R_dt['alpha']
+        if R_dI['alpha'] != 0.0:
+            s_dynamic_grad += RdI_gradient(Frames,**R_dI)*R_dI['alpha']
+        if R_dt['alpha'] != 0.0:
+            s_dynamic_grad += Rdt_gradient(Frames, B_dt, **R_dt)*R_dt['alpha']
 
-        if alpha_dS1 != 0.0: s_dS += RdS_gradient(Frames, nprior_embed_List, embed_mask_List, entropy1, norm_reg, beam_size=beam_size, alpha_A=alpha_A)*alpha_dS1
-        if alpha_dS2 != 0.0: s_dS += RdS_gradient(Frames, nprior_embed_List, embed_mask_List, entropy2, norm_reg, beam_size=beam_size, alpha_A=alpha_A)*alpha_dS2
+        if alpha_dS1 != 0.0:
+            s_dS += RdS_gradient(Frames, nprior_embed_List, embed_mask_List, entropy1, norm_reg, beam_size=beam_size, alpha_A=alpha_A)*alpha_dS1
+        if alpha_dS2 != 0.0:
+            s_dS += RdS_gradient(Frames, nprior_embed_List, embed_mask_List, entropy2, norm_reg, beam_size=beam_size, alpha_A=alpha_A)*alpha_dS2
 
-        if alpha_dF != 0.0: s_dF += RdF_gradient_clip(Frames, embed_mask_List)*alpha_dF
+        if alpha_dF != 0.0:
+            s_dF += RdF_gradient_clip(Frames, embed_mask_List)*alpha_dF
 
-        if alpha_centroid != 0.0: cm_grad = centroid_gradient(Frames, coord) * alpha_centroid
+        if alpha_centroid != 0.0:
+            cm_grad = centroid_gradient(Frames, coord) * alpha_centroid
 
         if alpha_flux > 0.0:
             flux_grad = alpha_flux * movie_flux_constraint_grad(Frames, flux_List)
@@ -1592,7 +1621,7 @@ minimizer_method = 'L-BFGS-B', update_interval = 1
         nit += 1
 
         if nit%update_interval == 0 or final:
-            print ("iteration %d" % nit)
+            print(f"iteration {nit}")
 
             Frames = np.zeros((N_frame, N_ypix, N_xpix))
             log_Frames = np.zeros((N_frame, N_ypix, N_xpix))
@@ -1630,15 +1659,21 @@ minimizer_method = 'L-BFGS-B', update_interval = 1
 
             s_dynamic = cm = s_dS = s_dF = 0.0
 
-            if R_dI['alpha'] != 0.0: s_dynamic += RdI(Frames, **R_dI)*R_dI['alpha']
-            if R_dt['alpha'] != 0.0: s_dynamic += Rdt(Frames, B_dt, **R_dt)*R_dt['alpha']
+            if R_dI['alpha'] != 0.0:
+                s_dynamic += RdI(Frames, **R_dI)*R_dI['alpha']
+            if R_dt['alpha'] != 0.0:
+                s_dynamic += Rdt(Frames, B_dt, **R_dt)*R_dt['alpha']
 
-            if alpha_dS1 != 0.0: s_dS += RdS(Frames, nprior_embed_List, embed_mask_List, entropy1, norm_reg, beam_size=beam_size, alpha_A=alpha_A, **kwargs)*alpha_dS1
-            if alpha_dS2 != 0.0: s_dS += RdS(Frames, nprior_embed_List, embed_mask_List, entropy2, norm_reg, beam_size=beam_size, alpha_A=alpha_A, **kwargs)*alpha_dS2
+            if alpha_dS1 != 0.0:
+                s_dS += RdS(Frames, nprior_embed_List, embed_mask_List, entropy1, norm_reg, beam_size=beam_size, alpha_A=alpha_A, **kwargs)*alpha_dS1
+            if alpha_dS2 != 0.0:
+                s_dS += RdS(Frames, nprior_embed_List, embed_mask_List, entropy2, norm_reg, beam_size=beam_size, alpha_A=alpha_A, **kwargs)*alpha_dS2
 
-            if alpha_dF != 0.0: s_dF += RdF_clip(Frames, embed_mask_List)*alpha_dF
+            if alpha_dF != 0.0:
+                s_dF += RdF_clip(Frames, embed_mask_List)*alpha_dF
 
-            if alpha_centroid != 0.0: cm = centroid(Frames, coord) * alpha_centroid
+            if alpha_centroid != 0.0:
+                cm = centroid(Frames, coord) * alpha_centroid
 
             if not stochastic_optics:
                 if processes > 0:
@@ -1665,20 +1700,32 @@ minimizer_method = 'L-BFGS-B', update_interval = 1
             chisq1_max = np.max(chisq1_List)
             chisq2_max = np.max(chisq2_List)
             chisq3_max = np.max(chisq3_List)
-            if d1: print (f"chi2_1: {chisq1:f}")
-            if d2: print (f"chi2_2: {chisq2:f}")
-            if d3: print (f"chi2_3: {chisq3:f}")
-            if d1: print ("weighted chi2_1: %f" % (chisq1 * alpha_d1))
-            if d2: print ("weighted chi2_2: %f" % (chisq2 * alpha_d2))
-            if d3: print ("weighted chi2_3: %f" % (chisq3 * alpha_d3))
-            if d1: print (f"Max Frame chi2_1: {chisq1_max:f}")
-            if d2: print (f"Max Frame chi2_2: {chisq2_max:f}")
-            if d3: print (f"Max Frame chi2_3: {chisq3_max:f}")
+            if d1:
+                print (f"chi2_1: {chisq1:f}")
+            if d2:
+                print (f"chi2_2: {chisq2:f}")
+            if d3:
+                print (f"chi2_3: {chisq3:f}")
+            if d1:
+                print ("weighted chi2_1: %f" % (chisq1 * alpha_d1))
+            if d2:
+                print ("weighted chi2_2: %f" % (chisq2 * alpha_d2))
+            if d3:
+                print ("weighted chi2_3: %f" % (chisq3 * alpha_d3))
+            if d1:
+                print (f"Max Frame chi2_1: {chisq1_max:f}")
+            if d2:
+                print (f"Max Frame chi2_2: {chisq2_max:f}")
+            if d3:
+                print (f"Max Frame chi2_3: {chisq3_max:f}")
 
             if final:
-                if d1: print ("All chisq1:",chisq1_List)
-                if d2: print ("All chisq2:",chisq2_List)
-                if d3: print ("All chisq3:",chisq3_List)
+                if d1:
+                    print ("All chisq1:",chisq1_List)
+                if d2:
+                    print ("All chisq2:",chisq2_List)
+                if d3:
+                    print ("All chisq3:",chisq3_List)
 
             # Now deal with the a flow, if necessary
             if R_flow['alpha'] != 0.0:
@@ -1688,12 +1735,17 @@ minimizer_method = 'L-BFGS-B', update_interval = 1
                 s_dynamic += Rflow(Frames, Flow, **R_flow)*R_flow['alpha']
                 print ("Weighted R_Flow: %f" % (Rflow(Frames, Flow, **R_flow)*R_flow['alpha']))
 
-            if s1 != 0.0: print (f"weighted s1: {s1:f}")
-            if s2 != 0.0: print (f"weighted s2: {s2:f}")
-            if s_dF != 0.0: print (f"weighted s_dF: {s_dF:f}")
-            if s_dS != 0.0: print (f"weighted s_dS: {s_dS:f}")
+            if s1 != 0.0:
+                print (f"weighted s1: {s1:f}")
+            if s2 != 0.0:
+                print (f"weighted s2: {s2:f}")
+            if s_dF != 0.0:
+                print (f"weighted s_dF: {s_dF:f}")
+            if s_dS != 0.0:
+                print (f"weighted s_dS: {s_dS:f}")
             print (f"weighted s_dynamic: {s_dynamic:f}")
-            if alpha_centroid > 0.0: print (f"weighted COM: {cm:f}")
+            if alpha_centroid > 0.0:
+                print (f"weighted COM: {cm:f}")
 
             if alpha_flux > 0.0:
                 print ("weighted flux constraint: %f" % (alpha_flux * movie_flux_constraint(Frames, flux_List)))
@@ -1773,7 +1825,7 @@ minimizer_method = 'L-BFGS-B', update_interval = 1
                          Prior.ra, Prior.dec, rf=Obsdata_List[i].rf, source=Prior.source,
                          mjd=InitIm_List[i].mjd, time=InitIm_List[i].time, pulse=Prior.pulse) for i in range(N_frame)]
 
-    if type(init_ims) == list:
+    if isinstance(init_ims, list):
         pass
     else:
         outim = movie.merge_im_list(outim)
@@ -1933,15 +1985,21 @@ maxit=200, J_factor = 0.001, stop=1.0e-10, ipynb=False, refresh_interval = 1000,
             if alpha_s2 != 0.0:
                 s2 += static_regularizer(Frames[i1:i2], nprior_embed_List[i1:i2], embed_mask_List[i1:i2], Prior.total_flux(), Prior.psize, entropy2, norm_reg=norm_reg, beam_size=beam_size[j], alpha_A=alpha_A, xdim=Prior.xdim, ydim=Prior.ydim)*alpha_s2
 
-            if R_dI['alpha'] != 0.0: s_dynamic += RdI(Frames[i1:i2], **R_dI)*R_dI['alpha']
-            if R_dt['alpha'] != 0.0: s_dynamic += Rdt(Frames[i1:i2], B_dt, **R_dt)*R_dt['alpha']
+            if R_dI['alpha'] != 0.0:
+                s_dynamic += RdI(Frames[i1:i2], **R_dI)*R_dI['alpha']
+            if R_dt['alpha'] != 0.0:
+                s_dynamic += Rdt(Frames[i1:i2], B_dt, **R_dt)*R_dt['alpha']
 
-            if alpha_dS1 != 0.0: s_dS += RdS(Frames[i1:i2], nprior_embed_List[i1:i2], embed_mask_List[i1:i2], entropy1, norm_reg, beam_size=beam_size[j], alpha_A=alpha_A)*alpha_dS1
-            if alpha_dS2 != 0.0: s_dS += RdS(Frames[i1:i2], nprior_embed_List[i1:i2], embed_mask_List[i1:i2], entropy2, norm_reg, beam_size=beam_size[j], alpha_A=alpha_A)*alpha_dS2
+            if alpha_dS1 != 0.0:
+                s_dS += RdS(Frames[i1:i2], nprior_embed_List[i1:i2], embed_mask_List[i1:i2], entropy1, norm_reg, beam_size=beam_size[j], alpha_A=alpha_A)*alpha_dS1
+            if alpha_dS2 != 0.0:
+                s_dS += RdS(Frames[i1:i2], nprior_embed_List[i1:i2], embed_mask_List[i1:i2], entropy2, norm_reg, beam_size=beam_size[j], alpha_A=alpha_A)*alpha_dS2
 
-            if alpha_dF != 0.0: s_dF += RdF_clip(Frames[i1:i2], embed_mask_List[i1:i2])*alpha_dF
+            if alpha_dF != 0.0:
+                s_dF += RdF_clip(Frames[i1:i2], embed_mask_List[i1:i2])*alpha_dF
 
-        if alpha_centroid != 0.0: cm = centroid(Frames, coord) * alpha_centroid
+        if alpha_centroid != 0.0:
+            cm = centroid(Frames, coord) * alpha_centroid
 
         if alpha_flux > 0.0:
             flux = alpha_flux * movie_flux_constraint(Frames, flux_List)
@@ -1991,15 +2049,21 @@ maxit=200, J_factor = 0.001, stop=1.0e-10, ipynb=False, refresh_interval = 1000,
             if alpha_s2 != 0.0:
                 s2[mf1:mf2] = static_regularizer_gradient(Frames[i1:i2], nprior_embed_List[i1:i2], embed_mask_List[i1:i2], Prior.total_flux(), Prior.psize, entropy2, norm_reg=norm_reg, beam_size=beam_size[j], alpha_A=alpha_A, xdim=Prior.xdim, ydim=Prior.ydim)*alpha_s2
 
-            if R_dI['alpha'] != 0.0: s_dynamic_grad[f1:f2] += RdI_gradient(Frames[i1:i2],**R_dI)*R_dI['alpha']
-            if R_dt['alpha'] != 0.0: s_dynamic_grad[f1:f2] += Rdt_gradient(Frames[i1:i2], B_dt, **R_dt)*R_dt['alpha']
+            if R_dI['alpha'] != 0.0:
+                s_dynamic_grad[f1:f2] += RdI_gradient(Frames[i1:i2],**R_dI)*R_dI['alpha']
+            if R_dt['alpha'] != 0.0:
+                s_dynamic_grad[f1:f2] += Rdt_gradient(Frames[i1:i2], B_dt, **R_dt)*R_dt['alpha']
 
-            if alpha_dS1 != 0.0: s_dS[mf1:mf2] += RdS_gradient(Frames[i1:i2], nprior_embed_List[i1:i2], embed_mask_List[i1:i2], entropy1, norm_reg, beam_size=beam_size[j], alpha_A=alpha_A)*alpha_dS1
-            if alpha_dS2 != 0.0: s_dS[mf1:mf2] += RdS_gradient(Frames[i1:i2], nprior_embed_List[i1:i2], embed_mask_List[i1:i2], entropy2, norm_reg, beam_size=beam_size[j], alpha_A=alpha_A)*alpha_dS2
+            if alpha_dS1 != 0.0:
+                s_dS[mf1:mf2] += RdS_gradient(Frames[i1:i2], nprior_embed_List[i1:i2], embed_mask_List[i1:i2], entropy1, norm_reg, beam_size=beam_size[j], alpha_A=alpha_A)*alpha_dS1
+            if alpha_dS2 != 0.0:
+                s_dS[mf1:mf2] += RdS_gradient(Frames[i1:i2], nprior_embed_List[i1:i2], embed_mask_List[i1:i2], entropy2, norm_reg, beam_size=beam_size[j], alpha_A=alpha_A)*alpha_dS2
 
-            if alpha_dF != 0.0: s_dF[mf1:mf2] += RdF_gradient_clip(Frames[i1:i2], embed_mask_List[i1:i2])*alpha_dF
+            if alpha_dF != 0.0:
+                s_dF[mf1:mf2] += RdF_gradient_clip(Frames[i1:i2], embed_mask_List[i1:i2])*alpha_dF
 
-        if alpha_centroid != 0.0: cm_grad = centroid_gradient(Frames, coord) * alpha_centroid
+        if alpha_centroid != 0.0:
+            cm_grad = centroid_gradient(Frames, coord) * alpha_centroid
 
         if alpha_flux > 0.0:
             flux_grad = alpha_flux * movie_flux_constraint_grad(Frames, flux_List)
@@ -2030,7 +2094,7 @@ maxit=200, J_factor = 0.001, stop=1.0e-10, ipynb=False, refresh_interval = 1000,
         nit += 1
 
         if nit%update_interval == 0 or final:
-            print ("iteration %d" % nit)
+            print(f"iteration {nit}")
 
             Frames = np.zeros((N_freq*N_frame, N_ypix, N_xpix))
             log_Frames = np.zeros((N_freq*N_frame, N_ypix, N_xpix))
@@ -2059,15 +2123,21 @@ maxit=200, J_factor = 0.001, stop=1.0e-10, ipynb=False, refresh_interval = 1000,
                 if alpha_s2 != 0.0:
                     s2 += static_regularizer(Frames[i1:i2], nprior_embed_List[i1:i2], embed_mask_List[i1:i2], Prior.total_flux(), Prior.psize, entropy2, norm_reg=norm_reg, beam_size=beam_size[j], alpha_A=alpha_A, xdim=Prior.xdim, ydim=Prior.ydim)*alpha_s2
 
-                if R_dI['alpha'] != 0.0: s_dynamic += RdI(Frames[i1:i2], **R_dI)*R_dI['alpha']
-                if R_dt['alpha'] != 0.0: s_dynamic += Rdt(Frames[i1:i2], B_dt, **R_dt)*R_dt['alpha']
+                if R_dI['alpha'] != 0.0:
+                    s_dynamic += RdI(Frames[i1:i2], **R_dI)*R_dI['alpha']
+                if R_dt['alpha'] != 0.0:
+                    s_dynamic += Rdt(Frames[i1:i2], B_dt, **R_dt)*R_dt['alpha']
 
-                if alpha_dS1 != 0.0: s_dS += RdS(Frames[i1:i2], nprior_embed_List[i1:i2], embed_mask_List[i1:i2], entropy1, norm_reg, beam_size=beam_size[j], alpha_A=alpha_A)*alpha_dS1
-                if alpha_dS2 != 0.0: s_dS += RdS(Frames[i1:i2], nprior_embed_List[i1:i2], embed_mask_List[i1:i2], entropy2, norm_reg, beam_size=beam_size[j], alpha_A=alpha_A)*alpha_dS2
+                if alpha_dS1 != 0.0:
+                    s_dS += RdS(Frames[i1:i2], nprior_embed_List[i1:i2], embed_mask_List[i1:i2], entropy1, norm_reg, beam_size=beam_size[j], alpha_A=alpha_A)*alpha_dS1
+                if alpha_dS2 != 0.0:
+                    s_dS += RdS(Frames[i1:i2], nprior_embed_List[i1:i2], embed_mask_List[i1:i2], entropy2, norm_reg, beam_size=beam_size[j], alpha_A=alpha_A)*alpha_dS2
 
-                if alpha_dF != 0.0: s_dF += RdF_clip(Frames[i1:i2], embed_mask_List[i1:i2])*alpha_dF
+                if alpha_dF != 0.0:
+                    s_dF += RdF_clip(Frames[i1:i2], embed_mask_List[i1:i2])*alpha_dF
 
-            if alpha_centroid != 0.0: cm = centroid(Frames, coord) * alpha_centroid
+            if alpha_centroid != 0.0:
+                cm = centroid(Frames, coord) * alpha_centroid
 
             chisq = np.array([get_chisq(j, Frames[j].ravel()[embed_mask_List[j]],
                                   d1, d2, d3, ttype, embed_mask_List[j]) for j in range(N_freq*N_frame)])
@@ -2081,28 +2151,45 @@ maxit=200, J_factor = 0.001, stop=1.0e-10, ipynb=False, refresh_interval = 1000,
             chisq1_max = np.max(chisq1_List)
             chisq2_max = np.max(chisq2_List)
             chisq3_max = np.max(chisq3_List)
-            if d1: print (f"chi2_1: {chisq1:f}")
-            if d2: print (f"chi2_2: {chisq2:f}")
-            if d3: print (f"chi2_3: {chisq3:f}")
-            if d1: print ("weighted chi2_1: %f" % (chisq1 * alpha_d1))
-            if d2: print ("weighted chi2_2: %f" % (chisq2 * alpha_d2))
-            if d3: print ("weighted chi2_3: %f" % (chisq3 * alpha_d3))
-            if d1: print (f"Max Frame chi2_1: {chisq1_max:f}")
-            if d2: print (f"Max Frame chi2_2: {chisq2_max:f}")
-            if d3: print (f"Max Frame chi2_3: {chisq3_max:f}")
+            if d1:
+                print (f"chi2_1: {chisq1:f}")
+            if d2:
+                print (f"chi2_2: {chisq2:f}")
+            if d3:
+                print (f"chi2_3: {chisq3:f}")
+            if d1:
+                print ("weighted chi2_1: %f" % (chisq1 * alpha_d1))
+            if d2:
+                print ("weighted chi2_2: %f" % (chisq2 * alpha_d2))
+            if d3:
+                print ("weighted chi2_3: %f" % (chisq3 * alpha_d3))
+            if d1:
+                print (f"Max Frame chi2_1: {chisq1_max:f}")
+            if d2:
+                print (f"Max Frame chi2_2: {chisq2_max:f}")
+            if d3:
+                print (f"Max Frame chi2_3: {chisq3_max:f}")
 
             if final:
-                if d1: print ("All chisq1:",chisq1_List)
-                if d2: print ("All chisq2:",chisq2_List)
-                if d3: print ("All chisq3:",chisq3_List)
+                if d1:
+                    print ("All chisq1:",chisq1_List)
+                if d2:
+                    print ("All chisq2:",chisq2_List)
+                if d3:
+                    print ("All chisq3:",chisq3_List)
 
-            if s1 != 0.0: print (f"weighted s1: {s1:f}")
-            if s2 != 0.0: print (f"weighted s2: {s2:f}")
-            if s_dF != 0.0: print (f"weighted s_dF: {s_dF:f}")
-            if s_dS != 0.0: print (f"weighted s_dS: {s_dS:f}")
+            if s1 != 0.0:
+                print (f"weighted s1: {s1:f}")
+            if s2 != 0.0:
+                print (f"weighted s2: {s2:f}")
+            if s_dF != 0.0:
+                print (f"weighted s_dF: {s_dF:f}")
+            if s_dS != 0.0:
+                print (f"weighted s_dS: {s_dS:f}")
             print (f"weighted s_dynamic: {s_dynamic:f}")
             print (f"weighted s_multifreq: {s_multifreq:f}")
-            if alpha_centroid > 0.0: print (f"weighted COM: {cm:f}")
+            if alpha_centroid > 0.0:
+                print (f"weighted COM: {cm:f}")
 
             if alpha_flux > 0.0:
                 print ("weighted flux constraint: %f" % (alpha_flux * movie_flux_constraint(Frames, flux_List)))
@@ -2233,7 +2320,7 @@ def plot_i_dynamic(im_List, Prior, nit, chi2, s, s_dynamic, ipynb=False):
     if i == 0:
         plt.xlabel(r'Relative RA ($\mu$as)')
         plt.ylabel(r'Relative Dec ($\mu$as)')
-        plt.title(r"step: %i  $\chi^2$: %f  $s$: %f  $s_{t}$: %f" % (nit, chi2, s, s_dynamic), fontsize=20)
+        plt.title(rf"step: {nit}  $\chi^2$: {chi2:f}  $s$: {s:f}  $s_{{t}}$: {s_dynamic:f}", fontsize=20)
     else:
         plt.xlabel('')
         plt.ylabel('')
