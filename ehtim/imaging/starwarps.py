@@ -958,11 +958,13 @@ def movie(im_List, out='movie.mp4', fps=10, dpi=120):
     import matplotlib.animation as animation
 
     fig = plt.figure()
-    frame = im_List[0].imvec #read_auto(filelist[len(filelist)/2])
-    fov = im_List[0].psize*im_List[0].xdim
-    extent = fov * np.array((1,-1,-1,1)) / 2.
+    frame = im_List[0].imvec
+    fov_x = im_List[0].psize * im_List[0].xdim
+    fov_y = im_List[0].psize * im_List[0].ydim
+    # matplotlib extent convention: (xmin, xmax, ymin, ymax); x reversed for RA-east-left.
+    extent = (fov_x/2., -fov_x/2., -fov_y/2., fov_y/2.)
     maxi = np.max(frame)
-    im = plt.imshow( np.reshape(frame,[im_List[0].xdim, im_List[0].xdim]) , cmap='hot', extent=extent) #inferno
+    im = plt.imshow(np.reshape(frame, [im_List[0].ydim, im_List[0].xdim]), cmap='hot', extent=extent)
     plt.colorbar()
     im.set_clim([0,maxi])
     fig.set_size_inches([5,5])
@@ -971,7 +973,7 @@ def movie(im_List, out='movie.mp4', fps=10, dpi=120):
     def update_img(n):
         sys.stdout.write('\rprocessing image %i of %i ...' % (n,len(im_List)) )
         sys.stdout.flush()
-        im.set_data(np.reshape(im_List[n].imvec, [im_List[n].xdim, im_List[n].xdim]) )
+        im.set_data(np.reshape(im_List[n].imvec, [im_List[n].ydim, im_List[n].xdim]))
         return im
 
     ani = animation.FuncAnimation(fig,update_img,len(im_List),interval=1e3/fps)
