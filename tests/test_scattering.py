@@ -33,7 +33,13 @@ class TestSqrtQMatrix:
 
 
 class TestEnsembleAverageKernel:
-    """Ensemble_Average_Kernel normalization on rectangular reference images."""
+    """Ensemble_Average_Kernel shape + normalization on rectangular reference images."""
+
+    def test_shape_matches_rect_reference_image(self, model, make_rect_image):
+        """The blurring kernel has shape (ydim, xdim) matching the reference image."""
+        im = make_rect_image(RECT_XDIM, RECT_YDIM)
+        ker = model.Ensemble_Average_Kernel(im)
+        assert ker.shape == (im.ydim, im.xdim)
 
     def test_kernel_sums_to_one(self, model, make_rect_image):
         """The ensemble-average kernel is flux-preserving (sums to 1)."""

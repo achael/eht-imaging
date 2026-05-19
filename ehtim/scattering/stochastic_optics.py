@@ -245,12 +245,13 @@ class ScatteringModel(object):
         if wavelength_cm == None:
             wavelength_cm = C/Reference_Image.rf*100.0 #Observing wavelength [cm]
 
-        uvlist = np.fft.fftfreq(Reference_Image.xdim)/Reference_Image.psize # assume square kernel.  FIXME: create ulist and vlist, and construct u_grid and v_grid with the correct dimension
+        ulist = np.fft.fftfreq(Reference_Image.xdim)/Reference_Image.psize
+        vlist = np.fft.fftfreq(Reference_Image.ydim)/Reference_Image.psize
         if use_approximate_form == True:
-            u_grid, v_grid = np.meshgrid(uvlist, uvlist)
+            u_grid, v_grid = np.meshgrid(ulist, vlist)
             ker_uv = self.Ensemble_Average_Kernel_Visibility(u_grid, v_grid, wavelength_cm, use_approximate_form=use_approximate_form)
         else:
-            ker_uv = np.array([[self.Ensemble_Average_Kernel_Visibility(u, v, wavelength_cm, use_approximate_form=use_approximate_form) for u in uvlist] for v in uvlist]) 
+            ker_uv = np.array([[self.Ensemble_Average_Kernel_Visibility(u, v, wavelength_cm, use_approximate_form=use_approximate_form) for u in ulist] for v in vlist])
 
         ker = np.real(np.fft.fftshift(np.fft.fft2(ker_uv)))
         ker = ker / np.sum(ker) # normalize to 1
