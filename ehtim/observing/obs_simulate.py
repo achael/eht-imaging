@@ -107,7 +107,7 @@ def make_uvpoints(array, ra, dec, rf, bw, tint, tadv, tstart, tstop,
                 site2 = array.tarr[i2]['site']
                 coord1 = ((array.tarr[i1]['x'], array.tarr[i1]['y'], array.tarr[i1]['z']))
                 coord2 = ((array.tarr[i2]['x'], array.tarr[i2]['y'], array.tarr[i2]['z']))
-                
+
                 # Optical Depth
                 if type(tau) == dict:
                     try:
@@ -383,8 +383,8 @@ def sample_vis(im_org, uv, sgrscat=False, polrep_obs='stokes',
 def make_jones(obs, opacitycal=True, ampcal=True, phasecal=True, dcal=True,
                frcal=True, rlgaincal=True,
                stabilize_scan_phase=False, stabilize_scan_amp=False, neggains=False,
-               taup=ehc.GAINPDEF, 
-               gainp=ehc.GAINPDEF, gain_offset=ehc.GAINPDEF, 
+               taup=ehc.GAINPDEF,
+               gainp=ehc.GAINPDEF, gain_offset=ehc.GAINPDEF,
                phase_std=-1,
                dterm_offset=ehc.DTERMPDEF,
                rlratio_std=0., rlphase_std=0.,
@@ -403,36 +403,36 @@ def make_jones(obs, opacitycal=True, ampcal=True, phasecal=True, dcal=True,
            stabilize_scan_phase (bool): if True, random phase errors are constant over scans
            stabilize_scan_amp (bool): if True, random amplitude errors are constant over scans
            neggains (bool): if True, force the applied gains to be <1
-           
+
            taup (float): the fractional std. dev. of the random error on the opacities
            gainp (float): the fractional std. dev. of the random error on the gains
-                          or a dict giving one std. dev. per site      
+                          or a dict giving one std. dev. per site
 
            gain_offset (float): the base gain offset at all sites,
                                 or a dict giving one gain offset per site
-           phase_std (float): std. dev. of LCP phase, 
+           phase_std (float): std. dev. of LCP phase,
                               or a dict giving one std. dev. per site
-                              a negative value samples from uniform                                          
+                              a negative value samples from uniform
            dterm_offset (float): the base std. dev. of random additive error at all sites,
                                 or a dict giving one std. dev. per site
 
            rlratio_std (float): the fractional std. dev. of the R/L gain offset
-                                or a dict giving one std. dev. per site                                          
-           rlphase_std (float): std. dev. of R/L phase offset, 
                                 or a dict giving one std. dev. per site
-                                a negative value samples from uniform                                          
-                                                                            
+           rlphase_std (float): std. dev. of R/L phase offset,
+                                or a dict giving one std. dev. per site
+                                a negative value samples from uniform
+
            sigmat (float): temporal std for a Gaussian Process used to generate gains.
                            If sigmat=None then an iid gain noise is applied.
            phasesigmat (float): temporal std for a Gaussian Process used to generate phases.
-                                If phasesigmat=None then an iid gain noise is applied.                           
+                                If phasesigmat=None then an iid gain noise is applied.
            rlgsigmat (float): temporal std deviation for a Gaussian Process used to generate R/L gain ratios.
                            If rlgsigmat=None then an iid gain noise is applied.
            rlpsigmat (float): temporal std deviation for a Gaussian Process used to generate R/L phase diff.
                            If rlpsigmat=None then an iid gain noise is applied.
-                                                      
+
            caltable_path (string): If not None, path and prefix for saving the applied caltable
-           seed : a seed for the random number generators, uses system time if false                           
+           seed : a seed for the random number generators, uses system time if false
        Returns:
            (dict): a nested dictionary of matrices indexed by the site, then by the time
     """
@@ -536,19 +536,19 @@ def make_jones(obs, opacitycal=True, ampcal=True, phasecal=True, dcal=True,
             phase_mult = phase_std[site]
         else:
             phase_mult = phase_std
-                                
+
         # gainratio_mult: time dependent R/L gain offset
         if type(rlratio_std) == dict:
             gainratio_mult = rlratio_std[site]
         else:
             gainratio_mult = rlratio_std
-                            
+
         # phasediff_mult: time dependent R-L phase offset
         if type(rlphase_std) == dict:
             phasediff_mult = rlphase_std[site]
         else:
             phasediff_mult = rlphase_std
-            
+
         # correlation timescales
         if type(sigmat) == dict:
             sigt_g = sigmat[site]
@@ -569,11 +569,11 @@ def make_jones(obs, opacitycal=True, ampcal=True, phasecal=True, dcal=True,
             sigt_rlp = rlpsigmat[site]
         else:
             sigt_rlp = rlpsigmat
-                                                            
+
         # Amplitude gains
         gainR = gainL = np.ones(len(times))
         if not ampcal:
-     
+
             # mean LCP gain
             gainL_constant = goff * obsh.hashrandn(site, 'gain', str(goff), seed)
 
@@ -581,7 +581,7 @@ def make_jones(obs, opacitycal=True, ampcal=True, phasecal=True, dcal=True,
             if neggains:
                 gainL_constant = -np.abs(gainL_constant)
 
-            # LCP gain 
+            # LCP gain
             if sigt_g is None: # iid sampling in time
 
                 gainL = np.sqrt(np.abs(np.fromiter((
@@ -592,9 +592,9 @@ def make_jones(obs, opacitycal=True, ampcal=True, phasecal=True, dcal=True,
 
             elif sigt_g <=0: # single sample in time
 
-                gainL = np.sqrt(np.abs(np.fromiter(((1.0 + gainL_constant) 
+                gainL = np.sqrt(np.abs(np.fromiter(((1.0 + gainL_constant)
                                        for time in times_stable_amp), float)))
-                                
+
             else: # correlated sampling in time
                 scan_start_times = scans[:, 0]
                 cov = obsh.rbf_kernel_covariance(scan_start_times, sigt_g)
@@ -611,41 +611,41 @@ def make_jones(obs, opacitycal=True, ampcal=True, phasecal=True, dcal=True,
                 gain_RLratio = 1.
             else:
                 if sigt_rlg is None: #iid sampling in time
-                
+
                     gain_RLratio = np.abs(np.fromiter((
-                      (1.0 + gainratio_mult * obsh.hashrandn(site, 'gainratio', str(time), 
-                                                             str(gainratio_mult), seed))                
-                      for time in times_stable_amp), float))  
-                      
+                      (1.0 + gainratio_mult * obsh.hashrandn(site, 'gainratio', str(time),
+                                                             str(gainratio_mult), seed))
+                      for time in times_stable_amp), float))
+
                 elif sigt_rlg <=0: # single sample in time
                     gain_RLratio = np.abs(np.fromiter((
                       (1.0 + gainratio_mult * obsh.hashrandn(site, 'gainratio',
-                                                             str(gainratio_mult), seed))                
-                      for time in times_stable_amp), float))  
-                                                                      
+                                                             str(gainratio_mult), seed))
+                      for time in times_stable_amp), float))
+
                 else: #correlated sampling in time
                     scan_start_times = scans[:, 0]
                     cov = obsh.rbf_kernel_covariance(scan_start_times, sigt_rlg)
                     randRLx = obsh.hashmultivariaterandn(len(scan_start_times), cov, site,
-                                                         'gainratio', str(time), str(gainratio_mult), 
-                                                         seed) 
-                    gain_RLratio = np.abs(1.0 + gainratio_mult * randRLx)    
+                                                         'gainratio', str(time), str(gainratio_mult),
+                                                         seed)
+                    gain_RLratio = np.abs(1.0 + gainratio_mult * randRLx)
                     gainRLratio_interpolateor = interp1d(scan_start_times, gain_RLratio, kind='zero')
-                    gain_RLratio = gainRLratio_interpolateor(times_stable_amp)   
-                                                                            
-            # RCP gain                
+                    gain_RLratio = gainRLratio_interpolateor(times_stable_amp)
+
+            # RCP gain
             gainR = gain_RLratio * gainL
-                
+
             # enforce gains < 1
-            # TODO -- will this mess up gain offset priors? 
+            # TODO -- will this mess up gain offset priors?
             if neggains:
                 gainR = np.exp(-np.abs(np.log(gainR)))
                 gainL = np.exp(-np.abs(np.log(gainL)))
-                    
+
         # Opacity attenuation of amplitude gain
         if not opacitycal:
             taus = np.abs(np.fromiter((
-                (taudict[site][j]) * 
+                (taudict[site][j]) *
                 (1.0 + taup * obsh.hashrandn(site, 'tau', times_stable_amp[j], seed))
                 for j in range(len(times))), float))
             atten = np.exp(-taus/(ehc.EP + 2.0*np.sin(el_angles)))
@@ -656,44 +656,44 @@ def make_jones(obs, opacitycal=True, ampcal=True, phasecal=True, dcal=True,
         # Atmospheric Phase
         if not phasecal:
 
-            # Gaussian distribution of LCP phase 
-            if phase_mult >=0: 
+            # Gaussian distribution of LCP phase
+            if phase_mult >=0:
 
-                if sigt_p is None: #iid sampling in time                                                 
+                if sigt_p is None: #iid sampling in time
                     phaseL = np.fromiter((phase_mult * obsh.hashrandn(site, 'phase', str(time),
-                                                                      str(phase_mult), seed)               
+                                                                      str(phase_mult), seed)
                                           for time in times_stable_phase), float)
-                                          
+
                 elif sigt_p <=0: # single sample in time
-                    phaseL = np.fromiter((phase_mult * obsh.hashrandn(site, 'phase', 
-                                                                      str(phase_mult), seed)               
-                                          for time in times_stable_phase), float)                
+                    phaseL = np.fromiter((phase_mult * obsh.hashrandn(site, 'phase',
+                                                                      str(phase_mult), seed)
+                                          for time in times_stable_phase), float)
                 else: #correlated sampling in time
                     scan_start_times = scans[:, 0]
                     cov = obsh.rbf_kernel_covariance(scan_start_times, sigt_p)
                     phaseL = phase_mult* obsh.hashmultivariaterandn(len(scan_start_times), cov, site,
-                                                                   'phase', str(time), str(phase_mult), 
-                                                                    seed) 
+                                                                   'phase', str(time), str(phase_mult),
+                                                                    seed)
                     phaseL_interpolateor = interp1d(scan_start_times, phaseL, kind='zero')
-                    phaseL = phaseL_interpolateor(times_stable_phase)   
-                    
+                    phaseL = phaseL_interpolateor(times_stable_phase)
+
             # flat distribution of LCP phase, iid in time
             # TODO correlated sampling with flat phases?
-            else:                        
+            else:
 
                 phaseL = np.fromiter((2 * np.pi * obsh.hashrand(site, 'phase', time, seed)
-                                     for time in times_stable_phase), float)           
-                
+                                     for time in times_stable_phase), float)
+
             # R-L phase offset
             if rlgaincal:
-                phaseRLdiff = 0.                 
+                phaseRLdiff = 0.
             else:
                 # Gaussian distributed phase difference
-                if phasediff_mult >=0: 
+                if phasediff_mult >=0:
                     if sigt_rlp is None: #iid sampling in time
                         phaseRLdiff = np.fromiter((phasediff_mult *
                                                    obsh.hashrandn(site, 'phasediff', str(time),
-                                                                  str(phasediff_mult), seed)               
+                                                                  str(phasediff_mult), seed)
                                                    for time in times_stable_phase), float)
                     elif sigt_rlp <=0: # single sample in time
                         phaseRLdiff = np.fromiter((phasediff_mult *
@@ -703,22 +703,22 @@ def make_jones(obs, opacitycal=True, ampcal=True, phasecal=True, dcal=True,
                     else: #correlated sampling in time
                         scan_start_times = scans[:, 0]
                         cov = obsh.rbf_kernel_covariance(scan_start_times, sigt_rlp)
-                        phaseRLdiff = phasediff_mult * obsh.hashmultivariaterandn(len(scan_start_times), 
-                                                                                  cov, site, 'phasediff', 
-                                                                                  str(time), str(phasediff_mult), 
-                                                                                  seed) 
+                        phaseRLdiff = phasediff_mult * obsh.hashmultivariaterandn(len(scan_start_times),
+                                                                                  cov, site, 'phasediff',
+                                                                                  str(time), str(phasediff_mult),
+                                                                                  seed)
                         phaseRL_interpolateor = interp1d(scan_start_times, phaseRLdiff, kind='zero')
-                        phaseRLdiff = phaseRL_interpolateor(times_stable_phase)   
-                                                         
+                        phaseRLdiff = phaseRL_interpolateor(times_stable_phase)
+
                 # flat distribution phase difference, iid in time
-                # TODO correlated sampling with flat phases?                
-                else:                        
+                # TODO correlated sampling with flat phases?
+                else:
                     phaseRLdiff = np.fromiter((2 * np.pi * obsh.hashrand(site, 'phase', time, seed)
-                                              for time in times_stable_phase), float) 
+                                              for time in times_stable_phase), float)
                     phaseRLdiff -= np.pi
-            
-            # Complex gains                                             
-            gainL = gainL * np.exp(1j*phaseL)            
+
+            # Complex gains
+            gainL = gainL * np.exp(1j*phaseL)
             gainR = gainR * np.exp(1j*(phaseL + phaseRLdiff))
 
 
@@ -757,7 +757,7 @@ def make_jones(obs, opacitycal=True, ampcal=True, phasecal=True, dcal=True,
 
         # Assemble the Jones Matrices and save to dictionary
         j_matrices = {times[j]: np.array([
-            [np.exp(-1j*fr_angle[j])*gainR[j], 
+            [np.exp(-1j*fr_angle[j])*gainR[j],
              np.exp(1j*(fr_angle[j]+fr_angle_D[j]))*dR*gainR[j]],
             [np.exp(-1j*(fr_angle[j]+fr_angle_D[j]))*dL*gainL[j],
              np.exp(1j*fr_angle[j])*gainL[j]]
@@ -908,8 +908,8 @@ def add_jones_and_noise(obs, add_th_noise=True,
                         frcal=True, rlgaincal=True,
                         stabilize_scan_phase=False, stabilize_scan_amp=False,
                         neggains=False,
-                        taup=ehc.GAINPDEF, 
-                        gainp=ehc.GAINPDEF,gain_offset=ehc.GAINPDEF, 
+                        taup=ehc.GAINPDEF,
+                        gainp=ehc.GAINPDEF,gain_offset=ehc.GAINPDEF,
                         phase_std=-1,
                         dterm_offset=ehc.DTERMPDEF,
                         rlratio_std=0., rlphase_std=0.,
@@ -933,33 +933,33 @@ def add_jones_and_noise(obs, add_th_noise=True,
 
            taup (float): the fractional std. dev. of the random error on the opacities
            gainp (float): the fractional std. dev. of the random error on the gains
-                          or a dict giving one std. dev. per site      
+                          or a dict giving one std. dev. per site
 
            gain_offset (float): the base gain offset at all sites,
                                 or a dict giving one gain offset per site
-           phase_std (float): std. dev. of LCP phase, 
+           phase_std (float): std. dev. of LCP phase,
                               or a dict giving one std. dev. per site
-                              a negative value samples from uniform                                          
+                              a negative value samples from uniform
            dterm_offset (float): the base std. dev. of random additive error at all sites,
                                 or a dict giving one std. dev. per site
 
            rlratio_std (float): the fractional std. dev. of the R/L gain offset
-                                or a dict giving one std. dev. per site                                          
-           rlphase_std (float): std. dev. of R/L phase offset, 
                                 or a dict giving one std. dev. per site
-                                a negative value samples from uniform                                          
-                                                                            
+           rlphase_std (float): std. dev. of R/L phase offset,
+                                or a dict giving one std. dev. per site
+                                a negative value samples from uniform
+
            sigmat (float): temporal std for a Gaussian Process used to generate gains.
                            If sigmat=None then an iid gain noise is applied.
            phasesigmat (float): temporal std for a Gaussian Process used to generate phases.
-                                If phasesigmat=None then an iid gain noise is applied.                           
+                                If phasesigmat=None then an iid gain noise is applied.
            rlgsigmat (float): temporal std deviation for a Gaussian Process used to generate R/L gain ratios.
                            If rlgsigmat=None then an iid gain noise is applied.
            rlpsigmat (float): temporal std deviation for a Gaussian Process used to generate R/L phase diff.
                            If rlpsigmat=None then an iid gain noise is applied.
-                           
+
            caltable_path (string): If not None, path and prefix for saving the applied caltable
-           seed (int): seeds the random component of the noise terms. DO NOT set to 0!                                          
+           seed (int): seeds the random component of the noise terms. DO NOT set to 0!
            verbose (bool): print updates and warnings
        Returns:
            (np.array): an observation  data array
@@ -967,7 +967,7 @@ def add_jones_and_noise(obs, add_th_noise=True,
 
     if verbose:
         print("Applying Jones Matrices to data . . . ")
-        
+
     # Build Jones Matrices
     jm_dict = make_jones(obs,
                          ampcal=ampcal, opacitycal=opacitycal, phasecal=phasecal,
@@ -975,7 +975,7 @@ def add_jones_and_noise(obs, add_th_noise=True,
                          stabilize_scan_phase=stabilize_scan_phase,
                          stabilize_scan_amp=stabilize_scan_amp, neggains=neggains,
                          taup=taup,
-                         gainp=gainp, gain_offset=gain_offset, 
+                         gainp=gainp, gain_offset=gain_offset,
                          phase_std=phase_std,
                          dterm_offset=dterm_offset,
                          rlratio_std=rlratio_std, rlphase_std=rlphase_std,
@@ -1202,8 +1202,8 @@ def apply_jones_inverse(obs, opacitycal=True, dcal=True, frcal=True, verbose=Tru
 def add_noise(obs, add_th_noise=True, opacitycal=True, ampcal=True, phasecal=True,
               stabilize_scan_amp=False, stabilize_scan_phase=False,
               neggains=False,
-              taup=ehc.GAINPDEF, gain_offset=ehc.GAINPDEF, gainp=ehc.GAINPDEF, 
-              caltable_path=None, seed=False, sigmat=None, 
+              taup=ehc.GAINPDEF, gain_offset=ehc.GAINPDEF, gainp=ehc.GAINPDEF,
+              caltable_path=None, seed=False, sigmat=None,
               verbose=True):
     """Add thermal noise and gain & phase calibration errors to a dataset.
        Old routine replaced by add_jones_and_noise.
@@ -1227,13 +1227,13 @@ def add_noise(obs, add_th_noise=True, opacitycal=True, ampcal=True, phasecal=Tru
            seed (int): seeds the random component of the noise terms. DO NOT set to 0!
            sigmat (float): temporal std for a Gaussian Process used to generate gains.
                            NOT SUPPORTED for add_noise
-                           
+
            verbose (bool): print updates and warnings
        Returns:
            (np.array): an observation data array
     """
 
-    if caltable_path: 
+    if caltable_path:
         print("caltable saving not implemented for old add_noise function!")
     if verbose:
         print("Adding gain + phase errors to data and applying a priori calibration . . . ")
@@ -1297,7 +1297,7 @@ def add_noise(obs, add_th_noise=True, opacitycal=True, ampcal=True, phasecal=Tru
         sig_rr = np.fromiter((obsh.blnoise(obs.tarr[obs.tkey[sites[i][0]]]['sefdr'],
                                            obs.tarr[obs.tkey[sites[i][1]]]['sefdr'], tint[i], bw)
                               for i in range(len(tint))), float)
-        sig_ll = np.fromiter((obsh.blnoise(obs.tarr[obs.tkey[sites[i][0]]]['sefdr'],
+        sig_ll = np.fromiter((obsh.blnoise(obs.tarr[obs.tkey[sites[i][0]]]['sefdl'],
                                            obs.tarr[obs.tkey[sites[i][1]]]['sefdl'], tint[i], bw)
                               for i in range(len(tint))), float)
         sig_rl = np.fromiter((obsh.blnoise(obs.tarr[obs.tkey[sites[i][0]]]['sefdr'],
