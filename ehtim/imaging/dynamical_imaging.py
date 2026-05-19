@@ -727,7 +727,7 @@ def static_regularizer(Frame_List, Prior_List, embed_mask_List, flux, psize, sty
     N_frame = Frame_List.shape[0]
     xdim = int(len(Frame_List[0].ravel())**0.5)
 
-    s = np.sum( regularizer(Frame_List[i].ravel()[embed_mask_List[i]], Prior_List[i].ravel()[embed_mask_List[i]], embed_mask_List[i], flux=flux, xdim=xdim, ydim=xdim, psize=psize, stype=stype, norm_reg=norm_reg, **kwargs) for i in range(N_frame))
+    s = sum(regularizer(Frame_List[i].ravel()[embed_mask_List[i]], Prior_List[i].ravel()[embed_mask_List[i]], embed_mask_List[i], flux=flux, xdim=xdim, ydim=xdim, psize=psize, stype=stype, norm_reg=norm_reg, **kwargs) for i in range(N_frame))
 
     return s/N_frame
 
@@ -745,7 +745,7 @@ def static_regularizer_gradient(Frame_List, Prior_List, embed_mask_List, flux, p
 ##################################################################################################
 
 def centroid(Frame_List, coord):
-    return np.sum(np.sum(im.ravel() * coord[:,0])**2 + np.sum(im.ravel() * coord[:,1])**2 for im in Frame_List)/len(Frame_List)
+    return sum(np.sum(im.ravel() * coord[:,0])**2 + np.sum(im.ravel() * coord[:,1])**2 for im in Frame_List)/len(Frame_List)
 
 def centroid_gradient(Frame_List, coord): #Includes Jacobian factor to account for the frames being written as log(frame)
     return 2.0 * np.concatenate([(np.sum(im.ravel() * coord[:,0])*coord[:,0] + np.sum(im.ravel() * coord[:,1])*coord[:,1])*im.ravel() for im in Frame_List])/len(Frame_List)
