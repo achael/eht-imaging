@@ -386,9 +386,8 @@ def computeSuffStatistics(mu, Lambda, obs_List, Upsilon, theta, init_x, init_y, 
     if not len(mask):
         mask = np.ones(mu[0].imvec.shape)>0
     
-    # check if first mean image is square
-    if mu[0].xdim != mu[0].ydim:
-        error('Error: This has only been checked thus far on square images!')
+    # Rectangular grids are supported: the underlying matrix algebra uses
+    # np.eye(xdim*ydim) at the interior sites and never assumes a square shape.
 
     # lightcurve and flux constraint go together
     if lightcurve == None  and 'flux' in measurement.keys(): #KATIE ADDED FEB 1 2021
