@@ -784,13 +784,15 @@ def chisqgrad_vvis_nfft(imarr, A, v, sigmav,pol_solve=POL_SOLVE_DEFAULT):
 
 
 ##################################################################################################
-# Imager-backend wrappers
+# Polarimetric regularizers
 #
-# Same pattern as `reg_X` / `reggrad_X` in `imager_utils.py`: each wrapper adapts
-# a pol regularizer above to the uniform `(imarr, mask, **kwargs)` signature used
-# by `_REGULARIZER_DISPATCH`. Pol spatial regularizers use `embed_imarr` (not
-# `embed`) for the pre-step and slice the gradient as `g[:, mask]` because the
-# pol gradient is shaped (4, nimage) — one row per Stokes component.
+# Each `reg_X` / `reggrad_X` implements a polarimetric regularizer with the
+# uniform `(imarr, mask, **kwargs)` signature used by the `_REGULARIZER_DISPATCH`
+# table in `imager_backend.py`. Each returns the penalty value (positive; the
+# imager solver minimises it). Spatial regularizers (ptv, vtv, vtv2) use
+# `embed_imarr` (not `embed`) for the pre-step and slice the gradient as
+# `g[:, mask]` since the pol gradient is shaped (4, nimage) — one row per
+# Stokes component, gated on `pol_solve[0..3]`.
 ##################################################################################################
 
 

@@ -1742,13 +1742,14 @@ def fAgrad(imvec, I_ref=1.0, alpha_A=1.0):
 
 
 ##################################################################################################
-# Imager-backend wrappers
+# Stokes-I regularizers
 #
-# Each `reg_X` / `reggrad_X` adapts an `sX` / `sXgrad` regularizer above to the
-# uniform `(imvec, mask, **kwargs)` signature used by the `_REGULARIZER_DISPATCH`
-# table in `imager_backend.py`. The wrappers add the sign convention (the
-# imager minimizes `-regularizer`), unpack kwargs into the leaf's positional
-# args, and handle the embed-pre / mask-post-slice pattern for spatial regs.
+# Each `reg_X` / `reggrad_X` implements a Stokes-I regularizer with the uniform
+# `(imvec, mask, **kwargs)` signature used by the `_REGULARIZER_DISPATCH` table
+# in `imager_backend.py`. Each returns the penalty value (positive; the imager
+# solver minimises it). Spatial regularizers (cm, tv, tvlog, tv2, tv2log,
+# compact, compact2, rgauss) use the embed-pre / mask-post-slice pattern; flat
+# regularizers (flux, simple, l1, l1w, lA, gs, patch) operate directly.
 ##################################################################################################
 
 

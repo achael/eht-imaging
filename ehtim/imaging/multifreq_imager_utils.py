@@ -214,12 +214,15 @@ def regularizergrad_mf(imvec, nprior, mask, xdim, ydim, psize, stype, **kwargs):
 
 
 ##################################################################################################
-# Imager-backend wrappers
+# Multifrequency regularizers
 #
-# Same pattern as `reg_X` / `reggrad_X` in `imager_utils.py`: each wrapper adapts
-# `l2_spec` / `tv_spec` to the uniform `(imvec, mask, **kwargs)` signature used by
-# `_REGULARIZER_DISPATCH`. tv_spec uses clipfloor=0 (not the default) and
-# randomfloor=False for embed since spectral-index images can be negative.
+# Each `reg_X` / `reggrad_X` implements a spectral-index regularizer with the
+# uniform `(imvec, mask, **kwargs)` signature used by the `_REGULARIZER_DISPATCH`
+# table in `imager_backend.py`. The four entry points (`reg_l2_spec`,
+# `reggrad_l2_spec`, `reg_tv_spec`, `reggrad_tv_spec`) cover six spectral slots
+# each (alpha, beta, rm, cm, alphap, betap) via the `spectral_slot()` runtime
+# dispatch. `reg_tv_spec` uses `clipfloor=0` (not the default) and
+# `randomfloor=False` for embed since spectral-index images can be negative.
 ##################################################################################################
 
 
