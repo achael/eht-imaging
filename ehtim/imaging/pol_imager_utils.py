@@ -1289,113 +1289,333 @@ def stv2_v_grad(imarr, vflux, nx, ny, psize, pol_solve=POL_SOLVE_DEFAULT_V,
 
 
 def reg_msimple(imarr, mask, **kwargs):
-    return -sm(imarr, kwargs['flux'], norm_reg=kwargs.get('norm_reg', True))
+    flux = kwargs['flux']
+    norm = flux if kwargs.get('norm_reg', True) else 1
+    iimage = make_i_image(imarr)
+    mimage = make_m_image(imarr)
+    return np.sum(iimage * np.log(mimage)) / norm
 
 
 def reggrad_msimple(imarr, mask, **kwargs):
-    return -smgrad(imarr, kwargs['flux'],
-                   pol_solve=kwargs.get('pol_solve', POL_SOLVE_DEFAULT),
-                   norm_reg=kwargs.get('norm_reg', True))
+    flux = kwargs['flux']
+    pol_solve = kwargs.get('pol_solve', POL_SOLVE_DEFAULT)
+    norm = flux if kwargs.get('norm_reg', True) else 1
+    iimage = make_i_image(imarr)
+    mimage = make_m_image(imarr)
+    psiimage = make_psi_image(imarr)
+    gradout = np.zeros(imarr.shape)
+    if pol_solve[0] != 0:
+        gradout[0] = np.log(mimage)
+    if pol_solve[1] != 0:
+        gradm = iimage / mimage
+        gradout[1] = gradm * np.cos(psiimage)
+    if pol_solve[3] != 0:
+        gradm = iimage / mimage
+        gradout[3] = gradm * (-mimage * np.tan(psiimage))
+    return gradout / norm
 
 
 def reg_hw(imarr, mask, **kwargs):
-    return -shw(imarr, kwargs['flux'], norm_reg=kwargs.get('norm_reg', True))
+    flux = kwargs['flux']
+    norm = flux if kwargs.get('norm_reg', True) else 1
+    iimage = make_i_image(imarr)
+    mimage = make_m_image(imarr)
+    return np.sum(iimage * (((1+mimage)/2) * np.log((1+mimage)/2)
+                            + ((1-mimage)/2) * np.log((1-mimage)/2))) / norm
 
 
 def reggrad_hw(imarr, mask, **kwargs):
-    return -shwgrad(imarr, kwargs['flux'],
-                    pol_solve=kwargs.get('pol_solve', POL_SOLVE_DEFAULT),
-                    norm_reg=kwargs.get('norm_reg', True))
+    flux = kwargs['flux']
+    pol_solve = kwargs.get('pol_solve', POL_SOLVE_DEFAULT)
+    norm = flux if kwargs.get('norm_reg', True) else 1
+    iimage = make_i_image(imarr)
+    mimage = make_m_image(imarr)
+    psiimage = make_psi_image(imarr)
+    gradout = np.zeros(imarr.shape)
+    if pol_solve[0] != 0:
+        gradout[0] = (((1+mimage)/2) * np.log((1+mimage)/2)
+                      + ((1-mimage)/2) * np.log((1-mimage)/2))
+    if pol_solve[1] != 0:
+        gradm = iimage * np.arctanh(mimage)
+        gradout[1] = gradm * np.cos(psiimage)
+    if pol_solve[3] != 0:
+        gradm = iimage * np.arctanh(mimage)
+        gradout[3] = gradm * (-mimage * np.tan(psiimage))
+    return gradout / norm
 
 
 def reg_ptv(imarr, mask, **kwargs):
     from ehtim.imaging.imager_utils import embed_imarr
     if np.any(np.invert(mask)):
         imarr = embed_imarr(imarr, mask, randomfloor=True)
-    return -stv_pol(imarr, kwargs['flux'], kwargs['xdim'], kwargs['ydim'], kwargs['psize'],
-                    norm_reg=kwargs.get('norm_reg', True),
-                    beam_size=kwargs.get('beam_size', 1))
+    flux = kwargs['flux']
+    nx, ny, psize = kwargs['xdim'], kwargs['ydim'], kwargs['psize']
+    beam_size = kwargs.get('beam_size', 1) or psize
+    norm = flux * psize / beam_size if kwargs.get('norm_reg', True) else 1
+    pimage = make_p_image(imarr)
+    im = pimage.reshape(ny, nx)
+    impad = np.pad(im, 1, mode='constant', constant_values=0)
+    im_l1 = np.roll(impad, -1, axis=0)[1:ny+1, 1:nx+1]
+    im_l2 = np.roll(impad, -1, axis=1)[1:ny+1, 1:nx+1]
+    return np.sum(np.sqrt(np.abs(im_l1 - im)**2 + np.abs(im_l2 - im)**2)) / norm
 
 
 def reggrad_ptv(imarr, mask, **kwargs):
     from ehtim.imaging.imager_utils import embed_imarr
-    if np.any(np.invert(mask)):
+    do_slice = np.any(np.invert(mask))
+    if do_slice:
         imarr = embed_imarr(imarr, mask, randomfloor=True)
-    g = -stv_pol_grad(imarr, kwargs['flux'], kwargs['xdim'], kwargs['ydim'], kwargs['psize'],
-                      pol_solve=kwargs.get('pol_solve', POL_SOLVE_DEFAULT),
-                      norm_reg=kwargs.get('norm_reg', True),
-                      beam_size=kwargs.get('beam_size', 1))
-    return g[:, mask] if np.any(np.invert(mask)) else g
+    flux = kwargs['flux']
+    nx, ny, psize = kwargs['xdim'], kwargs['ydim'], kwargs['psize']
+    pol_solve = kwargs.get('pol_solve', POL_SOLVE_DEFAULT)
+    beam_size = kwargs.get('beam_size', 1) or psize
+    norm = flux * psize / beam_size if kwargs.get('norm_reg', True) else 1
+    iimage = make_i_image(imarr)
+    pimage = make_p_image(imarr)
+    mimage = make_m_image(imarr)
+    psiimage = make_psi_image(imarr)
+    im = pimage.reshape(ny, nx)
+    impad = np.pad(im, 1, mode='constant', constant_values=0)
+    im_l1 = np.roll(impad, -1, axis=0)[1:ny+1, 1:nx+1]
+    im_l2 = np.roll(impad, -1, axis=1)[1:ny+1, 1:nx+1]
+    im_r1 = np.roll(impad, 1, axis=0)[1:ny+1, 1:nx+1]
+    im_r2 = np.roll(impad, 1, axis=1)[1:ny+1, 1:nx+1]
+    im_r1l2 = np.roll(np.roll(impad,  1, axis=0), -1, axis=1)[1:ny+1, 1:nx+1]
+    im_l1r2 = np.roll(np.roll(impad, -1, axis=0),  1, axis=1)[1:ny+1, 1:nx+1]
+    d1 = np.sqrt(np.abs(im_l1 - im)**2 + np.abs(im_l2 - im)**2)
+    d2 = np.sqrt(np.abs(im_r1 - im)**2 + np.abs(im_r1l2 - im_r1)**2)
+    d3 = np.sqrt(np.abs(im_r2 - im)**2 + np.abs(im_l1r2 - im_r2)**2)
+    gradout = np.zeros(imarr.shape)
+    if pol_solve[0] != 0:
+        m1 = 2*np.abs(im*im) - np.abs(im*im_l1)*np.cos(np.angle(im_l1) - np.angle(im)) - np.abs(im*im_l2)*np.cos(np.angle(im_l2) - np.angle(im))
+        m2 = np.abs(im*im) - np.abs(im*im_r1)*np.cos(np.angle(im) - np.angle(im_r1))
+        m3 = np.abs(im*im) - np.abs(im*im_r2)*np.cos(np.angle(im) - np.angle(im_r2))
+        gradout[0] = (1./iimage) * (m1/d1 + m2/d2 + m3/d3).flatten()
+    if pol_solve[1] != 0:
+        m1 = 2*np.abs(im) - np.abs(im_l1)*np.cos(np.angle(im_l1) - np.angle(im)) - np.abs(im_l2)*np.cos(np.angle(im_l2) - np.angle(im))
+        m2 = np.abs(im) - np.abs(im_r1)*np.cos(np.angle(im) - np.angle(im_r1))
+        m3 = np.abs(im) - np.abs(im_r2)*np.cos(np.angle(im) - np.angle(im_r2))
+        gradm = iimage * (m1/d1 + m2/d2 + m3/d3).flatten()
+        gradout[1] = gradm * np.cos(psiimage)
+    if pol_solve[2] != 0:
+        c1 = -2*np.abs(im*im_l1)*np.sin(np.angle(im_l1) - np.angle(im)) - 2*np.abs(im*im_l2)*np.sin(np.angle(im_l2) - np.angle(im))
+        c2 = 2*np.abs(im*im_r1)*np.sin(np.angle(im) - np.angle(im_r1))
+        c3 = 2*np.abs(im*im_r2)*np.sin(np.angle(im) - np.angle(im_r2))
+        gradchi = (c1/d1 + c2/d2 + c3/d3).flatten()
+        gradout[2] = 0.5 * gradchi
+    if pol_solve[3] != 0:
+        m1 = 2*np.abs(im) - np.abs(im_l1)*np.cos(np.angle(im_l1) - np.angle(im)) - np.abs(im_l2)*np.cos(np.angle(im_l2) - np.angle(im))
+        m2 = np.abs(im) - np.abs(im_r1)*np.cos(np.angle(im) - np.angle(im_r1))
+        m3 = np.abs(im) - np.abs(im_r2)*np.cos(np.angle(im) - np.angle(im_r2))
+        gradm = iimage * (m1/d1 + m2/d2 + m3/d3).flatten()
+        gradout[3] = gradm * (-mimage * np.tan(psiimage))
+    g = gradout / norm
+    return g[:, mask] if do_slice else g
 
 
 def reg_vflux(imarr, mask, **kwargs):
-    return -svflux(imarr, kwargs['vflux'], norm_reg=kwargs.get('norm_reg', True))
+    vflux = kwargs['vflux']
+    norm = np.abs(vflux)**2 if kwargs.get('norm_reg', True) else 1
+    vimage = make_v_image(imarr)
+    return (np.sum(vimage) - vflux)**2 / norm
 
 
 def reggrad_vflux(imarr, mask, **kwargs):
-    return -svfluxgrad(imarr, kwargs['vflux'],
-                       pol_solve=kwargs.get('pol_solve', POL_SOLVE_DEFAULT_V),
-                       norm_reg=kwargs.get('norm_reg', True))
+    vflux = kwargs['vflux']
+    pol_solve = kwargs.get('pol_solve', POL_SOLVE_DEFAULT_V)
+    norm = np.abs(vflux)**2 if kwargs.get('norm_reg', True) else 1
+    iimage = make_i_image(imarr)
+    vimage = make_v_image(imarr)
+    vfimage = make_vf_image(imarr)
+    psiimage = make_psi_image(imarr)
+    base = 2 * (np.sum(vimage) - vflux) * np.ones(len(vimage))
+    gradout = np.zeros(imarr.shape)
+    if pol_solve[0] != 0:
+        gradout[0] = (vimage / iimage) * base
+    if pol_solve[1] != 0:
+        gradv = iimage * base
+        gradout[1] = gradv * np.sin(psiimage)
+    if pol_solve[3] != 0:
+        gradv = iimage * base
+        gradout[3] = gradv * (vfimage / np.tan(psiimage))
+    return gradout / norm
 
 
 def reg_l1v(imarr, mask, **kwargs):
-    return -sl1v(imarr, kwargs['vflux'], norm_reg=kwargs.get('norm_reg', True))
+    vflux = kwargs['vflux']
+    norm = np.abs(vflux) if kwargs.get('norm_reg', True) else 1
+    vimage = make_v_image(imarr)
+    return np.sum(np.abs(vimage)) / norm
 
 
 def reggrad_l1v(imarr, mask, **kwargs):
-    return -sl1vgrad(imarr, kwargs['vflux'],
-                     pol_solve=kwargs.get('pol_solve', POL_SOLVE_DEFAULT_V),
-                     norm_reg=kwargs.get('norm_reg', True))
+    vflux = kwargs['vflux']
+    pol_solve = kwargs.get('pol_solve', POL_SOLVE_DEFAULT_V)
+    norm = np.abs(vflux) if kwargs.get('norm_reg', True) else 1
+    iimage = make_i_image(imarr)
+    vimage = make_v_image(imarr)
+    vfimage = make_vf_image(imarr)
+    psiimage = make_psi_image(imarr)
+    base = np.sign(vimage)
+    gradout = np.zeros(imarr.shape)
+    if pol_solve[0] != 0:
+        gradout[0] = vfimage * base
+    if pol_solve[1] != 0:
+        gradv = iimage * base
+        gradout[1] = gradv * np.sin(psiimage)
+    if pol_solve[3] != 0:
+        gradv = iimage * base
+        gradout[3] = gradv * (vfimage / np.tan(psiimage))
+    return gradout / norm
 
 
 def reg_l2v(imarr, mask, **kwargs):
-    return -sl2v(imarr, kwargs['vflux'], norm_reg=kwargs.get('norm_reg', True))
+    vflux = kwargs['vflux']
+    norm = np.abs(vflux**2) if kwargs.get('norm_reg', True) else 1
+    vimage = make_v_image(imarr)
+    return np.sum(vimage**2) / norm
 
 
 def reggrad_l2v(imarr, mask, **kwargs):
-    return -sl2vgrad(imarr, kwargs['vflux'],
-                     pol_solve=kwargs.get('pol_solve', POL_SOLVE_DEFAULT_V),
-                     norm_reg=kwargs.get('norm_reg', True))
+    vflux = kwargs['vflux']
+    pol_solve = kwargs.get('pol_solve', POL_SOLVE_DEFAULT_V)
+    norm = np.abs(vflux**2) if kwargs.get('norm_reg', True) else 1
+    iimage = make_i_image(imarr)
+    vimage = make_v_image(imarr)
+    vfimage = make_vf_image(imarr)
+    psiimage = make_psi_image(imarr)
+    base = 2 * vimage
+    gradout = np.zeros(imarr.shape)
+    if pol_solve[0] != 0:
+        gradout[0] = vfimage * base
+    if pol_solve[1] != 0:
+        gradv = iimage * base
+        gradout[1] = gradv * np.sin(psiimage)
+    if pol_solve[3] != 0:
+        gradv = iimage * base
+        gradout[3] = gradv * (vfimage / np.tan(psiimage))
+    return gradout / norm
 
 
 def reg_vtv(imarr, mask, **kwargs):
     from ehtim.imaging.imager_utils import embed_imarr
     if np.any(np.invert(mask)):
         imarr = embed_imarr(imarr, mask, randomfloor=True)
-    return -stv_v(imarr, kwargs['vflux'], kwargs['xdim'], kwargs['ydim'], kwargs['psize'],
-                  norm_reg=kwargs.get('norm_reg', True),
-                  beam_size=kwargs.get('beam_size', 1))
+    vflux = kwargs['vflux']
+    nx, ny, psize = kwargs['xdim'], kwargs['ydim'], kwargs['psize']
+    beam_size = kwargs.get('beam_size', 1) or psize
+    norm = np.abs(vflux) * psize / beam_size if kwargs.get('norm_reg', True) else 1
+    vimage = make_v_image(imarr)
+    im = vimage.reshape(ny, nx)
+    impad = np.pad(im, 1, mode='constant', constant_values=0)
+    im_l1 = np.roll(impad, -1, axis=0)[1:ny+1, 1:nx+1]
+    im_l2 = np.roll(impad, -1, axis=1)[1:ny+1, 1:nx+1]
+    return np.sum(np.sqrt(np.abs(im_l1 - im)**2 + np.abs(im_l2 - im)**2)) / norm
 
 
 def reggrad_vtv(imarr, mask, **kwargs):
     from ehtim.imaging.imager_utils import embed_imarr
-    if np.any(np.invert(mask)):
+    do_slice = np.any(np.invert(mask))
+    if do_slice:
         imarr = embed_imarr(imarr, mask, randomfloor=True)
-    g = -stv_v_grad(imarr, kwargs['vflux'], kwargs['xdim'], kwargs['ydim'], kwargs['psize'],
-                    pol_solve=kwargs.get('pol_solve', POL_SOLVE_DEFAULT_V),
-                    norm_reg=kwargs.get('norm_reg', True),
-                    beam_size=kwargs.get('beam_size', 1))
-    return g[:, mask] if np.any(np.invert(mask)) else g
+    vflux = kwargs['vflux']
+    nx, ny, psize = kwargs['xdim'], kwargs['ydim'], kwargs['psize']
+    pol_solve = kwargs.get('pol_solve', POL_SOLVE_DEFAULT_V)
+    beam_size = kwargs.get('beam_size', 1) or psize
+    norm = np.abs(vflux) * psize / beam_size if kwargs.get('norm_reg', True) else 1
+    epsilon = 0.
+    iimage = make_i_image(imarr)
+    vimage = make_v_image(imarr)
+    vfimage = make_vf_image(imarr)
+    psiimage = make_psi_image(imarr)
+    im = vimage.reshape(ny, nx)
+    impad = np.pad(im, 1, mode='constant', constant_values=0)
+    im_l1 = np.roll(impad, -1, axis=0)[1:ny+1, 1:nx+1]
+    im_l2 = np.roll(impad, -1, axis=1)[1:ny+1, 1:nx+1]
+    im_r1 = np.roll(impad, 1, axis=0)[1:ny+1, 1:nx+1]
+    im_r2 = np.roll(impad, 1, axis=1)[1:ny+1, 1:nx+1]
+    im_r1l2 = np.roll(np.roll(impad,  1, axis=0), -1, axis=1)[1:ny+1, 1:nx+1]
+    im_l1r2 = np.roll(np.roll(impad, -1, axis=0),  1, axis=1)[1:ny+1, 1:nx+1]
+    g1 = (2*im - im_l1 - im_l2) / np.sqrt((im - im_l1)**2 + (im - im_l2)**2 + epsilon)
+    g2 = (im - im_r1) / np.sqrt((im - im_r1)**2 + (im_r1l2 - im_r1)**2 + epsilon)
+    g3 = (im - im_r2) / np.sqrt((im - im_r2)**2 + (im_l1r2 - im_r2)**2 + epsilon)
+    mask1 = np.zeros(im.shape)
+    mask2 = np.zeros(im.shape)
+    mask1[0, :] = 1
+    mask2[:, 0] = 1
+    g2[mask1.astype(bool)] = 0
+    g3[mask2.astype(bool)] = 0
+    base = (g1 + g2 + g3).flatten()
+    gradout = np.zeros(imarr.shape)
+    if pol_solve[0] != 0:
+        gradout[0] = vfimage * base
+    if pol_solve[1] != 0:
+        gradv = iimage * base
+        gradout[1] = gradv * np.sin(psiimage)
+    if pol_solve[3] != 0:
+        gradv = iimage * base
+        gradout[3] = gradv * (vfimage / np.tan(psiimage))
+    g = gradout / norm
+    return g[:, mask] if do_slice else g
 
 
 def reg_vtv2(imarr, mask, **kwargs):
     from ehtim.imaging.imager_utils import embed_imarr
     if np.any(np.invert(mask)):
         imarr = embed_imarr(imarr, mask, randomfloor=True)
-    return -stv2_v(imarr, kwargs['vflux'], kwargs['xdim'], kwargs['ydim'], kwargs['psize'],
-                   norm_reg=kwargs.get('norm_reg', True),
-                   beam_size=kwargs.get('beam_size', 1))
+    vflux = kwargs['vflux']
+    nx, ny, psize = kwargs['xdim'], kwargs['ydim'], kwargs['psize']
+    beam_size = kwargs.get('beam_size', 1) or psize
+    norm = psize**4 * np.abs(vflux**2) / beam_size**4 if kwargs.get('norm_reg', True) else 1
+    vimage = make_v_image(imarr)
+    im = vimage.reshape(ny, nx)
+    impad = np.pad(im, 1, mode='constant', constant_values=0)
+    im_l1 = np.roll(impad, -1, axis=0)[1:ny+1, 1:nx+1]
+    im_l2 = np.roll(impad, -1, axis=1)[1:ny+1, 1:nx+1]
+    return np.sum((im_l1 - im)**2 + (im_l2 - im)**2) / norm
 
 
 def reggrad_vtv2(imarr, mask, **kwargs):
     from ehtim.imaging.imager_utils import embed_imarr
-    if np.any(np.invert(mask)):
+    do_slice = np.any(np.invert(mask))
+    if do_slice:
         imarr = embed_imarr(imarr, mask, randomfloor=True)
-    g = -stv2_v_grad(imarr, kwargs['vflux'], kwargs['xdim'], kwargs['ydim'], kwargs['psize'],
-                     pol_solve=kwargs.get('pol_solve', POL_SOLVE_DEFAULT_V),
-                     norm_reg=kwargs.get('norm_reg', True),
-                     beam_size=kwargs.get('beam_size', 1))
-    return g[:, mask] if np.any(np.invert(mask)) else g
+    vflux = kwargs['vflux']
+    nx, ny, psize = kwargs['xdim'], kwargs['ydim'], kwargs['psize']
+    pol_solve = kwargs.get('pol_solve', POL_SOLVE_DEFAULT_V)
+    beam_size = kwargs.get('beam_size', 1) or psize
+    norm = psize**4 * np.abs(vflux**2) / beam_size**4 if kwargs.get('norm_reg', True) else 1
+    iimage = make_i_image(imarr)
+    vimage = make_v_image(imarr)
+    vfimage = make_vf_image(imarr)
+    psiimage = make_psi_image(imarr)
+    im = vimage.reshape(ny, nx)
+    impad = np.pad(im, 1, mode='constant', constant_values=0)
+    im_l1 = np.roll(impad, -1, axis=0)[1:ny+1, 1:nx+1]
+    im_l2 = np.roll(impad, -1, axis=1)[1:ny+1, 1:nx+1]
+    im_r1 = np.roll(impad, 1, axis=0)[1:ny+1, 1:nx+1]
+    im_r2 = np.roll(impad, 1, axis=1)[1:ny+1, 1:nx+1]
+    g1 = 2*im - im_l1 - im_l2
+    g2 = im - im_r1
+    g3 = im - im_r2
+    mask1 = np.zeros(im.shape)
+    mask2 = np.zeros(im.shape)
+    mask1[0, :] = 1
+    mask2[:, 0] = 1
+    g2[mask1.astype(bool)] = 0
+    g3[mask2.astype(bool)] = 0
+    base = 2 * (g1 + g2 + g3).flatten()
+    gradout = np.zeros(imarr.shape)
+    if pol_solve[0] != 0:
+        gradout[0] = vfimage * base
+    if pol_solve[1] != 0:
+        gradv = iimage * base
+        gradout[1] = gradv * np.sin(psiimage)
+    if pol_solve[3] != 0:
+        gradv = iimage * base
+        gradout[3] = gradv * (vfimage / np.tan(psiimage))
+    g = gradout / norm
+    return g[:, mask] if do_slice else g
 
 
 ##################################################################################################
