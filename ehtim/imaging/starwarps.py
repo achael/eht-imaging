@@ -1105,10 +1105,10 @@ def gaussImgCovariance(im, pixelStdev=1.0, powerDropoff=1.0, filter='none', kern
     uvdist[0] = 'Inf'
     
     if filter == 'hamming':
-        hammingwindow = np.dot(np.reshape(np.hamming(im.xdim), (im.xdim,1)), np.reshape(np.hamming(im.ydim) , (1, im.ydim)) )
-        shiftMtx = np.dot(shiftMtx, np.diag(np.reshape(hammingwindow, (im.xdim*im.ydim))) ) 
+        hammingwindow = np.outer(np.hamming(im.ydim), np.hamming(im.xdim))
+        shiftMtx = np.dot(shiftMtx, np.diag(np.reshape(hammingwindow, (im.xdim*im.ydim))) )
     if filter == 'gaussian':
-        gausswindow = gkern(kernlen=im.xdim, nsig=kernsig)
+        gausswindow = gkern(kernlen=im.xdim, kernlen_y=im.ydim, nsig=kernsig)
         shiftMtx = np.dot(shiftMtx, np.diag(np.reshape(gausswindow, (im.xdim*im.ydim))) )
     
     shiftMtx_exp = realimagStack(shiftMtx)    
@@ -1541,15 +1541,26 @@ def cmpFreqExtraction_phaseWarp(obs, im_true, im_canonical, theta, centerTheta, 
 ################################# HELPER FUNCTIONS #############################################
 
 
-def gkern(kernlen=21, nsig=3):
-    """Returns a 2D Gaussian kernel array."""
+def gkern(kernlen=21, nsig=3, kernlen_y=None):
+    """Returns a 2D Gaussian kernel of shape (kernlen_y, kernlen).
 
-    interval = (2*nsig+1.)/(kernlen)
-    x = np.linspace(-nsig-interval/2., nsig+interval/2., kernlen+1)
-    kern1d = np.diff(st.norm.cdf(x))
-    kernel_raw = np.sqrt(np.outer(kern1d, kern1d))
-    kernel = kernel_raw/kernel_raw.sum()
-    return kernel
+    If ``kernlen_y`` is ``None`` (the legacy default) the kernel is square
+    of shape ``(kernlen, kernlen)``. Pass ``kernlen_y`` explicitly for
+    rectangular kernels.
+    """
+
+    if kernlen_y is None:
+        kernlen_y = kernlen
+
+    def _kern1d(n):
+        interval = (2*nsig+1.)/n
+        x = np.linspace(-nsig-interval/2., nsig+interval/2., n+1)
+        return np.diff(st.norm.cdf(x))
+
+    kern_x = _kern1d(kernlen)
+    kern_y = _kern1d(kernlen_y)
+    kernel_raw = np.sqrt(np.outer(kern_y, kern_x))
+    return kernel_raw / kernel_raw.sum()
 
 def gradMtx(w, h, dir='x'):
     

@@ -13,13 +13,19 @@ class TestGkern:
     """gkern returns a normalised 2D Gaussian kernel of the requested size."""
 
     def test_returns_square_kernel_with_correct_shape(self):
-        """gkern(kernlen=N) returns an (N, N) array."""
+        """gkern(kernlen=N) returns an (N, N) array (legacy default)."""
         kern = sw.gkern(kernlen=9, nsig=2)
         assert kern.shape == (9, 9)
 
     def test_kernel_is_normalized(self):
         """gkern is flux-preserving (sums to 1)."""
         kern = sw.gkern(kernlen=11, nsig=2)
+        assert kern.sum() == pytest.approx(1.0, rel=1e-10)
+
+    def test_rect_kernel_with_explicit_kernlen_y(self):
+        """gkern(kernlen=Nx, kernlen_y=Ny) returns a (Ny, Nx) kernel that still sums to 1."""
+        kern = sw.gkern(kernlen=8, kernlen_y=12, nsig=2)
+        assert kern.shape == (12, 8)
         assert kern.sum() == pytest.approx(1.0, rel=1e-10)
 
 
