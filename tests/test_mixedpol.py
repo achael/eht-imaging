@@ -572,3 +572,151 @@ def test_phase2_add_satellite_tle_invalid_feed_type_raises():
     tle = ['SAT1', 'line1', 'line2']
     with pytest.raises(ValueError, match="feed_type must be one of"):
         _empty_array().add_satellite_tle(tle, feed_type='qq')
+
+
+# ----- TarrView wrapper -----------------------------------------------------
+
+def test_phase2_tarrview_is_returned_by_tarr_property():
+    arr = ea.Array(_legacy_tarr())
+    assert isinstance(arr.tarr, ea.TarrView)
+
+
+def test_phase2_tarrview_sefdr_on_homogeneous_rl_works():
+    arr = ea.Array(_legacy_tarr())
+    # Legacy title-alias access still works on an all-RL array.
+    np.testing.assert_array_equal(arr.tarr['sefdr'], [1000., 2000.])
+    np.testing.assert_array_equal(arr.tarr['sefdl'], [1100., 2100.])
+
+
+def test_phase2_tarrview_sefdr_on_xy_array_raises():
+    arr = ea.Array(_xy_tarr())
+    with pytest.raises(KeyError, match=r"tarr\['sefdr'\].*xy"):
+        _ = arr.tarr['sefdr']
+
+
+def test_phase2_tarrview_sefdl_on_xy_array_raises():
+    arr = ea.Array(_xy_tarr())
+    with pytest.raises(KeyError, match=r"tarr\['sefdl'\].*xy"):
+        _ = arr.tarr['sefdl']
+
+
+def test_phase2_tarrview_sefdr_on_mixed_array_raises():
+    arr = ea.Array(_mixed_tarr())
+    with pytest.raises(KeyError, match=r"tarr\['sefdr'\].*"):
+        _ = arr.tarr['sefdr']
+
+
+def test_phase2_tarrview_dr_on_mixed_array_raises():
+    arr = ea.Array(_mixed_tarr())
+    with pytest.raises(KeyError, match="dterm_for_feed"):
+        _ = arr.tarr['dr']
+
+
+def test_phase2_tarrview_generic_names_always_work():
+    # Generic per-feed names are never guarded.
+    arr = ea.Array(_mixed_tarr())
+    np.testing.assert_array_equal(arr.tarr['sefd_p1'], [100., 4000.])
+    np.testing.assert_array_equal(arr.tarr['sefd_p2'], [110., 4100.])
+
+
+def test_phase2_tarrview_dtype_attribute_forwarded():
+    arr = ea.Array(_legacy_tarr())
+    assert 'feed_type' in arr.tarr.dtype.names
+    assert arr.tarr.dtype == ehc.DTARR
+
+
+def test_phase2_tarrview_len_iter_forwarded():
+    arr = ea.Array(_legacy_tarr())
+    assert len(arr.tarr) == 2
+    sites = [str(row['site']) for row in arr.tarr]
+    assert sites == ['A', 'B']
+
+
+def test_phase2_tarrview_row_index_returns_void():
+    arr = ea.Array(_legacy_tarr())
+    row = arr.tarr[0]
+    # Single-row index returns a numpy void; field access on it bypasses
+    # the guard (documented limitation).
+    assert str(row['site']) == 'A'
+
+
+def test_phase2_tarrview_boolean_mask_returns_wrapped_view():
+    arr = ea.Array(_mixed_tarr())
+    mask = np.array([True, False])
+    sub = arr.tarr[mask]
+    assert isinstance(sub, ea.TarrView)
+    assert len(sub) == 1
+    assert str(sub[0]['site']) == 'ALMA'
+
+
+def test_phase2_tarrview_boolean_mask_preserves_guard():
+    # Slicing a mixed array down to one xy station: legacy 'sefdr'
+    # still raises on the subview (feed_types still non-RL).
+    arr = ea.Array(_mixed_tarr())
+    sub = arr.tarr[np.array([True, False])]
+    with pytest.raises(KeyError):
+        _ = sub['sefdr']
+
+
+def test_phase2_tarrview_equality_recarray_lhs():
+    arr = ea.Array(_legacy_tarr())
+    raw = arr.tarr._tarr.copy()
+    cmp = raw == arr.tarr
+    assert np.all(cmp)
+
+
+def test_phase2_tarrview_equality_recarray_rhs():
+    arr = ea.Array(_legacy_tarr())
+    raw = arr.tarr._tarr.copy()
+    cmp = arr.tarr == raw
+    assert np.all(cmp)
+
+
+def test_phase2_tarrview_equality_both_views():
+    arr1 = ea.Array(_legacy_tarr())
+    arr2 = ea.Array(_legacy_tarr())
+    assert np.all(arr1.tarr == arr2.tarr)
+
+
+def test_phase2_tarrview_pickle_roundtrip():
+    arr = ea.Array(_legacy_tarr())
+    view = arr.tarr
+    view2 = pickle.loads(pickle.dumps(view))
+    assert isinstance(view2, ea.TarrView)
+    assert np.all(view == view2)
+
+
+def test_phase2_tarrview_unhashable():
+    arr = ea.Array(_legacy_tarr())
+    with pytest.raises(TypeError):
+        hash(arr.tarr)
+
+
+def test_phase2_tarrview_numpy_interop_via_array_protocol():
+    arr = ea.Array(_legacy_tarr())
+    # np.asarray should produce a recarray view (no copy required by spec).
+    asarr = np.asarray(arr.tarr)
+    assert isinstance(asarr, np.ndarray)
+    assert asarr.dtype.names == arr.tarr.dtype.names
+
+
+def test_phase2_tarrview_setter_unwraps_view():
+    # Assigning a TarrView via the property setter unwraps it so _tarr
+    # remains a plain ndarray (the storage truth).
+    arr = ea.Array(_legacy_tarr())
+    view = arr.tarr  # TarrView
+    arr.tarr = view  # round-trip via setter
+    assert not isinstance(arr._tarr, ea.TarrView)
+    assert isinstance(arr._tarr, np.ndarray)
+    assert arr._tarr.dtype.names is not None  # structured dtype preserved
+
+
+def test_phase2_tarrview_array_pickle_roundtrip_preserves_ndarray_storage():
+    # The Array itself round-trips through pickle: storage stays as an
+    # ndarray (not a TarrView), so the on-disk format is unchanged.
+    arr = ea.Array(_legacy_tarr())
+    arr2 = pickle.loads(pickle.dumps(arr))
+    assert isinstance(arr2._tarr, np.ndarray)
+    assert not isinstance(arr2._tarr, ea.TarrView)
+    assert isinstance(arr2.tarr, ea.TarrView)
+    assert np.all(arr2.tarr == arr.tarr)

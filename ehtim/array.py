@@ -78,6 +78,123 @@ def _resolve_sefd_pair(sefd, sefd_p1, sefd_p2):
     return val, val
 
 
+class TarrView:
+    """Thin wrapper around an Array's underlying telescope-array recarray.
+
+    Forwards array-like operations (indexing, iteration, length, dtype
+    lookup, numpy interop, equality, pickling) to the wrapped recarray.
+    The wrapper exists to guard column-form access of legacy feed-specific
+    field names ('sefdr', 'sefdl', 'dr', 'dl') on arrays whose stations
+    are not all 'rl'-feed: in that case the title-alias accessor would
+    return values from the underlying generic slot (sefd_p1, d_p1, etc.),
+    which on a non-RL station is the wrong-feed value. TarrView raises
+    KeyError instead and points to the per-feed accessor.
+
+    The recarray remains the storage truth; TarrView is created on the
+    fly by Array.tarr's property getter and adds no persisted state.
+
+    Note: this guard catches whole-column access (tarr['sefdr']). It does
+    not catch row-form access (tarr[i]['sefdr']) — the row is a numpy
+    void object owned by numpy. Phase 2+ code should prefer
+    Array.sefd_for_feed / Array.dterm_for_feed for per-station lookups.
+    """
+
+    _LEGACY_FIELD_HINT = {
+        'sefdr': 'Array.sefd_for_feed(site, feed)',
+        'sefdl': 'Array.sefd_for_feed(site, feed)',
+        'dr': 'Array.dterm_for_feed(site, feed)',
+        'dl': 'Array.dterm_for_feed(site, feed)',
+    }
+
+    __slots__ = ('_tarr',)
+
+    # Mark unhashable like the underlying ndarray.
+    __hash__ = None
+
+    def __init__(self, tarr):
+        object.__setattr__(self, '_tarr', tarr)
+
+    # ---- guard --------------------------------------------------------------
+    def _is_homogeneous_rl(self):
+        fts = self._tarr['feed_type']
+        if len(fts) == 0:
+            return True  # empty arrays default to legacy RL semantics
+        s = set(str(ft).lower() for ft in fts)
+        return s == {'rl'}
+
+    def _guard(self, key):
+        if isinstance(key, str) and key in self._LEGACY_FIELD_HINT \
+                and not self._is_homogeneous_rl():
+            fts = sorted({str(ft) for ft in self._tarr['feed_type']})
+            hint = self._LEGACY_FIELD_HINT[key]
+            raise KeyError(
+                f"tarr[{key!r}] is undefined on a non-RL or mixed-feed array "
+                f"(feed_types={fts}); use {hint} instead")
+
+    # ---- core forwarding ----------------------------------------------------
+    def __getitem__(self, key):
+        self._guard(key)
+        result = self._tarr[key]
+        # If the result is itself a structured-dtype slice (boolean mask,
+        # slice object, fancy index, ...), re-wrap so the guard stays in
+        # effect. Single-row integer indexing produces a numpy void and
+        # falls through unwrapped (documented limitation).
+        if isinstance(result, np.ndarray) and result.dtype.names is not None \
+                and 'feed_type' in result.dtype.names:
+            return TarrView(result)
+        return result
+
+    def __setitem__(self, key, value):
+        # Setting is delegated unguarded: callers writing whole columns
+        # are responsible for their data. Read-side guards still apply.
+        self._tarr[key] = value
+
+    def __iter__(self):
+        return iter(self._tarr)
+
+    def __len__(self):
+        return len(self._tarr)
+
+    def __array__(self, dtype=None, copy=None):
+        # Return the underlying ndarray directly; calling np.asarray() here
+        # would strip the structured dtype (numpy quirk with title aliases).
+        if dtype is None:
+            return self._tarr.copy() if copy else self._tarr
+        out = self._tarr.astype(dtype)
+        return out.copy() if copy else out
+
+    def __eq__(self, other):
+        if isinstance(other, TarrView):
+            other = other._tarr
+        return self._tarr == other
+
+    def __ne__(self, other):
+        if isinstance(other, TarrView):
+            other = other._tarr
+        return self._tarr != other
+
+    def __repr__(self):
+        return f"TarrView({self._tarr!r})"
+
+    # ---- attribute forwarding -----------------------------------------------
+    def __getattr__(self, name):
+        # __getattr__ only fires for misses; forward .dtype, .shape, .names,
+        # .copy, .view, etc. to the underlying ndarray.
+        #
+        # Numpy's __array_interface__ / __array_struct__ on a structured
+        # ndarray report 'typestr=V<nbytes>', which strips field names when
+        # numpy uses them to construct a copy. Hide them so np.asarray()
+        # falls back to our __array__ instead.
+        if name in ('__array_interface__', '__array_struct__'):
+            raise AttributeError(name)
+        return getattr(self._tarr, name)
+
+    # ---- pickle support -----------------------------------------------------
+    def __reduce__(self):
+        # Reconstruct via TarrView(recarray) on the other end.
+        return (TarrView, (self._tarr,))
+
+
 def _resolve_dterm_pair(dr, dl, d_p1, d_p2, feed_type):
     """Resolve (d_p1, d_p2) from legacy dr/dl + generic d_p1/d_p2 kwargs.
 
@@ -150,10 +267,12 @@ class Array:
 
     @property
     def tarr(self):
-        return self._tarr
+        return TarrView(self._tarr)
 
     @tarr.setter
     def tarr(self, tarr):
+        if isinstance(tarr, TarrView):
+            tarr = tarr._tarr
         self._tarr = tarr
         self.tkey = {tarr[i]['site']: i for i in range(len(tarr))}
 
