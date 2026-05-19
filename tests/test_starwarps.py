@@ -4,7 +4,6 @@ import pytest
 
 import ehtim.imaging.starwarps as sw
 
-
 RECT_XDIM = 32
 RECT_YDIM = 48
 
