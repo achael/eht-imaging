@@ -108,3 +108,37 @@ class TestMakeEpsilonScreenFromList:
         eps = so.MakeEpsilonScreenFromList(eps_list, n)
         assert eps.shape == (n, n)
         assert np.iscomplexobj(eps)
+
+
+class TestScatter:
+    """High-level Scatter() entry point on rectangular images."""
+
+    def test_scatter_preserves_image_shape_on_rect(self, model, make_rect_image):
+        """Scatter() of a rect image returns an image with the same (ydim, xdim) shape."""
+        im = make_rect_image(RECT_XDIM, RECT_YDIM)
+        eps = so.MakeEpsilonScreen(im.xdim, im.ydim, rngseed=2)
+        scattered = model.Scatter(im, Epsilon_Screen=eps)
+        assert scattered.imvec.shape == im.imvec.shape
+        assert scattered.xdim == im.xdim
+        assert scattered.ydim == im.ydim
+
+
+class TestScatterMovie:
+    """Scatter_Movie entry point on a rectangular-frame Movie."""
+
+    def test_scatter_movie_on_rect_movie(self, model, make_rect_image):
+        """Scattering a Movie of rect frames yields a Movie with matching shapes."""
+        import ehtim.movie as movie
+        im = make_rect_image(RECT_XDIM, RECT_YDIM)
+        frames = [im.imvec.reshape(im.ydim, im.xdim) for _ in range(2)]
+        mov = movie.Movie(
+            frames, times=[0.0, 1.0/3600.0],
+            psize=im.psize, ra=im.ra, dec=im.dec, rf=im.rf,
+        )
+        scattered = model.Scatter_Movie(
+            mov, framedur_sec=1.0,
+            sqrtQ=model.sqrtQ_Matrix(im),
+        )
+        assert scattered.xdim == RECT_XDIM
+        assert scattered.ydim == RECT_YDIM
+        assert len(scattered.frames) == 2

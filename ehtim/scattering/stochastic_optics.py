@@ -577,7 +577,7 @@ class ScatteringModel(object):
             tlist_hr = [framedur_sec/3600.0*j for j in range(N_frames)]
 
         if type(Unscattered_Movie) == movie.Movie:
-            N = Unscattered_Movie.xdim
+            Nx, Ny = Unscattered_Movie.xdim, Unscattered_Movie.ydim
             N_frames = len(Unscattered_Movie.frames)
             psize = Unscattered_Movie.psize
             ra = Unscattered_Movie.ra
@@ -590,7 +590,7 @@ class ScatteringModel(object):
             has_pol = len(Unscattered_Movie.qframes)
             has_circ_pol = len(Unscattered_Movie.vframes)
         elif type(Unscattered_Movie) == list:
-            N = Unscattered_Movie[0].xdim
+            Nx, Ny = Unscattered_Movie[0].xdim, Unscattered_Movie[0].ydim
             N_frames = len(Unscattered_Movie)
             psize = Unscattered_Movie[0].psize
             ra = Unscattered_Movie[0].ra
@@ -603,7 +603,7 @@ class ScatteringModel(object):
             has_pol = len(Unscattered_Movie[0].qvec)
             has_circ_pol = len(Unscattered_Movie[0].vvec)
         else:
-            N = Unscattered_Movie.xdim
+            Nx, Ny = Unscattered_Movie.xdim, Unscattered_Movie.ydim
             psize = Unscattered_Movie.psize
             ra = Unscattered_Movie.ra
             dec = Unscattered_Movie.dec
@@ -617,11 +617,11 @@ class ScatteringModel(object):
 
         def get_frame(j):
             if type(Unscattered_Movie) == movie.Movie:
-                im = image.Image(Unscattered_Movie.frames[j].reshape((N,N)), psize=psize, ra=ra, dec=dec, rf=rf, pulse=pulse, source=source, mjd=mjd)
+                im = image.Image(Unscattered_Movie.frames[j].reshape((Ny,Nx)), psize=psize, ra=ra, dec=dec, rf=rf, pulse=pulse, source=source, mjd=mjd)
                 if len(Unscattered_Movie.qframes) > 0:
-                    im.add_qu(Unscattered_Movie.qframes[j].reshape((N,N)), Unscattered_Movie.uframes[j].reshape((N,N)))
+                    im.add_qu(Unscattered_Movie.qframes[j].reshape((Ny,Nx)), Unscattered_Movie.uframes[j].reshape((Ny,Nx)))
                 if len(Unscattered_Movie.vframes) > 0:
-                    im.add_v(Unscattered_Movie.vframes[j].reshape((N,N)))
+                    im.add_v(Unscattered_Movie.vframes[j].reshape((Ny,Nx)))
                 return im
             elif type(Unscattered_Movie) == list:
                 return Unscattered_Movie[j]
@@ -634,7 +634,7 @@ class ScatteringModel(object):
 
         # If no epsilon screen is specified, then generate a random realization
         if Epsilon_Screen.shape[0] == 0:
-            Epsilon_Screen = MakeEpsilonScreen(N, N)
+            Epsilon_Screen = MakeEpsilonScreen(Nx, Ny)
 
         # possibly parallelize
         if processes < 0:
@@ -659,15 +659,15 @@ class ScatteringModel(object):
         if Return_Image_List == True:
             return scattered_im_List
 
-        Scattered_Movie = movie.Movie( [im.imvec.reshape((im.xdim,im.ydim)) for im in scattered_im_List],
+        Scattered_Movie = movie.Movie( [im.imvec.reshape((im.ydim,im.xdim)) for im in scattered_im_List],
                                        times=tlist_hr, psize = psize, ra = ra, dec = dec, rf=rf, pulse=pulse, source=source, mjd=mjd)
 
         if has_pol:
-            Scattered_Movie_Q = [im.qvec.reshape((im.xdim,im.ydim)) for im in scattered_im_List]
-            Scattered_Movie_U = [im.uvec.reshape((im.xdim,im.ydim)) for im in scattered_im_List]
+            Scattered_Movie_Q = [im.qvec.reshape((im.ydim,im.xdim)) for im in scattered_im_List]
+            Scattered_Movie_U = [im.uvec.reshape((im.ydim,im.xdim)) for im in scattered_im_List]
             Scattered_Movie.add_qu(Scattered_Movie_Q, Scattered_Movie_U)
         if has_circ_pol: 
-            Scattered_Movie_V = [im.vvec.reshape((im.xdim,im.ydim)) for im in scattered_im_List]
+            Scattered_Movie_V = [im.vvec.reshape((im.ydim,im.xdim)) for im in scattered_im_List]
             Scattered_Movie.add_v(Scattered_Movie_V)
         return Scattered_Movie
 
