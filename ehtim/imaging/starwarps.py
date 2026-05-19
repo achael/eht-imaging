@@ -1600,21 +1600,19 @@ def padNewFOV(im, fov_arcseconds):
 
     
 def flipImg(im, flip_lr, flip_ud):
-    
-    img = np.reshape(im.imvec, [im.xdim, im.xdim])
+
+    img = np.reshape(im.imvec, [im.ydim, im.xdim])
     if flip_lr:
         img = np.fliplr(img)
     if flip_ud:
         img = np.flipud(img)
-    im.imec = img.reshape((im.xdim*im.xdim))
     return image.Image(img, im.psize, im.ra, im.dec, rf=im.rf, source=im.source, mjd=im.mjd, pulse=im.pulse)
 
-        
+
 def rotateImg(im, k):
-    
-    img = np.reshape(im.imvec, [im.xdim, im.xdim])
+
+    img = np.reshape(im.imvec, [im.ydim, im.xdim])
     img = np.rot90(img, k=k)
-    im.imec = img.reshape((im.xdim*im.xdim))
     return image.Image(img, im.psize, im.ra, im.dec, rf=im.rf, source=im.source, mjd=im.mjd, pulse=im.pulse)
 
 
