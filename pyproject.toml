@@ -93,10 +93,9 @@ ignore = [
 
 [tool.ruff.lint.per-file-ignores]
 "tests/*" = ["F841"]
-# modeling_utils.py + stochastic_optics.py have deferred cleanup
-# silence legacy-style noise until the dedicated cleanup PR.
+# modeling_utils.py has deferred cleanup -- silence legacy-style noise
+# until the dedicated cleanup PR.
 "ehtim/modeling/modeling_utils.py" = ["E701", "E721", "E722", "F403", "F405", "UP031"]
-"ehtim/scattering/stochastic_optics.py" = ["E701", "E721", "E722", "F403", "F405", "UP031"]
 
 [tool.ruff.lint.isort]
 known-first-party = ["ehtim"]

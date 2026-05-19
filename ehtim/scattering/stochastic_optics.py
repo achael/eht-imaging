@@ -1,6 +1,5 @@
 # Michael Johnson, 2/15/2017
 # See http://adsabs.harvard.edu/abs/2016ApJ...833...74J for details about this module
-# TODO >> remove ruff exceptions in pyproject.toml after cleaning up this file
 
 import math
 from multiprocessing import Pool, cpu_count
@@ -15,8 +14,8 @@ from scipy.optimize import minimize
 import ehtim.image as image
 import ehtim.movie as movie
 import ehtim.obsdata as obsdata
-from ehtim.const_def import *  #Note: C is m/s rather than cm/s.
-from ehtim.observing.obs_helpers import *
+from ehtim.const_def import RADPERAS, C  # C is m/s rather than cm/s
+from ehtim.observing.obs_helpers import ticks
 
 ################################################################################
 # The class ScatteringModel enscompasses a generic scattering model, determined by the power spectrum Q and phase structure function Dphi
@@ -555,11 +554,11 @@ class ScatteringModel:
 
         print("Warning!! assuming a constant frame duration, but Movie objects now support unequally spaced frames!")
 
-        if type(Unscattered_Movie) != movie.Movie and framedur_sec is None:
+        if not isinstance(Unscattered_Movie, movie.Movie) and framedur_sec is None:
             print("If scattering a list of images or static image, the framedur must be specified!")
             return
 
-        if type(Unscattered_Movie) == image.Image and N_frames is None:
+        if isinstance(Unscattered_Movie, image.Image) and N_frames is None:
             print("If scattering a static image, the total number of frames must be specified (N_frames)!")
             return
 
@@ -569,7 +568,7 @@ class ScatteringModel:
         else:
             tlist_hr = [framedur_sec/3600.0*j for j in range(N_frames)]
 
-        if type(Unscattered_Movie) == movie.Movie:
+        if isinstance(Unscattered_Movie, movie.Movie):
             Nx, Ny = Unscattered_Movie.xdim, Unscattered_Movie.ydim
             N_frames = len(Unscattered_Movie.frames)
             psize = Unscattered_Movie.psize
@@ -582,7 +581,7 @@ class ScatteringModel:
             start_hr=Unscattered_Movie.start_hr
             has_pol = len(Unscattered_Movie.qframes)
             has_circ_pol = len(Unscattered_Movie.vframes)
-        elif type(Unscattered_Movie) == list:
+        elif isinstance(Unscattered_Movie, list):
             Nx, Ny = Unscattered_Movie[0].xdim, Unscattered_Movie[0].ydim
             N_frames = len(Unscattered_Movie)
             psize = Unscattered_Movie[0].psize
@@ -609,14 +608,14 @@ class ScatteringModel:
             has_circ_pol = len(Unscattered_Movie.vvec)
 
         def get_frame(j):
-            if type(Unscattered_Movie) == movie.Movie:
+            if isinstance(Unscattered_Movie, movie.Movie):
                 im = image.Image(Unscattered_Movie.frames[j].reshape((Ny,Nx)), psize=psize, ra=ra, dec=dec, rf=rf, pulse=pulse, source=source, mjd=mjd)
                 if len(Unscattered_Movie.qframes) > 0:
                     im.add_qu(Unscattered_Movie.qframes[j].reshape((Ny,Nx)), Unscattered_Movie.uframes[j].reshape((Ny,Nx)))
                 if len(Unscattered_Movie.vframes) > 0:
                     im.add_v(Unscattered_Movie.vframes[j].reshape((Ny,Nx)))
                 return im
-            elif type(Unscattered_Movie) == list:
+            elif isinstance(Unscattered_Movie, list):
                 return Unscattered_Movie[j]
             else:
                 return Unscattered_Movie
@@ -768,7 +767,7 @@ def plot_scatt(im_unscatt, im_ea, im_scatt, im_phase, Prior, nit, chi2, ipynb=Fa
     plt.ion()
     plt.clf()
     if chi2 > 0.0:
-        plt.suptitle(r"step: %i  $\chi^2$: %f " % (nit, chi2), fontsize=20)
+        plt.suptitle(rf"step: {nit}  $\chi^2$: {chi2:f} ", fontsize=20)
 
     # Unscattered Image
     plt.subplot(141)
