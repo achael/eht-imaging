@@ -379,13 +379,15 @@ class ScatteringModel:
         rF  = self.rF(wavelength)
         Nx = EpsilonScreen.shape[1]
         Ny = EpsilonScreen.shape[0]
+        # Pixel size at the screen (cm/pixel). Isotropic because psize is shared across axes.
+        psize_screen = Reference_Image.psize * self.observer_screen_distance
 
 #        if Nx%2 == 0:
 #            print("The image dimension should really be odd...")
 
         #Now we'll calculate the power spectrum for each pixel in Fourier space
-        screen_x_offset_pixels = (Vx_km_per_s*1.e5) * (t_hr*3600.0) / (FOV/float(Nx))
-        screen_y_offset_pixels = (Vy_km_per_s*1.e5) * (t_hr*3600.0) / (FOV/float(Nx))
+        screen_x_offset_pixels = (Vx_km_per_s*1.e5) * (t_hr*3600.0) / psize_screen
+        screen_y_offset_pixels = (Vy_km_per_s*1.e5) * (t_hr*3600.0) / psize_screen
 
         if sqrtQ_init is None:
             sqrtQ = self.sqrtQ_Matrix(Reference_Image, Vx_km_per_s=Vx_km_per_s, Vy_km_per_s=Vy_km_per_s, t_hr=t_hr)
@@ -682,6 +684,10 @@ def Wrapped_Gradient(M):
     return (Gx, Gy)
 
 def MakeEpsilonScreenFromList(EpsilonList, N):
+    # TODO: rect support requires reworking the Hermitian-symmetry packing
+    # (separate Nx, Ny, conjugate pairing epsilon[y][x] <-> epsilon[Ny-y][Nx-x],
+    # and parity edge cases for even Nx/Ny). The companion generator
+    # MakeEpsilonScreen(Nx, Ny) is already rect-aware.
     epsilon = np.zeros((N,N),dtype=complex)
     #If N is odd: there are (N^2-1)/2 real elements followed by their corresponding (N^2-1)/2 imaginary elements
     #If N is even: there are (N^2+2)/2 of each, although 3 of these must be purely real, also giving a total of N^2-1 degrees of freedom
