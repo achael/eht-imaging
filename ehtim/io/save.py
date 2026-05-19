@@ -276,11 +276,16 @@ def save_mov_txt(mov, fname, mjd=False):
 def save_array_txt(arr, fname):
     """Save the array data in a text file.
 
+       Emits the v2 versioned format: a leading '# ehtim array format v2'
+       comment, then one row per station with 14 whitespace-separated
+       tokens (site, x, y, z, sefd_p1, sefd_p2, fr_par, fr_elev, fr_off,
+       d_p1_re, d_p1_im, d_p2_re, d_p2_im, feed_type). The numeric layout
+       is unchanged from the legacy 13-column format; feed_type is
+       appended as the 14th column and a version header is added.
+
        Args:
             arr (Array): array object
             fname (str): name of output text file
-
-       Returns:
     """
 
     if isinstance(arr, np.ndarray):
@@ -290,23 +295,27 @@ def save_array_txt(arr, fname):
             tarr = arr.tarr
         except AttributeError:
             print("Array format not recognized!")
+            return
 
-    out = ("#Site      X(m)             Y(m)             Z(m)           " +
-           "SEFDR      SEFDL     FR_PAR   FR_EL   FR_OFF  " +
-           "DR_RE    DR_IM    DL_RE    DL_IM   \n")
+    out = ("# ehtim array format v2\n"
+           "#Site      X(m)             Y(m)             Z(m)           "
+           "SEFD_P1    SEFD_P2   FR_PAR   FR_EL   FR_OFF  "
+           "D_P1_RE  D_P1_IM  D_P2_RE  D_P2_IM   FEED\n")
     for scope in range(len(tarr)):
-        dat = (tarr[scope]['site'],
-               tarr[scope]['x'], tarr[scope]['y'], tarr[scope]['z'],
-               tarr[scope]['sefdr'], tarr[scope]['sefdl'],
-               tarr[scope]['fr_par'], tarr[scope]['fr_elev'], tarr[scope]['fr_off'],
-               tarr[scope]['dr'].real, tarr[scope]['dr'].imag,
-               tarr[scope]['dl'].real, tarr[scope]['dl'].imag
-               )
+        row = tarr[scope]
+        d_p1 = complex(row['d_p1'])
+        d_p2 = complex(row['d_p2'])
+        dat = (str(row['site']),
+               float(row['x']), float(row['y']), float(row['z']),
+               float(row['sefd_p1']), float(row['sefd_p2']),
+               float(row['fr_par']), float(row['fr_elev']), float(row['fr_off']),
+               d_p1.real, d_p1.imag, d_p2.real, d_p2.imag,
+               str(row['feed_type']))
         out += ("{:<8s} {:15.5f}  {:15.5f}  {:15.5f}  {:8.2f}   {:8.2f}  "
-                "{:5.2f}   {:5.2f}   {:5.2f}  {:8.4f} {:8.4f} {:8.4f} {:8.4f} \n").format(*dat)
-    f = open(fname, 'w')
-    f.write(out)
-    f.close()
+                "{:5.2f}   {:5.2f}   {:5.2f}  "
+                "{:8.4f} {:8.4f} {:8.4f} {:8.4f}  {:<2s}\n").format(*dat)
+    with open(fname, 'w') as f:
+        f.write(out)
     return
 
 

@@ -4,6 +4,7 @@ Tests are grouped by the phase of obsdata_mixedpol_plan_v2.md they cover.
 Subsequent phases (2, 2.5, 3, ...) should append their tests to this file
 under matching headers.
 """
+import os
 import pickle
 
 import numpy as np
@@ -812,3 +813,152 @@ def test_phase2_obsdata_polrep_mixed_on_mixed_array_raises_not_implemented():
     arr = ea.Array(_eht_like_mixed_array())
     with pytest.raises(NotImplementedError, match="Phase 5"):
         arr.obsdata(polrep='mixed', **_obs_kwargs())
+
+
+# ----- save_array_txt v2 + load_array_txt round-trip ------------------------
+
+def _full_tarr(feed_types):
+    """Synthetic tarr with non-trivial values across all DTARR fields."""
+    n = len(feed_types)
+    t = np.zeros(n, dtype=ehc.DTARR)
+    t['site'] = [f'S{i}' for i in range(n)]
+    t['x'] = [1.0 * (i + 1) for i in range(n)]
+    t['y'] = [2.0 * (i + 1) for i in range(n)]
+    t['z'] = [3.0 * (i + 1) for i in range(n)]
+    t['sefd_p1'] = [100.0 * (i + 1) for i in range(n)]
+    t['sefd_p2'] = [110.0 * (i + 1) for i in range(n)]
+    t['d_p1'] = [complex(0.01 * (i + 1), 0.02 * (i + 1)) for i in range(n)]
+    t['d_p2'] = [complex(0.03 * (i + 1), 0.04 * (i + 1)) for i in range(n)]
+    t['fr_par'] = [1.0 * (i + 1) for i in range(n)]
+    t['fr_elev'] = [0.5 * (i + 1) for i in range(n)]
+    t['fr_off'] = [0.1 * (i + 1) for i in range(n)]
+    t['feed_type'] = feed_types
+    return t
+
+
+def _assert_tarr_round_trip(arr_before, arr_after, atol_sefd=1e-2,
+                             atol_d=1e-4, atol_fr=1e-2, atol_coord=1e-5):
+    """Compare numeric fields with tolerances matching save_array_txt's
+    printf precision; feed_type and site are exact."""
+    a, b = arr_before.tarr._tarr, arr_after.tarr._tarr
+    assert np.array_equal(a['site'], b['site'])
+    assert np.array_equal(a['feed_type'], b['feed_type'])
+    np.testing.assert_allclose(a['x'], b['x'], atol=atol_coord)
+    np.testing.assert_allclose(a['y'], b['y'], atol=atol_coord)
+    np.testing.assert_allclose(a['z'], b['z'], atol=atol_coord)
+    np.testing.assert_allclose(a['sefd_p1'], b['sefd_p1'], atol=atol_sefd)
+    np.testing.assert_allclose(a['sefd_p2'], b['sefd_p2'], atol=atol_sefd)
+    np.testing.assert_allclose(a['d_p1'].real, b['d_p1'].real, atol=atol_d)
+    np.testing.assert_allclose(a['d_p1'].imag, b['d_p1'].imag, atol=atol_d)
+    np.testing.assert_allclose(a['d_p2'].real, b['d_p2'].real, atol=atol_d)
+    np.testing.assert_allclose(a['d_p2'].imag, b['d_p2'].imag, atol=atol_d)
+    np.testing.assert_allclose(a['fr_par'], b['fr_par'], atol=atol_fr)
+    np.testing.assert_allclose(a['fr_elev'], b['fr_elev'], atol=atol_fr)
+    np.testing.assert_allclose(a['fr_off'], b['fr_off'], atol=atol_fr)
+
+
+def test_phase2_save_array_txt_emits_v2_header(tmp_path):
+    arr = ea.Array(_full_tarr(['rl', 'rl']))
+    fname = str(tmp_path / 'a.txt')
+    arr.save_txt(fname)
+    with open(fname) as f:
+        first = f.readline().strip()
+    assert first == '# ehtim array format v2'
+
+
+def test_phase2_save_load_array_txt_roundtrip_rl(tmp_path):
+    arr = ea.Array(_full_tarr(['rl', 'rl']))
+    fname = str(tmp_path / 'a.txt')
+    arr.save_txt(fname)
+    arr2 = ea.load_txt(fname)
+    _assert_tarr_round_trip(arr, arr2)
+    assert set(arr2.feed_types()) == {'rl'}
+
+
+def test_phase2_save_load_array_txt_roundtrip_xy(tmp_path):
+    arr = ea.Array(_full_tarr(['xy', 'xy', 'xy']))
+    fname = str(tmp_path / 'a.txt')
+    arr.save_txt(fname)
+    arr2 = ea.load_txt(fname)
+    _assert_tarr_round_trip(arr, arr2)
+    assert set(arr2.feed_types()) == {'xy'}
+
+
+def test_phase2_save_load_array_txt_roundtrip_mixed(tmp_path):
+    arr = ea.Array(_full_tarr(['rl', 'xy', 'lx']))
+    fname = str(tmp_path / 'a.txt')
+    arr.save_txt(fname)
+    arr2 = ea.load_txt(fname)
+    _assert_tarr_round_trip(arr, arr2)
+    assert arr2.feed_types() == {'rl', 'xy', 'lx'}
+
+
+# Legacy unversioned files in arrays/ must continue to load bit-identically.
+ARRAYS_DIR = os.path.join(os.path.dirname(__file__), '..', 'arrays')
+_LEGACY_ARRAY_FILES = sorted([
+    f for f in os.listdir(ARRAYS_DIR) if f.endswith('.txt')
+]) if os.path.isdir(ARRAYS_DIR) else []
+
+
+@pytest.mark.parametrize('fname', _LEGACY_ARRAY_FILES)
+def test_phase2_load_array_txt_legacy_bit_identical(fname):
+    """For every existing arrays/*.txt file, the loaded tarr's numeric
+    columns match a fresh np.loadtxt read of the same file byte-for-byte
+    (Phase 1 added a feed_type column; nothing else may differ).
+    """
+    path = os.path.join(ARRAYS_DIR, fname)
+    # SITES.txt is a non-array reference file (site name → code table).
+    if fname == 'SITES.txt':
+        pytest.skip("SITES.txt is not an Array file")
+    arr = ea.load_txt(path)
+
+    raw = np.loadtxt(path, dtype=bytes, comments='#').astype(str)
+    if raw[0][0].lower() == 'site':
+        raw = raw[1:]
+    if raw.ndim == 1:
+        raw = raw.reshape(1, -1)
+    ncols = raw.shape[1]
+    n = len(arr.tarr)
+    assert ncols in (5, 13, 14)
+    assert len(raw) == n
+
+    # site, x, y, z always in cols 0..3
+    np.testing.assert_array_equal(arr.tarr['site'], raw[:, 0])
+    np.testing.assert_array_equal(arr.tarr._tarr['x'], raw[:, 1].astype(float))
+    np.testing.assert_array_equal(arr.tarr._tarr['y'], raw[:, 2].astype(float))
+    np.testing.assert_array_equal(arr.tarr._tarr['z'], raw[:, 3].astype(float))
+
+    if ncols == 5:
+        # SEFD symmetric, all other numeric fields zero, feed_type='rl'
+        np.testing.assert_array_equal(arr.tarr._tarr['sefd_p1'],
+                                      raw[:, 4].astype(float))
+        np.testing.assert_array_equal(arr.tarr._tarr['sefd_p2'],
+                                      raw[:, 4].astype(float))
+        assert np.all(arr.tarr._tarr['fr_par'] == 0)
+        assert np.all(arr.tarr._tarr['d_p1'] == 0)
+        assert np.all(arr.tarr._tarr['d_p2'] == 0)
+    else:
+        np.testing.assert_array_equal(arr.tarr._tarr['sefd_p1'],
+                                      raw[:, 4].astype(float))
+        np.testing.assert_array_equal(arr.tarr._tarr['sefd_p2'],
+                                      raw[:, 5].astype(float))
+        np.testing.assert_array_equal(arr.tarr._tarr['fr_par'],
+                                      raw[:, 6].astype(float))
+        np.testing.assert_array_equal(arr.tarr._tarr['fr_elev'],
+                                      raw[:, 7].astype(float))
+        np.testing.assert_array_equal(arr.tarr._tarr['fr_off'],
+                                      raw[:, 8].astype(float))
+        d_p1_re = raw[:, 9].astype(float)
+        d_p1_im = raw[:, 10].astype(float)
+        d_p2_re = raw[:, 11].astype(float)
+        d_p2_im = raw[:, 12].astype(float)
+        np.testing.assert_array_equal(arr.tarr._tarr['d_p1'].real, d_p1_re)
+        np.testing.assert_array_equal(arr.tarr._tarr['d_p1'].imag, d_p1_im)
+        np.testing.assert_array_equal(arr.tarr._tarr['d_p2'].real, d_p2_re)
+        np.testing.assert_array_equal(arr.tarr._tarr['d_p2'].imag, d_p2_im)
+
+    # feed_type: 14-col files read it from disk; 5/13-col fall back to 'rl'
+    if ncols == 14:
+        np.testing.assert_array_equal(arr.tarr['feed_type'], raw[:, 13])
+    else:
+        assert np.all(arr.tarr['feed_type'] == 'rl')
