@@ -98,7 +98,7 @@ def center_core(im, blur_size_uas=100):
         im_rotate.uvec = np.roll(im.uvec.reshape((im.ydim,im.xdim)), center - core_pos, (0,1)).flatten()
     if len(im.vvec):
         im_rotate.vvec = np.roll(im.vvec.reshape((im.ydim,im.xdim)), center - core_pos, (0,1)).flatten()
-    
+
     return im_rotate
 
 def align_left(im,min_frac=0.1,opposite_frac_thresh=0.05):
@@ -166,9 +166,9 @@ def export_multipanel_movie(im_List_Set, out='movie.mp4', fps=10, dpi=120, scale
         ax = plt.subplot(1, N_set, j+1)
         plt_im[j] = plt.imshow(im_data(j, 0), extent=extent[j], cmap=plt.get_cmap('afmhot'), interpolation='gaussian')
 
-        if xlim != None:
+        if xlim is not None:
             ax.set_xlim(xlim)
-        if ylim != None:
+        if ylim is not None:
             ax.set_ylim(ylim)
 
         if scale == 'linear':
@@ -177,8 +177,8 @@ def export_multipanel_movie(im_List_Set, out='movie.mp4', fps=10, dpi=120, scale
             plt_im[j].set_clim([np.log(maxi[j]/dynamic_range[j]),np.log(maxi[j])])
 
         if j == 0:
-            plt.xlabel('Relative RA ($\mu$as)')
-            plt.ylabel('Relative Dec ($\mu$as)')
+            plt.xlabel(r'Relative RA ($\mu$as)')
+            plt.ylabel(r'Relative Dec ($\mu$as)')
 
         if len(titles) > 0:
             ax.set_title(titles[j])
@@ -211,7 +211,7 @@ def export_movie(im_List, out='movie.mp4', fps=10, dpi=120, scale='linear', cbar
     import matplotlib.animation as animation
     import matplotlib.pyplot as plt
 
-    mjd_range = im_List[-1].mjd - im_List[0].mjd    
+    mjd_range = im_List[-1].mjd - im_List[0].mjd
 
     fig = plt.figure()
 
@@ -253,8 +253,8 @@ def export_movie(im_List, out='movie.mp4', fps=10, dpi=120, scale='linear', cbar
     elif scale == 'gamma':
         plt_im.set_clim([(maxi/dynamic_range)**gamma,(maxi)**(gamma)])
 
-    plt.xlabel('Relative RA ($\mu$as)')
-    plt.ylabel('Relative Dec ($\mu$as)')
+    plt.xlabel(r'Relative RA ($\mu$as)')
+    plt.ylabel(r'Relative Dec ($\mu$as)')
 
     fig.set_size_inches([5,5])
     plt.tight_layout()
@@ -348,7 +348,7 @@ def Wrapped_Convolve(sig,ker):
 
     N = sig.shape[0]
 
-    if Fast_Convolve == False:
+    if not Fast_Convolve:
         return scipy.signal.fftconvolve(np.pad(sig,((N, N), (N, N)), 'wrap'), np.pad(ker,((N, N), (N, N)), 'constant'),mode='same')[N:(2*N),N:(2*N)]
     else:
         return scipy.signal.fftconvolve(sig, ker,mode='same')
@@ -792,14 +792,14 @@ def get_chisq(i, imvec_embed, d1, d2, d3, ttype, mask):
     global A1_List, A2_List, A3_List, data1_List, data2_List, data3_List, sigma1_List, sigma2_List, sigma3_List
     chisq1 = chisq2 = chisq3 = 1.0
 
-    if d1 != False and len(data1_List[i])>0:
+    if d1 and len(data1_List[i])>0:
 
         chisq1 = chisq(imvec_embed, A1_List[i], data1_List[i], sigma1_List[i], d1, ttype=ttype, mask=mask)
 
-    if d2 != False and len(data2_List[i])>0:
+    if d2 and len(data2_List[i])>0:
         chisq2 = chisq(imvec_embed, A2_List[i], data2_List[i], sigma2_List[i], d2, ttype=ttype, mask=mask)
 
-    if d3 != False and len(data3_List[i])>0:
+    if d3 and len(data3_List[i])>0:
         chisq3 = chisq(imvec_embed, A3_List[i], data3_List[i], sigma3_List[i], d3, ttype=ttype, mask=mask)
 
     return [chisq1, chisq2, chisq3]
@@ -812,14 +812,14 @@ def get_chisqgrad(i, imvec_embed, d1, d2, d3, ttype, mask):
     global A1_List, A2_List, A3_List, data1_List, data2_List, data3_List, sigma1_List, sigma2_List, sigma3_List
     chisqgrad1 = chisqgrad2 = chisqgrad3 = 0.0*imvec_embed
 
-    if d1 != False and len(data1_List[i])>0:
+    if d1 and len(data1_List[i])>0:
 
         chisqgrad1 = chisqgrad(imvec_embed, A1_List[i], data1_List[i], sigma1_List[i], d1, ttype=ttype, mask=mask) #This *does not* include the Jacobian factor
 
-    if d2 != False and len(data2_List[i])>0:
+    if d2 and len(data2_List[i])>0:
         chisqgrad2 = chisqgrad(imvec_embed, A2_List[i], data2_List[i], sigma2_List[i], d2, ttype=ttype, mask=mask) #This *does not* include the Jacobian factor
 
-    if d3 != False and len(data3_List[i])>0:
+    if d3 and len(data3_List[i])>0:
         chisqgrad3 = chisqgrad(imvec_embed, A3_List[i], data3_List[i], sigma3_List[i], d3, ttype=ttype, mask=mask) #This *does not* include the Jacobian factor
 
     return [chisqgrad1, chisqgrad2, chisqgrad3]
@@ -839,8 +839,8 @@ systematic_noise1=0.0, systematic_noise2=0.0, systematic_noise3=0.0,
 entropy1="tv2", entropy2="l1",
 alpha_s1=1.0, alpha_s2=1.0, norm_reg=True, alpha_A=1.0,
 R_dt  ={'alpha':0.0, 'metric':'SymKL', 'p':2.0},
-maxit=200, J_factor = 0.001, stop=1.0e-10, ipynb=False, refresh_interval = 1000, 
-minimizer_method = 'L-BFGS-B', NHIST = 25, update_interval = 1, clipfloor=0., 
+maxit=200, J_factor = 0.001, stop=1.0e-10, ipynb=False, refresh_interval = 1000,
+minimizer_method = 'L-BFGS-B', NHIST = 25, update_interval = 1, clipfloor=0.,
 ttype = 'nfft', fft_pad_factor=2):
 
     global A1_List, A2_List, A3_List, data1_List, data2_List, data3_List, sigma1_List, sigma2_List, sigma3_List
@@ -996,7 +996,7 @@ ttype = 'nfft', fft_pad_factor=2):
         global nit
         nit += 1
 
-        if nit%update_interval == 0 or final == True:
+        if nit%update_interval == 0 or final:
             print ("iteration %d" % nit)
 
             Frames = np.zeros((N_frame, N_ypix, N_xpix))
@@ -1035,24 +1035,24 @@ ttype = 'nfft', fft_pad_factor=2):
             chisq1_max = np.max(chisq1_List)
             chisq2_max = np.max(chisq2_List)
             chisq3_max = np.max(chisq3_List)
-            if d1 != False: print ("chi2_1: %f" % chisq1)
-            if d2 != False: print ("chi2_2: %f" % chisq2)
-            if d3 != False: print ("chi2_3: %f" % chisq3)
-            if d1 != False: print ("weighted chi2_1: %f" % (chisq1 * alpha_d1))
-            if d2 != False: print ("weighted chi2_2: %f" % (chisq2 * alpha_d2))
-            if d3 != False: print ("weighted chi2_3: %f" % (chisq3 * alpha_d3))
-            if d1 != False: print ("Max Frame chi2_1: %f" % chisq1_max)
-            if d2 != False: print ("Max Frame chi2_2: %f" % chisq2_max)
-            if d3 != False: print ("Max Frame chi2_3: %f" % chisq3_max)
+            if d1: print (f"chi2_1: {chisq1:f}")
+            if d2: print (f"chi2_2: {chisq2:f}")
+            if d3: print (f"chi2_3: {chisq3:f}")
+            if d1: print ("weighted chi2_1: %f" % (chisq1 * alpha_d1))
+            if d2: print ("weighted chi2_2: %f" % (chisq2 * alpha_d2))
+            if d3: print ("weighted chi2_3: %f" % (chisq3 * alpha_d3))
+            if d1: print (f"Max Frame chi2_1: {chisq1_max:f}")
+            if d2: print (f"Max Frame chi2_2: {chisq2_max:f}")
+            if d3: print (f"Max Frame chi2_3: {chisq3_max:f}")
 
-            if final == True:
-                if d1 != False: print ("All chisq1:",chisq1_List)
-                if d2 != False: print ("All chisq2:",chisq2_List)
-                if d3 != False: print ("All chisq3:",chisq3_List)
+            if final:
+                if d1: print ("All chisq1:",chisq1_List)
+                if d2: print ("All chisq2:",chisq2_List)
+                if d3: print ("All chisq3:",chisq3_List)
 
-            if s1 != 0.0: print ("weighted s1: %f" % (s1))
-            if s2 != 0.0: print ("weighted s2: %f" % (s2))
-            print ("weighted s_dynamic: %f" % (s_dynamic))
+            if s1 != 0.0: print (f"weighted s1: {s1:f}")
+            if s2 != 0.0: print (f"weighted s2: {s2:f}")
+            print (f"weighted s_dynamic: {s_dynamic:f}")
 
             if nit%refresh_interval == 0:
                 print ("Plotting Functionality Temporarily Disabled...")
@@ -1087,7 +1087,7 @@ ttype = 'nfft', fft_pad_factor=2):
 
     # Print stats
     print ("time: %f s" % (tstop - tstart))
-    print ("J: %f" % res.fun)
+    print (f"J: {res.fun:f}")
     print (res.message)
 
     outim = [image.Image(Frames[i].reshape(Prior.ydim, Prior.xdim), Prior.psize,
@@ -1109,8 +1109,8 @@ R_flow={'alpha':0.0, 'metric':'SymKL', 'p':2.0, 'alpha_flow_tv':50.0},
 alpha_centroid=0.0, alpha_flux=0.0, alpha_dF=0.0, alpha_dS1=0.0, alpha_dS2=0.0, #other regularizers
 stochastic_optics=False, scattering_model=False, alpha_phi = 1.e4, #options for scattering
 Target_Dynamic_Range = 10000.0,
-maxit=200, J_factor = 0.001, stop=1.0e-10, ipynb=False, refresh_interval = 1000, 
-minimizer_method = 'L-BFGS-B', NHIST = 25, update_interval = 1, clipfloor=0., processes = -1, 
+maxit=200, J_factor = 0.001, stop=1.0e-10, ipynb=False, refresh_interval = 1000,
+minimizer_method = 'L-BFGS-B', NHIST = 25, update_interval = 1, clipfloor=0., processes = -1,
 recalculate_chisqdata = True,  ttype = 'nfft', fft_pad_factor=2, **kwargs):
 
     """Run dynamical imaging.
@@ -1118,8 +1118,8 @@ recalculate_chisqdata = True,  ttype = 'nfft', fft_pad_factor=2, **kwargs):
        Args:
            obs_input (List or Obsdata): Observation. Form can be either:
                                      1. List of Obsdata objects, one per reconstructed frame. Some can have empty data arrays.
-                                     2. Single Obsdata object. 
-           init_ims (List or Movie): List of initial images. List can be either:    
+                                     2. Single Obsdata object.
+           init_ims (List or Movie): List of initial images. List can be either:
                                      1. Each an Image object, one per reconstructed frame.
                                      2. A Movie object, where the frames will be used
            Prior (Image): The Image object with the prior image
@@ -1150,8 +1150,8 @@ recalculate_chisqdata = True,  ttype = 'nfft', fft_pad_factor=2, **kwargs):
            norm_reg (bool): If True, normalizes regularizer terms
            ttype (str): The Fourier transform type; options are 'fast', 'direct', 'nfft'
 
-           stochastic_optics (bool): If True, stochastic optics imaging is used. 
-           scattering_model (ScatteringModel): Optional specification of the ScatteringModel object. 
+           stochastic_optics (bool): If True, stochastic optics imaging is used.
+           scattering_model (ScatteringModel): Optional specification of the ScatteringModel object.
            alpha_phi (float): Weighting for screen phase regularization in stochastic optics.
 minimizer_method = 'L-BFGS-B', update_interval = 1
 
@@ -1182,9 +1182,9 @@ minimizer_method = 'L-BFGS-B', update_interval = 1
         c = 0
         for j in range(len(frame_mjds)):
             Obsdata_List[j].mjd  = InitIm_List[j].mjd
-            try: 
+            try:
                 Obsdata_List[j].data = np.concatenate(tlist[[x == j for x in idx_list]])
-            except: 
+            except:
                 Obsdata_List[j].data = []
                 c = c + 1
                 pass
@@ -1217,11 +1217,11 @@ minimizer_method = 'L-BFGS-B', update_interval = 1
         raise Exception("Number of elements in the list of total flux densities does not match the number of frames!")
 
     # If using stochastic optics, do some preliminary calculations
-    if stochastic_optics == True:
+    if stochastic_optics:
         # Doesn't yet work with clipping
         clipfloor = -1.0
 
-        if scattering_model == False:
+        if not scattering_model:
             print("No scattering model specified. Assuming the default scattering for Sgr A*.")
             scattering_model = so.ScatteringModel()
 
@@ -1274,7 +1274,7 @@ minimizer_method = 'L-BFGS-B', update_interval = 1
     ninit_embed_List = [InitIm_List[i].imvec for i in range(N_frame)]
     ninit_List = [ninit_embed_List[i][embed_mask_List[i]] for i in range(N_frame)]
 
-    if (recalculate_chisqdata == True and ttype == 'direct') or ttype != 'direct':
+    if (recalculate_chisqdata and ttype == 'direct') or ttype != 'direct':
         print ("Calculating lists/matrices for chi-squared terms...")
         A1_List = [None for _ in range(N_frame)]
         A2_List = [None for _ in range(N_frame)]
@@ -1304,9 +1304,9 @@ minimizer_method = 'L-BFGS-B', update_interval = 1
         if len(Obsdata_List[i].data) == 0:  #This allows the algorithm to create frames for periods with no data
             continue
 
-        if (recalculate_chisqdata == True and ttype == 'direct') or ttype != 'direct':
+        if (recalculate_chisqdata and ttype == 'direct') or ttype != 'direct':
             # Try to create the chisqdata. These can throw errors, for instance when no closure quantities exist in a frame with data
-            try: 
+            try:
                 (data1_List[i], sigma1_List[i], A1_List[i]) = chisqdata(Obsdata_List[i], Prior, embed_mask_List[i], d1, ttype=ttype, fft_pad_factor=fft_pad_factor, systematic_noise=systematic_noise1)
             except:
                 pass
@@ -1355,7 +1355,7 @@ minimizer_method = 'L-BFGS-B', update_interval = 1
             Flow = np.transpose([Flow_x.ravel(),Flow_y.ravel()]).reshape((N_ypix, N_xpix,2))
             init_i += 2*cur_len
 
-        if stochastic_optics == True:
+        if stochastic_optics:
             EpsilonList = x[init_i:(init_i + N**2-1)]
             im_List = [image.Image(Frames[j], Prior.psize, Prior.ra, Prior.dec, rf=Obsdata_List[j].rf, source=Prior.source, mjd=Prior.mjd) for j in range(N_frame)]
             #the list of scattered image vectors
@@ -1384,7 +1384,7 @@ minimizer_method = 'L-BFGS-B', update_interval = 1
         if alpha_flux > 0.0:
             flux = alpha_flux * movie_flux_constraint(Frames, flux_List)
 
-        if stochastic_optics == False:
+        if not stochastic_optics:
             if processes > 0:
                 chisq = np.array(pool.map(get_chisq_wrap, [[j, Frames[j].ravel()[embed_mask_List[j]], d1, d2, d3, ttype, embed_mask_List[j]] for j in range(N_frame)]))
             else:
@@ -1406,7 +1406,7 @@ minimizer_method = 'L-BFGS-B', update_interval = 1
 
         # Scattering screen regularization term
         regterm_scattering = 0.0
-        if stochastic_optics == True:
+        if stochastic_optics:
             chisq_epsilon = sum(EpsilonList*EpsilonList)/((N*N-1.0)/2.0)
             regterm_scattering = alpha_phi * (chisq_epsilon - 1.0)
 
@@ -1430,7 +1430,7 @@ minimizer_method = 'L-BFGS-B', update_interval = 1
             Flow = np.transpose([Flow_x.ravel(),Flow_y.ravel()]).reshape((N_ypix, N_xpix,2))
             init_i += 2*cur_len
 
-        if stochastic_optics == True:
+        if stochastic_optics:
             EpsilonList = x[init_i:(init_i + N**2-1)]
             Epsilon_Screen = so.MakeEpsilonScreenFromList(EpsilonList, N)
             im_List = [image.Image(Frames[j], Prior.psize, Prior.ra, Prior.dec, rf=Obsdata_List[j].rf, source=Prior.source, mjd=Prior.mjd) for j in range(N_frame)]
@@ -1463,7 +1463,7 @@ minimizer_method = 'L-BFGS-B', update_interval = 1
 
 
         # Michael -- can we do something about this
-        if stochastic_optics == False:
+        if not stochastic_optics:
             if processes > 0:
                 chisq_grad = np.array(pool.map(get_chisqgrad_wrap, [[j, Frames[j].ravel()[embed_mask_List[j]], d1, d2, d3, ttype, embed_mask_List[j]] for j in range(N_frame)]))
             else:
@@ -1510,7 +1510,7 @@ minimizer_method = 'L-BFGS-B', update_interval = 1
 
         # Gradient of the data chi^2 wrt to the epsilon screen -- this is the really difficult one
         chisq_grad_epsilon = np.array([])
-        if stochastic_optics == True:
+        if stochastic_optics:
             #Preliminary Definitions
             chisq_grad_epsilon = np.zeros(N**2-1)
             ell_mat = np.zeros((N,N))
@@ -1585,7 +1585,7 @@ minimizer_method = 'L-BFGS-B', update_interval = 1
 
         # Gradient of the chi^2 regularization term for the epsilon screen
         chisq_epsilon_grad = np.array([])
-        if stochastic_optics == True:
+        if stochastic_optics:
             chisq_epsilon_grad = alpha_phi * 2.0*EpsilonList/((N*N-1)/2.0)
 
         return (np.concatenate((s1 + s2 + s_dF + s_dS + (s_dynamic_grad + chisq_grad + cm_grad + cm_grad + flux_grad)[embed_mask_All], flow_grad, chisq_grad_epsilon + chisq_epsilon_grad))*J_factor)
@@ -1597,7 +1597,7 @@ minimizer_method = 'L-BFGS-B', update_interval = 1
         global nit
         nit += 1
 
-        if nit%update_interval == 0 or final == True:
+        if nit%update_interval == 0 or final:
             print ("iteration %d" % nit)
 
             Frames = np.zeros((N_frame, N_ypix, N_xpix))
@@ -1617,7 +1617,7 @@ minimizer_method = 'L-BFGS-B', update_interval = 1
                 Flow = np.transpose([Flow_x.ravel(),Flow_y.ravel()]).reshape((N_ypix, N_xpix,2))
                 init_i += 2*cur_len
 
-            if stochastic_optics == True:
+            if stochastic_optics:
                 EpsilonList = x[init_i:(init_i + N**2-1)]
                 im_List = [image.Image(Frames[j], Prior.psize, Prior.ra, Prior.dec, rf=Obsdata_List[j].rf, source=Prior.source, mjd=Prior.mjd) for j in range(N_frame)]
 
@@ -1646,7 +1646,7 @@ minimizer_method = 'L-BFGS-B', update_interval = 1
 
             if alpha_centroid != 0.0: cm = centroid(Frames, coord) * alpha_centroid
 
-            if stochastic_optics == False:
+            if not stochastic_optics:
                 if processes > 0:
 
                     chisq = np.array(pool.map(get_chisq_wrap, [[j, Frames[j].ravel()[embed_mask_List[j]],
@@ -1671,20 +1671,20 @@ minimizer_method = 'L-BFGS-B', update_interval = 1
             chisq1_max = np.max(chisq1_List)
             chisq2_max = np.max(chisq2_List)
             chisq3_max = np.max(chisq3_List)
-            if d1 != False: print ("chi2_1: %f" % chisq1)
-            if d2 != False: print ("chi2_2: %f" % chisq2)
-            if d3 != False: print ("chi2_3: %f" % chisq3)
-            if d1 != False: print ("weighted chi2_1: %f" % (chisq1 * alpha_d1))
-            if d2 != False: print ("weighted chi2_2: %f" % (chisq2 * alpha_d2))
-            if d3 != False: print ("weighted chi2_3: %f" % (chisq3 * alpha_d3))
-            if d1 != False: print ("Max Frame chi2_1: %f" % chisq1_max)
-            if d2 != False: print ("Max Frame chi2_2: %f" % chisq2_max)
-            if d3 != False: print ("Max Frame chi2_3: %f" % chisq3_max)
+            if d1: print (f"chi2_1: {chisq1:f}")
+            if d2: print (f"chi2_2: {chisq2:f}")
+            if d3: print (f"chi2_3: {chisq3:f}")
+            if d1: print ("weighted chi2_1: %f" % (chisq1 * alpha_d1))
+            if d2: print ("weighted chi2_2: %f" % (chisq2 * alpha_d2))
+            if d3: print ("weighted chi2_3: %f" % (chisq3 * alpha_d3))
+            if d1: print (f"Max Frame chi2_1: {chisq1_max:f}")
+            if d2: print (f"Max Frame chi2_2: {chisq2_max:f}")
+            if d3: print (f"Max Frame chi2_3: {chisq3_max:f}")
 
-            if final == True:
-                if d1 != False: print ("All chisq1:",chisq1_List)
-                if d2 != False: print ("All chisq2:",chisq2_List)
-                if d3 != False: print ("All chisq3:",chisq3_List)
+            if final:
+                if d1: print ("All chisq1:",chisq1_List)
+                if d2: print ("All chisq2:",chisq2_List)
+                if d3: print ("All chisq3:",chisq3_List)
 
             # Now deal with the a flow, if necessary
             if R_flow['alpha'] != 0.0:
@@ -1694,22 +1694,22 @@ minimizer_method = 'L-BFGS-B', update_interval = 1
                 s_dynamic += Rflow(Frames, Flow, **R_flow)*R_flow['alpha']
                 print ("Weighted R_Flow: %f" % (Rflow(Frames, Flow, **R_flow)*R_flow['alpha']))
 
-            if s1 != 0.0: print ("weighted s1: %f" % (s1))
-            if s2 != 0.0: print ("weighted s2: %f" % (s2))
-            if s_dF != 0.0: print ("weighted s_dF: %f" % (s_dF))
-            if s_dS != 0.0: print ("weighted s_dS: %f" % (s_dS))
-            print ("weighted s_dynamic: %f" % (s_dynamic))
-            if alpha_centroid > 0.0: print ("weighted COM: %f" % cm)
+            if s1 != 0.0: print (f"weighted s1: {s1:f}")
+            if s2 != 0.0: print (f"weighted s2: {s2:f}")
+            if s_dF != 0.0: print (f"weighted s_dF: {s_dF:f}")
+            if s_dS != 0.0: print (f"weighted s_dS: {s_dS:f}")
+            print (f"weighted s_dynamic: {s_dynamic:f}")
+            if alpha_centroid > 0.0: print (f"weighted COM: {cm:f}")
 
             if alpha_flux > 0.0:
                 print ("weighted flux constraint: %f" % (alpha_flux * movie_flux_constraint(Frames, flux_List)))
 
-            if stochastic_optics == True:
+            if stochastic_optics:
                 chisq_epsilon = sum(EpsilonList*EpsilonList)/((N*N-1.0)/2.0)
                 regterm_scattering = alpha_phi * (chisq_epsilon - 1.0)
-                print("Epsilon chi^2 : %0.2f " % (chisq_epsilon))
-                print("Weighted Epsilon chi^2 : %0.2f " % (regterm_scattering))
-                print("Max |Epsilon| : %0.2f " % (max(abs(EpsilonList))))
+                print(f"Epsilon chi^2 : {chisq_epsilon:0.2f} ")
+                print(f"Weighted Epsilon chi^2 : {regterm_scattering:0.2f} ")
+                print(f"Max |Epsilon| : {max(abs(EpsilonList)):0.2f} ")
 
             if nit%refresh_interval == 0:
                 print ("Plotting Functionality Temporarily Disabled...")
@@ -1721,7 +1721,7 @@ minimizer_method = 'L-BFGS-B', update_interval = 1
         Flow_Init_embed = np.transpose([Flow_Init.ravel()[::2][embed_mask_List[0]],Flow_Init.ravel()[1::2][embed_mask_List[0]]]).ravel()
         x0 = np.concatenate( (loginit, Flow_Init_embed) )
 
-    if stochastic_optics == True:
+    if stochastic_optics:
         x0 = np.concatenate((x0,np.zeros(N**2-1)))
 
 
@@ -1758,7 +1758,7 @@ minimizer_method = 'L-BFGS-B', update_interval = 1
         Flow = np.transpose([Flow_x.ravel(),Flow_y.ravel()]).reshape((N_ypix, N_xpix,2))
         init_i += 2*cur_len
 
-    if stochastic_optics == True:
+    if stochastic_optics:
         EpsilonList = res.x[init_i:(init_i + N**2-1)]
         init_i += len(EpsilonList)
 
@@ -1767,7 +1767,7 @@ minimizer_method = 'L-BFGS-B', update_interval = 1
 
     # Print stats
     print ("time: %f s" % (tstop - tstart))
-    print ("J: %f" % res.fun)
+    print (f"J: {res.fun:f}")
     print (res.message)
 
     #Note: the global variables are *not* released to avoid recalculation
@@ -1781,10 +1781,10 @@ minimizer_method = 'L-BFGS-B', update_interval = 1
 
     if type(init_ims) == list:
         pass
-    else: 
+    else:
         outim = movie.merge_im_list(outim)
 
-    if R_flow['alpha'] == 0.0 and stochastic_optics == False:
+    if R_flow['alpha'] == 0.0 and not stochastic_optics:
         return outim
     else:
         return {'Movie':outim, 'Frames':outim, 'Flow':Flow, 'EpsilonList':EpsilonList }
@@ -1872,7 +1872,7 @@ maxit=200, J_factor = 0.001, stop=1.0e-10, ipynb=False, refresh_interval = 1000,
     ninit_embed_List = [InitIm_List[i].imvec for i in range(N_freq * N_frame)]
     ninit_List = [ninit_embed_List[i][embed_mask_List[i]] for i in range(N_freq * N_frame)]
 
-    if (recalculate_chisqdata == True and ttype == 'direct') or ttype != 'direct':
+    if (recalculate_chisqdata and ttype == 'direct') or ttype != 'direct':
         print ("Calculating lists/matrices for chi-squared terms...")
         A1_List = [None,] * N_freq * N_frame
         A2_List = [None,] * N_freq * N_frame
@@ -1900,7 +1900,7 @@ maxit=200, J_factor = 0.001, stop=1.0e-10, ipynb=False, refresh_interval = 1000,
         if len(Obsdata_List[i].data) == 0:  #This allows the algorithm to create frames for periods with no data
             continue
 
-        if (recalculate_chisqdata == True and ttype == 'direct') or ttype != 'direct':
+        if (recalculate_chisqdata and ttype == 'direct') or ttype != 'direct':
             (data1_List[i], sigma1_List[i], A1_List[i]) = chisqdata(Obsdata_List[i], Prior, embed_mask_List[i], d1, ttype=ttype, fft_pad_factor=fft_pad_factor, systematic_noise=systematic_noise1)
             (data2_List[i], sigma2_List[i], A2_List[i]) = chisqdata(Obsdata_List[i], Prior, embed_mask_List[i], d2, ttype=ttype, fft_pad_factor=fft_pad_factor, systematic_noise=systematic_noise2)
             (data3_List[i], sigma3_List[i], A3_List[i]) = chisqdata(Obsdata_List[i], Prior, embed_mask_List[i], d3, ttype=ttype, fft_pad_factor=fft_pad_factor, systematic_noise=systematic_noise3)
@@ -1925,7 +1925,7 @@ maxit=200, J_factor = 0.001, stop=1.0e-10, ipynb=False, refresh_interval = 1000,
         s1 = s2 = s_multifreq = s_dynamic = cm = flux = s_dS = s_dF = 0.0
 
         # Multifrequency part
-        if R_dt_multifreq['alpha'] != 0.0: 
+        if R_dt_multifreq['alpha'] != 0.0:
             for j in range(N_frame):
                 s_multifreq += Rdt(Frames[j::N_frame], B_dt_multifreq, **R_dt_multifreq)*R_dt_multifreq['alpha']
 
@@ -1986,7 +1986,7 @@ maxit=200, J_factor = 0.001, stop=1.0e-10, ipynb=False, refresh_interval = 1000,
         for j in range(N_freq):
             i1 = j*N_frame
             i2 = (j+1)*N_frame
-            f1 = j*N_frame*N_xpix*N_ypix 
+            f1 = j*N_frame*N_xpix*N_ypix
             f2 = (j+1)*N_frame*N_xpix*N_ypix
             mf1 = j*N_frame*cur_len # Note: This assumes that all priors have the same number of masked pixels!
             mf2 = (j+1)*N_frame*cur_len
@@ -2035,7 +2035,7 @@ maxit=200, J_factor = 0.001, stop=1.0e-10, ipynb=False, refresh_interval = 1000,
         global nit
         nit += 1
 
-        if nit%update_interval == 0 or final == True:
+        if nit%update_interval == 0 or final:
             print ("iteration %d" % nit)
 
             Frames = np.zeros((N_freq*N_frame, N_ypix, N_xpix))
@@ -2051,7 +2051,7 @@ maxit=200, J_factor = 0.001, stop=1.0e-10, ipynb=False, refresh_interval = 1000,
             s1 = s2 = s_multifreq = s_dynamic = cm = s_dS = s_dF = 0.0
 
             # Multifrequency part
-            if R_dt_multifreq['alpha'] != 0.0: 
+            if R_dt_multifreq['alpha'] != 0.0:
                 for j in range(N_frame):
                     s_multifreq += Rdt(Frames[j::N_frame], B_dt_multifreq, **R_dt_multifreq)*R_dt_multifreq['alpha']
 
@@ -2087,28 +2087,28 @@ maxit=200, J_factor = 0.001, stop=1.0e-10, ipynb=False, refresh_interval = 1000,
             chisq1_max = np.max(chisq1_List)
             chisq2_max = np.max(chisq2_List)
             chisq3_max = np.max(chisq3_List)
-            if d1 != False: print ("chi2_1: %f" % chisq1)
-            if d2 != False: print ("chi2_2: %f" % chisq2)
-            if d3 != False: print ("chi2_3: %f" % chisq3)
-            if d1 != False: print ("weighted chi2_1: %f" % (chisq1 * alpha_d1))
-            if d2 != False: print ("weighted chi2_2: %f" % (chisq2 * alpha_d2))
-            if d3 != False: print ("weighted chi2_3: %f" % (chisq3 * alpha_d3))
-            if d1 != False: print ("Max Frame chi2_1: %f" % chisq1_max)
-            if d2 != False: print ("Max Frame chi2_2: %f" % chisq2_max)
-            if d3 != False: print ("Max Frame chi2_3: %f" % chisq3_max)
+            if d1: print (f"chi2_1: {chisq1:f}")
+            if d2: print (f"chi2_2: {chisq2:f}")
+            if d3: print (f"chi2_3: {chisq3:f}")
+            if d1: print ("weighted chi2_1: %f" % (chisq1 * alpha_d1))
+            if d2: print ("weighted chi2_2: %f" % (chisq2 * alpha_d2))
+            if d3: print ("weighted chi2_3: %f" % (chisq3 * alpha_d3))
+            if d1: print (f"Max Frame chi2_1: {chisq1_max:f}")
+            if d2: print (f"Max Frame chi2_2: {chisq2_max:f}")
+            if d3: print (f"Max Frame chi2_3: {chisq3_max:f}")
 
-            if final == True:
-                if d1 != False: print ("All chisq1:",chisq1_List)
-                if d2 != False: print ("All chisq2:",chisq2_List)
-                if d3 != False: print ("All chisq3:",chisq3_List)
+            if final:
+                if d1: print ("All chisq1:",chisq1_List)
+                if d2: print ("All chisq2:",chisq2_List)
+                if d3: print ("All chisq3:",chisq3_List)
 
-            if s1 != 0.0: print ("weighted s1: %f" % (s1))
-            if s2 != 0.0: print ("weighted s2: %f" % (s2))
-            if s_dF != 0.0: print ("weighted s_dF: %f" % (s_dF))
-            if s_dS != 0.0: print ("weighted s_dS: %f" % (s_dS))
-            print ("weighted s_dynamic: %f" % (s_dynamic))
-            print ("weighted s_multifreq: %f" % (s_multifreq))
-            if alpha_centroid > 0.0: print ("weighted COM: %f" % cm)
+            if s1 != 0.0: print (f"weighted s1: {s1:f}")
+            if s2 != 0.0: print (f"weighted s2: {s2:f}")
+            if s_dF != 0.0: print (f"weighted s_dF: {s_dF:f}")
+            if s_dS != 0.0: print (f"weighted s_dS: {s_dS:f}")
+            print (f"weighted s_dynamic: {s_dynamic:f}")
+            print (f"weighted s_multifreq: {s_multifreq:f}")
+            if alpha_centroid > 0.0: print (f"weighted COM: {cm:f}")
 
             if alpha_flux > 0.0:
                 print ("weighted flux constraint: %f" % (alpha_flux * movie_flux_constraint(Frames, flux_List)))
@@ -2147,7 +2147,7 @@ maxit=200, J_factor = 0.001, stop=1.0e-10, ipynb=False, refresh_interval = 1000,
 
     # Print stats
     print ("time: %f s" % (tstop - tstart))
-    print ("J: %f" % res.fun)
+    print (f"J: {res.fun:f}")
     print (res.message)
 
     #Return Frames
@@ -2178,7 +2178,7 @@ def plot_im_List_Set(im_List_List, plot_log_amplitude=False, ipynb=False):
     for i in range(xnum*ynum):
         plt.subplot(ynum, xnum, i+1)
         im = im_List_List[(i-i%xnum)//xnum][i%xnum]
-        if plot_log_amplitude == False:
+        if not plot_log_amplitude:
             plt.imshow(im.imvec.reshape(im.ydim,im.xdim), cmap=plt.get_cmap('afmhot'), interpolation='gaussian')
         else:
             plt.imshow(np.log(im.imvec.reshape(im.ydim,im.xdim)), cmap=plt.get_cmap('afmhot'), interpolation='gaussian')
@@ -2187,8 +2187,8 @@ def plot_im_List_Set(im_List_List, plot_log_amplitude=False, ipynb=False):
         plt.xticks(xticks[0], xticks[1])
         plt.yticks(yticks[0], yticks[1])
         if i == 0:
-            plt.xlabel('Relative RA ($\mu$as)')
-            plt.ylabel('Relative Dec ($\mu$as)')
+            plt.xlabel(r'Relative RA ($\mu$as)')
+            plt.ylabel(r'Relative Dec ($\mu$as)')
         else:
             plt.xlabel('')
             plt.ylabel('')
@@ -2205,7 +2205,7 @@ def plot_im_List(im_List, plot_log_amplitude=False, ipynb=False):
 
     for i in range(len(im_List)):
         plt.subplot(1, len(im_List), i+1)
-        if plot_log_amplitude == False:
+        if not plot_log_amplitude:
             plt.imshow(im_List[i].imvec.reshape(Prior.ydim,Prior.xdim), cmap=plt.get_cmap('afmhot'), interpolation='gaussian')
         else:
             plt.imshow(np.log(im_List[i].imvec.reshape(Prior.ydim,Prior.xdim)), cmap=plt.get_cmap('afmhot'), interpolation='gaussian')
@@ -2214,8 +2214,8 @@ def plot_im_List(im_List, plot_log_amplitude=False, ipynb=False):
         plt.xticks(xticks[0], xticks[1])
         plt.yticks(yticks[0], yticks[1])
         if i == 0:
-            plt.xlabel('Relative RA ($\mu$as)')
-            plt.ylabel('Relative Dec ($\mu$as)')
+            plt.xlabel(r'Relative RA ($\mu$as)')
+            plt.ylabel(r'Relative Dec ($\mu$as)')
         else:
             plt.xlabel('')
             plt.ylabel('')
@@ -2237,9 +2237,9 @@ def plot_i_dynamic(im_List, Prior, nit, chi2, s, s_dynamic, ipynb=False):
         plt.xticks(xticks[0], xticks[1])
         plt.yticks(yticks[0], yticks[1])
     if i == 0:
-        plt.xlabel('Relative RA ($\mu$as)')
-        plt.ylabel('Relative Dec ($\mu$as)')
-        plt.title("step: %i  $\chi^2$: %f  $s$: %f  $s_{t}$: %f" % (nit, chi2, s, s_dynamic), fontsize=20)
+        plt.xlabel(r'Relative RA ($\mu$as)')
+        plt.ylabel(r'Relative Dec ($\mu$as)')
+        plt.title(r"step: %i  $\chi^2$: %f  $s$: %f  $s_{t}$: %f" % (nit, chi2, s, s_dynamic), fontsize=20)
     else:
         plt.xlabel('')
         plt.ylabel('')
@@ -2396,7 +2396,7 @@ def downloadMOJAVEfiles(url, path = './'):
         UVurl = baseurl+UVbuFileName
         CLEANurl = baseurl + CLEANbuFileName
         # If it doesn't already exist, download the UV file
-        if os.path.isfile(UVpath+'/'+date+'_'+ sn+".uvf") == False:
+        if not os.path.isfile(UVpath+'/'+date+'_'+ sn+".uvf"):
             print ("Downloading " + (UVpath+'/'+date+'_'+ sn+".uvf"))
             response = requests.get(UVurl, stream=True)
             with open(UVpath+'/'+date+'_'+ sn+".uvf",'wb') as handle:
@@ -2405,7 +2405,7 @@ def downloadMOJAVEfiles(url, path = './'):
             print ("Already Downloaded " + (UVpath+'/'+date+'_'+ sn+".uvf"))
 
         # If it doesn't already exist, download the CLEAN file
-        if os.path.isfile(CLEANpath+'/'+date+'_'+sn+".icn.fits.gz") == False:
+        if not os.path.isfile(CLEANpath+'/'+date+'_'+sn+".icn.fits.gz"):
             print ("Downloading " + (CLEANpath+'/'+date+'_'+sn+".icn.fits.gz"))
             response = requests.get(CLEANurl, stream=True)
             with open(CLEANpath+'/'+date+'_'+sn+".icn.fits.gz",'wb') as handle:
@@ -2448,7 +2448,7 @@ def downloadCLEANfiles(url, path = './'):
         UVurl = baseurl+UVbuFileName
         CLEANurl = baseurl + CLEANbuFileName
         # If it doesn't already exist, download the UV file
-        if os.path.isfile(UVpath+'/'+date+'_'+ sn+"_UV.UVP.gz") == False:
+        if not os.path.isfile(UVpath+'/'+date+'_'+ sn+"_UV.UVP.gz"):
             print ("Downloading " + (UVpath+'/'+date+'_'+ sn+"_UV.UVP.gz"))
             response = requests.get(UVurl, stream=True)
             with open(UVpath+'/'+date+'_'+ sn+"_UV.UVP.gz",'wb') as handle:
@@ -2457,7 +2457,7 @@ def downloadCLEANfiles(url, path = './'):
             print ("Already Downloaded " + (UVpath+'/'+date+'_'+ sn+"_UV.UVP.gz"))
 
         # If it doesn't already exist, download the CLEAN file
-        if os.path.isfile(CLEANpath+'/'+date+'_'+sn+"_CLEAN.mod") == False:
+        if not os.path.isfile(CLEANpath+'/'+date+'_'+sn+"_CLEAN.mod"):
             print ("Downloading " + (CLEANpath+'/'+date+'_'+sn+"_CLEAN.mod"))
             response = requests.get(CLEANurl, stream=True)
             with open(CLEANpath+'/'+date+'_'+sn+"_CLEAN.mod",'wb') as handle:
