@@ -307,29 +307,56 @@ def tv_spec_grad(imvec, nx, ny, psize, norm_reg=NORM_REGULARIZER, beam_size=None
 
 
 def reg_l2_spec(imvec, mask, **kwargs):
-    return -l2_spec(imvec, kwargs['nprior'], norm_reg=kwargs.get('norm_reg', True))
+    priorvec = kwargs['nprior']
+    norm = float(len(imvec)) if kwargs.get('norm_reg', True) else 1
+    return np.sum((imvec - priorvec)**2) / norm
 
 
 def reggrad_l2_spec(imvec, mask, **kwargs):
-    return -l2_spec_grad(imvec, kwargs['nprior'], norm_reg=kwargs.get('norm_reg', True))
+    priorvec = kwargs['nprior']
+    norm = float(len(imvec)) if kwargs.get('norm_reg', True) else 1
+    return 2 * (imvec - priorvec) / norm
 
 
 def reg_tv_spec(imvec, mask, **kwargs):
     from ehtim.imaging.imager_utils import embed
     if np.any(np.invert(mask)):
         imvec = embed(imvec, mask, clipfloor=0, randomfloor=False)
-    return -tv_spec(imvec, kwargs['xdim'], kwargs['ydim'], kwargs['psize'],
-                    norm_reg=kwargs.get('norm_reg', True),
-                    beam_size=kwargs.get('beam_size'))
+    nx, ny, psize = kwargs['xdim'], kwargs['ydim'], kwargs['psize']
+    beam_size = kwargs.get('beam_size') or psize
+    norm = len(imvec) * psize / beam_size if kwargs.get('norm_reg', True) else 1
+    im = imvec.reshape(ny, nx)
+    impad = np.pad(im, 1, mode='constant', constant_values=0)
+    im_l1 = np.roll(impad, -1, axis=0)[1:ny+1, 1:nx+1]
+    im_l2 = np.roll(impad, -1, axis=1)[1:ny+1, 1:nx+1]
+    return np.sum(np.sqrt(np.abs(im_l1 - im)**2 + np.abs(im_l2 - im)**2 + EPSILON)) / norm
 
 
 def reggrad_tv_spec(imvec, mask, **kwargs):
     from ehtim.imaging.imager_utils import embed
     if np.any(np.invert(mask)):
         imvec = embed(imvec, mask, clipfloor=0, randomfloor=False)
-    g = -tv_spec_grad(imvec, kwargs['xdim'], kwargs['ydim'], kwargs['psize'],
-                      norm_reg=kwargs.get('norm_reg', True),
-                      beam_size=kwargs.get('beam_size'))
+    nx, ny, psize = kwargs['xdim'], kwargs['ydim'], kwargs['psize']
+    beam_size = kwargs.get('beam_size') or psize
+    norm = len(imvec) * psize / beam_size if kwargs.get('norm_reg', True) else 1
+    im = imvec.reshape(ny, nx)
+    impad = np.pad(im, 1, mode='constant', constant_values=0)
+    im_l1 = np.roll(impad, -1, axis=0)[1:ny+1, 1:nx+1]
+    im_l2 = np.roll(impad, -1, axis=1)[1:ny+1, 1:nx+1]
+    im_r1 = np.roll(impad, 1, axis=0)[1:ny+1, 1:nx+1]
+    im_r2 = np.roll(impad, 1, axis=1)[1:ny+1, 1:nx+1]
+    im_r1l2 = np.roll(np.roll(impad,  1, axis=0), -1, axis=1)[1:ny+1, 1:nx+1]
+    im_l1r2 = np.roll(np.roll(impad, -1, axis=0),  1, axis=1)[1:ny+1, 1:nx+1]
+    g1 = (2*im - im_l1 - im_l2) / np.sqrt((im - im_l1)**2 + (im - im_l2)**2 + EPSILON)
+    g2 = (im - im_r1) / np.sqrt((im - im_r1)**2 + (im_r1l2 - im_r1)**2 + EPSILON)
+    g3 = (im - im_r2) / np.sqrt((im - im_r2)**2 + (im_l1r2 - im_r2)**2 + EPSILON)
+    mask1 = np.zeros(im.shape)
+    mask2 = np.zeros(im.shape)
+    mask1[0, :] = 1
+    mask2[:, 0] = 1
+    g2[mask1.astype(bool)] = 0
+    g3[mask2.astype(bool)] = 0
+    g = (g1 + g2 + g3).flatten() / norm
     return g[mask]
 
 
