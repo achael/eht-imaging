@@ -101,19 +101,19 @@ class ScatteringModel(object):
             def avM_Anisotropy(kzeta):                
                 return np.abs( (kzeta*sps.i0(kzeta)/sps.i1(kzeta) - 1.0)**0.5 - A )
 
-            self.kzeta = minimize(avM_Anisotropy, A**2, method='nelder-mead', options={'xtol': 1e-8, 'disp': False}).x
+            self.kzeta = minimize(avM_Anisotropy, A**2, method='nelder-mead', options={'xatol': 1e-8, 'disp': False}).x[0]
             self.P_phi_prefac = 1.0/(2.0*np.pi*sps.i0(self.kzeta))  
         elif model == 'boxcar':
             def boxcar_Anisotropy(kzeta):                
                 return np.abs( np.sin(np.pi/(1.0 + kzeta))/(np.pi/(1.0 + kzeta)) - (theta_maj_mas_ref**2 - theta_min_mas_ref**2)/(theta_maj_mas_ref**2 + theta_min_mas_ref**2) )       
 
-            self.kzeta = minimize(boxcar_Anisotropy, A, method='nelder-mead', options={'xtol': 1e-8, 'disp': False}).x
+            self.kzeta = minimize(boxcar_Anisotropy, A, method='nelder-mead', options={'xatol': 1e-8, 'disp': False}).x[0]
             self.P_phi_prefac = (1.0 + self.kzeta)/(2.0*np.pi)   
         elif model == 'dipole':
             def dipole_Anisotropy(kzeta):                
                 return np.abs( sps.hyp2f1((self.scatt_alpha + 2.0)/2.0, 0.5, 2.0, -kzeta)/sps.hyp2f1((self.scatt_alpha + 2.0)/2.0, 1.5, 2.0, -kzeta) - A**2 )  
 
-            self.kzeta = minimize(dipole_Anisotropy, A, method='nelder-mead', options={'xtol': 1e-8, 'disp': False}).x
+            self.kzeta = minimize(dipole_Anisotropy, A, method='nelder-mead', options={'xatol': 1e-8, 'disp': False}).x[0]
             self.P_phi_prefac = 1.0/(2.0*np.pi*sps.hyp2f1((self.scatt_alpha + 2.0)/2.0, 0.5, 1.0, -self.kzeta))       
         else:
             print("Scattering Model Not Recognized!")
