@@ -19,7 +19,7 @@ import scipy.stats as st
 import ehtim.image as image
 import ehtim.observing.pulses
 from ehtim.imaging.imager_utils import chisqdata
-from ehtim.observing.obs_helpers import *
+from ehtim.observing.obs_helpers import ftmatrix, ticks
 
 PROPERROR = True
 
@@ -138,7 +138,7 @@ def forwardUpdates_apxImgs(mu, Lambda_orig, obs_List, A_orig, Q_orig, init_image
 
     # for each forward timestep...
     for t in range(0,len(obs_List)):
-        sys.stdout.write('\rForward timestep %i of %i total timesteps...' % (t,len(obs_List)))
+        sys.stdout.write(f"\rForward timestep {t} of {len(obs_List)} total timesteps...")
         sys.stdout.flush()
 
         print('forward timestep: ' + str(t))
@@ -280,7 +280,7 @@ def backwardUpdates(mu, Lambda_orig, obs_List, A_orig, Q_orig, measurement={'vis
 
     lastidx = len(obs_List)-1
     for t in range(lastidx,-1,-1):
-        sys.stdout.write('\rBackward timestep %i of %i total timesteps...' % (t,len(obs_List)))
+        sys.stdout.write(f"\rBackward timestep {t} of {len(obs_List)} total timesteps...")
         sys.stdout.flush()
 
         if len(mu) == 1:
@@ -389,7 +389,7 @@ def computeSuffStatistics(mu, Lambda, obs_List, Upsilon, theta, init_x, init_y, 
 
     # lightcurve and flux constraint go together
     if lightcurve is None  and 'flux' in measurement.keys(): #KATIE ADDED FEB 1 2021
-        error('Error: if you are using a flux constraint you must specify a lightcurve')
+        raise Exception('Error: if you are using a flux constraint you must specify a lightcurve')
 
     # if the visibility is the only measurement,
     if list(measurement.keys())==1 and measurement.keys()[0]=='vis':
@@ -523,7 +523,7 @@ def maximizeTheta(expVal_t_t, expVal_tm1_t, dummy_im, Q, centerTheta, init_x, in
     if method == 'phase' or method == 'approx_phase':
         dWarp_dTheta = calc_dWarp_dTheta(dummy_im, centerTheta, init_x, init_y, flowbasis_x, flowbasis_y, initTheta, method='phase')
     else:
-        error('ERROR: WE ONLY HANDLE PHASE WARP MINIMIZATION RIGHT NOW')
+        raise Exception('ERROR: WE ONLY HANDLE PHASE WARP MINIMIZATION RIGHT NOW')
 
     warpMtx = calcWarpMtx(dummy_im, centerTheta, init_x, init_y, flowbasis_x, flowbasis_y, initTheta, method=method)
     invQ = np.linalg.inv(Q)
@@ -592,9 +592,10 @@ def negloglikelihood(theta, mu, Lambda, obs_List, Upsilon, init_x, init_y, flowb
     B = np.zeros(mu.imvec.shape)
     Q = Upsilon
 
-    loglike, z_t_tm1, P_t_tm1, z_t_t, P_t_t = forwardUpdates(mu, Lambda, obs_List, A, B, Q, measurement=measurement, interiorPriors=interiorPriors, mask=mask)
-
-    return -loglike[2]
+    raise NotImplementedError(
+        "forwardUpdates is undefined; this dead-code path needs revisit "
+        "(it was likely meant to call forwardUpdates_apxImgs with a different signature)."
+    )
 
 def expnegloglikelihood_full(theta, expectation_theta, mu, Lambda, obs_List, Q, init_x, init_y, flowbasis_x, flowbasis_y, initTheta, method, measurement, interiorPriors, numLinIters, apxImgs):
 
@@ -761,13 +762,13 @@ def getMeasurementTerms(obs, im, measurement={'vis': 1}, tot_flux=None, mask=[],
         try:
             if dname=='flux':
                 if tot_flux is None:
-                    error('Error: if you are using a flux constraint you must specify a total flux (via the lightcurve)')
+                    raise Exception('Error: if you are using a flux constraint you must specify a total flux (via the lightcurve)')
                 data = np.array([tot_flux])
                 sigma = np.array([1])
             else:
                 data, sigma, A = chisqdata(obs, im, mask, dtype=dname, ttype='direct')
             count = count + 1
-        except:
+        except Exception:
             continue
 
         #compute the derivative matrix and the ideal measurements if im was the true image
@@ -968,7 +969,7 @@ def movie(im_List, out='movie.mp4', fps=10, dpi=120):
     plt.tight_layout()
 
     def update_img(n):
-        sys.stdout.write('\rprocessing image %i of %i ...' % (n,len(im_List)) )
+        sys.stdout.write(f"\rprocessing image {n} of {len(im_List)} ...")
         sys.stdout.flush()
         im.set_data(np.reshape(im_List[n].imvec, [im_List[n].ydim, im_List[n].xdim]))
         return im
@@ -996,7 +997,7 @@ def dirtyImage(im, obs_List, init_x=[], init_y=[], flowbasis_x=[], flowbasis_y=[
 
 def weinerFiltering(meanImg, covImg, obs_List, mask=[]):
 
-    if type(obs_List) != list:
+    if not isinstance(obs_List, list):
         obs_List = [obs_List]
 
     im_List = []
