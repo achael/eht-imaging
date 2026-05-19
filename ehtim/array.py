@@ -35,6 +35,81 @@ from ehtim.caltable import plot_tarr_dterms
 # Array object
 ###################################################################################################
 
+# Valid two-character feed_type strings for a single station (lowercase).
+# Mixed-basis stations (e.g. Effelsberg R+X) are explicitly enumerated.
+VALID_FEED_TYPES = frozenset({
+    'rl', 'lr', 'xy', 'yx',
+    'rx', 'ry', 'lx', 'ly',
+    'xr', 'xl', 'yr', 'yl',
+})
+
+# Default symmetric SEFD when none is supplied (legacy convention).
+_DEFAULT_SEFD = 10000.0
+
+
+def _validate_feed_type(feed_type):
+    """Raise ValueError if feed_type is not a recognised 2-char feed string."""
+    if not isinstance(feed_type, str) or feed_type.lower() not in VALID_FEED_TYPES:
+        raise ValueError(
+            f"feed_type must be one of {sorted(VALID_FEED_TYPES)}; "
+            f"got {feed_type!r}")
+
+
+def _resolve_sefd_pair(sefd, sefd_p1, sefd_p2):
+    """Resolve (sefd_p1, sefd_p2) from legacy + generic kwargs.
+
+    Rules: pass exactly one of `sefd` (symmetric, both feeds) or the
+    `sefd_p1`/`sefd_p2` pair (asymmetric, per-feed). Mixing the legacy
+    `sefd` kwarg with either generic kwarg raises. The generic kwargs
+    must be supplied as a pair. If none are given, both feeds default
+    to _DEFAULT_SEFD.
+    """
+    any_generic = (sefd_p1 is not None) or (sefd_p2 is not None)
+    if sefd is not None and any_generic:
+        raise ValueError(
+            "pass only one of sefd (legacy, symmetric) or "
+            "sefd_p1/sefd_p2 (generic, per-feed), not both")
+    if any_generic:
+        if sefd_p1 is None or sefd_p2 is None:
+            raise ValueError(
+                "sefd_p1 and sefd_p2 must be supplied together")
+        return float(sefd_p1), float(sefd_p2)
+    val = float(sefd) if sefd is not None else _DEFAULT_SEFD
+    return val, val
+
+
+def _resolve_dterm_pair(dr, dl, d_p1, d_p2, feed_type):
+    """Resolve (d_p1, d_p2) from legacy dr/dl + generic d_p1/d_p2 kwargs.
+
+    `dr`/`dl` are only valid for feed_type='rl' and cannot be combined
+    with their generic counterpart on the same feed. Missing values
+    default to 0+0j (no leakage).
+    """
+    if feed_type.lower() != 'rl' and (dr is not None or dl is not None):
+        raise ValueError(
+            f"dr/dl kwargs are only valid for feed_type='rl' "
+            f"(got feed_type={feed_type!r}); use d_p1/d_p2 instead")
+    if dr is not None and d_p1 is not None:
+        raise ValueError(
+            "pass only one of dr (legacy) or d_p1 (generic), not both")
+    if dl is not None and d_p2 is not None:
+        raise ValueError(
+            "pass only one of dl (legacy) or d_p2 (generic), not both")
+
+    if d_p1 is not None:
+        d_p1_val = complex(d_p1)
+    elif dr is not None:
+        d_p1_val = complex(dr)
+    else:
+        d_p1_val = 0 + 0j
+    if d_p2 is not None:
+        d_p2_val = complex(d_p2)
+    elif dl is not None:
+        d_p2_val = complex(dl)
+    else:
+        d_p2_val = 0 + 0j
+    return d_p1_val, d_p2_val
+
 
 class Array:
 
@@ -291,24 +366,53 @@ class Array:
 
         return axes
 
-    def add_site(self, site, coords, sefd=10000,
+    def add_site(self, site, coords, sefd=None,
                  fr_par=0, fr_elev=0, fr_off=0,
-                 dr=0.+0.j, dl=0.+0.j):
+                 dr=None, dl=None,
+                 feed_type='rl',
+                 sefd_p1=None, sefd_p2=None,
+                 d_p1=None, d_p2=None):
 
         """Add a ground station to the array
 
-           TODO (Phase 2 mixed-pol): extend signature with `feed_type='rl'` and
-           per-feed sefd/d-term kwargs (sefd_p1/sefd_p2/d_p1/d_p2). Phase 1
-           hardcodes feed_type='rl' so legacy circular workflows are unchanged.
+           Pass either the legacy symmetric kwargs (`sefd`, `dr`, `dl` — only
+           valid for feed_type='rl') OR the generic per-feed kwargs
+           (`sefd_p1`/`sefd_p2`, `d_p1`/`d_p2`). Mixing legacy and generic
+           kwargs for the same field raises ValueError.
+
+           Args:
+               site (str): site name
+               coords (tuple): (x, y, z) station coordinates in meters
+               sefd (float): legacy symmetric SEFD applied to both feeds.
+                             Defaults to 10000 Jy when none of sefd / sefd_p1
+                             / sefd_p2 is supplied.
+               fr_par, fr_elev, fr_off (float): field-rotation coefficients
+               dr (complex): legacy D-term for the R feed; only valid when
+                             feed_type='rl'.
+               dl (complex): legacy D-term for the L feed; only valid when
+                             feed_type='rl'.
+               feed_type (str): two-character feed-type string, lowercase,
+                                drawn from VALID_FEED_TYPES. Default 'rl'
+                                preserves the legacy calling convention.
+               sefd_p1, sefd_p2 (float): per-feed SEFDs. Must be supplied
+                                         together.
+               d_p1, d_p2 (complex): per-feed D-terms. Default 0+0j.
+
+           Returns:
+               Array: a new Array with the station appended.
         """
+        _validate_feed_type(feed_type)
+        sefd_p1_val, sefd_p2_val = _resolve_sefd_pair(sefd, sefd_p1, sefd_p2)
+        d_p1_val, d_p2_val = _resolve_dterm_pair(dr, dl, d_p1, d_p2, feed_type)
+
         tarr_old = self.tarr.copy()
         ephem_old = self.ephem.copy()
 
-
         tarr_newline = np.array((str(site), float(coords[0]), float(coords[1]), float(coords[2]),
-                                 float(sefd), float(sefd),
-                                 dr, dl,
-                                 float(fr_par), float(fr_elev), float(fr_off), 'rl'), dtype=ehc.DTARR)
+                                 sefd_p1_val, sefd_p2_val,
+                                 d_p1_val, d_p2_val,
+                                 float(fr_par), float(fr_elev), float(fr_off),
+                                 feed_type.lower()), dtype=ehc.DTARR)
         tarr_new = np.append(tarr_old, tarr_newline)
 
         arr_out = Array(tarr_new, ephem_old)
@@ -336,23 +440,33 @@ class Array:
         arr_out = Array(tarr_new, ephem_new)
         return arr_out
 
-    def add_satellite_tle(self, tlearr, sefd=10000):
+    def add_satellite_tle(self, tlearr, sefd=None,
+                          feed_type='rl',
+                          sefd_p1=None, sefd_p2=None,
+                          d_p1=None, d_p2=None):
 
         """Add an earth-orbiting satellite to the array from a TLE
 
            Args:
              tlearr (str) : 3 element list with [name, tle line 1, tle line 2] as strings
-             sefd (float) : assumed sefd for the array file (assumes sefdl = sefdr)
-
-           TODO (Phase 2 mixed-pol): extend signature with feed_type kwarg.
+             sefd (float) : legacy symmetric SEFD (sefdl = sefdr); defaults to 10000.
+             feed_type (str): two-character feed_type string (default 'rl').
+             sefd_p1, sefd_p2 (float): per-feed SEFDs; pass together as an
+                                       alternative to `sefd`.
+             d_p1, d_p2 (complex): per-feed D-terms.
         """
+        _validate_feed_type(feed_type)
+        sefd_p1_val, sefd_p2_val = _resolve_sefd_pair(sefd, sefd_p1, sefd_p2)
+        d_p1_val, d_p2_val = _resolve_dterm_pair(None, None, d_p1, d_p2, feed_type)
+
         satname = tlearr[0]
         tarr_new = self.tarr.copy()
         ephem_new = self.ephem.copy()
 
         tarr_newline = np.array((str(satname), 0., 0., 0.,
-                                 float(sefd), float(sefd),
-                                 0., 0., 0., 0., 0., 'rl'), dtype=ehc.DTARR)
+                                 sefd_p1_val, sefd_p2_val,
+                                 d_p1_val, d_p2_val,
+                                 0., 0., 0., feed_type.lower()), dtype=ehc.DTARR)
         tarr_new = np.append(tarr_new, tarr_newline)
         ephem_new[satname] = tlearr
         arr_out = Array(tarr_new, ephem_new)
@@ -363,7 +477,10 @@ class Array:
                                perigee_mjd=Time.now().mjd,
                                period_days=1., eccentricity=0.,
                                inclination=0., arg_perigee=0., long_ascending=0.,
-                               sefd=10000):
+                               sefd=None,
+                               feed_type='rl',
+                               sefd_p1=None, sefd_p2=None,
+                               d_p1=None, d_p2=None):
         """Add an earth-orbiting satellite to the array from simple keplerian elements
            perfect keplerian orbit is assumed, no derivatives
 
@@ -371,16 +488,23 @@ class Array:
                perigee time given in mjd
                period given in days
                inclination, arg_perigee, long_ascending given in degrees
-
-           TODO (Phase 2 mixed-pol): extend signature with feed_type kwarg.
+               sefd (float): legacy symmetric SEFD (defaults to 10000).
+               feed_type (str): two-character feed_type string (default 'rl').
+               sefd_p1, sefd_p2 (float): per-feed SEFDs; pass together as an
+                                         alternative to `sefd`.
+               d_p1, d_p2 (complex): per-feed D-terms.
         """
+        _validate_feed_type(feed_type)
+        sefd_p1_val, sefd_p2_val = _resolve_sefd_pair(sefd, sefd_p1, sefd_p2)
+        d_p1_val, d_p2_val = _resolve_dterm_pair(None, None, d_p1, d_p2, feed_type)
 
         tarr_new = self.tarr.copy()
         ephem_new = self.ephem.copy()
 
         tarr_newline = np.array((str(satname), 0., 0., 0.,
-                                 float(sefd), float(sefd),
-                                 0., 0., 0., 0., 0., 'rl'), dtype=ehc.DTARR)
+                                 sefd_p1_val, sefd_p2_val,
+                                 d_p1_val, d_p2_val,
+                                 0., 0., 0., feed_type.lower()), dtype=ehc.DTARR)
         tarr_new = np.append(tarr_new, tarr_newline)
 
         ephem_new[satname] = [perigee_mjd, period_days, eccentricity, inclination, arg_perigee, long_ascending]

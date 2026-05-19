@@ -444,3 +444,131 @@ def test_phase2_dterm_for_feed_wrong_feed_raises():
     arr = ea.Array(_mixed_tarr())
     with pytest.raises(ValueError, match="not in feed_type"):
         arr.dterm_for_feed('APEX', 'X')
+
+
+# ----- add_site signature extension -----------------------------------------
+
+def _empty_array():
+    return ea.Array(np.zeros(0, dtype=ehc.DTARR))
+
+
+def test_phase2_add_site_default_kwargs_bit_identical_to_legacy():
+    arr = _empty_array().add_site('A', (1.0, 2.0, 3.0))
+    row = arr.tarr[arr.tkey['A']]
+    assert row['sefd_p1'] == 10000.0
+    assert row['sefd_p2'] == 10000.0
+    assert row['d_p1'] == 0 + 0j
+    assert row['d_p2'] == 0 + 0j
+    assert str(row['feed_type']) == 'rl'
+
+
+def test_phase2_add_site_legacy_sefd_and_dr_dl_still_work():
+    arr = _empty_array().add_site('A', (1., 2., 3.),
+                                  sefd=5000, dr=0.1 + 0.2j, dl=0.3 + 0.4j)
+    row = arr.tarr[arr.tkey['A']]
+    assert row['sefd_p1'] == 5000.0
+    assert row['sefd_p2'] == 5000.0
+    assert row['d_p1'] == 0.1 + 0.2j
+    assert row['d_p2'] == 0.3 + 0.4j
+    assert str(row['feed_type']) == 'rl'
+
+
+def test_phase2_add_site_with_feed_type_xy_and_generic_sefds():
+    arr = _empty_array().add_site('A', (1., 2., 3.),
+                                  feed_type='xy',
+                                  sefd_p1=100., sefd_p2=110.,
+                                  d_p1=0.01 + 0j, d_p2=0.02 + 0j)
+    row = arr.tarr[arr.tkey['A']]
+    assert str(row['feed_type']) == 'xy'
+    assert row['sefd_p1'] == 100.0
+    assert row['sefd_p2'] == 110.0
+    assert row['d_p1'] == 0.01 + 0j
+    assert row['d_p2'] == 0.02 + 0j
+
+
+def test_phase2_add_site_dr_with_non_rl_feed_raises():
+    with pytest.raises(ValueError, match="dr/dl kwargs are only valid"):
+        _empty_array().add_site('A', (0., 0., 0.),
+                                feed_type='xy', dr=0.1 + 0j)
+
+
+def test_phase2_add_site_dl_with_non_rl_feed_raises():
+    with pytest.raises(ValueError, match="dr/dl kwargs are only valid"):
+        _empty_array().add_site('A', (0., 0., 0.),
+                                feed_type='xy', dl=0.1 + 0j)
+
+
+def test_phase2_add_site_dr_and_d_p1_both_raises():
+    with pytest.raises(ValueError, match="dr.*d_p1"):
+        _empty_array().add_site('A', (0., 0., 0.),
+                                dr=0.1 + 0j, d_p1=0.2 + 0j)
+
+
+def test_phase2_add_site_dl_and_d_p2_both_raises():
+    with pytest.raises(ValueError, match="dl.*d_p2"):
+        _empty_array().add_site('A', (0., 0., 0.),
+                                dl=0.1 + 0j, d_p2=0.2 + 0j)
+
+
+def test_phase2_add_site_sefd_and_sefd_p1_both_raises():
+    with pytest.raises(ValueError, match="sefd.*sefd_p1"):
+        _empty_array().add_site('A', (0., 0., 0.),
+                                sefd=5000, sefd_p1=100., sefd_p2=110.)
+
+
+def test_phase2_add_site_sefd_p1_without_p2_raises():
+    with pytest.raises(ValueError, match="sefd_p1 and sefd_p2"):
+        _empty_array().add_site('A', (0., 0., 0.),
+                                feed_type='xy', sefd_p1=100.)
+
+
+def test_phase2_add_site_invalid_feed_type_raises():
+    with pytest.raises(ValueError, match="feed_type must be one of"):
+        _empty_array().add_site('A', (0., 0., 0.), feed_type='zz')
+
+
+# ----- add_satellite_* signature extension ----------------------------------
+
+def test_phase2_add_satellite_tle_default_feed_type_rl():
+    tle = ['SAT1', 'line1', 'line2']
+    arr = _empty_array().add_satellite_tle(tle, sefd=10000)
+    row = arr.tarr[arr.tkey['SAT1']]
+    assert str(row['feed_type']) == 'rl'
+    assert row['sefd_p1'] == 10000.0
+    assert row['sefd_p2'] == 10000.0
+
+
+def test_phase2_add_satellite_tle_with_feed_type_xy():
+    tle = ['SAT1', 'line1', 'line2']
+    arr = _empty_array().add_satellite_tle(tle, feed_type='xy',
+                                            sefd_p1=500., sefd_p2=600.)
+    row = arr.tarr[arr.tkey['SAT1']]
+    assert str(row['feed_type']) == 'xy'
+    assert row['sefd_p1'] == 500.0
+    assert row['sefd_p2'] == 600.0
+
+
+def test_phase2_add_satellite_elements_default_feed_type_rl():
+    arr = _empty_array().add_satellite_elements('SAT2', sefd=2000)
+    row = arr.tarr[arr.tkey['SAT2']]
+    assert str(row['feed_type']) == 'rl'
+    assert row['sefd_p1'] == 2000.0
+
+
+def test_phase2_add_satellite_elements_with_feed_type_xy_and_dterms():
+    arr = _empty_array().add_satellite_elements('SAT2', feed_type='xy',
+                                                 sefd_p1=300., sefd_p2=400.,
+                                                 d_p1=0.05 + 0.01j,
+                                                 d_p2=0.06 + 0.02j)
+    row = arr.tarr[arr.tkey['SAT2']]
+    assert str(row['feed_type']) == 'xy'
+    assert row['sefd_p1'] == 300.0
+    assert row['sefd_p2'] == 400.0
+    assert row['d_p1'] == 0.05 + 0.01j
+    assert row['d_p2'] == 0.06 + 0.02j
+
+
+def test_phase2_add_satellite_tle_invalid_feed_type_raises():
+    tle = ['SAT1', 'line1', 'line2']
+    with pytest.raises(ValueError, match="feed_type must be one of"):
+        _empty_array().add_satellite_tle(tle, feed_type='qq')
