@@ -2561,9 +2561,9 @@ def Cont(imG):
 
     import matplotlib.pyplot as plt
     plt.figure()
-    Z = np.reshape(imG.imvec,(imG.xdim,imG.ydim))
-    pov = imG.xdim*imG.psize
-    pov_mas = pov/(RADPERUAS*1.e3)
+    Z = np.reshape(imG.imvec,(imG.ydim,imG.xdim))
+    pov_x_mas = imG.xdim*imG.psize/(RADPERUAS*1.e3)
+    pov_y_mas = imG.ydim*imG.psize/(RADPERUAS*1.e3)
     Zmax = np.amax(Z)
     print(Zmax)
 
@@ -2572,7 +2572,7 @@ def Cont(imG):
     CS = plt.contour(Z, levels,
                      origin='lower',
                      linewidths=2,
-                     extent=(-pov_mas/2., pov_mas/2., -pov_mas/2., pov_mas/2.))
+                     extent=(-pov_x_mas/2., pov_x_mas/2., -pov_y_mas/2., pov_y_mas/2.))
     plt.show()
 
 
