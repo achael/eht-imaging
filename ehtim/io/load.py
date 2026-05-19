@@ -827,21 +827,26 @@ def load_array_txt(filename, ephemdir='ephemeris'):
     path = os.path.dirname(filename)
 
     tdataout = []
-    if (tdata.shape[1] != 5 and tdata.shape[1] != 13):
+    if (tdata.shape[1] not in (5, 13, 14)):
         raise Exception("Array file should have format: " +
                         "(name, x, y, z, SEFDR, SEFDL " +
                         "FR_PAR_ANGLE FR_ELEV_ANGLE FR_OFFSET" +
-                        "DR_RE   DR_IM   DL_RE    DL_IM )")
+                        "DR_RE   DR_IM   DL_RE    DL_IM   [FEED_TYPE])")
 
     elif tdata.shape[1] == 5:
         tdataout = [np.array((x[0], float(x[1]), float(x[2]), float(x[3]), float(x[4]), float(x[4]),
                               0.0, 0.0,
-                              0.0, 0.0, 0.0),
+                              0.0, 0.0, 0.0, 'rl'),
                              dtype=ehc.DTARR) for x in tdata]
     elif tdata.shape[1] == 13:
         tdataout = [np.array((x[0], float(x[1]), float(x[2]), float(x[3]), float(x[4]), float(x[5]),
                               float(x[9]) + 1j * float(x[10]), float(x[11]) + 1j * float(x[12]),
-                              float(x[6]), float(x[7]), float(x[8])),
+                              float(x[6]), float(x[7]), float(x[8]), 'rl'),
+                             dtype=ehc.DTARR) for x in tdata]
+    elif tdata.shape[1] == 14:
+        tdataout = [np.array((x[0], float(x[1]), float(x[2]), float(x[3]), float(x[4]), float(x[5]),
+                              float(x[9]) + 1j * float(x[10]), float(x[11]) + 1j * float(x[12]),
+                              float(x[6]), float(x[7]), float(x[8]), str(x[13])),
                              dtype=ehc.DTARR) for x in tdata]
 
     # load spacecraft
@@ -922,12 +927,17 @@ def load_obs_txt(filename, polrep='stokes'):
     while line[1][0] != "-":
         if len(line) == 6:
             tarr.append(np.array((line[1], line[2], line[3], line[4], line[5], line[5],
-                                  0, 0, 0, 0, 0), dtype=ehc.DTARR))
+                                  0, 0, 0, 0, 0, 'rl'), dtype=ehc.DTARR))
         elif len(line) == 14:
             tarr.append(np.array((line[1], line[2], line[3], line[4], line[5], line[6],
                                   float(line[10]) + 1j * float(line[11]),
                                   float(line[12]) + 1j * float(line[13]),
-                                  line[7], line[8], line[9]), dtype=ehc.DTARR))
+                                  line[7], line[8], line[9], 'rl'), dtype=ehc.DTARR))
+        elif len(line) == 15:
+            tarr.append(np.array((line[1], line[2], line[3], line[4], line[5], line[6],
+                                  float(line[10]) + 1j * float(line[11]),
+                                  float(line[12]) + 1j * float(line[13]),
+                                  line[7], line[8], line[9], str(line[14])), dtype=ehc.DTARR))
         else:
             raise Exception("Telescope header doesn't have the right number of fields!")
         line = file.readline().split()
@@ -1075,10 +1085,12 @@ def load_obs_uvfits(filename, polrep='stokes', flipbl=False,
     dr = np.zeros(len(tnames)) + 1j * np.zeros(len(tnames))
     dl = np.zeros(len(tnames)) + 1j * np.zeros(len(tnames))
 
+    # TODO (Phase 3c/6 mixed-pol): read POLTYA/POLTYB from the AIPS AN table
+    # to populate per-station feed_type. Until then, assume circular feeds.
     tarr = [np.array((
             str(tnames[i]), xyz[i][0], xyz[i][1], xyz[i][2],
             sefdr[i], sefdl[i], dr[i], dl[i],
-            fr_par[i], fr_el[i], fr_off[i]),
+            fr_par[i], fr_el[i], fr_off[i], 'rl'),
         dtype=ehc.DTARR) for i in range(len(tnames))]
 
     tarr = np.array(tarr)
@@ -1542,7 +1554,7 @@ def load_obs_maps(arrfile, obsspec, ifile, qfile=0, ufile=0, vfile=0,
     # Read telescope parameters from the array file
     tdata = np.loadtxt(arrfile, dtype=bytes).astype(str)
     tdata = [np.array((x[0], float(x[1]), float(x[2]), float(x[3]),
-                       float(x[-1]), float(x[-1]), 0., 0., 0., 0., 0.),
+                       float(x[-1]), float(x[-1]), 0., 0., 0., 0., 0., 'rl'),
                       dtype=ehc.DTARR) for x in tdata]
     tdata = np.array(tdata)
 

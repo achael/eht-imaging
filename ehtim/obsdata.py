@@ -128,6 +128,9 @@ class Obsdata:
 
         if len(datatable) == 0:
             raise Exception("No data in input table!")
+        # Silently upgrade legacy DTPOL_CIRC (no title aliases) to the
+        # current dtype; zero-copy view-cast when applicable.
+        datatable = ehc.upgrade_dtpol_circ(datatable)
         if datatable.dtype not in [ehc.DTPOL_STOKES, ehc.DTPOL_CIRC]:
             raise Exception("Data table dtype should be DTPOL_STOKES or DTPOL_CIRC")
 
@@ -164,7 +167,7 @@ class Obsdata:
         self.scans = scantable
 
         # Telescope array: default ordering is by sefd
-        self.tarr = tarr
+        self.tarr = ehc.upgrade_tarr(tarr)
         self.tkey = {self.tarr[i]['site']: i for i in range(len(self.tarr))}
         if np.any(self.tarr['sefdr'] != 0) or np.any(self.tarr['sefdl'] != 0):
             self.reorder_tarr_sefd(reorder_baselines=False)
@@ -188,6 +191,16 @@ class Obsdata:
     def tarr(self, tarr):
         self._tarr = tarr
         self.tkey = {tarr[i]['site']: i for i in range(len(tarr))}
+
+    def __setstate__(self, state):
+        # Silently upgrade legacy pickles to the current mixedpol schema.
+        if '_tarr' in state:
+            state['_tarr'] = ehc.upgrade_tarr(state['_tarr'])
+        if 'tarr' in state:
+            state['tarr'] = ehc.upgrade_tarr(state['tarr'])
+        if 'data' in state and state['data'] is not None:
+            state['data'] = ehc.upgrade_dtpol_circ(state['data'])
+        self.__dict__.update(state)
 
     def obsdata_args(self):
         """"Copy arguments for making a new Obsdata into a list and dictonary
@@ -274,8 +287,7 @@ class Obsdata:
             rrmask = np.isnan(self.data['rrvis'])
             llmask = np.isnan(self.data['llvis'])
 
-            for f in ehc.DTPOL_STOKES:
-                f = f[0]
+            for f in np.dtype(ehc.DTPOL_STOKES).names:
                 if f in ['time', 'tint', 't1', 't2', 'tau1', 'tau2', 'u', 'v']:
                     data[f] = self.data[f]
                 elif f == 'vis':
@@ -304,8 +316,7 @@ class Obsdata:
             data = np.empty(len(self.data), dtype=ehc.DTPOL_CIRC)
             Vmask = np.isnan(self.data['vvis'])
 
-            for f in ehc.DTPOL_CIRC:
-                f = f[0]
+            for f in np.dtype(ehc.DTPOL_CIRC).names:
                 if f in ['time', 'tint', 't1', 't2', 'tau1', 'tau2', 'u', 'v']:
                     data[f] = self.data[f]
                 elif f == 'rrvis':
@@ -532,8 +543,7 @@ class Obsdata:
         data = np.empty(2 * len(self.data), dtype=self.poltype)
 
         # Add the conjugate baseline data
-        for f in self.poltype:
-            f = f[0]
+        for f in self.data.dtype.names:
             if f in ['t1', 't2', 'tau1', 'tau2']:
                 if f[-1] == '1':
                     f2 = f[:-1] + '2'
