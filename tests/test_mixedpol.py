@@ -331,3 +331,116 @@ def test_phase1_caltable_pickle_roundtrip_legacy_dtcal():
     assert 'dr' in caltab2.data['A'].dtype.names
     assert np.array_equal(caltab2.data['A']['rscale'],
                           caltab.data['A']['rscale'])
+
+
+# ============================================================================
+# Phase 2 — Array class migration
+# ============================================================================
+#
+# Plan reference: obsdata_mixedpol_plan_v2.md, "Phase 2".
+# Scope:
+#   - Array query methods: is_homogeneous_feeds, feed_types,
+#     sefd_for_feed, dterm_for_feed
+#   - add_site / add_satellite_tle / add_satellite_elements feed_type kwarg
+#   - TarrView wrapper raising on legacy R/L access for non-RL stations
+#   - Array.obsdata(polrep=...) extended to 'lin' and 'mixed'
+#   - save_array_txt / load_array_txt v2 versioned text format
+#   - load_obs_txt embedded-tarr versioned header
+
+def _mixed_tarr():
+    """Two-site tarr: one 'rl', one 'xy'."""
+    t = np.zeros(2, dtype=ehc.DTARR)
+    t['site'] = ['ALMA', 'APEX']
+    t['sefd_p1'] = [100., 4000.]
+    t['sefd_p2'] = [110., 4100.]
+    t['d_p1'] = [0.01 + 0.02j, 0.03 + 0.04j]
+    t['d_p2'] = [0.05 + 0.06j, 0.07 + 0.08j]
+    t['feed_type'] = ['xy', 'rl']
+    return t
+
+
+def _xy_tarr():
+    """Two-site all-linear-feed tarr."""
+    t = np.zeros(2, dtype=ehc.DTARR)
+    t['site'] = ['A', 'B']
+    t['sefd_p1'] = [1000., 2000.]
+    t['sefd_p2'] = [1100., 2100.]
+    t['d_p1'] = [0.1 + 0.0j, 0.2 + 0.0j]
+    t['d_p2'] = [0.3 + 0.0j, 0.4 + 0.0j]
+    t['feed_type'] = ['xy', 'xy']
+    return t
+
+
+# ----- Array query methods --------------------------------------------------
+
+def test_phase2_is_homogeneous_feeds_legacy_array_true():
+    arr = ea.Array(_legacy_tarr())
+    assert arr.is_homogeneous_feeds() is True
+
+
+def test_phase2_is_homogeneous_feeds_xy_array_true():
+    arr = ea.Array(_xy_tarr())
+    assert arr.is_homogeneous_feeds() is True
+
+
+def test_phase2_is_homogeneous_feeds_mixed_array_false():
+    arr = ea.Array(_mixed_tarr())
+    assert arr.is_homogeneous_feeds() is False
+
+
+def test_phase2_feed_types_legacy_array():
+    arr = ea.Array(_legacy_tarr())
+    assert arr.feed_types() == {'rl'}
+
+
+def test_phase2_feed_types_mixed_array():
+    arr = ea.Array(_mixed_tarr())
+    assert arr.feed_types() == {'rl', 'xy'}
+
+
+def test_phase2_sefd_for_feed_rl_station_returns_p1_p2():
+    arr = ea.Array(_mixed_tarr())
+    assert arr.sefd_for_feed('APEX', 'R') == 4000.
+    assert arr.sefd_for_feed('APEX', 'L') == 4100.
+
+
+def test_phase2_sefd_for_feed_xy_station_returns_p1_p2():
+    arr = ea.Array(_mixed_tarr())
+    assert arr.sefd_for_feed('ALMA', 'X') == 100.
+    assert arr.sefd_for_feed('ALMA', 'Y') == 110.
+
+
+def test_phase2_sefd_for_feed_case_insensitive():
+    arr = ea.Array(_mixed_tarr())
+    assert arr.sefd_for_feed('ALMA', 'x') == arr.sefd_for_feed('ALMA', 'X')
+
+
+def test_phase2_sefd_for_feed_wrong_feed_raises():
+    arr = ea.Array(_mixed_tarr())
+    # ALMA is 'xy'; asking for R should raise.
+    with pytest.raises(ValueError, match="feed 'R' not in feed_type 'xy'"):
+        arr.sefd_for_feed('ALMA', 'R')
+
+
+def test_phase2_sefd_for_feed_unknown_site_raises():
+    arr = ea.Array(_mixed_tarr())
+    with pytest.raises(KeyError, match="site 'NOSITE' not in array"):
+        arr.sefd_for_feed('NOSITE', 'R')
+
+
+def test_phase2_dterm_for_feed_rl_station_dispatch():
+    arr = ea.Array(_mixed_tarr())
+    assert arr.dterm_for_feed('APEX', 'R') == 0.03 + 0.04j
+    assert arr.dterm_for_feed('APEX', 'L') == 0.07 + 0.08j
+
+
+def test_phase2_dterm_for_feed_xy_station_dispatch():
+    arr = ea.Array(_mixed_tarr())
+    assert arr.dterm_for_feed('ALMA', 'X') == 0.01 + 0.02j
+    assert arr.dterm_for_feed('ALMA', 'Y') == 0.05 + 0.06j
+
+
+def test_phase2_dterm_for_feed_wrong_feed_raises():
+    arr = ea.Array(_mixed_tarr())
+    with pytest.raises(ValueError, match="not in feed_type"):
+        arr.dterm_for_feed('APEX', 'X')

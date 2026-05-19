@@ -82,6 +82,79 @@ class Array:
         self._tarr = tarr
         self.tkey = {tarr[i]['site']: i for i in range(len(tarr))}
 
+    def is_homogeneous_feeds(self):
+        """Return True if every station shares the same feed_type.
+
+           Returns:
+                bool : True for single-feed arrays (legacy 'rl', all-'xy', ...);
+                       False for mixed-feed arrays.
+        """
+        return len(set(self._tarr['feed_type'])) <= 1
+
+    def feed_types(self):
+        """Return the set of distinct feed types present in the array.
+
+           Returns:
+                set[str] : e.g. {'rl'} for a legacy array, {'rl', 'xy'} for
+                           a mixed circular+linear array.
+        """
+        return set(str(ft) for ft in self._tarr['feed_type'])
+
+    def _row_and_feed_index(self, site, feed):
+        """Resolve (row, slot_index) for site/feed lookup; raise on miss.
+
+           slot_index is 0 if feed matches the station's first feed channel,
+           1 if it matches the second. feed and feed_type are compared
+           case-insensitively.
+        """
+        if site not in self.tkey:
+            raise KeyError(
+                f"site {site!r} not in array (have: {sorted(self.tkey)})")
+        row = self._tarr[self.tkey[site]]
+        ft = str(row['feed_type']).lower()
+        feed_lc = str(feed).lower()
+        if len(feed_lc) != 1 or len(ft) != 2:
+            raise ValueError(
+                f"feed must be a single character and feed_type a 2-char "
+                f"string; got feed={feed!r}, feed_type={ft!r}")
+        if feed_lc == ft[0]:
+            return row, 0
+        if feed_lc == ft[1]:
+            return row, 1
+        raise ValueError(
+            f"feed {feed!r} not in feed_type {ft!r} of site {site!r}")
+
+    def sefd_for_feed(self, site, feed):
+        """Return the SEFD for a single feed channel of a station.
+
+           Args:
+                site (str) : station name (key in self.tkey)
+                feed (str) : single feed character; must match one of the two
+                             feed channels of the station's feed_type
+                             (e.g. 'R'/'L' for 'rl', 'X'/'Y' for 'xy').
+                             Case-insensitive.
+
+           Returns:
+                float : SEFD in Jy
+        """
+        row, slot = self._row_and_feed_index(site, feed)
+        return float(row['sefd_p1' if slot == 0 else 'sefd_p2'])
+
+    def dterm_for_feed(self, site, feed):
+        """Return the leakage D-term for a single feed channel of a station.
+
+           Args:
+                site (str) : station name (key in self.tkey)
+                feed (str) : single feed character; must match one of the two
+                             feed channels of the station's feed_type.
+                             Case-insensitive.
+
+           Returns:
+                complex : leakage D-term
+        """
+        row, slot = self._row_and_feed_index(site, feed)
+        return complex(row['d_p1' if slot == 0 else 'd_p2'])
+
     def copy(self):
         """Copy the array object.
 
