@@ -44,6 +44,26 @@ class TestImageOperations:
         assert aligned.imvec.shape == im.imvec.shape
         assert aligned.total_flux() == pytest.approx(im.total_flux(), rel=1e-10)
 
+    def test_align_left_rolls_to_x_axis_center_on_rect(self, make_rect_image):
+        """A single bright column at x=0 lands at the x-axis centre after align.
+
+        Catches the bug where the roll amount uses the y-centre instead of
+        the x-centre, which is silent on square images but visibly wrong on
+        rectangular ones.
+        """
+        im = make_rect_image(RECT_XDIM, RECT_YDIM)
+        arr = np.zeros((im.ydim, im.xdim))
+        arr[:, 0] = 1.0
+        arr /= arr.sum()
+        bright = im.copy()
+        bright.imvec = arr.flatten()
+
+        aligned = di.align_left(bright, min_frac=0.1)
+
+        new_arr = aligned.imvec.reshape(aligned.ydim, aligned.xdim)
+        col_with_bright = int(np.argmax(new_arr.sum(axis=0)))
+        assert col_with_bright == (aligned.xdim - 1) // 2
+
 
 class TestAveraging:
     """Frame-list averaging and Gaussian blurring on rectangular frames."""

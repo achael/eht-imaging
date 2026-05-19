@@ -113,13 +113,13 @@ def align_left(im,min_frac=0.1,opposite_frac_thresh=0.05):
         if projected_flux[j] > thresh:  #or projected_flux[j] > opposite_thresh
             break
 
-    im_rotate.imvec = np.roll(im.imvec.reshape((im.ydim,im.xdim)), center[0] - j, (1)).flatten()
+    im_rotate.imvec = np.roll(im.imvec.reshape((im.ydim,im.xdim)), center[1] - j, (1)).flatten()
     if len(im.qvec):
-        im_rotate.qvec = np.roll(im.qvec.reshape((im.ydim,im.xdim)), center[0] - j, (1)).flatten()
+        im_rotate.qvec = np.roll(im.qvec.reshape((im.ydim,im.xdim)), center[1] - j, (1)).flatten()
     if len(im.uvec):
-        im_rotate.uvec = np.roll(im.uvec.reshape((im.ydim,im.xdim)), center[0] - j, (1)).flatten()
+        im_rotate.uvec = np.roll(im.uvec.reshape((im.ydim,im.xdim)), center[1] - j, (1)).flatten()
     if len(im.vvec):
-        im_rotate.vvec = np.roll(im.vvec.reshape((im.ydim,im.xdim)), center[0] - j, (1)).flatten()
+        im_rotate.vvec = np.roll(im.vvec.reshape((im.ydim,im.xdim)), center[1] - j, (1)).flatten()
 
     return im_rotate
 
