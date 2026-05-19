@@ -131,6 +131,32 @@ class TestCenterOfMassRegularizer:
                   - ib.compute_regularizer_term(em, 'cm', mask, **kw)) / (2 * h)
             np.testing.assert_allclose(grad_analytic[i], fd, rtol=1e-4, atol=1e-12)
 
+    def test_gradient_matches_finite_difference_partial_mask(self, gauss_im):
+        """Exercise the embed-pre / mask-post-slice path of reg_cm/reggrad_cm.
+
+        With a non-trivial mask, `reg_cm` calls `embed(imvec, mask, randomfloor=True)`
+        which (with default `clipfloor=0`) zero-fills masked positions deterministically.
+        The analytic gradient returned by `reggrad_cm` is length-nmask (post-slice),
+        and FD perturbations on the masked-only vector must agree.
+        """
+        full_mask = gauss_im.imvec > 0.1 * gauss_im.imvec.max()
+        assert not full_mask.all(), "test requires a partial (non-trivial) mask"
+        kw = self._kw(gauss_im)
+        rng = np.random.default_rng(1)
+        imvec_masked = gauss_im.imvec[full_mask] + 0.01 * rng.standard_normal(full_mask.sum())
+        grad_analytic = ib.compute_regularizergrad_term(imvec_masked, 'cm', full_mask, **kw)
+        assert grad_analytic.shape == (full_mask.sum(),), "gradient must be length-nmask"
+        h = 1e-6
+        sample_idx = rng.choice(imvec_masked.size, size=10, replace=False)
+        for i in sample_idx:
+            ep = imvec_masked.copy()
+            ep[i] += h
+            em = imvec_masked.copy()
+            em[i] -= h
+            fd = (ib.compute_regularizer_term(ep, 'cm', full_mask, **kw)
+                  - ib.compute_regularizer_term(em, 'cm', full_mask, **kw)) / (2 * h)
+            np.testing.assert_allclose(grad_analytic[i], fd, rtol=1e-4, atol=1e-12)
+
 
 def _reg_kwargs(rtype, norm_reg=True):
     """Return kwargs for regularizer/regularizergrad based on rtype."""
