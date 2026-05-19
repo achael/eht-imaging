@@ -2009,8 +2009,9 @@ def reggrad_tv2(imvec, mask, **kwargs):
 
 
 def reg_tv2log(imvec, mask, **kwargs):
+    epsilon = kwargs.get('epsilon_tv', 0.)
     if np.any(np.invert(mask)):
-        imvec = embed(imvec, mask, randomfloor=True)
+        imvec = embed(imvec, mask, clipfloor=epsilon, randomfloor=True)
     nx, ny = kwargs['xdim'], kwargs['ydim']
     flux = kwargs['flux']
     npix = nx * ny
@@ -2021,8 +2022,9 @@ def reg_tv2log(imvec, mask, **kwargs):
 
 
 def reggrad_tv2log(imvec, mask, **kwargs):
+    epsilon = kwargs.get('epsilon_tv', 0.)
     if np.any(np.invert(mask)):
-        imvec = embed(imvec, mask, randomfloor=True)
+        imvec = embed(imvec, mask, clipfloor=epsilon, randomfloor=True)
     nx, ny = kwargs['xdim'], kwargs['ydim']
     flux = kwargs['flux']
     npix = nx * ny
