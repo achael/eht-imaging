@@ -96,3 +96,15 @@ class TestWrappedConvolve:
             mode="same",
         )[RECT_YDIM:(2*RECT_YDIM), RECT_XDIM:(2*RECT_XDIM)]
         np.testing.assert_allclose(out, ref, rtol=1e-10, atol=1e-10)
+
+
+class TestMakeEpsilonScreenFromList:
+    """MakeEpsilonScreenFromList runs on modern NumPy (no np.complex deprecation)."""
+
+    def test_returns_complex_square_screen(self):
+        """The function returns a complex (N, N) array; square-only by design."""
+        n = 9
+        eps_list = [0.0] * (n * n - 1)
+        eps = so.MakeEpsilonScreenFromList(eps_list, n)
+        assert eps.shape == (n, n)
+        assert np.iscomplexobj(eps)

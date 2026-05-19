@@ -690,7 +690,7 @@ def Wrapped_Gradient(M):
     return (Gx, Gy)
 
 def MakeEpsilonScreenFromList(EpsilonList, N):
-    epsilon = np.zeros((N,N),dtype=np.complex)
+    epsilon = np.zeros((N,N),dtype=complex)
     #If N is odd: there are (N^2-1)/2 real elements followed by their corresponding (N^2-1)/2 imaginary elements
     #If N is even: there are (N^2+2)/2 of each, although 3 of these must be purely real, also giving a total of N^2-1 degrees of freedom
     #This is because of conjugation symmetry in Fourier space to ensure a real Fourier transform
