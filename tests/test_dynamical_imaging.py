@@ -10,7 +10,6 @@ import pytest
 import ehtim as eh
 import ehtim.imaging.dynamical_imaging as di
 
-
 RECT_XDIM = 32
 RECT_YDIM = 48
 
