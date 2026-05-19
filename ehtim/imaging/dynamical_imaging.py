@@ -823,7 +823,7 @@ ttype = 'nfft', fft_pad_factor=2):
     global A1_List, A2_List, A3_List, data1_List, data2_List, data3_List, sigma1_List, sigma2_List, sigma3_List
 
     N_frame = len(Obsdata_List)
-    N_pixel = Prior.xdim #pixel dimension
+    N_xpix, N_ypix = Prior.xdim, Prior.ydim  # per-frame pixel dimensions
 
     # Determine the appropriate final resolution
     all_res = []
@@ -901,14 +901,14 @@ ttype = 'nfft', fft_pad_factor=2):
     # Define the objective function and gradient
     def objfunc(x):
         # Frames is a list of the *unscattered* frames
-        Frames = np.zeros((N_frame, N_pixel, N_pixel))
-        log_Frames = np.zeros((N_frame, N_pixel, N_pixel))
+        Frames = np.zeros((N_frame, N_ypix, N_xpix))
+        log_Frames = np.zeros((N_frame, N_ypix, N_xpix))
 
         init_i = 0
         for i in range(N_frame):
             cur_len = np.sum(embed_mask_List[i])
-            log_Frames[i] = embed(x[init_i:(init_i+cur_len)], embed_mask_List[i]).reshape((N_pixel, N_pixel))
-            Frames[i] = np.exp(log_Frames[i])*(embed_mask_List[i].reshape((N_pixel, N_pixel)))
+            log_Frames[i] = embed(x[init_i:(init_i+cur_len)], embed_mask_List[i]).reshape((N_ypix, N_xpix))
+            Frames[i] = np.exp(log_Frames[i])*(embed_mask_List[i].reshape((N_ypix, N_xpix)))
             init_i += cur_len
 
         s1 = s2 = 0.0
@@ -931,14 +931,14 @@ ttype = 'nfft', fft_pad_factor=2):
         return (s1 + s2 + s_dynamic + chisq)*J_factor
 
     def objgrad(x):
-        Frames = np.zeros((N_frame, N_pixel, N_pixel))
-        log_Frames = np.zeros((N_frame, N_pixel, N_pixel))
+        Frames = np.zeros((N_frame, N_ypix, N_xpix))
+        log_Frames = np.zeros((N_frame, N_ypix, N_xpix))
 
         init_i = 0
         for i in range(N_frame):
             cur_len = np.sum(embed_mask_List[i])
-            log_Frames[i] = embed(x[init_i:(init_i+cur_len)], embed_mask_List[i]).reshape((N_pixel, N_pixel))
-            Frames[i] = np.exp(log_Frames[i])*(embed_mask_List[i].reshape((N_pixel, N_pixel)))
+            log_Frames[i] = embed(x[init_i:(init_i+cur_len)], embed_mask_List[i]).reshape((N_ypix, N_xpix))
+            Frames[i] = np.exp(log_Frames[i])*(embed_mask_List[i].reshape((N_ypix, N_xpix)))
             init_i += cur_len
 
         s1 = s2 = 0.0
@@ -976,14 +976,14 @@ ttype = 'nfft', fft_pad_factor=2):
         if nit%update_interval == 0 or final == True:
             print ("iteration %d" % nit)
 
-            Frames = np.zeros((N_frame, N_pixel, N_pixel))
-            log_Frames = np.zeros((N_frame, N_pixel, N_pixel))
+            Frames = np.zeros((N_frame, N_ypix, N_xpix))
+            log_Frames = np.zeros((N_frame, N_ypix, N_xpix))
 
             init_i = 0
             for i in range(N_frame):
                 cur_len = np.sum(embed_mask_List[i])
-                log_Frames[i] = embed(x[init_i:(init_i+cur_len)], embed_mask_List[i]).reshape((N_pixel, N_pixel))
-                Frames[i] = np.exp(log_Frames[i])*(embed_mask_List[i].reshape((N_pixel, N_pixel)))
+                log_Frames[i] = embed(x[init_i:(init_i+cur_len)], embed_mask_List[i]).reshape((N_ypix, N_xpix))
+                Frames[i] = np.exp(log_Frames[i])*(embed_mask_List[i].reshape((N_ypix, N_xpix)))
                 init_i += cur_len
 
             s1 = s2 = 0.0
@@ -1037,7 +1037,7 @@ ttype = 'nfft', fft_pad_factor=2):
     loginit = np.hstack(loginit_List).flatten()
     x0 = loginit
 
-    print ("Total Pixel #: ",(N_pixel*N_pixel*N_frame))
+    print ("Total Pixel #: ",(N_xpix*N_ypix*N_frame))
     print ("Clipped Pixel #: ",(len(loginit)))
 
     print ("Initial Values:")
@@ -1049,15 +1049,15 @@ ttype = 'nfft', fft_pad_factor=2):
     res = opt.minimize(objfunc, x0, method=minimizer_method, jac=objgrad, options=optdict, callback=plotcur)
     tstop = time.time()
 
-    Frames = np.zeros((N_frame, N_pixel, N_pixel))
-    log_Frames = np.zeros((N_frame, N_pixel, N_pixel))
+    Frames = np.zeros((N_frame, N_ypix, N_xpix))
+    log_Frames = np.zeros((N_frame, N_ypix, N_xpix))
 
     init_i = 0
     for i in range(N_frame):
         cur_len = np.sum(embed_mask_List[i])
-        log_Frames[i] = embed(res.x[init_i:(init_i+cur_len)], embed_mask_List[i]).reshape((N_pixel, N_pixel))
+        log_Frames[i] = embed(res.x[init_i:(init_i+cur_len)], embed_mask_List[i]).reshape((N_ypix, N_xpix))
         #Impose the prior mask in linear space for the output
-        Frames[i] = np.exp(log_Frames[i])*(embed_mask_List[i].reshape((N_pixel, N_pixel)))
+        Frames[i] = np.exp(log_Frames[i])*(embed_mask_List[i].reshape((N_ypix, N_xpix)))
         init_i += cur_len
 
     plotcur(res.x, final=True)
@@ -1169,7 +1169,7 @@ minimizer_method = 'L-BFGS-B', update_interval = 1
             print("%d/%d frames have no data"%(c,len(frame_mjds)))
 
     N_frame = len(Obsdata_List)
-    N_pixel = Prior.xdim #pixel dimension
+    N_xpix, N_ypix = Prior.xdim, Prior.ydim  # per-frame pixel dimensions
 
     # Determine the appropriate final resolution
     all_res = []
@@ -1315,21 +1315,21 @@ minimizer_method = 'L-BFGS-B', update_interval = 1
     # Define the objective function and gradient
     def objfunc(x):
         # Frames is a list of the *unscattered* frames
-        Frames = np.zeros((N_frame, N_pixel, N_pixel))
-        log_Frames = np.zeros((N_frame, N_pixel, N_pixel))
+        Frames = np.zeros((N_frame, N_ypix, N_xpix))
+        log_Frames = np.zeros((N_frame, N_ypix, N_xpix))
 
         init_i = 0
         for i in range(N_frame):
             cur_len = np.sum(embed_mask_List[i])
-            log_Frames[i] = embed(x[init_i:(init_i+cur_len)], embed_mask_List[i]).reshape((N_pixel, N_pixel))
-            Frames[i] = np.exp(log_Frames[i])*(embed_mask_List[i].reshape((N_pixel, N_pixel)))
+            log_Frames[i] = embed(x[init_i:(init_i+cur_len)], embed_mask_List[i]).reshape((N_ypix, N_xpix))
+            Frames[i] = np.exp(log_Frames[i])*(embed_mask_List[i].reshape((N_ypix, N_xpix)))
             init_i += cur_len
 
         if R_flow['alpha'] != 0.0:
             cur_len = np.sum(embed_mask_List[0]) #assumes all the priors have the same embedding
-            Flow_x = embed(x[init_i:(init_i+2*cur_len-1):2],   embed_mask_List[i]).reshape((N_pixel, N_pixel))
-            Flow_y = embed(x[(init_i+1):(init_i+2*cur_len):2], embed_mask_List[i]).reshape((N_pixel, N_pixel))
-            Flow = np.transpose([Flow_x.ravel(),Flow_y.ravel()]).reshape((N_pixel, N_pixel,2))
+            Flow_x = embed(x[init_i:(init_i+2*cur_len-1):2],   embed_mask_List[i]).reshape((N_ypix, N_xpix))
+            Flow_y = embed(x[(init_i+1):(init_i+2*cur_len):2], embed_mask_List[i]).reshape((N_ypix, N_xpix))
+            Flow = np.transpose([Flow_x.ravel(),Flow_y.ravel()]).reshape((N_ypix, N_xpix,2))
             init_i += 2*cur_len
 
         if stochastic_optics == True:
@@ -1390,21 +1390,21 @@ minimizer_method = 'L-BFGS-B', update_interval = 1
         return (s1 + s2 + s_dF + s_dS + s_dynamic + chisq + cm + flux + regterm_scattering)*J_factor
 
     def objgrad(x):
-        Frames = np.zeros((N_frame, N_pixel, N_pixel))
-        log_Frames = np.zeros((N_frame, N_pixel, N_pixel))
+        Frames = np.zeros((N_frame, N_ypix, N_xpix))
+        log_Frames = np.zeros((N_frame, N_ypix, N_xpix))
 
         init_i = 0
         for i in range(N_frame):
             cur_len = np.sum(embed_mask_List[i])
-            log_Frames[i] = embed(x[init_i:(init_i+cur_len)], embed_mask_List[i]).reshape((N_pixel, N_pixel))
-            Frames[i] = np.exp(log_Frames[i])*(embed_mask_List[i].reshape((N_pixel, N_pixel)))
+            log_Frames[i] = embed(x[init_i:(init_i+cur_len)], embed_mask_List[i]).reshape((N_ypix, N_xpix))
+            Frames[i] = np.exp(log_Frames[i])*(embed_mask_List[i].reshape((N_ypix, N_xpix)))
             init_i += cur_len
 
         if R_flow['alpha'] != 0.0:
             cur_len = np.sum(embed_mask_List[0]) #assumes all the priors have the same embedding
-            Flow_x = embed(x[init_i:(init_i+2*cur_len-1):2],   embed_mask_List[i]).reshape((N_pixel, N_pixel))
-            Flow_y = embed(x[(init_i+1):(init_i+2*cur_len):2], embed_mask_List[i]).reshape((N_pixel, N_pixel))
-            Flow = np.transpose([Flow_x.ravel(),Flow_y.ravel()]).reshape((N_pixel, N_pixel,2))
+            Flow_x = embed(x[init_i:(init_i+2*cur_len-1):2],   embed_mask_List[i]).reshape((N_ypix, N_xpix))
+            Flow_y = embed(x[(init_i+1):(init_i+2*cur_len):2], embed_mask_List[i]).reshape((N_ypix, N_xpix))
+            Flow = np.transpose([Flow_x.ravel(),Flow_y.ravel()]).reshape((N_ypix, N_xpix,2))
             init_i += 2*cur_len
 
         if stochastic_optics == True:
@@ -1547,9 +1547,9 @@ minimizer_method = 'L-BFGS-B', update_interval = 1
         flow_grad = np.array([])
         if R_flow['alpha'] != 0.0:
             cur_len = np.sum(embed_mask_List[0])
-            Flow_x = embed(x[init_i:(init_i+2*cur_len-1):2],   embed_mask_List[i]).reshape((N_pixel, N_pixel))
-            Flow_y = embed(x[(init_i+1):(init_i+2*cur_len):2], embed_mask_List[i]).reshape((N_pixel, N_pixel))
-            Flow = np.transpose([Flow_x.ravel(),Flow_y.ravel()]).reshape((N_pixel, N_pixel,2))
+            Flow_x = embed(x[init_i:(init_i+2*cur_len-1):2],   embed_mask_List[i]).reshape((N_ypix, N_xpix))
+            Flow_y = embed(x[(init_i+1):(init_i+2*cur_len):2], embed_mask_List[i]).reshape((N_ypix, N_xpix))
+            Flow = np.transpose([Flow_x.ravel(),Flow_y.ravel()]).reshape((N_ypix, N_xpix,2))
             flow_tv_grad = squared_gradient_flow_grad(Flow)
             s_dynamic_grad_Frames = s_dynamic_grad_Flow = 0.0
             s_dynamic_grad_Frames = Rflow_gradient_I(Frames, Flow, R_flow)
@@ -1577,21 +1577,21 @@ minimizer_method = 'L-BFGS-B', update_interval = 1
         if nit%update_interval == 0 or final == True:
             print ("iteration %d" % nit)
 
-            Frames = np.zeros((N_frame, N_pixel, N_pixel))
-            log_Frames = np.zeros((N_frame, N_pixel, N_pixel))
+            Frames = np.zeros((N_frame, N_ypix, N_xpix))
+            log_Frames = np.zeros((N_frame, N_ypix, N_xpix))
 
             init_i = 0
             for i in range(N_frame):
                 cur_len = np.sum(embed_mask_List[i])
-                log_Frames[i] = embed(x[init_i:(init_i+cur_len)], embed_mask_List[i]).reshape((N_pixel, N_pixel))
-                Frames[i] = np.exp(log_Frames[i])*(embed_mask_List[i].reshape((N_pixel, N_pixel)))
+                log_Frames[i] = embed(x[init_i:(init_i+cur_len)], embed_mask_List[i]).reshape((N_ypix, N_xpix))
+                Frames[i] = np.exp(log_Frames[i])*(embed_mask_List[i].reshape((N_ypix, N_xpix)))
                 init_i += cur_len
 
             if R_flow['alpha'] != 0.0:
                 cur_len = np.sum(embed_mask_List[0]) #assumes all the priors have the same embedding
-                Flow_x = embed(x[init_i:(init_i+2*cur_len-1):2],   embed_mask_List[i]).reshape((N_pixel, N_pixel))
-                Flow_y = embed(x[(init_i+1):(init_i+2*cur_len):2], embed_mask_List[i]).reshape((N_pixel, N_pixel))
-                Flow = np.transpose([Flow_x.ravel(),Flow_y.ravel()]).reshape((N_pixel, N_pixel,2))
+                Flow_x = embed(x[init_i:(init_i+2*cur_len-1):2],   embed_mask_List[i]).reshape((N_ypix, N_xpix))
+                Flow_y = embed(x[(init_i+1):(init_i+2*cur_len):2], embed_mask_List[i]).reshape((N_ypix, N_xpix))
+                Flow = np.transpose([Flow_x.ravel(),Flow_y.ravel()]).reshape((N_ypix, N_xpix,2))
                 init_i += 2*cur_len
 
             if stochastic_optics == True:
@@ -1702,7 +1702,7 @@ minimizer_method = 'L-BFGS-B', update_interval = 1
         x0 = np.concatenate((x0,np.zeros(N**2-1)))
 
 
-    print ("Total Pixel #: ",(N_pixel*N_pixel*N_frame))
+    print ("Total Pixel #: ",(N_xpix*N_ypix*N_frame))
     print ("Clipped Pixel #: ",(len(loginit)))
 
     print ("Initial Values:")
@@ -1714,15 +1714,15 @@ minimizer_method = 'L-BFGS-B', update_interval = 1
     res = opt.minimize(objfunc, x0, method=minimizer_method, jac=objgrad, options=optdict, callback=plotcur)
     tstop = time.time()
 
-    Frames = np.zeros((N_frame, N_pixel, N_pixel))
-    log_Frames = np.zeros((N_frame, N_pixel, N_pixel))
+    Frames = np.zeros((N_frame, N_ypix, N_xpix))
+    log_Frames = np.zeros((N_frame, N_ypix, N_xpix))
 
     init_i = 0
     for i in range(N_frame):
         cur_len = np.sum(embed_mask_List[i])
-        log_Frames[i] = embed(res.x[init_i:(init_i+cur_len)], embed_mask_List[i]).reshape((N_pixel, N_pixel))
+        log_Frames[i] = embed(res.x[init_i:(init_i+cur_len)], embed_mask_List[i]).reshape((N_ypix, N_xpix))
         #Impose the prior mask in linear space for the output
-        Frames[i] = np.exp(log_Frames[i])*(embed_mask_List[i].reshape((N_pixel, N_pixel)))
+        Frames[i] = np.exp(log_Frames[i])*(embed_mask_List[i].reshape((N_ypix, N_xpix)))
         init_i += cur_len
 
     Flow = EpsilonList = False
@@ -1730,9 +1730,9 @@ minimizer_method = 'L-BFGS-B', update_interval = 1
     if R_flow['alpha'] != 0.0:
         print ("Collecting Flow...")
         cur_len = np.sum(embed_mask_List[0])
-        Flow_x = embed(res.x[init_i:(init_i+2*cur_len-1):2],   embed_mask_List[i]).reshape((N_pixel, N_pixel))
-        Flow_y = embed(res.x[(init_i+1):(init_i+2*cur_len):2], embed_mask_List[i]).reshape((N_pixel, N_pixel))
-        Flow = np.transpose([Flow_x.ravel(),Flow_y.ravel()]).reshape((N_pixel, N_pixel,2))
+        Flow_x = embed(res.x[init_i:(init_i+2*cur_len-1):2],   embed_mask_List[i]).reshape((N_ypix, N_xpix))
+        Flow_y = embed(res.x[(init_i+1):(init_i+2*cur_len):2], embed_mask_List[i]).reshape((N_ypix, N_xpix))
+        Flow = np.transpose([Flow_x.ravel(),Flow_y.ravel()]).reshape((N_ypix, N_xpix,2))
         init_i += 2*cur_len
 
     if stochastic_optics == True:
@@ -1790,7 +1790,7 @@ maxit=200, J_factor = 0.001, stop=1.0e-10, ipynb=False, refresh_interval = 1000,
 
     N_freq  = len(Obsdata_Multifreq_List)
     N_frame = len(Obsdata_Multifreq_List[0])
-    N_pixel = Prior.xdim #pixel dimension
+    N_xpix, N_ypix = Prior.xdim, Prior.ydim  # per-frame pixel dimensions
 
     # Flatten the input lists
     flux_List    = [x for y in flux_Multifreq_List    for x in y]
@@ -1889,14 +1889,14 @@ maxit=200, J_factor = 0.001, stop=1.0e-10, ipynb=False, refresh_interval = 1000,
 
     # Define the objective function and gradient
     def objfunc(x):
-        Frames = np.zeros((N_freq*N_frame, N_pixel, N_pixel))
-        log_Frames = np.zeros((N_freq*N_frame, N_pixel, N_pixel))
+        Frames = np.zeros((N_freq*N_frame, N_ypix, N_xpix))
+        log_Frames = np.zeros((N_freq*N_frame, N_ypix, N_xpix))
 
         init_i = 0
         for i in range(N_freq*N_frame):
             cur_len = np.sum(embed_mask_List[i])
-            log_Frames[i] = embed(x[init_i:(init_i+cur_len)], embed_mask_List[i]).reshape((N_pixel, N_pixel))
-            Frames[i] = np.exp(log_Frames[i])*(embed_mask_List[i].reshape((N_pixel, N_pixel)))
+            log_Frames[i] = embed(x[init_i:(init_i+cur_len)], embed_mask_List[i]).reshape((N_ypix, N_xpix))
+            Frames[i] = np.exp(log_Frames[i])*(embed_mask_List[i].reshape((N_ypix, N_xpix)))
             init_i += cur_len
 
         s1 = s2 = s_multifreq = s_dynamic = cm = flux = s_dS = s_dF = 0.0
@@ -1938,33 +1938,33 @@ maxit=200, J_factor = 0.001, stop=1.0e-10, ipynb=False, refresh_interval = 1000,
         return (s1 + s2 + s_dF + s_dS + s_multifreq + s_dynamic + chisq + cm + flux)*J_factor
 
     def objgrad(x):
-        Frames = np.zeros((N_freq*N_frame, N_pixel, N_pixel))
-        log_Frames = np.zeros((N_freq*N_frame, N_pixel, N_pixel))
+        Frames = np.zeros((N_freq*N_frame, N_ypix, N_xpix))
+        log_Frames = np.zeros((N_freq*N_frame, N_ypix, N_xpix))
 
         init_i = 0
         for i in range(N_freq*N_frame):
             cur_len = np.sum(embed_mask_List[i])
-            log_Frames[i] = embed(x[init_i:(init_i+cur_len)], embed_mask_List[i]).reshape((N_pixel, N_pixel))
-            Frames[i] = np.exp(log_Frames[i])*(embed_mask_List[i].reshape((N_pixel, N_pixel)))
+            log_Frames[i] = embed(x[init_i:(init_i+cur_len)], embed_mask_List[i]).reshape((N_ypix, N_xpix))
+            Frames[i] = np.exp(log_Frames[i])*(embed_mask_List[i].reshape((N_ypix, N_xpix)))
             init_i += cur_len
 
         s1 = s2 = s_dS = s_dF = np.zeros((N_freq*N_frame*cur_len))
-        s_dynamic_grad = cm_grad = flux_grad = np.zeros((N_freq*N_frame*N_pixel*N_pixel))
+        s_dynamic_grad = cm_grad = flux_grad = np.zeros((N_freq*N_frame*N_xpix*N_ypix))
         s_multifreq = 0.0
 
         # Multifrequency part
         if R_dt_multifreq['alpha'] != 0.0:
-            s_multifreq = np.zeros((N_freq*N_frame, N_pixel*N_pixel))
+            s_multifreq = np.zeros((N_freq*N_frame, N_xpix*N_ypix))
             for j in range(N_frame):
-                s_multifreq[j::N_frame] += Rdt_gradient(Frames[j::N_frame], B_dt_multifreq, **R_dt_multifreq).reshape((N_freq,N_pixel*N_pixel))*R_dt_multifreq['alpha']
-            s_multifreq = s_multifreq.reshape(N_freq*N_frame*N_pixel*N_pixel)
+                s_multifreq[j::N_frame] += Rdt_gradient(Frames[j::N_frame], B_dt_multifreq, **R_dt_multifreq).reshape((N_freq,N_xpix*N_ypix))*R_dt_multifreq['alpha']
+            s_multifreq = s_multifreq.reshape(N_freq*N_frame*N_xpix*N_ypix)
 
         # Individual frequencies
         for j in range(N_freq):
             i1 = j*N_frame
             i2 = (j+1)*N_frame
-            f1 = j*N_frame*N_pixel*N_pixel 
-            f2 = (j+1)*N_frame*N_pixel*N_pixel
+            f1 = j*N_frame*N_xpix*N_ypix 
+            f2 = (j+1)*N_frame*N_xpix*N_ypix
             mf1 = j*N_frame*cur_len # Note: This assumes that all priors have the same number of masked pixels!
             mf2 = (j+1)*N_frame*cur_len
 
@@ -2015,14 +2015,14 @@ maxit=200, J_factor = 0.001, stop=1.0e-10, ipynb=False, refresh_interval = 1000,
         if nit%update_interval == 0 or final == True:
             print ("iteration %d" % nit)
 
-            Frames = np.zeros((N_freq*N_frame, N_pixel, N_pixel))
-            log_Frames = np.zeros((N_freq*N_frame, N_pixel, N_pixel))
+            Frames = np.zeros((N_freq*N_frame, N_ypix, N_xpix))
+            log_Frames = np.zeros((N_freq*N_frame, N_ypix, N_xpix))
 
             init_i = 0
             for i in range(N_freq*N_frame):
                 cur_len = np.sum(embed_mask_List[i])
-                log_Frames[i] = embed(x[init_i:(init_i+cur_len)], embed_mask_List[i]).reshape((N_pixel, N_pixel))
-                Frames[i] = np.exp(log_Frames[i])*(embed_mask_List[i].reshape((N_pixel, N_pixel)))
+                log_Frames[i] = embed(x[init_i:(init_i+cur_len)], embed_mask_List[i]).reshape((N_ypix, N_xpix))
+                Frames[i] = np.exp(log_Frames[i])*(embed_mask_List[i].reshape((N_ypix, N_xpix)))
                 init_i += cur_len
 
             s1 = s2 = s_multifreq = s_dynamic = cm = s_dS = s_dF = 0.0
@@ -2097,7 +2097,7 @@ maxit=200, J_factor = 0.001, stop=1.0e-10, ipynb=False, refresh_interval = 1000,
 
     x0 = loginit
 
-    print ("Total Pixel #: ",(N_pixel*N_pixel*N_frame*N_freq))
+    print ("Total Pixel #: ",(N_xpix*N_ypix*N_frame*N_freq))
     print ("Clipped Pixel #: ",(len(loginit)))
 
     print ("Initial Values:")
@@ -2109,15 +2109,15 @@ maxit=200, J_factor = 0.001, stop=1.0e-10, ipynb=False, refresh_interval = 1000,
     res = opt.minimize(objfunc, x0, method=minimizer_method, jac=objgrad, options=optdict, callback=plotcur)
     tstop = time.time()
 
-    Frames = np.zeros((N_freq*N_frame, N_pixel, N_pixel))
-    log_Frames = np.zeros((N_freq*N_frame, N_pixel, N_pixel))
+    Frames = np.zeros((N_freq*N_frame, N_ypix, N_xpix))
+    log_Frames = np.zeros((N_freq*N_frame, N_ypix, N_xpix))
 
     init_i = 0
     for i in range(N_freq*N_frame):
         cur_len = np.sum(embed_mask_List[i])
-        log_Frames[i] = embed(res.x[init_i:(init_i+cur_len)], embed_mask_List[i]).reshape((N_pixel, N_pixel))
+        log_Frames[i] = embed(res.x[init_i:(init_i+cur_len)], embed_mask_List[i]).reshape((N_ypix, N_xpix))
         #Impose the prior mask in linear space for the output
-        Frames[i] = np.exp(log_Frames[i])*(embed_mask_List[i].reshape((N_pixel, N_pixel)))
+        Frames[i] = np.exp(log_Frames[i])*(embed_mask_List[i].reshape((N_ypix, N_xpix)))
         init_i += cur_len
 
     plotcur(res.x, final=True)
