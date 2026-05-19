@@ -363,20 +363,21 @@ def save_obs_txt(obs, fname):
             "----------------------------------------------------------------------" +
             "------------------------------------------------------------------\n" +
             "Site       X(m)             Y(m)             Z(m)           " +
-            "SEFDR      SEFDL     FR_PAR   FR_EL   FR_OFF  " +
-            "DR_RE    DR_IM    DL_RE    DL_IM   \n"
+            "SEFD_P1    SEFD_P2   FR_PAR   FR_EL   FR_OFF  " +
+            "D_P1_RE  D_P1_IM  D_P2_RE  D_P2_IM   FEED\n"
             )
 
     for i in range(len(obs.tarr)):
+        d_p1 = complex(obs.tarr[i]['d_p1'])
+        d_p2 = complex(obs.tarr[i]['d_p2'])
         head += ("{:<8s} {:15.5f}  {:15.5f}  {:15.5f}  {:8.2f}   {:8.2f}  "
-                 "{:5.2f}   {:5.2f}   {:5.2f}  {:8.4f} {:8.4f} {:8.4f} {:8.4f} \n").format(
-                  obs.tarr[i]['site'],
-                  obs.tarr[i]['x'], obs.tarr[i]['y'], obs.tarr[i]['z'],
-                  obs.tarr[i]['sefdr'], obs.tarr[i]['sefdl'],
-                  obs.tarr[i]['fr_par'], obs.tarr[i]['fr_elev'], obs.tarr[i]['fr_off'],
-                  (obs.tarr[i]['dr']).real, (obs.tarr[i]['dr']).imag,
-                  (obs.tarr[i]['dl']).real, (obs.tarr[i]['dl']).imag
-                  )
+                 "{:5.2f}   {:5.2f}   {:5.2f}  {:8.4f} {:8.4f} {:8.4f} {:8.4f}  {:<2s}\n").format(
+                  str(obs.tarr[i]['site']),
+                  float(obs.tarr[i]['x']), float(obs.tarr[i]['y']), float(obs.tarr[i]['z']),
+                  float(obs.tarr[i]['sefd_p1']), float(obs.tarr[i]['sefd_p2']),
+                  float(obs.tarr[i]['fr_par']), float(obs.tarr[i]['fr_elev']), float(obs.tarr[i]['fr_off']),
+                  d_p1.real, d_p1.imag, d_p2.real, d_p2.imag,
+                  str(obs.tarr[i]['feed_type']))
 
     if obs.polrep == 'stokes':
         head += (
@@ -891,20 +892,21 @@ def save_dtype_txt(obs, fname, data, dtype='cphase'):
             "----------------------------------------------------------------------" +
             "------------------------------------------------------------------\n" +
             "Site       X(m)             Y(m)             Z(m)           " +
-            "SEFDR      SEFDL     FR_PAR   FR_EL   FR_OFF  " +
-            "DR_RE    DR_IM    DL_RE    DL_IM   \n"
+            "SEFD_P1    SEFD_P2   FR_PAR   FR_EL   FR_OFF  " +
+            "D_P1_RE  D_P1_IM  D_P2_RE  D_P2_IM   FEED\n"
             )
 
     for i in range(len(obs.tarr)):
+        d_p1 = complex(obs.tarr[i]['d_p1'])
+        d_p2 = complex(obs.tarr[i]['d_p2'])
         head += ("{:<8s} {:15.5f}  {:15.5f}  {:15.5f}  {:8.2f}   {:8.2f}  "
-                 "{:5.2f}   {:5.2f}   {:5.2f}  {:8.4f} {:8.4f} {:8.4f} {:8.4f} \n").format(
-                  obs.tarr[i]['site'],
-                  obs.tarr[i]['x'], obs.tarr[i]['y'], obs.tarr[i]['z'],
-                  obs.tarr[i]['sefdr'], obs.tarr[i]['sefdl'],
-                  obs.tarr[i]['fr_par'], obs.tarr[i]['fr_elev'], obs.tarr[i]['fr_off'],
-                  (obs.tarr[i]['dr']).real, (obs.tarr[i]['dr']).imag,
-                  (obs.tarr[i]['dl']).real, (obs.tarr[i]['dl']).imag
-                  )
+                 "{:5.2f}   {:5.2f}   {:5.2f}  {:8.4f} {:8.4f} {:8.4f} {:8.4f}  {:<2s}\n").format(
+                  str(obs.tarr[i]['site']),
+                  float(obs.tarr[i]['x']), float(obs.tarr[i]['y']), float(obs.tarr[i]['z']),
+                  float(obs.tarr[i]['sefd_p1']), float(obs.tarr[i]['sefd_p2']),
+                  float(obs.tarr[i]['fr_par']), float(obs.tarr[i]['fr_elev']), float(obs.tarr[i]['fr_off']),
+                  d_p1.real, d_p1.imag, d_p2.real, d_p2.imag,
+                  str(obs.tarr[i]['feed_type']))
 
     head += ("----------------------------------------------------------------------"
              "------------------------------------------------------------------\n" +

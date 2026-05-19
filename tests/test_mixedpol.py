@@ -962,3 +962,27 @@ def test_phase2_load_array_txt_legacy_bit_identical(fname):
         np.testing.assert_array_equal(arr.tarr['feed_type'], raw[:, 13])
     else:
         assert np.all(arr.tarr['feed_type'] == 'rl')
+
+
+# ----- save_obs_txt / load_obs_txt embedded-tarr round-trip -----------------
+
+def test_phase2_save_load_obs_txt_embedded_tarr_with_feed_type(tmp_path):
+    """The obs.txt embedded tarr block now emits feed_type; round-trip
+    must preserve it for non-trivial values."""
+    tarr = _full_tarr(['rl', 'xy', 'lx'])
+    data = np.zeros(2, dtype=ehc.DTPOL_STOKES)
+    data['t1'] = ['S0', 'S0']
+    data['t2'] = ['S1', 'S2']
+    data['u'] = [1e9, 2e9]
+    data['v'] = [1e8, 2e8]
+    data['vis'] = [1 + 0j, 0.5 + 0j]
+    data['sigma'] = [0.1, 0.1]
+    obs = eo.Obsdata(ra=17.76, dec=-29., rf=230e9, bw=1e9,
+                     datatable=data, tarr=tarr, polrep='stokes')
+    fname = str(tmp_path / 'obs.txt')
+    obs.save_txt(fname)
+    obs2 = eo.load_txt(fname, polrep='stokes')
+    np.testing.assert_array_equal(obs2.tarr['feed_type'], obs.tarr['feed_type'])
+    np.testing.assert_array_equal(obs2.tarr['site'], obs.tarr['site'])
+    np.testing.assert_allclose(obs2.tarr['sefd_p1'], obs.tarr['sefd_p1'], atol=1e-2)
+    np.testing.assert_allclose(obs2.tarr['sefd_p2'], obs.tarr['sefd_p2'], atol=1e-2)
