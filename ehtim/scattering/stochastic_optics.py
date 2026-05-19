@@ -214,16 +214,20 @@ class ScatteringModel(object):
             """
 
         #Derived parameters
-        FOV = Reference_Image.psize * Reference_Image.xdim * self.observer_screen_distance #Field of view, in cm, at the scattering screen
-        N = Reference_Image.xdim
-        dq = 2.0*np.pi/FOV #this is the spacing in wavenumber
-        screen_x_offset_pixels = (Vx_km_per_s * 1.e5) * (t_hr*3600.0) / (FOV/float(N))
-        screen_y_offset_pixels = (Vy_km_per_s * 1.e5) * (t_hr*3600.0) / (FOV/float(N))
+        Nx = Reference_Image.xdim
+        Ny = Reference_Image.ydim
+        FOV_x = Reference_Image.psize * Nx * self.observer_screen_distance  # x-axis FOV at the screen (cm)
+        FOV_y = Reference_Image.psize * Ny * self.observer_screen_distance  # y-axis FOV at the screen (cm)
+        dq_x = 2.0*np.pi/FOV_x  # wavenumber spacing along x
+        dq_y = 2.0*np.pi/FOV_y  # wavenumber spacing along y
+        screen_x_offset_pixels = (Vx_km_per_s * 1.e5) * (t_hr*3600.0) / (FOV_x/float(Nx))
+        screen_y_offset_pixels = (Vy_km_per_s * 1.e5) * (t_hr*3600.0) / (FOV_y/float(Ny))
 
-        s, t = np.meshgrid(np.fft.fftfreq(N, d=1.0/N), np.fft.fftfreq(N, d=1.0/N))
-        sqrtQ = np.sqrt(self.Q(dq*s, dq*t)) * np.exp(2.0*np.pi*1j*(s*screen_x_offset_pixels +
-                                                                   t*screen_y_offset_pixels)/float(N))
-        sqrtQ[0][0] = 0.0 #A DC offset doesn't affect scattering
+        s, t = np.meshgrid(np.fft.fftfreq(Nx, d=1.0/Nx), np.fft.fftfreq(Ny, d=1.0/Ny))
+        sqrtQ = np.sqrt(self.Q(dq_x*s, dq_y*t)) * np.exp(
+            2.0*np.pi*1j*(s*screen_x_offset_pixels/float(Nx) +
+                          t*screen_y_offset_pixels/float(Ny)))
+        sqrtQ[0][0] = 0.0  #A DC offset doesn't affect scattering
 
         return sqrtQ
 

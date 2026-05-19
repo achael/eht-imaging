@@ -17,7 +17,13 @@ def model():
 
 
 class TestSqrtQMatrix:
-    """sqrtQ_Matrix smoke coverage on rectangular reference images."""
+    """sqrtQ_Matrix shape + finiteness on rectangular reference images."""
+
+    def test_shape_matches_rect_reference_image(self, model, make_rect_image):
+        """sqrtQ has shape (ydim, xdim) matching the reference image."""
+        im = make_rect_image(RECT_XDIM, RECT_YDIM)
+        sqrtQ = model.sqrtQ_Matrix(im)
+        assert sqrtQ.shape == (im.ydim, im.xdim)
 
     def test_returns_finite_values(self, model, make_rect_image):
         """The Fourier-domain power spectrum is finite everywhere on rect."""
