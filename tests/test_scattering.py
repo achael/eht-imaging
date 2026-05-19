@@ -75,3 +75,24 @@ class TestWrappedConvolve:
             mode="same",
         )[16:32, 16:32]
         np.testing.assert_allclose(out, ref, rtol=1e-10, atol=1e-10)
+
+    def test_preserves_shape_on_rect_inputs(self):
+        """Wrapped_Convolve on rect (ydim, xdim) inputs returns matching-shape output."""
+        rng = np.random.default_rng(1)
+        sig = rng.standard_normal((RECT_YDIM, RECT_XDIM))
+        ker = rng.standard_normal((RECT_YDIM, RECT_XDIM))
+        out = so.Wrapped_Convolve(sig, ker)
+        assert out.shape == sig.shape
+
+    def test_matches_scipy_on_rect_inputs(self):
+        """On rect inputs the helper matches the equivalent scipy fftconvolve form."""
+        rng = np.random.default_rng(2)
+        sig = rng.standard_normal((RECT_YDIM, RECT_XDIM))
+        ker = rng.standard_normal((RECT_YDIM, RECT_XDIM))
+        out = so.Wrapped_Convolve(sig, ker)
+        ref = scipy.signal.fftconvolve(
+            np.pad(sig, ((RECT_YDIM, RECT_YDIM), (RECT_XDIM, RECT_XDIM)), "wrap"),
+            np.pad(ker, ((RECT_YDIM, RECT_YDIM), (RECT_XDIM, RECT_XDIM)), "constant"),
+            mode="same",
+        )[RECT_YDIM:(2*RECT_YDIM), RECT_XDIM:(2*RECT_XDIM)]
+        np.testing.assert_allclose(out, ref, rtol=1e-10, atol=1e-10)

@@ -675,9 +675,13 @@ class ScatteringModel(object):
 # These are helper functions
 ################################################################################
 
-def Wrapped_Convolve(sig,ker):
-    N = sig.shape[0]
-    return scipy.signal.fftconvolve(np.pad(sig,((N, N), (N, N)), 'wrap'), np.pad(ker,((N, N), (N, N)), 'constant'),mode='same')[N:(2*N),N:(2*N)]
+def Wrapped_Convolve(sig, ker):
+    Ny, Nx = sig.shape
+    return scipy.signal.fftconvolve(
+        np.pad(sig, ((Ny, Ny), (Nx, Nx)), 'wrap'),
+        np.pad(ker, ((Ny, Ny), (Nx, Nx)), 'constant'),
+        mode='same',
+    )[Ny:(2*Ny), Nx:(2*Nx)]
 
 def Wrapped_Gradient(M):
     G = np.gradient(np.pad(M,((1, 1), (1, 1)), 'wrap'))
