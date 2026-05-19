@@ -720,3 +720,95 @@ def test_phase2_tarrview_array_pickle_roundtrip_preserves_ndarray_storage():
     assert not isinstance(arr2._tarr, ea.TarrView)
     assert isinstance(arr2.tarr, ea.TarrView)
     assert np.all(arr2.tarr == arr.tarr)
+
+
+# ----- Array.obsdata(polrep=...) validation ---------------------------------
+
+def _eht_like_rl_array():
+    """Two-site array with realistic ground-station coordinates."""
+    t = np.zeros(2, dtype=ehc.DTARR)
+    t['site'] = ['ALMA', 'APEX']
+    t['x'] = [2225061.16, 2225039.53]
+    t['y'] = [-5440057.37, -5441197.63]
+    t['z'] = [-2481681.15, -2479303.36]
+    t['sefd_p1'] = [100., 4000.]
+    t['sefd_p2'] = [100., 4000.]
+    t['feed_type'] = ['rl', 'rl']
+    return t
+
+
+def _eht_like_xy_array():
+    t = _eht_like_rl_array()
+    t['feed_type'] = ['xy', 'xy']
+    return t
+
+
+def _eht_like_mixed_array():
+    t = _eht_like_rl_array()
+    t['feed_type'] = ['xy', 'rl']
+    return t
+
+
+def _obs_kwargs():
+    # Sgr A* coords with full 24h window so ALMA/APEX intersect.
+    return dict(ra=17.76, dec=-29.0, rf=230e9, bw=1e9,
+                tint=60.0, tadv=600.0, tstart=0.0, tstop=24.0)
+
+
+def test_phase2_obsdata_polrep_invalid_raises():
+    arr = ea.Array(_eht_like_rl_array())
+    with pytest.raises(ValueError, match="polrep must be one of"):
+        arr.obsdata(polrep='bogus', **_obs_kwargs())
+
+
+def test_phase2_obsdata_polrep_stokes_on_rl_array_succeeds():
+    arr = ea.Array(_eht_like_rl_array())
+    obs = arr.obsdata(polrep='stokes', **_obs_kwargs())
+    assert obs.polrep == 'stokes'
+
+
+def test_phase2_obsdata_polrep_circ_on_rl_array_succeeds():
+    arr = ea.Array(_eht_like_rl_array())
+    obs = arr.obsdata(polrep='circ', **_obs_kwargs())
+    assert obs.polrep == 'circ'
+
+
+def test_phase2_obsdata_polrep_circ_on_xy_array_raises():
+    arr = ea.Array(_eht_like_xy_array())
+    with pytest.raises(ValueError,
+                       match="polrep='circ' requires all stations.*'rl'"):
+        arr.obsdata(polrep='circ', **_obs_kwargs())
+
+
+def test_phase2_obsdata_polrep_circ_on_mixed_array_raises():
+    arr = ea.Array(_eht_like_mixed_array())
+    with pytest.raises(ValueError, match="polrep='circ'"):
+        arr.obsdata(polrep='circ', **_obs_kwargs())
+
+
+def test_phase2_obsdata_polrep_lin_on_rl_array_raises():
+    arr = ea.Array(_eht_like_rl_array())
+    with pytest.raises(ValueError,
+                       match="polrep='lin' requires all stations.*'xy'"):
+        arr.obsdata(polrep='lin', **_obs_kwargs())
+
+
+def test_phase2_obsdata_polrep_lin_on_xy_array_raises_not_implemented():
+    # Validation passes (all xy) but simulation backend doesn't support
+    # 'lin' yet — should raise NotImplementedError pointing to Phase 5.
+    arr = ea.Array(_eht_like_xy_array())
+    with pytest.raises(NotImplementedError, match="Phase 5"):
+        arr.obsdata(polrep='lin', **_obs_kwargs())
+
+
+def test_phase2_obsdata_polrep_mixed_on_homogeneous_array_raises():
+    arr = ea.Array(_eht_like_rl_array())
+    with pytest.raises(ValueError,
+                       match="polrep='mixed' requires at least two"):
+        arr.obsdata(polrep='mixed', **_obs_kwargs())
+
+
+def test_phase2_obsdata_polrep_mixed_on_mixed_array_raises_not_implemented():
+    arr = ea.Array(_eht_like_mixed_array())
+    with pytest.raises(NotImplementedError, match="Phase 5"):
+        arr.obsdata(polrep='mixed', **_obs_kwargs())

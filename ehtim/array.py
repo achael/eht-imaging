@@ -396,7 +396,12 @@ class Array:
 
                mjd (int): the mjd of the observation
                timetype (str): how to interpret tstart and tstop; either 'GMST' or 'UTC'
-               polrep (str): polarization representation, either 'stokes' or 'circ'
+               polrep (str): polarization representation, one of
+                             {'stokes', 'circ', 'lin', 'mixed'}. 'circ' requires
+                             all-RL feeds; 'lin' requires all-XY feeds; 'mixed'
+                             requires at least two distinct feed types. 'lin'
+                             and 'mixed' are not yet wired through the
+                             simulation backend (Phase 5).
                elevmin (float): station minimum elevation in degrees
                elevmax (float): station maximum elevation in degrees
                no_elevcut_space (bool): if True, do not apply elevation cut to orbiters
@@ -407,6 +412,29 @@ class Array:
                Obsdata: an observation object with no data
 
         """
+        valid_polreps = ('stokes', 'circ', 'lin', 'mixed')
+        if polrep not in valid_polreps:
+            raise ValueError(
+                f"polrep must be one of {valid_polreps}; got {polrep!r}")
+
+        feeds = self.feed_types()
+        if polrep == 'circ' and feeds != {'rl'}:
+            raise ValueError(
+                f"polrep='circ' requires all stations to have feed_type='rl'; "
+                f"array has feed_types={sorted(feeds)}")
+        if polrep == 'lin' and feeds != {'xy'}:
+            raise ValueError(
+                f"polrep='lin' requires all stations to have feed_type='xy'; "
+                f"array has feed_types={sorted(feeds)}")
+        if polrep == 'mixed' and len(feeds) < 2:
+            raise ValueError(
+                f"polrep='mixed' requires at least two distinct feed types; "
+                f"array has feed_types={sorted(feeds)}")
+        if polrep in ('lin', 'mixed'):
+            raise NotImplementedError(
+                f"Array.obsdata(polrep={polrep!r}) is not yet supported by "
+                f"the simulation backend (see Phase 5 of "
+                f"obsdata_mixedpol_plan_v2.md)")
 
         obsarr = simobs.make_uvpoints(self, ra, dec, rf, bw,
                                       tint, tadv, tstart, tstop,
