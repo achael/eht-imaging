@@ -127,6 +127,24 @@ class TestStaticRegularizer:
         assert grad.shape == im.imvec.shape
         assert np.all(np.isfinite(grad))
 
+    def test_rect_call_without_xdim_ydim_falls_back_to_square_and_raises(
+        self, make_rect_image,
+    ):
+        """Omitting xdim/ydim defaults to the sqrt(npix) square inference.
+
+        Codifies the API contract: rect callers must opt in by passing both
+        ``xdim`` and ``ydim``. On a rectangular frame the silent square
+        fallback raises ``ValueError`` inside the leaf regularizer (because
+        the inferred square shape does not match the actual pixel count).
+        """
+        im = make_rect_image(RECT_XDIM, RECT_YDIM)
+        frames, priors, masks, flux, psize = self._single_frame_inputs(im)
+        with pytest.raises(ValueError):
+            di.static_regularizer(frames, priors, masks, flux, psize, stype="tv")
+        with pytest.raises(ValueError):
+            di.static_regularizer_gradient(frames, priors, masks, flux, psize,
+                                           stype="tv")
+
 
 class TestContPlotter:
     """Cont contour-plotter axis ordering and extent on rectangular frames."""
