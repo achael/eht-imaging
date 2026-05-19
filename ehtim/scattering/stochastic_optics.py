@@ -2,34 +2,27 @@
 # See http://adsabs.harvard.edu/abs/2016ApJ...833...74J for details about this module
 # TODO >> remove ruff exceptions in pyproject.toml after cleaning up this file
 
-from __future__ import print_function
-from builtins import range
-from builtins import object
-import numpy as np
-import scipy.signal
-import scipy.special as sps
-import scipy.integrate as integrate
-from scipy.optimize import minimize
+import math
+from multiprocessing import Pool, cpu_count
 
 import matplotlib.pyplot as plt
+import numpy as np
+import scipy.integrate as integrate
+import scipy.signal
+import scipy.special as sps
+from scipy.optimize import minimize
 
 import ehtim.image as image
 import ehtim.movie as movie
 import ehtim.obsdata as obsdata
+from ehtim.const_def import *  #Note: C is m/s rather than cm/s.
 from ehtim.observing.obs_helpers import *
-from ehtim.const_def import * #Note: C is m/s rather than cm/s.
-
-from multiprocessing import cpu_count
-from multiprocessing import Pool
-
-import math
-import cmath
 
 ################################################################################
 # The class ScatteringModel enscompasses a generic scattering model, determined by the power spectrum Q and phase structure function Dphi
 ################################################################################
 
-class ScatteringModel(object):
+class ScatteringModel:
     """A scattering model based on a thin-screen approximation.
 
        Models include:
@@ -88,51 +81,51 @@ class ScatteringModel(object):
         FWHM_fac = (2.0 * np.log(2.0))**0.5/np.pi
         self.Qbar = 2.0/sps.gamma((2.0 - self.scatt_alpha)/2.0) * (self.r_in**2*(1.0 + M)/(FWHM_fac*(self.wavelength_reference/(2.0*np.pi))**2) )**2 * ( (theta_maj_mas_ref**2 + theta_min_mas_ref**2)*(1.0/1000.0/3600.0*np.pi/180.0)**2)
         self.C_scatt_0 = (self.wavelength_reference/(2.0*np.pi))**2 * self.Qbar*sps.gamma(1.0 - self.scatt_alpha/2.0)/(8.0*np.pi**2*self.r_in**2)
-        A = theta_maj_mas_ref/theta_min_mas_ref # Anisotropy, >=1, as lambda->infinity 
+        A = theta_maj_mas_ref/theta_min_mas_ref # Anisotropy, >=1, as lambda->infinity
         self.phi0 = (90 - self.POS_ANG) * np.pi/180.0
 
-        # Parameters for the approximate phase structure function 
+        # Parameters for the approximate phase structure function
         theta_maj_rad_ref = theta_maj_mas_ref/1000.0/3600.0*np.pi/180.0
         theta_min_rad_ref = theta_min_mas_ref/1000.0/3600.0*np.pi/180.0
         self.Amaj_0 = ( self.r_in*(1.0 + M) * theta_maj_rad_ref/(FWHM_fac * (self.wavelength_reference/(2.0*np.pi)) * 2.0*np.pi ))**2
         self.Amin_0 = ( self.r_in*(1.0 + M) * theta_min_rad_ref/(FWHM_fac * (self.wavelength_reference/(2.0*np.pi)) * 2.0*np.pi ))**2
 
         if model == 'von_Mises':
-            def avM_Anisotropy(kzeta):                
+            def avM_Anisotropy(kzeta):
                 return np.abs( (kzeta*sps.i0(kzeta)/sps.i1(kzeta) - 1.0)**0.5 - A )
 
             self.kzeta = minimize(avM_Anisotropy, A**2, method='nelder-mead', options={'xatol': 1e-8, 'disp': False}).x[0]
-            self.P_phi_prefac = 1.0/(2.0*np.pi*sps.i0(self.kzeta))  
+            self.P_phi_prefac = 1.0/(2.0*np.pi*sps.i0(self.kzeta))
         elif model == 'boxcar':
-            def boxcar_Anisotropy(kzeta):                
-                return np.abs( np.sin(np.pi/(1.0 + kzeta))/(np.pi/(1.0 + kzeta)) - (theta_maj_mas_ref**2 - theta_min_mas_ref**2)/(theta_maj_mas_ref**2 + theta_min_mas_ref**2) )       
+            def boxcar_Anisotropy(kzeta):
+                return np.abs( np.sin(np.pi/(1.0 + kzeta))/(np.pi/(1.0 + kzeta)) - (theta_maj_mas_ref**2 - theta_min_mas_ref**2)/(theta_maj_mas_ref**2 + theta_min_mas_ref**2) )
 
             self.kzeta = minimize(boxcar_Anisotropy, A, method='nelder-mead', options={'xatol': 1e-8, 'disp': False}).x[0]
-            self.P_phi_prefac = (1.0 + self.kzeta)/(2.0*np.pi)   
+            self.P_phi_prefac = (1.0 + self.kzeta)/(2.0*np.pi)
         elif model == 'dipole':
-            def dipole_Anisotropy(kzeta):                
-                return np.abs( sps.hyp2f1((self.scatt_alpha + 2.0)/2.0, 0.5, 2.0, -kzeta)/sps.hyp2f1((self.scatt_alpha + 2.0)/2.0, 1.5, 2.0, -kzeta) - A**2 )  
+            def dipole_Anisotropy(kzeta):
+                return np.abs( sps.hyp2f1((self.scatt_alpha + 2.0)/2.0, 0.5, 2.0, -kzeta)/sps.hyp2f1((self.scatt_alpha + 2.0)/2.0, 1.5, 2.0, -kzeta) - A**2 )
 
             self.kzeta = minimize(dipole_Anisotropy, A, method='nelder-mead', options={'xatol': 1e-8, 'disp': False}).x[0]
-            self.P_phi_prefac = 1.0/(2.0*np.pi*sps.hyp2f1((self.scatt_alpha + 2.0)/2.0, 0.5, 1.0, -self.kzeta))       
+            self.P_phi_prefac = 1.0/(2.0*np.pi*sps.hyp2f1((self.scatt_alpha + 2.0)/2.0, 0.5, 1.0, -self.kzeta))
         else:
             print("Scattering Model Not Recognized!")
 
-        # More parameters for the approximate phase structure function 
-        int_maj = integrate.quad(lambda phi_q: np.abs( np.cos( self.phi0 - phi_q ) )**self.scatt_alpha * self.P_phi(phi_q), 0, 2.0*np.pi, limit=250)[0]  
-        int_min = integrate.quad(lambda phi_q: np.abs( np.sin( self.phi0 - phi_q ) )**self.scatt_alpha * self.P_phi(phi_q), 0, 2.0*np.pi, limit=250)[0]      
+        # More parameters for the approximate phase structure function
+        int_maj = integrate.quad(lambda phi_q: np.abs( np.cos( self.phi0 - phi_q ) )**self.scatt_alpha * self.P_phi(phi_q), 0, 2.0*np.pi, limit=250)[0]
+        int_min = integrate.quad(lambda phi_q: np.abs( np.sin( self.phi0 - phi_q ) )**self.scatt_alpha * self.P_phi(phi_q), 0, 2.0*np.pi, limit=250)[0]
         B_prefac = self.C_scatt_0 * 2.0**(2.0 - self.scatt_alpha) * np.pi**0.5/(self.scatt_alpha * sps.gamma((self.scatt_alpha + 1.0)/2.0))
         self.Bmaj_0 = B_prefac*int_maj
         self.Bmin_0 = B_prefac*int_min
 
         #Check normalization:
-        #print("Checking Normalization:",integrate.quad(lambda phi_q: self.P_phi(phi_q), 0, 2.0*np.pi)[0])  
+        #print("Checking Normalization:",integrate.quad(lambda phi_q: self.P_phi(phi_q), 0, 2.0*np.pi)[0])
 
         return
 
     def P_phi(self, phi):
         if self.model == 'von_Mises':
-            return self.P_phi_prefac * np.cosh(self.kzeta*np.cos(phi - self.phi0))  
+            return self.P_phi_prefac * np.cosh(self.kzeta*np.cos(phi - self.phi0))
         elif self.model == 'boxcar':
             return self.P_phi_prefac * (1.0 - ((np.pi/(2.0*(1.0 + self.kzeta)) < (phi - self.phi0) % np.pi) & ((phi - self.phi0) % np.pi < np.pi - np.pi/(2.0*(1.0 + self.kzeta)))))
         elif self.model == 'dipole':
@@ -166,7 +159,7 @@ class ScatteringModel(object):
         r = (x**2 + y**2)**0.5
         phi = np.arctan2(y, x)
 
-        return integrate.quad(lambda phi_q: self.dDphi_dz(r, phi, phi_q, wavelength_cm)*self.P_phi(phi_q), 0, 2.0*np.pi)[0]        
+        return integrate.quad(lambda phi_q: self.dDphi_dz(r, phi, phi_q, wavelength_cm)*self.P_phi(phi_q), 0, 2.0*np.pi)[0]
 
     def Dmaj(self, r, wavelength_cm):
         return (wavelength_cm/self.wavelength_reference)**2 * self.Bmaj_0 * (2.0 * self.Amaj_0/(self.scatt_alpha * self.Bmaj_0))**(-self.scatt_alpha/(2.0 - self.scatt_alpha)) * ((1.0 + (2.0*self.Amaj_0/(self.scatt_alpha * self.Bmaj_0))**(2.0/(2.0 - self.scatt_alpha)) * (r/self.r_in)**2 )**(self.scatt_alpha/2.0) - 1.0)
@@ -242,12 +235,12 @@ class ScatteringModel(object):
                ker (2D ndarray): The ensemble-average scattering kernel in the image domain.
             """
 
-        if wavelength_cm == None:
+        if wavelength_cm is None:
             wavelength_cm = C/Reference_Image.rf*100.0 #Observing wavelength [cm]
 
         ulist = np.fft.fftfreq(Reference_Image.xdim)/Reference_Image.psize
         vlist = np.fft.fftfreq(Reference_Image.ydim)/Reference_Image.psize
-        if use_approximate_form == True:
+        if use_approximate_form:
             u_grid, v_grid = np.meshgrid(ulist, vlist)
             ker_uv = self.Ensemble_Average_Kernel_Visibility(u_grid, v_grid, wavelength_cm, use_approximate_form=use_approximate_form)
         else:
@@ -268,7 +261,7 @@ class ScatteringModel(object):
            Returns:
                float: The ensemble-average kernel at the specified {u,v} point and observing wavelength.
             """
-        if use_approximate_form == True:
+        if use_approximate_form:
             return np.exp(-0.5*self.Dphi_approx(u*wavelength_cm/(1.0+self.Mag()), v*wavelength_cm/(1.0+self.Mag()), wavelength_cm))
         else:
             return np.exp(-0.5*self.Dphi_exact(u*wavelength_cm/(1.0+self.Mag()), v*wavelength_cm/(1.0+self.Mag()), wavelength_cm))
@@ -288,7 +281,7 @@ class ScatteringModel(object):
         # Inputs an unscattered image and an ensemble-average blurring kernel (2D array); returns the ensemble-average image
         # The pre-computed kernel can optionally be specified (ker)
 
-        if wavelength_cm == None:
+        if wavelength_cm is None:
             wavelength_cm = C/im.rf*100.0 #Observing wavelength [cm]
 
         if ker is None:
@@ -472,7 +465,7 @@ class ScatteringModel(object):
         phi_Gradient_x = -phi_Gradient[1]
         phi_Gradient_y = -phi_Gradient[0]
 
-        if Linearized_Approximation == True: #Use Equation 10 of Johnson & Narayan (2016)
+        if Linearized_Approximation: #Use Equation 10 of Johnson & Narayan (2016)
             #Calculate the gradient of the ensemble-average image
             EA_Gradient = Wrapped_Gradient((EA_Image.imvec/(FOV/Nx)).reshape(EA_Image.ydim, EA_Image.xdim))
             #The gradient signs don't actually matter, but let's make them match intuition (i.e., right to left, bottom to top)
@@ -518,7 +511,7 @@ class ScatteringModel(object):
                 AI_V = EA_im_V[ryp, rxp]
 
         #Optional: eliminate negative flux
-        if Force_Positivity == True:
+        if Force_Positivity:
            AI = abs(AI)
 
         #Make it into a proper image format
@@ -655,8 +648,8 @@ class ScatteringModel(object):
             pool.join()
         else:
             scattered_im_List = [self.Scatter(get_frame(j), Epsilon_Screen, obs_frequency_Hz = obs_frequency_Hz, Vx_km_per_s = Vx_km_per_s, Vy_km_per_s = Vy_km_per_s, t_hr=tlist_hr[j], ea_ker=ea_ker, sqrtQ=sqrtQ, Linearized_Approximation=Linearized_Approximation, Force_Positivity=Force_Positivity) for j in range(N_frames)]
-        
-        if Return_Image_List == True:
+
+        if Return_Image_List:
             return scattered_im_List
 
         Scattered_Movie = movie.Movie( [im.imvec.reshape((im.ydim,im.xdim)) for im in scattered_im_List],
@@ -666,7 +659,7 @@ class ScatteringModel(object):
             Scattered_Movie_Q = [im.qvec.reshape((im.ydim,im.xdim)) for im in scattered_im_List]
             Scattered_Movie_U = [im.uvec.reshape((im.ydim,im.xdim)) for im in scattered_im_List]
             Scattered_Movie.add_qu(Scattered_Movie_Q, Scattered_Movie_U)
-        if has_circ_pol: 
+        if has_circ_pol:
             Scattered_Movie_V = [im.vvec.reshape((im.ydim,im.xdim)) for im in scattered_im_List]
             Scattered_Movie.add_v(Scattered_Movie_V)
         return Scattered_Movie
@@ -749,9 +742,9 @@ def MakeEpsilonScreen(Nx, Ny, rngseed = 0):
         epsilon[Ny//2][Nx//2] = np.real(epsilon[Ny//2][Nx//2])
 
     for x in range(Nx):
-        if x > (Nx-1)//2: 
+        if x > (Nx-1)//2:
             epsilon[0][x] = np.conjugate(epsilon[0][Nx-x])
-        for y in range((Ny-1)//2, Ny): 
+        for y in range((Ny-1)//2, Ny):
             x2 = Nx - x
             y2 = Ny - y
             if x2 == Nx:
@@ -775,7 +768,7 @@ def plot_scatt(im_unscatt, im_ea, im_scatt, im_phase, Prior, nit, chi2, ipynb=Fa
     plt.ion()
     plt.clf()
     if chi2 > 0.0:
-        plt.suptitle("step: %i  $\chi^2$: %f " % (nit, chi2), fontsize=20)
+        plt.suptitle(r"step: %i  $\chi^2$: %f " % (nit, chi2), fontsize=20)
 
     # Unscattered Image
     plt.subplot(141)
@@ -784,8 +777,8 @@ def plot_scatt(im_unscatt, im_ea, im_scatt, im_phase, Prior, nit, chi2, ipynb=Fa
     yticks = ticks(Prior.ydim, Prior.psize/RADPERAS/1e-6)
     plt.xticks(xticks[0], xticks[1])
     plt.yticks(yticks[0], yticks[1])
-    plt.xlabel('Relative RA ($\mu$as)')
-    plt.ylabel('Relative Dec ($\mu$as)')
+    plt.xlabel(r'Relative RA ($\mu$as)')
+    plt.ylabel(r'Relative Dec ($\mu$as)')
     plt.title('Unscattered')
 
     # Ensemble Average
@@ -795,8 +788,8 @@ def plot_scatt(im_unscatt, im_ea, im_scatt, im_phase, Prior, nit, chi2, ipynb=Fa
     yticks = ticks(Prior.ydim, Prior.psize/RADPERAS/1e-6)
     plt.xticks(xticks[0], xticks[1])
     plt.yticks(yticks[0], yticks[1])
-    plt.xlabel('Relative RA ($\mu$as)')
-    plt.ylabel('Relative Dec ($\mu$as)')
+    plt.xlabel(r'Relative RA ($\mu$as)')
+    plt.ylabel(r'Relative Dec ($\mu$as)')
     plt.title('Ensemble Average')
 
     # Scattered
@@ -806,8 +799,8 @@ def plot_scatt(im_unscatt, im_ea, im_scatt, im_phase, Prior, nit, chi2, ipynb=Fa
     yticks = ticks(Prior.ydim, Prior.psize/RADPERAS/1e-6)
     plt.xticks(xticks[0], xticks[1])
     plt.yticks(yticks[0], yticks[1])
-    plt.xlabel('Relative RA ($\mu$as)')
-    plt.ylabel('Relative Dec ($\mu$as)')
+    plt.xlabel(r'Relative RA ($\mu$as)')
+    plt.ylabel(r'Relative Dec ($\mu$as)')
     plt.title('Average Image')
 
     # Phase
@@ -817,8 +810,8 @@ def plot_scatt(im_unscatt, im_ea, im_scatt, im_phase, Prior, nit, chi2, ipynb=Fa
     yticks = ticks(Prior.ydim, Prior.psize/RADPERAS/1e-6)
     plt.xticks(xticks[0], xticks[1])
     plt.yticks(yticks[0], yticks[1])
-    plt.xlabel('Relative RA ($\mu$as)')
-    plt.ylabel('Relative Dec ($\mu$as)')
+    plt.xlabel(r'Relative RA ($\mu$as)')
+    plt.ylabel(r'Relative Dec ($\mu$as)')
     plt.title('Phase Screen')
 
     # Display
