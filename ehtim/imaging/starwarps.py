@@ -1570,7 +1570,8 @@ def gradMtx(w, h, dir='x'):
         delrows = (np.linspace(w,h*w,h)-1).astype(int)
         G[delrows,:] = 0
     else:
-        G = G  - np.diag(np.ones(h*w-w), k=h)
+        # In row-major imvec.reshape(h, w), the next-row neighbour is at flat offset w.
+        G = G - np.diag(np.ones(h*w-w), k=w)
         delrows = range(h*w-w,h*w)
         G[delrows,:] = 0
     return G
