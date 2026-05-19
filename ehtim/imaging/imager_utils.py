@@ -1794,18 +1794,19 @@ def reggrad_l1(imvec, mask, **kwargs):
 def reg_l1w(imvec, mask, **kwargs):
     priorvec = kwargs['nprior']
     epsilon = ehc.EP
-    # norm is unity for both norm_reg branches in the legacy sl1w; preserved.
+    norm = 1  # placeholder: legacy sl1w normalized by unity in both norm_reg branches
     num = np.sqrt(imvec**2 + epsilon)
     denom = np.sqrt(priorvec**2 + epsilon) + epsilon
-    return np.sum(num / denom)
+    return np.sum(num / denom) / norm
 
 
 def reggrad_l1w(imvec, mask, **kwargs):
     priorvec = kwargs['nprior']
     epsilon = ehc.EP
+    norm = 1  # placeholder: matches reg_l1w
     num = imvec / np.sqrt(imvec**2 + epsilon)
     denom = np.sqrt(priorvec**2 + epsilon) + epsilon
-    return num / denom
+    return num / denom / norm
 
 
 def reg_lA(imvec, mask, **kwargs):
@@ -2126,6 +2127,7 @@ def reg_rgauss(imvec, mask, **kwargs):
     sigyy = np.sum((yy - y0)**2 * im) / S
     sigxy = np.sum((xx - x0) * (yy - y0) * im) / S
     rgauss = (sigxx - sigxx_prime)**2 + (sigyy - sigyy_prime)**2 + 2*(sigxy - sigxy_prime)**2
+    # reg_rgauss has no norm_reg option; always normalized by major^2 * minor^2.
     return rgauss / (major**2 * minor**2)
 
 
@@ -2157,6 +2159,7 @@ def reggrad_rgauss(imvec, mask, **kwargs):
     drgauss = (2 * (sigxx - sigxx_prime) * dxx +
                2 * (sigyy - sigyy_prime) * dyy +
                4 * (sigxy - sigxy_prime) * dxy)
+    # reggrad_rgauss has no norm_reg option; always normalized by major^2 * minor^2.
     g = drgauss.flatten() / (major**2 * minor**2)
     return g[mask]
 
