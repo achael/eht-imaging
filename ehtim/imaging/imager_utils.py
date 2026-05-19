@@ -2035,6 +2035,8 @@ def reggrad_tv2log(imvec, mask, **kwargs):
     return g[mask]
 
 
+# TODO: figure out normalizations for compact and compact2 regularizers
+# (carried over from legacy code; not formally verified).
 def reg_compact(imvec, mask, **kwargs):
     if np.any(np.invert(mask)):
         imvec = embed(imvec, mask, randomfloor=True)

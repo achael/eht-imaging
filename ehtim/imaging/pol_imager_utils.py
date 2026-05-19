@@ -890,28 +890,37 @@ def reggrad_ptv(imarr, mask, **kwargs):
     im_r2 = np.roll(impad, 1, axis=1)[1:ny+1, 1:nx+1]
     im_r1l2 = np.roll(np.roll(impad,  1, axis=0), -1, axis=1)[1:ny+1, 1:nx+1]
     im_l1r2 = np.roll(np.roll(impad, -1, axis=0),  1, axis=1)[1:ny+1, 1:nx+1]
+    # Denominators: |forward-l1|+|forward-l2|, |back-r1|+|cross|, |back-r2|+|cross|.
     d1 = np.sqrt(np.abs(im_l1 - im)**2 + np.abs(im_l2 - im)**2)
     d2 = np.sqrt(np.abs(im_r1 - im)**2 + np.abs(im_r1l2 - im_r1)**2)
     d3 = np.sqrt(np.abs(im_r2 - im)**2 + np.abs(im_l1r2 - im_r2)**2)
+    # Numerators below use cos/sin of the single-angle difference between
+    # neighbors, from d|P_l1 - P|^2/d|P| = 2|P| - 2|P_l1|*cos(angle(P_l1) - angle(P)).
     gradout = np.zeros(imarr.shape)
     if pol_solve[0] != 0:
+        # dS/dI numerators (chain through |P| = I*m)
         m1 = 2*np.abs(im*im) - np.abs(im*im_l1)*np.cos(np.angle(im_l1) - np.angle(im)) - np.abs(im*im_l2)*np.cos(np.angle(im_l2) - np.angle(im))
         m2 = np.abs(im*im) - np.abs(im*im_r1)*np.cos(np.angle(im) - np.angle(im_r1))
         m3 = np.abs(im*im) - np.abs(im*im_r2)*np.cos(np.angle(im) - np.angle(im_r2))
         gradout[0] = (1./iimage) * (m1/d1 + m2/d2 + m3/d3).flatten()
     if pol_solve[1] != 0:
+        # dS/dm numerators; m enters via |P| = I*m, so dS/dm = I * dS/d|P|.
+        # Then dm/dprimitive[1] = cos(psi) on the (m, psi) -> (m, v) chart.
         m1 = 2*np.abs(im) - np.abs(im_l1)*np.cos(np.angle(im_l1) - np.angle(im)) - np.abs(im_l2)*np.cos(np.angle(im_l2) - np.angle(im))
         m2 = np.abs(im) - np.abs(im_r1)*np.cos(np.angle(im) - np.angle(im_r1))
         m3 = np.abs(im) - np.abs(im_r2)*np.cos(np.angle(im) - np.angle(im_r2))
         gradm = iimage * (m1/d1 + m2/d2 + m3/d3).flatten()
         gradout[1] = gradm * np.cos(psiimage)
     if pol_solve[2] != 0:
+        # dS/dphi numerators (primitive is phi = 2*chi, see PR #240).
+        # `gradchi` is dS/dchi; chain through chi(phi) = phi/2 gives the *0.5.
         c1 = -2*np.abs(im*im_l1)*np.sin(np.angle(im_l1) - np.angle(im)) - 2*np.abs(im*im_l2)*np.sin(np.angle(im_l2) - np.angle(im))
         c2 = 2*np.abs(im*im_r1)*np.sin(np.angle(im) - np.angle(im_r1))
         c3 = 2*np.abs(im*im_r2)*np.sin(np.angle(im) - np.angle(im_r2))
         gradchi = (c1/d1 + c2/d2 + c3/d3).flatten()
         gradout[2] = 0.5 * gradchi
     if pol_solve[3] != 0:
+        # dS/dpsi numerators; reuse dS/dm and chain through dm/dpsi = -m*tan(psi).
         m1 = 2*np.abs(im) - np.abs(im_l1)*np.cos(np.angle(im_l1) - np.angle(im)) - np.abs(im_l2)*np.cos(np.angle(im_l2) - np.angle(im))
         m2 = np.abs(im) - np.abs(im_r1)*np.cos(np.angle(im) - np.angle(im_r1))
         m3 = np.abs(im) - np.abs(im_r2)*np.cos(np.angle(im) - np.angle(im_r2))
@@ -921,6 +930,10 @@ def reggrad_ptv(imarr, mask, **kwargs):
     return g[:, mask] if do_slice else g
 
 
+# --- circular-polarization (V) regularizers ---------------------------------
+# TODO check!! The V-pol regularizers below were never thoroughly audited; the
+# `gradv * (vfimage / np.tan(psiimage))` chain-rule form (dS/dpsi) is unusual
+# and the test coverage only exercises generic random pol structure.
 def reg_vflux(imarr, mask, **kwargs):
     vflux = kwargs['vflux']
     norm = np.abs(vflux)**2 if kwargs.get('norm_reg', True) else 1
@@ -936,16 +949,18 @@ def reggrad_vflux(imarr, mask, **kwargs):
     vimage = make_v_image(imarr)
     vfimage = make_vf_image(imarr)
     psiimage = make_psi_image(imarr)
+    # base = dS/dV via V = I * vf, vf = m*sin(psi); pol_solve branches below
+    # chain through dV/dI = V/I, dV/dm = I*sin(psi), dV/dpsi = I*m*cos(psi).
     base = 2 * (np.sum(vimage) - vflux) * np.ones(len(vimage))
     gradout = np.zeros(imarr.shape)
     if pol_solve[0] != 0:
-        gradout[0] = (vimage / iimage) * base
+        gradout[0] = (vimage / iimage) * base  # dS/dI
     if pol_solve[1] != 0:
         gradv = iimage * base
-        gradout[1] = gradv * np.sin(psiimage)
+        gradout[1] = gradv * np.sin(psiimage)  # dS/dm
     if pol_solve[3] != 0:
         gradv = iimage * base
-        gradout[3] = gradv * (vfimage / np.tan(psiimage))
+        gradout[3] = gradv * (vfimage / np.tan(psiimage))  # dS/dpsi; vf/tan(psi) = m*cos(psi)
     return gradout / norm
 
 
@@ -964,16 +979,17 @@ def reggrad_l1v(imarr, mask, **kwargs):
     vimage = make_v_image(imarr)
     vfimage = make_vf_image(imarr)
     psiimage = make_psi_image(imarr)
+    # base = dS/dV via V = I*vf; chain rules per reggrad_vflux.
     base = np.sign(vimage)
     gradout = np.zeros(imarr.shape)
     if pol_solve[0] != 0:
-        gradout[0] = vfimage * base
+        gradout[0] = vfimage * base  # dS/dI (vfimage = V/I)
     if pol_solve[1] != 0:
         gradv = iimage * base
-        gradout[1] = gradv * np.sin(psiimage)
+        gradout[1] = gradv * np.sin(psiimage)  # dS/dm
     if pol_solve[3] != 0:
         gradv = iimage * base
-        gradout[3] = gradv * (vfimage / np.tan(psiimage))
+        gradout[3] = gradv * (vfimage / np.tan(psiimage))  # dS/dpsi
     return gradout / norm
 
 
@@ -992,16 +1008,17 @@ def reggrad_l2v(imarr, mask, **kwargs):
     vimage = make_v_image(imarr)
     vfimage = make_vf_image(imarr)
     psiimage = make_psi_image(imarr)
+    # base = dS/dV via V = I*vf; chain rules per reggrad_vflux.
     base = 2 * vimage
     gradout = np.zeros(imarr.shape)
     if pol_solve[0] != 0:
-        gradout[0] = vfimage * base
+        gradout[0] = vfimage * base  # dS/dI
     if pol_solve[1] != 0:
         gradv = iimage * base
-        gradout[1] = gradv * np.sin(psiimage)
+        gradout[1] = gradv * np.sin(psiimage)  # dS/dm
     if pol_solve[3] != 0:
         gradv = iimage * base
-        gradout[3] = gradv * (vfimage / np.tan(psiimage))
+        gradout[3] = gradv * (vfimage / np.tan(psiimage))  # dS/dpsi
     return gradout / norm
 
 
@@ -1053,16 +1070,17 @@ def reggrad_vtv(imarr, mask, **kwargs):
     mask2[:, 0] = 1
     g2[mask1.astype(bool)] = 0
     g3[mask2.astype(bool)] = 0
+    # base = dS/dV via V = I*vf; chain rules per reggrad_vflux.
     base = (g1 + g2 + g3).flatten()
     gradout = np.zeros(imarr.shape)
     if pol_solve[0] != 0:
-        gradout[0] = vfimage * base
+        gradout[0] = vfimage * base  # dS/dI
     if pol_solve[1] != 0:
         gradv = iimage * base
-        gradout[1] = gradv * np.sin(psiimage)
+        gradout[1] = gradv * np.sin(psiimage)  # dS/dm
     if pol_solve[3] != 0:
         gradv = iimage * base
-        gradout[3] = gradv * (vfimage / np.tan(psiimage))
+        gradout[3] = gradv * (vfimage / np.tan(psiimage))  # dS/dpsi
     g = gradout / norm
     return g[:, mask] if do_slice else g
 
@@ -1112,16 +1130,17 @@ def reggrad_vtv2(imarr, mask, **kwargs):
     mask2[:, 0] = 1
     g2[mask1.astype(bool)] = 0
     g3[mask2.astype(bool)] = 0
+    # base = dS/dV via V = I*vf; chain rules per reggrad_vflux.
     base = 2 * (g1 + g2 + g3).flatten()
     gradout = np.zeros(imarr.shape)
     if pol_solve[0] != 0:
-        gradout[0] = vfimage * base
+        gradout[0] = vfimage * base  # dS/dI
     if pol_solve[1] != 0:
         gradv = iimage * base
-        gradout[1] = gradv * np.sin(psiimage)
+        gradout[1] = gradv * np.sin(psiimage)  # dS/dm
     if pol_solve[3] != 0:
         gradv = iimage * base
-        gradout[3] = gradv * (vfimage / np.tan(psiimage))
+        gradout[3] = gradv * (vfimage / np.tan(psiimage))  # dS/dpsi
     g = gradout / norm
     return g[:, mask] if do_slice else g
 
