@@ -5,7 +5,6 @@ import scipy.signal
 
 import ehtim.scattering.stochastic_optics as so
 
-
 RECT_XDIM = 32
 RECT_YDIM = 48
 
