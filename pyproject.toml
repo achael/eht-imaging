@@ -31,7 +31,6 @@ dependencies = [
     "finufft>=2.2",
     "skyfield",
     "h5py",
-    "pandas",
     "requests",
     "future",
     "networkx",
@@ -43,6 +42,7 @@ dev = [
     "pytest>=7.0",
     "pytest-cov",
     "ruff",
+    "pandas",
 ]
 
 [project.urls]
