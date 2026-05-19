@@ -262,7 +262,26 @@ def inc_sig(amp,sig):
     return sigma0
 
 def coh_sig(amp, sig):
-    """Inverse-variance combined sigma: 1 / sqrt(sum_i 1/sig_i^2)."""
+    """Error on the directly (unweighted) averaged visibility: sqrt(sum_i sig_i^2) / N.
+
+    Correct estimator when the visibilities are combined with the plain
+    mean. For the inverse-variance weighted mean, use ``invvar_coh_sig``.
+    """
+    amp = np.abs(np.asarray(amp))
+    sig = np.asarray(sig)
+    Nc = len(amp)
+    sigma0 = np.sqrt(np.sum(sig ** 2) / Nc ** 2)
+    return sigma0
+
+
+def invvar_coh_sig(amp, sig):
+    """Error on the inverse-variance weighted averaged visibility: 1 / sqrt(sum_i 1/sig_i^2).
+
+    Correct estimator when the visibilities are combined with
+    inverse-variance weights. For the plain unweighted mean, use
+    ``coh_sig``. Rows with non-finite or non-positive sigma are dropped;
+    returns NaN if none remain.
+    """
     sig = np.asarray(sig)
     finite = np.isfinite(sig) & (sig > 0)
     if not np.any(finite):

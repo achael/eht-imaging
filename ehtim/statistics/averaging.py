@@ -67,9 +67,9 @@ import ehtim.const_def as ehc
 
 # TODO: the helpers below (and the per-group amplitude reductions in this
 # module) overlap conceptually with stats.deb_amp / stats.inc_sig /
-# stats.mean_incoh_avg / stats.coh_sig. Worth consolidating into a single
-# set of vectorised reducers once the legacy stats.py call sites elsewhere
-# in the codebase are audited.
+# stats.mean_incoh_avg / stats.coh_sig / stats.invvar_coh_sig. Worth
+# consolidating into a single set of vectorised reducers once the legacy
+# stats.py call sites elsewhere in the codebase are audited.
 from ehtim.statistics.stats import bootstrap, mean_incoh_avg
 
 __all__ = ["coh_avg_vis", "coh_moving_avg_vis", "incoh_avg_vis"]
