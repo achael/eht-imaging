@@ -24,16 +24,26 @@ class TestGkern:
 
 
 class TestPadNewFOV:
-    """padNewFOV pads a (possibly rect) image to a larger isotropic FOV."""
+    """padNewFOV pads a (possibly rect) image to a larger isotropic FOV.
+
+    Output is always square at the target FOV regardless of input shape;
+    square inputs keep bit-for-bit legacy behavior.
+    """
 
     def test_pads_square_image_to_larger_square(self, gauss_im):
-        """Square image padded to ~1.5x FOV remains square and grows."""
-        # The kwarg is misnamed `fov_arcseconds` but the function multiplies by
-        # ehtim.RADPERUAS, so the value is effectively in microarcseconds.
+        """Square input -> larger square output (legacy contract preserved)."""
         old_fov_uas = gauss_im.psize * gauss_im.xdim / 4.848136811e-12
         padded = sw.padNewFOV(gauss_im, fov_arcseconds=1.5 * old_fov_uas)
         assert padded.xdim == padded.ydim
         assert padded.xdim > gauss_im.xdim
+
+    def test_pads_rect_image_to_square_at_target_fov(self, make_rect_image):
+        """Rect input -> square output with side = ceil(newfov / psize)."""
+        im = make_rect_image(RECT_XDIM, RECT_YDIM)
+        old_fov_large_uas = max(im.xdim, im.ydim) * im.psize / 4.848136811e-12
+        padded = sw.padNewFOV(im, fov_arcseconds=1.5 * old_fov_large_uas)
+        assert padded.xdim == padded.ydim
+        assert padded.xdim >= max(im.xdim, im.ydim)
 
 
 class TestFlipImg:

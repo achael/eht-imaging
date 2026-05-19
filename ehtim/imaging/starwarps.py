@@ -1586,17 +1586,18 @@ def listconcatenate(*lists):
     return new_list
     
 def padNewFOV(im, fov_arcseconds):
-    
-    oldfov = im.psize * im.xdim
+
     newfov = fov_arcseconds * ehtim.RADPERUAS
-    tnpixels = np.ceil(im.xdim * newfov/oldfov).astype('int')
-    
-    origimg = np.reshape(im.imvec, [im.xdim, im.xdim])
-    padimg = np.pad(origimg, ((0,tnpixels-im.xdim), (0,tnpixels-im.xdim)), 'constant')
-    padimg = np.roll(padimg, np.floor((tnpixels-im.xdim)/2.).astype('int'), axis=0)
-    padimg = np.roll(padimg, np.floor((tnpixels-im.xdim)/2.).astype('int'), axis=1)
-    
-    return image.Image(padimg.reshape((tnpixels, tnpixels)), im.psize, im.ra, im.dec, rf=im.rf, source=im.source, mjd=im.mjd, pulse=im.pulse)
+    tnpixels = np.ceil(newfov / im.psize).astype('int')
+
+    origimg = np.reshape(im.imvec, [im.ydim, im.xdim])
+    pad_x = tnpixels - im.xdim
+    pad_y = tnpixels - im.ydim
+    padimg = np.pad(origimg, ((0, pad_y), (0, pad_x)), 'constant')
+    padimg = np.roll(padimg, np.floor(pad_y/2.).astype('int'), axis=0)
+    padimg = np.roll(padimg, np.floor(pad_x/2.).astype('int'), axis=1)
+
+    return image.Image(padimg, im.psize, im.ra, im.dec, rf=im.rf, source=im.source, mjd=im.mjd, pulse=im.pulse)
 
     
 def flipImg(im, flip_lr, flip_ud):
