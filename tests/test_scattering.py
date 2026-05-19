@@ -48,6 +48,18 @@ class TestEnsembleAverageKernel:
         assert np.sum(ker) == pytest.approx(1.0, rel=1e-10)
 
 
+class TestMakePhaseScreen:
+    """MakePhaseScreen shape contract on rectangular reference images."""
+
+    def test_shape_matches_rect_epsilon_screen(self, model, make_rect_image):
+        """Phase screen output has the (ydim, xdim) shape of the reference image."""
+        im = make_rect_image(RECT_XDIM, RECT_YDIM)
+        eps = so.MakeEpsilonScreen(im.xdim, im.ydim, rngseed=1)
+        phi = model.MakePhaseScreen(eps, im)
+        assert phi.imvec.shape == (im.ydim * im.xdim,)
+        assert np.all(np.isfinite(phi.imvec))
+
+
 class TestWrappedConvolve:
     """Wrapped_Convolve helper agrees with scipy.signal.fftconvolve."""
 

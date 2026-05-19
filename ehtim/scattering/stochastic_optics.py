@@ -402,8 +402,9 @@ class ScatteringModel(object):
 
             if screen_x_offset_pixels != 0.0 or screen_y_offset_pixels != 0.0:
                 s, t = np.meshgrid(np.fft.fftfreq(Nx, d=1.0/Nx), np.fft.fftfreq(Ny, d=1.0/Ny))
-                sqrtQ = sqrtQ_init * np.exp(2.0*np.pi*1j*(s*screen_x_offset_pixels +
-                                                          t*screen_y_offset_pixels)/float(Nx))
+                sqrtQ = sqrtQ_init * np.exp(
+                    2.0*np.pi*1j*(s*screen_x_offset_pixels/float(Nx) +
+                                  t*screen_y_offset_pixels/float(Ny)))
             else:
                 sqrtQ = sqrtQ_init
 
