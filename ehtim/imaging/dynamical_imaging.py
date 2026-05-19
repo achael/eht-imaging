@@ -723,22 +723,51 @@ def squared_gradient_flow_grad(flow):
 
 ###### Static Regularizer Master Functions #######
 
-def static_regularizer(Frame_List, Prior_List, embed_mask_List, flux, psize, stype="simple", norm_reg=True, **kwargs):
+def static_regularizer(Frame_List, Prior_List, embed_mask_List, flux, psize,
+                       stype="simple", norm_reg=True, xdim=None, ydim=None,
+                       **kwargs):
+    """Per-frame mean of ``regularizer`` over a stack of frames.
+
+    Pass ``xdim`` and ``ydim`` explicitly to support rectangular frames; if
+    either is omitted, both default to ``sqrt(npix)`` (square frames).
+    """
     N_frame = Frame_List.shape[0]
-    xdim = int(len(Frame_List[0].ravel())**0.5)
+    if xdim is None or ydim is None:
+        xdim = ydim = int(len(Frame_List[0].ravel())**0.5)
 
-    s = sum(regularizer(Frame_List[i].ravel()[embed_mask_List[i]], Prior_List[i].ravel()[embed_mask_List[i]], embed_mask_List[i], flux=flux, xdim=xdim, ydim=xdim, psize=psize, stype=stype, norm_reg=norm_reg, **kwargs) for i in range(N_frame))
+    s = sum(regularizer(Frame_List[i].ravel()[embed_mask_List[i]],
+                        Prior_List[i].ravel()[embed_mask_List[i]],
+                        embed_mask_List[i],
+                        flux=flux, xdim=xdim, ydim=ydim, psize=psize,
+                        stype=stype, norm_reg=norm_reg, **kwargs)
+            for i in range(N_frame))
 
-    return s/N_frame
+    return s / N_frame
 
-def static_regularizer_gradient(Frame_List, Prior_List, embed_mask_List, flux, psize, stype="simple", norm_reg=True, **kwargs):
-    # Note: this function includes Jacobian factor to account for the frames being written as log(frame)
+
+def static_regularizer_gradient(Frame_List, Prior_List, embed_mask_List, flux,
+                                psize, stype="simple", norm_reg=True,
+                                xdim=None, ydim=None, **kwargs):
+    """Per-frame mean of ``regularizergrad`` with the log-frame Jacobian factor.
+
+    Pass ``xdim``/``ydim`` explicitly for rectangular frames; otherwise both
+    default to ``sqrt(npix)`` (square frames).
+    """
     N_frame = Frame_List.shape[0]
-    xdim = int(len(Frame_List[0].ravel())**0.5)
+    if xdim is None or ydim is None:
+        xdim = ydim = int(len(Frame_List[0].ravel())**0.5)
 
-    s = np.concatenate([regularizergrad((Frame_List[i].ravel())[embed_mask_List[i]], Prior_List[i].ravel()[embed_mask_List[i]], embed_mask_List[i], flux=flux, xdim=xdim, ydim=xdim, psize=psize, stype=stype, norm_reg=norm_reg, **kwargs)*(Frame_List[i].ravel())[embed_mask_List[i]] for i in range(N_frame)])
+    s = np.concatenate([
+        regularizergrad((Frame_List[i].ravel())[embed_mask_List[i]],
+                        Prior_List[i].ravel()[embed_mask_List[i]],
+                        embed_mask_List[i],
+                        flux=flux, xdim=xdim, ydim=ydim, psize=psize,
+                        stype=stype, norm_reg=norm_reg, **kwargs)
+        * (Frame_List[i].ravel())[embed_mask_List[i]]
+        for i in range(N_frame)
+    ])
 
-    return s/N_frame
+    return s / N_frame
 
 ##################################################################################################
 # Other Regularization Functions
@@ -914,9 +943,9 @@ ttype = 'nfft', fft_pad_factor=2):
         s1 = s2 = 0.0
 
         if alpha_s1 != 0.0:
-            s1 = static_regularizer(Frames, nprior_embed_List, embed_mask_List, Prior.total_flux(), Prior.psize, entropy1, norm_reg=norm_reg, beam_size=beam_size, alpha_A=alpha_A)*alpha_s1
+            s1 = static_regularizer(Frames, nprior_embed_List, embed_mask_List, Prior.total_flux(), Prior.psize, entropy1, norm_reg=norm_reg, beam_size=beam_size, alpha_A=alpha_A, xdim=Prior.xdim, ydim=Prior.ydim)*alpha_s1
         if alpha_s2 != 0.0:
-            s2 = static_regularizer(Frames, nprior_embed_List, embed_mask_List, Prior.total_flux(), Prior.psize, entropy2, norm_reg=norm_reg, beam_size=beam_size, alpha_A=alpha_A)*alpha_s2
+            s2 = static_regularizer(Frames, nprior_embed_List, embed_mask_List, Prior.total_flux(), Prior.psize, entropy2, norm_reg=norm_reg, beam_size=beam_size, alpha_A=alpha_A, xdim=Prior.xdim, ydim=Prior.ydim)*alpha_s2
 
         s_dynamic = 0.0
 
@@ -944,9 +973,9 @@ ttype = 'nfft', fft_pad_factor=2):
         s1 = s2 = 0.0
 
         if alpha_s1 != 0.0:
-            s1 = static_regularizer_gradient(Frames, nprior_embed_List, embed_mask_List, Prior.total_flux(), Prior.psize, entropy1, norm_reg=norm_reg, beam_size=beam_size, alpha_A=alpha_A)*alpha_s1
+            s1 = static_regularizer_gradient(Frames, nprior_embed_List, embed_mask_List, Prior.total_flux(), Prior.psize, entropy1, norm_reg=norm_reg, beam_size=beam_size, alpha_A=alpha_A, xdim=Prior.xdim, ydim=Prior.ydim)*alpha_s1
         if alpha_s2 != 0.0:
-            s2 = static_regularizer_gradient(Frames, nprior_embed_List, embed_mask_List, Prior.total_flux(), Prior.psize, entropy2, norm_reg=norm_reg, beam_size=beam_size, alpha_A=alpha_A)*alpha_s2
+            s2 = static_regularizer_gradient(Frames, nprior_embed_List, embed_mask_List, Prior.total_flux(), Prior.psize, entropy2, norm_reg=norm_reg, beam_size=beam_size, alpha_A=alpha_A, xdim=Prior.xdim, ydim=Prior.ydim)*alpha_s2
 
         s_dynamic_grad = 0.0
         if R_dt['alpha'] != 0.0: s_dynamic_grad += Rdt_gradient(Frames, B_dt, **R_dt)*R_dt['alpha']
@@ -991,10 +1020,10 @@ ttype = 'nfft', fft_pad_factor=2):
             if alpha_s1 != 0.0:
 
                 s1 = static_regularizer(Frames, nprior_embed_List, embed_mask_List, Prior.total_flux(),
-                                        Prior.psize, entropy1, norm_reg=norm_reg, beam_size=beam_size, alpha_A=alpha_A)*alpha_s1
+                                        Prior.psize, entropy1, norm_reg=norm_reg, beam_size=beam_size, alpha_A=alpha_A, xdim=Prior.xdim, ydim=Prior.ydim)*alpha_s1
             if alpha_s2 != 0.0:
                 s2 = static_regularizer(Frames, nprior_embed_List, embed_mask_List, Prior.total_flux(),
-                                        Prior.psize, entropy2, norm_reg=norm_reg, beam_size=beam_size, alpha_A=alpha_A)*alpha_s2
+                                        Prior.psize, entropy2, norm_reg=norm_reg, beam_size=beam_size, alpha_A=alpha_A, xdim=Prior.xdim, ydim=Prior.ydim)*alpha_s2
 
             s_dynamic = 0.0
 
@@ -1342,9 +1371,9 @@ minimizer_method = 'L-BFGS-B', update_interval = 1
         s1 = s2 = 0.0
 
         if alpha_s1 != 0.0:
-            s1 = static_regularizer(Frames, nprior_embed_List, embed_mask_List, Prior.total_flux(), Prior.psize, entropy1, norm_reg=norm_reg, beam_size=beam_size, alpha_A=alpha_A, **kwargs)*alpha_s1
+            s1 = static_regularizer(Frames, nprior_embed_List, embed_mask_List, Prior.total_flux(), Prior.psize, entropy1, norm_reg=norm_reg, beam_size=beam_size, alpha_A=alpha_A, xdim=Prior.xdim, ydim=Prior.ydim, **kwargs)*alpha_s1
         if alpha_s2 != 0.0:
-            s2 = static_regularizer(Frames, nprior_embed_List, embed_mask_List, Prior.total_flux(), Prior.psize, entropy2, norm_reg=norm_reg, beam_size=beam_size, alpha_A=alpha_A, **kwargs)*alpha_s2
+            s2 = static_regularizer(Frames, nprior_embed_List, embed_mask_List, Prior.total_flux(), Prior.psize, entropy2, norm_reg=norm_reg, beam_size=beam_size, alpha_A=alpha_A, xdim=Prior.xdim, ydim=Prior.ydim, **kwargs)*alpha_s2
 
         s_dynamic = cm = flux = s_dS = s_dF = 0.0
 
@@ -1418,9 +1447,9 @@ minimizer_method = 'L-BFGS-B', update_interval = 1
         s1 = s2 = 0.0
 
         if alpha_s1 != 0.0:
-            s1 = static_regularizer_gradient(Frames, nprior_embed_List, embed_mask_List, Prior.total_flux(), Prior.psize, entropy1, norm_reg=norm_reg, beam_size=beam_size, alpha_A=alpha_A, **kwargs)*alpha_s1
+            s1 = static_regularizer_gradient(Frames, nprior_embed_List, embed_mask_List, Prior.total_flux(), Prior.psize, entropy1, norm_reg=norm_reg, beam_size=beam_size, alpha_A=alpha_A, xdim=Prior.xdim, ydim=Prior.ydim, **kwargs)*alpha_s1
         if alpha_s2 != 0.0:
-            s2 = static_regularizer_gradient(Frames, nprior_embed_List, embed_mask_List, Prior.total_flux(), Prior.psize, entropy2, norm_reg=norm_reg, beam_size=beam_size, alpha_A=alpha_A, **kwargs)*alpha_s2
+            s2 = static_regularizer_gradient(Frames, nprior_embed_List, embed_mask_List, Prior.total_flux(), Prior.psize, entropy2, norm_reg=norm_reg, beam_size=beam_size, alpha_A=alpha_A, xdim=Prior.xdim, ydim=Prior.ydim, **kwargs)*alpha_s2
 
         s_dynamic_grad = cm_grad = flux_grad = s_dS = s_dF = 0.0
         if R_dI['alpha'] != 0.0: s_dynamic_grad += RdI_gradient(Frames,**R_dI)*R_dI['alpha']
@@ -1606,10 +1635,10 @@ minimizer_method = 'L-BFGS-B', update_interval = 1
             if alpha_s1 != 0.0:
 
                 s1 = static_regularizer(Frames, nprior_embed_List, embed_mask_List, Prior.total_flux(),
-                                        Prior.psize, entropy1, norm_reg=norm_reg, beam_size=beam_size, alpha_A=alpha_A, **kwargs)*alpha_s1
+                                        Prior.psize, entropy1, norm_reg=norm_reg, beam_size=beam_size, alpha_A=alpha_A, xdim=Prior.xdim, ydim=Prior.ydim, **kwargs)*alpha_s1
             if alpha_s2 != 0.0:
                 s2 = static_regularizer(Frames, nprior_embed_List, embed_mask_List, Prior.total_flux(),
-                                        Prior.psize, entropy2, norm_reg=norm_reg, beam_size=beam_size, alpha_A=alpha_A, **kwargs)*alpha_s2
+                                        Prior.psize, entropy2, norm_reg=norm_reg, beam_size=beam_size, alpha_A=alpha_A, xdim=Prior.xdim, ydim=Prior.ydim, **kwargs)*alpha_s2
 
             s_dynamic = cm = s_dS = s_dF = 0.0
 
@@ -1912,9 +1941,9 @@ maxit=200, J_factor = 0.001, stop=1.0e-10, ipynb=False, refresh_interval = 1000,
             i2 = (j+1)*N_frame
 
             if alpha_s1 != 0.0:
-                s1 += static_regularizer(Frames[i1:i2], nprior_embed_List[i1:i2], embed_mask_List[i1:i2], Prior.total_flux(), Prior.psize, entropy1, norm_reg=norm_reg, beam_size=beam_size[j], alpha_A=alpha_A)*alpha_s1
+                s1 += static_regularizer(Frames[i1:i2], nprior_embed_List[i1:i2], embed_mask_List[i1:i2], Prior.total_flux(), Prior.psize, entropy1, norm_reg=norm_reg, beam_size=beam_size[j], alpha_A=alpha_A, xdim=Prior.xdim, ydim=Prior.ydim)*alpha_s1
             if alpha_s2 != 0.0:
-                s2 += static_regularizer(Frames[i1:i2], nprior_embed_List[i1:i2], embed_mask_List[i1:i2], Prior.total_flux(), Prior.psize, entropy2, norm_reg=norm_reg, beam_size=beam_size[j], alpha_A=alpha_A)*alpha_s2
+                s2 += static_regularizer(Frames[i1:i2], nprior_embed_List[i1:i2], embed_mask_List[i1:i2], Prior.total_flux(), Prior.psize, entropy2, norm_reg=norm_reg, beam_size=beam_size[j], alpha_A=alpha_A, xdim=Prior.xdim, ydim=Prior.ydim)*alpha_s2
 
             if R_dI['alpha'] != 0.0: s_dynamic += RdI(Frames[i1:i2], **R_dI)*R_dI['alpha']
             if R_dt['alpha'] != 0.0: s_dynamic += Rdt(Frames[i1:i2], B_dt, **R_dt)*R_dt['alpha']
@@ -1970,9 +1999,9 @@ maxit=200, J_factor = 0.001, stop=1.0e-10, ipynb=False, refresh_interval = 1000,
 
 
             if alpha_s1 != 0.0:
-                s1[mf1:mf2] = static_regularizer_gradient(Frames[i1:i2], nprior_embed_List[i1:i2], embed_mask_List[i1:i2], Prior.total_flux(), Prior.psize, entropy1, norm_reg=norm_reg, beam_size=beam_size[j], alpha_A=alpha_A)*alpha_s1
+                s1[mf1:mf2] = static_regularizer_gradient(Frames[i1:i2], nprior_embed_List[i1:i2], embed_mask_List[i1:i2], Prior.total_flux(), Prior.psize, entropy1, norm_reg=norm_reg, beam_size=beam_size[j], alpha_A=alpha_A, xdim=Prior.xdim, ydim=Prior.ydim)*alpha_s1
             if alpha_s2 != 0.0:
-                s2[mf1:mf2] = static_regularizer_gradient(Frames[i1:i2], nprior_embed_List[i1:i2], embed_mask_List[i1:i2], Prior.total_flux(), Prior.psize, entropy2, norm_reg=norm_reg, beam_size=beam_size[j], alpha_A=alpha_A)*alpha_s2
+                s2[mf1:mf2] = static_regularizer_gradient(Frames[i1:i2], nprior_embed_List[i1:i2], embed_mask_List[i1:i2], Prior.total_flux(), Prior.psize, entropy2, norm_reg=norm_reg, beam_size=beam_size[j], alpha_A=alpha_A, xdim=Prior.xdim, ydim=Prior.ydim)*alpha_s2
 
             if R_dI['alpha'] != 0.0: s_dynamic_grad[f1:f2] += RdI_gradient(Frames[i1:i2],**R_dI)*R_dI['alpha']
             if R_dt['alpha'] != 0.0: s_dynamic_grad[f1:f2] += Rdt_gradient(Frames[i1:i2], B_dt, **R_dt)*R_dt['alpha']
@@ -2038,9 +2067,9 @@ maxit=200, J_factor = 0.001, stop=1.0e-10, ipynb=False, refresh_interval = 1000,
                 i2 = (j+1)*N_frame
 
                 if alpha_s1 != 0.0:
-                    s1 += static_regularizer(Frames[i1:i2], nprior_embed_List[i1:i2], embed_mask_List[i1:i2], Prior.total_flux(), Prior.psize, entropy1, norm_reg=norm_reg, beam_size=beam_size[j], alpha_A=alpha_A)*alpha_s1
+                    s1 += static_regularizer(Frames[i1:i2], nprior_embed_List[i1:i2], embed_mask_List[i1:i2], Prior.total_flux(), Prior.psize, entropy1, norm_reg=norm_reg, beam_size=beam_size[j], alpha_A=alpha_A, xdim=Prior.xdim, ydim=Prior.ydim)*alpha_s1
                 if alpha_s2 != 0.0:
-                    s2 += static_regularizer(Frames[i1:i2], nprior_embed_List[i1:i2], embed_mask_List[i1:i2], Prior.total_flux(), Prior.psize, entropy2, norm_reg=norm_reg, beam_size=beam_size[j], alpha_A=alpha_A)*alpha_s2
+                    s2 += static_regularizer(Frames[i1:i2], nprior_embed_List[i1:i2], embed_mask_List[i1:i2], Prior.total_flux(), Prior.psize, entropy2, norm_reg=norm_reg, beam_size=beam_size[j], alpha_A=alpha_A, xdim=Prior.xdim, ydim=Prior.ydim)*alpha_s2
 
                 if R_dI['alpha'] != 0.0: s_dynamic += RdI(Frames[i1:i2], **R_dI)*R_dI['alpha']
                 if R_dt['alpha'] != 0.0: s_dynamic += Rdt(Frames[i1:i2], B_dt, **R_dt)*R_dt['alpha']
