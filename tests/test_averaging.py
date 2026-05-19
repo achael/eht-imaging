@@ -431,6 +431,104 @@ def test_coh_moving_avg_vis_inverse_variance_sigma():
     np.testing.assert_allclose(out["sigma"], expected, rtol=1e-12)
 
 
+def test_coh_moving_avg_vis_invvar_mean_nonuniform_sigma():
+    """Sliding-window inverse-variance mean weights by 1/sigma^2.
+
+    Two samples (vis 1.0 and 3.0, sigmas 0.1 and 0.2) inside one 120 s
+    window: weights [100, 25], <V> = (1.0*100 + 3.0*25)/125 = 1.4 at both
+    row positions.
+    """
+    times = np.array([0.0, 1.0 / 3600.0])
+    obs = _make_obs(times_hr=times,
+                    vis_fn=lambda t, t1, t2: 1.0 + 0.0j if t == 0.0 else 3.0 + 0.0j)
+    obs.data["sigma"] = np.array([0.1, 0.2])
+    obs.data["qsigma"] = np.array([0.1, 0.2])
+    obs.data["usigma"] = np.array([0.1, 0.2])
+    obs.data["vsigma"] = np.array([0.1, 0.2])
+
+    out = coh_moving_avg_vis(obs, dt=120.0, invvar_avg=True)
+    w = np.array([1 / 0.1**2, 1 / 0.2**2])
+    expected = np.sum(np.array([1.0, 3.0]) * w) / np.sum(w)
+    np.testing.assert_allclose(out["vis"].real, expected, rtol=1e-12)
+
+
+def test_coh_moving_avg_vis_legacy_mean_and_sigma_nonuniform():
+    """invvar_avg=False sliding window: direct mean + legacy sigma.
+
+    Two samples (vis 1.0 and 3.0, sigmas 0.1 and 0.2) in one 120 s window:
+    direct mean = 2.0, legacy sigma = sqrt(0.1^2 + 0.2^2)/2 ≈ 0.1118 at
+    both rows.
+    """
+    times = np.array([0.0, 1.0 / 3600.0])
+    obs = _make_obs(times_hr=times,
+                    vis_fn=lambda t, t1, t2: 1.0 + 0.0j if t == 0.0 else 3.0 + 0.0j)
+    obs.data["sigma"] = np.array([0.1, 0.2])
+    obs.data["qsigma"] = np.array([0.1, 0.2])
+    obs.data["usigma"] = np.array([0.1, 0.2])
+    obs.data["vsigma"] = np.array([0.1, 0.2])
+
+    out = coh_moving_avg_vis(obs, dt=120.0, invvar_avg=False)
+    np.testing.assert_allclose(out["vis"].real, 2.0, rtol=1e-12)
+    expected_sig = np.sqrt(0.1**2 + 0.2**2) / 2.0
+    np.testing.assert_allclose(out["sigma"], expected_sig, rtol=1e-12)
+
+
+def test_coh_moving_avg_vis_full_window_matches_coh_avg_vis():
+    """A moving window wide enough to cover every sample on a baseline
+    yields, at each row, the same value coh_avg_vis produces for the bin
+    that contains all those samples. Holds for both weighting modes.
+
+    This pins that the moving-window and fixed-bin paths share identical
+    combine arithmetic — only their segment-sum mechanism (cumsum window
+    vs bincount group) differs.
+    """
+    times = np.array([0.0, 10.0 / 3600.0, 20.0 / 3600.0])
+    obs = _make_obs(times_hr=times,
+                    vis_fn=lambda t, t1, t2: 1.0 + (t * 3600.0) * 0.05)
+    obs.data["sigma"] = np.array([0.1, 0.3, 0.2])
+    obs.data["qsigma"] = np.array([0.1, 0.3, 0.2])
+    obs.data["usigma"] = np.array([0.1, 0.3, 0.2])
+    obs.data["vsigma"] = np.array([0.1, 0.3, 0.2])
+
+    for invvar in (True, False):
+        binned = coh_avg_vis(obs, dt=60.0, invvar_avg=invvar)
+        moving = coh_moving_avg_vis(obs, dt=120.0, invvar_avg=invvar)
+        assert len(binned) == 1
+        # Every moving-window row collapses to the single-bin value.
+        np.testing.assert_allclose(moving["vis"], binned["vis"][0], rtol=1e-12)
+        np.testing.assert_allclose(moving["sigma"], binned["sigma"][0], rtol=1e-12)
+
+
+def test_coh_moving_avg_vis_centered_window_differs_from_legacy(_legacy_ehdf):
+    """The window is centered ([t-dt/2, t+dt/2], original timestamps), unlike
+    the legacy dataframes.coh_moving_avg_vis trailing .rolling(dt) window +
+    -dt/2 shift. On irregular spacing the two select different samples, so
+    the outputs differ. Pinned so a silent revert to the trailing convention
+    is caught.
+    """
+    # Five samples at 0, 20, 40, 70, 130 s on one baseline; vis = 1..5.
+    sec_to_vis = {0: 1.0, 20: 2.0, 40: 3.0, 70: 4.0, 130: 5.0}
+    times = np.array(sorted(sec_to_vis)) / 3600.0
+    obs = _make_obs(times_hr=times,
+                    vis_fn=lambda t, t1, t2: sec_to_vis[int(round(t * 3600.0))] + 0.0j)
+
+    new = coh_moving_avg_vis(obs, dt=50.0, invvar_avg=False)
+    new = new[np.argsort(new["time"])]
+    # Centered window, half-width 25 s, computed by hand:
+    #   t=0   -> [-25, 25]  -> {0, 20}     -> mean(1, 2)    = 1.5
+    #   t=20  -> [-5, 45]   -> {0, 20, 40} -> mean(1, 2, 3) = 2.0
+    #   t=40  -> [15, 65]   -> {20, 40}    -> mean(2, 3)    = 2.5
+    #   t=70  -> [45, 95]   -> {70}        -> 4.0
+    #   t=130 -> [105, 155] -> {130}       -> 5.0
+    np.testing.assert_allclose(new["vis"].real, [1.5, 2.0, 2.5, 4.0, 5.0],
+                               rtol=1e-12)
+
+    # Legacy trailing window selects a different set, so the values differ.
+    old = _legacy_ehdf.coh_moving_avg_vis(obs, dt=50.0, return_type="rec")
+    old = old[np.argsort(old["time"])]
+    assert np.any(np.abs(new["vis"].real - old["vis"].real) > 1e-6)
+
+
 def test_coh_avg_vis_err_type_measured_smoke():
     """The bootstrap err_type='measured' path runs end-to-end."""
     rng = np.random.default_rng(42)
@@ -449,3 +547,147 @@ def test_coh_avg_vis_err_type_measured_smoke():
     assert len(out) == 1
     # Bootstrap sigma should be a positive finite number.
     assert np.isfinite(out["sigma"][0]) and out["sigma"][0] > 0
+
+
+# ---------------------------------------------------------------------------
+# Section 8: incoh_avg_vis — coupled (amp, sigma) estimator pairs
+#
+# invvar_avg gates BOTH the amplitude estimator and the sigma estimator
+# under err_type='predicted', so each branch produces a self-consistent
+# pair:
+#   - True : inverse-variance Rice-debiased amplitude + 1/sqrt(sum 1/sig^2)
+#   - False: stats.deb_amp + stats.inc_sig (legacy Rician-SNR pair)
+# Mixing across paths (inv-var amp with Rician sigma, or vice versa) is
+# not a valid estimator; the tests below pin the coupling.
+# ---------------------------------------------------------------------------
+
+
+def test_incoh_avg_vis_invvar_sigma_inverse_variance(_legacy_ehdf):
+    """invvar_avg=True returns the inverse-variance sigma 1/sqrt(sum 1/sig^2).
+
+    With sigmas [0.1, 0.2] the inverse-variance combination differs from
+    the Rician-SNR estimator (invvar_avg=False) by ~25%, so the formula
+    can be pinned strictly.
+    """
+    times = np.array([0.0, 1.0 / 3600.0])
+    obs = _make_obs(times_hr=times)
+    obs.data["sigma"] = np.array([0.1, 0.2])
+    obs.data["qsigma"] = np.array([0.1, 0.2])
+    obs.data["usigma"] = np.array([0.1, 0.2])
+    obs.data["vsigma"] = np.array([0.1, 0.2])
+
+    out_invvar = incoh_avg_vis(obs, dt=60.0, debias=False, invvar_avg=True)
+    expected = 1.0 / np.sqrt(1.0 / 0.1**2 + 1.0 / 0.2**2)
+    assert out_invvar["sigma"][0] == pytest.approx(expected, rel=1e-12)
+
+
+def test_incoh_avg_vis_invvar_amp_equal_sigma_matches_deb_amp():
+    """Equal-sigma limit: the inverse-variance Rice-debiased amplitude
+    reduces to stats.deb_amp.
+
+    With w_i = 1/sigma**2 the inv-var bias correction (2N-1)/sum(w)
+    becomes (2 - 1/N)*sigma**2 and matches stats.deb_amp's
+    (2 - 1/Nc)*mean(sigma**2) exactly when all sigmas are equal.
+    """
+    times = np.array([0.0, 1.0 / 3600.0, 2.0 / 3600.0])
+    sigma_val = 0.2
+
+    def vis_fn(t, t1, t2):
+        s = int(round(t * 3600.0))
+        return [1.0, 1.2, 0.8][s] + 0.0j
+
+    obs = _make_obs(times_hr=times, vis_fn=vis_fn, sigma=sigma_val)
+    out_invvar = incoh_avg_vis(obs, dt=60.0, debias=True, invvar_avg=True)
+    out_legacy = incoh_avg_vis(obs, dt=60.0, debias=True, invvar_avg=False)
+
+    np.testing.assert_allclose(out_invvar["vis"].real, out_legacy["vis"].real,
+                               rtol=1e-12, atol=1e-14)
+
+
+def test_incoh_avg_vis_invvar_debias_subtracts_bias():
+    """invvar_avg=True with debias=True must subtract the Rice bias term
+    from the inverse-variance weighted second moment.
+
+    Three samples of |V| = 1.0 with sigma = 0.5: <|V|^2>_w = 1, the bias
+    correction (2N-1)/sum(w) = 5/12 ≈ 0.417, so the debiased amplitude
+    must be strictly smaller than the undebiased one.
+    """
+    times = np.array([0.0, 1.0 / 3600.0, 2.0 / 3600.0])
+    obs = _make_obs(times_hr=times,
+                    vis_fn=lambda t, t1, t2: 1.0 + 0.0j,
+                    sigma=0.5)
+    out_no_debias = incoh_avg_vis(obs, dt=60.0, debias=False, invvar_avg=True)
+    out_debias = incoh_avg_vis(obs, dt=60.0, debias=True, invvar_avg=True)
+    assert out_debias["vis"][0].real < out_no_debias["vis"][0].real - 1e-6
+
+
+def test_incoh_avg_vis_invvar_varied_sigma_diverges_from_legacy(_legacy_ehdf):
+    """Varied intra-bin sigmas: invvar_avg=True (coupled inv-var pair)
+    differs from invvar_avg=False (legacy deb_amp + inc_sig) in BOTH
+    amplitude and sigma. Pins that the two paths are not aliases.
+    """
+    times = np.array([0.0, 10.0 / 3600.0, 20.0 / 3600.0, 30.0 / 3600.0])
+    obs = _make_obs(times_hr=times,
+                    vis_fn=lambda t, t1, t2: 1.0 + (t * 3600.0) * 0.01)
+    obs.data["sigma"] = np.array([0.1, 0.4, 0.1, 0.4])
+
+    out_invvar = incoh_avg_vis(obs, dt=60.0, debias=True, invvar_avg=True)
+    out_legacy = incoh_avg_vis(obs, dt=60.0, debias=True, invvar_avg=False)
+
+    assert abs(out_invvar["vis"][0].real - out_legacy["vis"][0].real) > 1e-4
+    assert abs(out_invvar["sigma"][0] - out_legacy["sigma"][0]) > 1e-4
+
+
+def test_parity_incoh_avg_vis_invvar_false_matches_legacy_varied_sigma(_legacy_ehdf):
+    """invvar_avg=False reproduces ehtim.statistics.dataframes.incoh_avg_vis
+    bit-for-bit on varied intra-bin sigmas (deb_amp amplitude and inc_sig
+    sigma both match).
+    """
+    times = np.array([0.0, 10.0 / 3600.0, 20.0 / 3600.0, 30.0 / 3600.0])
+    obs = _make_obs(times_hr=times,
+                    vis_fn=lambda t, t1, t2: 1.0 + (t * 3600.0) * 0.01)
+    obs.data["sigma"] = np.array([0.1, 0.4, 0.1, 0.4])
+    obs.data["qsigma"] = np.array([0.1, 0.4, 0.1, 0.4])
+    obs.data["usigma"] = np.array([0.1, 0.4, 0.1, 0.4])
+    obs.data["vsigma"] = np.array([0.1, 0.4, 0.1, 0.4])
+
+    new = incoh_avg_vis(obs, dt=60.0, debias=True, invvar_avg=False)
+    old = _legacy_ehdf.incoh_avg_vis(obs, dt=60.0, debias=True, return_type='rec')
+
+    np.testing.assert_allclose(new["vis"].real, old["vis"].real,
+                               rtol=1e-8, atol=1e-10)
+    np.testing.assert_allclose(new["sigma"], old["sigma"],
+                               rtol=1e-8, atol=1e-10)
+
+
+def test_incoh_avg_vis_invvar_on_eht2017_gaussian(obs_direct, _legacy_ehdf):
+    """End-to-end on the realistic EHT2017 Gaussian fixture (obs_direct).
+
+    Bins are chosen wide enough (dt = 2 h) to capture multiple integrations
+    per baseline so the two estimator paths actually exercise their
+    multi-sample math (single-sample bins are degenerate: both branches
+    just return the lone sigma untouched).
+
+    Pins:
+      - both branches run without error and emit the same row count,
+      - amplitudes and sigmas are finite and non-negative,
+      - sigma diverges between branches on at least some rows.
+    """
+    dt = 7200.0  # 2-hour bins — multiple 5s integrations per baseline
+    new_invvar = incoh_avg_vis(obs_direct, dt=dt, debias=True, invvar_avg=True)
+    new_legacy = incoh_avg_vis(obs_direct, dt=dt, debias=True, invvar_avg=False)
+    assert len(new_invvar) == len(new_legacy)
+    new_invvar = new_invvar[np.argsort(new_invvar, order=("t1", "t2", "time"))]
+    new_legacy = new_legacy[np.argsort(new_legacy, order=("t1", "t2", "time"))]
+
+    for branch in (new_invvar, new_legacy):
+        assert np.all(np.isfinite(branch["vis"].real))
+        assert np.all(branch["vis"].real >= 0)
+        assert np.all(np.isfinite(branch["sigma"]))
+        assert np.all(branch["sigma"] >= 0)
+
+    sigma_diff = np.abs(new_invvar["sigma"] - new_legacy["sigma"])
+    assert np.any(sigma_diff > 1e-6), (
+        "expected at least one row where the inverse-variance sigma and "
+        "the Rician-SNR sigma disagree on obs_direct"
+    )

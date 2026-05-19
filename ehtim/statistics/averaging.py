@@ -8,13 +8,39 @@ Pure-NumPy implementations of three averaging routines:
 - :func:`incoh_avg_vis` — incoherent (amplitude) averaging with Rice
   debiasing.
 
-Sigma propagation uses the inverse-variance combination
+``invvar_avg`` selects the value+sigma estimator pair on each routine.
+Both halves are gated together so each branch is internally consistent:
 
-.. math:: \\sigma_{\\rm avg} = 1 / \\sqrt{\\sum_i 1/\\sigma_i^2}.
+  - ``invvar_avg=True`` (default) — inverse-variance weighted mean and
+    inverse-variance sigma:
 
-With ``invvar_avg=True`` (default) visibility values are also combined with
-inverse-variance weights, ``<V> = sum_i(V_i/\\sigma_i^2) / sum_i(1/\\sigma_i^2)``.
-``invvar_avg=False`` reproduces the legacy direct (unweighted) mean.
+    .. math:: \\langle V \\rangle = \\sum_i (V_i / \\sigma_i^2) / \\sum_i (1 / \\sigma_i^2)
+    .. math:: \\sigma_{\\rm avg} = 1 / \\sqrt{\\sum_i 1 / \\sigma_i^2}
+
+    For ``incoh_avg_vis`` the amplitude is computed as an inverse-variance
+    weighted Rice-debiased mean
+    ``sqrt(max(<|V|^2>_w - (2 - 1/N) <sigma^2>_w, 0))``; the sigma is the
+    same inverse-variance formula above.
+
+  - ``invvar_avg=False`` — legacy estimator formulas:
+
+    * ``coh_avg_vis``: direct (unweighted) complex mean with
+      ``sigma_avg = sqrt(sum sigma_i^2) / N``. Reproduces
+      ``dataframes.coh_avg_vis`` bit-for-bit.
+    * ``incoh_avg_vis``: ``stats.deb_amp`` amplitude with
+      ``stats.inc_sig`` Rician-SNR sigma (eq 9.86 of Thompson et al.,
+      Interferometry and Synthesis in Radio Astronomy). Reproduces
+      ``dataframes.incoh_avg_vis`` bit-for-bit.
+    * ``coh_moving_avg_vis``: the same unweighted-mean and
+      ``sqrt(sum sigma_i^2) / N`` formulas, but a *centered* window
+      ``[t - dt/2, t + dt/2]`` with original timestamps. This does NOT
+      reproduce ``dataframes.coh_moving_avg_vis`` bit-for-bit: the legacy
+      version used a trailing pandas ``.rolling(dt)`` window plus a
+      ``-dt/2`` timestamp shift. The centered window is the intended
+      convention; the divergence is deliberate.
+
+Mixing the two paths (e.g., inv-var amplitude with the Rician-SNR sigma)
+is not a coherent estimator and must be avoided.
 
 Conventions worth flagging for future readers:
   - Fixed-dt bins set the output ``time`` to the bin midpoint; ``scan_avg``
@@ -22,22 +48,28 @@ Conventions worth flagging for future readers:
   - Output ``(u, v)`` is the per-bin mean.
   - ``err_type='measured'`` bootstraps the visibility-amplitude dispersion;
     sigma is returned as half the 68% bootstrap interval width. Convention
-    inherited from the legacy code, not a standard estimator.
-  - For incoherent averaging with ``err_type='predicted'``, the per-bin
-    sigma comes from :func:`stats.inc_sig` (eq 9.86 of Thompson et al.,
-    Interferometry and Synthesis in Radio Astronomy). It is an analytic
-    Rician-SNR estimator that returns the noise level which would produce
-    the equivalent SNR penalty after Rice-debiased averaging — neither
-    stddev nor pure inverse variance.
+    inherited from the legacy code, not stddev. ``invvar_avg`` has no
+    effect on this path.
   - ``tau1`` / ``tau2`` (per-site opacities) are copied through from the
     first row in each bin. They are not used as grouping keys: they are
     basically always zero in practice, and using them would needlessly
     fragment bins if a site's opacity drifted within a window.
+  - ``_assign_scan_bin`` assumes ``obs.scans`` is pre-sorted and
+    non-overlapping (legacy invariant). The pandas-based
+    ``dataframes.get_bins_labels`` carried explicit overlap / midnight-
+    wraparound logic; that path is not exercised by current code paths
+    so it is not ported here.
 """
 
 import numpy as np
 
 import ehtim.const_def as ehc
+
+# TODO: the helpers below (and the per-group amplitude reductions in this
+# module) overlap conceptually with stats.deb_amp / stats.inc_sig /
+# stats.mean_incoh_avg / stats.coh_sig. Worth consolidating into a single
+# set of vectorised reducers once the legacy stats.py call sites elsewhere
+# in the codebase are audited.
 from ehtim.statistics.stats import bootstrap, mean_incoh_avg
 
 __all__ = ["coh_avg_vis", "coh_moving_avg_vis", "incoh_avg_vis"]
@@ -75,6 +107,28 @@ def _assign_scan_bin(times_hr, scans):
     intervals are ``(tstart, tstop]`` (open on the left, closed on the
     right) so a sample exactly on a scan boundary lands in the later scan
     only, not both.
+
+    Legacy behaviors deliberately NOT ported from
+    ``dataframes.get_bins_labels`` — flagged here in case a real dataset
+    ever needs them back:
+
+      1. **Edge padding.** The legacy default expanded each scan edge by
+         ``dt=0.00001`` hr (~36 ms) before binning. Not replicated:
+         scan-edge fuzz is a property of the scan table, not the binning
+         code; fix the table (e.g. ``obs.add_scans(...)``) rather than
+         relying on a hidden tolerance here.
+      2. **Overlap merging.** The legacy code detected overlapping
+         intervals in ``obs.scans`` and merged them via
+         ``merge_overlapping_intervals``. Not replicated: ``obs.scans``
+         is expected pre-sorted and non-overlapping. Overlapping
+         intervals here would cause earlier scans to silently shadow
+         later ones (the loop writes ``out[mask] = idx`` in order).
+      3. **Midnight wraparound.** The legacy code patched any interval
+         with ``tstop < tstart`` by adding 24 hr to ``tstop`` (so the
+         scan straddled midnight). Not replicated: a wrapping interval
+         here yields an empty mask and the rows get index ``-1`` (i.e.
+         dropped). Callers with multi-day or midnight-crossing data
+         should pre-normalise the scan table.
     """
     out = np.full(len(times_hr), -1, dtype=np.int64)
     for idx, scan in enumerate(scans):
@@ -117,52 +171,186 @@ def _first_index_per_group(gids, n_groups):
     return out
 
 
-def _inverse_variance_sigma(sig_per_row, gids, n_groups):
-    """Reduce a per-row sigma array to per-group inverse-variance sigma.
+# Shared weighting + segment-combine primitives.
+#
+# Both the fixed-bin path (``coh_avg_vis``, which reduces per-row terms into
+# disjoint groups via ``np.bincount``) and the sliding-window path
+# (``coh_moving_avg_vis``, which reduces overlapping windows via cumulative-
+# sum differences) build per-row terms, sum them per segment, then combine
+# the sums with identical arithmetic. The segment-sum mechanism differs
+# (bincount over group IDs vs cumsum over window index ranges, since windows
+# overlap and cannot be expressed as disjoint groups) but the combine
+# formulas live here once.
 
-    For each group g, the result is ``1 / sqrt(sum_i 1/sigma_i**2)`` over rows
-    i in group g with finite, positive sigma.  Groups with no valid rows get
-    ``NaN``.
+
+def _inverse_variance_weights(sig_per_row):
+    """Per-row inverse-variance weights ``1 / sigma**2``.
+
+    Returns ``(weights, finite)``. ``weights`` is zeroed on rows with
+    non-finite or non-positive sigma so they contribute nothing to a
+    weighted sum; ``finite`` is the per-row validity mask.
     """
     finite = np.isfinite(sig_per_row) & (sig_per_row > 0)
-    inv_var = np.zeros_like(sig_per_row, dtype=np.float64)
-    inv_var[finite] = 1.0 / sig_per_row[finite] ** 2
-    sums = np.bincount(gids, weights=inv_var, minlength=n_groups)
-    out = np.full(n_groups, np.nan)
-    out[sums > 0] = 1.0 / np.sqrt(sums[sums > 0])
+    weights = np.where(finite, 1.0 / np.maximum(sig_per_row, 1e-300) ** 2, 0.0)
+    return weights, finite
+
+
+def _window_sums(values, left, right):
+    """Sliding-window segment sums for half-open index ranges ``[left, right)``.
+
+    ``cs[right] - cs[left]`` over a zero-prefixed cumulative sum — the
+    overlapping-window analogue of ``np.bincount`` over disjoint groups.
+    Relies on float64 accumulation: the ``cs[right] - cs[left]``
+    subtraction loses precision if ported to float32 (catastrophic
+    cancellation when the running sum dwarfs the window sum).
+    """
+    cumsum = np.concatenate(([0.0], np.cumsum(values)))
+    return cumsum[right] - cumsum[left]
+
+
+def _combine_mean_inverse_variance(sum_re_w, sum_im_w, sum_w):
+    """Complex inverse-variance mean from segment sums.
+
+    ``<V> = (sum(Re/sigma**2) + i sum(Im/sigma**2)) / sum(1/sigma**2)``.
+    Segments with zero total weight get ``NaN + NaN*1j``.
+    """
+    out = np.full(sum_w.shape, np.nan + 1j * np.nan, dtype=np.complex128)
+    valid = sum_w > 0
+    out.real[valid] = sum_re_w[valid] / sum_w[valid]
+    out.imag[valid] = sum_im_w[valid] / sum_w[valid]
     return out
+
+
+def _combine_mean_direct(sum_re, sum_im, count):
+    """Complex direct (unweighted) mean from segment sums: ``sum(V) / N``.
+
+    Segments with no finite rows get ``NaN + NaN*1j``.
+    """
+    out = np.full(count.shape, np.nan + 1j * np.nan, dtype=np.complex128)
+    valid = count > 0
+    out.real[valid] = sum_re[valid] / count[valid]
+    out.imag[valid] = sum_im[valid] / count[valid]
+    return out
+
+
+def _combine_sigma_inverse_variance(sum_w):
+    """Inverse-variance sigma from segment sums: ``1 / sqrt(sum(1/sigma**2))``.
+
+    Segments with zero total weight get ``NaN``.
+    """
+    out = np.full(sum_w.shape, np.nan)
+    valid = sum_w > 0
+    out[valid] = 1.0 / np.sqrt(sum_w[valid])
+    return out
+
+
+def _combine_sigma_legacy(sum_sq, count):
+    """Legacy sigma from segment sums: ``sqrt(sum(sigma**2)) / N``.
+
+    The formula used by ``dataframes.coh_avg_vis`` — NOT inverse variance;
+    kept so ``invvar_avg=False`` reproduces legacy output bit-for-bit.
+    Segments with no finite rows get ``NaN``.
+    """
+    out = np.full(count.shape, np.nan)
+    valid = count > 0
+    out[valid] = np.sqrt(sum_sq[valid]) / count[valid]
+    return out
+
+
+def _inverse_variance_sigma(sig_per_row, gids, n_groups):
+    """Per-group inverse-variance sigma ``1 / sqrt(sum_i 1/sigma_i**2)``.
+
+    Groups with no valid rows get ``NaN``.
+    """
+    weights, _ = _inverse_variance_weights(sig_per_row)
+    sum_w = np.bincount(gids, weights=weights, minlength=n_groups)
+    return _combine_sigma_inverse_variance(sum_w)
 
 
 def _legacy_sigma(sig_per_row, gids, n_groups):
-    """Reduce per-row sigma to per-group ``sqrt(sum_i sigma_i^2) / N``.
+    """Per-group legacy sigma ``sqrt(sum_i sigma_i**2) / N``.
 
-    The legacy formula used by ``dataframes.coh_avg_vis``. NOT inverse
-    variance; kept here only so ``invvar_avg=False`` reproduces legacy
-    output bit-for-bit. Groups with no finite rows get ``NaN``.
+    Groups with no finite rows get ``NaN``.
     """
     finite = np.isfinite(sig_per_row) & (sig_per_row > 0)
     sq = np.where(finite, sig_per_row ** 2, 0.0)
-    sums = np.bincount(gids, weights=sq, minlength=n_groups)
-    counts = np.bincount(gids, weights=finite.astype(np.float64), minlength=n_groups)
-    out = np.full(n_groups, np.nan)
-    valid = counts > 0
-    out[valid] = np.sqrt(sums[valid]) / counts[valid]
-    return out
+    sum_sq = np.bincount(gids, weights=sq, minlength=n_groups)
+    count = np.bincount(gids, weights=finite.astype(np.float64), minlength=n_groups)
+    return _combine_sigma_legacy(sum_sq, count)
 
 
-def _amplitude_per_group(amps_per_row, sigs_per_row, gids, n_groups,
-                         debias, err_type, num_samples, invvar_avg):
-    """Reduce per-row (amplitude, sigma) pairs to per-group (mean_amp, sigma).
+def _legacy_mean_complex(vis_per_row, gids, n_groups):
+    """Per-group direct (unweighted) complex mean. NaN-safe.
 
-    err_type:
-      - 'predicted': use the per-row sigmas. mean_incoh_avg applies Rice
-        debiasing to the amplitudes and returns the analytic Rician-SNR
-        sigma (see module docstring). When invvar_avg=True the per-group
-        amplitude mean is inverse-variance weighted; the returned sigma
-        still comes from inc_sig (predicted by the per-row sigmas).
-      - 'measured': bootstrap the amplitude dispersion within each group.
-        The reported sigma is half the 68% bootstrap interval width — a
-        convention inherited from the legacy code, not stddev.
+    Groups with no finite rows get ``NaN + NaN*1j``.
+    """
+    finite = np.isfinite(vis_per_row.real) & np.isfinite(vis_per_row.imag)
+    re = np.where(finite, vis_per_row.real, 0.0)
+    im = np.where(finite, vis_per_row.imag, 0.0)
+    sum_re = np.bincount(gids, weights=re, minlength=n_groups)
+    sum_im = np.bincount(gids, weights=im, minlength=n_groups)
+    count = np.bincount(gids, weights=finite.astype(np.float64), minlength=n_groups)
+    return _combine_mean_direct(sum_re, sum_im, count)
+
+
+def _inverse_variance_mean_complex(vis_per_row, sig_per_row, gids, n_groups):
+    """Per-group inverse-variance weighted complex mean. NaN-safe.
+
+    ``<V>_g = sum_i (V_i / sigma_i^2) / sum_i (1 / sigma_i^2)`` over rows
+    i in group g with finite V and finite positive sigma. Groups with no
+    valid rows get ``NaN + NaN*1j``.
+    """
+    weights, finite_s = _inverse_variance_weights(sig_per_row)
+    finite = (finite_s & np.isfinite(vis_per_row.real)
+              & np.isfinite(vis_per_row.imag))
+    w = np.where(finite, weights, 0.0)
+    re_w = np.where(finite, vis_per_row.real, 0.0) * w
+    im_w = np.where(finite, vis_per_row.imag, 0.0) * w
+    sum_re_w = np.bincount(gids, weights=re_w, minlength=n_groups)
+    sum_im_w = np.bincount(gids, weights=im_w, minlength=n_groups)
+    sum_w = np.bincount(gids, weights=w, minlength=n_groups)
+    return _combine_mean_inverse_variance(sum_re_w, sum_im_w, sum_w)
+
+
+def _legacy_mean_amplitude_group(amps_per_row, sigs_per_row, gids, n_groups,
+                                 debias, err_type, num_samples):
+    """Per-group (amplitude, sigma) via the legacy stats helpers.
+
+    Reproduces ``ehtim.statistics.dataframes.incoh_avg_vis`` row-for-row.
+    Used on the ``invvar_avg=False`` branch of :func:`incoh_avg_vis`.
+
+    Parameters
+    ----------
+    amps_per_row : np.ndarray
+        Per-row magnitudes ``|V_i|``. ``np.abs(data[vis_field])`` at the
+        call site; need not be non-negative on input (taken as ``|.|``
+        internally where it matters).
+    sigs_per_row : np.ndarray
+        Per-row visibility sigmas. Rows with non-finite or non-positive
+        sigma are dropped from the per-group reductions.
+    gids : np.ndarray of int64
+        Length-N per-row group ID (output of :func:`_group_ids`).
+    n_groups : int
+        Number of distinct groups; sets the output length.
+    debias : bool
+        When True, the ``err_type='predicted'`` amplitude is the
+        Rice-debiased ``stats.deb_amp``; when False, it is the raw
+        ``sqrt(mean(|V_i|**2))``. Ignored on ``err_type='measured'``.
+    err_type : {'predicted', 'measured'}
+        ``'predicted'`` uses the per-row sigmas: amplitude from
+        ``stats.deb_amp`` (eq 9.86 of Thompson et al.), sigma from
+        ``stats.inc_sig`` (analytic Rician-SNR estimator). ``'measured'``
+        bootstraps the per-bin amplitude dispersion; sigma is half the
+        68% bootstrap-interval width (legacy convention, not stddev).
+    num_samples : int
+        Bootstrap resample count when ``err_type='measured'``.
+
+    Returns
+    -------
+    amp_out : np.ndarray, shape (n_groups,)
+        Per-group amplitude. ``NaN`` for empty groups.
+    sig_out : np.ndarray, shape (n_groups,)
+        Per-group sigma. ``NaN`` for empty groups.
     """
     amp_out = np.full(n_groups, np.nan)
     sig_out = np.full(n_groups, np.nan)
@@ -173,14 +361,6 @@ def _amplitude_per_group(amps_per_row, sigs_per_row, gids, n_groups,
             continue
         if err_type == "predicted":
             a, s = mean_incoh_avg(pairs, debias=debias)
-            if invvar_avg:
-                amps_g = np.abs(amps_per_row[mask])
-                sigs_g = sigs_per_row[mask]
-                finite = (np.isfinite(amps_g) & np.isfinite(sigs_g)
-                          & (sigs_g > 0))
-                if np.any(finite):
-                    w = 1.0 / sigs_g[finite] ** 2
-                    a = np.sum(amps_g[finite] * w) / np.sum(w)
             amp_out[g] = a
             sig_out[g] = s
         else:
@@ -198,44 +378,68 @@ def _amplitude_per_group(amps_per_row, sigs_per_row, gids, n_groups,
     return amp_out, sig_out
 
 
-def _mean_complex(vis_per_row, gids, n_groups):
-    """Per-group complex mean (direct, unweighted). NaN-safe.
+def _inverse_variance_mean_amplitude_group(amps_per_row, sigs_per_row, gids,
+                                           n_groups, debias):
+    """Per-group (amplitude, sigma) via the inverse-variance pair.
 
-    Groups with no finite rows get ``NaN + NaN*1j``.
+    Both halves are inverse-variance-weighted so the output is internally
+    consistent (no mixing across estimator families). Used on the
+    ``invvar_avg=True`` branch of :func:`incoh_avg_vis`. For each group
+    ``g``, with ``w_i = 1 / sigma_i**2`` over rows ``i`` with finite
+    ``amp_i`` and ``sigma_i > 0``:
+
+      amp**2 = sum_i(w_i * amp_i**2) / sum_i(w_i)            (not debias)
+             = max(<above> - (2 - 1/N) * N / sum_i(w_i), 0)  (debias)
+      sigma  = 1 / sqrt(sum_i(w_i))
+
+    The Rice debias term ``(2 - 1/N) * <sigma**2>_w`` generalises
+    ``stats.deb_amp``'s ``(2 - 1/Nc) * mean(sigma**2)`` to inverse-variance
+    weights: since ``w_i * sigma_i**2 = 1``, ``<sigma**2>_w = N / sum(w_i)``
+    and the correction simplifies to ``(2N - 1) / sum(w_i)``. In the
+    equal-sigma limit the amplitude reduces exactly to ``stats.deb_amp``;
+    the sigma does NOT reduce to ``stats.inc_sig`` — different estimator
+    families — see module docstring.
+
+    Parameters
+    ----------
+    amps_per_row : np.ndarray
+        Per-row magnitudes ``|V_i|``. Squared before reduction.
+    sigs_per_row : np.ndarray
+        Per-row visibility sigmas. Rows with non-finite or non-positive
+        sigma are dropped (zero inverse-variance weight).
+    gids : np.ndarray of int64
+        Length-N per-row group ID.
+    n_groups : int
+        Number of distinct groups.
+    debias : bool
+        Apply the inverse-variance-weighted Rice bias correction. When
+        False the amplitude is the bare inverse-variance-weighted RMS.
+
+    Returns
+    -------
+    amp_out : np.ndarray, shape (n_groups,)
+        Per-group amplitude. ``NaN`` for groups with no finite rows.
+    sig_out : np.ndarray, shape (n_groups,)
+        Per-group sigma. ``NaN`` for groups with no finite rows.
     """
-    finite = np.isfinite(vis_per_row.real) & np.isfinite(vis_per_row.imag)
-    re = np.where(finite, vis_per_row.real, 0.0)
-    im = np.where(finite, vis_per_row.imag, 0.0)
-    sums_re = np.bincount(gids, weights=re, minlength=n_groups)
-    sums_im = np.bincount(gids, weights=im, minlength=n_groups)
-    counts = np.bincount(gids, weights=finite.astype(np.float64), minlength=n_groups)
-    out = np.full(n_groups, np.nan + 1j * np.nan, dtype=np.complex128)
-    valid = counts > 0
-    out.real[valid] = sums_re[valid] / counts[valid]
-    out.imag[valid] = sums_im[valid] / counts[valid]
-    return out
-
-
-def _invvar_mean_complex(vis_per_row, sig_per_row, gids, n_groups):
-    """Per-group inverse-variance weighted complex mean. NaN-safe.
-
-    ``<V>_g = sum_i (V_i / sigma_i^2) / sum_i (1 / sigma_i^2)`` over rows
-    i in group g with finite V and finite positive sigma. Groups with no
-    valid rows get ``NaN + NaN*1j``.
-    """
-    finite = (np.isfinite(vis_per_row.real) & np.isfinite(vis_per_row.imag)
-              & np.isfinite(sig_per_row) & (sig_per_row > 0))
-    inv_var = np.where(finite, 1.0 / np.maximum(sig_per_row, 1e-300) ** 2, 0.0)
-    re_w = np.where(finite, vis_per_row.real * inv_var, 0.0)
-    im_w = np.where(finite, vis_per_row.imag * inv_var, 0.0)
-    sums_re = np.bincount(gids, weights=re_w, minlength=n_groups)
-    sums_im = np.bincount(gids, weights=im_w, minlength=n_groups)
+    amp_out = np.full(n_groups, np.nan)
+    sig_out = np.full(n_groups, np.nan)
+    weights, finite_s = _inverse_variance_weights(sigs_per_row)
+    finite = finite_s & np.isfinite(amps_per_row)
+    inv_var = np.where(finite, weights, 0.0)
+    a2_w = np.where(finite, amps_per_row ** 2, 0.0) * inv_var
     sums_w = np.bincount(gids, weights=inv_var, minlength=n_groups)
-    out = np.full(n_groups, np.nan + 1j * np.nan, dtype=np.complex128)
+    sums_a2_w = np.bincount(gids, weights=a2_w, minlength=n_groups)
+    counts = np.bincount(gids, weights=finite.astype(np.float64), minlength=n_groups)
     valid = sums_w > 0
-    out.real[valid] = sums_re[valid] / sums_w[valid]
-    out.imag[valid] = sums_im[valid] / sums_w[valid]
-    return out
+    sig_out[valid] = 1.0 / np.sqrt(sums_w[valid])
+    a2_avg = np.where(valid, sums_a2_w / np.maximum(sums_w, 1e-300), 0.0)
+    if debias:
+        bias = np.where(valid & (counts > 0),
+                        (2.0 * counts - 1.0) / np.maximum(sums_w, 1e-300), 0.0)
+        a2_avg = np.maximum(a2_avg - bias, 0.0)
+    amp_out[valid] = np.sqrt(a2_avg[valid])
+    return amp_out, sig_out
 
 
 # ---------------------------------------------------------------------------
@@ -322,9 +526,9 @@ def coh_avg_vis(obs, dt=0, scan_avg=False, err_type="predicted",
     # Visibilities: inverse-variance weighted (default) or direct mean.
     for vf, sf in zip(vis_fields, sig_fields):
         if invvar_avg:
-            out[vf] = _invvar_mean_complex(data[vf], data[sf], gids, n_groups)
+            out[vf] = _inverse_variance_mean_complex(data[vf], data[sf], gids, n_groups)
         else:
-            out[vf] = _mean_complex(data[vf], gids, n_groups)
+            out[vf] = _legacy_mean_complex(data[vf], gids, n_groups)
 
     # Sigmas. invvar_avg gates the predicted-sigma branch so
     # invvar_avg=False reproduces the legacy sqrt(sum(sig^2))/N formula
@@ -366,11 +570,24 @@ def coh_moving_avg_vis(obs, dt=50, invvar_avg=True):
     invvar_avg : bool
         When True (default), combine visibilities within each window with
         inverse-variance weights. When False use the direct (unweighted)
-        complex mean (legacy behavior).
+        complex mean. Selects only the value+sigma *formula*; the window
+        is centered either way (see Notes).
 
     Returns
     -------
     np.recarray of dtype DTPOL_STOKES or DTPOL_CIRC matching ``obs.polrep``.
+
+    Notes
+    -----
+    The window is centered: ``[t - dt/2, t + dt/2]`` with the row's
+    original timestamp preserved. This differs from the legacy
+    ``dataframes.coh_moving_avg_vis``, which used a trailing pandas
+    ``.rolling(dt)`` window ``(t - dt, t]`` followed by a ``-dt/2``
+    timestamp shift. The two conventions select different samples on
+    irregularly spaced data, so ``invvar_avg=False`` here does NOT
+    reproduce the legacy output bit-for-bit (only the unweighted-mean and
+    ``sqrt(sum sigma_i^2)/N`` formulas match). The centered window is the
+    intended convention.
     """
     if dt <= 0:
         raise ValueError("dt must be positive")
@@ -401,52 +618,46 @@ def coh_moving_avg_vis(obs, dt=50, invvar_avg=True):
         left = np.searchsorted(sorted_times, sorted_times - half, side="left")
         right = np.searchsorted(sorted_times, sorted_times + half, side="right")
 
+        # Same combine arithmetic as coh_avg_vis (the _combine_* helpers);
+        # only the per-segment sum uses _window_sums (cumsum over overlapping
+        # windows) instead of np.bincount (disjoint groups).
         for vf, sf in zip(vis_fields, sig_fields):
             vals = data[vf][sorted_rows]
             sigs = data[sf][sorted_rows]
             if invvar_avg:
-                finite_v = np.isfinite(vals.real) & np.isfinite(vals.imag)
-                finite_s = np.isfinite(sigs) & (sigs > 0)
-                finite = finite_v & finite_s
-                inv_var = np.where(finite, 1.0 / np.maximum(sigs, 1e-300) ** 2, 0.0)
-                re_w = np.where(finite, vals.real * inv_var, 0.0)
-                im_w = np.where(finite, vals.imag * inv_var, 0.0)
-                re_cs = np.concatenate(([0.0], np.cumsum(re_w)))
-                im_cs = np.concatenate(([0.0], np.cumsum(im_w)))
-                w_cs = np.concatenate(([0.0], np.cumsum(inv_var)))
-                w = w_cs[right] - w_cs[left]
-                re_mean = np.where(w > 0, (re_cs[right] - re_cs[left]) / np.maximum(w, 1e-300), np.nan)
-                im_mean = np.where(w > 0, (im_cs[right] - im_cs[left]) / np.maximum(w, 1e-300), np.nan)
-                out[vf][sorted_rows] = re_mean + 1j * im_mean
+                weights, finite_s = _inverse_variance_weights(sigs)
+                finite = finite_s & np.isfinite(vals.real) & np.isfinite(vals.imag)
+                w = np.where(finite, weights, 0.0)
+                re_w = np.where(finite, vals.real, 0.0) * w
+                im_w = np.where(finite, vals.imag, 0.0) * w
+                out[vf][sorted_rows] = _combine_mean_inverse_variance(
+                    _window_sums(re_w, left, right),
+                    _window_sums(im_w, left, right),
+                    _window_sums(w, left, right),
+                )
             else:
                 finite = np.isfinite(vals.real) & np.isfinite(vals.imag)
-                re_cs = np.concatenate(([0.0], np.cumsum(np.where(finite, vals.real, 0.0))))
-                im_cs = np.concatenate(([0.0], np.cumsum(np.where(finite, vals.imag, 0.0))))
-                cnt_cs = np.concatenate(([0.0], np.cumsum(finite.astype(np.float64))))
-                cnt = cnt_cs[right] - cnt_cs[left]
-                re_mean = np.where(cnt > 0, (re_cs[right] - re_cs[left]) / np.maximum(cnt, 1.0), np.nan)
-                im_mean = np.where(cnt > 0, (im_cs[right] - im_cs[left]) / np.maximum(cnt, 1.0), np.nan)
-                out[vf][sorted_rows] = re_mean + 1j * im_mean
+                re = np.where(finite, vals.real, 0.0)
+                im = np.where(finite, vals.imag, 0.0)
+                out[vf][sorted_rows] = _combine_mean_direct(
+                    _window_sums(re, left, right),
+                    _window_sums(im, left, right),
+                    _window_sums(finite.astype(np.float64), left, right),
+                )
 
         for sf in sig_fields:
             vals = data[sf][sorted_rows]
-            finite = np.isfinite(vals) & (vals > 0)
             if invvar_avg:
-                inv_var = np.where(finite, 1.0 / np.maximum(vals, 1e-300) ** 2, 0.0)
-                inv_var_cs = np.concatenate(([0.0], np.cumsum(inv_var)))
-                sums = inv_var_cs[right] - inv_var_cs[left]
-                out[sf][sorted_rows] = np.where(
-                    sums > 0, 1.0 / np.sqrt(np.maximum(sums, 1e-300)), np.nan,
+                weights, _ = _inverse_variance_weights(vals)
+                out[sf][sorted_rows] = _combine_sigma_inverse_variance(
+                    _window_sums(weights, left, right),
                 )
             else:
-                # Legacy: sqrt(sum(sig_i^2)) / N within the window.
+                finite = np.isfinite(vals) & (vals > 0)
                 sq = np.where(finite, vals ** 2, 0.0)
-                sq_cs = np.concatenate(([0.0], np.cumsum(sq)))
-                cnt_cs = np.concatenate(([0.0], np.cumsum(finite.astype(np.float64))))
-                sums = sq_cs[right] - sq_cs[left]
-                cnt = cnt_cs[right] - cnt_cs[left]
-                out[sf][sorted_rows] = np.where(
-                    cnt > 0, np.sqrt(sums) / np.maximum(cnt, 1.0), np.nan,
+                out[sf][sorted_rows] = _combine_sigma_legacy(
+                    _window_sums(sq, left, right),
+                    _window_sums(finite.astype(np.float64), left, right),
                 )
 
     return out
@@ -476,10 +687,19 @@ def incoh_avg_vis(obs, dt=0, debias=True, scan_avg=False, rec_type="vis",
     num_samples : int
         Bootstrap resample size when ``err_type='measured'``.
     invvar_avg : bool
-        When True (default) and ``err_type='predicted'``, the per-bin
-        amplitude mean is inverse-variance weighted by the per-row sigmas
-        before Rice debiasing reuses the analytic Rician-SNR estimator for
-        the output sigma. When False, falls back to the legacy direct mean.
+        Selects the (amplitude, sigma) estimator pair when
+        ``err_type='predicted'``. Both halves are gated together so the
+        output is internally consistent:
+
+          - True (default): inverse-variance-weighted Rice-debiased
+            amplitude paired with the inverse-variance sigma
+            ``1 / sqrt(sum_i 1/sigma_i**2)``.
+          - False: legacy ``stats.deb_amp`` amplitude paired with the
+            ``stats.inc_sig`` Rician-SNR sigma. Reproduces the legacy
+            ``ehtim.statistics.dataframes.incoh_avg_vis`` bit-for-bit.
+
+        Has no effect when ``err_type='measured'`` (bootstrap path is
+        unchanged either way).
 
     Returns
     -------
@@ -549,13 +769,26 @@ def incoh_avg_vis(obs, dt=0, debias=True, scan_avg=False, rec_type="vis",
         out["tau1"] = data["tau1"][first]
         out["tau2"] = data["tau2"][first]
 
-    # Per-group amplitude + sigma via mean_incoh_avg / bootstrap.
+    # Per-group amplitude + sigma. invvar_avg gates BOTH halves so the
+    # output is internally consistent on each branch:
+    #   - False : legacy mean_incoh_avg (deb_amp + inc_sig). Bit-for-bit
+    #     reproduces ehtim.statistics.dataframes.incoh_avg_vis.
+    #   - True  : inverse-variance-weighted Rice-debiased amplitude paired
+    #     with the inverse-variance sigma 1 / sqrt(sum 1/sigma^2). The
+    #     coupling matters: mixing an inv-var amplitude with the Rician-
+    #     SNR sigma (or vice versa) is not a coherent estimator.
+    # err_type='measured' bootstraps the dispersion independently of
+    # invvar_avg.
     for vf, sf in zip(amp_fields, sig_fields):
-        amp_out, sig_out = _amplitude_per_group(
-            np.abs(data[vf]), data[sf], gids, n_groups,
-            debias=debias, err_type=err_type, num_samples=num_samples,
-            invvar_avg=invvar_avg,
-        )
+        if err_type == "predicted" and invvar_avg:
+            amp_out, sig_out = _inverse_variance_mean_amplitude_group(
+                np.abs(data[vf]), data[sf], gids, n_groups, debias=debias,
+            )
+        else:
+            amp_out, sig_out = _legacy_mean_amplitude_group(
+                np.abs(data[vf]), data[sf], gids, n_groups,
+                debias=debias, err_type=err_type, num_samples=num_samples,
+            )
         if rec_type == "vis":
             out[vf] = amp_out  # cast to complex implicitly via dtype
         else:
