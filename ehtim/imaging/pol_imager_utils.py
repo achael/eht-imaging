@@ -782,620 +782,367 @@ def chisqgrad_vvis_nfft(imarr, A, v, sigmav,pol_solve=POL_SOLVE_DEFAULT):
 
     return gradout
 
-##################################################################################################
-# Polarimetric Entropy and Gradient Functions
-##################################################################################################
-
-def sm(imarr, flux, norm_reg=NORM_REGULARIZER):
-    """I log m entropy
-    """
-    if norm_reg:
-        norm = flux
-    else:
-        norm = 1
-
-    iimage = make_i_image(imarr)
-    mimage = make_m_image(imarr)
-    S = -np.sum(iimage * np.log(mimage))
-    return S/norm
-
-def smgrad(imarr, flux, pol_solve=POL_SOLVE_DEFAULT,
-           norm_reg=NORM_REGULARIZER):
-    """I log m entropy gradient
-    """
-    gradout = np.zeros(imarr.shape)
-
-    if norm_reg:
-        norm = flux
-    else:
-        norm = 1
-
-    iimage = make_i_image(imarr)
-    mimage = make_m_image(imarr)
-    psiimage = make_psi_image(imarr)
-
-    if pol_solve[0]!=0:
-        gradi = -np.log(mimage)
-        gradout[0] = gradi
-
-    if pol_solve[1]!=0:
-        gradm = -iimage / mimage
-        gradrho = gradm * np.cos(psiimage)
-        gradout[1] = gradrho
-
-    if pol_solve[3]!=0:
-        gradm = -iimage / mimage
-        gradpsi = gradm * (-mimage*np.tan(psiimage))
-        gradout[3] = gradpsi
-
-    return gradout/norm
-
-def shw(imarr, flux, norm_reg=NORM_REGULARIZER):
-    """Holdaway-Wardle polarimetric entropy
-    """
-
-    if norm_reg:
-        norm = flux
-    else:
-        norm = 1
-
-    iimage = make_i_image(imarr)
-    mimage = make_m_image(imarr)
-    S = -np.sum(iimage * (((1+mimage)/2) * np.log((1+mimage)/2) + ((1-mimage)/2) * np.log((1-mimage)/2)))
-    return S/norm
-
-def shwgrad(imarr, flux,pol_solve=POL_SOLVE_DEFAULT,
-            norm_reg=NORM_REGULARIZER):
-    """Gradient of the Holdaway-Wardle polarimetric entropy
-    """
-    gradout = np.zeros(imarr.shape)
-
-    if norm_reg:
-        norm = flux
-    else:
-        norm = 1
-
-    iimage = make_i_image(imarr)
-    mimage = make_m_image(imarr)
-    psiimage = make_psi_image(imarr)
-
-    if pol_solve[0]!=0:
-        gradi =  -(((1+mimage)/2) * np.log((1+mimage)/2) + ((1-mimage)/2) * np.log((1-mimage)/2))
-        gradout[0] = gradi
-
-    if pol_solve[1]!=0:
-        gradm = -iimage * np.arctanh(mimage)
-        gradrho = gradm * np.cos(psiimage)
-        gradout[1] = gradrho
-
-    if pol_solve[3]!=0:
-        gradm = -iimage * np.arctanh(mimage)
-        gradpsi = gradm * (-mimage*np.tan(psiimage))
-        gradout[3] = gradpsi
-
-    return gradout/norm
-
-def stv_pol(imarr, flux, nx, ny, psize,
-            norm_reg=NORM_REGULARIZER, beam_size=None):
-    """Total variation of I*m*exp(2Ichi)"""
-
-    if beam_size is None:
-        beam_size = psize
-    if norm_reg:
-        norm = flux*psize / beam_size
-    else:
-        norm = 1
-
-    pimage = make_p_image(imarr)
-    im = pimage.reshape(ny, nx)
-
-    impad = np.pad(im, 1, mode='constant', constant_values=0)
-    im_l1 = np.roll(impad, -1, axis=0)[1:ny+1, 1:nx+1]
-    im_l2 = np.roll(impad, -1, axis=1)[1:ny+1, 1:nx+1]
-    S = -np.sum(np.sqrt(np.abs(im_l1 - im)**2 + np.abs(im_l2 - im)**2))
-    return S/norm
-
-def stv_pol_grad(imarr, flux, nx, ny, psize, pol_solve=POL_SOLVE_DEFAULT,
-             norm_reg=NORM_REGULARIZER, beam_size=None):
-    """Total variation entropy gradient"""
-    gradout = np.zeros(imarr.shape)
-
-    if beam_size is None:
-        beam_size = psize
-    if norm_reg:
-        norm = flux*psize / beam_size
-    else:
-        norm = 1
-
-    iimage = make_i_image(imarr)
-    pimage = make_p_image(imarr)
-    mimage = make_m_image(imarr)
-    psiimage = make_psi_image(imarr)
-
-    im = pimage.reshape(ny, nx)
-    impad = np.pad(im, 1, mode='constant', constant_values=0)
-    im_l1 = np.roll(impad, -1, axis=0)[1:ny+1, 1:nx+1]
-    im_l2 = np.roll(impad, -1, axis=1)[1:ny+1, 1:nx+1]
-    im_r1 = np.roll(impad, 1, axis=0)[1:ny+1, 1:nx+1]
-    im_r2 = np.roll(impad, 1, axis=1)[1:ny+1, 1:nx+1]
-    im_r1l2 = np.roll(np.roll(impad, 1, axis=0), -1, axis=1)[1:ny+1, 1:nx+1]
-    im_l1r2 = np.roll(np.roll(impad, -1, axis=0), 1, axis=1)[1:ny+1, 1:nx+1]
-
-    # Denominators
-    d1 = np.sqrt(np.abs(im_l1 - im)**2 + np.abs(im_l2 - im)**2)
-    d2 = np.sqrt(np.abs(im_r1 - im)**2 + np.abs(im_r1l2 - im_r1)**2)
-    d3 = np.sqrt(np.abs(im_r2 - im)**2 + np.abs(im_l1r2 - im_r2)**2)
-
-    # Numerators use cos/sin of the single-angle difference between neighbors,
-    # from d|P_l1 - P|^2 / d|P| = 2|P| - 2|P_l1|*cos(angle(P_l1) - angle(P)).
-
-    # dS/dI Numerators
-    if pol_solve[0]!=0:
-        m1 = 2*np.abs(im*im) - np.abs(im*im_l1)*np.cos(np.angle(im_l1) - np.angle(im)) - np.abs(im*im_l2)*np.cos(np.angle(im_l2) - np.angle(im))
-        m2 = np.abs(im*im) - np.abs(im*im_r1)*np.cos(np.angle(im) - np.angle(im_r1))
-        m3 = np.abs(im*im) - np.abs(im*im_r2)*np.cos(np.angle(im) - np.angle(im_r2))
-        gradi = -(1./iimage)*(m1/d1 + m2/d2 + m3/d3).flatten()
-        gradout[0] = gradi
-
-    # dS/dm numerators
-    if pol_solve[1]!=0:
-        m1 = 2*np.abs(im) - np.abs(im_l1)*np.cos(np.angle(im_l1) - np.angle(im)) - np.abs(im_l2)*np.cos(np.angle(im_l2) - np.angle(im))
-        m2 = np.abs(im) - np.abs(im_r1)*np.cos(np.angle(im) - np.angle(im_r1))
-        m3 = np.abs(im) - np.abs(im_r2)*np.cos(np.angle(im) - np.angle(im_r2))
-        gradm = -iimage*(m1/d1 + m2/d2 + m3/d3).flatten()
-        gradrho = gradm * np.cos(psiimage)
-        gradout[1] = gradrho
-
-    # dS/dphi numerators (\phi=2\chi)
-    if pol_solve[2]!=0:
-        c1 = -2*np.abs(im*im_l1)*np.sin(np.angle(im_l1) - np.angle(im)) - 2*np.abs(im*im_l2)*np.sin(np.angle(im_l2) - np.angle(im))
-        c2 = 2*np.abs(im*im_r1)*np.sin(np.angle(im) - np.angle(im_r1))
-        c3 = 2*np.abs(im*im_r2)*np.sin(np.angle(im) - np.angle(im_r2))
-        gradchi = -(c1/d1 + c2/d2 + c3/d3).flatten()
-        gradphi = 0.5*gradchi
-        gradout[2] = gradphi
-
-    # dS/dpsi
-    if pol_solve[3]!=0:
-        m1 = 2*np.abs(im) - np.abs(im_l1)*np.cos(np.angle(im_l1) - np.angle(im)) - np.abs(im_l2)*np.cos(np.angle(im_l2) - np.angle(im))
-        m2 = np.abs(im) - np.abs(im_r1)*np.cos(np.angle(im) - np.angle(im_r1))
-        m3 = np.abs(im) - np.abs(im_r2)*np.cos(np.angle(im) - np.angle(im_r2))
-        gradm = -iimage*(m1/d1 + m2/d2 + m3/d3).flatten()
-        gradpsi = gradm * (-mimage*np.tan(psiimage))
-        gradout[3] = gradpsi
-
-    return gradout/norm
-
-###############################################################
-# circular polarization
-# TODO check!!
-def svflux(imarr, vflux, norm_reg=NORM_REGULARIZER):
-    """Total flux constraint
-    """
-    if norm_reg:
-        norm = np.abs(vflux)**2
-    else:
-        norm = 1
-
-    vimage = make_v_image(imarr)
-
-    out = -(np.sum(vimage) - vflux)**2
-    return out/norm
-
-
-def svfluxgrad(imarr, vflux,  pol_solve=POL_SOLVE_DEFAULT_V, norm_reg=NORM_REGULARIZER):
-    """Total flux constraint gradient
-    """
-    gradout = np.zeros(imarr.shape)
-
-    if norm_reg:
-        norm = np.abs(vflux)**2
-    else:
-        norm = 1
-
-    iimage = make_i_image(imarr)
-    vimage = make_v_image(imarr)
-    vfimage = make_vf_image(imarr)
-    psiimage = make_psi_image(imarr)
-    grad = -2*(np.sum(vimage) - vflux)*np.ones(len(vimage))
-
-
-    # dS/dI Numerators
-    if pol_solve[0]!=0:
-        gradi = (vimage/iimage)*grad
-        gradout[0] = gradi
-
-    # dS/dv numerators
-    if pol_solve[1]!=0:
-        gradv = iimage*grad
-        gradrho = gradv*np.sin(psiimage)
-        gradout[1] = gradrho
-
-    if pol_solve[3]!=0:
-        gradv = iimage*grad
-        gradpsi = gradv * (vfimage/np.tan(psiimage))
-        gradout[3] = gradpsi
-
-    return gradout/norm
-
-def sl1v(imarr, vflux, norm_reg=NORM_REGULARIZER):
-    """L1 norm regularizer on V
-    """
-    if norm_reg:
-        norm = np.abs(vflux)
-    else:
-        norm = 1
-
-    vimage = make_v_image(imarr)
-    l1 = -np.sum(np.abs(vimage))
-    return l1/norm
-
-
-def sl1vgrad(imarr, vflux, pol_solve=POL_SOLVE_DEFAULT_V,  norm_reg=NORM_REGULARIZER):
-    """L1 norm gradient
-    """
-    gradout = np.zeros(imarr.shape)
-
-    if norm_reg:
-        norm = np.abs(vflux)
-    else:
-        norm = 1
-
-    iimage = make_i_image(imarr)
-    vimage = make_v_image(imarr)
-    vfimage = make_vf_image(imarr)
-    psiimage = make_psi_image(imarr)
-
-    grad = -np.sign(vimage)
-
-    # dS/dI Numerators
-    if pol_solve[0]!=0:
-        gradi = vfimage*grad
-        gradout[0] = gradi
-
-    # dS/dv numerators
-    if pol_solve[1]!=0:
-        gradv = iimage*grad
-        gradrho = gradv*np.sin(psiimage)
-        gradout[1] = gradrho
-
-    if pol_solve[3]!=0:
-        gradv = iimage*grad
-        gradpsi = gradv * (vfimage/np.tan(psiimage))
-        gradout[3] = gradpsi
-
-    return gradout/norm
-
-def sl2v(imarr, vflux, norm_reg=NORM_REGULARIZER):
-    """L1 norm regularizer on V
-    """
-    if norm_reg:
-        norm = np.abs(vflux**2)
-    else:
-        norm = 1
-
-    vimage = make_v_image(imarr)
-    l2 = -np.sum((vimage)**2)
-    return l2/norm
-
-
-def sl2vgrad(imarr, vflux,pol_solve=POL_SOLVE_DEFAULT_V, norm_reg=NORM_REGULARIZER):
-    """L2 norm gradient
-    """
-    gradout = np.zeros(imarr.shape)
-
-    if norm_reg:
-        norm = np.abs(vflux**2)
-    else:
-        norm = 1
-
-    iimage = make_i_image(imarr)
-    vimage = make_v_image(imarr)
-    vfimage = make_vf_image(imarr)
-    psiimage = make_psi_image(imarr)
-
-    grad = -2*vimage
-
-    # dS/dI Numerators
-    if pol_solve[0]!=0:
-        gradi = (vfimage)*grad
-        gradout[0] = gradi
-
-    # dS/dv numerators
-    if pol_solve[1]!=0:
-        gradv = iimage*grad
-        gradrho = gradv*np.sin(psiimage)
-        gradout[1] = gradrho
-
-    if pol_solve[3]!=0:
-        gradv = iimage*grad
-        gradpsi = gradv * (vfimage/np.tan(psiimage))
-        gradout[3] = gradpsi
-
-    return gradout/norm
-
-def stv_v(imarr, vflux, nx, ny, psize,
-          norm_reg=NORM_REGULARIZER, beam_size=None, epsilon=0.):
-    """Total variation of I*vfrac"""
-
-    if beam_size is None:
-        beam_size = psize
-    if norm_reg:
-        norm = np.abs(vflux)*psize / beam_size
-    else:
-        norm = 1
-
-    vimage = make_v_image(imarr)
-    im = vimage.reshape(ny, nx)
-
-    impad = np.pad(im, 1, mode='constant', constant_values=0)
-    im_l1 = np.roll(impad, -1, axis=0)[1:ny+1, 1:nx+1]
-    im_l2 = np.roll(impad, -1, axis=1)[1:ny+1, 1:nx+1]
-    S = -np.sum(np.sqrt(np.abs(im_l1 - im)**2 + np.abs(im_l2 - im)**2+epsilon))
-    return S/norm
-
-def stv_v_grad(imarr, vflux, nx, ny, psize, pol_solve=POL_SOLVE_DEFAULT_V,
-               norm_reg=NORM_REGULARIZER, beam_size=None, epsilon=0.):
-    """Total variation gradient"""
-    gradout = np.zeros(imarr.shape)
-
-    if beam_size is None:
-        beam_size = psize
-    if norm_reg:
-        norm = np.abs(vflux)*psize / beam_size
-    else:
-        norm = 1
-
-    iimage = make_i_image(imarr)
-    vimage = make_v_image(imarr)
-    vfimage = make_vf_image(imarr)
-    psiimage = make_psi_image(imarr)
-
-    im = vimage.reshape(ny, nx)
-
-    impad = np.pad(im, 1, mode='constant', constant_values=0)
-    im_l1 = np.roll(impad, -1, axis=0)[1:ny+1, 1:nx+1]
-    im_l2 = np.roll(impad, -1, axis=1)[1:ny+1, 1:nx+1]
-    im_r1 = np.roll(impad, 1, axis=0)[1:ny+1, 1:nx+1]
-    im_r2 = np.roll(impad, 1, axis=1)[1:ny+1, 1:nx+1]
-
-    # rotate images
-    im_r1l2 = np.roll(np.roll(impad,  1, axis=0), -1, axis=1)[1:ny+1, 1:nx+1]
-    im_l1r2 = np.roll(np.roll(impad, -1, axis=0), 1, axis=1)[1:ny+1, 1:nx+1]
-
-    # add together terms and return
-    g1 = (2*im - im_l1 - im_l2) / np.sqrt((im - im_l1)**2 + (im - im_l2)**2 + epsilon)
-    g2 = (im - im_r1) / np.sqrt((im - im_r1)**2 + (im_r1l2 - im_r1)**2 + epsilon)
-    g3 = (im - im_r2) / np.sqrt((im - im_r2)**2 + (im_l1r2 - im_r2)**2 + epsilon)
-
-    # mask the first row column gradient terms that don't exist
-    mask1 = np.zeros(im.shape)
-    mask2 = np.zeros(im.shape)
-    mask1[0, :] = 1
-    mask2[:, 0] = 1
-    g2[mask1.astype(bool)] = 0
-    g3[mask2.astype(bool)] = 0
-
-    # add terms together and return
-    grad = -(g1 + g2 + g3).flatten()
-
-    # dS/dI Numerators
-    if pol_solve[0]!=0:
-        gradi = vfimage*grad
-        gradout[0] = gradi
-
-    # dS/dv numerators
-    if pol_solve[1]!=0:
-        gradv = iimage*grad
-        gradrho = gradv*np.sin(psiimage)
-        gradout[1] = gradrho
-
-    if pol_solve[3]!=0:
-        gradv = iimage*grad
-        gradpsi = gradv * (vfimage/np.tan(psiimage))
-        gradout[3] = gradpsi
-
-    return gradout/norm
-
-def stv2_v(imarr, vflux, nx, ny, psize,
-           norm_reg=NORM_REGULARIZER, beam_size=None):
-    """Squared Total variation of I*vfrac
-    """
-
-    if beam_size is None:
-        beam_size = psize
-    if norm_reg:
-        norm = psize**4 * np.abs(vflux**2) / beam_size**4
-    else:
-        norm = 1
-
-    vimage = make_v_image(imarr)
-    im = vimage.reshape(ny, nx)
-
-    impad = np.pad(im, 1, mode='constant', constant_values=0)
-    im_l1 = np.roll(impad, -1, axis=0)[1:ny+1, 1:nx+1]
-    im_l2 = np.roll(impad, -1, axis=1)[1:ny+1, 1:nx+1]
-    out = -np.sum((im_l1 - im)**2 + (im_l2 - im)**2)
-    return out/norm
-
-def stv2_v_grad(imarr, vflux, nx, ny, psize, pol_solve=POL_SOLVE_DEFAULT_V,
-               norm_reg=NORM_REGULARIZER, beam_size=None):
-    """Squared Total variation gradient
-    """
-    gradout = np.zeros(imarr.shape)
-    if beam_size is None:
-        beam_size = psize
-    if norm_reg:
-        norm = psize**4 * np.abs(vflux**2) / beam_size**4
-    else:
-        norm = 1
-
-    iimage = make_i_image(imarr)
-    vimage = make_v_image(imarr)
-    vfimage = make_vf_image(imarr)
-    psiimage = make_psi_image(imarr)
-
-    im = vimage.reshape(ny, nx)
-
-    impad = np.pad(im, 1, mode='constant', constant_values=0)
-    im_l1 = np.roll(impad, -1, axis=0)[1:ny+1, 1:nx+1]
-    im_l2 = np.roll(impad, -1, axis=1)[1:ny+1, 1:nx+1]
-    im_r1 = np.roll(impad, 1, axis=0)[1:ny+1, 1:nx+1]
-    im_r2 = np.roll(impad, 1, axis=1)[1:ny+1, 1:nx+1]
-
-    g1 = (2*im - im_l1 - im_l2)
-    g2 = (im - im_r1)
-    g3 = (im - im_r2)
-
-    # mask the first row column gradient terms that don't exist
-    mask1 = np.zeros(im.shape)
-    mask2 = np.zeros(im.shape)
-    mask1[0, :] = 1
-    mask2[:, 0] = 1
-    g2[mask1.astype(bool)] = 0
-    g3[mask2.astype(bool)] = 0
-
-    # add together terms and return
-    grad = -2*(g1 + g2 + g3).flatten()
-
-    # dS/dI Numerators
-    if pol_solve[0]!=0:
-        gradi = vfimage*grad
-        gradout[0] = gradi
-
-    # dS/dv numerators
-    if pol_solve[1]!=0:
-        gradv = iimage*grad
-        gradrho = gradv*np.sin(psiimage)
-        gradout[1] = gradrho
-
-    if pol_solve[3]!=0:
-        gradv = iimage*grad
-        gradpsi = gradv * (vfimage/np.tan(psiimage))
-        gradout[3] = gradpsi
-
-    return gradout/norm
-
 
 ##################################################################################################
-# Imager-backend wrappers
+# Polarimetric regularizers
 #
-# Same pattern as `reg_X` / `reggrad_X` in `imager_utils.py`: each wrapper adapts
-# a pol regularizer above to the uniform `(imarr, mask, **kwargs)` signature used
-# by `_REGULARIZER_DISPATCH`. Pol spatial regularizers use `embed_imarr` (not
-# `embed`) for the pre-step and slice the gradient as `g[:, mask]` because the
-# pol gradient is shaped (4, nimage) — one row per Stokes component.
+# Each `reg_X` / `reggrad_X` implements a polarimetric regularizer with the
+# uniform `(imarr, mask, **kwargs)` signature used by the `_REGULARIZER_DISPATCH`
+# table in `imager_backend.py`. Each returns the penalty value (positive; the
+# imager solver minimises it). Spatial regularizers (ptv, vtv, vtv2) use
+# `embed_imarr` (not `embed`) for the pre-step and slice the gradient as
+# `g[:, mask]` since the pol gradient is shaped (4, nimage) — one row per
+# Stokes component, gated on `pol_solve[0..3]`.
 ##################################################################################################
 
 
 def reg_msimple(imarr, mask, **kwargs):
-    return -sm(imarr, kwargs['flux'], norm_reg=kwargs.get('norm_reg', True))
+    flux = kwargs['flux']
+    norm = flux if kwargs.get('norm_reg', True) else 1
+    iimage = make_i_image(imarr)
+    mimage = make_m_image(imarr)
+    return np.sum(iimage * np.log(mimage)) / norm
 
 
 def reggrad_msimple(imarr, mask, **kwargs):
-    return -smgrad(imarr, kwargs['flux'],
-                   pol_solve=kwargs.get('pol_solve', POL_SOLVE_DEFAULT),
-                   norm_reg=kwargs.get('norm_reg', True))
+    flux = kwargs['flux']
+    pol_solve = kwargs.get('pol_solve', POL_SOLVE_DEFAULT)
+    norm = flux if kwargs.get('norm_reg', True) else 1
+    iimage = make_i_image(imarr)
+    mimage = make_m_image(imarr)
+    psiimage = make_psi_image(imarr)
+    gradout = np.zeros(imarr.shape)
+    if pol_solve[0] != 0:
+        gradout[0] = np.log(mimage)
+    if pol_solve[1] != 0:
+        gradm = iimage / mimage
+        gradout[1] = gradm * np.cos(psiimage)
+    if pol_solve[3] != 0:
+        gradm = iimage / mimage
+        gradout[3] = gradm * (-mimage * np.tan(psiimage))
+    return gradout / norm
 
 
 def reg_hw(imarr, mask, **kwargs):
-    return -shw(imarr, kwargs['flux'], norm_reg=kwargs.get('norm_reg', True))
+    flux = kwargs['flux']
+    norm = flux if kwargs.get('norm_reg', True) else 1
+    iimage = make_i_image(imarr)
+    mimage = make_m_image(imarr)
+    return np.sum(iimage * (((1+mimage)/2) * np.log((1+mimage)/2)
+                            + ((1-mimage)/2) * np.log((1-mimage)/2))) / norm
 
 
 def reggrad_hw(imarr, mask, **kwargs):
-    return -shwgrad(imarr, kwargs['flux'],
-                    pol_solve=kwargs.get('pol_solve', POL_SOLVE_DEFAULT),
-                    norm_reg=kwargs.get('norm_reg', True))
+    flux = kwargs['flux']
+    pol_solve = kwargs.get('pol_solve', POL_SOLVE_DEFAULT)
+    norm = flux if kwargs.get('norm_reg', True) else 1
+    iimage = make_i_image(imarr)
+    mimage = make_m_image(imarr)
+    psiimage = make_psi_image(imarr)
+    gradout = np.zeros(imarr.shape)
+    if pol_solve[0] != 0:
+        gradout[0] = (((1+mimage)/2) * np.log((1+mimage)/2)
+                      + ((1-mimage)/2) * np.log((1-mimage)/2))
+    if pol_solve[1] != 0:
+        gradm = iimage * np.arctanh(mimage)
+        gradout[1] = gradm * np.cos(psiimage)
+    if pol_solve[3] != 0:
+        gradm = iimage * np.arctanh(mimage)
+        gradout[3] = gradm * (-mimage * np.tan(psiimage))
+    return gradout / norm
 
 
 def reg_ptv(imarr, mask, **kwargs):
     from ehtim.imaging.imager_utils import embed_imarr
     if np.any(np.invert(mask)):
         imarr = embed_imarr(imarr, mask, randomfloor=True)
-    return -stv_pol(imarr, kwargs['flux'], kwargs['xdim'], kwargs['ydim'], kwargs['psize'],
-                    norm_reg=kwargs.get('norm_reg', True),
-                    beam_size=kwargs.get('beam_size', 1))
+    flux = kwargs['flux']
+    nx, ny, psize = kwargs['xdim'], kwargs['ydim'], kwargs['psize']
+    beam_size = kwargs.get('beam_size', 1) or psize
+    norm = flux * psize / beam_size if kwargs.get('norm_reg', True) else 1
+    pimage = make_p_image(imarr)
+    im = pimage.reshape(ny, nx)
+    impad = np.pad(im, 1, mode='constant', constant_values=0)
+    im_l1 = np.roll(impad, -1, axis=0)[1:ny+1, 1:nx+1]
+    im_l2 = np.roll(impad, -1, axis=1)[1:ny+1, 1:nx+1]
+    return np.sum(np.sqrt(np.abs(im_l1 - im)**2 + np.abs(im_l2 - im)**2)) / norm
 
 
 def reggrad_ptv(imarr, mask, **kwargs):
     from ehtim.imaging.imager_utils import embed_imarr
-    if np.any(np.invert(mask)):
+    do_slice = np.any(np.invert(mask))
+    if do_slice:
         imarr = embed_imarr(imarr, mask, randomfloor=True)
-    g = -stv_pol_grad(imarr, kwargs['flux'], kwargs['xdim'], kwargs['ydim'], kwargs['psize'],
-                      pol_solve=kwargs.get('pol_solve', POL_SOLVE_DEFAULT),
-                      norm_reg=kwargs.get('norm_reg', True),
-                      beam_size=kwargs.get('beam_size', 1))
-    return g[:, mask] if np.any(np.invert(mask)) else g
+    flux = kwargs['flux']
+    nx, ny, psize = kwargs['xdim'], kwargs['ydim'], kwargs['psize']
+    pol_solve = kwargs.get('pol_solve', POL_SOLVE_DEFAULT)
+    beam_size = kwargs.get('beam_size', 1) or psize
+    norm = flux * psize / beam_size if kwargs.get('norm_reg', True) else 1
+    iimage = make_i_image(imarr)
+    pimage = make_p_image(imarr)
+    mimage = make_m_image(imarr)
+    psiimage = make_psi_image(imarr)
+    im = pimage.reshape(ny, nx)
+    impad = np.pad(im, 1, mode='constant', constant_values=0)
+    im_l1 = np.roll(impad, -1, axis=0)[1:ny+1, 1:nx+1]
+    im_l2 = np.roll(impad, -1, axis=1)[1:ny+1, 1:nx+1]
+    im_r1 = np.roll(impad, 1, axis=0)[1:ny+1, 1:nx+1]
+    im_r2 = np.roll(impad, 1, axis=1)[1:ny+1, 1:nx+1]
+    im_r1l2 = np.roll(np.roll(impad,  1, axis=0), -1, axis=1)[1:ny+1, 1:nx+1]
+    im_l1r2 = np.roll(np.roll(impad, -1, axis=0),  1, axis=1)[1:ny+1, 1:nx+1]
+    # Denominators: |forward-l1|+|forward-l2|, |back-r1|+|cross|, |back-r2|+|cross|.
+    d1 = np.sqrt(np.abs(im_l1 - im)**2 + np.abs(im_l2 - im)**2)
+    d2 = np.sqrt(np.abs(im_r1 - im)**2 + np.abs(im_r1l2 - im_r1)**2)
+    d3 = np.sqrt(np.abs(im_r2 - im)**2 + np.abs(im_l1r2 - im_r2)**2)
+    # Numerators below use cos/sin of the single-angle difference between
+    # neighbors, from d|P_l1 - P|^2/d|P| = 2|P| - 2|P_l1|*cos(angle(P_l1) - angle(P)).
+    gradout = np.zeros(imarr.shape)
+    if pol_solve[0] != 0:
+        # dS/dI numerators (chain through |P| = I*m)
+        m1 = 2*np.abs(im*im) - np.abs(im*im_l1)*np.cos(np.angle(im_l1) - np.angle(im)) - np.abs(im*im_l2)*np.cos(np.angle(im_l2) - np.angle(im))
+        m2 = np.abs(im*im) - np.abs(im*im_r1)*np.cos(np.angle(im) - np.angle(im_r1))
+        m3 = np.abs(im*im) - np.abs(im*im_r2)*np.cos(np.angle(im) - np.angle(im_r2))
+        gradout[0] = (1./iimage) * (m1/d1 + m2/d2 + m3/d3).flatten()
+    if pol_solve[1] != 0:
+        # dS/dm numerators; m enters via |P| = I*m, so dS/dm = I * dS/d|P|.
+        # Then dm/dprimitive[1] = cos(psi) on the (m, psi) -> (m, v) chart.
+        m1 = 2*np.abs(im) - np.abs(im_l1)*np.cos(np.angle(im_l1) - np.angle(im)) - np.abs(im_l2)*np.cos(np.angle(im_l2) - np.angle(im))
+        m2 = np.abs(im) - np.abs(im_r1)*np.cos(np.angle(im) - np.angle(im_r1))
+        m3 = np.abs(im) - np.abs(im_r2)*np.cos(np.angle(im) - np.angle(im_r2))
+        gradm = iimage * (m1/d1 + m2/d2 + m3/d3).flatten()
+        gradout[1] = gradm * np.cos(psiimage)
+    if pol_solve[2] != 0:
+        # dS/dphi numerators (primitive is phi = 2*chi, see PR #240).
+        # `gradchi` is dS/dchi; chain through chi(phi) = phi/2 gives the *0.5.
+        c1 = -2*np.abs(im*im_l1)*np.sin(np.angle(im_l1) - np.angle(im)) - 2*np.abs(im*im_l2)*np.sin(np.angle(im_l2) - np.angle(im))
+        c2 = 2*np.abs(im*im_r1)*np.sin(np.angle(im) - np.angle(im_r1))
+        c3 = 2*np.abs(im*im_r2)*np.sin(np.angle(im) - np.angle(im_r2))
+        gradchi = (c1/d1 + c2/d2 + c3/d3).flatten()
+        gradout[2] = 0.5 * gradchi
+    if pol_solve[3] != 0:
+        # dS/dpsi numerators; reuse dS/dm and chain through dm/dpsi = -m*tan(psi).
+        m1 = 2*np.abs(im) - np.abs(im_l1)*np.cos(np.angle(im_l1) - np.angle(im)) - np.abs(im_l2)*np.cos(np.angle(im_l2) - np.angle(im))
+        m2 = np.abs(im) - np.abs(im_r1)*np.cos(np.angle(im) - np.angle(im_r1))
+        m3 = np.abs(im) - np.abs(im_r2)*np.cos(np.angle(im) - np.angle(im_r2))
+        gradm = iimage * (m1/d1 + m2/d2 + m3/d3).flatten()
+        gradout[3] = gradm * (-mimage * np.tan(psiimage))
+    g = gradout / norm
+    return g[:, mask] if do_slice else g
 
 
+# --- circular-polarization (V) regularizers ---------------------------------
+# TODO check!! The V-pol regularizers below were never thoroughly audited; the
+# `gradv * (vfimage / np.tan(psiimage))` chain-rule form (dS/dpsi) is unusual
+# and the test coverage only exercises generic random pol structure.
 def reg_vflux(imarr, mask, **kwargs):
-    return -svflux(imarr, kwargs['vflux'], norm_reg=kwargs.get('norm_reg', True))
+    vflux = kwargs['vflux']
+    norm = np.abs(vflux)**2 if kwargs.get('norm_reg', True) else 1
+    vimage = make_v_image(imarr)
+    return (np.sum(vimage) - vflux)**2 / norm
 
 
 def reggrad_vflux(imarr, mask, **kwargs):
-    return -svfluxgrad(imarr, kwargs['vflux'],
-                       pol_solve=kwargs.get('pol_solve', POL_SOLVE_DEFAULT_V),
-                       norm_reg=kwargs.get('norm_reg', True))
+    vflux = kwargs['vflux']
+    pol_solve = kwargs.get('pol_solve', POL_SOLVE_DEFAULT_V)
+    norm = np.abs(vflux)**2 if kwargs.get('norm_reg', True) else 1
+    iimage = make_i_image(imarr)
+    vimage = make_v_image(imarr)
+    vfimage = make_vf_image(imarr)
+    psiimage = make_psi_image(imarr)
+    # base = dS/dV via V = I * vf, vf = m*sin(psi); pol_solve branches below
+    # chain through dV/dI = V/I, dV/dm = I*sin(psi), dV/dpsi = I*m*cos(psi).
+    base = 2 * (np.sum(vimage) - vflux) * np.ones(len(vimage))
+    gradout = np.zeros(imarr.shape)
+    if pol_solve[0] != 0:
+        gradout[0] = (vimage / iimage) * base  # dS/dI
+    if pol_solve[1] != 0:
+        gradv = iimage * base
+        gradout[1] = gradv * np.sin(psiimage)  # dS/dm
+    if pol_solve[3] != 0:
+        gradv = iimage * base
+        gradout[3] = gradv * (vfimage / np.tan(psiimage))  # dS/dpsi; vf/tan(psi) = m*cos(psi)
+    return gradout / norm
 
 
 def reg_l1v(imarr, mask, **kwargs):
-    return -sl1v(imarr, kwargs['vflux'], norm_reg=kwargs.get('norm_reg', True))
+    vflux = kwargs['vflux']
+    norm = np.abs(vflux) if kwargs.get('norm_reg', True) else 1
+    vimage = make_v_image(imarr)
+    return np.sum(np.abs(vimage)) / norm
 
 
 def reggrad_l1v(imarr, mask, **kwargs):
-    return -sl1vgrad(imarr, kwargs['vflux'],
-                     pol_solve=kwargs.get('pol_solve', POL_SOLVE_DEFAULT_V),
-                     norm_reg=kwargs.get('norm_reg', True))
+    vflux = kwargs['vflux']
+    pol_solve = kwargs.get('pol_solve', POL_SOLVE_DEFAULT_V)
+    norm = np.abs(vflux) if kwargs.get('norm_reg', True) else 1
+    iimage = make_i_image(imarr)
+    vimage = make_v_image(imarr)
+    vfimage = make_vf_image(imarr)
+    psiimage = make_psi_image(imarr)
+    # base = dS/dV via V = I*vf; chain rules per reggrad_vflux.
+    base = np.sign(vimage)
+    gradout = np.zeros(imarr.shape)
+    if pol_solve[0] != 0:
+        gradout[0] = vfimage * base  # dS/dI (vfimage = V/I)
+    if pol_solve[1] != 0:
+        gradv = iimage * base
+        gradout[1] = gradv * np.sin(psiimage)  # dS/dm
+    if pol_solve[3] != 0:
+        gradv = iimage * base
+        gradout[3] = gradv * (vfimage / np.tan(psiimage))  # dS/dpsi
+    return gradout / norm
 
 
 def reg_l2v(imarr, mask, **kwargs):
-    return -sl2v(imarr, kwargs['vflux'], norm_reg=kwargs.get('norm_reg', True))
+    vflux = kwargs['vflux']
+    norm = np.abs(vflux**2) if kwargs.get('norm_reg', True) else 1
+    vimage = make_v_image(imarr)
+    return np.sum(vimage**2) / norm
 
 
 def reggrad_l2v(imarr, mask, **kwargs):
-    return -sl2vgrad(imarr, kwargs['vflux'],
-                     pol_solve=kwargs.get('pol_solve', POL_SOLVE_DEFAULT_V),
-                     norm_reg=kwargs.get('norm_reg', True))
+    vflux = kwargs['vflux']
+    pol_solve = kwargs.get('pol_solve', POL_SOLVE_DEFAULT_V)
+    norm = np.abs(vflux**2) if kwargs.get('norm_reg', True) else 1
+    iimage = make_i_image(imarr)
+    vimage = make_v_image(imarr)
+    vfimage = make_vf_image(imarr)
+    psiimage = make_psi_image(imarr)
+    # base = dS/dV via V = I*vf; chain rules per reggrad_vflux.
+    base = 2 * vimage
+    gradout = np.zeros(imarr.shape)
+    if pol_solve[0] != 0:
+        gradout[0] = vfimage * base  # dS/dI
+    if pol_solve[1] != 0:
+        gradv = iimage * base
+        gradout[1] = gradv * np.sin(psiimage)  # dS/dm
+    if pol_solve[3] != 0:
+        gradv = iimage * base
+        gradout[3] = gradv * (vfimage / np.tan(psiimage))  # dS/dpsi
+    return gradout / norm
 
 
 def reg_vtv(imarr, mask, **kwargs):
     from ehtim.imaging.imager_utils import embed_imarr
     if np.any(np.invert(mask)):
         imarr = embed_imarr(imarr, mask, randomfloor=True)
-    return -stv_v(imarr, kwargs['vflux'], kwargs['xdim'], kwargs['ydim'], kwargs['psize'],
-                  norm_reg=kwargs.get('norm_reg', True),
-                  beam_size=kwargs.get('beam_size', 1))
+    vflux = kwargs['vflux']
+    nx, ny, psize = kwargs['xdim'], kwargs['ydim'], kwargs['psize']
+    beam_size = kwargs.get('beam_size', 1) or psize
+    norm = np.abs(vflux) * psize / beam_size if kwargs.get('norm_reg', True) else 1
+    vimage = make_v_image(imarr)
+    im = vimage.reshape(ny, nx)
+    impad = np.pad(im, 1, mode='constant', constant_values=0)
+    im_l1 = np.roll(impad, -1, axis=0)[1:ny+1, 1:nx+1]
+    im_l2 = np.roll(impad, -1, axis=1)[1:ny+1, 1:nx+1]
+    return np.sum(np.sqrt(np.abs(im_l1 - im)**2 + np.abs(im_l2 - im)**2)) / norm
 
 
 def reggrad_vtv(imarr, mask, **kwargs):
     from ehtim.imaging.imager_utils import embed_imarr
-    if np.any(np.invert(mask)):
+    do_slice = np.any(np.invert(mask))
+    if do_slice:
         imarr = embed_imarr(imarr, mask, randomfloor=True)
-    g = -stv_v_grad(imarr, kwargs['vflux'], kwargs['xdim'], kwargs['ydim'], kwargs['psize'],
-                    pol_solve=kwargs.get('pol_solve', POL_SOLVE_DEFAULT_V),
-                    norm_reg=kwargs.get('norm_reg', True),
-                    beam_size=kwargs.get('beam_size', 1))
-    return g[:, mask] if np.any(np.invert(mask)) else g
+    vflux = kwargs['vflux']
+    nx, ny, psize = kwargs['xdim'], kwargs['ydim'], kwargs['psize']
+    pol_solve = kwargs.get('pol_solve', POL_SOLVE_DEFAULT_V)
+    beam_size = kwargs.get('beam_size', 1) or psize
+    norm = np.abs(vflux) * psize / beam_size if kwargs.get('norm_reg', True) else 1
+    epsilon = 0.
+    iimage = make_i_image(imarr)
+    vimage = make_v_image(imarr)
+    vfimage = make_vf_image(imarr)
+    psiimage = make_psi_image(imarr)
+    im = vimage.reshape(ny, nx)
+    impad = np.pad(im, 1, mode='constant', constant_values=0)
+    im_l1 = np.roll(impad, -1, axis=0)[1:ny+1, 1:nx+1]
+    im_l2 = np.roll(impad, -1, axis=1)[1:ny+1, 1:nx+1]
+    im_r1 = np.roll(impad, 1, axis=0)[1:ny+1, 1:nx+1]
+    im_r2 = np.roll(impad, 1, axis=1)[1:ny+1, 1:nx+1]
+    im_r1l2 = np.roll(np.roll(impad,  1, axis=0), -1, axis=1)[1:ny+1, 1:nx+1]
+    im_l1r2 = np.roll(np.roll(impad, -1, axis=0),  1, axis=1)[1:ny+1, 1:nx+1]
+    g1 = (2*im - im_l1 - im_l2) / np.sqrt((im - im_l1)**2 + (im - im_l2)**2 + epsilon)
+    g2 = (im - im_r1) / np.sqrt((im - im_r1)**2 + (im_r1l2 - im_r1)**2 + epsilon)
+    g3 = (im - im_r2) / np.sqrt((im - im_r2)**2 + (im_l1r2 - im_r2)**2 + epsilon)
+    mask1 = np.zeros(im.shape)
+    mask2 = np.zeros(im.shape)
+    mask1[0, :] = 1
+    mask2[:, 0] = 1
+    g2[mask1.astype(bool)] = 0
+    g3[mask2.astype(bool)] = 0
+    # base = dS/dV via V = I*vf; chain rules per reggrad_vflux.
+    base = (g1 + g2 + g3).flatten()
+    gradout = np.zeros(imarr.shape)
+    if pol_solve[0] != 0:
+        gradout[0] = vfimage * base  # dS/dI
+    if pol_solve[1] != 0:
+        gradv = iimage * base
+        gradout[1] = gradv * np.sin(psiimage)  # dS/dm
+    if pol_solve[3] != 0:
+        gradv = iimage * base
+        gradout[3] = gradv * (vfimage / np.tan(psiimage))  # dS/dpsi
+    g = gradout / norm
+    return g[:, mask] if do_slice else g
 
 
 def reg_vtv2(imarr, mask, **kwargs):
     from ehtim.imaging.imager_utils import embed_imarr
     if np.any(np.invert(mask)):
         imarr = embed_imarr(imarr, mask, randomfloor=True)
-    return -stv2_v(imarr, kwargs['vflux'], kwargs['xdim'], kwargs['ydim'], kwargs['psize'],
-                   norm_reg=kwargs.get('norm_reg', True),
-                   beam_size=kwargs.get('beam_size', 1))
+    vflux = kwargs['vflux']
+    nx, ny, psize = kwargs['xdim'], kwargs['ydim'], kwargs['psize']
+    beam_size = kwargs.get('beam_size', 1) or psize
+    norm = psize**4 * np.abs(vflux**2) / beam_size**4 if kwargs.get('norm_reg', True) else 1
+    vimage = make_v_image(imarr)
+    im = vimage.reshape(ny, nx)
+    impad = np.pad(im, 1, mode='constant', constant_values=0)
+    im_l1 = np.roll(impad, -1, axis=0)[1:ny+1, 1:nx+1]
+    im_l2 = np.roll(impad, -1, axis=1)[1:ny+1, 1:nx+1]
+    return np.sum((im_l1 - im)**2 + (im_l2 - im)**2) / norm
 
 
 def reggrad_vtv2(imarr, mask, **kwargs):
     from ehtim.imaging.imager_utils import embed_imarr
-    if np.any(np.invert(mask)):
+    do_slice = np.any(np.invert(mask))
+    if do_slice:
         imarr = embed_imarr(imarr, mask, randomfloor=True)
-    g = -stv2_v_grad(imarr, kwargs['vflux'], kwargs['xdim'], kwargs['ydim'], kwargs['psize'],
-                     pol_solve=kwargs.get('pol_solve', POL_SOLVE_DEFAULT_V),
-                     norm_reg=kwargs.get('norm_reg', True),
-                     beam_size=kwargs.get('beam_size', 1))
-    return g[:, mask] if np.any(np.invert(mask)) else g
+    vflux = kwargs['vflux']
+    nx, ny, psize = kwargs['xdim'], kwargs['ydim'], kwargs['psize']
+    pol_solve = kwargs.get('pol_solve', POL_SOLVE_DEFAULT_V)
+    beam_size = kwargs.get('beam_size', 1) or psize
+    norm = psize**4 * np.abs(vflux**2) / beam_size**4 if kwargs.get('norm_reg', True) else 1
+    iimage = make_i_image(imarr)
+    vimage = make_v_image(imarr)
+    vfimage = make_vf_image(imarr)
+    psiimage = make_psi_image(imarr)
+    im = vimage.reshape(ny, nx)
+    impad = np.pad(im, 1, mode='constant', constant_values=0)
+    im_l1 = np.roll(impad, -1, axis=0)[1:ny+1, 1:nx+1]
+    im_l2 = np.roll(impad, -1, axis=1)[1:ny+1, 1:nx+1]
+    im_r1 = np.roll(impad, 1, axis=0)[1:ny+1, 1:nx+1]
+    im_r2 = np.roll(impad, 1, axis=1)[1:ny+1, 1:nx+1]
+    g1 = 2*im - im_l1 - im_l2
+    g2 = im - im_r1
+    g3 = im - im_r2
+    mask1 = np.zeros(im.shape)
+    mask2 = np.zeros(im.shape)
+    mask1[0, :] = 1
+    mask2[:, 0] = 1
+    g2[mask1.astype(bool)] = 0
+    g3[mask2.astype(bool)] = 0
+    # base = dS/dV via V = I*vf; chain rules per reggrad_vflux.
+    base = 2 * (g1 + g2 + g3).flatten()
+    gradout = np.zeros(imarr.shape)
+    if pol_solve[0] != 0:
+        gradout[0] = vfimage * base  # dS/dI
+    if pol_solve[1] != 0:
+        gradv = iimage * base
+        gradout[1] = gradv * np.sin(psiimage)  # dS/dm
+    if pol_solve[3] != 0:
+        gradv = iimage * base
+        gradout[3] = gradv * (vfimage / np.tan(psiimage))  # dS/dpsi
+    g = gradout / norm
+    return g[:, mask] if do_slice else g
 
 
 ##################################################################################################
