@@ -25,12 +25,6 @@ import numpy as np
 import scipy.ndimage as nd
 from scipy.interpolate import interp1d
 
-try:
-    from pynfft.nfft import NFFT
-except ImportError:
-    pass
-    #print("Warning: No NFFT installed!")
-
 import ehtim.const_def as ehc
 
 from . import obs_helpers as obsh
@@ -300,35 +294,13 @@ def sample_vis(im_org, uv, sgrscat=False, polrep_obs='stokes',
     # Get visibilities from the NFFT
     elif ttype == "nfft":
 
-        uvdim = len(uv)
         if (im.xdim % 2 or im.ydim % 2):
             raise Exception("NFFT doesn't work with odd image dimensions!")
 
-        npad = fft_pad_factor * np.max((im.xdim, im.ydim))
+        npad = int(fft_pad_factor * np.max((im.xdim, im.ydim)))
+        info = obsh.NFFTInfo(im.xdim, im.ydim, im.psize, im.pulse,
+                             npad, ehc.GRIDDER_P_RAD_DEFAULT, uv)
 
-        # TODO what is a good kernel size??
-        nker = np.floor(np.min((im.xdim, im.ydim))/5)
-        if (nker > 50):
-            nker = 50
-        elif (im.xdim < 50 or im.ydim < 50):
-            nker = np.min((im.xdim, im.ydim))/2
-
-        # TODO are y & x reversed?
-        plan = NFFT([im.xdim, im.ydim], uvdim, m=nker, n=[npad, npad])
-
-        # Sampled uv points
-        uvlist = uv*im.psize
-
-        # Precompute
-        plan.x = uvlist
-        plan.precompute()
-
-        # Extra phase and pulsefac
-        phase = np.exp(-1j*np.pi*(uvlist[:, 0] + uvlist[:, 1]))
-        pulsefac = np.fromiter((im.pulse(2*np.pi*uvlist[i, 0], 2*np.pi*uvlist[i, 1], 1., dom="F")
-                                for i in range(uvdim)), 'c16')
-
-        # Compute the uniform --> nonuniform transform for different polarizations
         for i in range(4):
             pol = pollist[i]
             imvec = im._imdict[pol]
@@ -338,11 +310,9 @@ def sample_vis(im_org, uv, sgrscat=False, polrep_obs='stokes',
                 else:
                     obsdata.append(None)
             else:
-                plan.f_hat = imvec.copy().reshape((im.ydim, im.xdim)).T
-                plan.trafo()
-                vis = plan.f.copy()*phase*pulsefac
-
-                obsdata.append(vis)
+                info.plan.f_hat = imvec.copy().reshape((im.ydim, im.xdim)).T
+                info.plan.trafo()
+                obsdata.append(info.plan.f.copy() * info.pulsefac)
 
     # Get visibilities from DTFT
     else:

@@ -706,11 +706,8 @@ def test_rescale_noise_multiplies_sigmas(obs_direct):
 
 
 def test_find_amt_fractional_noise_runs(obs_noisy, gauss_im):
-    # find_amt_fractional_noise calls obs.chisq() with no ttype override, so
-    # it inherits the chisq() default of 'nfft' — needs pynfft. Skip when
-    # NFFT isn't installed rather than running ttype='direct' (the method
-    # doesn't expose the kwarg).
-    pytest.importorskip("pynfft")
+    # find_amt_fractional_noise calls obs.chisq() with no ttype override,
+    # so it inherits the chisq() default of 'nfft'.
     out = obs_noisy.find_amt_fractional_noise(gauss_im, dtype="vis", target=1.0, maxiter=5)
     assert np.isfinite(out).all()
 

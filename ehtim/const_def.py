@@ -74,6 +74,10 @@ GRIDDER_P_RAD_DEFAULT = 2
 GRIDDER_CONV_FUNC_DEFAULT = 'gaussian'
 FFT_PAD_DEFAULT = 2
 FFT_INTERP_DEFAULT = 3
+# Requested relative accuracy of the NFFT. 1e-9 is safe for high-dynamic-range
+# imaging (ALMA polarimetry, SKA-class arrays). Tighten to 1e-12 for ~1e6
+# dynamic range; relax to 1e-6 for fast low-SNR work.
+NFFT_EPS_DEFAULT = 1e-9
 
 # Observation recarray datatypes
 # DTARR uses generic names primary because it is a single shared dtype across

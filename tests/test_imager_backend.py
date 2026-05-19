@@ -791,8 +791,6 @@ class TestComputeChisqDict:
     @pytest.mark.parametrize("ttype", ["direct", "fast", "nfft"])
     def test_all_ttypes(self, gauss_im, observe, initialize_imager, ttype):
         """Backend works for all three transform types."""
-        if ttype == "nfft":
-            pytest.importorskip("pynfft")
         obs = observe(gauss_im, ttype=ttype)
         imgr, imcur = initialize_imager(obs, gauss_im, {"vis": 100}, ttype=ttype)
         result = _call_backend_chisq_dict(imgr, imcur)
@@ -939,8 +937,6 @@ class TestComputeChisqgradDict:
     @pytest.mark.parametrize("ttype", ["direct", "fast", "nfft"])
     def test_all_ttypes(self, gauss_im, observe, initialize_imager, ttype):
         """Backend works for all three transform types."""
-        if ttype == "nfft":
-            pytest.importorskip("pynfft")
         obs = observe(gauss_im, ttype=ttype)
         imgr, imcur = initialize_imager(obs, gauss_im, {"vis": 100}, ttype=ttype)
         result = _call_backend_chisqgrad_dict(imgr, imcur)
@@ -1388,6 +1384,7 @@ class TestFourierGridParams:
 
     EXPECTED_FIELDS = (
         "fft_pad_factor", "fft_conv_func", "fft_gridder_prad", "fft_interp_order",
+        "nfft_eps",
     )
 
     def test_full_fft_returns_namedtuple(self, gauss_im, observe, initialize_imager):
@@ -1402,6 +1399,7 @@ class TestFourierGridParams:
         assert fp.fft_conv_func == imgr._fft_conv_func
         assert fp.fft_gridder_prad == imgr._fft_gridder_prad
         assert fp.fft_interp_order == imgr._fft_interp_order
+        assert fp.nfft_eps == imgr._nfft_eps
 
     def test_asdict_has_expected_keys(self, gauss_im, observe, initialize_imager):
         imgr, _ = initialize_imager(observe(gauss_im), gauss_im, {"vis": 100})
@@ -1419,7 +1417,7 @@ class TestFourierGridParams:
             obs, gauss_im, prior_im=gauss_im, flux=gauss_im.total_flux(),
             data_term={"vis": 100}, ttype="direct", pol="I",
             fft_pad_factor=4, fft_conv_func="pillbox", fft_gridder_prad=3,
-            fft_interp_order=5,
+            fft_interp_order=5, nfft_eps=1e-12,
         )
         imgr.check_params()
         imgr.check_limits()
@@ -1429,13 +1427,15 @@ class TestFourierGridParams:
         assert fp.fft_conv_func == "pillbox"
         assert fp.fft_gridder_prad == 3
         assert fp.fft_interp_order == 5
+        assert fp.nfft_eps == 1e-12
 
     def test_defaults_preserved(self, gauss_im, observe, initialize_imager):
-        from ehtim.imager import (
+        from ehtim.const_def import (
             FFT_INTERP_DEFAULT,
             FFT_PAD_DEFAULT,
             GRIDDER_CONV_FUNC_DEFAULT,
             GRIDDER_P_RAD_DEFAULT,
+            NFFT_EPS_DEFAULT,
         )
         imgr, _ = initialize_imager(observe(gauss_im), gauss_im, {"vis": 100})
         fp = imgr._fft_params()
@@ -1443,6 +1443,7 @@ class TestFourierGridParams:
         assert fp.fft_conv_func == GRIDDER_CONV_FUNC_DEFAULT
         assert fp.fft_gridder_prad == GRIDDER_P_RAD_DEFAULT
         assert fp.fft_interp_order == FFT_INTERP_DEFAULT
+        assert fp.nfft_eps == NFFT_EPS_DEFAULT
 
 
 class TestMfConfig:
@@ -3442,7 +3443,9 @@ class TestComputeChisqgradTerm(_ChisqTermFixtures):
         new = compute_chisqgrad_term(imcur, dtype, A, data, sigma,
                                      ttype='nfft', mask=mask,
                                      pol_solve=pol_solve)
-        np.testing.assert_allclose(new, legacy, rtol=1e-12, atol=1e-15)
+        # atol relaxed from 1e-15: multi-threaded finufft reductions are
+        # not bit-deterministic across calls; noise floor is ~1e-13.
+        np.testing.assert_allclose(new, legacy, rtol=1e-12, atol=1e-12)
 
     def test_pol_grad_missing_pol_solve_raises(self, gauss_im_pol, obs_direct):
         """Pol grad requires explicit pol_solve; no hidden default."""
