@@ -37,11 +37,30 @@ class TestImageOperations:
         assert rotated.total_flux() == pytest.approx(im.total_flux(), rel=1e-10)
 
     def test_align_left_preserves_shape_and_flux(self, make_rect_image):
-        """Horizontal alignment is a pure roll: vector length and flux unchanged."""
+        """Off-center Gaussian: align is a flux-preserving roll whose post-shift peak matches the documented formula."""
         im = make_rect_image(RECT_XDIM, RECT_YDIM)
-        aligned = di.align_left(im)
-        assert aligned.imvec.shape == im.imvec.shape
-        assert aligned.total_flux() == pytest.approx(im.total_flux(), rel=1e-10)
+        # Shift the centered Gaussian xdim/4 columns to the left so align has a
+        # non-trivial roll to perform (the centered case is near a no-op and
+        # cannot distinguish a y-vs-x roll bug from the correct fix).
+        arr = im.imvec.reshape(im.ydim, im.xdim)
+        shifted = np.roll(arr, -im.xdim // 4, axis=1)
+        offcenter = im.copy()
+        offcenter.imvec = shifted.flatten()
+
+        aligned = di.align_left(offcenter)
+
+        # Pure roll: shape + total flux preserved.
+        assert aligned.imvec.shape == offcenter.imvec.shape
+        assert aligned.total_flux() == pytest.approx(offcenter.total_flux(), rel=1e-10)
+        # Predict the post-align peak column from the documented algorithm:
+        # the leftmost above-threshold column j_first rolls to (xdim-1)//2.
+        projected = shifted.sum(axis=0)
+        j_first = int(np.argmax(projected > projected.max() * 0.1))
+        roll = (im.xdim - 1) // 2 - j_first
+        old_peak = int(np.argmax(projected))
+        expected_peak = (old_peak + roll) % im.xdim
+        new_arr = aligned.imvec.reshape(aligned.ydim, aligned.xdim)
+        assert int(np.argmax(new_arr.sum(axis=0))) == expected_peak
 
     def test_align_left_rolls_to_x_axis_center_on_rect(self, make_rect_image):
         """A single bright column at x=0 lands at the x-axis centre after align.

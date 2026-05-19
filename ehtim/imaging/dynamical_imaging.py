@@ -1331,6 +1331,8 @@ minimizer_method = 'L-BFGS-B', update_interval = 1
                 pass
 
     # Coordinate matrix for COM constraint
+    # Inner loop over x, outer over y -> ravel order matches imvec (row-major).
+    # Flat index i corresponds to pixel (y=i//xdim, x=i%xdim).
     coord = np.array([[[x,y] for x in np.linspace(Prior.xdim/2,-Prior.xdim/2,Prior.xdim)]
                              for y in np.linspace(Prior.ydim/2,-Prior.ydim/2,Prior.ydim)])
     coord = coord.reshape(Prior.ydim*Prior.xdim, 2)
@@ -1952,6 +1954,8 @@ maxit=200, J_factor = 0.001, stop=1.0e-10, ipynb=False, refresh_interval = 1000,
             (data3_List[i], sigma3_List[i], A3_List[i]) = chisqdata(Obsdata_List[i], Prior, embed_mask_List[i], d3, ttype=ttype, fft_pad_factor=fft_pad_factor, systematic_noise=systematic_noise3)
 
     # Coordinate matrix for COM constraint
+    # Inner loop over x, outer over y -> ravel order matches imvec (row-major).
+    # Flat index i corresponds to pixel (y=i//xdim, x=i%xdim).
     coord = np.array([[[x,y] for x in np.linspace(Prior.xdim/2,-Prior.xdim/2,Prior.xdim)]
                                            for y in np.linspace(Prior.ydim/2,-Prior.ydim/2,Prior.ydim)])
     coord = coord.reshape(Prior.ydim*Prior.xdim, 2)
