@@ -26,7 +26,7 @@ except ImportError:
     NFFT = None
     _HAS_NFFT = False
 
-from ehtim.const_def import FFT_PAD_DEFAULT, GRIDDER_P_RAD_DEFAULT, RADPERAS
+from ehtim.const_def import FFT_PAD_DEFAULT, GRIDDER_P_RAD_DEFAULT, NFFT_EPS_DEFAULT, RADPERAS
 from ehtim.observing.obs_helpers import NFFTInfo, ftmatrix, ticks
 
 TANWIDTH_M = 0.5
@@ -1422,6 +1422,7 @@ def chisqdata_pvis_nfft(Obsdata, Prior, **kwargs):
     # unpack keyword args
     fft_pad_factor = kwargs.get('fft_pad_factor',FFT_PAD_DEFAULT)
     p_rad = kwargs.get('p_rad', GRIDDER_P_RAD_DEFAULT)
+    nfft_eps = kwargs.get('nfft_eps', NFFT_EPS_DEFAULT)
 
     # unpack data
     data_arr = Obsdata.unpack(['u','v','pvis','psigma'], conj=True)
@@ -1431,7 +1432,7 @@ def chisqdata_pvis_nfft(Obsdata, Prior, **kwargs):
 
     # get NFFT info
     npad = int(fft_pad_factor * np.max((Prior.xdim, Prior.ydim)))
-    A1 = NFFTInfo(Prior.xdim, Prior.ydim, Prior.psize, Prior.pulse, npad, p_rad, uv)
+    A1 = NFFTInfo(Prior.xdim, Prior.ydim, Prior.psize, Prior.pulse, npad, p_rad, uv, eps=nfft_eps)
     A = [A1]
 
     return (vis, sigma, A)
@@ -1458,6 +1459,7 @@ def chisqdata_m_nfft(Obsdata, Prior, **kwargs):
     # unpack keyword args
     fft_pad_factor = kwargs.get('fft_pad_factor',FFT_PAD_DEFAULT)
     p_rad = kwargs.get('p_rad', GRIDDER_P_RAD_DEFAULT)
+    nfft_eps = kwargs.get('nfft_eps', NFFT_EPS_DEFAULT)
 
     # unpack data
     mdata = Obsdata.unpack(['u','v','m','msigma'], conj=True)
@@ -1467,7 +1469,7 @@ def chisqdata_m_nfft(Obsdata, Prior, **kwargs):
 
     # get NFFT info
     npad = int(fft_pad_factor * np.max((Prior.xdim, Prior.ydim)))
-    A1 = NFFTInfo(Prior.xdim, Prior.ydim, Prior.psize, Prior.pulse, npad, p_rad, uv)
+    A1 = NFFTInfo(Prior.xdim, Prior.ydim, Prior.psize, Prior.pulse, npad, p_rad, uv, eps=nfft_eps)
     A = [A1]
 
     return (m, sigmam, A)
@@ -1494,6 +1496,7 @@ def chisqdata_vvis_nfft(Obsdata, Prior, **kwargs):
     # unpack keyword args
     fft_pad_factor = kwargs.get('fft_pad_factor',FFT_PAD_DEFAULT)
     p_rad = kwargs.get('p_rad', GRIDDER_P_RAD_DEFAULT)
+    nfft_eps = kwargs.get('nfft_eps', NFFT_EPS_DEFAULT)
 
     # unpack data
     data_arr = Obsdata.unpack(['u','v','vvis','vsigma'], conj=False)
@@ -1503,7 +1506,7 @@ def chisqdata_vvis_nfft(Obsdata, Prior, **kwargs):
 
     # get NFFT info
     npad = int(fft_pad_factor * np.max((Prior.xdim, Prior.ydim)))
-    A1 = NFFTInfo(Prior.xdim, Prior.ydim, Prior.psize, Prior.pulse, npad, p_rad, uv)
+    A1 = NFFTInfo(Prior.xdim, Prior.ydim, Prior.psize, Prior.pulse, npad, p_rad, uv, eps=nfft_eps)
     A = [A1]
 
     return (vis, sigma, A)

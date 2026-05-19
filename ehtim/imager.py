@@ -33,6 +33,13 @@ import ehtim.const_def as ehc
 import ehtim.image
 import ehtim.imaging.imager_utils as imutils
 import ehtim.imaging.pol_imager_utils as polutils
+from ehtim.const_def import (
+    FFT_INTERP_DEFAULT,
+    FFT_PAD_DEFAULT,
+    GRIDDER_CONV_FUNC_DEFAULT,
+    GRIDDER_P_RAD_DEFAULT,
+    NFFT_EPS_DEFAULT,
+)
 from ehtim.imaging.imager_backend import (
     DATATERMS,
     DATATERMS_POL,
@@ -62,11 +69,6 @@ NHIST = 50   # number of steps to store for hessian approx
 MAXLS = 40   # maximum number of line search steps in BFGS-B
 STOP = 1e-6  # convergence criterion
 EPS = 1e-8
-
-GRIDDER_P_RAD_DEFAULT = 2
-GRIDDER_CONV_FUNC_DEFAULT = 'gaussian'
-FFT_PAD_DEFAULT = 2
-FFT_INTERP_DEFAULT = 3
 
 REG_DEFAULT = {'simple': 1}
 DAT_DEFAULT = {'vis': 100}
@@ -196,6 +198,7 @@ class Imager:
         self._fft_conv_func = kwargs.get('fft_conv_func', GRIDDER_CONV_FUNC_DEFAULT)
         self._fft_pad_factor = kwargs.get('fft_pad_factor', FFT_PAD_DEFAULT)
         self._fft_interp_order = kwargs.get('fft_interp_order', FFT_INTERP_DEFAULT)
+        self._nfft_eps = kwargs.get('nfft_eps', NFFT_EPS_DEFAULT)
 
         # multifrequency
         mf = kwargs.get('mf', False)
@@ -776,6 +779,7 @@ class Imager:
             fft_conv_func=self._fft_conv_func,
             fft_gridder_prad=self._fft_gridder_prad,
             fft_interp_order=self._fft_interp_order,
+            nfft_eps=self._nfft_eps,
         )
 
     def make_reg_dict(self, imcur):

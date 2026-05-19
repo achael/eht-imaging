@@ -16,12 +16,7 @@
 #    You should have received a copy of the GNU General Public License
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-from __future__ import division
-from __future__ import print_function
 
-from builtins import str
-from builtins import range
-from builtins import object
 
 import matplotlib as mpl
 import matplotlib.pyplot as plt
@@ -77,6 +72,10 @@ GRIDDER_P_RAD_DEFAULT = 2
 GRIDDER_CONV_FUNC_DEFAULT = 'gaussian'
 FFT_PAD_DEFAULT = 2
 FFT_INTERP_DEFAULT = 3
+# Requested relative accuracy of the NFFT. 1e-9 is safe for high-dynamic-range
+# imaging (ALMA polarimetry, SKA-class arrays). Tighten to 1e-12 for ~1e6
+# dynamic range; relax to 1e-6 for fast low-SNR work.
+NFFT_EPS_DEFAULT = 1e-9
 
 # Observation recarray datatypes
 DTARR = [('site', 'U32'), ('x', 'f8'), ('y', 'f8'), ('z', 'f8'),
@@ -186,7 +185,7 @@ def show_noblock(pause=0.001):
         plt.pause(pause)
         plt.draw()
         plt.pause(pause)
-                
+
 FIELD_LABELS = {'time': 'Time',
                 'time_utc': 'Time (UTC)',
                 'time_gmst': 'Time (GMST)',

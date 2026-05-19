@@ -3436,6 +3436,7 @@ def chisqdata_vis_nfft(Obsdata, Prior, pol='I', **kwargs):
     weighting = kwargs.get('weighting', 'natural')
     fft_pad_factor = kwargs.get('fft_pad_factor', ehc.FFT_PAD_DEFAULT)
     p_rad = kwargs.get('p_rad', ehc.GRIDDER_P_RAD_DEFAULT)
+    nfft_eps = kwargs.get('nfft_eps', ehc.NFFT_EPS_DEFAULT)
 
     # unpack data
     vtype = ehc.vis_poldict[pol]
@@ -3450,7 +3451,7 @@ def chisqdata_vis_nfft(Obsdata, Prior, pol='I', **kwargs):
 
     # get NFFT info
     npad = int(fft_pad_factor * np.max((Prior.xdim, Prior.ydim)))
-    A1 = obsh.NFFTInfo(Prior.xdim, Prior.ydim, Prior.psize, Prior.pulse, npad, p_rad, uv)
+    A1 = obsh.NFFTInfo(Prior.xdim, Prior.ydim, Prior.psize, Prior.pulse, npad, p_rad, uv, eps=nfft_eps)
     A = [A1]
 
     return (vis, sigma, A)
@@ -3469,6 +3470,7 @@ def chisqdata_amp_nfft(Obsdata, Prior, pol='I', **kwargs):
     weighting = kwargs.get('weighting', 'natural')
     fft_pad_factor = kwargs.get('fft_pad_factor', ehc.FFT_PAD_DEFAULT)
     p_rad = kwargs.get('p_rad', ehc.GRIDDER_P_RAD_DEFAULT)
+    nfft_eps = kwargs.get('nfft_eps', ehc.NFFT_EPS_DEFAULT)
 
     # unpack data
     vtype = ehc.vis_poldict[pol]
@@ -3485,7 +3487,7 @@ def chisqdata_amp_nfft(Obsdata, Prior, pol='I', **kwargs):
 
     # get NFFT info
     npad = int(fft_pad_factor * np.max((Prior.xdim, Prior.ydim)))
-    A1 = obsh.NFFTInfo(Prior.xdim, Prior.ydim, Prior.psize, Prior.pulse, npad, p_rad, uv)
+    A1 = obsh.NFFTInfo(Prior.xdim, Prior.ydim, Prior.psize, Prior.pulse, npad, p_rad, uv, eps=nfft_eps)
     A = [A1]
 
     return (amp, sigma, A)
@@ -3509,6 +3511,7 @@ def chisqdata_bs_nfft(Obsdata, Prior, pol='I', **kwargs):
     weighting = kwargs.get('weighting', 'natural')
     fft_pad_factor = kwargs.get('fft_pad_factor', ehc.FFT_PAD_DEFAULT)
     p_rad = kwargs.get('p_rad', ehc.GRIDDER_P_RAD_DEFAULT)
+    nfft_eps = kwargs.get('nfft_eps', ehc.NFFT_EPS_DEFAULT)
 
     # unpack data
     vtype = ehc.vis_poldict[pol]
@@ -3529,9 +3532,9 @@ def chisqdata_bs_nfft(Obsdata, Prior, pol='I', **kwargs):
 
     # get NFFT info
     npad = int(fft_pad_factor * np.max((Prior.xdim, Prior.ydim)))
-    A1 = obsh.NFFTInfo(Prior.xdim, Prior.ydim, Prior.psize, Prior.pulse, npad, p_rad, uv1)
-    A2 = obsh.NFFTInfo(Prior.xdim, Prior.ydim, Prior.psize, Prior.pulse, npad, p_rad, uv2)
-    A3 = obsh.NFFTInfo(Prior.xdim, Prior.ydim, Prior.psize, Prior.pulse, npad, p_rad, uv3)
+    A1 = obsh.NFFTInfo(Prior.xdim, Prior.ydim, Prior.psize, Prior.pulse, npad, p_rad, uv1, eps=nfft_eps)
+    A2 = obsh.NFFTInfo(Prior.xdim, Prior.ydim, Prior.psize, Prior.pulse, npad, p_rad, uv2, eps=nfft_eps)
+    A3 = obsh.NFFTInfo(Prior.xdim, Prior.ydim, Prior.psize, Prior.pulse, npad, p_rad, uv3, eps=nfft_eps)
     A = [A1, A2, A3]
 
     return (bi, sigma, A)
@@ -3556,6 +3559,7 @@ def chisqdata_cphase_nfft(Obsdata, Prior, pol='I', **kwargs):
     systematic_cphase_noise = kwargs.get('systematic_cphase_noise', 0.)
     fft_pad_factor = kwargs.get('fft_pad_factor', ehc.FFT_PAD_DEFAULT)
     p_rad = kwargs.get('p_rad', ehc.GRIDDER_P_RAD_DEFAULT)
+    nfft_eps = kwargs.get('nfft_eps', ehc.NFFT_EPS_DEFAULT)
 
     # unpack data
     vtype = ehc.vis_poldict[pol]
@@ -3577,9 +3581,9 @@ def chisqdata_cphase_nfft(Obsdata, Prior, pol='I', **kwargs):
 
     # get NFFT info
     npad = int(fft_pad_factor * np.max((Prior.xdim, Prior.ydim)))
-    A1 = obsh.NFFTInfo(Prior.xdim, Prior.ydim, Prior.psize, Prior.pulse, npad, p_rad, uv1)
-    A2 = obsh.NFFTInfo(Prior.xdim, Prior.ydim, Prior.psize, Prior.pulse, npad, p_rad, uv2)
-    A3 = obsh.NFFTInfo(Prior.xdim, Prior.ydim, Prior.psize, Prior.pulse, npad, p_rad, uv3)
+    A1 = obsh.NFFTInfo(Prior.xdim, Prior.ydim, Prior.psize, Prior.pulse, npad, p_rad, uv1, eps=nfft_eps)
+    A2 = obsh.NFFTInfo(Prior.xdim, Prior.ydim, Prior.psize, Prior.pulse, npad, p_rad, uv2, eps=nfft_eps)
+    A3 = obsh.NFFTInfo(Prior.xdim, Prior.ydim, Prior.psize, Prior.pulse, npad, p_rad, uv3, eps=nfft_eps)
     A = [A1, A2, A3]
 
     return (clphase, sigma, A)
@@ -3602,6 +3606,7 @@ def chisqdata_cphase_diag_nfft(Obsdata, Prior, pol='I', **kwargs):
     snrcut = kwargs.get('snrcut', 0.)
     fft_pad_factor = kwargs.get('fft_pad_factor', ehc.FFT_PAD_DEFAULT)
     p_rad = kwargs.get('p_rad', ehc.GRIDDER_P_RAD_DEFAULT)
+    nfft_eps = kwargs.get('nfft_eps', ehc.NFFT_EPS_DEFAULT)
 
     # unpack data
     vtype = ehc.vis_poldict[pol]
@@ -3649,9 +3654,9 @@ def chisqdata_cphase_diag_nfft(Obsdata, Prior, pol='I', **kwargs):
 
     # get NFFT info
     npad = int(fft_pad_factor * np.max((Prior.xdim, Prior.ydim)))
-    A1 = obsh.NFFTInfo(Prior.xdim, Prior.ydim, Prior.psize, Prior.pulse, npad, p_rad, uv1)
-    A2 = obsh.NFFTInfo(Prior.xdim, Prior.ydim, Prior.psize, Prior.pulse, npad, p_rad, uv2)
-    A3 = obsh.NFFTInfo(Prior.xdim, Prior.ydim, Prior.psize, Prior.pulse, npad, p_rad, uv3)
+    A1 = obsh.NFFTInfo(Prior.xdim, Prior.ydim, Prior.psize, Prior.pulse, npad, p_rad, uv1, eps=nfft_eps)
+    A2 = obsh.NFFTInfo(Prior.xdim, Prior.ydim, Prior.psize, Prior.pulse, npad, p_rad, uv2, eps=nfft_eps)
+    A3 = obsh.NFFTInfo(Prior.xdim, Prior.ydim, Prior.psize, Prior.pulse, npad, p_rad, uv3, eps=nfft_eps)
     A = [A1, A2, A3]
 
     # Per-timestamp transform matrices have varying shapes; NumPy >= 1.24
@@ -3679,6 +3684,7 @@ def chisqdata_camp_nfft(Obsdata, Prior, pol='I', **kwargs):
     weighting = kwargs.get('weighting', 'natural')
     fft_pad_factor = kwargs.get('fft_pad_factor', ehc.FFT_PAD_DEFAULT)
     p_rad = kwargs.get('p_rad', ehc.GRIDDER_P_RAD_DEFAULT)
+    nfft_eps = kwargs.get('nfft_eps', ehc.NFFT_EPS_DEFAULT)
 
     # unpack data
     vtype = ehc.vis_poldict[pol]
@@ -3698,10 +3704,10 @@ def chisqdata_camp_nfft(Obsdata, Prior, pol='I', **kwargs):
 
     # get NFFT info
     npad = int(fft_pad_factor * np.max((Prior.xdim, Prior.ydim)))
-    A1 = obsh.NFFTInfo(Prior.xdim, Prior.ydim, Prior.psize, Prior.pulse, npad, p_rad, uv1)
-    A2 = obsh.NFFTInfo(Prior.xdim, Prior.ydim, Prior.psize, Prior.pulse, npad, p_rad, uv2)
-    A3 = obsh.NFFTInfo(Prior.xdim, Prior.ydim, Prior.psize, Prior.pulse, npad, p_rad, uv3)
-    A4 = obsh.NFFTInfo(Prior.xdim, Prior.ydim, Prior.psize, Prior.pulse, npad, p_rad, uv4)
+    A1 = obsh.NFFTInfo(Prior.xdim, Prior.ydim, Prior.psize, Prior.pulse, npad, p_rad, uv1, eps=nfft_eps)
+    A2 = obsh.NFFTInfo(Prior.xdim, Prior.ydim, Prior.psize, Prior.pulse, npad, p_rad, uv2, eps=nfft_eps)
+    A3 = obsh.NFFTInfo(Prior.xdim, Prior.ydim, Prior.psize, Prior.pulse, npad, p_rad, uv3, eps=nfft_eps)
+    A4 = obsh.NFFTInfo(Prior.xdim, Prior.ydim, Prior.psize, Prior.pulse, npad, p_rad, uv4, eps=nfft_eps)
     A = [A1, A2, A3, A4]
 
     return (clamp, sigma, A)
@@ -3725,6 +3731,7 @@ def chisqdata_logcamp_nfft(Obsdata, Prior, pol='I', **kwargs):
     weighting = kwargs.get('weighting', 'natural')
     fft_pad_factor = kwargs.get('fft_pad_factor', ehc.FFT_PAD_DEFAULT)
     p_rad = kwargs.get('p_rad', ehc.GRIDDER_P_RAD_DEFAULT)
+    nfft_eps = kwargs.get('nfft_eps', ehc.NFFT_EPS_DEFAULT)
 
     # unpack data
     vtype = ehc.vis_poldict[pol]
@@ -3744,10 +3751,10 @@ def chisqdata_logcamp_nfft(Obsdata, Prior, pol='I', **kwargs):
 
     # get NFFT info
     npad = int(fft_pad_factor * np.max((Prior.xdim, Prior.ydim)))
-    A1 = obsh.NFFTInfo(Prior.xdim, Prior.ydim, Prior.psize, Prior.pulse, npad, p_rad, uv1)
-    A2 = obsh.NFFTInfo(Prior.xdim, Prior.ydim, Prior.psize, Prior.pulse, npad, p_rad, uv2)
-    A3 = obsh.NFFTInfo(Prior.xdim, Prior.ydim, Prior.psize, Prior.pulse, npad, p_rad, uv3)
-    A4 = obsh.NFFTInfo(Prior.xdim, Prior.ydim, Prior.psize, Prior.pulse, npad, p_rad, uv4)
+    A1 = obsh.NFFTInfo(Prior.xdim, Prior.ydim, Prior.psize, Prior.pulse, npad, p_rad, uv1, eps=nfft_eps)
+    A2 = obsh.NFFTInfo(Prior.xdim, Prior.ydim, Prior.psize, Prior.pulse, npad, p_rad, uv2, eps=nfft_eps)
+    A3 = obsh.NFFTInfo(Prior.xdim, Prior.ydim, Prior.psize, Prior.pulse, npad, p_rad, uv3, eps=nfft_eps)
+    A4 = obsh.NFFTInfo(Prior.xdim, Prior.ydim, Prior.psize, Prior.pulse, npad, p_rad, uv4, eps=nfft_eps)
     A = [A1, A2, A3, A4]
 
     return (clamp, sigma, A)
@@ -3770,6 +3777,7 @@ def chisqdata_logcamp_diag_nfft(Obsdata, Prior, pol='I', **kwargs):
     debias = kwargs.get('debias', False)
     fft_pad_factor = kwargs.get('fft_pad_factor', ehc.FFT_PAD_DEFAULT)
     p_rad = kwargs.get('p_rad', ehc.GRIDDER_P_RAD_DEFAULT)
+    nfft_eps = kwargs.get('nfft_eps', ehc.NFFT_EPS_DEFAULT)
 
     # unpack data & mask low snr points
     vtype = ehc.vis_poldict[pol]
@@ -3824,10 +3832,10 @@ def chisqdata_logcamp_diag_nfft(Obsdata, Prior, pol='I', **kwargs):
 
     # get NFFT info
     npad = int(fft_pad_factor * np.max((Prior.xdim, Prior.ydim)))
-    A1 = obsh.NFFTInfo(Prior.xdim, Prior.ydim, Prior.psize, Prior.pulse, npad, p_rad, uv1)
-    A2 = obsh.NFFTInfo(Prior.xdim, Prior.ydim, Prior.psize, Prior.pulse, npad, p_rad, uv2)
-    A3 = obsh.NFFTInfo(Prior.xdim, Prior.ydim, Prior.psize, Prior.pulse, npad, p_rad, uv3)
-    A4 = obsh.NFFTInfo(Prior.xdim, Prior.ydim, Prior.psize, Prior.pulse, npad, p_rad, uv4)
+    A1 = obsh.NFFTInfo(Prior.xdim, Prior.ydim, Prior.psize, Prior.pulse, npad, p_rad, uv1, eps=nfft_eps)
+    A2 = obsh.NFFTInfo(Prior.xdim, Prior.ydim, Prior.psize, Prior.pulse, npad, p_rad, uv2, eps=nfft_eps)
+    A3 = obsh.NFFTInfo(Prior.xdim, Prior.ydim, Prior.psize, Prior.pulse, npad, p_rad, uv3, eps=nfft_eps)
+    A4 = obsh.NFFTInfo(Prior.xdim, Prior.ydim, Prior.psize, Prior.pulse, npad, p_rad, uv4, eps=nfft_eps)
     A = [A1, A2, A3, A4]
 
     # Per-timestamp transform matrices have varying shapes; NumPy >= 1.24

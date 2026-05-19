@@ -88,8 +88,6 @@ class TestChisqGradientFiniteDiff:
     @pytest.mark.parametrize("dtype", DATATERMS)
     @pytest.mark.parametrize("ttype", TTYPES)
     def test_median_frac_diff(self, grad_setup, dtype, ttype):
-        if ttype == "nfft":
-            pytest.importorskip("pynfft")
         median_frac, _ = _chisq_gradient_check(grad_setup, dtype, ttype)
         assert median_frac < CHISQ_GRAD_MEDIAN_TOL, (
             f"{dtype} ({ttype}) median fractional gradient diff = {median_frac:.6f}"
@@ -98,8 +96,6 @@ class TestChisqGradientFiniteDiff:
     @pytest.mark.parametrize("dtype", DATATERMS)
     @pytest.mark.parametrize("ttype", TTYPES)
     def test_max_frac_diff(self, grad_setup, dtype, ttype):
-        if ttype == "nfft":
-            pytest.importorskip("pynfft")
         _, max_frac = _chisq_gradient_check(grad_setup, dtype, ttype)
         assert max_frac < CHISQ_GRAD_MAX_TOL, (
             f"{dtype} ({ttype}) max fractional gradient diff = {max_frac:.6f}"
