@@ -26,7 +26,7 @@ import calendar
 import os
 import time
 from html.parser import HTMLParser
-from multiprocessing import Pool
+from multiprocessing import Pool, cpu_count
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -39,11 +39,16 @@ import ehtim.image as image
 import ehtim.movie as movie
 import ehtim.obsdata as obsdata
 import ehtim.scattering as so
-from ehtim.const_def import *  #Note: C is m/s rather than cm/s.
-from ehtim.imaging.imager_utils import *
-from ehtim.observing.obs_helpers import *
-
-#from HTMLParser import HTMLParser
+from ehtim.const_def import C, RADPERAS, RADPERUAS
+from ehtim.imaging.imager_utils import (
+    chisq,
+    chisqdata,
+    chisqgrad,
+    embed,
+    regularizer,
+    regularizergrad,
+)
+from ehtim.observing.obs_helpers import ticks
 
 Fast_Convolve = True # This option will not wrap the convolution around the image
 
@@ -188,12 +193,12 @@ def export_multipanel_movie(im_List_Set, out='movie.mp4', fps=10, dpi=120, scale
 
     def update_img(n):
         if verbose:
-            print (f"processing frame {n} of {len(im_List)*pad_factor}")
+            print (f"processing frame {n} of {len(im_List_Set[0])*pad_factor}")
         for j in range(N_set):
             plt_im[j].set_data(im_data(j, n))
 
         if mjd_step > 0.1:
-            fig.suptitle('MJD: ' + str(im_List_Set[0][int((n-n%pad_factor)//pad_factor)].mjd), verticalalignment = verticalalignment)
+            fig.suptitle('MJD: ' + str(im_List_Set[0][int((n-n%pad_factor)//pad_factor)].mjd), verticalalignment='center')
         else:
             time = im_List_Set[0][int((n-n%pad_factor)//pad_factor)].time
             time_str = ("%d:%02d.%02d" % (int(time), (time*60) % 60, (time*3600) % 60))
@@ -469,38 +474,26 @@ def RdI_gradient(Frames, metric='SymKL', p=2.0, **kwargs):
         return 0.0
 
 def Rflow(Frames, Flow, metric='D2', p=2.0, **kwargs):
-    if metric == 'KL':
-        return Rflow_KL(Frames, Flow)
-    elif metric == 'SymKL':
-        return Rflow_SymKL(Frames, Flow)
-    elif metric == 'D2':
+    if metric == 'D2':
         return Rflow_D2(Frames, Flow)
-    elif metric == 'Dp':
-        return Rflow_Dp(Frames, Flow, p=p)
+    elif metric in ('KL', 'SymKL', 'Dp'):
+        raise NotImplementedError(f"Rflow metric={metric!r} is not implemented")
     else:
         return 0.0
 
 def Rflow_gradient_I(Frames, Flow, metric='D2', p=2.0, **kwargs):
-    if metric == 'KL':
-        return Rflow_KL_gradient_I(Frames, Flow)
-    elif metric == 'SymKL':
-        return Rflow_SymKL_gradient_I(Frames, Flow)
-    elif metric == 'D2':
+    if metric == 'D2':
         return Rflow_D2_gradient_I(Frames, Flow)
-    elif metric == 'Dp':
-        return Rflow_Dp_gradient_I(Frames, Flow, p=p)
+    elif metric in ('KL', 'SymKL', 'Dp'):
+        raise NotImplementedError(f"Rflow_gradient_I metric={metric!r} is not implemented")
     else:
         return 0.0
 
 def Rflow_gradient_m(Frames, Flow, metric='D2', p=2.0, **kwargs):
-    if metric == 'KL':
-        return Rflow_KL_gradient_m(Frames, Flow)
-    elif metric == 'SymKL':
-        return Rflow_SymKL_gradient_m(Frames, Flow)
-    elif metric == 'D2':
-        return Rflow_Dp_gradient_m(Frames, Flow)
-    elif metric == 'Dp':
-        return Rflow_Dp_gradient_m(Frames, Flow, p=p)
+    if metric == 'D2':
+        return Rflow_D2_gradient_m(Frames, Flow)
+    elif metric in ('KL', 'SymKL', 'Dp'):
+        raise NotImplementedError(f"Rflow_gradient_m metric={metric!r} is not implemented")
     else:
         return 0.0
 
@@ -837,8 +830,9 @@ d1='vis', d2=False, d3=False,
 alpha_d1=10, alpha_d2=10, alpha_d3=10,
 systematic_noise1=0.0, systematic_noise2=0.0, systematic_noise3=0.0,
 entropy1="tv2", entropy2="l1",
-alpha_s1=1.0, alpha_s2=1.0, norm_reg=True, alpha_A=1.0,
+alpha_s1=1.0, alpha_s2=1.0, norm_reg=True, alpha_A=1.0, alpha_flux=0.0,
 R_dt  ={'alpha':0.0, 'metric':'SymKL', 'p':2.0},
+Target_Dynamic_Range=10000.0,
 maxit=200, J_factor = 0.001, stop=1.0e-10, ipynb=False, refresh_interval = 1000,
 minimizer_method = 'L-BFGS-B', NHIST = 25, update_interval = 1, clipfloor=0.,
 ttype = 'nfft', fft_pad_factor=2):
