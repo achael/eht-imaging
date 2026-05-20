@@ -394,9 +394,6 @@ def test_evpa_stokes_recovers_input_angle(gauss_im_pol):
     assert gauss_im_pol.evpa() == pytest.approx(expected, rel=1e-10)
 
 
-@pytest.mark.xfail(reason="Bug in Image.evpa circ branch: missing 0.5 factor "
-                          "(image.py:979 returns angle(sum(rlvec)) instead of "
-                          "0.5*angle(sum(rlvec))).")
 def test_evpa_matches_across_polreps(gauss_im_pol):
     e_stokes = gauss_im_pol.evpa()
     e_circ = gauss_im_pol.switch_polrep("circ").evpa()
@@ -621,9 +618,6 @@ def test_grad_zero_for_uniform_image():
     np.testing.assert_allclose(out.imvec, 0.0, atol=1e-12)
 
 
-@pytest.mark.xfail(reason="Bug in Image.grad (image.py:1786-1791): `if gradtype=='y'` "
-                          "should be `elif`. As written, gradtype='x' is overwritten "
-                          "by the else branch, so 'x' produces the same result as 'abs'.")
 def test_grad_x_differs_from_abs():
     arr = np.zeros((16, 16))
     arr[8, 3] = 1.0

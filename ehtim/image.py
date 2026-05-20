@@ -976,7 +976,7 @@ class Image:
         if self.polrep == 'stokes':
             frac = 0.5 * np.angle(np.sum(self.qvec + 1j * self.uvec))
         elif self.polrep == 'circ':
-            frac = np.angle(np.sum(self.rlvec))
+            frac = 0.5 * np.angle(np.sum(self.rlvec))
 
         return frac
 
@@ -1785,7 +1785,7 @@ class Image:
             # TODO: are these in the right order??
             if gradtype == 'x':
                 gradarr = sx
-            if gradtype == 'y':
+            elif gradtype == 'y':
                 gradarr = sy
             else:
                 gradarr = np.hypot(sx, sy)
