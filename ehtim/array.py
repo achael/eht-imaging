@@ -35,6 +35,198 @@ from ehtim.caltable import plot_tarr_dterms
 # Array object
 ###################################################################################################
 
+# Valid two-character feed_type strings for a single station (lowercase).
+# Mixed-basis stations (e.g. Effelsberg R+X) are explicitly enumerated.
+VALID_FEED_TYPES = frozenset({
+    'rl', 'lr', 'xy', 'yx',
+    'rx', 'ry', 'lx', 'ly',
+    'xr', 'xl', 'yr', 'yl',
+})
+
+# Default symmetric SEFD when none is supplied (legacy convention).
+_DEFAULT_SEFD = 10000.0
+
+
+def _validate_feed_type(feed_type):
+    """Raise ValueError if feed_type is not a recognised 2-char feed string."""
+    if not isinstance(feed_type, str) or feed_type.lower() not in VALID_FEED_TYPES:
+        raise ValueError(
+            f"feed_type must be one of {sorted(VALID_FEED_TYPES)}; "
+            f"got {feed_type!r}")
+
+
+def _resolve_sefd_pair(sefd, sefd_p1, sefd_p2):
+    """Resolve (sefd_p1, sefd_p2) from legacy + generic kwargs.
+
+    Rules: pass exactly one of `sefd` (symmetric, both feeds) or the
+    `sefd_p1`/`sefd_p2` pair (asymmetric, per-feed). Mixing the legacy
+    `sefd` kwarg with either generic kwarg raises. The generic kwargs
+    must be supplied as a pair. If none are given, both feeds default
+    to _DEFAULT_SEFD.
+    """
+    any_generic = (sefd_p1 is not None) or (sefd_p2 is not None)
+    if sefd is not None and any_generic:
+        raise ValueError(
+            "pass only one of sefd (legacy, symmetric) or "
+            "sefd_p1/sefd_p2 (generic, per-feed), not both")
+    if any_generic:
+        if sefd_p1 is None or sefd_p2 is None:
+            raise ValueError(
+                "sefd_p1 and sefd_p2 must be supplied together")
+        return float(sefd_p1), float(sefd_p2)
+    val = float(sefd) if sefd is not None else _DEFAULT_SEFD
+    return val, val
+
+
+class TarrView:
+    """Thin wrapper around an Array's underlying telescope-array recarray.
+
+    Forwards array-like operations (indexing, iteration, length, dtype
+    lookup, numpy interop, equality, pickling) to the wrapped recarray.
+    The wrapper exists to guard column-form access of legacy feed-specific
+    field names ('sefdr', 'sefdl', 'dr', 'dl') on arrays whose stations
+    are not all 'rl'-feed: in that case the title-alias accessor would
+    return values from the underlying generic slot (sefd_p1, d_p1, etc.),
+    which on a non-RL station is the wrong-feed value. TarrView raises
+    KeyError instead and points to the per-feed accessor.
+
+    The recarray remains the storage truth; TarrView is created on the
+    fly by Array.tarr's property getter and adds no persisted state.
+
+    Note: this guard catches whole-column access (tarr['sefdr']). It does
+    not catch row-form access (tarr[i]['sefdr']) — the row is a numpy
+    void object owned by numpy. Phase 2+ code should prefer
+    Array.sefd_for_feed / Array.dterm_for_feed for per-station lookups.
+    """
+
+    _LEGACY_FIELD_HINT = {
+        'sefdr': 'Array.sefd_for_feed(site, feed)',
+        'sefdl': 'Array.sefd_for_feed(site, feed)',
+        'dr': 'Array.dterm_for_feed(site, feed)',
+        'dl': 'Array.dterm_for_feed(site, feed)',
+    }
+
+    __slots__ = ('_tarr',)
+
+    # Mark unhashable like the underlying ndarray.
+    __hash__ = None
+
+    def __init__(self, tarr):
+        object.__setattr__(self, '_tarr', tarr)
+
+    # ---- guard --------------------------------------------------------------
+    def _is_homogeneous_rl(self):
+        fts = self._tarr['feed_type']
+        if len(fts) == 0:
+            return True  # empty arrays default to legacy RL semantics
+        s = set(str(ft).lower() for ft in fts)
+        return s == {'rl'}
+
+    def _guard(self, key):
+        if isinstance(key, str) and key in self._LEGACY_FIELD_HINT \
+                and not self._is_homogeneous_rl():
+            fts = sorted({str(ft) for ft in self._tarr['feed_type']})
+            hint = self._LEGACY_FIELD_HINT[key]
+            raise KeyError(
+                f"tarr[{key!r}] is undefined on a non-RL or mixed-feed array "
+                f"(feed_types={fts}); use {hint} instead")
+
+    # ---- core forwarding ----------------------------------------------------
+    def __getitem__(self, key):
+        self._guard(key)
+        result = self._tarr[key]
+        # If the result is itself a structured-dtype slice (boolean mask,
+        # slice object, fancy index, ...), re-wrap so the guard stays in
+        # effect. Single-row integer indexing produces a numpy void and
+        # falls through unwrapped (documented limitation).
+        if isinstance(result, np.ndarray) and result.dtype.names is not None \
+                and 'feed_type' in result.dtype.names:
+            return TarrView(result)
+        return result
+
+    def __setitem__(self, key, value):
+        # Setting is delegated unguarded: callers writing whole columns
+        # are responsible for their data. Read-side guards still apply.
+        self._tarr[key] = value
+
+    def __iter__(self):
+        return iter(self._tarr)
+
+    def __len__(self):
+        return len(self._tarr)
+
+    def __array__(self, dtype=None, copy=None):
+        # Return the underlying ndarray directly; calling np.asarray() here
+        # would strip the structured dtype (numpy quirk with title aliases).
+        if dtype is None:
+            return self._tarr.copy() if copy else self._tarr
+        out = self._tarr.astype(dtype)
+        return out.copy() if copy else out
+
+    def __eq__(self, other):
+        if isinstance(other, TarrView):
+            other = other._tarr
+        return self._tarr == other
+
+    def __ne__(self, other):
+        if isinstance(other, TarrView):
+            other = other._tarr
+        return self._tarr != other
+
+    def __repr__(self):
+        return f"TarrView({self._tarr!r})"
+
+    # ---- attribute forwarding -----------------------------------------------
+    def __getattr__(self, name):
+        # __getattr__ only fires for misses; forward .dtype, .shape, .names,
+        # .copy, .view, etc. to the underlying ndarray.
+        #
+        # Numpy's __array_interface__ / __array_struct__ on a structured
+        # ndarray report 'typestr=V<nbytes>', which strips field names when
+        # numpy uses them to construct a copy. Hide them so np.asarray()
+        # falls back to our __array__ instead.
+        if name in ('__array_interface__', '__array_struct__'):
+            raise AttributeError(name)
+        return getattr(self._tarr, name)
+
+    # ---- pickle support -----------------------------------------------------
+    def __reduce__(self):
+        # Reconstruct via TarrView(recarray) on the other end.
+        return (TarrView, (self._tarr,))
+
+
+def _resolve_dterm_pair(dr, dl, d_p1, d_p2, feed_type):
+    """Resolve (d_p1, d_p2) from legacy dr/dl + generic d_p1/d_p2 kwargs.
+
+    `dr`/`dl` are only valid for feed_type='rl' and cannot be combined
+    with their generic counterpart on the same feed. Missing values
+    default to 0+0j (no leakage).
+    """
+    if feed_type.lower() != 'rl' and (dr is not None or dl is not None):
+        raise ValueError(
+            f"dr/dl kwargs are only valid for feed_type='rl' "
+            f"(got feed_type={feed_type!r}); use d_p1/d_p2 instead")
+    if dr is not None and d_p1 is not None:
+        raise ValueError(
+            "pass only one of dr (legacy) or d_p1 (generic), not both")
+    if dl is not None and d_p2 is not None:
+        raise ValueError(
+            "pass only one of dl (legacy) or d_p2 (generic), not both")
+
+    if d_p1 is not None:
+        d_p1_val = complex(d_p1)
+    elif dr is not None:
+        d_p1_val = complex(dr)
+    else:
+        d_p1_val = 0 + 0j
+    if d_p2 is not None:
+        d_p2_val = complex(d_p2)
+    elif dl is not None:
+        d_p2_val = complex(dl)
+    else:
+        d_p2_val = 0 + 0j
+    return d_p1_val, d_p2_val
+
 
 class Array:
 
@@ -75,12 +267,87 @@ class Array:
 
     @property
     def tarr(self):
-        return self._tarr
+        return TarrView(self._tarr)
 
     @tarr.setter
     def tarr(self, tarr):
+        if isinstance(tarr, TarrView):
+            tarr = tarr._tarr
         self._tarr = tarr
         self.tkey = {tarr[i]['site']: i for i in range(len(tarr))}
+
+    def is_homogeneous_feeds(self):
+        """Return True if every station shares the same feed_type.
+
+           Returns:
+                bool : True for single-feed arrays (legacy 'rl', all-'xy', ...);
+                       False for mixed-feed arrays.
+        """
+        return len(set(self._tarr['feed_type'])) <= 1
+
+    def feed_types(self):
+        """Return the set of distinct feed types present in the array.
+
+           Returns:
+                set[str] : e.g. {'rl'} for a legacy array, {'rl', 'xy'} for
+                           a mixed circular+linear array.
+        """
+        return set(str(ft) for ft in self._tarr['feed_type'])
+
+    def _row_and_feed_index(self, site, feed):
+        """Resolve (row, slot_index) for site/feed lookup; raise on miss.
+
+           slot_index is 0 if feed matches the station's first feed channel,
+           1 if it matches the second. feed and feed_type are compared
+           case-insensitively.
+        """
+        if site not in self.tkey:
+            raise KeyError(
+                f"site {site!r} not in array (have: {sorted(self.tkey)})")
+        row = self._tarr[self.tkey[site]]
+        ft = str(row['feed_type']).lower()
+        feed_lc = str(feed).lower()
+        if len(feed_lc) != 1 or len(ft) != 2:
+            raise ValueError(
+                f"feed must be a single character and feed_type a 2-char "
+                f"string; got feed={feed!r}, feed_type={ft!r}")
+        if feed_lc == ft[0]:
+            return row, 0
+        if feed_lc == ft[1]:
+            return row, 1
+        raise ValueError(
+            f"feed {feed!r} not in feed_type {ft!r} of site {site!r}")
+
+    def sefd_for_feed(self, site, feed):
+        """Return the SEFD for a single feed channel of a station.
+
+           Args:
+                site (str) : station name (key in self.tkey)
+                feed (str) : single feed character; must match one of the two
+                             feed channels of the station's feed_type
+                             (e.g. 'R'/'L' for 'rl', 'X'/'Y' for 'xy').
+                             Case-insensitive.
+
+           Returns:
+                float : SEFD in Jy
+        """
+        row, slot = self._row_and_feed_index(site, feed)
+        return float(row['sefd_p1' if slot == 0 else 'sefd_p2'])
+
+    def dterm_for_feed(self, site, feed):
+        """Return the leakage D-term for a single feed channel of a station.
+
+           Args:
+                site (str) : station name (key in self.tkey)
+                feed (str) : single feed character; must match one of the two
+                             feed channels of the station's feed_type.
+                             Case-insensitive.
+
+           Returns:
+                complex : leakage D-term
+        """
+        row, slot = self._row_and_feed_index(site, feed)
+        return complex(row['d_p1' if slot == 0 else 'd_p2'])
 
     def copy(self):
         """Copy the array object.
@@ -129,7 +396,12 @@ class Array:
 
                mjd (int): the mjd of the observation
                timetype (str): how to interpret tstart and tstop; either 'GMST' or 'UTC'
-               polrep (str): polarization representation, either 'stokes' or 'circ'
+               polrep (str): polarization representation, one of
+                             {'stokes', 'circ', 'lin', 'mixed'}. 'circ' requires
+                             all-RL feeds; 'lin' requires all-XY feeds; 'mixed'
+                             requires at least two distinct feed types. 'lin'
+                             and 'mixed' are not yet wired through the
+                             simulation backend (Phase 5).
                elevmin (float): station minimum elevation in degrees
                elevmax (float): station maximum elevation in degrees
                no_elevcut_space (bool): if True, do not apply elevation cut to orbiters
@@ -140,6 +412,29 @@ class Array:
                Obsdata: an observation object with no data
 
         """
+        valid_polreps = ('stokes', 'circ', 'lin', 'mixed')
+        if polrep not in valid_polreps:
+            raise ValueError(
+                f"polrep must be one of {valid_polreps}; got {polrep!r}")
+
+        feeds = self.feed_types()
+        if polrep == 'circ' and feeds != {'rl'}:
+            raise ValueError(
+                f"polrep='circ' requires all stations to have feed_type='rl'; "
+                f"array has feed_types={sorted(feeds)}")
+        if polrep == 'lin' and feeds != {'xy'}:
+            raise ValueError(
+                f"polrep='lin' requires all stations to have feed_type='xy'; "
+                f"array has feed_types={sorted(feeds)}")
+        if polrep == 'mixed' and len(feeds) < 2:
+            raise ValueError(
+                f"polrep='mixed' requires at least two distinct feed types; "
+                f"array has feed_types={sorted(feeds)}")
+        if polrep in ('lin', 'mixed'):
+            raise NotImplementedError(
+                f"Array.obsdata(polrep={polrep!r}) is not yet supported by "
+                f"the simulation backend (see Phase 5 of "
+                f"obsdata_mixedpol_plan_v2.md)")
 
         obsarr = simobs.make_uvpoints(self, ra, dec, rf, bw,
                                       tint, tadv, tstart, tstop,
@@ -218,24 +513,53 @@ class Array:
 
         return axes
 
-    def add_site(self, site, coords, sefd=10000,
+    def add_site(self, site, coords, sefd=None,
                  fr_par=0, fr_elev=0, fr_off=0,
-                 dr=0.+0.j, dl=0.+0.j):
+                 dr=None, dl=None,
+                 feed_type='rl',
+                 sefd_p1=None, sefd_p2=None,
+                 d_p1=None, d_p2=None):
 
         """Add a ground station to the array
 
-           TODO (Phase 2 mixed-pol): extend signature with `feed_type='rl'` and
-           per-feed sefd/d-term kwargs (sefd_p1/sefd_p2/d_p1/d_p2). Phase 1
-           hardcodes feed_type='rl' so legacy circular workflows are unchanged.
+           Pass either the legacy symmetric kwargs (`sefd`, `dr`, `dl` — only
+           valid for feed_type='rl') OR the generic per-feed kwargs
+           (`sefd_p1`/`sefd_p2`, `d_p1`/`d_p2`). Mixing legacy and generic
+           kwargs for the same field raises ValueError.
+
+           Args:
+               site (str): site name
+               coords (tuple): (x, y, z) station coordinates in meters
+               sefd (float): legacy symmetric SEFD applied to both feeds.
+                             Defaults to 10000 Jy when none of sefd / sefd_p1
+                             / sefd_p2 is supplied.
+               fr_par, fr_elev, fr_off (float): field-rotation coefficients
+               dr (complex): legacy D-term for the R feed; only valid when
+                             feed_type='rl'.
+               dl (complex): legacy D-term for the L feed; only valid when
+                             feed_type='rl'.
+               feed_type (str): two-character feed-type string, lowercase,
+                                drawn from VALID_FEED_TYPES. Default 'rl'
+                                preserves the legacy calling convention.
+               sefd_p1, sefd_p2 (float): per-feed SEFDs. Must be supplied
+                                         together.
+               d_p1, d_p2 (complex): per-feed D-terms. Default 0+0j.
+
+           Returns:
+               Array: a new Array with the station appended.
         """
+        _validate_feed_type(feed_type)
+        sefd_p1_val, sefd_p2_val = _resolve_sefd_pair(sefd, sefd_p1, sefd_p2)
+        d_p1_val, d_p2_val = _resolve_dterm_pair(dr, dl, d_p1, d_p2, feed_type)
+
         tarr_old = self.tarr.copy()
         ephem_old = self.ephem.copy()
 
-
         tarr_newline = np.array((str(site), float(coords[0]), float(coords[1]), float(coords[2]),
-                                 float(sefd), float(sefd),
-                                 dr, dl,
-                                 float(fr_par), float(fr_elev), float(fr_off), 'rl'), dtype=ehc.DTARR)
+                                 sefd_p1_val, sefd_p2_val,
+                                 d_p1_val, d_p2_val,
+                                 float(fr_par), float(fr_elev), float(fr_off),
+                                 feed_type.lower()), dtype=ehc.DTARR)
         tarr_new = np.append(tarr_old, tarr_newline)
 
         arr_out = Array(tarr_new, ephem_old)
@@ -263,23 +587,33 @@ class Array:
         arr_out = Array(tarr_new, ephem_new)
         return arr_out
 
-    def add_satellite_tle(self, tlearr, sefd=10000):
+    def add_satellite_tle(self, tlearr, sefd=None,
+                          feed_type='rl',
+                          sefd_p1=None, sefd_p2=None,
+                          d_p1=None, d_p2=None):
 
         """Add an earth-orbiting satellite to the array from a TLE
 
            Args:
              tlearr (str) : 3 element list with [name, tle line 1, tle line 2] as strings
-             sefd (float) : assumed sefd for the array file (assumes sefdl = sefdr)
-
-           TODO (Phase 2 mixed-pol): extend signature with feed_type kwarg.
+             sefd (float) : legacy symmetric SEFD (sefdl = sefdr); defaults to 10000.
+             feed_type (str): two-character feed_type string (default 'rl').
+             sefd_p1, sefd_p2 (float): per-feed SEFDs; pass together as an
+                                       alternative to `sefd`.
+             d_p1, d_p2 (complex): per-feed D-terms.
         """
+        _validate_feed_type(feed_type)
+        sefd_p1_val, sefd_p2_val = _resolve_sefd_pair(sefd, sefd_p1, sefd_p2)
+        d_p1_val, d_p2_val = _resolve_dterm_pair(None, None, d_p1, d_p2, feed_type)
+
         satname = tlearr[0]
         tarr_new = self.tarr.copy()
         ephem_new = self.ephem.copy()
 
         tarr_newline = np.array((str(satname), 0., 0., 0.,
-                                 float(sefd), float(sefd),
-                                 0., 0., 0., 0., 0., 'rl'), dtype=ehc.DTARR)
+                                 sefd_p1_val, sefd_p2_val,
+                                 d_p1_val, d_p2_val,
+                                 0., 0., 0., feed_type.lower()), dtype=ehc.DTARR)
         tarr_new = np.append(tarr_new, tarr_newline)
         ephem_new[satname] = tlearr
         arr_out = Array(tarr_new, ephem_new)
@@ -290,7 +624,10 @@ class Array:
                                perigee_mjd=Time.now().mjd,
                                period_days=1., eccentricity=0.,
                                inclination=0., arg_perigee=0., long_ascending=0.,
-                               sefd=10000):
+                               sefd=None,
+                               feed_type='rl',
+                               sefd_p1=None, sefd_p2=None,
+                               d_p1=None, d_p2=None):
         """Add an earth-orbiting satellite to the array from simple keplerian elements
            perfect keplerian orbit is assumed, no derivatives
 
@@ -298,16 +635,23 @@ class Array:
                perigee time given in mjd
                period given in days
                inclination, arg_perigee, long_ascending given in degrees
-
-           TODO (Phase 2 mixed-pol): extend signature with feed_type kwarg.
+               sefd (float): legacy symmetric SEFD (defaults to 10000).
+               feed_type (str): two-character feed_type string (default 'rl').
+               sefd_p1, sefd_p2 (float): per-feed SEFDs; pass together as an
+                                         alternative to `sefd`.
+               d_p1, d_p2 (complex): per-feed D-terms.
         """
+        _validate_feed_type(feed_type)
+        sefd_p1_val, sefd_p2_val = _resolve_sefd_pair(sefd, sefd_p1, sefd_p2)
+        d_p1_val, d_p2_val = _resolve_dterm_pair(None, None, d_p1, d_p2, feed_type)
 
         tarr_new = self.tarr.copy()
         ephem_new = self.ephem.copy()
 
         tarr_newline = np.array((str(satname), 0., 0., 0.,
-                                 float(sefd), float(sefd),
-                                 0., 0., 0., 0., 0., 'rl'), dtype=ehc.DTARR)
+                                 sefd_p1_val, sefd_p2_val,
+                                 d_p1_val, d_p2_val,
+                                 0., 0., 0., feed_type.lower()), dtype=ehc.DTARR)
         tarr_new = np.append(tarr_new, tarr_newline)
 
         ephem_new[satname] = [perigee_mjd, period_days, eccentricity, inclination, arg_perigee, long_ascending]

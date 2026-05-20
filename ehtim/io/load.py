@@ -821,17 +821,25 @@ def load_array_txt(filename, ephemdir='ephemeris'):
 
 
     tdata = np.loadtxt(filename, dtype=bytes, comments='#').astype(str)
+    if tdata.ndim == 1:
+        tdata = tdata.reshape(1, -1)
     if tdata[0][0].lower() == 'site':
         tdata = tdata[1:]
 
     path = os.path.dirname(filename)
 
+    # Column count is the schema discriminator:
+    #   5  = legacy minimal (site, x, y, z, sefd)
+    #   13 = legacy circular-only (no feed_type)
+    #   14 = current format (legacy circular + explicit feed_type),
+    #        emitted by save_array_txt with a leading
+    #        '# ehtim array format v2' marker
     tdataout = []
     if (tdata.shape[1] not in (5, 13, 14)):
         raise Exception("Array file should have format: " +
-                        "(name, x, y, z, SEFDR, SEFDL " +
-                        "FR_PAR_ANGLE FR_ELEV_ANGLE FR_OFFSET" +
-                        "DR_RE   DR_IM   DL_RE    DL_IM   [FEED_TYPE])")
+                        "(name, x, y, z, SEFD_P1, SEFD_P2 " +
+                        "FR_PAR_ANGLE FR_ELEV_ANGLE FR_OFFSET " +
+                        "D_P1_RE D_P1_IM D_P2_RE D_P2_IM [FEED_TYPE])")
 
     elif tdata.shape[1] == 5:
         tdataout = [np.array((x[0], float(x[1]), float(x[2]), float(x[3]), float(x[4]), float(x[4]),
