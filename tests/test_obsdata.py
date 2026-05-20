@@ -374,6 +374,56 @@ def test_bllist_unique_baseline_per_chunk(obs_direct):
         assert len(pairs) == 1
 
 
+# Regression: np.array(list_of_recarrays, dtype=object) silently stacks into 2-D
+# when every scan has the same shape, dropping the recarray dtype and breaking
+# field-name indexing downstream (e.g. bispectra() -> tdata[0]['time']). See PR #186.
+
+def test_tlist_returns_1d_object_array_single_scan(obs_direct):
+    chunks = obs_direct.tlist(t_gather=1e9)  # lump all data into one scan
+    assert chunks.ndim == 1
+    assert len(chunks) == 1
+    assert chunks[0].dtype.names is not None
+    # Field-name indexing must not raise.
+    assert chunks[0]["time"].shape == (len(chunks[0]),)
+
+
+def test_tlist_returns_1d_object_array_uniform_scans(obs_direct):
+    # Synthesize an obs whose scans all have the same baseline count by
+    # restricting to one baseline that's present at every time.
+    obs = obs_direct.copy()
+    pair = (obs.data[0]["t1"], obs.data[0]["t2"])
+    mask = (obs.data["t1"] == pair[0]) & (obs.data["t2"] == pair[1])
+    obs.data = obs.data[mask]
+    chunks = obs.tlist()
+    assert len(chunks) > 1  # multiple scans
+    assert chunks.ndim == 1
+    assert chunks[0].dtype.names is not None
+    assert chunks[0]["time"].shape == (1,)
+
+
+def test_bllist_returns_1d_object_array(obs_direct):
+    # Restrict to the (ALMA, APEX)/(ALMA, SPT)/(APEX, SPT) triangle, whose
+    # baselines all share the same row count -- triggers the auto-stacking bug.
+    obs = obs_direct.copy()
+    triangle = {"ALMA", "APEX", "SPT"}
+    mask = np.array([row["t1"] in triangle and row["t2"] in triangle for row in obs.data])
+    obs.data = obs.data[mask]
+    chunks = obs.bllist()
+    assert chunks.ndim == 1
+    assert len(chunks) == 3
+    assert chunks[0].dtype.names is not None
+    assert chunks[0]["t1"].shape == (len(chunks[0]),)
+
+
+def test_bispectra_runs_when_scans_have_uniform_shape(obs_direct):
+    # Direct repro from PR #186: bispectra() does `tdata[0]['time']`, which
+    # raised when tlist() collapsed to 2-D.
+    obs = obs_direct.copy()
+    obs.data = obs.data[obs.data["time"] == obs.data[0]["time"]]
+    bs = obs.bispectra(mode="all", count="min")
+    assert len(bs) > 0
+
+
 # ---------------------------------------------------------------------------
 # Section 5: Unpacking (unpack, unpack_dat, unpack_bl)
 # ---------------------------------------------------------------------------
