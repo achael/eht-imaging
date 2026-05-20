@@ -640,6 +640,37 @@ class TestAddJonesAndNoise:
                                    np.abs(obs.data["vis"]), atol=1e-10)
         assert not np.allclose(np.angle(out["vis"]), np.angle(obs.data["vis"]))
 
+    def test_recomputed_sigmas_match_asymmetric_sefds(self, asymmetric_image, asymmetric_array):
+        """Per-correlation sigmas after SEFD recomputation, on an array with sefdr != sefdl.
+
+        Pins the four SEFD-column pairings:
+            sig_rr = blnoise(sefdr1, sefdr2)
+            sig_ll = blnoise(sefdl1, sefdl2)
+            sig_rl = blnoise(sefdr1, sefdl2)
+            sig_lr = blnoise(sefdl1, sefdr2)
+
+        Catches the kind of bug where one of these uses the wrong SEFD column
+        (e.g. sig_ll using sefdr1 instead of sefdl1) — invisible when sefdr == sefdl.
+        """
+        obs_circ = _observe(asymmetric_image, asymmetric_array).switch_polrep("circ")
+        out = os_sim.add_jones_and_noise(obs_circ, add_th_noise=False,
+                                         verbose=False, seed=42)
+        arr = obs_circ.tarr
+        sites = list(arr["site"])
+        for row in out:
+            i1 = sites.index(row["t1"])
+            i2 = sites.index(row["t2"])
+            sefdr1, sefdl1 = arr[i1]["sefdr"], arr[i1]["sefdl"]
+            sefdr2, sefdl2 = arr[i2]["sefdr"], arr[i2]["sefdl"]
+            np.testing.assert_allclose(row["rrsigma"],
+                obsh.blnoise(sefdr1, sefdr2, row["tint"], obs_circ.bw))
+            np.testing.assert_allclose(row["llsigma"],
+                obsh.blnoise(sefdl1, sefdl2, row["tint"], obs_circ.bw))
+            np.testing.assert_allclose(row["rlsigma"],
+                obsh.blnoise(sefdr1, sefdl2, row["tint"], obs_circ.bw))
+            np.testing.assert_allclose(row["lrsigma"],
+                obsh.blnoise(sefdl1, sefdr2, row["tint"], obs_circ.bw))
+
     def test_sefd_nonpositive_falls_back_to_sigmas(self, obs, capsys):
         """SEFD<=0: code uses obs.data sigmas rather than recomputing.  Warning printed."""
         obs_bad = obs.copy()
@@ -681,6 +712,30 @@ class TestApplyJonesInverse:
         obs_back = obs_corr.copy()
         obs_back.data = os_sim.apply_jones_inverse(obs_corr, frcal=False, verbose=False)
         np.testing.assert_allclose(obs_back.data["vis"], obs.data["vis"], atol=1e-10)
+
+    def test_recomputed_sigmas_match_asymmetric_sefds(self, asymmetric_image, asymmetric_array):
+        """Same correlation-vs-SEFD layout check as in add_jones_and_noise.
+
+        With all cal flags True the inverse Jones matrices are identity and the
+        recomputed sigmas equal blnoise(sefd_a, sefd_b) directly per slot.
+        """
+        obs_circ = _observe(asymmetric_image, asymmetric_array).switch_polrep("circ")
+        out = os_sim.apply_jones_inverse(obs_circ, verbose=False)
+        arr = obs_circ.tarr
+        sites = list(arr["site"])
+        for row in out:
+            i1 = sites.index(row["t1"])
+            i2 = sites.index(row["t2"])
+            sefdr1, sefdl1 = arr[i1]["sefdr"], arr[i1]["sefdl"]
+            sefdr2, sefdl2 = arr[i2]["sefdr"], arr[i2]["sefdl"]
+            np.testing.assert_allclose(row["rrsigma"],
+                obsh.blnoise(sefdr1, sefdr2, row["tint"], obs_circ.bw))
+            np.testing.assert_allclose(row["llsigma"],
+                obsh.blnoise(sefdl1, sefdl2, row["tint"], obs_circ.bw))
+            np.testing.assert_allclose(row["rlsigma"],
+                obsh.blnoise(sefdr1, sefdl2, row["tint"], obs_circ.bw))
+            np.testing.assert_allclose(row["lrsigma"],
+                obsh.blnoise(sefdl1, sefdr2, row["tint"], obs_circ.bw))
 
     def test_roundtrip_with_opacity_only(self, obs):
         """taup=0 makes opacity attenuation deterministic; apply_jones_inverse inverts exactly."""
@@ -819,6 +874,7 @@ class TestAddNoiseLegacy:
             np.testing.assert_allclose(row["usigma"], sig_qu)
 
     def test_thermal_noise_residual_matches_sigma(self, obs):
+        out = os_sim.add_noise(obs, add_th_noise=True, verbose=False, seed=42)
         residual = out["vis"] - obs.data["vis"]
         ratio = np.std(residual.real) / np.mean(out["sigma"])
         assert 0.5 < ratio < 2.0
