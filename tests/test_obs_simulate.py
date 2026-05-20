@@ -3,7 +3,6 @@
 Covers all seven public functions: make_uvpoints, sample_vis, make_jones,
 make_jones_inverse, add_jones_and_noise, apply_jones_inverse, add_noise.
 """
-import copy
 import os
 
 import numpy as np
