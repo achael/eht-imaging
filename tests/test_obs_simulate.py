@@ -771,6 +771,53 @@ class TestAddNoiseLegacy:
                                        rtol=1e-10)
             break
 
+    def test_recomputed_sigmas_match_asymmetric_sefds_circ(self, asymmetric_image, asymmetric_array):
+        """Per-correlation sigmas after add_noise's SEFD recomputation, circ polrep.
+
+        With sefdr != sefdl, llsigma must use (sefdl1, sefdl2), not (sefdr1, sefdl2).
+        A wrong-SEFD-column bug in any of the four slots is caught directly here.
+        """
+        obs_circ = _observe(asymmetric_image, asymmetric_array).switch_polrep("circ")
+        out = os_sim.add_noise(obs_circ, add_th_noise=False, verbose=False, seed=42)
+        arr = obs_circ.tarr
+        sites = list(arr["site"])
+        for row in out:
+            i1 = sites.index(row["t1"])
+            i2 = sites.index(row["t2"])
+            sefdr1, sefdl1 = arr[i1]["sefdr"], arr[i1]["sefdl"]
+            sefdr2, sefdl2 = arr[i2]["sefdr"], arr[i2]["sefdl"]
+            np.testing.assert_allclose(row["rrsigma"],
+                obsh.blnoise(sefdr1, sefdr2, row["tint"], obs_circ.bw))
+            np.testing.assert_allclose(row["llsigma"],
+                obsh.blnoise(sefdl1, sefdl2, row["tint"], obs_circ.bw))
+            np.testing.assert_allclose(row["rlsigma"],
+                obsh.blnoise(sefdr1, sefdl2, row["tint"], obs_circ.bw))
+            np.testing.assert_allclose(row["lrsigma"],
+                obsh.blnoise(sefdl1, sefdr2, row["tint"], obs_circ.bw))
+
+    def test_recomputed_sigmas_match_asymmetric_sefds_stokes(self, obs_asym):
+        """Same as the circ-polrep test, but on stokes input: bug propagates through
+        sig_iv = 0.5*sqrt(sig_rr^2 + sig_ll^2) into both `sigma` and `vsigma`.
+        """
+        out = os_sim.add_noise(obs_asym, add_th_noise=False, verbose=False, seed=42)
+        arr = obs_asym.tarr
+        sites = list(arr["site"])
+        for row in out:
+            i1 = sites.index(row["t1"])
+            i2 = sites.index(row["t2"])
+            sefdr1, sefdl1 = arr[i1]["sefdr"], arr[i1]["sefdl"]
+            sefdr2, sefdl2 = arr[i2]["sefdr"], arr[i2]["sefdl"]
+            sig_rr = obsh.blnoise(sefdr1, sefdr2, row["tint"], obs_asym.bw)
+            sig_ll = obsh.blnoise(sefdl1, sefdl2, row["tint"], obs_asym.bw)
+            sig_rl = obsh.blnoise(sefdr1, sefdl2, row["tint"], obs_asym.bw)
+            sig_lr = obsh.blnoise(sefdl1, sefdr2, row["tint"], obs_asym.bw)
+            sig_iv = 0.5 * np.sqrt(sig_rr ** 2 + sig_ll ** 2)
+            sig_qu = 0.5 * np.sqrt(sig_rl ** 2 + sig_lr ** 2)
+            np.testing.assert_allclose(row["sigma"], sig_iv)
+            np.testing.assert_allclose(row["vsigma"], sig_iv)
+            np.testing.assert_allclose(row["qsigma"], sig_qu)
+            np.testing.assert_allclose(row["usigma"], sig_qu)
+
     def test_thermal_noise_residual_matches_sigma(self, obs):
         residual = out["vis"] - obs.data["vis"]
         ratio = np.std(residual.real) / np.mean(out["sigma"])
