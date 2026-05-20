@@ -88,6 +88,76 @@ class TestRegularizerGradients:
         )
 
 
+class TestCenterOfMassRegularizer:
+    """`reg_cm` / `reggrad_cm` semantics on a full-grid imvec.
+
+    The COM constraint is `(sum(I*x))^2 + (sum(I*y))^2`, normalised. An
+    off-centre image yields a strictly larger penalty than the centred one,
+    and the analytic gradient must match a finite-difference reference.
+    """
+
+    @staticmethod
+    def _kw(im):
+        return dict(xdim=im.xdim, ydim=im.ydim, psize=im.psize,
+                    flux=im.total_flux(), norm_reg=True)
+
+    def test_off_center_image_more_positive_than_centered(self, gauss_im):
+        """Shifting the source off-centre makes the (positive) penalty strictly larger."""
+        mask = np.ones_like(gauss_im.imvec, dtype=bool)
+        arr = gauss_im.imvec.reshape(gauss_im.ydim, gauss_im.xdim)
+        shifted = np.roll(arr, gauss_im.xdim // 4, axis=1).flatten()
+        val_centered = ib.compute_regularizer_term(gauss_im.imvec, 'cm', mask,
+                                                   **self._kw(gauss_im))
+        val_off = ib.compute_regularizer_term(shifted, 'cm', mask,
+                                              **self._kw(gauss_im))
+        assert val_off > val_centered
+        assert val_off > 1e-6
+
+    def test_gradient_matches_finite_difference(self, gauss_im):
+        """Analytic reggrad_cm matches a central finite-difference gradient at sample pixels."""
+        mask = np.ones_like(gauss_im.imvec, dtype=bool)
+        kw = self._kw(gauss_im)
+        rng = np.random.default_rng(0)
+        imvec = gauss_im.imvec + 0.01 * rng.standard_normal(gauss_im.imvec.shape)
+        grad_analytic = ib.compute_regularizergrad_term(imvec, 'cm', mask, **kw)
+        h = 1e-6
+        sample_idx = rng.choice(imvec.size, size=10, replace=False)
+        for i in sample_idx:
+            ep = imvec.copy()
+            ep[i] += h
+            em = imvec.copy()
+            em[i] -= h
+            fd = (ib.compute_regularizer_term(ep, 'cm', mask, **kw)
+                  - ib.compute_regularizer_term(em, 'cm', mask, **kw)) / (2 * h)
+            np.testing.assert_allclose(grad_analytic[i], fd, rtol=1e-4, atol=1e-12)
+
+    def test_gradient_matches_finite_difference_partial_mask(self, gauss_im):
+        """Exercise the embed-pre / mask-post-slice path of reg_cm/reggrad_cm.
+
+        With a non-trivial mask, `reg_cm` calls `embed(imvec, mask, randomfloor=True)`
+        which (with default `clipfloor=0`) zero-fills masked positions deterministically.
+        The analytic gradient returned by `reggrad_cm` is length-nmask (post-slice),
+        and FD perturbations on the masked-only vector must agree.
+        """
+        full_mask = gauss_im.imvec > 0.1 * gauss_im.imvec.max()
+        assert not full_mask.all(), "test requires a partial (non-trivial) mask"
+        kw = self._kw(gauss_im)
+        rng = np.random.default_rng(1)
+        imvec_masked = gauss_im.imvec[full_mask] + 0.01 * rng.standard_normal(full_mask.sum())
+        grad_analytic = ib.compute_regularizergrad_term(imvec_masked, 'cm', full_mask, **kw)
+        assert grad_analytic.shape == (full_mask.sum(),), "gradient must be length-nmask"
+        h = 1e-6
+        sample_idx = rng.choice(imvec_masked.size, size=10, replace=False)
+        for i in sample_idx:
+            ep = imvec_masked.copy()
+            ep[i] += h
+            em = imvec_masked.copy()
+            em[i] -= h
+            fd = (ib.compute_regularizer_term(ep, 'cm', full_mask, **kw)
+                  - ib.compute_regularizer_term(em, 'cm', full_mask, **kw)) / (2 * h)
+            np.testing.assert_allclose(grad_analytic[i], fd, rtol=1e-4, atol=1e-12)
+
+
 def _reg_kwargs(rtype, norm_reg=True):
     """Return kwargs for regularizer/regularizergrad based on rtype."""
     kwargs = dict(

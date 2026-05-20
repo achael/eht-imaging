@@ -741,7 +741,8 @@ def make_jones(obs, opacitycal=True, ampcal=True, phasecal=True, dcal=True,
             obs_tmp.tarr[i]['dl'] = dL
             datatable = []
             for j in range(len(times)):
-                datatable.append(np.array((times[j], gainR[j], gainL[j]), dtype=ehc.DTCAL))
+                datatable.append(np.array((times[j], gainR[j], gainL[j], dR, dL),
+                                          dtype=ehc.DTCAL))
             datatables[site] = np.array(datatable)
 
     # Save a calibration table with the synthetic gains and dterms added
@@ -1266,7 +1267,7 @@ def add_noise(obs, add_th_noise=True, opacitycal=True, ampcal=True, phasecal=Tru
         sig_rr = np.fromiter((obsh.blnoise(obs.tarr[obs.tkey[sites[i][0]]]['sefdr'],
                                            obs.tarr[obs.tkey[sites[i][1]]]['sefdr'], tint[i], bw)
                               for i in range(len(tint))), float)
-        sig_ll = np.fromiter((obsh.blnoise(obs.tarr[obs.tkey[sites[i][0]]]['sefdr'],
+        sig_ll = np.fromiter((obsh.blnoise(obs.tarr[obs.tkey[sites[i][0]]]['sefdl'],
                                            obs.tarr[obs.tkey[sites[i][1]]]['sefdl'], tint[i], bw)
                               for i in range(len(tint))), float)
         sig_rl = np.fromiter((obsh.blnoise(obs.tarr[obs.tkey[sites[i][0]]]['sefdr'],

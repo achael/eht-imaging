@@ -575,7 +575,7 @@ class Array:
 
         try:
             tarr_new = np.delete(tarr_old.copy(), self.tkey[site])
-        except IndexError:
+        except (KeyError, IndexError):
             raise Exception(f"could not find site {site} to delete from Array.tarr!")
 
         if site in ephem_old.keys():
