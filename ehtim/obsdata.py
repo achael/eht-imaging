@@ -435,10 +435,9 @@ class Obsdata:
             if n_true_dupes_dropped > 0:
                 warnings.warn(
                     f"reorder_baselines: dropped {n_true_dupes_dropped} duplicate "
-                    "row(s) at matching (time, t1, t2) with inconsistent (u, v). "
-                    "This usually indicates multi-channel data flattened into a "
-                    "single-frequency Obsdata; the schema cannot represent "
-                    "per-channel rows. Inspect your loader.",
+                    "row(s) at matching (time, t1, t2) that aren't a conjugate pair "
+                    "(e.g. flattened multi-channel or duplicate data) "
+                    "Inspect your loader.",
                     stacklevel=2,
                 )
             dat = dat[keep]
