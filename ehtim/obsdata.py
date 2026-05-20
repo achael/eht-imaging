@@ -613,7 +613,12 @@ class Obsdata:
                     data, lambda x: np.searchsorted(self.scans[:, 0], x['time'])):
                 datalist.append(np.array([obs for obs in group]))
 
-        return np.array(datalist, dtype=object)
+        # np.array(datalist, dtype=object) silently stacks into 2-D when all scans
+        # share a shape, dropping the recarray dtype; pre-allocate to force 1-D.
+        out = np.empty(len(datalist), dtype=object)
+        for i, d in enumerate(datalist):
+            out[i] = d
+        return out
 
 
     def split_obs(self, t_gather=0., scan_gather=False):
@@ -692,7 +697,10 @@ class Obsdata:
         for key, group in it.groupby(data[idx], lambda x: set((x['t1'], x['t2']))):
             datalist.append(np.array([obs for obs in group]))
 
-        return np.array(datalist, dtype=object)
+        out = np.empty(len(datalist), dtype=object)
+        for i, d in enumerate(datalist):
+            out[i] = d
+        return out
 
     def unpack_bl(self, site1, site2, fields, ang_unit='deg', debias=False, timetype=False):
         """Unpack the data over time on the selected baseline site1-site2.
