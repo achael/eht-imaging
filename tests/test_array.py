@@ -25,7 +25,6 @@ Designed to survive the Phase-2 mixed-pol changes landing in PR #260
 """
 
 import os
-import tempfile
 
 import numpy as np
 import pytest
