@@ -1266,7 +1266,7 @@ def add_noise(obs, add_th_noise=True, opacitycal=True, ampcal=True, phasecal=Tru
         sig_rr = np.fromiter((obsh.blnoise(obs.tarr[obs.tkey[sites[i][0]]]['sefdr'],
                                            obs.tarr[obs.tkey[sites[i][1]]]['sefdr'], tint[i], bw)
                               for i in range(len(tint))), float)
-        sig_ll = np.fromiter((obsh.blnoise(obs.tarr[obs.tkey[sites[i][0]]]['sefdr'],
+        sig_ll = np.fromiter((obsh.blnoise(obs.tarr[obs.tkey[sites[i][0]]]['sefdl'],
                                            obs.tarr[obs.tkey[sites[i][1]]]['sefdl'], tint[i], bw)
                               for i in range(len(tint))), float)
         sig_rl = np.fromiter((obsh.blnoise(obs.tarr[obs.tkey[sites[i][0]]]['sefdr'],
