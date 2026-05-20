@@ -618,7 +618,6 @@ class TestAddJonesAndNoise:
 
     def test_thermal_noise_residual_matches_sigma(self, obs):
         """With add_th_noise, residual std should be ~sigma."""
-        np.random.seed(0)
         obsdat = os_sim.add_jones_and_noise(obs, add_th_noise=True,
                                             verbose=False, seed=42)
         residual = obsdat["vis"] - obs.data["vis"]
@@ -773,8 +772,6 @@ class TestAddNoiseLegacy:
             break
 
     def test_thermal_noise_residual_matches_sigma(self, obs):
-        np.random.seed(0)
-        out = os_sim.add_noise(obs, add_th_noise=True, verbose=False, seed=42)
         residual = out["vis"] - obs.data["vis"]
         ratio = np.std(residual.real) / np.mean(out["sigma"])
         assert 0.5 < ratio < 2.0
