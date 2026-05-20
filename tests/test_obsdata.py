@@ -236,16 +236,68 @@ def test_reorder_baselines_time_sorted(obs_direct):
 
 
 def test_trial_speedups_matches_default(obs_direct):
-    obs_default = obs_direct.copy()
+    # The trial_speedups flag in reorder_baselines is now a no-op; both
+    # invocations must produce byte-identical output, including when the
+    # input contains conjugate pairs and true duplicates.
+    extra = obs_direct.data[0].copy()
+    extra["t1"], extra["t2"] = obs_direct.data[0]["t2"], obs_direct.data[0]["t1"]
+    extra["u"], extra["v"] = -obs_direct.data[0]["u"], -obs_direct.data[0]["v"]
+    extra["vis"] = np.conj(obs_direct.data[0]["vis"])
+    seeded = obs_direct.copy()
+    seeded.data = np.concatenate([obs_direct.data, np.array([extra], dtype=obs_direct.data.dtype)])
+
+    obs_default = seeded.copy()
     obs_default.reorder_baselines(trial_speedups=False)
-    obs_trial = obs_direct.copy()
+    obs_trial = seeded.copy()
     obs_trial.reorder_baselines(trial_speedups=True)
-    np.testing.assert_array_equal(
-        obs_default.data["time"], obs_trial.data["time"]
+    np.testing.assert_array_equal(obs_default.data, obs_trial.data)
+
+
+def _seed_extra_row(obs, **overrides):
+    """Return a copy of `obs` with one extra row tacked on, fields overridden."""
+    row = obs.data[0].copy()
+    for k, v in overrides.items():
+        row[k] = v
+    new = obs.copy()
+    new.data = np.concatenate([obs.data, np.array([row], dtype=obs.data.dtype)])
+    return new
+
+
+def test_reorder_baselines_conjugate_pair_silent_merge(obs_direct):
+    # (A,B) and (B,A) at the same time with conjugate u,v are the same
+    # measurement; reorder_baselines must drop one without warning.
+    r0 = obs_direct.data[0]
+    seeded = _seed_extra_row(
+        obs_direct, t1=r0["t2"], t2=r0["t1"], u=-r0["u"], v=-r0["v"],
+        vis=np.conj(r0["vis"]),
     )
-    np.testing.assert_array_equal(obs_default.data["t1"], obs_trial.data["t1"])
-    np.testing.assert_array_equal(obs_default.data["t2"], obs_trial.data["t2"])
-    np.testing.assert_array_equal(obs_default.data["vis"], obs_trial.data["vis"])
+    n_before = len(seeded.data)
+    with warnings.catch_warnings():
+        warnings.simplefilter("error", UserWarning)
+        seeded.reorder_baselines()
+    assert len(seeded.data) == n_before - 1
+
+
+def test_reorder_baselines_true_duplicate_warns(obs_direct):
+    # Same canonical (time, t1, t2) and same (u, v) but different vis ->
+    # not a conjugate pair, the user supplied inconsistent data. Warn.
+    seeded = _seed_extra_row(obs_direct, vis=obs_direct.data[0]["vis"] + 100.0)
+    n_before = len(seeded.data)
+    with pytest.warns(UserWarning, match="reorder_baselines: dropped 1"):
+        seeded.reorder_baselines()
+    assert len(seeded.data) == n_before - 1
+
+
+def test_reorder_baselines_multichannel_like_warns(obs_direct):
+    # Five extra rows with the same canonical baseline but distinct (u, v) --
+    # mimics multi-channel data flattened into a single-frequency Obsdata.
+    rows = [obs_direct.data[0].copy() for _ in range(5)]
+    for k, r in enumerate(rows):
+        r["u"] = obs_direct.data[0]["u"] * (1.0 + 0.01 * (k + 1))
+    seeded = obs_direct.copy()
+    seeded.data = np.concatenate([obs_direct.data, np.array(rows, dtype=obs_direct.data.dtype)])
+    with pytest.warns(UserWarning, match="reorder_baselines: dropped 5"):
+        seeded.reorder_baselines()
 
 
 def test_reorder_tarr_sefd_monotonic(obs_direct):
