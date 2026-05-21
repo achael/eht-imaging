@@ -1499,18 +1499,20 @@ def load_obs_uvfits(filename, polrep='stokes', flipbl=False,
                                 source=src, mjd=mjd, scantable=scantable,
                                 trial_speedups=trial_speedups)
 
-    # TODO -- this is bad and slow, use masks!
     if remove_nan:
         if polrep_uvfits == 'circ':
-            for j in range(len(obs.data)):
-                if np.isnan(obs.data[j]['rrsigma']):
-                    obs.data[j]['rrsigma'] = obs.data[j]['llsigma']
-                if np.isnan(obs.data[j]['llsigma']):
-                    obs.data[j]['llsigma'] = obs.data[j]['rrsigma']
-                if np.isnan(obs.data[j]['rlsigma']):
-                    obs.data[j]['rlsigma'] = obs.data[j]['rrsigma']
-                if np.isnan(obs.data[j]['lrsigma']):
-                    obs.data[j]['lrsigma'] = obs.data[j]['rrsigma']
+            # Fill nan sigmas from the parallel-hand value. rr is filled from ll
+            # first, then ll/rl/lr fall back to the (now-filled) rr -- so rr_filled
+            # feeds the other three, matching the original sequential logic.
+            rr = obs.data['rrsigma']
+            ll = obs.data['llsigma']
+            rl = obs.data['rlsigma']
+            lr = obs.data['lrsigma']
+            rr_filled = np.where(np.isnan(rr), ll, rr)
+            obs.data['rrsigma'] = rr_filled
+            obs.data['llsigma'] = np.where(np.isnan(ll), rr_filled, ll)
+            obs.data['rlsigma'] = np.where(np.isnan(rl), rr_filled, rl)
+            obs.data['lrsigma'] = np.where(np.isnan(lr), rr_filled, lr)
         else:
             print("WARNING: remove_nan not implemented with stokes uvfits files!")
 
