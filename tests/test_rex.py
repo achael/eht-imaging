@@ -78,6 +78,33 @@ def test_compute_ring_profile_recovers_ring_radius(ring_image):
     assert abs(pp.pkrad - R_RING_UAS) < 3.0
 
 
+def test_compute_ring_profile_rectangular():
+    """Ring extraction on a rectangular image (xdim != ydim).
+
+    The interpolator is built as RGI((ys, xs), imarr) with imarr of shape
+    (ydim, xdim); a swapped axis order would raise on the shape mismatch here
+    even though it is silent on square images.
+    """
+    xdim, ydim = 48, 64
+    psize = 200 * eh.RADPERUAS / max(xdim, ydim)
+    psize_uas = psize / eh.RADPERUAS
+    xs = np.arange(xdim) * psize_uas
+    ys = np.arange(ydim) * psize_uas
+    xc = 0.5 * (xdim - 1) * psize_uas
+    yc = 0.5 * (ydim - 1) * psize_uas
+    xx, yy = np.meshgrid(xs, ys)                 # (ydim, xdim)
+    rr = np.sqrt((xx - xc) ** 2 + (yy - yc) ** 2)
+    ring = np.exp(-0.5 * ((rr - R_RING_UAS) / RING_WIDTH_UAS) ** 2)
+    im = eh.image.Image(ring, psize, 17.761, -29.0,
+                        polrep="stokes", pol_prim="I", rf=230e9)
+
+    pp = rex.compute_ring_profile(im, xc, yc, rmax=40, interptype="cubic")
+    pp.calc_meanprof_and_stats()
+
+    assert np.all(np.isfinite(pp.meanprof))
+    assert abs(pp.pkrad - R_RING_UAS) < 3.0
+
+
 def test_compute_ring_profile_polarized_runs(ring_image):
     im, center = ring_image
     im = im.copy()
