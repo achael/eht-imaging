@@ -26,7 +26,7 @@ from builtins import object
 import string
 import numpy as np
 import scipy.interpolate
-import scipy.ndimage.filters as filt
+import scipy.ndimage as filt
 
 import ehtim.image
 import ehtim.obsdata

@@ -31,7 +31,7 @@ from multiprocessing import Pool, cpu_count
 import matplotlib.pyplot as plt
 import numpy as np
 import requests
-import scipy.ndimage.filters as filt
+import scipy.ndimage as filt
 import scipy.optimize as opt
 import scipy.signal
 

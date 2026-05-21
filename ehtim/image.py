@@ -23,9 +23,8 @@ import math
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 import numpy as np
-import numpy.matlib as matlib
 import scipy.interpolate
-import scipy.ndimage.filters as filt
+import scipy.ndimage as filt
 import scipy.optimize as opt
 import scipy.signal
 from scipy import ndimage as ndi
@@ -1356,7 +1355,7 @@ class Image:
         def rot_imvec(imvec):
             if np.any(np.imag(imvec) != 0):
                 return rot_imvec(np.real(imvec)) + 1j * rot_imvec(np.imag(imvec))
-            imarr_rot = scipy.ndimage.interpolation.rotate(imvec.reshape((self.ydim, self.xdim)),
+            imarr_rot = ndi.rotate(imvec.reshape((self.ydim, self.xdim)),
                                                            angle * 180.0 / np.pi, reshape=False,
                                                            order=order, mode='constant',
                                                            cval=0.0, prefilter=True)
@@ -4114,7 +4113,7 @@ class Image:
             dynamic_range = dynamic_range * np.ones(len(im_list) + 1)
 
         if not isinstance(shift, np.ndarray) and not isinstance(shift, bool):
-            shift = matlib.repmat(shift, len(im_list), 1)
+            shift = np.tile(shift, (len(im_list), 1))
 
         psize = self.psize
         max_fov = np.max([self.xdim * self.psize, self.ydim * self.psize])
