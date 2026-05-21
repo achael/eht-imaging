@@ -104,7 +104,9 @@ class Profiles(object):
 
         self.xs = np.arange(im.xdim)*im.psize/ehc.RADPERUAS
         self.ys = np.arange(im.ydim)*im.psize/ehc.RADPERUAS
-        self.interp = scipy.interpolate.interp2d(self.ys, self.xs, self.imarr, kind=interptype)
+        self.interp = scipy.interpolate.RegularGridInterpolator(
+            (self.ys, self.xs), self.imarr,
+            method=interptype, bounds_error=False, fill_value=None)
 
         self.profiles = np.array(profs)
         self.profilesQ = np.array(profsQ)
@@ -724,13 +726,14 @@ def compute_ring_profile(im, x0, y0, title="",
     ys = np.arange(im.ydim)*im.psize/ehc.RADPERUAS
 
     # TODO: test fiducial images with linear?
-    interp = scipy.interpolate.interp2d(ys, xs, imarr, kind=interptype)
+    interp = scipy.interpolate.RegularGridInterpolator(
+        (ys, xs), imarr, method=interptype, bounds_error=False, fill_value=None)
 
     def ringVals(theta):
         xxs = x0 - rs*np.sin(theta)
         yys = y0 + rs*np.cos(theta)
 
-        vals = [interp(xxs[i], yys[i])[0] for i in np.arange(len(rs))]
+        vals = interp(np.column_stack([yys, xxs]))
         return vals
 
     profs = []
@@ -744,21 +747,23 @@ def compute_ring_profile(im, x0, y0, title="",
     if len(im.qvec) > 0 and len(im.uvec > 0) and pol_profs:
         qarr = im.qvec.reshape(im.ydim, im.xdim)[::-1] * factor  # in brightness temperature K
         uarr = im.uvec.reshape(im.ydim, im.xdim)[::-1] * factor  # in brightness temperature K
-        interpQ = scipy.interpolate.interp2d(ys, xs, qarr, kind=interptype)
-        interpU = scipy.interpolate.interp2d(ys, xs, uarr, kind=interptype)
+        interpQ = scipy.interpolate.RegularGridInterpolator(
+            (ys, xs), qarr, method=interptype, bounds_error=False, fill_value=None)
+        interpU = scipy.interpolate.RegularGridInterpolator(
+            (ys, xs), uarr, method=interptype, bounds_error=False, fill_value=None)
 
         def ringValsQ(theta):
             xxs = x0 - rs*np.sin(theta)
             yys = y0 + rs*np.cos(theta)
 
-            vals = [interpQ(xxs[i], yys[i])[0] for i in np.arange(len(rs))]
+            vals = interpQ(np.column_stack([yys, xxs]))
             return vals
 
         def ringValsU(theta):
             xxs = x0 - rs*np.sin(theta)
             yys = y0 + rs*np.cos(theta)
 
-            vals = [interpU(xxs[i], yys[i])[0] for i in np.arange(len(rs))]
+            vals = interpU(np.column_stack([yys, xxs]))
             return vals
 
         for j in range(nrays):
@@ -793,16 +798,15 @@ def findCenter(im,
     ys = np.arange(im.ydim)*im.psize/ehc.RADPERUAS
 
     # TODO: test fiducial images with linear?
-    #iminterp = scipy.interpolate.interp2d(ys, xs, imarr, kind='cubic')
-    iminterp = scipy.interpolate.interp2d(ys, xs, imarr, kind='linear')
-    #iminterp = scipy.interpolate.RegularGridInterpolator((ys,xs),imarr)
+    iminterp = scipy.interpolate.RegularGridInterpolator(
+        (ys, xs), imarr, method='linear', bounds_error=False, fill_value=None)
     def objFunc(pos):
         (x0, y0) = pos
         diameters = []
         for j in range(nrays_search):
             xxs = x0 - rs*np.sin(thetas[j])
             yys = y0 + rs*np.cos(thetas[j])
-            prof = np.array([iminterp(xxs[i], yys[i])[0] for i in np.arange(len(rs))])
+            prof = iminterp(np.column_stack([yys, xxs]))
             
             args = np.argsort(prof)
             pkpos = args[-1]
