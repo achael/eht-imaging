@@ -18,8 +18,13 @@
 
 import matplotlib.pyplot as plt
 import numpy as np
-import pandas as pd
 import os
+
+try:
+    import pandas as pd
+except ImportError:
+    print("Warning: pandas not installed!")
+    print("Please install pandas to use the survey package!")
 
 import ehtim as eh
 import paramsurvey

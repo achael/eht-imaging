@@ -1040,5 +1040,5 @@ def add_gmst(df):
         times_unix, format='unix').sidereal_time('mean', 'greenwich').hour # vectorized
     df['gmst'] = 0. # initialize new column
     for (gmst, idx) in zip(times_gmst, indices):
-        df.ix[idx, 'gmst'] = gmst
+        df.loc[idx, 'gmst'] = gmst
     return df
