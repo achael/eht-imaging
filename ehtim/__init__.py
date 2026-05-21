@@ -45,8 +45,10 @@ import ehtim.model
 import ehtim.survey
 
 
-import warnings
-warnings.filterwarnings(
+# Use a non-colliding local name: the bare `warnings` name shadows the
+# `ehtim.warnings` submodule attribute and breaks `import ehtim.warnings as ehw`.
+import warnings as _stdlib_warnings
+_stdlib_warnings.filterwarnings(
     "ignore", message="numpy.dtype size changed, may indicate binary incompatibility.")
 
 # necessary to prevent hangs from astropy iers bug in astropy v 2.0.8
