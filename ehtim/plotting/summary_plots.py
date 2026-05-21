@@ -239,20 +239,20 @@ def imgsum(im_or_mov, obs, obs_uncal, outname, outdir='.', title='imgsum', comme
                 ha='left', va='center', transform=ax.transAxes)
         ax.text(.23, .5, "%0.0f GHz" % (im_or_mov.rf/1.e9), fontsize=fs,
                 ha='left', va='center', transform=ax.transAxes)
-        ax.text(.23, .3, "%0.1f $\mu$as" % (im_display.fovx()/ehc.RADPERUAS), fontsize=fs,
+        ax.text(.23, .3, r"%0.1f $\mu$as" % (im_display.fovx()/ehc.RADPERUAS), fontsize=fs,
                 ha='left', va='center', transform=ax.transAxes)
         ax.text(.23, .1, "%0.2f Jy" % flux, fontsize=fs,
                 ha='left', va='center', transform=ax.transAxes)
 
-        ax.text(.5, .9, "$\chi^2_{vis}$", fontsize=fs,
+        ax.text(.5, .9, r"$\chi^2_{vis}$", fontsize=fs,
                 ha='left', va='center', transform=ax.transAxes)
-        ax.text(.5, .7, "$\chi^2_{amp}$", fontsize=fs,
+        ax.text(.5, .7, r"$\chi^2_{amp}$", fontsize=fs,
                 ha='left', va='center', transform=ax.transAxes)
-        ax.text(.5, .5, "$\chi^2_{cphase}$", fontsize=fs,
+        ax.text(.5, .5, r"$\chi^2_{cphase}$", fontsize=fs,
                 ha='left', va='center', transform=ax.transAxes)
-        ax.text(.5, .3, "$\chi^2_{log camp}$", fontsize=fs,
+        ax.text(.5, .3, r"$\chi^2_{log camp}$", fontsize=fs,
                 ha='left', va='center', transform=ax.transAxes)
-        ax.text(.5, .1, "$\chi^2_{camp}$", fontsize=fs,
+        ax.text(.5, .1, r"$\chi^2_{camp}$", fontsize=fs,
                 ha='left', va='center', transform=ax.transAxes)
 
         ax.text(.72, .9, "%0.2f" % chi2vis, fontsize=fs,
@@ -470,7 +470,7 @@ def imgsum(im_or_mov, obs, obs_uncal, outname, outdir='.', title='imgsum', comme
                                  ebar=ebar, markersize=MARKERSIZE)
         # modify the labels
         ax.set_title('Calibrated Visiblity Amplitudes')
-        ax.set_xlabel('u-v distance (G$\lambda$)')
+        ax.set_xlabel(r'u-v distance (G$\lambda$)')
         ax.set_xlim([0, 1.e10])
         ax.set_xticks([0, 2.e9, 4.e9, 6.e9, 8.e9, 10.e9])
         ax.set_xticklabels(["0", "2", "4", "6", "8", "10"])
@@ -1025,18 +1025,18 @@ def imgsum_pol(im, obs, obs_uncal, outname,
                 ha='left', va='center', transform=ax.transAxes)
         ax.text(.23, .5, "%0.0f GHz" % (im.rf/1.e9), fontsize=fs,
                 ha='left', va='center', transform=ax.transAxes)
-        ax.text(.23, .3, "%0.1f $\mu$as" % (im.fovx()/ehc.RADPERUAS), fontsize=fs,
+        ax.text(.23, .3, r"%0.1f $\mu$as" % (im.fovx()/ehc.RADPERUAS), fontsize=fs,
                 ha='left', va='center', transform=ax.transAxes)
         ax.text(.23, .1, "%0.2f Jy" % flux, fontsize=fs,
                 ha='left', va='center', transform=ax.transAxes)
 
-        ax.text(.5, .9, "$\chi^2_{m}$", fontsize=fs,
+        ax.text(.5, .9, r"$\chi^2_{m}$", fontsize=fs,
                 ha='left', va='center', transform=ax.transAxes)
-        ax.text(.5, .7, "$\chi^2_{P}$", fontsize=fs,
+        ax.text(.5, .7, r"$\chi^2_{P}$", fontsize=fs,
                 ha='left', va='center', transform=ax.transAxes)
-        ax.text(.5, .5, "$\chi^2_{Q}$", fontsize=fs,
+        ax.text(.5, .5, r"$\chi^2_{Q}$", fontsize=fs,
                 ha='left', va='center', transform=ax.transAxes)
-        ax.text(.5, .3, "$\chi^2_{U}$", fontsize=fs,
+        ax.text(.5, .3, r"$\chi^2_{U}$", fontsize=fs,
                 ha='left', va='center', transform=ax.transAxes)
 
         ax.text(.72, .9, "%0.2f" % chi2m, fontsize=fs,
@@ -1510,7 +1510,7 @@ def _display_img(im, beamparams=None, scale='linear', gamma=0.5, cbar_lims=False
     imvec = imvec * factor
 
     imarr = (imvec).reshape(im.ydim, im.xdim)
-    unit = 'mJy/$\mu$ as$^2$'
+    unit = r'mJy/$\mu$ as$^2$'
     if scale == 'log':
         if (imarr < 0.0).any():
             print('clipping values less than 0')
@@ -1561,7 +1561,7 @@ def _display_img(im, beamparams=None, scale='linear', gamma=0.5, cbar_lims=False
     start = im.xdim * roughfactor / 3.0  # select the start location
     end = start + fov_scale/fov_uas * im.xdim  # determine the end location
     plt.plot([start, end], [im.ydim-start, im.ydim-start], color="white", lw=1)  # plot line
-    plt.text(x=(start+end)/2.0, y=im.ydim-start-im.ydim/20, s=str(fov_scale) + " $\mu$as",
+    plt.text(x=(start+end)/2.0, y=im.ydim-start-im.ydim/20, s=str(fov_scale) + r" $\mu$as",
              color="white", ha="center", va="center",
              fontsize=int(1.2*fontsize), fontweight='bold')
 
@@ -1719,7 +1719,7 @@ def _display_img_pol(im, beamparams=None, scale='linear', gamma=0.5, cbar_lims=F
         end = start + fov_scale/fov_uas * im.xdim
         # determine the end location based on the size of the bar
         plt.plot([start, end], [im.ydim-start, im.ydim-start], color="white", lw=1)  # plot line
-        plt.text(x=(start+end)/2.0, y=im.ydim-start-im.ydim/20, s=str(fov_scale) + " $\mu$as",
+        plt.text(x=(start+end)/2.0, y=im.ydim-start-im.ydim/20, s=str(fov_scale) + r" $\mu$as",
                  color="white", ha="center", va="center",
                  fontsize=int(1.2*fontsize), fontweight='bold')
 
