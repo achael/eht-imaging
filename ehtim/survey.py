@@ -16,24 +16,28 @@
 #    You should have received a copy of the GNU General Public License
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+import csv
 import os
 
 import matplotlib.pyplot as plt
 import numpy as np
-
-try:
-    import pandas as pd
-except ImportError:
-    print("Warning: pandas not installed!")
-    print("Please install pandas to use the survey package!")
-
-
 import paramsurvey
 import paramsurvey.params
 
 import ehtim as eh
 
 #warnings.filterwarnings("ignore", category=np.VisibleDeprecationWarning)
+
+
+def _save_row_csv(path, row):
+    """Write a one-row CSV matching pandas DataFrame.to_csv output: a leading
+    unnamed integer-index column (value 0), then one column per key in order.
+    A NaN value is written as an empty field, as pandas does.
+    """
+    with open(path, 'w', newline='') as f:
+        writer = csv.writer(f, lineterminator='\n')
+        writer.writerow([''] + list(row.keys()))
+        writer.writerow([0] + ['' if v != v else v for v in row.values()])
 
 
 ##################################################################################################
@@ -451,8 +455,7 @@ class ParameterSet:
         stats_dict['chi2_lc_sys'] = [chi2_lc_sys]
         stats_dict['chi2_vis_sys'] = [chi2_vis_sys]
 
-        df = pd.DataFrame.from_dict(stats_dict)
-        df.to_csv(outstats)
+        _save_row_csv(outstats, {k: stats_dict[k][0] for k in stats_dict})
 
     def save_params(self):
         """
@@ -466,10 +469,8 @@ class ParameterSet:
         self.paramset['fov'] = self.fov
         self.paramset['zbl_tot'] = self.zbl_tot
 
-        df = pd.DataFrame.from_dict([self.paramset])
-
         outparams = os.path.join(self.outpath, f'{self.outfile}_params.csv')
-        df.to_csv(outparams)
+        _save_row_csv(outparams, self.paramset)
 
     def run(self):
 
