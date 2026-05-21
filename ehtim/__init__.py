@@ -10,35 +10,39 @@
 # Use a non-colliding local name: the bare `warnings` name shadows the
 # `ehtim.warnings` submodule attribute and breaks `import ehtim.warnings as ehw`.
 import warnings as _stdlib_warnings
-from builtins import object, range, str
 
-import ehtim.array
-import ehtim.calibrating
-import ehtim.caltable
-import ehtim.features
-import ehtim.image
-import ehtim.imager
-import ehtim.imaging
-import ehtim.model
-import ehtim.movie
-import ehtim.obsdata
+# TODO: this import order is necessary to avoid circular imports
+# refactor in the future and remove * imports 
 import ehtim.observing
-import ehtim.parloop
+from ehtim.const_def import *
+from ehtim.modeling.modeling_utils import modeler_func
+import ehtim.imaging
+from ehtim.features import rex
+import ehtim.features
+from ehtim.plotting.summary_plots import *
+from ehtim.plotting.comparisons import *
+from ehtim.plotting.comp_plots import *
+from ehtim.plotting import comparisons
+from ehtim.plotting import comp_plots
 import ehtim.plotting
-import ehtim.survey
-import ehtim.vex
-from ehtim.calibrating import network_cal, pol_cal, self_cal
 from ehtim.calibrating.network_cal import network_cal as netcal
+from ehtim.calibrating.self_cal import self_cal as selfcal
 from ehtim.calibrating.pol_cal import *
 from ehtim.calibrating.pol_cal_new import *
-from ehtim.calibrating.self_cal import self_cal as selfcal
-from ehtim.const_def import *
-from ehtim.features import rex
-from ehtim.modeling.modeling_utils import modeler_func
-from ehtim.plotting import comp_plots, comparisons
-from ehtim.plotting.comp_plots import *
-from ehtim.plotting.comparisons import *
-from ehtim.plotting.summary_plots import *
+from ehtim.calibrating import pol_cal
+from ehtim.calibrating import network_cal
+from ehtim.calibrating import self_cal
+import ehtim.calibrating
+import ehtim.parloop
+import ehtim.caltable
+import ehtim.vex
+import ehtim.imager
+import ehtim.obsdata
+import ehtim.array
+import ehtim.movie
+import ehtim.image
+import ehtim.model
+import ehtim.survey
 
 _stdlib_warnings.filterwarnings(
     "ignore", message="numpy.dtype size changed, may indicate binary incompatibility.")
