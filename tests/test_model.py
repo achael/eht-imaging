@@ -6,11 +6,22 @@ Focused on Phase 3 mixed-pol additions:
   pol_conventions.stokes_to_lin and pol_conventions.circ_to_lin
 - get_const_polfac dispatches XX/YY/XY/YX
 
-Note: Model.sample_uv and Model.observe_same_nonoise both flow through
-sample_model_uv (model.py:1467, 1470), which uses np.sum(generator) —
-removed in numpy 2.0. That bug pre-dates Phase 3 and is out of scope
-here; the affected end-to-end paths are marked xfail and tested at the
-module-level entry point sample_1model_uv instead.
+Two pre-Phase-3 Model issues constrain what this file can test directly;
+both are tracked as future-cleanup TODOs separate from this PR:
+
+1. Model.switch_polrep is intentionally a no-op — it validates the
+   request and returns `self.copy()`, leaving the polrep unchanged.
+   Worse, Model.__init__ hardcodes `self.polrep = 'stokes'` regardless
+   of the `polrep=` constructor argument (model.py:1548). The polrep
+   slot on a Model is therefore always 'stokes' in practice. We test
+   only that switch_polrep('lin') doesn't raise, not that the output
+   actually carries the new polrep.
+
+2. Model.sample_uv and Model.observe_same_nonoise both flow through
+   sample_model_uv (model.py:1467, 1470), which uses
+   `np.sum(generator)` — removed in numpy 2.0. Affected end-to-end
+   paths are marked xfail and tested at the module-level entry point
+   sample_1model_uv instead.
 """
 
 import numpy as np
