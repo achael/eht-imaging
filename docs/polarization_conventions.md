@@ -96,8 +96,12 @@ $$Q = \tfrac{1}{2}(RL + LR), \quad U = \tfrac{i}{2}(LR - RL).$$
 These match ehtim's existing (pre-mixed-pol) circular-to-Stokes code
 and define what we mean by Stokes throughout the codebase.
 
-Implemented at: `ehtim/observing/pol_conventions.py:96-109`
-(`circ_to_stokes`) and `:111-124` (`stokes_to_circ`).
+Implemented at: pair primitives in
+`ehtim/observing/pol_conventions.py:108-115` (`circ_to_stokes_parallel`),
+`:117-126` (`circ_to_stokes_cross`), `:128-131`
+(`stokes_to_circ_parallel`), `:134-137` (`stokes_to_circ_cross`).
+Four-component wrappers at `:176-186` (`circ_to_stokes`) and
+`:188-198` (`stokes_to_circ`).
 
 ---
 
@@ -125,8 +129,12 @@ The **sign of V** depends on the §2 choice: under the opposite basis
 convention, $V \to -i(XY - YX)/2$ and accordingly $XY \to U + iV$,
 $YX \to U - iV$.
 
-Implemented at: `ehtim/observing/pol_conventions.py:126-139`
-(`lin_to_stokes`) and `:141-156` (`stokes_to_lin`).
+Implemented at: pair primitives in
+`ehtim/observing/pol_conventions.py:140-146` (`lin_to_stokes_diag`),
+`:149-158` (`lin_to_stokes_offdiag`), `:160-163`
+(`stokes_to_lin_diag`), `:166-169` (`stokes_to_lin_offdiag`).
+Four-component wrappers at `:200-210` (`lin_to_stokes`) and
+`:212-222` (`stokes_to_lin`).
 
 ---
 
@@ -195,9 +203,9 @@ sufficient for bit-identical migration of existing Obsdata behavior —
 but new code that mixes polreps in noise calculations should not
 assume independence.
 
-Implemented at: `ehtim/observing/pol_conventions.py:191-200`
-(`circ_to_stokes_sigma`), `:202-211` (`stokes_to_circ_sigma`),
-`:213-221` (`lin_to_stokes_sigma`), `:224-228` (`stokes_to_lin_sigma`).
+Implemented at: `ehtim/observing/pol_conventions.py:257-266`
+(`circ_to_stokes_sigma`), `:268-277` (`stokes_to_circ_sigma`),
+`:279-287` (`lin_to_stokes_sigma`), `:290-294` (`stokes_to_lin_sigma`).
 The covariance-aware version is not yet implemented; it will arrive
 when a downstream consumer needs it.
 
@@ -220,8 +228,8 @@ wrapper in `pol_conventions.py` is implemented as the two-step
 composition `lin_to_stokes` → `stokes_to_circ` to keep a single source
 of truth and make any future convention change a one-line edit.
 
-Implemented at: `ehtim/observing/pol_conventions.py:158-160`
-(`lin_to_circ`) and `:163-165` (`circ_to_lin`).
+Implemented at: `ehtim/observing/pol_conventions.py:224-226`
+(`lin_to_circ`) and `:229-231` (`circ_to_lin`).
 The cross-check is enforced by a round-trip test in
 `tests/test_pol_conventions.py`.
 
@@ -266,8 +274,8 @@ work. This module ships the per-station algebra so that downstream
 calibration code has a single home to call into.)
 
 Implemented at: scaffolding in
-`ehtim/observing/pol_conventions.py:244-264` (`jones_matrix`),
-`:266-271` (`invert_jones`), `:274-291`
+`ehtim/observing/pol_conventions.py:310-330` (`jones_matrix`),
+`:332-337` (`invert_jones`), `:340-357`
 (`apply_inverse_jones_to_coherency`).
 
 ---
@@ -295,7 +303,7 @@ EHT calibration pipeline. When the first consumer (full-Jones
 `applycal`) lands, verify against existing `pol_cal*` code in this
 repo — flip here if a sign mismatch is found.
 
-Implemented at: `ehtim/observing/pol_conventions.py:244-264`
+Implemented at: `ehtim/observing/pol_conventions.py:310-330`
 (`jones_matrix`).
 
 ---
@@ -311,7 +319,7 @@ When gains and D-terms are well-determined and the feed model is
 correct, $C^{ij}_{\text{corr}}$ recovers the true sky-domain coherency
 matrix up to noise.
 
-Implemented at: `ehtim/observing/pol_conventions.py:274-291`
+Implemented at: `ehtim/observing/pol_conventions.py:340-357`
 (`apply_inverse_jones_to_coherency`).
 
 ---

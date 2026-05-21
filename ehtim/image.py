@@ -36,6 +36,7 @@ import ehtim.io.load
 import ehtim.io.save
 import ehtim.observing.obs_helpers as obsh
 import ehtim.observing.obs_simulate as simobs
+import ehtim.observing.pol_conventions as pol_conventions
 import ehtim.observing.pulses as pulses
 
 # TODO : add time to all images
@@ -261,10 +262,10 @@ class Image:
             ivec = self._imdict['I']
         elif self.polrep == 'circ':
             if len(self.rrvec) != 0 and len(self.llvec) != 0:
-                ivec = 0.5 * (self.rrvec + self.llvec)
+                ivec, _ = pol_conventions.circ_to_stokes_parallel(self.rrvec, self.llvec)
         elif self.polrep == 'lin':
             if len(self.xxvec) != 0 and len(self.yyvec) != 0:
-                ivec = 0.5 * (self.xxvec + self.yyvec)
+                ivec, _ = pol_conventions.lin_to_stokes_diag(self.xxvec, self.yyvec)
 
         return ivec
 
@@ -284,10 +285,11 @@ class Image:
             qvec = self._imdict['Q']
         elif self.polrep == 'circ':
             if len(self.rlvec) != 0 and len(self.lrvec) != 0:
-                qvec = np.real(0.5 * (self.lrvec + self.rlvec))
+                qvec_c, _ = pol_conventions.circ_to_stokes_cross(self.rlvec, self.lrvec)
+                qvec = np.real(qvec_c)
         elif self.polrep == 'lin':
             if len(self.xxvec) != 0 and len(self.yyvec) != 0:
-                qvec = 0.5 * (self.xxvec - self.yyvec)
+                _, qvec = pol_conventions.lin_to_stokes_diag(self.xxvec, self.yyvec)
 
         return qvec
 
@@ -307,10 +309,12 @@ class Image:
             uvec = self._imdict['U']
         elif self.polrep == 'circ':
             if len(self.rlvec) != 0 and len(self.lrvec) != 0:
-                uvec = np.real(0.5j * (self.lrvec - self.rlvec))
+                _, uvec_c = pol_conventions.circ_to_stokes_cross(self.rlvec, self.lrvec)
+                uvec = np.real(uvec_c)
         elif self.polrep == 'lin':
             if len(self.xyvec) != 0 and len(self.yxvec) != 0:
-                uvec = np.real(0.5 * (self.xyvec + self.yxvec))
+                uvec_c, _ = pol_conventions.lin_to_stokes_offdiag(self.xyvec, self.yxvec)
+                uvec = np.real(uvec_c)
 
         return uvec
 
@@ -330,10 +334,11 @@ class Image:
             vvec = self._imdict['V']
         elif self.polrep == 'circ':
             if len(self.rrvec) != 0 and len(self.llvec) != 0:
-                vvec = 0.5 * (self.rrvec - self.llvec)
+                _, vvec = pol_conventions.circ_to_stokes_parallel(self.rrvec, self.llvec)
         elif self.polrep == 'lin':
             if len(self.xyvec) != 0 and len(self.yxvec) != 0:
-                vvec = np.real(0.5j * (self.xyvec - self.yxvec))
+                _, vvec_c = pol_conventions.lin_to_stokes_offdiag(self.xyvec, self.yxvec)
+                vvec = np.real(vvec_c)
 
         return vvec
 
@@ -354,7 +359,7 @@ class Image:
         elif self.polrep in ('stokes', 'lin'):
             # lin composes through the Stokes vec getters above.
             if len(self.ivec) != 0 and len(self.vvec) != 0:
-                rrvec = (self.ivec + self.vvec)
+                rrvec, _ = pol_conventions.stokes_to_circ_parallel(self.ivec, self.vvec)
 
         return rrvec
 
@@ -374,7 +379,7 @@ class Image:
             llvec = self._imdict['LL']
         elif self.polrep in ('stokes', 'lin'):
             if len(self.ivec) != 0 and len(self.vvec) != 0:
-                llvec = (self.ivec - self.vvec)
+                _, llvec = pol_conventions.stokes_to_circ_parallel(self.ivec, self.vvec)
 
         return llvec
 
@@ -394,7 +399,7 @@ class Image:
             rlvec = self._imdict['RL']
         elif self.polrep in ('stokes', 'lin'):
             if len(self.qvec) != 0 and len(self.uvec) != 0:
-                rlvec = (self.qvec + 1j * self.uvec)
+                rlvec, _ = pol_conventions.stokes_to_circ_cross(self.qvec, self.uvec)
 
         return rlvec
 
@@ -415,7 +420,7 @@ class Image:
             lrvec = self._imdict['LR']
         elif self.polrep in ('stokes', 'lin'):
             if len(self.qvec) != 0 and len(self.uvec) != 0:
-                lrvec = (self.qvec - 1j * self.uvec)
+                _, lrvec = pol_conventions.stokes_to_circ_cross(self.qvec, self.uvec)
 
         return lrvec
 
@@ -437,7 +442,7 @@ class Image:
             xxvec = self._imdict['XX']
         elif self.polrep in ('stokes', 'circ'):
             if len(self.ivec) != 0 and len(self.qvec) != 0:
-                xxvec = (self.ivec + self.qvec)
+                xxvec, _ = pol_conventions.stokes_to_lin_diag(self.ivec, self.qvec)
 
         return xxvec
 
@@ -456,7 +461,7 @@ class Image:
             yyvec = self._imdict['YY']
         elif self.polrep in ('stokes', 'circ'):
             if len(self.ivec) != 0 and len(self.qvec) != 0:
-                yyvec = (self.ivec - self.qvec)
+                _, yyvec = pol_conventions.stokes_to_lin_diag(self.ivec, self.qvec)
 
         return yyvec
 
@@ -475,7 +480,7 @@ class Image:
             xyvec = self._imdict['XY']
         elif self.polrep in ('stokes', 'circ'):
             if len(self.uvec) != 0 and len(self.vvec) != 0:
-                xyvec = (self.uvec - 1j * self.vvec)
+                xyvec, _ = pol_conventions.stokes_to_lin_offdiag(self.uvec, self.vvec)
 
         return xyvec
 
@@ -494,7 +499,7 @@ class Image:
             yxvec = self._imdict['YX']
         elif self.polrep in ('stokes', 'circ'):
             if len(self.uvec) != 0 and len(self.vvec) != 0:
-                yxvec = (self.uvec + 1j * self.vvec)
+                _, yxvec = pol_conventions.stokes_to_lin_offdiag(self.uvec, self.vvec)
 
         return yxvec
 
