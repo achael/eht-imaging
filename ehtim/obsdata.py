@@ -1535,16 +1535,12 @@ class Obsdata:
         # Rescale short baselines to excise contributions from extended flux
         # Note: this does not do the proper thing for fractional polarization)
         obs = self.copy()
-        for j in range(len(obs.data)):
-            if (obs.data['u'][j]**2 + obs.data['v'][j]**2)**0.5 < uv_max:
-                obs.data['vis'][j] *= totflux / orig_totflux
-                obs.data['qvis'][j] *= totflux / orig_totflux
-                obs.data['uvis'][j] *= totflux / orig_totflux
-                obs.data['vvis'][j] *= totflux / orig_totflux
-                obs.data['sigma'][j] *= totflux / orig_totflux
-                obs.data['qsigma'][j] *= totflux / orig_totflux
-                obs.data['usigma'][j] *= totflux / orig_totflux
-                obs.data['vsigma'][j] *= totflux / orig_totflux
+        scale = totflux / orig_totflux
+        uvdist = np.sqrt(obs.data['u']**2 + obs.data['v']**2)
+        mask = uvdist < uv_max
+        for field in ('vis', 'qvis', 'uvis', 'vvis',
+                      'sigma', 'qsigma', 'usigma', 'vsigma'):
+            obs.data[field][mask] *= scale
 
         return obs
 
