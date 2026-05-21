@@ -1810,7 +1810,7 @@ class Model(object):
         if beta_list is None:
             beta_list = [0.0]
         out.models.append('mring')
-        out.params.append({'F0':F0,'d':d,'beta_list':np.array(beta_list, dtype=np.complex_),'beta_list_pol':np.array(beta_list_pol, dtype=np.complex_),'beta_list_cpol':np.array(beta_list_cpol, dtype=np.complex_),'x0':x0,'y0':y0})
+        out.params.append({'F0':F0,'d':d,'beta_list':np.array(beta_list, dtype=np.complex128),'beta_list_pol':np.array(beta_list_pol, dtype=np.complex128),'beta_list_cpol':np.array(beta_list_cpol, dtype=np.complex128),'x0':x0,'y0':y0})
         return out
 
     def add_stretched_mring(self, F0 = 1.0, d = 50.*RADPERUAS, x0 = 0.0, y0 = 0.0, beta_list = None, beta_list_pol = None, beta_list_cpol = None, stretch = 1.0, stretch_PA = 0.0):
@@ -1838,7 +1838,7 @@ class Model(object):
         if beta_list is None:
             beta_list = [0.0]
         out.models.append('stretched_mring')
-        out.params.append({'F0':F0,'d':d,'beta_list':np.array(beta_list, dtype=np.complex_),'beta_list_pol':np.array(beta_list_pol, dtype=np.complex_),'beta_list_cpol':np.array(beta_list_cpol, dtype=np.complex_),'x0':x0,'y0':y0,'stretch':stretch,'stretch_PA':stretch_PA})
+        out.params.append({'F0':F0,'d':d,'beta_list':np.array(beta_list, dtype=np.complex128),'beta_list_pol':np.array(beta_list_pol, dtype=np.complex128),'beta_list_cpol':np.array(beta_list_cpol, dtype=np.complex128),'x0':x0,'y0':y0,'stretch':stretch,'stretch_PA':stretch_PA})
         return out
 
     def add_thick_mring(self, F0 = 1.0, d = 50.*RADPERUAS, alpha = 10.*RADPERUAS, x0 = 0.0, y0 = 0.0, beta_list = None, beta_list_pol = None, beta_list_cpol = None):
@@ -1866,7 +1866,7 @@ class Model(object):
         if beta_list is None:
             beta_list = [0.0]
         out.models.append('thick_mring')
-        out.params.append({'F0':F0,'d':d,'beta_list':np.array(beta_list, dtype=np.complex_),'beta_list_pol':np.array(beta_list_pol, dtype=np.complex_),'beta_list_cpol':np.array(beta_list_cpol, dtype=np.complex_),'alpha':alpha,'x0':x0,'y0':y0})
+        out.params.append({'F0':F0,'d':d,'beta_list':np.array(beta_list, dtype=np.complex128),'beta_list_pol':np.array(beta_list_pol, dtype=np.complex128),'beta_list_cpol':np.array(beta_list_cpol, dtype=np.complex128),'alpha':alpha,'x0':x0,'y0':y0})
         return out
 
     def add_thick_mring_floor(self, F0 = 1.0, d = 50.*RADPERUAS, alpha = 10.*RADPERUAS, ff=0.0, x0 = 0.0, y0 = 0.0, beta_list = None, beta_list_pol = None, beta_list_cpol = None):
@@ -1896,7 +1896,7 @@ class Model(object):
         if beta_list is None:
             beta_list = [0.0]
         out.models.append('thick_mring_floor')
-        out.params.append({'F0':F0,'d':d,'beta_list':np.array(beta_list, dtype=np.complex_),'beta_list_pol':np.array(beta_list_pol, dtype=np.complex_),'beta_list_cpol':np.array(beta_list_cpol, dtype=np.complex_),'alpha':alpha,'x0':x0,'y0':y0,'ff':ff})
+        out.params.append({'F0':F0,'d':d,'beta_list':np.array(beta_list, dtype=np.complex128),'beta_list_pol':np.array(beta_list_pol, dtype=np.complex128),'beta_list_cpol':np.array(beta_list_cpol, dtype=np.complex128),'alpha':alpha,'x0':x0,'y0':y0,'ff':ff})
         return out
 
     def add_thick_mring_Gfloor(self, F0 = 1.0, d = 50.*RADPERUAS, alpha = 10.*RADPERUAS, ff=0.0, FWHM = 50.*RADPERUAS, x0 = 0.0, y0 = 0.0, beta_list = None, beta_list_pol = None, beta_list_cpol = None):
@@ -1927,7 +1927,7 @@ class Model(object):
         if beta_list is None:
             beta_list = [0.0]
         out.models.append('thick_mring_Gfloor')
-        out.params.append({'F0':F0,'d':d,'beta_list':np.array(beta_list, dtype=np.complex_),'beta_list_pol':np.array(beta_list_pol, dtype=np.complex_),'beta_list_cpol':np.array(beta_list_cpol, dtype=np.complex_),'alpha':alpha,'x0':x0,'y0':y0,'ff':ff,'FWHM':FWHM})
+        out.params.append({'F0':F0,'d':d,'beta_list':np.array(beta_list, dtype=np.complex128),'beta_list_pol':np.array(beta_list_pol, dtype=np.complex128),'beta_list_cpol':np.array(beta_list_cpol, dtype=np.complex128),'alpha':alpha,'x0':x0,'y0':y0,'ff':ff,'FWHM':FWHM})
         return out
 
     def add_stretched_thick_mring(self, F0 = 1.0, d = 50.*RADPERUAS, alpha = 10.*RADPERUAS, x0 = 0.0, y0 = 0.0, beta_list = None, beta_list_pol = None, beta_list_cpol = None, stretch = 1.0, stretch_PA = 0.0):
@@ -1957,7 +1957,7 @@ class Model(object):
         if beta_list is None:
             beta_list = [0.0]
         out.models.append('stretched_thick_mring')
-        out.params.append({'F0':F0,'d':d,'beta_list':np.array(beta_list, dtype=np.complex_),'beta_list_pol':np.array(beta_list_pol, dtype=np.complex_),'beta_list_cpol':np.array(beta_list_cpol, dtype=np.complex_),'alpha':alpha,'x0':x0,'y0':y0,'stretch':stretch,'stretch_PA':stretch_PA})
+        out.params.append({'F0':F0,'d':d,'beta_list':np.array(beta_list, dtype=np.complex128),'beta_list_pol':np.array(beta_list_pol, dtype=np.complex128),'beta_list_cpol':np.array(beta_list_cpol, dtype=np.complex128),'alpha':alpha,'x0':x0,'y0':y0,'stretch':stretch,'stretch_PA':stretch_PA})
         return out
 
     def add_stretched_thick_mring_floor(self, F0 = 1.0, d = 50.*RADPERUAS, alpha = 10.*RADPERUAS, ff=0.0, x0 = 0.0, y0 = 0.0, beta_list = None, beta_list_pol = None, beta_list_cpol = None, stretch = 1.0, stretch_PA = 0.0):
@@ -1987,7 +1987,7 @@ class Model(object):
         if beta_list is None:
             beta_list = [0.0]
         out.models.append('stretched_thick_mring_floor')
-        out.params.append({'F0':F0,'d':d,'beta_list':np.array(beta_list, dtype=np.complex_),'beta_list_pol':np.array(beta_list_pol, dtype=np.complex_),'beta_list_cpol':np.array(beta_list_cpol, dtype=np.complex_),'alpha':alpha,'x0':x0,'y0':y0,'stretch':stretch,'stretch_PA':stretch_PA,'ff':ff})
+        out.params.append({'F0':F0,'d':d,'beta_list':np.array(beta_list, dtype=np.complex128),'beta_list_pol':np.array(beta_list_pol, dtype=np.complex128),'beta_list_cpol':np.array(beta_list_cpol, dtype=np.complex128),'alpha':alpha,'x0':x0,'y0':y0,'stretch':stretch,'stretch_PA':stretch_PA,'ff':ff})
         return out
 
     def sample_xy(self, x, y, psize=1.*RADPERUAS, pol='I'):
