@@ -90,79 +90,145 @@ def _reset_convention_warning():
 
 
 # ---------------------------------------------------------------------------
-# Visibility transforms (vis only; sigmas handled by *_sigma helpers below)
+# Pair-based polarization transforms (the primitives)
+# ---------------------------------------------------------------------------
+#
+# These transforms operate on the polarization basis itself, so they apply
+# uniformly to any quantity carried in that basis: visibilities, image
+# pixels, model parameters, etc. The basis transforms factor into pairs:
+#   - circ:  parallel-hand (RR, LL) <-> (I, V);  cross-hand (RL, LR) <-> (Q, U)
+#   - lin:   diagonal     (XX, YY) <-> (I, Q);   off-diagonal (XY, YX) <-> (U, V)
+#
+# Callers that need a single Stokes component (image/movie property
+# getters) call the relevant pair helper and discard one output. The
+# 4-in/4-out functions further down compose two pair calls and are
+# convenience wrappers for callers (like Obsdata.switch_polrep) that
+# want the full four-tuple.
+
+def circ_to_stokes_parallel(rr, ll):
+    """(I, V) from (RR, LL) parallel-hand pair.
+
+    Returns ``(0.5*(RR+LL), 0.5*(RR-LL))``.
+    """
+    _maybe_warn_convention()
+    return 0.5 * (rr + ll), 0.5 * (rr - ll)
+
+
+def circ_to_stokes_cross(rl, lr):
+    """(Q, U) from (RL, LR) cross-hand pair.
+
+    Returns ``(0.5*(LR+RL), 0.5j*(LR-RL))``. The outputs are complex;
+    image-domain callers should apply ``np.real()`` since the sky-domain
+    Q, U are real-valued.
+    """
+    _maybe_warn_convention()
+    return 0.5 * (lr + rl), 0.5j * (lr - rl)
+
+
+def stokes_to_circ_parallel(i, v):
+    """(RR, LL) from (I, V). Inverse of circ_to_stokes_parallel."""
+    _maybe_warn_convention()
+    return i + v, i - v
+
+
+def stokes_to_circ_cross(q, u):
+    """(RL, LR) from (Q, U). Inverse of circ_to_stokes_cross."""
+    _maybe_warn_convention()
+    return q + 1.0j * u, q - 1.0j * u
+
+
+def lin_to_stokes_diag(xx, yy):
+    """(I, Q) from (XX, YY) diagonal pair.
+
+    Returns ``(0.5*(XX+YY), 0.5*(XX-YY))``.
+    """
+    _maybe_warn_convention()
+    return 0.5 * (xx + yy), 0.5 * (xx - yy)
+
+
+def lin_to_stokes_offdiag(xy, yx):
+    """(U, V) from (XY, YX) off-diagonal pair.
+
+    Returns ``(0.5*(XY+YX), 0.5j*(XY-YX))``. The outputs are complex;
+    image-domain callers should apply ``np.real()`` since the sky-domain
+    U, V are real-valued.
+    """
+    _maybe_warn_convention()
+    return 0.5 * (xy + yx), 0.5j * (xy - yx)
+
+
+def stokes_to_lin_diag(i, q):
+    """(XX, YY) from (I, Q). Inverse of lin_to_stokes_diag."""
+    _maybe_warn_convention()
+    return i + q, i - q
+
+
+def stokes_to_lin_offdiag(u, v):
+    """(XY, YX) from (U, V). Inverse of lin_to_stokes_offdiag."""
+    _maybe_warn_convention()
+    return u - 1.0j * v, u + 1.0j * v
+
+
+# ---------------------------------------------------------------------------
+# 4-in/4-out polarization transforms (thin wrappers around the pair helpers)
 # ---------------------------------------------------------------------------
 
-def circ_to_stokes(rrvis, llvis, rlvis, lrvis):
-    """Convert circular-feed visibilities to Stokes visibilities.
+def circ_to_stokes(rr, ll, rl, lr):
+    """Convert all four circular-basis components to Stokes.
 
     Returns
     -------
-    (vis, qvis, uvis, vvis) : tuple of ndarrays
+    (i, q, u, v) : tuple of ndarrays
     """
-    _maybe_warn_convention()
-    vis = 0.5 * (rrvis + llvis)
-    qvis = 0.5 * (lrvis + rlvis)
-    uvis = 0.5j * (lrvis - rlvis)
-    vvis = 0.5 * (rrvis - llvis)
-    return vis, qvis, uvis, vvis
+    i, v = circ_to_stokes_parallel(rr, ll)
+    q, u = circ_to_stokes_cross(rl, lr)
+    return i, q, u, v
 
 
-def stokes_to_circ(vis, qvis, uvis, vvis):
-    """Convert Stokes visibilities to circular-feed visibilities.
+def stokes_to_circ(i, q, u, v):
+    """Convert all four Stokes components to circular basis.
 
     Returns
     -------
-    (rrvis, llvis, rlvis, lrvis) : tuple of ndarrays
+    (rr, ll, rl, lr) : tuple of ndarrays
     """
-    _maybe_warn_convention()
-    rrvis = vis + vvis
-    llvis = vis - vvis
-    rlvis = qvis + 1.0j * uvis
-    lrvis = qvis - 1.0j * uvis
-    return rrvis, llvis, rlvis, lrvis
+    rr, ll = stokes_to_circ_parallel(i, v)
+    rl, lr = stokes_to_circ_cross(q, u)
+    return rr, ll, rl, lr
 
 
-def lin_to_stokes(xxvis, yyvis, xyvis, yxvis):
-    """Convert linear-feed visibilities to Stokes (IAU/HBS).
+def lin_to_stokes(xx, yy, xy, yx):
+    """Convert all four linear-basis components to Stokes (IAU/HBS).
 
     Returns
     -------
-    (vis, qvis, uvis, vvis) : tuple of ndarrays
+    (i, q, u, v) : tuple of ndarrays
     """
-    _maybe_warn_convention()
-    vis = 0.5 * (xxvis + yyvis)
-    qvis = 0.5 * (xxvis - yyvis)
-    uvis = 0.5 * (xyvis + yxvis)
-    vvis = 0.5j * (xyvis - yxvis)
-    return vis, qvis, uvis, vvis
+    i, q = lin_to_stokes_diag(xx, yy)
+    u, v = lin_to_stokes_offdiag(xy, yx)
+    return i, q, u, v
 
 
-def stokes_to_lin(vis, qvis, uvis, vvis):
-    """Convert Stokes visibilities to linear-feed visibilities (IAU/HBS).
-
-    Inverse of ``lin_to_stokes``.
+def stokes_to_lin(i, q, u, v):
+    """Convert all four Stokes components to linear basis (IAU/HBS).
 
     Returns
     -------
-    (xxvis, yyvis, xyvis, yxvis) : tuple of ndarrays
+    (xx, yy, xy, yx) : tuple of ndarrays
     """
-    _maybe_warn_convention()
-    xxvis = vis + qvis
-    yyvis = vis - qvis
-    xyvis = uvis - 1.0j * vvis
-    yxvis = uvis + 1.0j * vvis
-    return xxvis, yyvis, xyvis, yxvis
+    xx, yy = stokes_to_lin_diag(i, q)
+    xy, yx = stokes_to_lin_offdiag(u, v)
+    return xx, yy, xy, yx
 
 
-def lin_to_circ(xxvis, yyvis, xyvis, yxvis):
-    """Convert linear-feed visibilities to circular-feed via Stokes."""
-    return stokes_to_circ(*lin_to_stokes(xxvis, yyvis, xyvis, yxvis))
+def lin_to_circ(xx, yy, xy, yx):
+    """Convert linear-basis components to circular basis via Stokes."""
+    return stokes_to_circ(*lin_to_stokes(xx, yy, xy, yx))
 
 
-def circ_to_lin(rrvis, llvis, rlvis, lrvis):
-    """Convert circular-feed visibilities to linear-feed via Stokes."""
-    return stokes_to_lin(*circ_to_stokes(rrvis, llvis, rlvis, lrvis))
+def circ_to_lin(rr, ll, rl, lr):
+    """Convert circular-basis components to linear basis via Stokes."""
+    return stokes_to_lin(*circ_to_stokes(rr, ll, rl, lr))
 
 
 # ---------------------------------------------------------------------------
