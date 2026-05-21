@@ -1,8 +1,8 @@
 """Interactive Plotly-based plotting for ehtim.
 
 Sits beside the matplotlib defaults in 'comp_plots.py', 'summary_plots.py',
-and the 'plot_*' methods on 'Obsdata' / 'Caltable'. 
-Plotly is imported lazily so this module imports cleanly without plotly installed; 
+and the 'plot_*' methods on 'Obsdata' / 'Caltable'.
+Plotly is imported lazily so this module imports cleanly without plotly installed;
 the import only fires on first call to a plotting function.
 """
 from __future__ import annotations
@@ -17,6 +17,7 @@ import ehtim.observing.obs_helpers as obsh
 
 if TYPE_CHECKING:
     from os import PathLike
+
     from ehtim.caltable import Caltable
     from ehtim.image import Image
     from ehtim.obsdata import Obsdata
@@ -106,8 +107,8 @@ def _apply_theme(fig, *, title, xaxis_title, yaxis_title,
         template="none", # Strip default light templates
         plot_bgcolor=_THEME["plot_bgcolor"],
         paper_bgcolor=_THEME["paper_bgcolor"],
-        font=dict(family=_THEME["font_family"], 
-                  size=_THEME["font_size"], 
+        font=dict(family=_THEME["font_family"],
+                  size=_THEME["font_size"],
                   color=_THEME["font_color"]),
         margin=dict(l=70, r=160, t=60, b=60),
         width=_THEME["width"], height=_THEME["height"],
@@ -179,7 +180,7 @@ def _legend_click_js() -> str:
 """
 
 
-def write_html(fig, path: "str | PathLike[str]", *,
+def write_html(fig, path: str | PathLike[str], *,
                include_plotlyjs: bool | str = True) -> None:
     """Write `fig` to an HTML file with the click-to-highlight JS embedded.
 
@@ -208,7 +209,8 @@ def display(fig) -> None:
     a side effect.
     """
     try:
-        from IPython.display import HTML, display as _ipy_display
+        from IPython.display import HTML
+        from IPython.display import display as _ipy_display
     except ImportError as e:
         raise ImportError(
             "IPython is required for ehtim.plotting.interactive.display(). "
@@ -280,7 +282,7 @@ def _build_baseline_trace(go, obs, site1, site2, field, sigtype, *,
 
 
 def plot_bl(
-    obs: "Obsdata",
+    obs: Obsdata,
     site1: str | None = None,
     site2: str | None = None,
     field: str = "amp",
@@ -379,7 +381,7 @@ def plot_bl(
 # --- plotall --------------------------------------------------------------
 
 def plotall(
-    obs: "Obsdata",
+    obs: Obsdata,
     field1: str,
     field2: str,
     *,
@@ -555,7 +557,7 @@ def plotall(
 # --- plot_gains -----------------------------------------------------------
 
 def plot_gains(
-    caltable: "Caltable",
+    caltable: Caltable,
     sites: list[str] | str = "all",
     gain_type: str = "amp",
     pol: str = "R",
@@ -680,9 +682,9 @@ def plot_gains(
 # --- dashboard ------------------------------------------------------------
 
 def dashboard(
-    im: "Image",
-    obs: "Obsdata",
-    caltable: "Caltable",
+    im: Image,
+    obs: Obsdata,
+    caltable: Caltable,
     *,
     pol: str = "R",
     show_model: bool = True,
