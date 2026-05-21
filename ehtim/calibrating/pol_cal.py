@@ -17,21 +17,16 @@
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-from __future__ import division
-from __future__ import print_function
 
-from builtins import str
-from builtins import range
-from builtins import object
-
-import numpy as np
-import scipy.optimize as opt
-import matplotlib.pyplot as plt
 import time
 
+import matplotlib.pyplot as plt
+import numpy as np
+import scipy.optimize as opt
+
+import ehtim.const_def as ehc
 import ehtim.imaging.imager_utils as iu
 import ehtim.observing.obs_simulate as simobs
-import ehtim.const_def as ehc
 
 MAXIT = 1000  # maximum number of iterations in pol-cal minimizer
 
@@ -236,7 +231,7 @@ def leakage_cal(obs, im=None, sites=[], leakage_tol=.1, pol_fit=['RL', 'LR'], dt
     print("Minimizing...")
     res = opt.minimize(errfunc, Dpar_guess, method=minimizer_method, options=optdict)
     print(errfunc(Dpar_guess),errfunc(res.x))
-    
+
     # get solution
     D_fit = res.x.astype(np.float64).view(dtype=np.complex128)  # all the D-terms (complex)
 
@@ -264,18 +259,17 @@ def leakage_cal(obs, im=None, sites=[], leakage_tol=.1, pol_fit=['RL', 'LR'], dt
                                      im_circ, D_fit*0, inverse=inverse)
             chisq_new = chisq_total(obs.switch_polrep('circ').data, im_circ, D_fit, inverse=inverse)
 
-        print("Original chi-squared: {:.4f}".format(chisq_orig))
-        print("New chi-squared: {:.4f}\n".format(chisq_new))
+        print(f"Original chi-squared: {chisq_orig:.4f}")
+        print(f"New chi-squared: {chisq_new:.4f}\n")
         for isite in range(len(sites)):
             print(sites[isite])
-            print('   D_R: {:.4f}'.format(D_fit[2*isite]))
-            print('   D_L: {:.4f}\n'.format(D_fit[2*isite+1]))
+            print(f'   D_R: {D_fit[2*isite]:.4f}')
+            print(f'   D_L: {D_fit[2*isite+1]:.4f}\n')
         if const_fpol:
-            print('Source Fractional Polarization Magnitude: {:.4f}'.format(np.abs(D_fit[-2])))
-            print('Source Fractional Polarization EVPA [deg]: {:.4f}\n'.format(
-                90./np.pi*np.angle(D_fit[-2])))
+            print(f'Source Fractional Polarization Magnitude: {np.abs(D_fit[-2]):.4f}')
+            print(f'Source Fractional Polarization EVPA [deg]: {90./np.pi*np.angle(D_fit[-2]):.4f}\n')
             if inverse:
-                print('Source Fractional Circular Polarization: {:.4f}'.format(np.real(D_fit[-1])))
+                print(f'Source Fractional Circular Polarization: {np.real(D_fit[-1]):.4f}')
 
     tstop = time.time()
     print("\nleakage_cal time: %f s" % (tstop - tstart))
