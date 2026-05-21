@@ -24,10 +24,9 @@ import matplotlib as mpl
 import matplotlib.pyplot as plt
 import numpy as np
 import scipy.interpolate
-import scipy.ndimage as filt
+import scipy.ndimage as ndi
 import scipy.optimize as opt
 import scipy.signal
-from scipy import ndimage as ndi
 
 import ehtim.const_def as ehc
 import ehtim.imaging.pol_imager_utils as polutils
@@ -1602,7 +1601,7 @@ class Image:
             sigma = fwhmp / (2. * np.sqrt(2. * np.log(2.)))
             if np.any(np.imag(imarr) != 0):
                 return blur(np.real(imarr), sigma) + 1j * blur(np.imag(imarr), sigma)
-            imarr_blur = filt.gaussian_filter(imarr, (sigma, sigma))
+            imarr_blur = ndi.gaussian_filter(imarr, (sigma, sigma))
             return imarr_blur
 
         def blur_butter(imarr, size):

@@ -21,7 +21,7 @@ import string
 
 import numpy as np
 import scipy.interpolate
-import scipy.ndimage as filt
+import scipy.ndimage as ndi
 
 import ehtim.const_def as ehc
 import ehtim.image
@@ -932,7 +932,7 @@ class Movie:
         sigma_x_pol = fwhm_x_pol / self.psize / (2. * np.sqrt(2. * np.log(2.)))
 
         arr = np.array([im.imvec.reshape(self.ydim, self.xdim) for im in frames])
-        arr = filt.gaussian_filter(arr, (sigma_t, sigma_x, sigma_x))
+        arr = ndi.gaussian_filter(arr, (sigma_t, sigma_x, sigma_x))
 
         # Make a new blurred movie
         arglist, argdict = self.movie_args()
@@ -947,7 +947,7 @@ class Movie:
 
             if len(polframes):
                 arr = np.array([imvec.reshape(self.ydim, self.xdim) for imvec in polframes])
-                arr = filt.gaussian_filter(arr, (sigma_t, sigma_x_pol, sigma_x_pol))
+                arr = ndi.gaussian_filter(arr, (sigma_t, sigma_x_pol, sigma_x_pol))
                 movie_blur.add_pol_movie(arr, pol)
 
         return movie_blur
