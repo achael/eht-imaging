@@ -14,7 +14,6 @@ import pytest
 import ehtim as eh
 from ehtim.observing import pol_conventions as pc
 
-
 # ---------------------------------------------------------------------------
 # Fixtures
 # ---------------------------------------------------------------------------

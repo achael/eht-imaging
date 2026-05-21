@@ -31,7 +31,6 @@ import ehtim as eh
 from ehtim.model import get_const_polfac, sample_1model_uv
 from ehtim.observing import pol_conventions as pc
 
-
 # ---------------------------------------------------------------------------
 # Fixtures
 # ---------------------------------------------------------------------------
