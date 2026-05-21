@@ -36,7 +36,6 @@ dependencies = [
     "requests",
     "future",
     "networkx>=3.0",
-    "paramsurvey",
 ]
 
 [project.optional-dependencies]
@@ -45,6 +44,7 @@ dev = [
     "pytest-cov",
     "ruff",
     "pandas",
+    "paramsurvey",
 ]
 
 [project.urls]

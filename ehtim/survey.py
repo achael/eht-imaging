@@ -21,8 +21,13 @@ import os
 
 import matplotlib.pyplot as plt
 import numpy as np
-import paramsurvey
-import paramsurvey.params
+
+try:
+    import paramsurvey
+    import paramsurvey.params
+except ImportError:
+    print("Warning: paramsurvey not installed!")
+    print("Please install paramsurvey to use the survey package!")
 
 import ehtim as eh
 
