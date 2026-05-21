@@ -96,8 +96,8 @@ class Image:
 
         if len(image.shape) != 2:
             raise Exception("image must be a 2D numpy array")
-        if polrep not in ['stokes', 'circ']:
-            raise Exception("only 'stokes' and 'circ' are supported polreps!")
+        if polrep not in ['stokes', 'circ', 'lin']:
+            raise Exception("only 'stokes', 'circ', and 'lin' are supported polreps!")
 
         # Save the image vector
         imvec = image.flatten()
@@ -126,8 +126,19 @@ class Image:
                 self._imdict = {'RR': np.array([]), 'LL': imvec, 'RL': np.array([]), 'LR': np.array([])}
             else:
                 raise Exception("for polrep=='circ', pol_prim must be 'RR' or 'LL'!")
+
+        elif polrep == 'lin':
+            if pol_prim is None:
+                print("polrep is 'lin' and no pol_prim specified! Setting pol_prim='XX'")
+                pol_prim = 'XX'
+            if pol_prim == 'XX':
+                self._imdict = {'XX': imvec, 'YY': np.array([]), 'XY': np.array([]), 'YX': np.array([])}
+            elif pol_prim == 'YY':
+                self._imdict = {'XX': np.array([]), 'YY': imvec, 'XY': np.array([]), 'YX': np.array([])}
+            else:
+                raise Exception("for polrep=='lin', pol_prim must be 'XX' or 'YY'!")
         else:
-            raise Exception("polrep must be 'circ' or 'stokes'!")
+            raise Exception("polrep must be 'circ', 'lin', or 'stokes'!")
 
         # multifrequency spectral index, curvature arrays
         # TODO -- higher orders?
@@ -251,6 +262,9 @@ class Image:
         elif self.polrep == 'circ':
             if len(self.rrvec) != 0 and len(self.llvec) != 0:
                 ivec = 0.5 * (self.rrvec + self.llvec)
+        elif self.polrep == 'lin':
+            if len(self.xxvec) != 0 and len(self.yyvec) != 0:
+                ivec = 0.5 * (self.xxvec + self.yyvec)
 
         return ivec
 
@@ -271,6 +285,9 @@ class Image:
         elif self.polrep == 'circ':
             if len(self.rlvec) != 0 and len(self.lrvec) != 0:
                 qvec = np.real(0.5 * (self.lrvec + self.rlvec))
+        elif self.polrep == 'lin':
+            if len(self.xxvec) != 0 and len(self.yyvec) != 0:
+                qvec = 0.5 * (self.xxvec - self.yyvec)
 
         return qvec
 
@@ -291,6 +308,9 @@ class Image:
         elif self.polrep == 'circ':
             if len(self.rlvec) != 0 and len(self.lrvec) != 0:
                 uvec = np.real(0.5j * (self.lrvec - self.rlvec))
+        elif self.polrep == 'lin':
+            if len(self.xyvec) != 0 and len(self.yxvec) != 0:
+                uvec = np.real(0.5 * (self.xyvec + self.yxvec))
 
         return uvec
 
@@ -311,6 +331,9 @@ class Image:
         elif self.polrep == 'circ':
             if len(self.rrvec) != 0 and len(self.llvec) != 0:
                 vvec = 0.5 * (self.rrvec - self.llvec)
+        elif self.polrep == 'lin':
+            if len(self.xyvec) != 0 and len(self.yxvec) != 0:
+                vvec = np.real(0.5j * (self.xyvec - self.yxvec))
 
         return vvec
 
@@ -328,7 +351,8 @@ class Image:
         rrvec = np.array([])
         if self.polrep == 'circ':
             rrvec = self._imdict['RR']
-        elif self.polrep == 'stokes':
+        elif self.polrep in ('stokes', 'lin'):
+            # lin composes through the Stokes vec getters above.
             if len(self.ivec) != 0 and len(self.vvec) != 0:
                 rrvec = (self.ivec + self.vvec)
 
@@ -348,7 +372,7 @@ class Image:
         llvec = np.array([])
         if self.polrep == 'circ':
             llvec = self._imdict['LL']
-        elif self.polrep == 'stokes':
+        elif self.polrep in ('stokes', 'lin'):
             if len(self.ivec) != 0 and len(self.vvec) != 0:
                 llvec = (self.ivec - self.vvec)
 
@@ -368,7 +392,7 @@ class Image:
         rlvec = np.array([])
         if self.polrep == 'circ':
             rlvec = self._imdict['RL']
-        elif self.polrep == 'stokes':
+        elif self.polrep in ('stokes', 'lin'):
             if len(self.qvec) != 0 and len(self.uvec) != 0:
                 rlvec = (self.qvec + 1j * self.uvec)
 
@@ -389,10 +413,9 @@ class Image:
         lrvec = np.array([])
         if self.polrep == 'circ':
             lrvec = self._imdict['LR']
-        elif self.polrep == 'stokes':
+        elif self.polrep in ('stokes', 'lin'):
             if len(self.qvec) != 0 and len(self.uvec) != 0:
                 lrvec = (self.qvec - 1j * self.uvec)
-
 
         return lrvec
 
@@ -408,11 +431,87 @@ class Image:
         self._imdict['LR'] = vec
 
     @property
+    def xxvec(self):
+        xxvec = np.array([])
+        if self.polrep == 'lin':
+            xxvec = self._imdict['XX']
+        elif self.polrep in ('stokes', 'circ'):
+            if len(self.ivec) != 0 and len(self.qvec) != 0:
+                xxvec = (self.ivec + self.qvec)
+
+        return xxvec
+
+    @xxvec.setter
+    def xxvec(self, vec):
+        if len(vec) != self.xdim * self.ydim:
+            raise Exception("vec size is not consistent with xdim*ydim!")
+        if self.polrep != 'lin':
+            raise Exception("xxvec cannot be set unless self.polrep=='lin'")
+        self._imdict['XX'] = vec
+
+    @property
+    def yyvec(self):
+        yyvec = np.array([])
+        if self.polrep == 'lin':
+            yyvec = self._imdict['YY']
+        elif self.polrep in ('stokes', 'circ'):
+            if len(self.ivec) != 0 and len(self.qvec) != 0:
+                yyvec = (self.ivec - self.qvec)
+
+        return yyvec
+
+    @yyvec.setter
+    def yyvec(self, vec):
+        if len(vec) != self.xdim * self.ydim:
+            raise Exception("vec size is not consistent with xdim*ydim!")
+        if self.polrep != 'lin':
+            raise Exception("yyvec cannot be set unless self.polrep=='lin'")
+        self._imdict['YY'] = vec
+
+    @property
+    def xyvec(self):
+        xyvec = np.array([])
+        if self.polrep == 'lin':
+            xyvec = self._imdict['XY']
+        elif self.polrep in ('stokes', 'circ'):
+            if len(self.uvec) != 0 and len(self.vvec) != 0:
+                xyvec = (self.uvec - 1j * self.vvec)
+
+        return xyvec
+
+    @xyvec.setter
+    def xyvec(self, vec):
+        if len(vec) != self.xdim * self.ydim:
+            raise Exception("vec size is not consistent with xdim*ydim!")
+        if self.polrep != 'lin':
+            raise Exception("xyvec cannot be set unless self.polrep=='lin'")
+        self._imdict['XY'] = vec
+
+    @property
+    def yxvec(self):
+        yxvec = np.array([])
+        if self.polrep == 'lin':
+            yxvec = self._imdict['YX']
+        elif self.polrep in ('stokes', 'circ'):
+            if len(self.uvec) != 0 and len(self.vvec) != 0:
+                yxvec = (self.uvec + 1j * self.vvec)
+
+        return yxvec
+
+    @yxvec.setter
+    def yxvec(self, vec):
+        if len(vec) != self.xdim * self.ydim:
+            raise Exception("vec size is not consistent with xdim*ydim!")
+        if self.polrep != 'lin':
+            raise Exception("yxvec cannot be set unless self.polrep=='lin'")
+        self._imdict['YX'] = vec
+
+    @property
     def pvec(self):
         """Return the linear polarization magnitude for each pixel"""
         if self.polrep == 'circ':
             pvec = np.abs(self.rlvec)
-        elif self.polrep == 'stokes':
+        elif self.polrep in ('stokes', 'lin'):
             pvec = np.abs(self.qvec + 1j * self.uvec)
 
         return pvec
@@ -422,7 +521,7 @@ class Image:
         """Return the fractional linear polarization for each pixel"""
         if self.polrep == 'circ':
             mvec = 2 * np.abs(self.rlvec) / (self.rrvec + self.llvec)
-        elif self.polrep == 'stokes':
+        elif self.polrep in ('stokes', 'lin'):
             mvec = np.abs(self.qvec + 1j * self.uvec) / self.ivec
 
         return mvec
@@ -432,7 +531,7 @@ class Image:
         """Return the linear polarization angle for each pixel"""
         if self.polrep == 'circ':
             chivec = 0.5 * np.angle(self.rlvec / (self.rrvec + self.llvec))
-        elif self.polrep == 'stokes':
+        elif self.polrep in ('stokes', 'lin'):
             chivec = 0.5 * np.angle((self.qvec + 1j * self.uvec) / self.ivec)
 
         return chivec
@@ -532,6 +631,8 @@ class Image:
             pol = 'I'
         elif self.polrep == 'circ' and pol is None:
             pol = 'RR'
+        elif self.polrep == 'lin' and pol is None:
+            pol = 'XX'
 
         if pol.lower() == 'i':
             outvec = self.ivec
@@ -549,6 +650,14 @@ class Image:
             outvec = self.lrvec
         elif pol.lower() == 'rl':
             outvec = self.rlvec
+        elif pol.lower() == 'xx':
+            outvec = self.xxvec
+        elif pol.lower() == 'yy':
+            outvec = self.yyvec
+        elif pol.lower() == 'xy':
+            outvec = self.xyvec
+        elif pol.lower() == 'yx':
+            outvec = self.yxvec
         elif pol.lower() == 'p':
             outvec = self.pvec
         elif pol.lower() == 'm':
@@ -648,6 +757,16 @@ class Image:
             elif pol == 'LR':
                 self.lrvec = image.flatten()
 
+        elif self.polrep == 'lin':
+            if pol == 'XX':
+                self.xxvec = image.flatten()
+            elif pol == 'YY':
+                self.yyvec = image.flatten()
+            elif pol == 'XY':
+                self.xyvec = image.flatten()
+            elif pol == 'YX':
+                self.yxvec = image.flatten()
+
         return
 
     # TODO deprecated -- replace with generic add_pol_image
@@ -686,64 +805,36 @@ class Image:
         """Return a new image with the polarization representation changed
            Args:
                polrep_out (str):  the polrep of the output data
-               pol_prim_out (str): The default image: I,Q,U or V for Stokes, RR,LL,LR,RL for circ
+               pol_prim_out (str): The default image: I,Q,U,V for stokes,
+                                   RR,LL,LR,RL for circ, XX,YY,XY,YX for lin
 
            Returns:
                (Image): new Image object with potentially different polrep
         """
 
-        if polrep_out not in ['stokes', 'circ']:
-            raise Exception("polrep_out must be either 'stokes' or 'circ'")
+        if polrep_out not in ['stokes', 'circ', 'lin']:
+            raise Exception("polrep_out must be 'stokes', 'circ', or 'lin'")
         if pol_prim_out is None:
             if polrep_out == 'stokes':
                 pol_prim_out = 'I'
             elif polrep_out == 'circ':
                 pol_prim_out = 'RR'
+            elif polrep_out == 'lin':
+                pol_prim_out = 'XX'
 
         # Simply copy if the polrep is unchanged
         if polrep_out == self.polrep and pol_prim_out == self.pol_prim:
             return self.copy()
 
-        # Assemble a dictionary of new polarization vectors
+        # The cross-polrep ivec/qvec/.../xxvec/... accessors compose through
+        # the canonical pair for the source polrep, returning empty arrays
+        # when a transform cannot close. No source-polrep branches needed.
         if polrep_out == 'stokes':
-            if self.polrep == 'stokes':
-                imdict = {'I': self.ivec, 'Q': self.qvec, 'U': self.uvec, 'V': self.vvec}
-            else:
-                if len(self.rrvec) == 0 or len(self.llvec) == 0:
-                    ivec = np.array([])
-                    vvec = np.array([])
-                else:
-                    ivec = 0.5 * (self.rrvec + self.llvec)
-                    vvec = 0.5 * (self.rrvec - self.llvec)
-
-                if len(self.rlvec) == 0 or len(self.lrvec) == 0:
-                    qvec = np.array([])
-                    uvec = np.array([])
-                else:
-                    qvec = np.real(0.5 * (self.lrvec + self.rlvec))
-                    uvec = np.real(0.5j * (self.lrvec - self.rlvec))
-
-                imdict = {'I': ivec, 'Q': qvec, 'U': uvec, 'V': vvec}
-
+            imdict = {'I': self.ivec, 'Q': self.qvec, 'U': self.uvec, 'V': self.vvec}
         elif polrep_out == 'circ':
-            if self.polrep == 'circ':
-                imdict = {'RR': self.rrvec, 'LL': self.llvec, 'RL': self.rlvec, 'LR': self.lrvec}
-            else:
-                if len(self.ivec) == 0 or len(self.vvec) == 0:
-                    rrvec = np.array([])
-                    llvec = np.array([])
-                else:
-                    rrvec = (self.ivec + self.vvec)
-                    llvec = (self.ivec - self.vvec)
-
-                if len(self.qvec) == 0 or len(self.uvec) == 0:
-                    rlvec = np.array([])
-                    lrvec = np.array([])
-                else:
-                    rlvec = (self.qvec + 1j * self.uvec)
-                    lrvec = (self.qvec - 1j * self.uvec)
-
-                imdict = {'RR': rrvec, 'LL': llvec, 'RL': rlvec, 'LR': lrvec}
+            imdict = {'RR': self.rrvec, 'LL': self.llvec, 'RL': self.rlvec, 'LR': self.lrvec}
+        elif polrep_out == 'lin':
+            imdict = {'XX': self.xxvec, 'YY': self.yyvec, 'XY': self.xyvec, 'YX': self.yxvec}
 
         # Assemble the new image
         imvec = imdict[pol_prim_out]

@@ -24,7 +24,13 @@ def test_init_requires_2d_array():
 
 def test_init_rejects_bad_polrep():
     with pytest.raises(Exception, match="polrep"):
-        eh.image.Image(np.zeros((4, 4)), 1e-10, 17.761, -29.0, polrep="lin")
+        eh.image.Image(np.zeros((4, 4)), 1e-10, 17.761, -29.0, polrep="bogus")
+
+
+def test_init_accepts_lin_polrep():
+    im = eh.image.Image(np.zeros((4, 4)), 1e-10, 17.761, -29.0, polrep="lin")
+    assert im.polrep == "lin"
+    assert im.pol_prim == "XX"
 
 
 def test_init_rejects_bad_pol_prim_stokes():
@@ -310,7 +316,7 @@ def test_copy_pol_images_brings_q_u_v(gauss_im, gauss_im_pol):
 
 def test_switch_polrep_invalid_raises(gauss_im):
     with pytest.raises(Exception, match="polrep_out"):
-        gauss_im.switch_polrep("lin")
+        gauss_im.switch_polrep("bogus")
 
 
 def test_switch_polrep_noop_returns_copy(gauss_im):
