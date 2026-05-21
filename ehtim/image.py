@@ -19,6 +19,7 @@
 
 import copy
 import math
+import warnings
 
 import matplotlib as mpl
 import matplotlib.pyplot as plt
@@ -1181,6 +1182,9 @@ class Image:
     def resample_square(self, xdim_new, ker_size=5):
         """Exactly resample a square image to new dimensions using the pulse function.
 
+           Deprecated: use :meth:`regrid_image`, which is far faster. This
+           pulse-function resampler is O(N_pix^2) and is not used internally.
+
            Args:
                 xdim_new  (int): new pixel dimension
                 ker_size  (int): kernel size for resampling
@@ -1188,6 +1192,11 @@ class Image:
            Returns:
                 im_resampled (Image): resampled image
         """
+        warnings.warn(
+            "Image.resample_square is deprecated and very slow (O(N_pix^2)); "
+            "use Image.regrid_image instead.",
+            DeprecationWarning, stacklevel=2,
+        )
 
         if self.xdim != self.ydim:
             raise Exception("Image must be square to use Image.resample_square!")
