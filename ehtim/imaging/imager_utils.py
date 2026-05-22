@@ -1167,7 +1167,7 @@ def chisq_cphase_diag_nfft(imvec, A, clphase_diag, sigma):
     sigma = np.concatenate(sigma) * ehc.DEGREE
 
     A3 = A[0]
-    tform_mats = A[1]
+    tform_blockdiag = A[1]
 
     # get nfft objects
     nfft_info1 = A3[0]
@@ -1197,7 +1197,7 @@ def chisq_cphase_diag_nfft(imvec, A, clphase_diag, sigma):
 
     clphase_samples = np.angle(samples1*samples2*samples3)
 
-    clphase_diag_samples = tform_mats.dot(clphase_samples)
+    clphase_diag_samples = tform_blockdiag.dot(clphase_samples)
 
     # compute chi^2
     chisq = (2.0/len(clphase_diag)) * \
@@ -1213,7 +1213,7 @@ def chisqgrad_cphase_diag_nfft(imvec, A, clphase_diag, sigma):
     sigma = np.concatenate(sigma) * ehc.DEGREE
 
     A3 = A[0]
-    tform_mats = A[1]
+    tform_blockdiag = A[1]
 
     # get nfft objects
     nfft_info1 = A3[0]
@@ -1244,9 +1244,9 @@ def chisqgrad_cphase_diag_nfft(imvec, A, clphase_diag, sigma):
     clphase_samples = np.angle(v1*v2*v3)
 
     # gradient vec for adjoint FT
-    clphase_diag_samples = tform_mats.dot(clphase_samples)
+    clphase_diag_samples = tform_blockdiag.dot(clphase_samples)
     weight = 2.0 * np.sin(clphase_diag - clphase_diag_samples) / (sigma**2)
-    pref = tform_mats.T.dot(weight)
+    pref = tform_blockdiag.T.dot(weight)
 
     pt1 = pref/v1.conj() * pulsefac1.conj()
     pt2 = pref/v2.conj() * pulsefac2.conj()
@@ -1504,7 +1504,7 @@ def chisq_logcamp_diag_nfft(imvec, A, log_clamp_diag, sigma):
     sigma = np.concatenate(sigma)
 
     A4 = A[0]
-    tform_mats = A[1]
+    tform_blockdiag = A[1]
 
     # get nfft objects
     nfft_info1 = A4[0]
@@ -1543,7 +1543,7 @@ def chisq_logcamp_diag_nfft(imvec, A, log_clamp_diag, sigma):
     log_clamp_samples = (np.log(np.abs(samples1)) + np.log(np.abs(samples2)) -
                          np.log(np.abs(samples3)) - np.log(np.abs(samples4)))
 
-    log_clamp_diag_samples = tform_mats.dot(log_clamp_samples)
+    log_clamp_diag_samples = tform_blockdiag.dot(log_clamp_samples)
 
     # compute chi^2
     chisq = np.sum(np.abs((log_clamp_diag - log_clamp_diag_samples)/sigma)**2) / \
@@ -1560,7 +1560,7 @@ def chisqgrad_logcamp_diag_nfft(imvec, A, log_clamp_diag, sigma):
     sigma = np.concatenate(sigma)
 
     A4 = A[0]
-    tform_mats = A[1]
+    tform_blockdiag = A[1]
 
     # get nfft objects
     nfft_info1 = A4[0]
@@ -1599,9 +1599,9 @@ def chisqgrad_logcamp_diag_nfft(imvec, A, log_clamp_diag, sigma):
     log_clamp_samples = np.log(np.abs((v1 * v2)/(v3 * v4)))
 
     # gradient vec for adjoint FT
-    log_clamp_diag_samples = tform_mats.dot(log_clamp_samples)
+    log_clamp_diag_samples = tform_blockdiag.dot(log_clamp_samples)
     weight = -2.0 * (log_clamp_diag - log_clamp_diag_samples) / (sigma**2)
-    pp = tform_mats.T.dot(weight)
+    pp = tform_blockdiag.T.dot(weight)
 
     pt1 = pp / v1.conj() * pulsefac1.conj()
     pt2 = pp / v2.conj() * pulsefac2.conj()
