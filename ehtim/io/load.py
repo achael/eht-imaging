@@ -1013,6 +1013,20 @@ def load_obs_txt(filename, polrep='stokes'):
     out = out.switch_polrep(polrep_out=polrep)
     return out
 
+def _fill_nan_sigmas(rr, ll, rl, lr):
+    """Fill nan sigmas from the parallel-hand value.
+
+    rr is filled from ll first; ll, rl, and lr then fall back to the (now
+    filled) rr. Returns (rr, ll, rl, lr) with nans replaced where a fallback is
+    available (a row that is nan in both parallel hands stays nan).
+    """
+    rr_filled = np.where(np.isnan(rr), ll, rr)
+    ll_filled = np.where(np.isnan(ll), rr_filled, ll)
+    rl_filled = np.where(np.isnan(rl), rr_filled, rl)
+    lr_filled = np.where(np.isnan(lr), rr_filled, lr)
+    return rr_filled, ll_filled, rl_filled, lr_filled
+
+
 # TODO can we save new telescope array terms and flags to uvfits and load them?
 # TODO uv coordinates, multiply by IF freqs and not header FREQ?
 def load_obs_uvfits(filename, polrep='stokes', flipbl=False,
@@ -1501,18 +1515,10 @@ def load_obs_uvfits(filename, polrep='stokes', flipbl=False,
 
     if remove_nan:
         if polrep_uvfits == 'circ':
-            # Fill nan sigmas from the parallel-hand value. rr is filled from ll
-            # first, then ll/rl/lr fall back to the (now-filled) rr -- so rr_filled
-            # feeds the other three, matching the original sequential logic.
-            rr = obs.data['rrsigma']
-            ll = obs.data['llsigma']
-            rl = obs.data['rlsigma']
-            lr = obs.data['lrsigma']
-            rr_filled = np.where(np.isnan(rr), ll, rr)
-            obs.data['rrsigma'] = rr_filled
-            obs.data['llsigma'] = np.where(np.isnan(ll), rr_filled, ll)
-            obs.data['rlsigma'] = np.where(np.isnan(rl), rr_filled, rl)
-            obs.data['lrsigma'] = np.where(np.isnan(lr), rr_filled, lr)
+            (obs.data['rrsigma'], obs.data['llsigma'],
+             obs.data['rlsigma'], obs.data['lrsigma']) = _fill_nan_sigmas(
+                obs.data['rrsigma'], obs.data['llsigma'],
+                obs.data['rlsigma'], obs.data['lrsigma'])
         else:
             print("WARNING: remove_nan not implemented with stokes uvfits files!")
 
