@@ -18,26 +18,23 @@
 
 # TODO add systematic noise to individual closure quantities?
 
-from __future__ import division
-from __future__ import print_function
 
-from builtins import str
-from builtins import range
-from builtins import object
-
-import numpy as np
-import matplotlib.pyplot as plt
-import matplotlib.gridspec as gridspec
-from matplotlib.backends.backend_pdf import PdfPages
 import datetime
 
-from ehtim.plotting.comp_plots import plotall_obs_compare
-from ehtim.plotting.comp_plots import plot_bl_obs_compare
-from ehtim.plotting.comp_plots import plot_cphase_obs_compare
-from ehtim.plotting.comp_plots import plot_camp_obs_compare
-from ehtim.calibrating.self_cal import self_cal as selfcal
-from ehtim.calibrating.pol_cal import leakage_cal, plot_leakage
+import matplotlib.gridspec as gridspec
+import matplotlib.pyplot as plt
+import numpy as np
+from matplotlib.backends.backend_pdf import PdfPages
+
 import ehtim.const_def as ehc
+from ehtim.calibrating.pol_cal import leakage_cal, plot_leakage
+from ehtim.calibrating.self_cal import self_cal as selfcal
+from ehtim.plotting.comp_plots import (
+    plot_bl_obs_compare,
+    plot_camp_obs_compare,
+    plot_cphase_obs_compare,
+    plotall_obs_compare,
+)
 
 FONTSIZE = 22
 WSPACE = 0.8
@@ -117,12 +114,12 @@ def imgsum(im_or_mov, obs, obs_uncal, outname, outdir='.', title='imgsum', comme
             snrcut_dict[key] = snrcut
 
     with PdfPages(outname) as pdf:
-        titlestr = 'Summary Sheet for %s on MJD %s' % (im_or_mov.source, im_or_mov.mjd)
+        titlestr = f'Summary Sheet for {im_or_mov.source} on MJD {im_or_mov.mjd}'
 
         # pdf metadata
         d = pdf.infodict()
         d['Title'] = title
-        d['Author'] = u'EHT Team 1'
+        d['Author'] = 'EHT Team 1'
         d['Subject'] = titlestr
         d['CreationDate'] = datetime.datetime.today()
         d['ModDate'] = datetime.datetime.today()
@@ -150,7 +147,7 @@ def imgsum(im_or_mov, obs, obs_uncal, outname, outdir='.', title='imgsum', comme
             # TODO --- ok to always extrapolate?
             if force_extrapolate:
                 im_or_mov.reset_interp(bounds_error=False)
-        elif hasattr(im_or_mov, 'make_image'):      
+        elif hasattr(im_or_mov, 'make_image'):
             im_display = im_or_mov.make_image(obs.res() * 10., 512)
         else:
             im_display = im_or_mov.copy()
@@ -214,11 +211,11 @@ def imgsum(im_or_mov, obs, obs_uncal, outname, outdir='.', title='imgsum', comme
         chi2camp_uncal = obs_uncal.chisq(im_or_mov, dtype='camp', ttype=ttype, systematic_noise=0,
                                          maxset=maxset, snrcut=snrcut_dict['camp'])
 
-        print("chi^2 vis: %0.2f %0.2f" % (chi2vis, chi2vis_uncal))
-        print("chi^2 amp: %0.2f %0.2f" % (chi2amp, chi2amp_uncal))
-        print("chi^2 cphase: %0.2f %0.2f" % (chi2cphase, chi2cphase_uncal))
-        print("chi^2 logcamp: %0.2f %0.2f" % (chi2logcamp, chi2logcamp_uncal))
-        print("chi^2 camp: %0.2f %0.2f" % (chi2logcamp, chi2logcamp_uncal))
+        print(f"chi^2 vis: {chi2vis:0.2f} {chi2vis_uncal:0.2f}")
+        print(f"chi^2 amp: {chi2amp:0.2f} {chi2amp_uncal:0.2f}")
+        print(f"chi^2 cphase: {chi2cphase:0.2f} {chi2cphase_uncal:0.2f}")
+        print(f"chi^2 logcamp: {chi2logcamp:0.2f} {chi2logcamp_uncal:0.2f}")
+        print(f"chi^2 camp: {chi2logcamp:0.2f} {chi2logcamp_uncal:0.2f}")
 
         fs = int(1*fontsize)
         fs2 = int(.8*fontsize)
@@ -233,48 +230,48 @@ def imgsum(im_or_mov, obs, obs_uncal, outname, outdir='.', title='imgsum', comme
         ax.text(.05, .1, "FLUX:", fontsize=fs,
                 ha='left', va='center', transform=ax.transAxes)
 
-        ax.text(.23, .9, "%s" % im_or_mov.source, fontsize=fs,
+        ax.text(.23, .9, f"{im_or_mov.source}", fontsize=fs,
                 ha='left', va='center', transform=ax.transAxes)
-        ax.text(.23, .7, "%i" % im_or_mov.mjd, fontsize=fs,
+        ax.text(.23, .7, f"{int(im_or_mov.mjd)}", fontsize=fs,
                 ha='left', va='center', transform=ax.transAxes)
-        ax.text(.23, .5, "%0.0f GHz" % (im_or_mov.rf/1.e9), fontsize=fs,
+        ax.text(.23, .5, f"{im_or_mov.rf / 1000000000.0:0.0f} GHz", fontsize=fs,
                 ha='left', va='center', transform=ax.transAxes)
-        ax.text(.23, .3, "%0.1f $\mu$as" % (im_display.fovx()/ehc.RADPERUAS), fontsize=fs,
+        ax.text(.23, .3, rf"{im_display.fovx() / ehc.RADPERUAS:0.1f} $\mu$as", fontsize=fs,
                 ha='left', va='center', transform=ax.transAxes)
-        ax.text(.23, .1, "%0.2f Jy" % flux, fontsize=fs,
-                ha='left', va='center', transform=ax.transAxes)
-
-        ax.text(.5, .9, "$\chi^2_{vis}$", fontsize=fs,
-                ha='left', va='center', transform=ax.transAxes)
-        ax.text(.5, .7, "$\chi^2_{amp}$", fontsize=fs,
-                ha='left', va='center', transform=ax.transAxes)
-        ax.text(.5, .5, "$\chi^2_{cphase}$", fontsize=fs,
-                ha='left', va='center', transform=ax.transAxes)
-        ax.text(.5, .3, "$\chi^2_{log camp}$", fontsize=fs,
-                ha='left', va='center', transform=ax.transAxes)
-        ax.text(.5, .1, "$\chi^2_{camp}$", fontsize=fs,
+        ax.text(.23, .1, f"{flux:0.2f} Jy", fontsize=fs,
                 ha='left', va='center', transform=ax.transAxes)
 
-        ax.text(.72, .9, "%0.2f" % chi2vis, fontsize=fs,
+        ax.text(.5, .9, r"$\chi^2_{vis}$", fontsize=fs,
                 ha='left', va='center', transform=ax.transAxes)
-        ax.text(.72, .7, "%0.2f" % chi2amp, fontsize=fs,
+        ax.text(.5, .7, r"$\chi^2_{amp}$", fontsize=fs,
                 ha='left', va='center', transform=ax.transAxes)
-        ax.text(.72, .5, "%0.2f" % chi2cphase, fontsize=fs,
+        ax.text(.5, .5, r"$\chi^2_{cphase}$", fontsize=fs,
                 ha='left', va='center', transform=ax.transAxes)
-        ax.text(.72, .3, "%0.2f" % chi2logcamp, fontsize=fs,
+        ax.text(.5, .3, r"$\chi^2_{log camp}$", fontsize=fs,
                 ha='left', va='center', transform=ax.transAxes)
-        ax.text(.72, .1, "%0.2f" % chi2camp, fontsize=fs,
+        ax.text(.5, .1, r"$\chi^2_{camp}$", fontsize=fs,
                 ha='left', va='center', transform=ax.transAxes)
 
-        ax.text(.85, .9, "(%0.2f)" % chi2vis_uncal, fontsize=fs2,
+        ax.text(.72, .9, f"{chi2vis:0.2f}", fontsize=fs,
                 ha='left', va='center', transform=ax.transAxes)
-        ax.text(.85, .7, "(%0.2f)" % chi2amp_uncal, fontsize=fs2,
+        ax.text(.72, .7, f"{chi2amp:0.2f}", fontsize=fs,
                 ha='left', va='center', transform=ax.transAxes)
-        ax.text(.85, .5, "(%0.2f)" % chi2cphase_uncal, fontsize=fs2,
+        ax.text(.72, .5, f"{chi2cphase:0.2f}", fontsize=fs,
                 ha='left', va='center', transform=ax.transAxes)
-        ax.text(.85, .3, "(%0.2f)" % chi2logcamp, fontsize=fs2,
+        ax.text(.72, .3, f"{chi2logcamp:0.2f}", fontsize=fs,
                 ha='left', va='center', transform=ax.transAxes)
-        ax.text(.85, .1, "(%0.2f)" % chi2camp_uncal, fontsize=fs2,
+        ax.text(.72, .1, f"{chi2camp:0.2f}", fontsize=fs,
+                ha='left', va='center', transform=ax.transAxes)
+
+        ax.text(.85, .9, f"({chi2vis_uncal:0.2f})", fontsize=fs2,
+                ha='left', va='center', transform=ax.transAxes)
+        ax.text(.85, .7, f"({chi2amp_uncal:0.2f})", fontsize=fs2,
+                ha='left', va='center', transform=ax.transAxes)
+        ax.text(.85, .5, f"({chi2cphase_uncal:0.2f})", fontsize=fs2,
+                ha='left', va='center', transform=ax.transAxes)
+        ax.text(.85, .3, f"({chi2logcamp:0.2f})", fontsize=fs2,
+                ha='left', va='center', transform=ax.transAxes)
+        ax.text(.85, .1, f"({chi2camp_uncal:0.2f})", fontsize=fs2,
                 ha='left', va='center', transform=ax.transAxes)
 
         ################################################################################
@@ -351,10 +348,10 @@ def imgsum(im_or_mov, obs, obs_uncal, outname, outdir='.', title='imgsum', comme
             if i > 30:
                 break
             data = cphase_chisq_data[idx[i]]
-            tristr = r"%s-%s-%s" % (data[0], data[1], data[2])
-            nstr = r"%i" % data[3]
-            rchisqstr = r"%0.1f" % (float(data[4])/float(data[3]))
-            rrchisqstr = r"%0.3f" % (float(data[4])/float(n_cphase))
+            tristr = rf"{data[0]}-{data[1]}-{data[2]}"
+            nstr = rf"{int(data[3])}"
+            rchisqstr = rf"{float(data[4]) / float(data[3]):0.1f}"
+            rrchisqstr = rf"{float(data[4]) / float(n_cphase):0.3f}"
             if first:
                 chisqtab += r" " + tristr + " & " + nstr + " & " + rchisqstr + " & " + rrchisqstr
                 first = False
@@ -434,10 +431,10 @@ def imgsum(im_or_mov, obs, obs_uncal, outname, outdir='.', title='imgsum', comme
             if i > 45:
                 break
             data = camp_chisq_data[idx[i]]
-            tristr = r"%s-%s-%s-%s" % (data[0], data[1], data[2], data[3])
-            nstr = r"%i" % data[4]
-            rchisqstr = r"%0.1f" % (data[5]/float(data[4]))
-            rrchisqstr = r"%0.3f" % (data[5]/float(n_camps))
+            tristr = rf"{data[0]}-{data[1]}-{data[2]}-{data[3]}"
+            nstr = rf"{int(data[4])}"
+            rchisqstr = rf"{data[5] / float(data[4]):0.1f}"
+            rrchisqstr = rf"{data[5] / float(n_camps):0.3f}"
             if i == 0:
                 chisqtab += r" " + tristr + " & " + nstr + " & " + rchisqstr + " & " + rrchisqstr
             else:
@@ -470,7 +467,7 @@ def imgsum(im_or_mov, obs, obs_uncal, outname, outdir='.', title='imgsum', comme
                                  ebar=ebar, markersize=MARKERSIZE)
         # modify the labels
         ax.set_title('Calibrated Visiblity Amplitudes')
-        ax.set_xlabel('u-v distance (G$\lambda$)')
+        ax.set_xlabel(r'u-v distance (G$\lambda$)')
         ax.set_xlim([0, 1.e10])
         ax.set_xticks([0, 2.e9, 4.e9, 6.e9, 8.e9, 10.e9])
         ax.set_xticklabels(["0", "2", "4", "6", "8", "10"])
@@ -481,7 +478,7 @@ def imgsum(im_or_mov, obs, obs_uncal, outname, outdir='.', title='imgsum', comme
         ax.set_ylim([0, 1.2*flux])
         yticks_maj = np.array([0, .2, .4, .6, .8, 1])*flux
         ax.set_yticks(yticks_maj)
-        ax.set_yticklabels(["%0.2f" % fl for fl in yticks_maj])
+        ax.set_yticklabels([f"{fl:0.2f}" for fl in yticks_maj])
         yticks_min = np.array([.1, .3, .5, .7, .9])*flux
         ax.set_yticks(yticks_min, minor=True)
         ax.set_yticklabels([], minor=True)
@@ -492,6 +489,7 @@ def imgsum(im_or_mov, obs, obs_uncal, outname, outdir='.', title='imgsum', comme
             print("plotting gains")
             ax2 = plt.subplot(gs[0:2, 2:6])
             obs_tmp = obs_uncal.copy()
+            ct_out = None
             for i in range(1):
                 ct = selfcal(obs_tmp, im_or_mov,
                              method='amp', ttype=ttype,
@@ -520,7 +518,7 @@ def imgsum(im_or_mov, obs, obs_uncal, outname, outdir='.', title='imgsum', comme
             for station in ct_out.tarr['site']:
                 try:
                     gain = np.median(np.abs(ct_out.data[station]['lscale']))
-                except:
+                except Exception:
                     continue
                 pdiff = np.abs(gain-1)*100
                 data = (station, gain, pdiff)
@@ -536,9 +534,9 @@ def imgsum(im_or_mov, obs, obs_uncal, outname, outdir='.', title='imgsum', comme
                 if i > 45:
                     break
                 data = gain_data[idx[i]]
-                sitestr = r"%s" % (data[0])
-                gstr = r"%0.2f" % data[1]
-                pstr = r"%0.0f" % data[2]
+                sitestr = rf"{data[0]}"
+                gstr = rf"{data[1]:0.2f}"
+                pstr = rf"{data[2]:0.0f}"
                 if i == 0:
                     chisqtab += r" " + sitestr + " & " + gstr + " & " + pstr
                 else:
@@ -599,10 +597,10 @@ def imgsum(im_or_mov, obs, obs_uncal, outname, outdir='.', title='imgsum', comme
             if i > 45:
                 break
             data = bl_chisq_data[idx[i]]
-            tristr = r"%s-%s" % (data[0], data[1])
-            nstr = r"%i" % data[2]
-            rchisqstr = r"%0.1f" % (data[3]/float(data[2]))
-            rrchisqstr = r"%0.3f" % (data[3]/float(n_bl))
+            tristr = rf"{data[0]}-{data[1]}"
+            nstr = rf"{int(data[2])}"
+            rchisqstr = rf"{data[3] / float(data[2]):0.1f}"
+            rrchisqstr = rf"{data[3] / float(n_bl):0.3f}"
             if i == 0:
                 chisqtab += r" " + tristr + " & " + nstr + " & " + rchisqstr + " & " + rrchisqstr
             else:
@@ -656,7 +654,7 @@ def imgsum(im_or_mov, obs, obs_uncal, outname, outdir='.', title='imgsum', comme
                 ax.set_xlabel('')
 
                 if i == 3:
-                    print('saving pdf page %i' % page)
+                    print(f'saving pdf page {int(page)}')
                     page += 1
                     pdf.savefig(pad_inches=MARGINS, bbox_inches='tight')
                     plt.close()
@@ -666,7 +664,7 @@ def imgsum(im_or_mov, obs, obs_uncal, outname, outdir='.', title='imgsum', comme
                     j = 0
                     switch = False
 
-            print('saving pdf page %i' % page)
+            print(f'saving pdf page {int(page)}')
             page += 1
             pdf.savefig(pad_inches=MARGINS, bbox_inches='tight')
             plt.close()
@@ -705,7 +703,7 @@ def imgsum(im_or_mov, obs, obs_uncal, outname, outdir='.', title='imgsum', comme
                 ax.set_xlabel('')
 
                 if i == 3:
-                    print('saving pdf page %i' % page)
+                    print(f'saving pdf page {int(page)}')
                     page += 1
                     pdf.savefig(pad_inches=MARGINS, bbox_inches='tight')
                     plt.close()
@@ -714,7 +712,7 @@ def imgsum(im_or_mov, obs, obs_uncal, outname, outdir='.', title='imgsum', comme
                     i = 0
                     j = 0
                     switch = False
-            print('saving pdf page %i' % page)
+            print(f'saving pdf page {int(page)}')
             page += 1
             pdf.savefig(pad_inches=MARGINS, bbox_inches='tight')
             plt.close()
@@ -754,7 +752,7 @@ def imgsum(im_or_mov, obs, obs_uncal, outname, outdir='.', title='imgsum', comme
                 ax.set_xlabel('')
 
                 if i == 3:
-                    print('saving pdf page %i' % page)
+                    print(f'saving pdf page {int(page)}')
                     page += 1
                     pdf.savefig(pad_inches=MARGINS, bbox_inches='tight')
                     plt.close()
@@ -763,7 +761,7 @@ def imgsum(im_or_mov, obs, obs_uncal, outname, outdir='.', title='imgsum', comme
                     i = 0
                     j = 0
                     switch = False
-            print('saving pdf page %i' % page)
+            print(f'saving pdf page {int(page)}')
             page += 1
             pdf.savefig(pad_inches=MARGINS, bbox_inches='tight')
             plt.close()
@@ -854,12 +852,12 @@ def imgsum_pol(im, obs, obs_uncal, outname,
         im.ivec += 1.e-50*np.max(im.ivec)
 
     with PdfPages(outname) as pdf:
-        titlestr = 'Summary Sheet for %s on MJD %s' % (im.source, im.mjd)
+        titlestr = f'Summary Sheet for {im.source} on MJD {im.mjd}'
 
         # pdf metadata
         d = pdf.infodict()
         d['Title'] = title
-        d['Author'] = u'EHT Team 1'
+        d['Author'] = 'EHT Team 1'
         d['Subject'] = titlestr
         d['CreationDate'] = datetime.datetime.today()
         d['ModDate'] = datetime.datetime.today()
@@ -1001,10 +999,10 @@ def imgsum_pol(im, obs, obs_uncal, outname,
         chi2uvis_uncal = obs_uncal.chisq(im, dtype='vis', ttype='nfft',
                                          systematic_noise=sysnoise, pol='U')
 
-        print("chi^2 m: %0.2f %0.2f" % (chi2m, chi2m_uncal))
-        print("chi^2 pvis: %0.2f %0.2f" % (chi2pvis, chi2pvis_uncal))
-        print("chi^2 qvis: %0.2f %0.2f" % (chi2qvis, chi2qvis_uncal))
-        print("chi^2 uvis: %0.2f %0.2f" % (chi2uvis, chi2uvis_uncal))
+        print(f"chi^2 m: {chi2m:0.2f} {chi2m_uncal:0.2f}")
+        print(f"chi^2 pvis: {chi2pvis:0.2f} {chi2pvis_uncal:0.2f}")
+        print(f"chi^2 qvis: {chi2qvis:0.2f} {chi2qvis_uncal:0.2f}")
+        print(f"chi^2 uvis: {chi2uvis:0.2f} {chi2uvis_uncal:0.2f}")
 
         fs = int(1*fontsize)
         fs2 = int(.8*fontsize)
@@ -1019,42 +1017,42 @@ def imgsum_pol(im, obs, obs_uncal, outname,
         ax.text(.05, .1, "FLUX:", fontsize=fs,
                 ha='left', va='center', transform=ax.transAxes)
 
-        ax.text(.23, .9, "%s" % im.source, fontsize=fs,
+        ax.text(.23, .9, f"{im.source}", fontsize=fs,
                 ha='left', va='center', transform=ax.transAxes)
-        ax.text(.23, .7, "%i" % im.mjd, fontsize=fs,
+        ax.text(.23, .7, f"{int(im.mjd)}", fontsize=fs,
                 ha='left', va='center', transform=ax.transAxes)
-        ax.text(.23, .5, "%0.0f GHz" % (im.rf/1.e9), fontsize=fs,
+        ax.text(.23, .5, f"{im.rf / 1000000000.0:0.0f} GHz", fontsize=fs,
                 ha='left', va='center', transform=ax.transAxes)
-        ax.text(.23, .3, "%0.1f $\mu$as" % (im.fovx()/ehc.RADPERUAS), fontsize=fs,
+        ax.text(.23, .3, rf"{im.fovx() / ehc.RADPERUAS:0.1f} $\mu$as", fontsize=fs,
                 ha='left', va='center', transform=ax.transAxes)
-        ax.text(.23, .1, "%0.2f Jy" % flux, fontsize=fs,
-                ha='left', va='center', transform=ax.transAxes)
-
-        ax.text(.5, .9, "$\chi^2_{m}$", fontsize=fs,
-                ha='left', va='center', transform=ax.transAxes)
-        ax.text(.5, .7, "$\chi^2_{P}$", fontsize=fs,
-                ha='left', va='center', transform=ax.transAxes)
-        ax.text(.5, .5, "$\chi^2_{Q}$", fontsize=fs,
-                ha='left', va='center', transform=ax.transAxes)
-        ax.text(.5, .3, "$\chi^2_{U}$", fontsize=fs,
+        ax.text(.23, .1, f"{flux:0.2f} Jy", fontsize=fs,
                 ha='left', va='center', transform=ax.transAxes)
 
-        ax.text(.72, .9, "%0.2f" % chi2m, fontsize=fs,
+        ax.text(.5, .9, r"$\chi^2_{m}$", fontsize=fs,
                 ha='left', va='center', transform=ax.transAxes)
-        ax.text(.72, .7, "%0.2f" % chi2pvis, fontsize=fs,
+        ax.text(.5, .7, r"$\chi^2_{P}$", fontsize=fs,
                 ha='left', va='center', transform=ax.transAxes)
-        ax.text(.72, .5, "%0.2f" % chi2qvis, fontsize=fs,
+        ax.text(.5, .5, r"$\chi^2_{Q}$", fontsize=fs,
                 ha='left', va='center', transform=ax.transAxes)
-        ax.text(.72, .3, "%0.2f" % chi2uvis, fontsize=fs,
+        ax.text(.5, .3, r"$\chi^2_{U}$", fontsize=fs,
                 ha='left', va='center', transform=ax.transAxes)
 
-        ax.text(.85, .9, "(%0.2f)" % chi2m_uncal, fontsize=fs2,
+        ax.text(.72, .9, f"{chi2m:0.2f}", fontsize=fs,
                 ha='left', va='center', transform=ax.transAxes)
-        ax.text(.85, .7, "(%0.2f)" % chi2pvis_uncal, fontsize=fs2,
+        ax.text(.72, .7, f"{chi2pvis:0.2f}", fontsize=fs,
                 ha='left', va='center', transform=ax.transAxes)
-        ax.text(.85, .5, "(%0.2f)" % chi2qvis_uncal, fontsize=fs2,
+        ax.text(.72, .5, f"{chi2qvis:0.2f}", fontsize=fs,
                 ha='left', va='center', transform=ax.transAxes)
-        ax.text(.85, .3, "(%0.2f)" % chi2uvis_uncal, fontsize=fs2,
+        ax.text(.72, .3, f"{chi2uvis:0.2f}", fontsize=fs,
+                ha='left', va='center', transform=ax.transAxes)
+
+        ax.text(.85, .9, f"({chi2m_uncal:0.2f})", fontsize=fs2,
+                ha='left', va='center', transform=ax.transAxes)
+        ax.text(.85, .7, f"({chi2pvis_uncal:0.2f})", fontsize=fs2,
+                ha='left', va='center', transform=ax.transAxes)
+        ax.text(.85, .5, f"({chi2qvis_uncal:0.2f})", fontsize=fs2,
+                ha='left', va='center', transform=ax.transAxes)
+        ax.text(.85, .3, f"({chi2uvis_uncal:0.2f})", fontsize=fs2,
                 ha='left', va='center', transform=ax.transAxes)
 
         ################################################################################
@@ -1185,11 +1183,11 @@ def imgsum_pol(im, obs, obs_uncal, outname,
             if i > 45:
                 break
             data = bl_chisq_data_m[idx_m[i]]
-            tristr = r"%s-%s" % (data[0], data[1])
-            nstr = r"%i" % data[2]
-            chisqstr = r"%0.1f" % data[3]
-            rchisqstr = r"%0.1f" % (data[3]/float(data[2]))
-            rrchisqstr = r"%0.3f" % (data[3]/float(n_bl))
+            tristr = rf"{data[0]}-{data[1]}"
+            nstr = rf"{int(data[2])}"
+            chisqstr = rf"{data[3]:0.1f}"
+            rchisqstr = rf"{data[3] / float(data[2]):0.1f}"
+            rrchisqstr = rf"{data[3] / float(n_bl):0.3f}"
             if i == 0:
                 chisqtab_m += r" " + tristr + " & " + nstr + " & " + rchisqstr + " & " + rrchisqstr
             else:
@@ -1198,10 +1196,10 @@ def imgsum_pol(im, obs, obs_uncal, outname,
             if i > 45:
                 break
             data = bl_chisq_data_pvis[idx_p[i]]
-            tristr = r"%s-%s" % (data[0], data[1])
-            nstr = r"%i" % data[2]
-            rchisqstr = r"%0.1f" % (data[3]/float(data[2]))
-            rrchisqstr = r"%0.3f" % (data[3]/float(n_bl))
+            tristr = rf"{data[0]}-{data[1]}"
+            nstr = rf"{int(data[2])}"
+            rchisqstr = rf"{data[3] / float(data[2]):0.1f}"
+            rrchisqstr = rf"{data[3] / float(n_bl):0.3f}"
             if i == 0:
                 chisqtab_p += r" " + tristr + " & " + nstr + " & " + rchisqstr + " & " + rrchisqstr
             else:
@@ -1210,10 +1208,10 @@ def imgsum_pol(im, obs, obs_uncal, outname,
             if i > 45:
                 break
             data = bl_chisq_data_qvis[idx_q[i]]
-            tristr = r"%s-%s" % (data[0], data[1])
-            nstr = r"%i" % data[2]
-            rchisqstr = r"%0.1f" % (data[3]/float(data[2]))
-            rrchisqstr = r"%0.3f" % (data[3]/float(n_bl))
+            tristr = rf"{data[0]}-{data[1]}"
+            nstr = rf"{int(data[2])}"
+            rchisqstr = rf"{data[3] / float(data[2]):0.1f}"
+            rrchisqstr = rf"{data[3] / float(n_bl):0.3f}"
             if i == 0:
                 chisqtab_q += r" " + tristr + " & " + nstr + " & " + rchisqstr + " & " + rrchisqstr
             else:
@@ -1222,10 +1220,10 @@ def imgsum_pol(im, obs, obs_uncal, outname,
             if i > 45:
                 break
             data = bl_chisq_data_qvis[idx_u[i]]
-            tristr = r"%s-%s" % (data[0], data[1])
-            nstr = r"%i" % data[2]
-            rchisqstr = r"%0.1f" % (data[3]/float(data[2]))
-            rrchisqstr = r"%0.3f" % (data[3]/float(n_bl))
+            tristr = rf"{data[0]}-{data[1]}"
+            nstr = rf"{int(data[2])}"
+            rchisqstr = rf"{data[3] / float(data[2]):0.1f}"
+            rrchisqstr = rf"{data[3] / float(n_bl):0.3f}"
             if i == 0:
                 chisqtab_u += r" " + tristr + " & " + nstr + " & " + rchisqstr + " & " + rrchisqstr
             else:
@@ -1309,7 +1307,7 @@ def imgsum_pol(im, obs, obs_uncal, outname,
                     continue
 
                 if i == 3:
-                    print('saving pdf page %i' % page)
+                    print(f'saving pdf page {int(page)}')
                     page += 1
                     pdf.savefig(pad_inches=MARGINS, bbox_inches='tight')
                     plt.close()
@@ -1319,7 +1317,7 @@ def imgsum_pol(im, obs, obs_uncal, outname,
                     j = 0
 
                 if nbl == len(uniquebl):
-                    print('saving pdf page %i' % page)
+                    print(f'saving pdf page {int(page)}')
                     page += 1
                     pdf.savefig(pad_inches=MARGINS, bbox_inches='tight')
                     plt.close()
@@ -1363,7 +1361,7 @@ def imgsum_pol(im, obs, obs_uncal, outname,
                     continue
 
                 if i == 3:
-                    print('saving pdf page %i' % page)
+                    print(f'saving pdf page {int(page)}')
                     page += 1
                     pdf.savefig(pad_inches=MARGINS, bbox_inches='tight')
                     plt.close()
@@ -1373,7 +1371,7 @@ def imgsum_pol(im, obs, obs_uncal, outname,
                     j = 0
 
                 if nbl == len(uniquebl):
-                    print('saving pdf page %i' % page)
+                    print(f'saving pdf page {int(page)}')
                     page += 1
                     pdf.savefig(pad_inches=MARGINS, bbox_inches='tight')
                     plt.close()
@@ -1417,7 +1415,7 @@ def imgsum_pol(im, obs, obs_uncal, outname,
                     continue
 
                 if i == 3:
-                    print('saving pdf page %i' % page)
+                    print(f'saving pdf page {int(page)}')
                     page += 1
                     pdf.savefig(pad_inches=MARGINS, bbox_inches='tight')
                     plt.close()
@@ -1427,7 +1425,7 @@ def imgsum_pol(im, obs, obs_uncal, outname,
                     j = 0
 
                 if nbl == len(uniquebl):
-                    print('saving pdf page %i' % page)
+                    print(f'saving pdf page {int(page)}')
                     page += 1
                     pdf.savefig(pad_inches=MARGINS, bbox_inches='tight')
                     plt.close()
@@ -1471,7 +1469,7 @@ def imgsum_pol(im, obs, obs_uncal, outname,
                     continue
 
                 if i == 3:
-                    print('saving pdf page %i' % page)
+                    print(f'saving pdf page {int(page)}')
                     page += 1
                     pdf.savefig(pad_inches=MARGINS, bbox_inches='tight')
                     plt.close()
@@ -1481,7 +1479,7 @@ def imgsum_pol(im, obs, obs_uncal, outname,
                     j = 0
 
                 if nbl == len(uniquebl):
-                    print('saving pdf page %i' % page)
+                    print(f'saving pdf page {int(page)}')
                     page += 1
                     pdf.savefig(pad_inches=MARGINS, bbox_inches='tight')
                     plt.close()
@@ -1510,7 +1508,7 @@ def _display_img(im, beamparams=None, scale='linear', gamma=0.5, cbar_lims=False
     imvec = imvec * factor
 
     imarr = (imvec).reshape(im.ydim, im.xdim)
-    unit = 'mJy/$\mu$ as$^2$'
+    unit = r'mJy/$\mu$ as$^2$'
     if scale == 'log':
         if (imarr < 0.0).any():
             print('clipping values less than 0')
@@ -1543,7 +1541,7 @@ def _display_img(im, beamparams=None, scale='linear', gamma=0.5, cbar_lims=False
         if cbar_lims:
             plt.clim(cbar_lims[0], cbar_lims[1])
 
-    if not(beamparams is None):
+    if beamparams is not None:
         beamparams = [beamparams[0], beamparams[1], beamparams[2],
                       -.35*im.fovx(), -.35*im.fovy()]
         beamimage = im.copy()
@@ -1561,7 +1559,7 @@ def _display_img(im, beamparams=None, scale='linear', gamma=0.5, cbar_lims=False
     start = im.xdim * roughfactor / 3.0  # select the start location
     end = start + fov_scale/fov_uas * im.xdim  # determine the end location
     plt.plot([start, end], [im.ydim-start, im.ydim-start], color="white", lw=1)  # plot line
-    plt.text(x=(start+end)/2.0, y=im.ydim-start-im.ydim/20, s=str(fov_scale) + " $\mu$as",
+    plt.text(x=(start+end)/2.0, y=im.ydim-start-im.ydim/20, s=str(fov_scale) + r" $\mu$as",
              color="white", ha="center", va="center",
              fontsize=int(1.2*fontsize), fontweight='bold')
 
@@ -1615,7 +1613,7 @@ def _display_img_pol(im, beamparams=None, scale='linear', gamma=0.5, cbar_lims=F
                     im2 = im.switch_polrep('stokes')
                 imvec = np.array(im2._imdict[pol]).reshape(-1)
             except KeyError:
-                raise Exception("Cannot make pol %s image in display()!" % pol)
+                raise Exception(f"Cannot make pol {pol} image in display()!")
 
     # flux unit is Tb
     imvec = imvec * factor
@@ -1698,7 +1696,7 @@ def _display_img_pol(im, beamparams=None, scale='linear', gamma=0.5, cbar_lims=F
         if cbar_lims:
             ax.set_clim(cbar_lims[0], cbar_lims[1])
 
-    if not(beamparams is None):
+    if beamparams is not None:
         beamparams = [beamparams[0], beamparams[1], beamparams[2],
                       -.35*im.fovx(), -.35*im.fovy()]
         beamimage = im.copy()
@@ -1719,7 +1717,7 @@ def _display_img_pol(im, beamparams=None, scale='linear', gamma=0.5, cbar_lims=F
         end = start + fov_scale/fov_uas * im.xdim
         # determine the end location based on the size of the bar
         plt.plot([start, end], [im.ydim-start, im.ydim-start], color="white", lw=1)  # plot line
-        plt.text(x=(start+end)/2.0, y=im.ydim-start-im.ydim/20, s=str(fov_scale) + " $\mu$as",
+        plt.text(x=(start+end)/2.0, y=im.ydim-start-im.ydim/20, s=str(fov_scale) + r" $\mu$as",
                  color="white", ha="center", va="center",
                  fontsize=int(1.2*fontsize), fontweight='bold')
 
