@@ -878,3 +878,16 @@ class TestAddNoiseLegacy:
         residual = out["vis"] - obs.data["vis"]
         ratio = np.std(residual.real) / np.mean(out["sigma"])
         assert 0.5 < ratio < 2.0
+
+
+def test_observe_fast_ttype_warns_deprecated(gauss_im, observe):
+    """Forward sampling with ttype='fast' emits a DeprecationWarning pointing
+    to nfft (the FFT sampler/gridder are not adjoint operators)."""
+    with pytest.warns(DeprecationWarning, match=r"ttype='fast'"):
+        observe(gauss_im, ttype="fast")
+
+
+def test_warn_fast_ttype_deprecated_helper():
+    """The shared helper emits a DeprecationWarning."""
+    with pytest.warns(DeprecationWarning, match=r"ttype='fast'"):
+        obsh.warn_fast_ttype_deprecated()

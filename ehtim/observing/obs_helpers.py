@@ -44,6 +44,25 @@ warnings.filterwarnings("ignore", message="divide by zero encountered in double_
 ##################################################################################################
 
 
+def warn_fast_ttype_deprecated():
+    """Emit a DeprecationWarning for the ``ttype='fast'`` (plain FFT) path.
+
+    The plain-FFT transform is deprecated: its imaging gradients are
+    inaccurate because the forward sampler (cubic-spline interpolation of the
+    FFT grid) and the adjoint gridder (Gaussian convolution) are not transpose
+    operators, so the FFT gradient does not match the FFT chi-squared. Use
+    ``ttype='nfft'`` (accurate, recommended) or ``ttype='direct'`` (small
+    problems) instead.
+    """
+    warnings.warn(
+        "ttype='fast' (plain FFT) is deprecated and will be removed in a "
+        "future release. Its imaging gradients are inaccurate (the FFT sampler "
+        "and gridder are not adjoint operators). Use ttype='nfft' (recommended) "
+        "or ttype='direct' instead.",
+        DeprecationWarning, stacklevel=2,
+    )
+
+
 def compute_uv_coordinates(array, site1, site2, time, mjd, ra, dec, rf, timetype='UTC',
                            elevmin=ehc.ELEV_LOW,  elevmax=ehc.ELEV_HIGH, no_elevcut_space=False,
                            fix_theta_GMST=False, earthshadow_space=True):
