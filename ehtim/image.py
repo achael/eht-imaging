@@ -19,6 +19,7 @@
 
 import copy
 import math
+import warnings
 
 import matplotlib as mpl
 import matplotlib.pyplot as plt
@@ -1179,6 +1180,17 @@ class Image:
     def resample_square(self, xdim_new, ker_size=5):
         """Exactly resample a square image to new dimensions using the pulse function.
 
+           Deprecated in favor of :meth:`regrid_image`. The two differ:
+           ``resample_square`` convolves the pixel values with the pulse
+           function and resamples the continuous pixel*pulse image
+           representation exactly at the new pixel locations, while
+           ``regrid_image`` interpolates the pixel values directly with
+           scipy.interpolate.RectBivariateSpline. In practice ``regrid_image``
+           is the correct choice and is far faster; use ``resample_square``
+           only if you specifically need the exact continuous pixel*pulse
+           representation at intermediate points. This implementation is
+           O(N_pix^2) and is not used internally.
+
            Args:
                 xdim_new  (int): new pixel dimension
                 ker_size  (int): kernel size for resampling
@@ -1186,6 +1198,15 @@ class Image:
            Returns:
                 im_resampled (Image): resampled image
         """
+        warnings.warn(
+            "Image.resample_square is deprecated and slow (O(N_pix^2)). It "
+            "resamples the continuous pixel*pulse representation exactly at the "
+            "new pixel locations; for nearly all uses prefer Image.regrid_image, "
+            "which interpolates the pixel values directly and is far faster. Use "
+            "resample_square only if you need the exact pixel*pulse "
+            "representation at intermediate points.",
+            DeprecationWarning, stacklevel=2,
+        )
 
         if self.xdim != self.ydim:
             raise Exception("Image must be square to use Image.resample_square!")

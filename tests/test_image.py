@@ -530,6 +530,11 @@ def test_resample_square_rejects_rect(make_rect_image):
         rect.resample_square(8)
 
 
+def test_resample_square_warns_deprecated(gauss_im):
+    with pytest.warns(DeprecationWarning, match="regrid_image"):
+        gauss_im.resample_square(16)
+
+
 # ---------------------------------------------------------------------------
 # Section 9: Blur, mask, threshold, gradient
 # ---------------------------------------------------------------------------

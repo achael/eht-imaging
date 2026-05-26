@@ -1524,6 +1524,12 @@ class Obsdata:
                (Obsdata): An Obsdata object with the inflated noise values.
         """
 
+        if self.polrep != 'stokes':
+            warnings.warn(
+                "rescale_zbl estimates the original total flux from the "
+                "primary-hand amplitude; for polrep != 'stokes' orig_totflux "
+                "may be incorrectly estimated.", stacklevel=2)
+
         # estimate the original total flux
         obs_zerobl = self.flag_uvdist(uv_max=uv_max)
         amps = obs_zerobl.unpack(['amp', 'sigma'], debias=debias)
@@ -1535,16 +1541,13 @@ class Obsdata:
         # Rescale short baselines to excise contributions from extended flux
         # Note: this does not do the proper thing for fractional polarization)
         obs = self.copy()
-        for j in range(len(obs.data)):
-            if (obs.data['u'][j]**2 + obs.data['v'][j]**2)**0.5 < uv_max:
-                obs.data['vis'][j] *= totflux / orig_totflux
-                obs.data['qvis'][j] *= totflux / orig_totflux
-                obs.data['uvis'][j] *= totflux / orig_totflux
-                obs.data['vvis'][j] *= totflux / orig_totflux
-                obs.data['sigma'][j] *= totflux / orig_totflux
-                obs.data['qsigma'][j] *= totflux / orig_totflux
-                obs.data['usigma'][j] *= totflux / orig_totflux
-                obs.data['vsigma'][j] *= totflux / orig_totflux
+        scale = totflux / orig_totflux
+        uvdist = np.sqrt(obs.data['u']**2 + obs.data['v']**2)
+        mask = uvdist < uv_max
+        fields = [self.poldict[key] for key in ('vis1', 'vis2', 'vis3', 'vis4',
+                                                'sigma1', 'sigma2', 'sigma3', 'sigma4')]
+        for field in fields:
+            obs.data[field][mask] *= scale
 
         return obs
 

@@ -1013,13 +1013,27 @@ def load_obs_txt(filename, polrep='stokes'):
     out = out.switch_polrep(polrep_out=polrep)
     return out
 
+def _fill_nan_sigmas(rr, ll, rl, lr):
+    """Fill nan sigmas from the parallel-hand value.
+
+    rr is filled from ll first; ll, rl, and lr then fall back to the (now
+    filled) rr. Returns (rr, ll, rl, lr) with nans replaced where a fallback is
+    available (a row that is nan in both parallel hands stays nan).
+    """
+    rr_filled = np.where(np.isnan(rr), ll, rr)
+    ll_filled = np.where(np.isnan(ll), rr_filled, ll)
+    rl_filled = np.where(np.isnan(rl), rr_filled, rl)
+    lr_filled = np.where(np.isnan(lr), rr_filled, lr)
+    return rr_filled, ll_filled, rl_filled, lr_filled
+
+
 # TODO can we save new telescope array terms and flags to uvfits and load them?
 # TODO uv coordinates, multiply by IF freqs and not header FREQ?
 def load_obs_uvfits(filename, polrep='stokes', flipbl=False,
                     allow_singlepol=True, force_singlepol=None,
                     channel=all, IF=all, remove_nan=False,
                     ignore_pzero_date=True,
-                    trial_speedups=False,
+                    trial_speedups=True,
                     invvar_channel_avg=True):
     """Load observation data from a uvfits file.
 
@@ -1035,7 +1049,9 @@ def load_obs_uvfits(filename, polrep='stokes', flipbl=False,
            remove_nan (bool): whether or not to remove entries with nan data
            ignore_pzero_date (bool): if True, ignore the offset parameters in DATE field
                                      TODO: what is the correct behavior per AIPS memo 117?
-           trial_speedups (bool): if True, use faster array/telescope handling paths
+           trial_speedups (bool): if True (default), use faster vectorized
+                                  array/telescope handling paths; produces data
+                                  and tarr identical to the legacy paths
            invvar_channel_avg (bool): if True, average IFs/channels with inverse-variance
                                       weighting. If False, use the original simple averaging.
        Returns:
@@ -1499,18 +1515,12 @@ def load_obs_uvfits(filename, polrep='stokes', flipbl=False,
                                 source=src, mjd=mjd, scantable=scantable,
                                 trial_speedups=trial_speedups)
 
-    # TODO -- this is bad and slow, use masks!
     if remove_nan:
         if polrep_uvfits == 'circ':
-            for j in range(len(obs.data)):
-                if np.isnan(obs.data[j]['rrsigma']):
-                    obs.data[j]['rrsigma'] = obs.data[j]['llsigma']
-                if np.isnan(obs.data[j]['llsigma']):
-                    obs.data[j]['llsigma'] = obs.data[j]['rrsigma']
-                if np.isnan(obs.data[j]['rlsigma']):
-                    obs.data[j]['rlsigma'] = obs.data[j]['rrsigma']
-                if np.isnan(obs.data[j]['lrsigma']):
-                    obs.data[j]['lrsigma'] = obs.data[j]['rrsigma']
+            (obs.data['rrsigma'], obs.data['llsigma'],
+             obs.data['rlsigma'], obs.data['lrsigma']) = _fill_nan_sigmas(
+                obs.data['rrsigma'], obs.data['llsigma'],
+                obs.data['rlsigma'], obs.data['lrsigma'])
         else:
             print("WARNING: remove_nan not implemented with stokes uvfits files!")
 

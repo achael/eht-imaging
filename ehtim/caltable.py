@@ -506,10 +506,10 @@ class Caltable:
             bl_obs['rlsigma'] = bl_obs['rlsigma'] * np.abs(rlscale)
             bl_obs['lrsigma'] = bl_obs['lrsigma'] * np.abs(lrscale)
 
-            if len(datatable):
-                datatable = np.hstack((datatable, bl_obs))
-            else:
-                datatable = bl_obs
+            datatable.append(bl_obs)
+
+        if len(datatable):
+            datatable = np.hstack(datatable)
 
         calobs = ehtim.obsdata.Obsdata(obs.ra, obs.dec, obs.rf, obs.bw,
                                        np.array(datatable), obs.tarr,
