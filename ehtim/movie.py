@@ -16,25 +16,20 @@
 #    You should have received a copy of the GNU General Public License
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-from __future__ import division
-from __future__ import print_function
-
-from builtins import str
-from builtins import range
-from builtins import object
 
 import string
+
 import numpy as np
 import scipy.interpolate
-import scipy.ndimage.filters as filt
+import scipy.ndimage as ndi
 
-import ehtim.image
-import ehtim.obsdata
-import ehtim.observing.obs_simulate as simobs
-import ehtim.io.save
-import ehtim.io.load
 import ehtim.const_def as ehc
+import ehtim.image
+import ehtim.io.load
+import ehtim.io.save
+import ehtim.obsdata
 import ehtim.observing.obs_helpers as obsh
+import ehtim.observing.obs_simulate as simobs
 
 INTERPOLATION_KINDS = ['linear', 'nearest', 'zero', 'slinear',
                        'quadratic', 'cubic', 'previous', 'next']
@@ -44,7 +39,7 @@ INTERPOLATION_KINDS = ['linear', 'nearest', 'zero', 'slinear',
 ###################################################################################################
 
 
-class Movie(object):
+class Movie:
 
     """A polarimetric movie (in units of Jy/pixel).
 
@@ -105,7 +100,7 @@ class Movie(object):
         if len(frames) != len(times):
             raise Exception("len(frames) != len(times) !")
 
-        if not (interp in INTERPOLATION_KINDS):
+        if interp not in INTERPOLATION_KINDS:
             raise Exception(
                 "'interp' must be a valid argument for scipy.interpolate.interp1d: " +
                 string.join(INTERPOLATION_KINDS))
@@ -473,7 +468,7 @@ class Movie(object):
         return mov
 
     def add_pol_movie(self, movie, pol):
-        """Add another movie polarization. 
+        """Add another movie polarization.
 
            Args:
                movie (list): list of 2D frames (possibly complex) in a Jy/pixel array
@@ -486,9 +481,8 @@ class Movie(object):
             raise Exception("new pol in add_pol_movie is the same as pol_prim!")
         if np.any(np.array([image.shape != (self.ydim, self.xdim) for image in movie])):
             raise Exception("add_pol_movie image shapes incompatible with primary image!")
-        if not (pol in list(self._movdict.keys())):
-            raise Exception("for polrep==%s, pol in add_pol_movie must be in " %
-                            self.polrep + ",".join(list(self._movdict.keys())))
+        if pol not in list(self._movdict.keys()):
+            raise Exception(f"for polrep=={self.polrep}, pol in add_pol_movie must be in " + ",".join(list(self._movdict.keys())))
 
         if self.polrep == 'stokes':
             if pol == 'I':
@@ -687,7 +681,7 @@ class Movie(object):
         frames = movdict[pol_prim_out]
         if len(frames) == 0:
             raise Exception("switch_polrep to " +
-                            "%s with pol_prim_out=%s, \n" % (polrep_out, pol_prim_out) +
+                            f"{polrep_out} with pol_prim_out={pol_prim_out}, \n" +
                             "output movie is not defined")
 
         # Make new  movie with primary polarization
@@ -817,8 +811,7 @@ class Movie(object):
                 # print ("time %f before movie start time %f" % (time, self.start_hr))
                 # print ("returning constant frame 0! \n")
             else:
-                raise Exception("time %f must be in the range %f - %f" %
-                                (time, self.start_hr, self.stop_hr))
+                raise Exception(f"time {time:f} must be in the range {self.start_hr:f} - {self.stop_hr:f}")
 
         if (time > self.stop_hr):
             if not(self.bounds_error):
@@ -826,8 +819,7 @@ class Movie(object):
                 # print ("time %f after movie stop time %f" % (time, self.stop_hr))
                 # print ("returning constant frame -1! \n")
             else:
-                raise Exception("time %f must be in the range %f - %f" %
-                                (time, self.start_hr, self.stop_hr))
+                raise Exception(f"time {time:f} must be in the range {self.start_hr:f} - {self.stop_hr:f}")
 
         # interpolate the imvec to the given time
         imvec = self._fundict[self.pol_prim](time)
@@ -861,7 +853,7 @@ class Movie(object):
         """
 
         if n < 0 or n >= len(self.frames):
-            raise Exception("n must be in the range 0 - %i" % self.nframes)
+            raise Exception(f"n must be in the range 0 - {int(self.nframes)}")
 
         time = self.times[n]
 
@@ -940,7 +932,7 @@ class Movie(object):
         sigma_x_pol = fwhm_x_pol / self.psize / (2. * np.sqrt(2. * np.log(2.)))
 
         arr = np.array([im.imvec.reshape(self.ydim, self.xdim) for im in frames])
-        arr = filt.gaussian_filter(arr, (sigma_t, sigma_x, sigma_x))
+        arr = ndi.gaussian_filter(arr, (sigma_t, sigma_x, sigma_x))
 
         # Make a new blurred movie
         arglist, argdict = self.movie_args()
@@ -955,13 +947,13 @@ class Movie(object):
 
             if len(polframes):
                 arr = np.array([imvec.reshape(self.ydim, self.xdim) for imvec in polframes])
-                arr = filt.gaussian_filter(arr, (sigma_t, sigma_x_pol, sigma_x_pol))
+                arr = ndi.gaussian_filter(arr, (sigma_t, sigma_x_pol, sigma_x_pol))
                 movie_blur.add_pol_movie(arr, pol)
 
         return movie_blur
 
-    def observe_same_nonoise(self, obs, repeat=False, sgrscat=False, 
-                             ttype="nfft", fft_pad_factor=2, 
+    def observe_same_nonoise(self, obs, repeat=False, sgrscat=False,
+                             ttype="nfft", fft_pad_factor=2,
                              zero_empty_pol=True, verbose=True):
         """Observe the movie on the same baselines as an existing observation
            without adding noise.
@@ -989,9 +981,10 @@ class Movie(object):
             raise Exception("Movie frequency is not the same as observation frequency!")
 
         if ttype == 'direct' or ttype == 'fast' or ttype == 'nfft':
-            if verbose: print("Producing clean visibilities from movie with " + ttype + " FT . . . ")
+            if verbose:
+                print("Producing clean visibilities from movie with " + ttype + " FT . . . ")
         else:
-            raise Exception("ttype=%s, options for ttype are 'direct', 'fast', 'nfft'" % ttype)
+            raise Exception(f"ttype={ttype}, options for ttype are 'direct', 'fast', 'nfft'")
 
         # Get data
         obslist = obs.tlist()
@@ -1000,22 +993,22 @@ class Movie(object):
 
         if (obstimes < self.start_hr).any():
             if repeat:
-                print("Some observation times before movie start time %f" % self.start_hr)
+                print(f"Some observation times before movie start time {self.start_hr:f}")
                 print("Looping movie before start\n")
             elif not(self.bounds_error):
-                print("Some observation times before movie start time %f" % self.start_hr)
+                print(f"Some observation times before movie start time {self.start_hr:f}")
                 print("bounds_error is  False:  using constant frame 0 before start_hr! \n")
             else:
-                raise Exception("Some observation times before movie start time %f" % self.start_hr)
+                raise Exception(f"Some observation times before movie start time {self.start_hr:f}")
         if (obstimes > self.stop_hr).any():
             if repeat:
-                print("Some observation times after movie stop time %f" % self.stop_hr)
+                print(f"Some observation times after movie stop time {self.stop_hr:f}")
                 print("Looping movie after stop\n")
             elif not(self.bounds_error):
-                print("Some observation times after movie stop time %f" % self.stop_hr)
+                print(f"Some observation times after movie stop time {self.stop_hr:f}")
                 print("bounds_error is  False:  using constant frame -1 after stop_hr! \n")
             else:
-                raise Exception("Some observation times after movie stop time %f" % self.stop_hr)
+                raise Exception(f"Some observation times after movie stop time {self.stop_hr:f}")
 
         # Observe nearest frame
         obsdata_out = []
@@ -1031,8 +1024,7 @@ class Movie(object):
                     if repeat:
                         time = self.start_hr + np.mod(time - self.start_hr, self.duration)
                     else:
-                        raise Exception("Obs time %f outside movie range %f--%f" %
-                                        (time, self.start_hr, self.stop_hr))
+                        raise Exception(f"Obs time {time:f} outside movie range {self.start_hr:f}--{self.stop_hr:f}")
 
             # Get the frame visibilities
             uv = obsh.recarr_to_ndarr(obsdata[['u', 'v']], 'f8')
@@ -1040,8 +1032,7 @@ class Movie(object):
             try:
                 im = self.get_image(time)
             except ValueError:
-                raise Exception("Interpolation error for time %f: movie range %f--%f" %
-                                (time, self.start_hr, self.stop_hr))
+                raise Exception(f"Interpolation error for time {time:f}: movie range {self.start_hr:f}--{self.stop_hr:f}")
 
             data = simobs.sample_vis(im, uv, sgrscat=sgrscat, polrep_obs=obs.polrep,
                                      ttype=ttype, fft_pad_factor=fft_pad_factor,
@@ -1051,16 +1042,16 @@ class Movie(object):
             # Put visibilities into the obsdata
             if obs.polrep == 'stokes':
                 obsdata['vis'] = data[0]
-                if not(data[1] is None):
+                if data[1] is not None:
                     obsdata['qvis'] = data[1]
                     obsdata['uvis'] = data[2]
                     obsdata['vvis'] = data[3]
 
             elif obs.polrep == 'circ':
                 obsdata['rrvis'] = data[0]
-                if not(data[1] is None):
+                if data[1] is not None:
                     obsdata['llvis'] = data[1]
-                if not(data[2] is None):
+                if data[2] is not None:
                     obsdata['rlvis'] = data[2]
                     obsdata['lrvis'] = data[3]
 
@@ -1089,7 +1080,7 @@ class Movie(object):
                      stabilize_scan_phase=False, stabilize_scan_amp=False,
                      neggains=False,
                      taup=ehc.GAINPDEF,
-                     gain_offset=ehc.GAINPDEF, gainp=ehc.GAINPDEF, 
+                     gain_offset=ehc.GAINPDEF, gainp=ehc.GAINPDEF,
                      dterm_offset=ehc.DTERMPDEF,
                      rlratio_std=0.,rlphase_std=0.,
                      caltable_path=None, seed=False, sigmat=None, verbose=True):
@@ -1119,7 +1110,7 @@ class Movie(object):
 
                taup (float): the fractional std. dev. of the random error on the opacities
                gainp (float): the fractional std. dev. of the random error on the gains
-                              or a dict giving one std. dev. per site      
+                              or a dict giving one std. dev. per site
 
                gain_offset (float): the base gain offset at all sites,
                                     or a dict giving one gain offset per site
@@ -1127,11 +1118,11 @@ class Movie(object):
                                     or a dict giving one std. dev. per site
 
                rlratio_std (float): the fractional std. dev. of the R/L gain offset
-                                    or a dict giving one std. dev. per site                                          
-               rlphase_std (float): std. dev. of R/L phase offset, 
                                     or a dict giving one std. dev. per site
-                                    a negative value samples from uniform                                          
-                                    
+               rlphase_std (float): std. dev. of R/L phase offset,
+                                    or a dict giving one std. dev. per site
+                                    a negative value samples from uniform
+
                caltable_path (string): If not None, path and prefix for saving the applied caltable
                seed (int): seeds the random component of the noise terms. DO NOT set to 0!
                sigmat (float): temporal std for a Gaussian Process used to generate gain noise.
@@ -1192,7 +1183,7 @@ class Movie(object):
                 print('WARNING: the caltable is only saved if you apply noise with a Jones Matrix')
 
             obsdata = simobs.add_noise(obs, add_th_noise=add_th_noise,
-                                       opacitycal=opacitycal, ampcal=ampcal, phasecal=phasecal, 
+                                       opacitycal=opacitycal, ampcal=ampcal, phasecal=phasecal,
                                        stabilize_scan_phase=stabilize_scan_phase,
                                        stabilize_scan_amp=stabilize_scan_amp,
                                        neggains=neggains,
@@ -1220,7 +1211,7 @@ class Movie(object):
                 stabilize_scan_phase=False, stabilize_scan_amp=False,
                 neggains=False,
                 tau=ehc.TAUDEF, taup=ehc.GAINPDEF,
-                gain_offset=ehc.GAINPDEF, gainp=ehc.GAINPDEF, 
+                gain_offset=ehc.GAINPDEF, gainp=ehc.GAINPDEF,
                 dterm_offset=ehc.DTERMPDEF,
                 rlratio_std=0.,rlphase_std=0.,
                 caltable_path=None, seed=False, sigmat=None, verbose=True):
@@ -1241,7 +1232,7 @@ class Movie(object):
                elevmin (float): station minimum elevation in degrees
                elevmax (float): station maximum elevation in degrees
                no_elevcut_space (bool): if True, do not apply elevation cut to orbiters
-           
+
                ttype (str): "fast", "nfft" or "dtft"
                fft_pad_factor (float): zero pad the image to fft_pad_factor * image size in the FFT
                fix_theta_GMST (bool): if True, stops earth rotation to sample fixed u,v
@@ -1267,7 +1258,7 @@ class Movie(object):
                tau (float): the base opacity at all sites, or a dict giving one opacity per site
                taup (float): the fractional std. dev. of the random error on the opacities
                gainp (float): the fractional std. dev. of the random error on the gains
-                              or a dict giving one std. dev. per site      
+                              or a dict giving one std. dev. per site
 
                gain_offset (float): the base gain offset at all sites,
                                     or a dict giving one gain offset per site
@@ -1275,10 +1266,10 @@ class Movie(object):
                                     or a dict giving one std. dev. per site
 
                rlratio_std (float): the fractional std. dev. of the R/L gain offset
-                                    or a dict giving one std. dev. per site                                          
-               rlphase_std (float): std. dev. of R/L phase offset, 
                                     or a dict giving one std. dev. per site
-                                    a negative value samples from uniform                                          
+               rlphase_std (float): std. dev. of R/L phase offset,
+                                    or a dict giving one std. dev. per site
+                                    a negative value samples from uniform
 
 
                caltable_path (string): If not None, path and prefix for saving the applied caltable
@@ -1293,7 +1284,8 @@ class Movie(object):
         """
 
         # Generate empty observation
-        if verbose: print("Generating empty observation file . . . ")
+        if verbose:
+            print("Generating empty observation file . . . ")
         if mjd is None:
             mjd = self.mjd
         if polrep_obs is None:
@@ -1307,7 +1299,7 @@ class Movie(object):
                             fix_theta_GMST=fix_theta_GMST)
 
         # Observe on the same baselines as the empty observation and add noise
-        obs = self.observe_same(obs, repeat=repeat, 
+        obs = self.observe_same(obs, repeat=repeat,
                                 ttype=ttype, fft_pad_factor=fft_pad_factor,
                                 sgrscat=sgrscat,
                                 add_th_noise=add_th_noise,
@@ -1319,7 +1311,7 @@ class Movie(object):
                                 stabilize_scan_amp=stabilize_scan_amp,
                                 neggains=neggains,
                                 taup=taup,
-                                gain_offset=gain_offset, gainp=gainp, 
+                                gain_offset=gain_offset, gainp=gainp,
                                 dterm_offset=dterm_offset,
                                 rlratio_std=rlratio_std,rlphase_std=rlphase_std,
                                 caltable_path=caltable_path, seed=seed, sigmat=sigmat,
@@ -1329,7 +1321,7 @@ class Movie(object):
 
     def observe_vex(self, vex, source, synchronize_start=True, t_int=0.0,
                     polrep_obs=None, ttype='nfft', fft_pad_factor=2,
-                    fix_theta_GMST=False, 
+                    fix_theta_GMST=False,
                     sgrscat=False, add_th_noise=True,
                     jones=False, inv_jones=False,
                     opacitycal=True, ampcal=True, phasecal=True,
@@ -1337,7 +1329,7 @@ class Movie(object):
                     stabilize_scan_phase=False, stabilize_scan_amp=False,
                     neggains=False,
                     tau=ehc.TAUDEF, taup=ehc.GAINPDEF,
-                    gain_offset=ehc.GAINPDEF, gainp=ehc.GAINPDEF, 
+                    gain_offset=ehc.GAINPDEF, gainp=ehc.GAINPDEF,
                     dterm_offset=ehc.DTERMPDEF,
                     caltable_path=None, seed=False, sigmat=None, verbose=True):
         """Generate baselines from a vex file and observe the movie.
@@ -1512,8 +1504,8 @@ class Movie(object):
 
         import matplotlib
         matplotlib.use('agg')
-        import matplotlib.pyplot as plt
         import matplotlib.animation as animation
+        import matplotlib.pyplot as plt
 
         if self.polrep != 'stokes':
             raise Exception("export_mp4 requires self.polrep=='stokes' -- try self.switch_polrep()")
@@ -1603,12 +1595,12 @@ class Movie(object):
 
         def update_img(n):
             if verbose:
-                print("processing frame {0} of {1}".format(n, len(self.frames)*frame_pad_factor))
+                print(f"processing frame {n} of {len(self.frames)*frame_pad_factor}")
             plt_im.set_data(im_data(n))
 
             if label_time:
                 time = self.times[n]
-                time_str = ("%02d:%02d:%02d" % (int(time), (time*60) % 60, (time*3600) % 60))
+                time_str = f"{int(time):02}:{int(time * 60 % 60):02}:{int(time * 3600 % 60):02}"
                 fig.suptitle(time_str)
 
             return plt_im
@@ -1646,8 +1638,8 @@ def export_multipanel_mp4(input_list, out='movie.mp4', start_hr=None, stop_hr=No
     """
     import matplotlib
     matplotlib.use('agg')
-    import matplotlib.pyplot as plt
     import matplotlib.animation as animation
+    import matplotlib.pyplot as plt
 
     if start_hr is None:
         try:
@@ -1661,7 +1653,7 @@ def export_multipanel_mp4(input_list, out='movie.mp4', start_hr=None, stop_hr=No
         except ValueError:
             raise Exception("no movies in input_list!")
 
-    print("%s will have %i frames in the  range %f-%f hr" % (out, nframes, start_hr, stop_hr))
+    print(f"{out} will have {int(nframes)} frames in the  range {start_hr:f}-{stop_hr:f} hr")
 
     ncols = int(np.ceil(len(input_list)/nrows))
     suptitle_space = 0.6  # inches
@@ -1734,7 +1726,7 @@ def export_multipanel_mp4(input_list, out='movie.mp4', start_hr=None, stop_hr=No
 
     def update_img(n):
         if verbose:
-            print("processing frame {0} of {1}".format(n, len(im_List_Set[0])))
+            print(f"processing frame {n} of {len(im_List_Set[0])}")
         i = 0
         for y in range(nrows):
             for x in range(ncols):
@@ -1748,7 +1740,7 @@ def export_multipanel_mp4(input_list, out='movie.mp4', start_hr=None, stop_hr=No
             fig.suptitle('MJD: ' + str(im_List_Set[0][n].mjd))
         else:
             time = im_List_Set[0][n].time
-            time_str = ("%d:%02d.%02d" % (int(time), (time*60) % 60, (time*3600) % 60))
+            time_str = f"{int(time)}:{int(time * 60 % 60):02}.{int(time * 3600 % 60):02}"
             fig.suptitle(time_str)
 
         return
@@ -1774,8 +1766,8 @@ def merge_im_list(imlist, framedur=-1, interp=ehc.INTERP_DEFAULT, bounds_error=e
     framelist = []
     nframes = len(imlist)
 
-    print("\nMerging %i frames from MJD %i %.2f hr to MJD %i %.2f hr" % (
-        nframes, imlist[0].mjd, imlist[0].time, imlist[-1].mjd, imlist[-1].time))
+    print(f"\nMerging {nframes} frames from MJD {imlist[0].mjd} {imlist[0].time:.2f} hr "
+          f"to MJD {imlist[-1].mjd} {imlist[-1].time:.2f} hr")
 
     for i in range(nframes):
         im = imlist[i]
@@ -1796,23 +1788,23 @@ def merge_im_list(imlist, framedur=-1, interp=ehc.INTERP_DEFAULT, bounds_error=e
             times = [hour0]
         else:
             if (im.polrep != polrep0):
-                raise Exception("polrep of image %i != polrep of image 0!" % i)
+                raise Exception(f"polrep of image {int(i)} != polrep of image 0!")
             if (im.psize != psize0):
-                raise Exception("psize of image %i != psize of image 0!" % i)
+                raise Exception(f"psize of image {int(i)} != psize of image 0!")
             if (im.xdim != xdim0):
-                raise Exception("xdim of image %i != xdim of image 0!" % i)
+                raise Exception(f"xdim of image {int(i)} != xdim of image 0!")
             if (im.ydim != ydim0):
-                raise Exception("ydim of image %i != ydim of image 0!" % i)
+                raise Exception(f"ydim of image {int(i)} != ydim of image 0!")
             if (im.ra != ra0):
-                raise Exception("RA of image %i != RA of image 0!" % i)
+                raise Exception(f"RA of image {int(i)} != RA of image 0!")
             if (im.dec != dec0):
-                raise Exception("DEC of image %i != DEC of image 0!" % i)
+                raise Exception(f"DEC of image {int(i)} != DEC of image 0!")
             if (im.rf != rf0):
-                raise Exception("rf of image %i != rf of image 0!" % i)
+                raise Exception(f"rf of image {int(i)} != rf of image 0!")
             if (im.source != src0):
-                raise Exception("source of image %i != src of image 0!" % i)
+                raise Exception(f"source of image {int(i)} != src of image 0!")
             if (im.mjd < mjd0):
-                raise Exception("mjd of image %i < mjd of image 0!" % i)
+                raise Exception(f"mjd of image {int(i)} < mjd of image 0!")
 
             hour = im.time
             if im.mjd > mjd0:
@@ -1831,7 +1823,7 @@ def merge_im_list(imlist, framedur=-1, interp=ehc.INTERP_DEFAULT, bounds_error=e
             else:
                 if movdict[pol]:
                     raise Exception("all frames in merge_im_list must have the same pol layout: " +
-                                    "error in  frame %i" % i)
+                                    f"error in  frame {int(i)}")
 
     # assume equispaced with a given framedur instead of reading the individual image times
     if framedur != -1:

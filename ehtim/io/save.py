@@ -194,14 +194,14 @@ def save_mov_hdf5(mov, fname, mjd=False):
         if mjd is False:
             mjd = mov.mjd
 
-        head.attrs['mjd'] = np.string_(str(mjd))
-        head.attrs['psize'] = np.string_(str(mov.psize))
-        head.attrs['source'] = np.string_(str(mov.source))
-        head.attrs['ra'] = np.string_(str(mov.ra))
-        head.attrs['dec'] = np.string_(str(mov.dec))
-        head.attrs['rf'] = np.string_(str(mov.rf))
-        head.attrs['polrep'] = np.string_(str(mov.polrep))
-        head.attrs['pol_prim'] = np.string_(str(mov.pol_prim))
+        head.attrs['mjd'] = np.bytes_(str(mjd))
+        head.attrs['psize'] = np.bytes_(str(mov.psize))
+        head.attrs['source'] = np.bytes_(str(mov.source))
+        head.attrs['ra'] = np.bytes_(str(mov.ra))
+        head.attrs['dec'] = np.bytes_(str(mov.dec))
+        head.attrs['rf'] = np.bytes_(str(mov.rf))
+        head.attrs['polrep'] = np.bytes_(str(mov.polrep))
+        head.attrs['pol_prim'] = np.bytes_(str(mov.pol_prim))
 
         name = 'times'
         times = mov.times

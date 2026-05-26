@@ -1273,24 +1273,24 @@ def applyImageWarp(im, theta, init_x, init_y, flowbasis_x, flowbasis_y, initThet
 
             vec_x = flow_x_new[1,i] - flow_x_new[0,i]
             vec_y = flow_y_new[1,i] - flow_y_new[0,i]
-            from_pts = np.row_stack( (from_pts, np.array( [ flow_x_new[0,i]-vec_x, flow_y_new[0,i]-vec_y ] ) ) )
+            from_pts = np.vstack( (from_pts, np.array( [ flow_x_new[0,i]-vec_x, flow_y_new[0,i]-vec_y ] ) ) )
             im_pts = np.concatenate( ( im_pts, np.array([0.0]) ), axis = 0 )
 
             vec_x = flow_x_new[im.ydim-2,i] - flow_x_new[im.ydim-1,i]
             vec_y = flow_y_new[im.ydim-2,i] - flow_y_new[im.ydim-1,i]
-            from_pts = np.row_stack( (from_pts, np.array( [ flow_x_new[im.ydim-1,i]-vec_x, flow_y_new[im.ydim-1,i]-vec_y ] ) ) )
+            from_pts = np.vstack( (from_pts, np.array( [ flow_x_new[im.ydim-1,i]-vec_x, flow_y_new[im.ydim-1,i]-vec_y ] ) ) )
             im_pts = np.concatenate( ( im_pts, np.array([0.0]) ), axis = 0 )
         # add padding on the y axis
         for i in range(0,im.ydim):
 
             vec_x = flow_x_new[i,1] - flow_x_new[i,0]
             vec_y = flow_y_new[i,1] - flow_y_new[i,0]
-            from_pts = np.row_stack( (from_pts, np.array( [ flow_x_new[i,0]-vec_x, flow_y_new[i,0]-vec_y ] ) ) )
+            from_pts = np.vstack( (from_pts, np.array( [ flow_x_new[i,0]-vec_x, flow_y_new[i,0]-vec_y ] ) ) )
             im_pts = np.concatenate( ( im_pts, np.array([0.0]) ), axis = 0 )
 
             vec_x = flow_x_new[i,im.xdim-2] - flow_x_new[i,im.xdim-1]
             vec_y = flow_y_new[i,im.xdim-2] - flow_y_new[i,im.xdim-1]
-            from_pts = np.row_stack( (from_pts, np.array( [ flow_x_new[i,im.xdim-1]-vec_x, flow_y_new[i,im.xdim-1]-vec_y ] ) ) )
+            from_pts = np.vstack( (from_pts, np.array( [ flow_x_new[i,im.xdim-1]-vec_x, flow_y_new[i,im.xdim-1]-vec_y ] ) ) )
             im_pts = np.concatenate( ( im_pts, np.array([0.0]) ), axis = 0 )
 
     #npixels = flowbasis_x.shape[0]*flowbasis_x.shape[1]
