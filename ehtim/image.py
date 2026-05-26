@@ -23,12 +23,10 @@ import math
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 import numpy as np
-import numpy.matlib as matlib
 import scipy.interpolate
-import scipy.ndimage.filters as filt
+import scipy.ndimage as ndi
 import scipy.optimize as opt
 import scipy.signal
-from scipy import ndimage as ndi
 
 import ehtim.const_def as ehc
 import ehtim.imaging.pol_imager_utils as polutils
@@ -976,7 +974,7 @@ class Image:
         if self.polrep == 'stokes':
             frac = 0.5 * np.angle(np.sum(self.qvec + 1j * self.uvec))
         elif self.polrep == 'circ':
-            frac = np.angle(np.sum(self.rlvec))
+            frac = 0.5 * np.angle(np.sum(self.rlvec))
 
         return frac
 
@@ -1356,7 +1354,7 @@ class Image:
         def rot_imvec(imvec):
             if np.any(np.imag(imvec) != 0):
                 return rot_imvec(np.real(imvec)) + 1j * rot_imvec(np.imag(imvec))
-            imarr_rot = scipy.ndimage.interpolation.rotate(imvec.reshape((self.ydim, self.xdim)),
+            imarr_rot = ndi.rotate(imvec.reshape((self.ydim, self.xdim)),
                                                            angle * 180.0 / np.pi, reshape=False,
                                                            order=order, mode='constant',
                                                            cval=0.0, prefilter=True)
@@ -1603,7 +1601,7 @@ class Image:
             sigma = fwhmp / (2. * np.sqrt(2. * np.log(2.)))
             if np.any(np.imag(imarr) != 0):
                 return blur(np.real(imarr), sigma) + 1j * blur(np.imag(imarr), sigma)
-            imarr_blur = filt.gaussian_filter(imarr, (sigma, sigma))
+            imarr_blur = ndi.gaussian_filter(imarr, (sigma, sigma))
             return imarr_blur
 
         def blur_butter(imarr, size):
@@ -1785,7 +1783,7 @@ class Image:
             # TODO: are these in the right order??
             if gradtype == 'x':
                 gradarr = sx
-            if gradtype == 'y':
+            elif gradtype == 'y':
                 gradarr = sy
             else:
                 gradarr = np.hypot(sx, sy)
@@ -4114,7 +4112,7 @@ class Image:
             dynamic_range = dynamic_range * np.ones(len(im_list) + 1)
 
         if not isinstance(shift, np.ndarray) and not isinstance(shift, bool):
-            shift = matlib.repmat(shift, len(im_list), 1)
+            shift = np.tile(shift, (len(im_list), 1))
 
         psize = self.psize
         max_fov = np.max([self.xdim * self.psize, self.ydim * self.psize])

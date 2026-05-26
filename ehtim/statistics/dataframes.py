@@ -54,7 +54,6 @@ try:
 except ImportError:
     pd = _PandasStub()
 
-
 def make_df(obs,polarization='unknown',band='unknown',round_s=0.1):
 
     """converts visibilities from obs.data to DataFrame format
@@ -1073,5 +1072,5 @@ def add_gmst(df):
         times_unix, format='unix').sidereal_time('mean', 'greenwich').hour # vectorized
     df['gmst'] = 0. # initialize new column
     for (gmst, idx) in zip(times_gmst, indices):
-        df.ix[idx, 'gmst'] = gmst
+        df.loc[idx, 'gmst'] = gmst
     return df
