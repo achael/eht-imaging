@@ -1,8 +1,10 @@
 """Tests for ehtim I/O functions."""
 
+import glob
 import os
 
 import numpy as np
+import pytest
 
 import ehtim as eh
 from ehtim.io import load
@@ -12,6 +14,8 @@ DATA_DIR = os.path.join(_ROOT, "data")
 ARRAY_DIR = os.path.join(_ROOT, "arrays")
 MODEL_DIR = os.path.join(_ROOT, "models")
 
+UVFITS_FILES = sorted(glob.glob(os.path.join(DATA_DIR, "*.uvfits")))
+
 
 def test_load_obs_uvfits():
     """Test that load_obs_uvfits can read a UVFITS file and return an Obsdata."""
@@ -19,13 +23,16 @@ def test_load_obs_uvfits():
     assert isinstance(obs, eh.obsdata.Obsdata)
 
 
-def test_load_obs_uvfits_trial_speedups_matches_default():
+@pytest.mark.parametrize("path", UVFITS_FILES,
+                         ids=[os.path.basename(p) for p in UVFITS_FILES])
+@pytest.mark.parametrize("polrep", ["stokes", "circ"])
+def test_load_obs_uvfits_trial_speedups_matches_default(path, polrep):
     """The trial_speedups paths in load_obs_uvfits (vectorized site lookup,
     alternate datatable assembly) must produce data and tarr identical to the
-    default paths."""
-    path = os.path.join(DATA_DIR, "sample.uvfits")
-    obs_default = load.load_obs_uvfits(path, trial_speedups=False)
-    obs_trial = load.load_obs_uvfits(path, trial_speedups=True)
+    default paths, across every uvfits file in the data directory and both
+    polreps."""
+    obs_default = load.load_obs_uvfits(path, polrep=polrep, trial_speedups=False)
+    obs_trial = load.load_obs_uvfits(path, polrep=polrep, trial_speedups=True)
     np.testing.assert_array_equal(obs_default.data, obs_trial.data)
     np.testing.assert_array_equal(obs_default.tarr, obs_trial.tarr)
 

@@ -1033,7 +1033,7 @@ def load_obs_uvfits(filename, polrep='stokes', flipbl=False,
                     allow_singlepol=True, force_singlepol=None,
                     channel=all, IF=all, remove_nan=False,
                     ignore_pzero_date=True,
-                    trial_speedups=False,
+                    trial_speedups=True,
                     invvar_channel_avg=True):
     """Load observation data from a uvfits file.
 
@@ -1049,7 +1049,9 @@ def load_obs_uvfits(filename, polrep='stokes', flipbl=False,
            remove_nan (bool): whether or not to remove entries with nan data
            ignore_pzero_date (bool): if True, ignore the offset parameters in DATE field
                                      TODO: what is the correct behavior per AIPS memo 117?
-           trial_speedups (bool): if True, use faster array/telescope handling paths
+           trial_speedups (bool): if True (default), use faster vectorized
+                                  array/telescope handling paths; produces data
+                                  and tarr identical to the legacy paths
            invvar_channel_avg (bool): if True, average IFs/channels with inverse-variance
                                       weighting. If False, use the original simple averaging.
        Returns:
