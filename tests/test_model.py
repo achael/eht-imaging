@@ -105,7 +105,7 @@ def test_get_const_polfac_xy_from_stokes(polarized_gauss_params):
     u_factor = get_const_polfac(mt, params, "U")
     v_factor = get_const_polfac(mt, params, "V")
     xy_factor = get_const_polfac(mt, params, "XY")
-    assert np.isclose(xy_factor, u_factor - 1j * v_factor)
+    assert np.isclose(xy_factor, u_factor + 1j * v_factor)
 
 
 def test_get_const_polfac_yx_from_stokes(polarized_gauss_params):
@@ -113,7 +113,7 @@ def test_get_const_polfac_yx_from_stokes(polarized_gauss_params):
     u_factor = get_const_polfac(mt, params, "U")
     v_factor = get_const_polfac(mt, params, "V")
     yx_factor = get_const_polfac(mt, params, "YX")
-    assert np.isclose(yx_factor, u_factor + 1j * v_factor)
+    assert np.isclose(yx_factor, u_factor - 1j * v_factor)
 
 
 # ---------------------------------------------------------------------------
