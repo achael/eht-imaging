@@ -1524,6 +1524,12 @@ class Obsdata:
                (Obsdata): An Obsdata object with the inflated noise values.
         """
 
+        if self.polrep != 'stokes':
+            warnings.warn(
+                "rescale_zbl estimates the original total flux from the "
+                "primary-hand amplitude; for polrep != 'stokes' orig_totflux "
+                "may be incorrectly estimated.", stacklevel=2)
+
         # estimate the original total flux
         obs_zerobl = self.flag_uvdist(uv_max=uv_max)
         amps = obs_zerobl.unpack(['amp', 'sigma'], debias=debias)
@@ -1538,8 +1544,9 @@ class Obsdata:
         scale = totflux / orig_totflux
         uvdist = np.sqrt(obs.data['u']**2 + obs.data['v']**2)
         mask = uvdist < uv_max
-        for field in ('vis', 'qvis', 'uvis', 'vvis',
-                      'sigma', 'qsigma', 'usigma', 'vsigma'):
+        fields = [self.poldict[key] for key in ('vis1', 'vis2', 'vis3', 'vis4',
+                                                'sigma1', 'sigma2', 'sigma3', 'sigma4')]
+        for field in fields:
             obs.data[field][mask] *= scale
 
         return obs
