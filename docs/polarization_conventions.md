@@ -17,9 +17,15 @@ We work in the sky-tangent frame at the source, with the right-handed
 basis $(\hat e_X, \hat e_Y, \hat k)$ where $\hat k$ points from source
 to observer. The electric field of a monochromatic plane wave is
 
-$$\vec E(t) = \mathrm{Re}\,[E_X \hat e_X + E_Y \hat e_Y]\,e^{-i\omega t},$$
+$$\vec E(t) = \mathrm{Re}\,[E_X \hat e_X + E_Y \hat e_Y]\,e^{+i\omega t},$$
 
-with $E_X, E_Y$ complex analytic amplitudes. The "feed" of an antenna
+with $E_X, E_Y$ complex analytic amplitudes. We use the engineering /
+IEEE positive-frequency convention $e^{+i\omega t}$ standard in radio
+interferometry literature (e.g., TMS Ch. 4). The physics convention
+$e^{-i\omega t}$ would conjugate all complex amplitudes and flip the
+sign of $V$ in the §5 linear formulas; everything else is invariant.
+
+The "feed" of an antenna
 projects $\vec E$ onto a basis vector; the two pure-feed cases of
 interest are **linear** (samples $E_X, E_Y$ directly) and **circular**
 (samples $E_R, E_L$ — defined below).
@@ -31,16 +37,17 @@ Implemented at: convention statement in
 
 ## §2. Linear-circular basis transform — the convention choice (IAU/HBS)
 
-ehtim adopts the IAU / Hamaker-Bregman-Sault / CASA / AIPS convention:
+ehtim adopts the IAU / Hamaker-Bregman-Sault / CASA / AIPS convention
+under the §1 engineering time dependence $e^{+i\omega t}$:
 
-$$R = \frac{X - iY}{\sqrt 2}, \quad L = \frac{X + iY}{\sqrt 2}.$$
+$$R = \frac{X + iY}{\sqrt 2}, \quad L = \frac{X - iY}{\sqrt 2}.$$
 
 In matrix form, the basis-change matrix
 $M_{\mathrm{lin}\to\mathrm{circ}}$ acting on the column vector
 $(E_X, E_Y)^\top$ to produce $(E_R, E_L)^\top$ is
 
 $$M_{\mathrm{lin}\to\mathrm{circ}} = \frac{1}{\sqrt 2}
-  \begin{pmatrix} 1 & -i \\ 1 & +i \end{pmatrix}.$$
+  \begin{pmatrix} 1 & +i \\ 1 & -i \end{pmatrix}.$$
 
 It is unitary, so
 $M_{\mathrm{circ}\to\mathrm{lin}} = M_{\mathrm{lin}\to\mathrm{circ}}^\dagger$.
@@ -49,10 +56,11 @@ The IAU/HBS convention is the standard in radio interferometry
 calibration software (CASA, AIPS, DIFX) and is what AIPS POLTYA/POLTYB
 labels assume when they report an X/Y feed.
 
-The opposite choice ($R = (X+iY)/\sqrt 2$) is sometimes used in optics
-texts and pulsar literature; switching to it requires only changing
-the constant `BASIS_LIN_TO_CIRC` in `pol_conventions.py` (and the
-formulas in §5 below). The sign of $V$ flips under that change.
+Under the physics time convention $e^{-i\omega t}$ the same physical
+basis is written $R = (X - iY)/\sqrt 2$ (complex conjugates of the
+amplitudes). Switching to that convention requires changing the
+constant `BASIS_LIN_TO_CIRC` in `pol_conventions.py` and flipping the
+sign of $V$ in §5; §4 is unaffected.
 
 Implemented at: `ehtim/observing/pol_conventions.py:56-60`.
 
@@ -107,27 +115,53 @@ Four-component wrappers at `:176-186` (`circ_to_stokes`) and
 
 ## §5. Stokes from linear feeds
 
-Substituting the §2 basis transform into the §4 definitions gives the
-linear-feed analog. Starting from $R = (X - iY)/\sqrt 2$ and
-$L = (X + iY)/\sqrt 2$, the four circular correlations expand to
+Following §3, the linear correlator labels are
+$XX \equiv \langle E_X E_X^* \rangle$,
+$XY \equiv \langle E_X E_Y^* \rangle$,
+$YX \equiv \langle E_Y E_X^* \rangle$,
+$YY \equiv \langle E_Y E_Y^* \rangle$
+(first index un-conjugated, second conjugated). This labeling, together
+with §2, fixes the sign of $V$.
 
-$$RR = \tfrac{1}{2}[(XX + YY) + i(XY - YX)],$$
-$$LL = \tfrac{1}{2}[(XX + YY) - i(XY - YX)],$$
+Substituting the §2 basis transform into the §4 definitions gives the
+linear-feed analog. Starting from $R = (X + iY)/\sqrt 2$ and
+$L = (X - iY)/\sqrt 2$, the four circular correlations expand to
+
+$$RR = \tfrac{1}{2}[(XX + YY) - i(XY - YX)],$$
+$$LL = \tfrac{1}{2}[(XX + YY) + i(XY - YX)],$$
 $$RL = \tfrac{1}{2}[(XX - YY) + i(XY + YX)],$$
 $$LR = \tfrac{1}{2}[(XX - YY) - i(XY + YX)].$$
 
 Plugging into §4 yields the linear-feed Stokes formulas:
 
 $$\boxed{\,I = \tfrac{1}{2}(XX + YY), \quad Q = \tfrac{1}{2}(XX - YY), \quad
-       U = \tfrac{1}{2}(XY + YX), \quad V = +\tfrac{i}{2}(XY - YX).\,}$$
+       U = \tfrac{1}{2}(XY + YX), \quad V = -\tfrac{i}{2}(XY - YX).\,}$$
 
 Inverted (to derive linear correlations from Stokes):
 
-$$XX = I + Q, \quad YY = I - Q, \quad XY = U - iV, \quad YX = U + iV.$$
+$$XX = I + Q, \quad YY = I - Q, \quad XY = U + iV, \quad YX = U - iV.$$
 
-The **sign of V** depends on the §2 choice: under the opposite basis
-convention, $V \to -i(XY - YX)/2$ and accordingly $XY \to U + iV$,
-$YX \to U - iV$.
+The **sign of V** depends on the §1/§2 choice: under the physics
+convention ($e^{-i\omega t}$, $R = (X - iY)/\sqrt 2$), $V \to +i(XY -
+YX)/2$ and accordingly $XY \to U - iV$, $YX \to U + iV$. The circular
+formulas in §4 are invariant.
+
+### §5a. Comparison to Thompson, Moran & Swenson (3rd ed.)
+
+TMS Eq. 4.28 (engineering convention $e^{+j\omega t}$, matching our §1)
+gives the cross-hand linear correlations as
+
+$$\langle E_X E_Y^* \rangle = \tfrac{1}{2}(U + jV), \qquad
+  \langle E_Y E_X^* \rangle = \tfrac{1}{2}(U - jV),$$
+
+which agree in sign with ehtim's $XY = U + iV$, $YX = U - iV$. The
+remaining difference is a factor-of-2 normalization: TMS Eq. 4.28
+puts the $1/2$ on the Stokes side of every correlation (parallel and
+cross), whereas ehtim §5 puts the $1/2$ on the correlation side.
+Equivalently, $\text{(TMS Stokes)} = 2 \times \text{(ehtim Stokes)}$
+for all of $I, Q, U, V$. A data set written under TMS Eq. 4.28
+normalization must therefore have all four Stokes parameters rescaled
+by $\tfrac{1}{2}$ before being ingested into the ehtim pipeline.
 
 Implemented at: pair primitives in
 `ehtim/observing/pol_conventions.py:140-146` (`lin_to_stokes_diag`),

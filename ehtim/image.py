@@ -570,8 +570,9 @@ class Image:
     def evec(self):
         """Return the E mode image vector"""
         if self.polrep == 'circ':
-            qvec = np.real(0.5 * (self.lrvec + self.rlvec))
-            uvec = np.real(0.5j * (self.lrvec - self.rlvec))
+            qvec_c, uvec_c = pol_conventions.circ_to_stokes_cross(self.rlvec, self.lrvec)
+            qvec = np.real(qvec_c)
+            uvec = np.real(uvec_c)
         elif self.polrep == 'stokes':
             qvec = self.qvec
             uvec = self.uvec
@@ -602,8 +603,9 @@ class Image:
         """Return the B mode image vector"""
 
         if self.polrep == 'circ':
-            qvec = np.real(0.5 * (self.lrvec + self.rlvec))
-            uvec = np.real(0.5j * (self.lrvec - self.rlvec))
+            qvec_c, uvec_c = pol_conventions.circ_to_stokes_cross(self.rlvec, self.lrvec)
+            qvec = np.real(qvec_c)
+            uvec = np.real(uvec_c)
         elif self.polrep == 'stokes':
             qvec = self.qvec
             uvec = self.uvec

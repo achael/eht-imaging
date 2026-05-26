@@ -18,24 +18,25 @@
 
 """Polarization basis transforms and Jones-matrix utilities.
 
-Convention (IAU / Hamaker-Bregman-Sault / CASA / AIPS):
+Convention (IAU / Hamaker-Bregman-Sault / CASA / AIPS, engineering
+time dependence ``exp(+i omega t)`` as in TMS Ch. 4):
 
-    R = (X - iY) / sqrt(2)
-    L = (X + iY) / sqrt(2)
+    R = (X + iY) / sqrt(2)
+    L = (X - iY) / sqrt(2)
 
 with the circular Stokes formulas:
 
     I = (RR + LL) / 2,    V = (RR - LL) / 2
     Q = (RL + LR) / 2,    U = i (LR - RL) / 2
 
-and the inverted linear-feed Stokes formulas:
+and the linear-feed Stokes formulas:
 
     I = (XX + YY) / 2,    Q = (XX - YY) / 2
-    U = (XY + YX) / 2,    V = +i (XY - YX) / 2
+    U = (XY + YX) / 2,    V = -i (XY - YX) / 2
 
 The sign of V flips under the opposite basis choice
-(R = (X + iY) / sqrt(2)). Full derivation and worked examples live in
-``docs/polarization_conventions.md``.
+(R = (X - iY) / sqrt(2), physics convention). Full derivation and
+worked examples live in ``docs/polarization_conventions.md``.
 
 A ``MixedPolConventionWarning`` fires once per session on the first
 non-identity transform call.
@@ -51,10 +52,15 @@ from ehtim.warnings import MixedPolConventionWarning
 # Basis matrices
 # ---------------------------------------------------------------------------
 
-# Maps a feed-basis vector (X, Y) -> (R, L) under the IAU/HBS convention.
+# Maps a feed-basis vector (X, Y) -> (R, L) under the IAU/HBS convention
+# with the engineering / IEEE time-dependence convention exp(+i omega t)
+# used throughout radio interferometry (cf. TMS Ch. 4). Under this
+# convention R = (X + iY)/sqrt(2), L = (X - iY)/sqrt(2).
 # Rows indexed by (R, L); columns by (X, Y).
-BASIS_LIN_TO_CIRC = np.array([[1.0, -1.0j],
-                              [1.0, +1.0j]]) / np.sqrt(2.0)
+# Reference only: the pair transforms below currently use the explicit
+# arithmetic forms.
+BASIS_LIN_TO_CIRC = np.array([[1.0, +1.0j],
+                              [1.0, -1.0j]]) / np.sqrt(2.0)
 
 # Unitary inverse: maps (R, L) -> (X, Y).
 BASIS_CIRC_TO_LIN = BASIS_LIN_TO_CIRC.conj().T
@@ -75,7 +81,7 @@ def _maybe_warn_convention():
     _convention_warning_emitted = True
     warnings.warn(
         "Polarization basis transform applied under the IAU/Hamaker-"
-        "Bregman-Sault convention (R = (X - iY)/sqrt(2)). This "
+        "Bregman-Sault convention (R = (X + iY)/sqrt(2)). This "
         "transformation assumes ideal feeds (D = 0 or already "
         "calibrated). See docs/polarization_conventions.md.",
         category=MixedPolConventionWarning,
@@ -149,12 +155,12 @@ def lin_to_stokes_diag(xx, yy):
 def lin_to_stokes_offdiag(xy, yx):
     """(U, V) from (XY, YX) off-diagonal pair.
 
-    Returns ``(0.5*(XY+YX), 0.5j*(XY-YX))``. The outputs are complex;
+    Returns ``(0.5*(XY+YX), 0.5j*(YX-XY))``. The outputs are complex;
     image-domain callers should apply ``np.real()`` since the sky-domain
     U, V are real-valued.
     """
     _maybe_warn_convention()
-    return 0.5 * (xy + yx), 0.5j * (xy - yx)
+    return 0.5 * (xy + yx), 0.5j * (yx - xy)
 
 
 def stokes_to_lin_diag(i, q):
@@ -166,7 +172,7 @@ def stokes_to_lin_diag(i, q):
 def stokes_to_lin_offdiag(u, v):
     """(XY, YX) from (U, V). Inverse of lin_to_stokes_offdiag."""
     _maybe_warn_convention()
-    return u - 1.0j * v, u + 1.0j * v
+    return u + 1.0j * v, u - 1.0j * v
 
 
 # ---------------------------------------------------------------------------
@@ -332,7 +338,8 @@ def jones_matrix(g_p1, g_p2, d_p1=0.0, d_p2=0.0):
 def invert_jones(J):
     """Return the inverse of a Jones matrix.
 
-    Broadcasts over leading axes.
+    Broadcasts over leading axes. Reference only: ``apply_inverse_jones_to_coherency``
+    currently inlines ``np.linalg.inv``.
     """
     return np.linalg.inv(J)
 

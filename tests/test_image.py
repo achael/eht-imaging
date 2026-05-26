@@ -392,9 +392,9 @@ def test_switch_polrep_stokes_to_lin_formulae(gauss_im_pol):
     np.testing.assert_allclose(out.yyvec,
                                gauss_im_pol.ivec - gauss_im_pol.qvec, atol=1e-12)
     np.testing.assert_allclose(out.xyvec,
-                               gauss_im_pol.uvec - 1j * gauss_im_pol.vvec, atol=1e-12)
-    np.testing.assert_allclose(out.yxvec,
                                gauss_im_pol.uvec + 1j * gauss_im_pol.vvec, atol=1e-12)
+    np.testing.assert_allclose(out.yxvec,
+                               gauss_im_pol.uvec - 1j * gauss_im_pol.vvec, atol=1e-12)
 
 
 def test_switch_polrep_circ_to_lin_matches_two_step(gauss_im_pol):
@@ -437,9 +437,9 @@ def test_stokes_image_xxvec_computes_from_iq(gauss_im_pol):
 
 
 def test_stokes_image_xyvec_computes_complex(gauss_im_pol):
-    """xyvec on a stokes image is U - iV (complex)."""
+    """xyvec on a stokes image is U + iV (complex, engineering convention)."""
     np.testing.assert_allclose(gauss_im_pol.xyvec,
-                               gauss_im_pol.uvec - 1j * gauss_im_pol.vvec,
+                               gauss_im_pol.uvec + 1j * gauss_im_pol.vvec,
                                atol=1e-12)
 
 

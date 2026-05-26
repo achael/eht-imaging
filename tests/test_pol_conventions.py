@@ -135,6 +135,31 @@ def test_circ_to_lin_via_composition():
     assert np.isclose(xy, xy_e) and np.isclose(yx, yx_e)
 
 
+def test_basis_matrix_consistent_with_circ_lin_stokes_formulas():
+    """BASIS_LIN_TO_CIRC must give the same Stokes whether you go
+    (X,Y) -> Stokes via §5, or (X,Y) -> (R,L) -> Stokes via §4.
+
+    Regression test for the convention bug where §2 declared one basis
+    but §4 / §5 implemented the opposite (pre-fix, lin_to_stokes_offdiag
+    had V with the wrong sign relative to BASIS_LIN_TO_CIRC).
+    """
+    # Pure +U linear wave (45 deg, in phase) — the discriminating case.
+    EX, EY = 1.0 + 0j, 1.0 + 0j
+    XX, YY = EX * np.conj(EX), EY * np.conj(EY)
+    XY, YX = EX * np.conj(EY), EY * np.conj(EX)
+    I_lin, Q_lin, U_lin, V_lin = pc.lin_to_stokes(XX, YY, XY, YX)
+
+    ER, EL = pc.BASIS_LIN_TO_CIRC @ np.array([EX, EY])
+    RR, LL = ER * np.conj(ER), EL * np.conj(EL)
+    RL, LR = ER * np.conj(EL), EL * np.conj(ER)
+    I_cir, Q_cir, U_cir, V_cir = pc.circ_to_stokes(RR, LL, RL, LR)
+
+    assert np.isclose(I_lin, I_cir)
+    assert np.isclose(Q_lin, Q_cir)
+    assert np.isclose(U_lin, U_cir)
+    assert np.isclose(V_lin, V_cir)
+
+
 # ---------------------------------------------------------------------------
 # IAU/HBS convention check via a known Stokes vector
 # ---------------------------------------------------------------------------
@@ -155,10 +180,10 @@ def test_known_stokes_q_only_to_lin():
 
 
 def test_known_stokes_v_only_to_lin_iau_sign():
-    """For pure V=1, IAU/HBS gives XY=-i, YX=+i; XX=YY=0."""
+    """For pure V=1, IAU/HBS (engineering) gives XY=+i, YX=-i; XX=YY=0."""
     xx, yy, xy, yx = pc.stokes_to_lin(0 + 0j, 0 + 0j, 0 + 0j, 1.0 + 0j)
     assert np.isclose(xx, 0.0) and np.isclose(yy, 0.0)
-    assert np.isclose(xy, -1.0j) and np.isclose(yx, +1.0j)
+    assert np.isclose(xy, +1.0j) and np.isclose(yx, -1.0j)
 
 
 # ---------------------------------------------------------------------------

@@ -107,7 +107,7 @@ def test_stokes_movie_xxframes_computes_from_iq(stokes_movie_pol):
 
 def test_stokes_movie_xyframes_complex_from_uv(stokes_movie_pol):
     xy = stokes_movie_pol.xyframes
-    expected = stokes_movie_pol.uframes - 1j * stokes_movie_pol.vframes
+    expected = stokes_movie_pol.uframes + 1j * stokes_movie_pol.vframes
     np.testing.assert_allclose(xy, expected, atol=1e-12)
 
 
