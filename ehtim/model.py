@@ -14,6 +14,7 @@ import scipy.interpolate as interpolate
 import copy
 
 import ehtim.observing.obs_simulate as simobs
+import ehtim.observing.pol_conventions as pol_conventions
 import ehtim.observing.pulses
 
 from ehtim.const_def import *
@@ -321,14 +322,28 @@ def get_const_polfac(model_type, params, pol):
             return params['cpol_frac']
         elif pol == 'P':
             return params['pol_frac'] * np.exp(1j * 2.0 * params['pol_evpa'])
-        elif pol == 'RR':
-            return get_const_polfac(model_type, params, 'I') + get_const_polfac(model_type, params, 'V')
-        elif pol == 'RL':
-            return get_const_polfac(model_type, params, 'Q') + 1j*get_const_polfac(model_type, params, 'U')
-        elif pol == 'LR':
-            return get_const_polfac(model_type, params, 'Q') - 1j*get_const_polfac(model_type, params, 'U')
-        elif pol == 'LL':
-            return get_const_polfac(model_type, params, 'I') - get_const_polfac(model_type, params, 'V')
+        # Non-stokes pols recurse on stokes via the stokes_to_circ / stokes_to_lin
+        # pair formulas in ehtim/observing/pol_conventions.py.
+        elif pol in ('RR', 'LL'):
+            rr, ll = pol_conventions.stokes_to_circ_parallel(
+                get_const_polfac(model_type, params, 'I'),
+                get_const_polfac(model_type, params, 'V'))
+            return rr if pol == 'RR' else ll
+        elif pol in ('RL', 'LR'):
+            rl, lr = pol_conventions.stokes_to_circ_cross(
+                get_const_polfac(model_type, params, 'Q'),
+                get_const_polfac(model_type, params, 'U'))
+            return rl if pol == 'RL' else lr
+        elif pol in ('XX', 'YY'):
+            xx, yy = pol_conventions.stokes_to_lin_diag(
+                get_const_polfac(model_type, params, 'I'),
+                get_const_polfac(model_type, params, 'Q'))
+            return xx if pol == 'XX' else yy
+        elif pol in ('XY', 'YX'):
+            xy, yx = pol_conventions.stokes_to_lin_offdiag(
+                get_const_polfac(model_type, params, 'U'),
+                get_const_polfac(model_type, params, 'V'))
+            return xy if pol == 'XY' else yx
     except Exception:
         pass
 
@@ -483,33 +498,49 @@ def sample_1model_uv(u, v, model_type, params, pol='I', jonesdict=None):
         RLp = RL + LL * DR1 * np.exp( 2j*fr1) + RR * DL2 * np.exp( 2j*fr2) + LR * DR1 * DL2 * np.exp( 2j*(fr1+fr2))
         LRp = LR + RR * DL1 * np.exp(-2j*fr1) + LL * DR2 * np.exp(-2j*fr2) + RL * DL1 * DR2 * np.exp(-2j*(fr1+fr2))
         LLp = LL + LR * DL2 * np.exp( 2j*fr2) + RL * DL1 * np.exp(-2j*fr1) + RR * DL1 * DL2 * np.exp(-2j*(fr1-fr2))
-        # Return the specified polarization
-        if   pol == 'RR': return RRp
-        elif pol == 'RL': return RLp
-        elif pol == 'LR': return LRp
-        elif pol == 'LL': return LLp
-        elif pol == 'I':  return 0.5 * (RRp + LLp)
-        elif pol == 'Q':  return 0.5 * (LRp + RLp)
-        elif pol == 'U':  return 0.5j* (LRp - RLp)
-        elif pol == 'V':  return 0.5 * (RRp - LLp)
-        elif pol == 'P':  return RLp
-        else:
-            raise Exception('Polarization ' + pol + ' not recognized!')
+        # Return the specified polarization. Stokes / lin clauses follow the
+        # circ_to_stokes and stokes_to_lin (composed) formulas in
+        # ehtim/observing/pol_conventions.py.
+        if pol in ('RR', 'LL', 'RL', 'LR'):
+            return {'RR': RRp, 'LL': LLp, 'RL': RLp, 'LR': LRp}[pol]
+        if pol == 'P':
+            return RLp
+        if pol in ('I', 'Q', 'U', 'V'):
+            i_v, q_v, u_v, v_v = pol_conventions.circ_to_stokes(RRp, LLp, RLp, LRp)
+            return {'I': i_v, 'Q': q_v, 'U': u_v, 'V': v_v}[pol]
+        if pol in ('XX', 'YY', 'XY', 'YX'):
+            xx_v, yy_v, xy_v, yx_v = pol_conventions.circ_to_lin(RRp, LLp, RLp, LRp)
+            return {'XX': xx_v, 'YY': yy_v, 'XY': xy_v, 'YX': yx_v}[pol]
+        raise Exception('Polarization ' + pol + ' not recognized!')
 
+    # Non-stokes pols recurse on stokes via the stokes_to_circ / stokes_to_lin
+    # pair formulas in ehtim/observing/pol_conventions.py.
     if pol == 'Q':
         return 0.5 * (sample_1model_uv(u, v, model_type, params, pol='P') + np.conj(sample_1model_uv(-u, -v, model_type, params, pol='P')))
     elif pol == 'U':
         return -0.5j * (sample_1model_uv(u, v, model_type, params, pol='P') - np.conj(sample_1model_uv(-u, -v, model_type, params, pol='P')))
     elif pol in ['I','V','P']:
         pass
-    elif pol == 'RR':
-        return sample_1model_uv(u, v, model_type, params, pol='I') + sample_1model_uv(u, v, model_type, params, pol='V')
-    elif pol == 'LL':
-        return sample_1model_uv(u, v, model_type, params, pol='I') - sample_1model_uv(u, v, model_type, params, pol='V')
-    elif pol == 'RL':
-        return sample_1model_uv(u, v, model_type, params, pol='Q') + 1j*sample_1model_uv(u, v, model_type, params, pol='U')
-    elif pol == 'LR':
-        return sample_1model_uv(u, v, model_type, params, pol='Q') - 1j*sample_1model_uv(u, v, model_type, params, pol='U')
+    elif pol in ('RR', 'LL'):
+        rr, ll = pol_conventions.stokes_to_circ_parallel(
+            sample_1model_uv(u, v, model_type, params, pol='I'),
+            sample_1model_uv(u, v, model_type, params, pol='V'))
+        return rr if pol == 'RR' else ll
+    elif pol in ('RL', 'LR'):
+        rl, lr = pol_conventions.stokes_to_circ_cross(
+            sample_1model_uv(u, v, model_type, params, pol='Q'),
+            sample_1model_uv(u, v, model_type, params, pol='U'))
+        return rl if pol == 'RL' else lr
+    elif pol in ('XX', 'YY'):
+        xx, yy = pol_conventions.stokes_to_lin_diag(
+            sample_1model_uv(u, v, model_type, params, pol='I'),
+            sample_1model_uv(u, v, model_type, params, pol='Q'))
+        return xx if pol == 'XX' else yy
+    elif pol in ('XY', 'YX'):
+        xy, yx = pol_conventions.stokes_to_lin_offdiag(
+            sample_1model_uv(u, v, model_type, params, pol='U'),
+            sample_1model_uv(u, v, model_type, params, pol='V'))
+        return xy if pol == 'XY' else yx
     else:
         raise Exception('Polarization ' + pol + ' not implemented!')
 
@@ -649,33 +680,49 @@ def sample_1model_graduv_uv(u, v, model_type, params, pol='I', jonesdict=None):
         RLp = (RL + LL * DR1 * np.exp( 2j*fr1) + RR * DL2 * np.exp( 2j*fr2) + LR * DR1 * DL2 * np.exp( 2j*(fr1+fr2)))
         LRp = (LR + RR * DL1 * np.exp(-2j*fr1) + LL * DR2 * np.exp(-2j*fr2) + RL * DL1 * DR2 * np.exp(-2j*(fr1+fr2)))
         LLp = (LL + LR * DL2 * np.exp( 2j*fr2) + RL * DL1 * np.exp(-2j*fr1) + RR * DL1 * DL2 * np.exp(-2j*(fr1-fr2)))
-        # Return the specified polarization
-        if   pol == 'RR': return RRp
-        elif pol == 'RL': return RLp
-        elif pol == 'LR': return LRp
-        elif pol == 'LL': return LLp
-        elif pol == 'I':  return 0.5 * (RRp + LLp)
-        elif pol == 'Q':  return 0.5 * (LRp + RLp)
-        elif pol == 'U':  return 0.5j* (LRp - RLp)
-        elif pol == 'V':  return 0.5 * (RRp - LLp)
-        elif pol == 'P':  return RLp
-        else:
-            raise Exception('Polarization ' + pol + ' not recognized!')
+        # Return the specified polarization. Stokes / lin clauses follow the
+        # circ_to_stokes and stokes_to_lin (composed) formulas in
+        # ehtim/observing/pol_conventions.py.
+        if pol in ('RR', 'LL', 'RL', 'LR'):
+            return {'RR': RRp, 'LL': LLp, 'RL': RLp, 'LR': LRp}[pol]
+        if pol == 'P':
+            return RLp
+        if pol in ('I', 'Q', 'U', 'V'):
+            i_v, q_v, u_v, v_v = pol_conventions.circ_to_stokes(RRp, LLp, RLp, LRp)
+            return {'I': i_v, 'Q': q_v, 'U': u_v, 'V': v_v}[pol]
+        if pol in ('XX', 'YY', 'XY', 'YX'):
+            xx_v, yy_v, xy_v, yx_v = pol_conventions.circ_to_lin(RRp, LLp, RLp, LRp)
+            return {'XX': xx_v, 'YY': yy_v, 'XY': xy_v, 'YX': yx_v}[pol]
+        raise Exception('Polarization ' + pol + ' not recognized!')
 
+    # Non-stokes pols recurse on stokes via the stokes_to_circ / stokes_to_lin
+    # pair formulas in ehtim/observing/pol_conventions.py.
     if pol == 'Q':
         return 0.5 * (sample_1model_graduv_uv(u, v, model_type, params, pol='P') + np.conj(sample_1model_graduv_uv(-u, -v, model_type, params, pol='P')))
     elif pol == 'U':
         return -0.5j * (sample_1model_graduv_uv(u, v, model_type, params, pol='P') - np.conj(sample_1model_graduv_uv(-u, -v, model_type, params, pol='P')))
     elif pol in ['I','V','P']:
         pass
-    elif pol == 'RR':
-        return sample_1model_graduv_uv(u, v, model_type, params, pol='I') + sample_1model_graduv_uv(u, v, model_type, params, pol='V')
-    elif pol == 'LL':
-        return sample_1model_graduv_uv(u, v, model_type, params, pol='I') - sample_1model_graduv_uv(u, v, model_type, params, pol='V')
-    elif pol == 'RL':
-        return sample_1model_graduv_uv(u, v, model_type, params, pol='Q') + 1j*sample_1model_graduv_uv(u, v, model_type, params, pol='U')
-    elif pol == 'LR':
-        return sample_1model_graduv_uv(u, v, model_type, params, pol='Q') - 1j*sample_1model_graduv_uv(u, v, model_type, params, pol='U')
+    elif pol in ('RR', 'LL'):
+        rr, ll = pol_conventions.stokes_to_circ_parallel(
+            sample_1model_graduv_uv(u, v, model_type, params, pol='I'),
+            sample_1model_graduv_uv(u, v, model_type, params, pol='V'))
+        return rr if pol == 'RR' else ll
+    elif pol in ('RL', 'LR'):
+        rl, lr = pol_conventions.stokes_to_circ_cross(
+            sample_1model_graduv_uv(u, v, model_type, params, pol='Q'),
+            sample_1model_graduv_uv(u, v, model_type, params, pol='U'))
+        return rl if pol == 'RL' else lr
+    elif pol in ('XX', 'YY'):
+        xx, yy = pol_conventions.stokes_to_lin_diag(
+            sample_1model_graduv_uv(u, v, model_type, params, pol='I'),
+            sample_1model_graduv_uv(u, v, model_type, params, pol='Q'))
+        return xx if pol == 'XX' else yy
+    elif pol in ('XY', 'YX'):
+        xy, yx = pol_conventions.stokes_to_lin_offdiag(
+            sample_1model_graduv_uv(u, v, model_type, params, pol='U'),
+            sample_1model_graduv_uv(u, v, model_type, params, pol='V'))
+        return xy if pol == 'XY' else yx
     else:
         raise Exception('Polarization ' + pol + ' not implemented!')
 
@@ -919,18 +966,20 @@ def sample_1model_grad_leakage_uv_re(u, v, model_type, params, pol, site, hand, 
     LRp = RR * DL1mask * np.exp(-2j*fr1) + LL * DR2mask * np.exp(-2j*fr2) + RL * DL1mask * DR2 * np.exp(-2j*(fr1+fr2)) + RL * DL1 * DR2mask * np.exp(-2j*(fr1+fr2))
     LLp = LR * DL2mask * np.exp( 2j*fr2) + RL * DL1mask * np.exp(-2j*fr1) + RR * DL1mask * DL2 * np.exp(-2j*(fr1-fr2)) + RR * DL1 * DL2mask * np.exp(-2j*(fr1-fr2))
 
-    # Return the specified polarization
-    if   pol == 'RR': return RRp
-    elif pol == 'RL': return RLp
-    elif pol == 'LR': return LRp
-    elif pol == 'LL': return LLp
-    elif pol == 'I':  return 0.5 * (RRp + LLp)
-    elif pol == 'Q':  return 0.5 * (LRp + RLp)
-    elif pol == 'U':  return 0.5j* (LRp - RLp)
-    elif pol == 'V':  return 0.5 * (RRp - LLp)
-    elif pol == 'P':  return RLp
-    else:
-        raise Exception('Polarization ' + pol + ' not recognized!')
+    # Return the specified polarization. Stokes / lin clauses follow the
+    # circ_to_stokes and stokes_to_lin (composed) formulas in
+    # ehtim/observing/pol_conventions.py.
+    if pol in ('RR', 'LL', 'RL', 'LR'):
+        return {'RR': RRp, 'LL': LLp, 'RL': RLp, 'LR': LRp}[pol]
+    if pol == 'P':
+        return RLp
+    if pol in ('I', 'Q', 'U', 'V'):
+        i_v, q_v, u_v, v_v = pol_conventions.circ_to_stokes(RRp, LLp, RLp, LRp)
+        return {'I': i_v, 'Q': q_v, 'U': u_v, 'V': v_v}[pol]
+    if pol in ('XX', 'YY', 'XY', 'YX'):
+        xx_v, yy_v, xy_v, yx_v = pol_conventions.circ_to_lin(RRp, LLp, RLp, LRp)
+        return {'XX': xx_v, 'YY': yy_v, 'XY': xy_v, 'YX': yx_v}[pol]
+    raise Exception('Polarization ' + pol + ' not recognized!')
 
 def sample_1model_grad_leakage_uv_im(u, v, model_type, params, pol, site, hand, jonesdict):
     # Convenience function to calculate the gradient with respect to the imaginary part of a specified site/hand leakage
@@ -961,18 +1010,20 @@ def sample_1model_grad_leakage_uv_im(u, v, model_type, params, pol, site, hand, 
     LRp = 1j*( RR * DL1mask * np.exp(-2j*fr1) - LL * DR2mask * np.exp(-2j*fr2) + RL * DL1mask * DR2 * np.exp(-2j*(fr1+fr2)) - RL * DL1 * DR2mask * np.exp(-2j*(fr1+fr2)))
     LLp = 1j*(-LR * DL2mask * np.exp( 2j*fr2) + RL * DL1mask * np.exp(-2j*fr1) + RR * DL1mask * DL2 * np.exp(-2j*(fr1-fr2)) - RR * DL1 * DL2mask * np.exp(-2j*(fr1-fr2)))
 
-    # Return the specified polarization
-    if   pol == 'RR': return RRp
-    elif pol == 'RL': return RLp
-    elif pol == 'LR': return LRp
-    elif pol == 'LL': return LLp
-    elif pol == 'I':  return 0.5 * (RRp + LLp)
-    elif pol == 'Q':  return 0.5 * (LRp + RLp)
-    elif pol == 'U':  return 0.5j* (LRp - RLp)
-    elif pol == 'V':  return 0.5 * (RRp - LLp)
-    elif pol == 'P':  return RLp
-    else:
-        raise Exception('Polarization ' + pol + ' not recognized!')
+    # Return the specified polarization. Stokes / lin clauses follow the
+    # circ_to_stokes and stokes_to_lin (composed) formulas in
+    # ehtim/observing/pol_conventions.py.
+    if pol in ('RR', 'LL', 'RL', 'LR'):
+        return {'RR': RRp, 'LL': LLp, 'RL': RLp, 'LR': LRp}[pol]
+    if pol == 'P':
+        return RLp
+    if pol in ('I', 'Q', 'U', 'V'):
+        i_v, q_v, u_v, v_v = pol_conventions.circ_to_stokes(RRp, LLp, RLp, LRp)
+        return {'I': i_v, 'Q': q_v, 'U': u_v, 'V': v_v}[pol]
+    if pol in ('XX', 'YY', 'XY', 'YX'):
+        xx_v, yy_v, xy_v, yx_v = pol_conventions.circ_to_lin(RRp, LLp, RLp, LRp)
+        return {'XX': xx_v, 'YY': yy_v, 'XY': xy_v, 'YX': yx_v}[pol]
+    raise Exception('Polarization ' + pol + ' not recognized!')
 
 def sample_1model_grad_uv(u, v, model_type, params, pol='I', fit_pol=False, fit_cpol=False, fit_leakage=False, jonesdict=None):
     # Gradient of the model for each model parameter 
@@ -995,16 +1046,19 @@ def sample_1model_grad_uv(u, v, model_type, params, pol='I', fit_pol=False, fit_
         RLp = (RL + LL * DR1 * np.exp( 2j*fr1) + RR * DL2 * np.exp( 2j*fr2) + LR * DR1 * DL2 * np.exp( 2j*(fr1+fr2)))
         LRp = (LR + RR * DL1 * np.exp(-2j*fr1) + LL * DR2 * np.exp(-2j*fr2) + RL * DL1 * DR2 * np.exp(-2j*(fr1+fr2)))
         LLp = (LL + LR * DL2 * np.exp( 2j*fr2) + RL * DL1 * np.exp(-2j*fr1) + RR * DL1 * DL2 * np.exp(-2j*(fr1-fr2)))
-        # Return the specified polarization
-        if   pol == 'RR': grad = RRp
-        elif pol == 'RL': grad = RLp
-        elif pol == 'LR': grad = LRp
-        elif pol == 'LL': grad = LLp
-        elif pol == 'I':  grad = 0.5 * (RRp + LLp)
-        elif pol == 'Q':  grad = 0.5 * (LRp + RLp)
-        elif pol == 'U':  grad = 0.5j* (LRp - RLp)
-        elif pol == 'V':  grad = 0.5 * (RRp - LLp)
-        elif pol == 'P':  grad = RLp
+        # Return the specified polarization. Stokes / lin clauses follow the
+        # circ_to_stokes and stokes_to_lin (composed) formulas in
+        # ehtim/observing/pol_conventions.py.
+        if pol in ('RR', 'LL', 'RL', 'LR'):
+            grad = {'RR': RRp, 'LL': LLp, 'RL': RLp, 'LR': LRp}[pol]
+        elif pol == 'P':
+            grad = RLp
+        elif pol in ('I', 'Q', 'U', 'V'):
+            i_v, q_v, u_v, v_v = pol_conventions.circ_to_stokes(RRp, LLp, RLp, LRp)
+            grad = {'I': i_v, 'Q': q_v, 'U': u_v, 'V': v_v}[pol]
+        elif pol in ('XX', 'YY', 'XY', 'YX'):
+            xx_v, yy_v, xy_v, yx_v = pol_conventions.circ_to_lin(RRp, LLp, RLp, LRp)
+            grad = {'XX': xx_v, 'YY': yy_v, 'XY': xy_v, 'YX': yx_v}[pol]
         else:
             raise Exception('Polarization ' + pol + ' not recognized!')
         # If necessary, add the gradient components from the leakage terms
@@ -1016,20 +1070,34 @@ def sample_1model_grad_uv(u, v, model_type, params, pol='I', fit_pol=False, fit_
 
         return grad
 
+    # Non-stokes pols recurse on stokes via the stokes_to_circ / stokes_to_lin
+    # pair formulas in ehtim/observing/pol_conventions.py.
     if pol == 'Q':
         return   0.5 * (sample_1model_grad_uv(u, v, model_type, params, pol='P', fit_pol=fit_pol, fit_cpol=fit_cpol) + np.conj(sample_1model_grad_uv(-u, -v, model_type, params, pol='P', fit_pol=fit_pol, fit_cpol=fit_cpol)))
     elif pol == 'U':
         return -0.5j * (sample_1model_grad_uv(u, v, model_type, params, pol='P', fit_pol=fit_pol, fit_cpol=fit_cpol) - np.conj(sample_1model_grad_uv(-u, -v, model_type, params, pol='P', fit_pol=fit_pol, fit_cpol=fit_cpol)))
     elif pol in ['I','V','P']:
         pass
-    elif pol == 'RR':
-        return sample_1model_grad_uv(u, v, model_type, params, pol='I', fit_pol=fit_pol, fit_cpol=fit_cpol) + sample_1model_grad_uv(u, v, model_type, params, pol='V', fit_pol=fit_pol, fit_cpol=fit_cpol)
-    elif pol == 'LL':
-        return sample_1model_grad_uv(u, v, model_type, params, pol='I', fit_pol=fit_pol, fit_cpol=fit_cpol) - sample_1model_grad_uv(u, v, model_type, params, pol='V', fit_pol=fit_pol, fit_cpol=fit_cpol)
-    elif pol == 'RL':
-        return sample_1model_grad_uv(u, v, model_type, params, pol='Q', fit_pol=fit_pol, fit_cpol=fit_cpol) + 1j*sample_1model_grad_uv(u, v, model_type, params, pol='U', fit_pol=fit_pol, fit_cpol=fit_cpol)
-    elif pol == 'LR':
-        return sample_1model_grad_uv(u, v, model_type, params, pol='Q', fit_pol=fit_pol, fit_cpol=fit_cpol) - 1j*sample_1model_grad_uv(u, v, model_type, params, pol='U', fit_pol=fit_pol, fit_cpol=fit_cpol)
+    elif pol in ('RR', 'LL'):
+        rr, ll = pol_conventions.stokes_to_circ_parallel(
+            sample_1model_grad_uv(u, v, model_type, params, pol='I', fit_pol=fit_pol, fit_cpol=fit_cpol),
+            sample_1model_grad_uv(u, v, model_type, params, pol='V', fit_pol=fit_pol, fit_cpol=fit_cpol))
+        return rr if pol == 'RR' else ll
+    elif pol in ('RL', 'LR'):
+        rl, lr = pol_conventions.stokes_to_circ_cross(
+            sample_1model_grad_uv(u, v, model_type, params, pol='Q', fit_pol=fit_pol, fit_cpol=fit_cpol),
+            sample_1model_grad_uv(u, v, model_type, params, pol='U', fit_pol=fit_pol, fit_cpol=fit_cpol))
+        return rl if pol == 'RL' else lr
+    elif pol in ('XX', 'YY'):
+        xx, yy = pol_conventions.stokes_to_lin_diag(
+            sample_1model_grad_uv(u, v, model_type, params, pol='I', fit_pol=fit_pol, fit_cpol=fit_cpol),
+            sample_1model_grad_uv(u, v, model_type, params, pol='Q', fit_pol=fit_pol, fit_cpol=fit_cpol))
+        return xx if pol == 'XX' else yy
+    elif pol in ('XY', 'YX'):
+        xy, yx = pol_conventions.stokes_to_lin_offdiag(
+            sample_1model_grad_uv(u, v, model_type, params, pol='U', fit_pol=fit_pol, fit_cpol=fit_cpol),
+            sample_1model_grad_uv(u, v, model_type, params, pol='V', fit_pol=fit_pol, fit_cpol=fit_cpol))
+        return xy if pol == 'XY' else yx
     else:
         raise Exception('Polarization ' + pol + ' not implemented!')
 
@@ -1532,11 +1600,12 @@ class Model(object):
         """
 
         # Note: this currently does nothing, but it is put here for compatibility with functions such as selfcal
-        if polrep_out not in ['stokes','circ']:
-            raise Exception("polrep_out must be either 'stokes' or 'circ'")
+        if polrep_out not in ['stokes', 'circ', 'lin']:
+            raise Exception("polrep_out must be 'stokes', 'circ', or 'lin'")
         if pol_prim_out is None:
             if polrep_out=='stokes': pol_prim_out = 'I'
             elif polrep_out=='circ': pol_prim_out = 'RR'
+            elif polrep_out=='lin': pol_prim_out = 'XX'
 
         return self.copy()
 
@@ -2143,6 +2212,11 @@ class Model(object):
             obsdata['rlvis'] = self.sample_uv(obs.data['u'], obs.data['v'], pol='RL', jonesdict=jonesdict)
             obsdata['lrvis'] = self.sample_uv(obs.data['u'], obs.data['v'], pol='LR', jonesdict=jonesdict)
             obsdata['llvis'] = self.sample_uv(obs.data['u'], obs.data['v'], pol='LL', jonesdict=jonesdict)
+        elif obs.polrep=='lin':
+            obsdata['xxvis'] = self.sample_uv(obs.data['u'], obs.data['v'], pol='XX', jonesdict=jonesdict)
+            obsdata['yyvis'] = self.sample_uv(obs.data['u'], obs.data['v'], pol='YY', jonesdict=jonesdict)
+            obsdata['xyvis'] = self.sample_uv(obs.data['u'], obs.data['v'], pol='XY', jonesdict=jonesdict)
+            obsdata['yxvis'] = self.sample_uv(obs.data['u'], obs.data['v'], pol='YX', jonesdict=jonesdict)
 
         obs_no_noise = ehtim.obsdata.Obsdata(obs.ra, obs.dec, obs.rf, obs.bw, obsdata, obs.tarr,
                                              source=obs.source, mjd=obs.mjd, polrep=obs.polrep,

@@ -161,9 +161,9 @@ DTCAL = DTCAL_CIRC  # legacy alias
 DTSCANS = [('time', 'f8'), ('interval', 'f8'), ('startvis', 'f8'), ('endvis', 'f8')]
 
 
-# TODO (Phase 3b): the feed_dtype_for_polrep / feed_poldict / upgrade_*
-# helpers below should migrate to ehtim/observing/pol_conventions.py when
-# that module is created.
+# TODO: the feed_dtype_for_polrep / feed_poldict / upgrade_* helpers below
+# should migrate to ehtim/observing/pol_conventions.py (created in
+# MixPol Phase 3) when Obsdata.switch_polrep is wired up to it.
 
 def feed_dtype_for_polrep(polrep):
     """Return the DTPOL_* field-spec list for a given polrep."""
@@ -263,11 +263,14 @@ POLDICT_CIRC = {'vis1': 'rrvis', 'vis2': 'llvis', 'vis3': 'rlvis', 'vis4': 'lrvi
 POLDICT_LIN = {'vis1': 'xxvis', 'vis2': 'yyvis', 'vis3': 'xyvis', 'vis4': 'yxvis',
                'sigma1': 'xxsigma', 'sigma2': 'yysigma', 'sigma3': 'xysigma', 'sigma4': 'yxsigma'}
 vis_poldict = {'I': 'vis', 'Q': 'qvis', 'U': 'uvis', 'V': 'vvis',
-               'RR': 'rrvis', 'LL': 'llvis', 'RL': 'rlvis', 'LR': 'lrvis'}
+               'RR': 'rrvis', 'LL': 'llvis', 'RL': 'rlvis', 'LR': 'lrvis',
+               'XX': 'xxvis', 'YY': 'yyvis', 'XY': 'xyvis', 'YX': 'yxvis'}
 amp_poldict = {'I': 'amp', 'Q': 'qamp', 'U': 'uamp', 'V': 'vamp',
-               'RR': 'rramp', 'LL': 'llamp', 'RL': 'rlamp', 'LR': 'lramp'}
+               'RR': 'rramp', 'LL': 'llamp', 'RL': 'rlamp', 'LR': 'lramp',
+               'XX': 'xxamp', 'YY': 'yyamp', 'XY': 'xyamp', 'YX': 'yxamp'}
 sig_poldict = {'I': 'sigma', 'Q': 'qsigma', 'U': 'usigma', 'V': 'vsigma',
-               'RR': 'rrsigma', 'LL': 'llsigma', 'RL': 'rlsigma', 'LR': 'lrsigma'}
+               'RR': 'rrsigma', 'LL': 'llsigma', 'RL': 'rlsigma', 'LR': 'lrsigma',
+               'XX': 'xxsigma', 'YY': 'yysigma', 'XY': 'xysigma', 'YX': 'yxsigma'}
 
 # Observation fields for plotting and retrieving data
 FIELDS = ['time', 'time_utc', 'time_gmst',

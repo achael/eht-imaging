@@ -42,6 +42,7 @@ import ehtim.image
 import ehtim.io.load
 import ehtim.io.save
 import ehtim.observing.obs_helpers as obsh
+import ehtim.observing.pol_conventions as pol_conventions
 import ehtim.statistics.dataframes as ehdf
 
 warnings.filterwarnings("ignore",
@@ -287,21 +288,16 @@ class Obsdata:
             rrmask = np.isnan(self.data['rrvis'])
             llmask = np.isnan(self.data['llvis'])
 
-            for f in np.dtype(ehc.DTPOL_STOKES).names:
-                if f in ['time', 'tint', 't1', 't2', 'tau1', 'tau2', 'u', 'v']:
-                    data[f] = self.data[f]
-                elif f == 'vis':
-                    data[f] = 0.5 * (self.data['rrvis'] + self.data['llvis'])
-                elif f == 'qvis':
-                    data[f] = 0.5 * (self.data['lrvis'] + self.data['rlvis'])
-                elif f == 'uvis':
-                    data[f] = 0.5j * (self.data['lrvis'] - self.data['rlvis'])
-                elif f == 'vvis':
-                    data[f] = 0.5 * (self.data['rrvis'] - self.data['llvis'])
-                elif f in ['sigma', 'vsigma']:
-                    data[f] = 0.5 * np.sqrt(self.data['rrsigma']**2 + self.data['llsigma']**2)
-                elif f in ['qsigma', 'usigma']:
-                    data[f] = 0.5 * np.sqrt(self.data['rlsigma']**2 + self.data['lrsigma']**2)
+            for f in ['time', 'tint', 't1', 't2', 'tau1', 'tau2', 'u', 'v']:
+                data[f] = self.data[f]
+            (data['vis'], data['qvis'],
+             data['uvis'], data['vvis']) = pol_conventions.circ_to_stokes(
+                self.data['rrvis'], self.data['llvis'],
+                self.data['rlvis'], self.data['lrvis'])
+            (data['sigma'], data['qsigma'],
+             data['usigma'], data['vsigma']) = pol_conventions.circ_to_stokes_sigma(
+                self.data['rrsigma'], self.data['llsigma'],
+                self.data['rlsigma'], self.data['lrsigma'])
 
             if allow_singlepol:
                 # In cases where only one polarization is present
@@ -316,21 +312,16 @@ class Obsdata:
             data = np.empty(len(self.data), dtype=ehc.DTPOL_CIRC)
             Vmask = np.isnan(self.data['vvis'])
 
-            for f in np.dtype(ehc.DTPOL_CIRC).names:
-                if f in ['time', 'tint', 't1', 't2', 'tau1', 'tau2', 'u', 'v']:
-                    data[f] = self.data[f]
-                elif f == 'rrvis':
-                    data[f] = (self.data['vis'] + self.data['vvis'])
-                elif f == 'llvis':
-                    data[f] = (self.data['vis'] - self.data['vvis'])
-                elif f == 'rlvis':
-                    data[f] = (self.data['qvis'] + 1j * self.data['uvis'])
-                elif f == 'lrvis':
-                    data[f] = (self.data['qvis'] - 1j * self.data['uvis'])
-                elif f in ['rrsigma', 'llsigma']:
-                    data[f] = np.sqrt(self.data['sigma']**2 + self.data['vsigma']**2)
-                elif f in ['rlsigma', 'lrsigma']:
-                    data[f] = np.sqrt(self.data['qsigma']**2 + self.data['usigma']**2)
+            for f in ['time', 'tint', 't1', 't2', 'tau1', 'tau2', 'u', 'v']:
+                data[f] = self.data[f]
+            (data['rrvis'], data['llvis'],
+             data['rlvis'], data['lrvis']) = pol_conventions.stokes_to_circ(
+                self.data['vis'], self.data['qvis'],
+                self.data['uvis'], self.data['vvis'])
+            (data['rrsigma'], data['llsigma'],
+             data['rlsigma'], data['lrsigma']) = pol_conventions.stokes_to_circ_sigma(
+                self.data['sigma'], self.data['qsigma'],
+                self.data['usigma'], self.data['vsigma'])
 
             if allow_singlepol:
                 # In cases where only Stokes I is present, copy it to a specified parallel-hand

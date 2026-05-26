@@ -35,6 +35,7 @@ import ehtim.io.save
 import ehtim.io.load
 import ehtim.const_def as ehc
 import ehtim.observing.obs_helpers as obsh
+import ehtim.observing.pol_conventions as pol_conventions
 
 INTERPOLATION_KINDS = ['linear', 'nearest', 'zero', 'slinear',
                        'quadratic', 'cubic', 'previous', 'next']
@@ -169,6 +170,22 @@ class Movie(object):
             else:
                 raise Exception("for polrep=='circ', pol_prim must be 'RR' or 'LL'!")
 
+        elif polrep == 'lin':
+            if pol_prim is None:
+                print("polrep is 'lin' and no pol_prim specified! Setting pol_prim='XX'")
+                pol_prim = 'XX'
+            if pol_prim == 'XX':
+                self._movdict = {'XX': frames, 'YY': [], 'XY': [], 'YX': []}
+                self._fundict = {'XX': fun, 'YY': None, 'XY': None, 'YX': None}
+            elif pol_prim == 'YY':
+                self._movdict = {'XX': [], 'YY': frames, 'XY': [], 'YX': []}
+                self._fundict = {'XX': None, 'YY': fun, 'XY': None, 'YX': None}
+            else:
+                raise Exception("for polrep=='lin', pol_prim must be 'XX' or 'YY'!")
+
+        else:
+            raise Exception("polrep must be 'stokes', 'circ', or 'lin'!")
+
         self.pol_prim = pol_prim
 
         self.ra = float(ra)
@@ -197,23 +214,35 @@ class Movie(object):
                                          bounds_error=self.bounds_error, fill_value=fill_value)
         self._fundict[self.pol_prim] = fun
 
+    # Frame accessors are harmonized across polreps: each getter returns the
+    # stored frames when self.polrep matches the accessor's native basis, or
+    # computes them from the stored basis via pol_conventions when not.
+    # Setters keep their original polrep guard (you can only write into the
+    # storage basis); they also (re)build the matching _fundict interpolator.
+    # Cross-polrep reads do not populate _fundict; callers that need time
+    # interpolation in a different basis should switch_polrep first.
+
     @property
     def iframes(self):
-
-        if self.polrep != 'stokes':
-            raise Exception(
-                "iframes is not defined unless self.polrep=='stokes' -- try self.switch_polrep()")
-
-        frames = self._movdict['I']
+        frames = []
+        if self.polrep == 'stokes':
+            frames = self._movdict['I']
+        elif self.polrep == 'circ':
+            rr, ll = self.rrframes, self.llframes
+            if len(rr) != 0 and len(ll) != 0:
+                frames, _ = pol_conventions.circ_to_stokes_parallel(rr, ll)
+        elif self.polrep == 'lin':
+            xx, yy = self.xxframes, self.yyframes
+            if len(xx) != 0 and len(yy) != 0:
+                frames, _ = pol_conventions.lin_to_stokes_diag(xx, yy)
         return frames
 
     @iframes.setter
     def iframes(self, frames):
-
+        if self.polrep != 'stokes':
+            raise Exception("iframes can only be set when self.polrep=='stokes'")
         if len(frames[0]) != self.xdim*self.ydim:
             raise Exception("vec size is not consistent with xdim*ydim!")
-
-        # TODO -- more checks on the consistency of the imvec with the existing pol data???
         frames = np.array(frames)
         self._movdict['I'] = frames
         fill_value = (frames[0], frames[-1])
@@ -223,21 +252,26 @@ class Movie(object):
 
     @property
     def qframes(self):
-
-        if self.polrep != 'stokes':
-            raise Exception(
-                "qframes is not defined unless self.polrep=='stokes' -- try self.switch_polrep()")
-
-        frames = self._movdict['Q']
+        frames = []
+        if self.polrep == 'stokes':
+            frames = self._movdict['Q']
+        elif self.polrep == 'circ':
+            rl, lr = self.rlframes, self.lrframes
+            if len(rl) != 0 and len(lr) != 0:
+                q_c, _ = pol_conventions.circ_to_stokes_cross(rl, lr)
+                frames = np.real(q_c)
+        elif self.polrep == 'lin':
+            xx, yy = self.xxframes, self.yyframes
+            if len(xx) != 0 and len(yy) != 0:
+                _, frames = pol_conventions.lin_to_stokes_diag(xx, yy)
         return frames
 
     @qframes.setter
     def qframes(self, frames):
-
+        if self.polrep != 'stokes':
+            raise Exception("qframes can only be set when self.polrep=='stokes'")
         if len(frames[0]) != self.xdim*self.ydim:
             raise Exception("vec size is not consistent with xdim*ydim!")
-
-        # TODO -- more checks on the consistency of the imvec with the existing pol data???
         frames = np.array(frames)
         self._movdict['Q'] = frames
         fill_value = (frames[0], frames[-1])
@@ -247,22 +281,27 @@ class Movie(object):
 
     @property
     def uframes(self):
-
-        if self.polrep != 'stokes':
-            raise Exception(
-                "uframes is not defined unless self.polrep=='stokes' -- try self.switch_polrep()")
-
-        frames = self._movdict['U']
-
+        frames = []
+        if self.polrep == 'stokes':
+            frames = self._movdict['U']
+        elif self.polrep == 'circ':
+            rl, lr = self.rlframes, self.lrframes
+            if len(rl) != 0 and len(lr) != 0:
+                _, u_c = pol_conventions.circ_to_stokes_cross(rl, lr)
+                frames = np.real(u_c)
+        elif self.polrep == 'lin':
+            xy, yx = self.xyframes, self.yxframes
+            if len(xy) != 0 and len(yx) != 0:
+                u_c, _ = pol_conventions.lin_to_stokes_offdiag(xy, yx)
+                frames = np.real(u_c)
         return frames
 
     @uframes.setter
     def uframes(self, frames):
-
+        if self.polrep != 'stokes':
+            raise Exception("uframes can only be set when self.polrep=='stokes'")
         if len(frames[0]) != self.xdim*self.ydim:
             raise Exception("vec size is not consistent with xdim*ydim!")
-
-        # TODO -- more checks on the consistency of the imvec with the existing pol data???
         frames = np.array(frames)
         self._movdict['U'] = frames
         fill_value = (frames[0], frames[-1])
@@ -272,22 +311,26 @@ class Movie(object):
 
     @property
     def vframes(self):
-
-        if self.polrep != 'stokes':
-            raise Exception(
-                "vframes is not defined unless self.polrep=='stokes' -- try self.switch_polrep()")
-
-        frames = self._movdict['V']
-
+        frames = []
+        if self.polrep == 'stokes':
+            frames = self._movdict['V']
+        elif self.polrep == 'circ':
+            rr, ll = self.rrframes, self.llframes
+            if len(rr) != 0 and len(ll) != 0:
+                _, frames = pol_conventions.circ_to_stokes_parallel(rr, ll)
+        elif self.polrep == 'lin':
+            xy, yx = self.xyframes, self.yxframes
+            if len(xy) != 0 and len(yx) != 0:
+                _, v_c = pol_conventions.lin_to_stokes_offdiag(xy, yx)
+                frames = np.real(v_c)
         return frames
 
     @vframes.setter
     def vframes(self, frames):
-
+        if self.polrep != 'stokes':
+            raise Exception("vframes can only be set when self.polrep=='stokes'")
         if len(frames[0]) != self.xdim*self.ydim:
             raise Exception("vec size is not consistent with xdim*ydim!")
-
-        # TODO -- more checks on the consistency of the imvec with the existing pol data???
         frames = np.array(frames)
         self._movdict['V'] = frames
         fill_value = (frames[0], frames[-1])
@@ -297,21 +340,21 @@ class Movie(object):
 
     @property
     def rrframes(self):
-
-        if self.polrep != 'circ':
-            raise Exception(
-                "rrframes is not defined unless self.polrep=='circ' -- try self.switch_polrep()")
-
-        frames = self._movdict['RR']
+        frames = []
+        if self.polrep == 'circ':
+            frames = self._movdict['RR']
+        elif self.polrep in ('stokes', 'lin'):
+            i, v = self.iframes, self.vframes
+            if len(i) != 0 and len(v) != 0:
+                frames, _ = pol_conventions.stokes_to_circ_parallel(i, v)
         return frames
 
     @rrframes.setter
     def rrframes(self, frames):
-
+        if self.polrep != 'circ':
+            raise Exception("rrframes can only be set when self.polrep=='circ'")
         if len(frames[0]) != self.xdim*self.ydim:
             raise Exception("vec size is not consistent with xdim*ydim!")
-
-        # TODO -- more checks on the consistency of the imvec with the existing pol data???
         frames = np.array(frames)
         self._movdict['RR'] = frames
         fill_value = (frames[0], frames[-1])
@@ -321,21 +364,21 @@ class Movie(object):
 
     @property
     def llframes(self):
-
-        if self.polrep != 'circ':
-            raise Exception(
-                "llframes is not defined unless self.polrep=='circ' -- try self.switch_polrep()")
-
-        frames = self._movdict['LL']
+        frames = []
+        if self.polrep == 'circ':
+            frames = self._movdict['LL']
+        elif self.polrep in ('stokes', 'lin'):
+            i, v = self.iframes, self.vframes
+            if len(i) != 0 and len(v) != 0:
+                _, frames = pol_conventions.stokes_to_circ_parallel(i, v)
         return frames
 
     @llframes.setter
     def llframes(self, frames):
-
+        if self.polrep != 'circ':
+            raise Exception("llframes can only be set when self.polrep=='circ'")
         if len(frames[0]) != self.xdim*self.ydim:
             raise Exception("vec size is not consistent with xdim*ydim!")
-
-        # TODO -- more checks on the consistency of the imvec with the existing pol data???
         frames = np.array(frames)
         self._movdict['LL'] = frames
         fill_value = (frames[0], frames[-1])
@@ -344,22 +387,22 @@ class Movie(object):
         self._fundict['LL'] = fun
 
     @property
-    def rlvec(self):
-
-        if self.polrep != 'circ':
-            raise Exception(
-                "rlframes is not defined unless self.polrep=='circ' -- try self.switch_polrep()")
-
-        frames = self._movdict['RL']
+    def rlframes(self):
+        frames = []
+        if self.polrep == 'circ':
+            frames = self._movdict['RL']
+        elif self.polrep in ('stokes', 'lin'):
+            q, u = self.qframes, self.uframes
+            if len(q) != 0 and len(u) != 0:
+                frames, _ = pol_conventions.stokes_to_circ_cross(q, u)
         return frames
 
-    @rlvec.setter
-    def rlvec(self, frames):
-
+    @rlframes.setter
+    def rlframes(self, frames):
+        if self.polrep != 'circ':
+            raise Exception("rlframes can only be set when self.polrep=='circ'")
         if len(frames[0]) != self.xdim*self.ydim:
             raise Exception("vec size is not consistent with xdim*ydim!")
-
-        # TODO -- more checks on the consistency of the imvec with the existing pol data???
         frames = np.array(frames)
         self._movdict['RL'] = frames
         fill_value = (frames[0], frames[-1])
@@ -368,28 +411,152 @@ class Movie(object):
         self._fundict['RL'] = fun
 
     @property
-    def lrvec(self):
-
-        if self.polrep != 'circ':
-            raise Exception(
-                "lrframes is not defined unless self.polrep=='circ' -- try self.switch_polrep()")
-
-        frames = self._movdict['LR']
+    def lrframes(self):
+        frames = []
+        if self.polrep == 'circ':
+            frames = self._movdict['LR']
+        elif self.polrep in ('stokes', 'lin'):
+            q, u = self.qframes, self.uframes
+            if len(q) != 0 and len(u) != 0:
+                _, frames = pol_conventions.stokes_to_circ_cross(q, u)
         return frames
 
-    @lrvec.setter
-    def lrvec(self, frames):
-
+    @lrframes.setter
+    def lrframes(self, frames):
+        if self.polrep != 'circ':
+            raise Exception("lrframes can only be set when self.polrep=='circ'")
         if len(frames[0]) != self.xdim*self.ydim:
             raise Exception("vec size is not consistent with xdim*ydim!")
-
-        # TODO -- more checks on the consistency of the imvec with the existing pol data???
         frames = np.array(frames)
         self._movdict['LR'] = frames
         fill_value = (frames[0], frames[-1])
         fun = scipy.interpolate.interp1d(self.times, frames.T, kind=self.interp,
                                          bounds_error=self.bounds_error, fill_value=fill_value)
         self._fundict['LR'] = fun
+
+    # Pre-Phase-3 names rlvec / lrvec were inconsistent with the rest of
+    # Movie's "frames" naming and the rest of the codebase did not call them.
+    # Phase 3 renamed them to rlframes / lrframes; these shims raise so any
+    # surviving caller fails loudly with a migration message.
+    @property
+    def rlvec(self):
+        raise AttributeError(
+            "Movie.rlvec was renamed to Movie.rlframes in Phase 3 mixed-pol; "
+            "update the caller.")
+
+    @rlvec.setter
+    def rlvec(self, frames):
+        raise AttributeError(
+            "Movie.rlvec was renamed to Movie.rlframes in Phase 3 mixed-pol; "
+            "update the caller.")
+
+    @property
+    def lrvec(self):
+        raise AttributeError(
+            "Movie.lrvec was renamed to Movie.lrframes in Phase 3 mixed-pol; "
+            "update the caller.")
+
+    @lrvec.setter
+    def lrvec(self, frames):
+        raise AttributeError(
+            "Movie.lrvec was renamed to Movie.lrframes in Phase 3 mixed-pol; "
+            "update the caller.")
+
+    @property
+    def xxframes(self):
+        frames = []
+        if self.polrep == 'lin':
+            frames = self._movdict['XX']
+        elif self.polrep in ('stokes', 'circ'):
+            i, q = self.iframes, self.qframes
+            if len(i) != 0 and len(q) != 0:
+                frames, _ = pol_conventions.stokes_to_lin_diag(i, q)
+        return frames
+
+    @xxframes.setter
+    def xxframes(self, frames):
+        if self.polrep != 'lin':
+            raise Exception("xxframes can only be set when self.polrep=='lin'")
+        if len(frames[0]) != self.xdim*self.ydim:
+            raise Exception("vec size is not consistent with xdim*ydim!")
+        frames = np.array(frames)
+        self._movdict['XX'] = frames
+        fill_value = (frames[0], frames[-1])
+        fun = scipy.interpolate.interp1d(self.times, frames.T, kind=self.interp,
+                                         bounds_error=self.bounds_error, fill_value=fill_value)
+        self._fundict['XX'] = fun
+
+    @property
+    def yyframes(self):
+        frames = []
+        if self.polrep == 'lin':
+            frames = self._movdict['YY']
+        elif self.polrep in ('stokes', 'circ'):
+            i, q = self.iframes, self.qframes
+            if len(i) != 0 and len(q) != 0:
+                _, frames = pol_conventions.stokes_to_lin_diag(i, q)
+        return frames
+
+    @yyframes.setter
+    def yyframes(self, frames):
+        if self.polrep != 'lin':
+            raise Exception("yyframes can only be set when self.polrep=='lin'")
+        if len(frames[0]) != self.xdim*self.ydim:
+            raise Exception("vec size is not consistent with xdim*ydim!")
+        frames = np.array(frames)
+        self._movdict['YY'] = frames
+        fill_value = (frames[0], frames[-1])
+        fun = scipy.interpolate.interp1d(self.times, frames.T, kind=self.interp,
+                                         bounds_error=self.bounds_error, fill_value=fill_value)
+        self._fundict['YY'] = fun
+
+    @property
+    def xyframes(self):
+        frames = []
+        if self.polrep == 'lin':
+            frames = self._movdict['XY']
+        elif self.polrep in ('stokes', 'circ'):
+            u, v = self.uframes, self.vframes
+            if len(u) != 0 and len(v) != 0:
+                frames, _ = pol_conventions.stokes_to_lin_offdiag(u, v)
+        return frames
+
+    @xyframes.setter
+    def xyframes(self, frames):
+        if self.polrep != 'lin':
+            raise Exception("xyframes can only be set when self.polrep=='lin'")
+        if len(frames[0]) != self.xdim*self.ydim:
+            raise Exception("vec size is not consistent with xdim*ydim!")
+        frames = np.array(frames)
+        self._movdict['XY'] = frames
+        fill_value = (frames[0], frames[-1])
+        fun = scipy.interpolate.interp1d(self.times, frames.T, kind=self.interp,
+                                         bounds_error=self.bounds_error, fill_value=fill_value)
+        self._fundict['XY'] = fun
+
+    @property
+    def yxframes(self):
+        frames = []
+        if self.polrep == 'lin':
+            frames = self._movdict['YX']
+        elif self.polrep in ('stokes', 'circ'):
+            u, v = self.uframes, self.vframes
+            if len(u) != 0 and len(v) != 0:
+                _, frames = pol_conventions.stokes_to_lin_offdiag(u, v)
+        return frames
+
+    @yxframes.setter
+    def yxframes(self, frames):
+        if self.polrep != 'lin':
+            raise Exception("yxframes can only be set when self.polrep=='lin'")
+        if len(frames[0]) != self.xdim*self.ydim:
+            raise Exception("vec size is not consistent with xdim*ydim!")
+        frames = np.array(frames)
+        self._movdict['YX'] = frames
+        fill_value = (frames[0], frames[-1])
+        fun = scipy.interpolate.interp1d(self.times, frames.T, kind=self.interp,
+                                         bounds_error=self.bounds_error, fill_value=fill_value)
+        self._fundict['YX'] = fun
 
     def movie_args(self):
         """"Copy arguments for making a  new Movie into a list and dictonary
@@ -575,6 +742,49 @@ class Movie(object):
             self._movdict = {'RR': self.rrframes, 'LL': self.llframes,
                              'RL': self.rlframes, 'LR': self.lrframes}
             self._fundict = {'RR': rrfun, 'LL': llfun, 'RL': rlfun, 'LR': lrfun}
+
+        elif self.polrep == 'lin':
+            if pol == 'XX':
+                self.xxframes = [image.flatten() for image in movie]
+            elif pol == 'YY':
+                self.yyframes = [image.flatten() for image in movie]
+            elif pol == 'XY':
+                self.xyframes = [image.flatten() for image in movie]
+            elif pol == 'YX':
+                self.yxframes = [image.flatten() for image in movie]
+
+            if len(self.xxframes) > 0:
+                fill_value = (self.xxframes[0], self.xxframes[-1])
+                xxfun = scipy.interpolate.interp1d(self.times, self.xxframes.T, kind=self.interp,
+                                                   fill_value=fill_value,
+                                                   bounds_error=self.bounds_error)
+            else:
+                xxfun = None
+            if len(self.yyframes) > 0:
+                fill_value = (self.yyframes[0], self.yyframes[-1])
+                yyfun = scipy.interpolate.interp1d(self.times, self.yyframes.T, kind=self.interp,
+                                                   fill_value=fill_value,
+                                                   bounds_error=self.bounds_error)
+            else:
+                yyfun = None
+            if len(self.xyframes) > 0:
+                fill_value = (self.xyframes[0], self.xyframes[-1])
+                xyfun = scipy.interpolate.interp1d(self.times, self.xyframes.T, kind=self.interp,
+                                                   fill_value=fill_value,
+                                                   bounds_error=self.bounds_error)
+            else:
+                xyfun = None
+            if len(self.yxframes) > 0:
+                fill_value = (self.yxframes[0], self.yxframes[-1])
+                yxfun = scipy.interpolate.interp1d(self.times, self.yxframes.T, kind=self.interp,
+                                                   fill_value=fill_value,
+                                                   bounds_error=self.bounds_error)
+            else:
+                yxfun = None
+
+            self._movdict = {'XX': self.xxframes, 'YY': self.yyframes,
+                             'XY': self.xyframes, 'YX': self.yxframes}
+            self._fundict = {'XX': xxfun, 'YY': yyfun, 'XY': xyfun, 'YX': yxfun}
         return
 
     # TODO deprecated -- replace with generic add_pol_movie
@@ -616,72 +826,43 @@ class Movie(object):
 
            Args:
                polrep_out (str):  the polrep of the output data
-               pol_prim_out (str): The default movie: I,Q,U or V for Stokes,
-                                   RR,LL,LR,RL for Circular
+               pol_prim_out (str): The default movie: I,Q,U,V for stokes,
+                                   RR,LL,LR,RL for circ, XX,YY,XY,YX for lin
 
            Returns:
                (Movie): new movie object with potentially different polrep
         """
 
-        if polrep_out not in ['stokes', 'circ']:
-            raise Exception("polrep_out must be either 'stokes' or 'circ'")
+        if polrep_out not in ['stokes', 'circ', 'lin']:
+            raise Exception("polrep_out must be 'stokes', 'circ', or 'lin'")
         if pol_prim_out is None:
             if polrep_out == 'stokes':
                 pol_prim_out = 'I'
             elif polrep_out == 'circ':
                 pol_prim_out = 'RR'
+            elif polrep_out == 'lin':
+                pol_prim_out = 'XX'
 
         # Simply copy if the polrep is unchanged
         if polrep_out == self.polrep and pol_prim_out == self.pol_prim:
             return self.copy()
 
-        # Assemble a dictionary of new polarization vectors
-        framedim = (self.nframes, self.ydim, self.xdim)
+        # circ <-> lin goes through stokes (no direct path; plan Decision 7).
+        if (polrep_out, self.polrep) in [('circ', 'lin'), ('lin', 'circ')]:
+            return self.switch_polrep('stokes').switch_polrep(polrep_out, pol_prim_out)
+
+        # The cross-polrep accessors compose through the canonical pair for
+        # the source polrep, returning empty arrays when a transform cannot
+        # close.
         if polrep_out == 'stokes':
-            if self.polrep == 'stokes':
-                movdict = {'I': self.iframes, 'Q': self.qframes,
-                           'U': self.uframes, 'V': self.vframes}
-            else:
-                if len(self.rrframes) == 0 or len(self.llframes) == 0:
-                    iframes = []
-                    vframes = []
-                else:
-                    iframes = 0.5*(self.rrframes.reshape(framedim) +
-                                   self.llframes.reshape(framedim))
-                    vframes = 0.5*(self.rrframes.reshape(framedim) -
-                                   self.llframes.reshape(framedim))
-
-                if len(self.rlframes) == 0 or len(self.lrframes) == 0:
-                    qframes = []
-                    uframes = []
-                else:
-                    qframes = np.real(0.5*(self.lrframes.reshape(framedim) +
-                                           self.rlframes.reshape(framedim)))
-                    uframes = np.real(0.5j*(self.lrframes.reshape(framedim) -
-                                            self.rlframes.reshape(framedim)))
-
-                movdict = {'I': iframes, 'Q': qframes, 'U': uframes, 'V': vframes}
-
+            movdict = {'I': self.iframes, 'Q': self.qframes,
+                       'U': self.uframes, 'V': self.vframes}
         elif polrep_out == 'circ':
-            if self.polrep == 'circ':
-                movdict = {'RR': self.rrframes, 'LL': self.llframes,
-                           'RL': self.rlframes, 'LR': self.lrframes}
-            else:
-                if len(self.iframes) == 0 or len(self.vframes) == 0:
-                    rrframes = []
-                    llframes = []
-                else:
-                    rrframes = (self.iframes.reshape(framedim) + self.vframes.reshape(framedim))
-                    llframes = (self.iframes.reshape(framedim) - self.vframes.reshape(framedim))
-
-                if len(self.qframes) == 0 or len(self.uframes) == 0:
-                    rlframes = []
-                    lrframes = []
-                else:
-                    rlframes = (self.qframes.reshape(framedim) + 1j*self.uframes.reshape(framedim))
-                    lrframes = (self.qframes.reshape(framedim) - 1j*self.uframes.reshape(framedim))
-
-                movdict = {'RR': rrframes, 'LL': llframes, 'RL': rlframes, 'LR': lrframes}
+            movdict = {'RR': self.rrframes, 'LL': self.llframes,
+                       'RL': self.rlframes, 'LR': self.lrframes}
+        elif polrep_out == 'lin':
+            movdict = {'XX': self.xxframes, 'YY': self.yyframes,
+                       'XY': self.xyframes, 'YX': self.yxframes}
 
         # Assemble the new movie
         frames = movdict[pol_prim_out]
@@ -690,9 +871,11 @@ class Movie(object):
                             "%s with pol_prim_out=%s, \n" % (polrep_out, pol_prim_out) +
                             "output movie is not defined")
 
-        # Make new  movie with primary polarization
+        # The Movie constructor wants a list of 2D frames; the accessors
+        # return (nframes, xdim*ydim). Reshape primary + secondary.
+        framedim = (self.nframes, self.ydim, self.xdim)
         arglist, argdict = self.movie_args()
-        arglist[0] = frames
+        arglist[0] = frames.reshape(framedim)
         argdict['polrep'] = polrep_out
         argdict['pol_prim'] = pol_prim_out
         newmov = Movie(*arglist, **argdict)
@@ -703,8 +886,7 @@ class Movie(object):
                 continue
             polframes = movdict[pol]
             if len(polframes):
-                polframes = polframes.reshape((self.nframes, self.ydim, self.xdim))
-                newmov.add_pol_movie(polframes, pol)
+                newmov.add_pol_movie(polframes.reshape(framedim), pol)
 
         return newmov
 
