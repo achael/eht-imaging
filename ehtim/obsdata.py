@@ -318,11 +318,13 @@ class Obsdata:
         """Return a new observation with the polarization representation changed
 
            Args:
-               polrep_out (str):  the polrep of the output data
-               allow_singlepol (bool): If True, treat single-polarization data as Stokes I
-                                       when converting from 'circ' polrep to 'stokes'
-               singlepol_hand (str): 'R' or 'L'; determines which parallel-hand is assumed
-                                       when converting 'stokes' to 'circ' if only I is present
+               polrep_out (str):  the polrep of the output data ('stokes', 'circ', 'lin')
+               allow_singlepol (bool): If True, fill missing parallel-hand rows with the
+                                       surviving one (or with Stokes I) when converting.
+                                       Emits a warning whenever any substitution occurs.
+               singlepol_hand (str): For 'stokes' -> 'circ', 'R' or 'L'; for 'stokes' ->
+                                     'lin', 'X' or 'Y'. Case-insensitive. Selects which
+                                     parallel-hand receives Stokes I when only I is present.
 
            Returns:
                (Obsdata): new Obsdata object with potentially different polrep
@@ -336,7 +338,16 @@ class Obsdata:
             )
         if polrep_out == self.polrep:
             return self.copy()
-        elif polrep_out == 'stokes':  # circ -> stokes
+
+        def _warn_singlepol(n, msg):
+            if n > 0:
+                warnings.warn(
+                    f"switch_polrep: allow_singlepol substituted {n} row(s) "
+                    f"({msg}); cross-hand visibilities are not modified",
+                    stacklevel=3,
+                )
+
+        if polrep_out == 'stokes' and self.polrep == 'circ':  # circ -> stokes
             data = np.empty(len(self.data), dtype=ehc.DTPOL_STOKES)
             rrmask = np.isnan(self.data['rrvis'])
             llmask = np.isnan(self.data['llvis'])
@@ -353,15 +364,38 @@ class Obsdata:
                 self.data['rlsigma'], self.data['lrsigma'])
 
             if allow_singlepol:
-                # In cases where only one polarization is present
-                # use it as an estimator for Stokes I
                 data['vis'][rrmask] = self.data['llvis'][rrmask]
                 data['sigma'][rrmask] = self.data['llsigma'][rrmask]
-
                 data['vis'][llmask] = self.data['rrvis'][llmask]
                 data['sigma'][llmask] = self.data['rrsigma'][llmask]
+                _warn_singlepol(int(np.sum(rrmask | llmask)),
+                                "filled missing rrvis/llvis with surviving parallel-hand")
 
-        elif polrep_out == 'circ':  # stokes -> circ
+        elif polrep_out == 'stokes' and self.polrep == 'lin':  # lin -> stokes
+            data = np.empty(len(self.data), dtype=ehc.DTPOL_STOKES)
+            xxmask = np.isnan(self.data['xxvis'])
+            yymask = np.isnan(self.data['yyvis'])
+
+            for f in ['time', 'tint', 't1', 't2', 'tau1', 'tau2', 'u', 'v']:
+                data[f] = self.data[f]
+            (data['vis'], data['qvis'],
+             data['uvis'], data['vvis']) = pol_conventions.lin_to_stokes(
+                self.data['xxvis'], self.data['yyvis'],
+                self.data['xyvis'], self.data['yxvis'])
+            (data['sigma'], data['qsigma'],
+             data['usigma'], data['vsigma']) = pol_conventions.lin_to_stokes_sigma(
+                self.data['xxsigma'], self.data['yysigma'],
+                self.data['xysigma'], self.data['yxsigma'])
+
+            if allow_singlepol:
+                data['vis'][xxmask] = self.data['yyvis'][xxmask]
+                data['sigma'][xxmask] = self.data['yysigma'][xxmask]
+                data['vis'][yymask] = self.data['xxvis'][yymask]
+                data['sigma'][yymask] = self.data['xxsigma'][yymask]
+                _warn_singlepol(int(np.sum(xxmask | yymask)),
+                                "filled missing xxvis/yyvis with surviving parallel-hand")
+
+        elif polrep_out == 'circ' and self.polrep == 'stokes':  # stokes -> circ
             data = np.empty(len(self.data), dtype=ehc.DTPOL_CIRC)
             Vmask = np.isnan(self.data['vvis'])
 
@@ -377,13 +411,51 @@ class Obsdata:
                 self.data['usigma'], self.data['vsigma'])
 
             if allow_singlepol:
-                # In cases where only Stokes I is present, copy it to a specified parallel-hand
-                prefix = singlepol_hand.lower() + singlepol_hand.lower()  # rr or ll
-                if prefix not in ['rr', 'll']:
-                    raise Exception('singlepol_hand must be R or L')
-
+                hand = singlepol_hand.upper() if isinstance(singlepol_hand, str) else None
+                if hand not in ('R', 'L'):
+                    raise Exception(
+                        f"singlepol_hand must be 'R' or 'L' when converting to circ; "
+                        f"got {singlepol_hand!r}"
+                    )
+                prefix = hand.lower() * 2  # 'rr' or 'll'
                 data[prefix + 'vis'][Vmask] = self.data['vis'][Vmask]
                 data[prefix + 'sigma'][Vmask] = self.data['sigma'][Vmask]
+                _warn_singlepol(int(np.sum(Vmask)),
+                                f"copied Stokes I into {prefix}vis where vvis was missing")
+
+        elif polrep_out == 'lin' and self.polrep == 'stokes':  # stokes -> lin
+            data = np.empty(len(self.data), dtype=ehc.DTPOL_LIN)
+            Vmask = np.isnan(self.data['vvis'])
+
+            for f in ['time', 'tint', 't1', 't2', 'tau1', 'tau2', 'u', 'v']:
+                data[f] = self.data[f]
+            (data['xxvis'], data['yyvis'],
+             data['xyvis'], data['yxvis']) = pol_conventions.stokes_to_lin(
+                self.data['vis'], self.data['qvis'],
+                self.data['uvis'], self.data['vvis'])
+            (data['xxsigma'], data['yysigma'],
+             data['xysigma'], data['yxsigma']) = pol_conventions.stokes_to_lin_sigma(
+                self.data['sigma'], self.data['qsigma'],
+                self.data['usigma'], self.data['vsigma'])
+
+            if allow_singlepol:
+                hand = singlepol_hand.upper() if isinstance(singlepol_hand, str) else None
+                if hand not in ('X', 'Y'):
+                    raise Exception(
+                        f"singlepol_hand must be 'X' or 'Y' when converting to lin; "
+                        f"got {singlepol_hand!r}"
+                    )
+                prefix = hand.lower() * 2  # 'xx' or 'yy'
+                data[prefix + 'vis'][Vmask] = self.data['vis'][Vmask]
+                data[prefix + 'sigma'][Vmask] = self.data['sigma'][Vmask]
+                _warn_singlepol(int(np.sum(Vmask)),
+                                f"copied Stokes I into {prefix}vis where vvis was missing")
+
+        else:
+            # circ <-> lin: implemented in a follow-up via two-step composition.
+            raise NotImplementedError(
+                f"switch_polrep({self.polrep!r} -> {polrep_out!r}) is not yet implemented"
+            )
 
         arglist, argdict = self.obsdata_args()
         arglist[DATPOS] = data
