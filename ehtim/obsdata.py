@@ -440,8 +440,19 @@ class Obsdata:
             lrs_orig = dat['lrsigma'].copy()
             dat['rlsigma'][ordermask] = lrs_orig[ordermask]
             dat['lrsigma'][ordermask] = rls_orig[ordermask]
+        elif self.polrep == 'lin':
+            dat['xxvis'][ordermask] = np.conj(dat['xxvis'][ordermask])
+            dat['yyvis'][ordermask] = np.conj(dat['yyvis'][ordermask])
+            xy_orig = dat['xyvis'].copy()
+            yx_orig = dat['yxvis'].copy()
+            dat['xyvis'][ordermask] = np.conj(yx_orig[ordermask])
+            dat['yxvis'][ordermask] = np.conj(xy_orig[ordermask])
+            xys_orig = dat['xysigma'].copy()
+            yxs_orig = dat['yxsigma'].copy()
+            dat['xysigma'][ordermask] = yxs_orig[ordermask]
+            dat['yxsigma'][ordermask] = xys_orig[ordermask]
         else:
-            raise Exception("polrep must be either 'stokes' or 'circ'")
+            raise Exception(f"reorder_baselines: unsupported polrep={self.polrep!r}")
 
         # Group rows by canonical (time, t1, t2). np.unique with axis=0 collapses
         # repeated rows in `keys` and returns:
