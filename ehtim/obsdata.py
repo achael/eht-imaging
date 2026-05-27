@@ -451,6 +451,23 @@ class Obsdata:
             yxs_orig = dat['yxsigma'].copy()
             dat['xysigma'][ordermask] = yxs_orig[ordermask]
             dat['yxsigma'][ordermask] = xys_orig[ordermask]
+        elif self.polrep == 'mixed':
+            # Same conjugate/swap algebra as circ/lin, in generic-slot names.
+            dat['p1p1vis'][ordermask] = np.conj(dat['p1p1vis'][ordermask])
+            dat['p2p2vis'][ordermask] = np.conj(dat['p2p2vis'][ordermask])
+            p12_orig = dat['p1p2vis'].copy()
+            p21_orig = dat['p2p1vis'].copy()
+            dat['p1p2vis'][ordermask] = np.conj(p21_orig[ordermask])
+            dat['p2p1vis'][ordermask] = np.conj(p12_orig[ordermask])
+            p12s_orig = dat['p1p2sigma'].copy()
+            p21s_orig = dat['p2p1sigma'].copy()
+            dat['p1p2sigma'][ordermask] = p21s_orig[ordermask]
+            dat['p2p1sigma'][ordermask] = p12s_orig[ordermask]
+            # polbasis encodes t1_feed+t2_feed; swap the two halves on
+            # reordered rows so the encoding stays consistent with (t1,t2).
+            pb_swapped = np.array([s[2:] + s[:2] for s in dat['polbasis']],
+                                  dtype='U4')
+            dat['polbasis'][ordermask] = pb_swapped[ordermask]
         else:
             raise Exception(f"reorder_baselines: unsupported polrep={self.polrep!r}")
 
