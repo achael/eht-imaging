@@ -986,3 +986,284 @@ def test_phase2_save_load_obs_txt_embedded_tarr_with_feed_type(tmp_path):
     np.testing.assert_array_equal(obs2.tarr['site'], obs.tarr['site'])
     np.testing.assert_allclose(obs2.tarr['sefd_p1'], obs.tarr['sefd_p1'], atol=1e-2)
     np.testing.assert_allclose(obs2.tarr['sefd_p2'], obs.tarr['sefd_p2'], atol=1e-2)
+
+
+# ============================================================================
+# Phase 4a — Obsdata polrep enum + dtype dispatch
+# ============================================================================
+
+
+# ----- Helpers --------------------------------------------------------------
+
+def _phase4a_tarr(feed_types, sites=None):
+    """Minimal valid tarr with the given feed_type list (one per station)."""
+    n = len(feed_types)
+    if sites is None:
+        sites = [f'S{i}' for i in range(n)]
+    t = np.zeros(n, dtype=ehc.DTARR)
+    t['site'] = sites
+    t['feed_type'] = feed_types
+    return t
+
+
+def _phase4a_lin_data(t1s, t2s, times=None):
+    """DTPOL_LIN datatable with non-trivial visibility values."""
+    n = len(t1s)
+    d = np.zeros(n, dtype=ehc.DTPOL_LIN)
+    d['time'] = times if times is not None else np.zeros(n)
+    d['t1'] = t1s
+    d['t2'] = t2s
+    d['u'] = 1e6 * (np.arange(n) + 1)
+    d['v'] = 1e5 * (np.arange(n) + 1)
+    d['xxvis'] = (1 + 2j) * (np.arange(n) + 1)
+    d['yyvis'] = (3 + 4j) * (np.arange(n) + 1)
+    d['xyvis'] = (5 + 6j) * (np.arange(n) + 1)
+    d['yxvis'] = (7 + 8j) * (np.arange(n) + 1)
+    d['xxsigma'] = 0.1 * (np.arange(n) + 1)
+    d['yysigma'] = 0.2 * (np.arange(n) + 1)
+    d['xysigma'] = 0.3 * (np.arange(n) + 1)
+    d['yxsigma'] = 0.4 * (np.arange(n) + 1)
+    return d
+
+
+def _phase4a_mixed_data(t1s, t2s, times=None):
+    """DTPOL_MIXED datatable; polbasis is left empty (populated in __init__)."""
+    n = len(t1s)
+    d = np.zeros(n, dtype=ehc.DTPOL_MIXED)
+    d['time'] = times if times is not None else np.zeros(n)
+    d['t1'] = t1s
+    d['t2'] = t2s
+    d['u'] = 1e6 * (np.arange(n) + 1)
+    d['v'] = 1e5 * (np.arange(n) + 1)
+    d['p1p1vis'] = (1 + 2j) * (np.arange(n) + 1)
+    d['p2p2vis'] = (3 + 4j) * (np.arange(n) + 1)
+    d['p1p2vis'] = (5 + 6j) * (np.arange(n) + 1)
+    d['p2p1vis'] = (7 + 8j) * (np.arange(n) + 1)
+    d['p1p1sigma'] = 0.1 * (np.arange(n) + 1)
+    d['p2p2sigma'] = 0.2 * (np.arange(n) + 1)
+    d['p1p2sigma'] = 0.3 * (np.arange(n) + 1)
+    d['p2p1sigma'] = 0.4 * (np.arange(n) + 1)
+    return d
+
+
+def _phase4a_lin_obs(t1s=('S0',), t2s=('S1',)):
+    return eo.Obsdata(0., 0., 230e9, 1e9,
+                      _phase4a_lin_data(list(t1s), list(t2s)),
+                      _phase4a_tarr(['xy', 'xy']),
+                      polrep='lin')
+
+
+def _phase4a_mixed_obs():
+    """3-station mixed array: S0/S1 are 'rl', S2 is 'xy'. 3 baselines."""
+    return eo.Obsdata(0., 0., 230e9, 1e9,
+                      _phase4a_mixed_data(['S0', 'S0', 'S1'],
+                                          ['S1', 'S2', 'S2']),
+                      _phase4a_tarr(['rl', 'rl', 'xy']),
+                      polrep='mixed')
+
+
+# ----- Construction & validation --------------------------------------------
+
+def test_phase4a_init_lin_from_synthetic_table():
+    obs = _phase4a_lin_obs()
+    assert obs.polrep == 'lin'
+    assert obs.poltype is ehc.DTPOL_LIN
+    assert obs.poldict is ehc.POLDICT_LIN
+    np.testing.assert_array_equal(obs.data['p1p1vis'], obs.data['xxvis'])
+    np.testing.assert_array_equal(obs.data['p2p1vis'], obs.data['yxvis'])
+
+
+def test_phase4a_init_mixed_from_synthetic_table():
+    obs = _phase4a_mixed_obs()
+    assert obs.polrep == 'mixed'
+    assert obs.poltype is ehc.DTPOL_MIXED
+    assert obs.poldict is ehc.POLDICT_MIXED
+    # polbasis is the lossless 4-char t1+t2 feed_type concat:
+    # (S0,S1) -> rlrl, (S0,S2) -> rlxy, (S1,S2) -> rlxy
+    assert set(obs.data['polbasis']) == {'rlrl', 'rlxy'}
+
+
+def test_phase4a_init_circ_rejects_xy_tarr():
+    d = np.zeros(1, dtype=ehc.DTPOL_CIRC)
+    d['t1'] = 'S0'
+    d['t2'] = 'S1'
+    tarr = _phase4a_tarr(['rl', 'xy'])
+    with pytest.raises(ValueError, match="polrep='circ' requires all stations to have feed_type='rl'"):
+        eo.Obsdata(0., 0., 230e9, 1e9, d, tarr, polrep='circ')
+
+
+def test_phase4a_init_lin_rejects_rl_tarr():
+    d = _phase4a_lin_data(['S0'], ['S1'])
+    tarr = _phase4a_tarr(['rl', 'rl'])
+    with pytest.raises(ValueError, match="polrep='lin' requires all stations to have feed_type='xy'"):
+        eo.Obsdata(0., 0., 230e9, 1e9, d, tarr, polrep='lin')
+
+
+def test_phase4a_init_mixed_rejects_homogeneous_tarr():
+    d = _phase4a_mixed_data(['S0'], ['S1'])
+    tarr = _phase4a_tarr(['rl', 'rl'])
+    with pytest.raises(ValueError, match="polrep='mixed' requires at least two distinct feed types"):
+        eo.Obsdata(0., 0., 230e9, 1e9, d, tarr, polrep='mixed')
+
+
+def test_phase4a_init_rejects_unset_feed_type_qq():
+    d = np.zeros(1, dtype=ehc.DTPOL_STOKES)
+    d['t1'] = 'S0'
+    d['t2'] = 'S1'
+    tarr = _phase4a_tarr(['??', '??'])
+    with pytest.raises(ValueError, match="unset feed_type='\\?\\?'"):
+        eo.Obsdata(0., 0., 230e9, 1e9, d, tarr, polrep='stokes')
+
+
+def test_phase4a_init_rejects_unknown_feed_type():
+    d = np.zeros(1, dtype=ehc.DTPOL_STOKES)
+    d['t1'] = 'S0'
+    d['t2'] = 'S1'
+    tarr = _phase4a_tarr(['rl', 'zz'])
+    with pytest.raises(ValueError, match="unknown feed_type"):
+        eo.Obsdata(0., 0., 230e9, 1e9, d, tarr, polrep='stokes')
+
+
+def test_phase4a_init_mixed_rejects_missing_station():
+    d = _phase4a_mixed_data(['SX'], ['S1'])
+    tarr = _phase4a_tarr(['rl', 'xy'])
+    with pytest.raises(ValueError, match="data references stations not in tarr"):
+        eo.Obsdata(0., 0., 230e9, 1e9, d, tarr, polrep='mixed')
+
+
+def test_phase4a_dtype_polrep_mismatch_raises():
+    d = np.zeros(1, dtype=ehc.DTPOL_STOKES)
+    d['t1'] = 'S0'
+    d['t2'] = 'S1'
+    tarr = _phase4a_tarr(['xy', 'xy'])
+    with pytest.raises(Exception, match="does not match polrep='lin'"):
+        eo.Obsdata(0., 0., 230e9, 1e9, d, tarr, polrep='lin')
+
+
+# ----- Round-trip & query methods -------------------------------------------
+
+def test_phase4a_copy_roundtrip_lin():
+    obs = _phase4a_lin_obs()
+    other = obs.copy()
+    assert other.polrep == 'lin'
+    assert other.poltype == ehc.DTPOL_LIN
+    np.testing.assert_array_equal(other.data['xxvis'], obs.data['xxvis'])
+
+
+def test_phase4a_copy_roundtrip_mixed():
+    obs = _phase4a_mixed_obs()
+    other = obs.copy()
+    assert other.polrep == 'mixed'
+    assert other.poltype == ehc.DTPOL_MIXED
+    np.testing.assert_array_equal(other.data['polbasis'], obs.data['polbasis'])
+    np.testing.assert_array_equal(other.data['p1p1vis'], obs.data['p1p1vis'])
+
+
+def test_phase4a_tlist_bllist_lin():
+    obs = eo.Obsdata(0., 0., 230e9, 1e9,
+                     _phase4a_lin_data(['S0', 'S0'], ['S1', 'S1'],
+                                       times=[0.0, 1.0]),
+                     _phase4a_tarr(['xy', 'xy']),
+                     polrep='lin')
+    tl = obs.tlist()
+    bl = obs.bllist()
+    assert len(tl) == 2
+    assert len(bl) == 1
+
+
+def test_phase4a_tlist_bllist_mixed():
+    obs = _phase4a_mixed_obs()
+    tl = obs.tlist()
+    bl = obs.bllist()
+    assert len(tl) == 1
+    assert len(bl) == 3
+
+
+def test_phase4a_flag_uvdist_lin():
+    obs = _phase4a_lin_obs()
+    kept = obs.flag_uvdist(uv_min=0., uv_max=1e20)
+    assert len(kept.data) == len(obs.data)
+
+
+def test_phase4a_flag_sites_mixed():
+    obs = _phase4a_mixed_obs()
+    kept = obs.flag_sites(['S2'])
+    assert 'S2' not in set(kept.data['t1']) | set(kept.data['t2'])
+
+
+# ----- reorder_baselines ----------------------------------------------------
+
+def test_phase4a_reorder_baselines_lin_swap():
+    # t1=S1, t2=S0 is reversed; reorder swaps and applies LIN conj/cross-swap.
+    d = _phase4a_lin_data(['S1'], ['S0'])
+    obs = eo.Obsdata(0., 0., 230e9, 1e9, d, _phase4a_tarr(['xy', 'xy']),
+                     polrep='lin')
+    row = obs.data[0]
+    assert row['t1'] == 'S0'
+    assert row['t2'] == 'S1'
+    assert row['u'] == -1e6
+    assert row['xxvis'] == np.conj(1 + 2j)
+    assert row['yyvis'] == np.conj(3 + 4j)
+    # cross: new xyvis = conj(old yxvis); new yxvis = conj(old xyvis)
+    assert row['xyvis'] == np.conj(7 + 8j)
+    assert row['yxvis'] == np.conj(5 + 6j)
+    assert row['xysigma'] == 0.4
+    assert row['yxsigma'] == 0.3
+
+
+def test_phase4a_reorder_baselines_mixed_swap_and_polbasis_flip():
+    # t1=S1 (xy), t2=S0 (rl); reorder swaps and flips polbasis 'xyrl' -> 'rlxy'.
+    d = _phase4a_mixed_data(['S1'], ['S0'])
+    obs = eo.Obsdata(0., 0., 230e9, 1e9, d,
+                     _phase4a_tarr(['rl', 'xy']),
+                     polrep='mixed')
+    row = obs.data[0]
+    assert row['t1'] == 'S0'
+    assert row['t2'] == 'S1'
+    assert row['u'] == -1e6
+    assert row['polbasis'] == 'rlxy'
+    assert row['p1p1vis'] == np.conj(1 + 2j)
+    assert row['p2p2vis'] == np.conj(3 + 4j)
+    assert row['p1p2vis'] == np.conj(7 + 8j)
+    assert row['p2p1vis'] == np.conj(5 + 6j)
+    assert row['p1p2sigma'] == 0.4
+    assert row['p2p1sigma'] == 0.3
+
+
+# ----- avg_coherent / avg_incoherent guards ---------------------------------
+
+def test_phase4a_avg_coherent_lin_raises():
+    obs = _phase4a_lin_obs()
+    with pytest.raises(NotImplementedError, match="not yet supported on polrep='lin'"):
+        obs.avg_coherent(60.0)
+
+
+def test_phase4a_avg_coherent_mixed_raises():
+    obs = _phase4a_mixed_obs()
+    with pytest.raises(NotImplementedError, match="not yet supported on polrep='mixed'"):
+        obs.avg_coherent(60.0)
+
+
+def test_phase4a_avg_incoherent_lin_raises():
+    obs = _phase4a_lin_obs()
+    with pytest.raises(NotImplementedError, match="not yet supported on polrep='lin'"):
+        obs.avg_incoherent(60.0)
+
+
+def test_phase4a_avg_incoherent_mixed_raises():
+    obs = _phase4a_mixed_obs()
+    with pytest.raises(NotImplementedError, match="not yet supported on polrep='mixed'"):
+        obs.avg_incoherent(60.0)
+
+
+# ----- dirtyimage -----------------------------------------------------------
+
+def test_phase4a_dirtyimage_mixed_raises():
+    obs = _phase4a_mixed_obs()
+    with pytest.raises(NotImplementedError, match="dirtyimage is not supported on polrep='mixed'"):
+        obs.dirtyimage(npix=8, fov=1e-6)
+
+
+# LIN dirtyimage smoke coverage is deferred: unpack_dat does not yet handle
+# LIN sigma/Stokes-derived fields, so dirtyimage falls over before it can
+# build the image. Will be exercised once unpack_dat gains the LIN branch.
