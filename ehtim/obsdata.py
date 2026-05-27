@@ -1557,6 +1557,12 @@ class Obsdata:
            Returns:
                (Image): an Image object with dirty image.
         """
+        if self.polrep == 'mixed':
+            raise NotImplementedError(
+                "dirtyimage is not supported on polrep='mixed' observations: "
+                "per-baseline feed-basis interpretation varies and Image has no "
+                "'mixed' polrep. Call obs.switch_polrep('stokes') first."
+            )
 
         pdim = fov / npix
         u = self.unpack('u')['u']
