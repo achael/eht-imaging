@@ -33,8 +33,8 @@ def test_init_rejects_empty_table(obs_direct):
 
 def test_init_rejects_bad_polrep(obs_direct):
     arglist, argdict = obs_direct.obsdata_args()
-    argdict["polrep"] = "lin"
-    with pytest.raises(Exception, match="only 'stokes' and 'circ'"):
+    argdict["polrep"] = "bogus"
+    with pytest.raises(Exception, match="polrep must be one of"):
         eh.obsdata.Obsdata(*arglist, **argdict)
 
 
@@ -42,7 +42,7 @@ def test_init_rejects_bad_dtype(obs_direct):
     arglist, argdict = obs_direct.obsdata_args()
     wrong = np.zeros(len(obs_direct.data), dtype=[("time", "f8"), ("u", "f8"), ("v", "f8")])
     arglist[4] = wrong
-    with pytest.raises(Exception, match="DTPOL_STOKES or DTPOL_CIRC"):
+    with pytest.raises(Exception, match="does not match polrep"):
         eh.obsdata.Obsdata(*arglist, **argdict)
 
 

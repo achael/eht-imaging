@@ -132,20 +132,22 @@ class Obsdata:
         # Silently upgrade legacy DTPOL_CIRC (no title aliases) to the
         # current dtype; zero-copy view-cast when applicable.
         datatable = ehc.upgrade_dtpol_circ(datatable)
-        if datatable.dtype not in [ehc.DTPOL_STOKES, ehc.DTPOL_CIRC]:
-            raise Exception("Data table dtype should be DTPOL_STOKES or DTPOL_CIRC")
 
         # Polarization Representation
-        if polrep == 'stokes':
-            self.polrep = 'stokes'
-            self.poldict = ehc.POLDICT_STOKES
-            self.poltype = ehc.DTPOL_STOKES
-        elif polrep == 'circ':
-            self.polrep = 'circ'
-            self.poldict = ehc.POLDICT_CIRC
-            self.poltype = ehc.DTPOL_CIRC
-        else:
-            raise Exception("only 'stokes' and 'circ' are supported polreps!")
+        if polrep not in ehc.polrep_to_poldict:
+            raise Exception(
+                f"polrep must be one of {sorted(ehc.polrep_to_poldict.keys())}; "
+                f"got {polrep!r}"
+            )
+        self.polrep = polrep
+        self.poldict = ehc.polrep_to_poldict[polrep]
+        self.poltype = ehc.feed_dtype_for_polrep(polrep)
+
+        # Validate the datatable dtype matches the declared polrep.
+        if datatable.dtype != np.dtype(self.poltype):
+            raise Exception(
+                f"datatable dtype {datatable.dtype} does not match polrep={polrep!r}"
+            )
 
         # Set the various observation parameters
         self.source = str(source)
@@ -170,6 +172,22 @@ class Obsdata:
         # Telescope array: default ordering is by sefd
         self.tarr = ehc.upgrade_tarr(tarr)
         self.tkey = {self.tarr[i]['site']: i for i in range(len(self.tarr))}
+
+        # Validate tarr feed_type agrees with polrep for homogeneous polreps.
+        # 'mixed' validation is handled separately (requires >= 2 feed types
+        # and per-row polbasis population).
+        feed_types = {str(ft) for ft in self.tarr['feed_type']}
+        if self.polrep == 'circ' and feed_types != {'rl'}:
+            raise ValueError(
+                f"polrep='circ' requires all stations to have feed_type='rl'; "
+                f"tarr has feed_types={sorted(feed_types)}"
+            )
+        if self.polrep == 'lin' and feed_types != {'xy'}:
+            raise ValueError(
+                f"polrep='lin' requires all stations to have feed_type='xy'; "
+                f"tarr has feed_types={sorted(feed_types)}"
+            )
+
         if np.any(self.tarr['sefdr'] != 0) or np.any(self.tarr['sefdl'] != 0):
             self.reorder_tarr_sefd(reorder_baselines=False)
 
