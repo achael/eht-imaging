@@ -35,23 +35,15 @@ from ehtim.caltable import plot_tarr_dterms
 # Array object
 ###################################################################################################
 
-# Valid two-character feed_type strings for a single station (lowercase).
-# Mixed-basis stations (e.g. Effelsberg R+X) are explicitly enumerated.
-VALID_FEED_TYPES = frozenset({
-    'rl', 'lr', 'xy', 'yx',
-    'rx', 'ry', 'lx', 'ly',
-    'xr', 'xl', 'yr', 'yl',
-})
-
 # Default symmetric SEFD when none is supplied (legacy convention).
 _DEFAULT_SEFD = 10000.0
 
 
 def _validate_feed_type(feed_type):
     """Raise ValueError if feed_type is not a recognised 2-char feed string."""
-    if not isinstance(feed_type, str) or feed_type.lower() not in VALID_FEED_TYPES:
+    if not isinstance(feed_type, str) or feed_type.lower() not in ehc.VALID_FEED_TYPES:
         raise ValueError(
-            f"feed_type must be one of {sorted(VALID_FEED_TYPES)}; "
+            f"feed_type must be one of {sorted(ehc.VALID_FEED_TYPES)}; "
             f"got {feed_type!r}")
 
 

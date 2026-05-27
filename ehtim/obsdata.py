@@ -173,10 +173,19 @@ class Obsdata:
         self.tarr = ehc.upgrade_tarr(tarr)
         self.tkey = {self.tarr[i]['site']: i for i in range(len(self.tarr))}
 
-        # Validate tarr feed_type agrees with polrep for homogeneous polreps.
-        # 'mixed' validation is handled separately (requires >= 2 feed types
-        # and per-row polbasis population).
+        # Validate tarr feed_type values and agreement with polrep.
         feed_types = {str(ft) for ft in self.tarr['feed_type']}
+        if '??' in feed_types:
+            raise ValueError(
+                "tarr contains unset feed_type='??'; all stations must "
+                "declare a feed_type before constructing an Obsdata"
+            )
+        unknown = feed_types - ehc.VALID_FEED_TYPES
+        if unknown:
+            raise ValueError(
+                f"tarr contains unknown feed_type(s): {sorted(unknown)}; "
+                f"valid values are {sorted(ehc.VALID_FEED_TYPES)}"
+            )
         if self.polrep == 'circ' and feed_types != {'rl'}:
             raise ValueError(
                 f"polrep='circ' requires all stations to have feed_type='rl'; "
@@ -187,6 +196,28 @@ class Obsdata:
                 f"polrep='lin' requires all stations to have feed_type='xy'; "
                 f"tarr has feed_types={sorted(feed_types)}"
             )
+        if self.polrep == 'mixed':
+            if len(feed_types) < 2:
+                raise ValueError(
+                    f"polrep='mixed' requires at least two distinct feed types; "
+                    f"tarr has feed_types={sorted(feed_types)}"
+                )
+            sites_in_tarr = set(self.tarr['site'])
+            data_sites = set(self.data['t1']).union(self.data['t2'])
+            missing = data_sites - sites_in_tarr
+            if missing:
+                raise ValueError(
+                    f"polrep='mixed' data references stations not in tarr: "
+                    f"{sorted(missing)}"
+                )
+            # Populate polbasis: full feed_type of each station, concatenated.
+            # E.g. ('rl','rl') -> 'rlrl'; ('rl','xy') -> 'rlxy'.
+            t1_idx = np.fromiter((self.tkey[t] for t in self.data['t1']),
+                                 dtype=int, count=len(self.data))
+            t2_idx = np.fromiter((self.tkey[t] for t in self.data['t2']),
+                                 dtype=int, count=len(self.data))
+            ft_arr = self.tarr['feed_type']
+            self.data['polbasis'] = np.char.add(ft_arr[t1_idx], ft_arr[t2_idx])
 
         if np.any(self.tarr['sefdr'] != 0) or np.any(self.tarr['sefdl'] != 0):
             self.reorder_tarr_sefd(reorder_baselines=False)

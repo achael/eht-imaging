@@ -79,6 +79,13 @@ FFT_INTERP_DEFAULT = 3
 # dynamic range; relax to 1e-6 for fast low-SNR work.
 NFFT_EPS_DEFAULT = 1e-9
 
+# Valid two-character feed_type strings for a single station (lowercase).
+VALID_FEED_TYPES = frozenset({
+    'rl', 'lr', 'xy', 'yx',
+    'rx', 'ry', 'lx', 'ly',
+    'xr', 'xl', 'yr', 'yl',
+})
+
 # Observation recarray datatypes
 # DTARR uses generic names primary because it is a single shared dtype across
 # all stations; legacy names are title aliases. Per-Obsdata/Caltable dtypes
@@ -122,7 +129,7 @@ DTPOL_MIXED = [('time', 'f8'), ('tint', 'f8'),
                ('p1p2vis', 'c16'), ('p2p1vis', 'c16'),
                ('p1p1sigma', 'f8'), ('p2p2sigma', 'f8'),
                ('p1p2sigma', 'f8'), ('p2p1sigma', 'f8'),
-               ('polbasis', 'U2')]
+               ('polbasis', 'U4')]
 
 DTAMP = [('time', 'f8'), ('tint', 'f8'),
          ('t1', 'U32'), ('t2', 'U32'),
