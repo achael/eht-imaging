@@ -262,6 +262,11 @@ POLDICT_CIRC = {'vis1': 'rrvis', 'vis2': 'llvis', 'vis3': 'rlvis', 'vis4': 'lrvi
                 'sigma1': 'rrsigma', 'sigma2': 'llsigma', 'sigma3': 'rlsigma', 'sigma4': 'lrsigma'}
 POLDICT_LIN = {'vis1': 'xxvis', 'vis2': 'yyvis', 'vis3': 'xyvis', 'vis4': 'yxvis',
                'sigma1': 'xxsigma', 'sigma2': 'yysigma', 'sigma3': 'xysigma', 'sigma4': 'yxsigma'}
+POLDICT_MIXED = {'vis1': 'p1p1vis', 'vis2': 'p2p2vis', 'vis3': 'p1p2vis', 'vis4': 'p2p1vis',
+                 'sigma1': 'p1p1sigma', 'sigma2': 'p2p2sigma',
+                 'sigma3': 'p1p2sigma', 'sigma4': 'p2p1sigma'}
+polrep_to_poldict = {'stokes': POLDICT_STOKES, 'circ': POLDICT_CIRC,
+                     'lin': POLDICT_LIN, 'mixed': POLDICT_MIXED}
 vis_poldict = {'I': 'vis', 'Q': 'qvis', 'U': 'uvis', 'V': 'vvis',
                'RR': 'rrvis', 'LL': 'llvis', 'RL': 'rlvis', 'LR': 'lrvis',
                'XX': 'xxvis', 'YY': 'yyvis', 'XY': 'xyvis', 'YX': 'yxvis'}
@@ -292,19 +297,37 @@ FIELDS = ['time', 'time_utc', 'time_gmst',
           'llvis', 'llamp', 'llphase', 'llsnr', 'llsigma', 'llsigma_phase',
           'rlvis', 'rlamp', 'rlphase', 'rlsnr', 'rlsigma', 'rlsigma_phase',
           'lrvis', 'lramp', 'lrphase', 'lrsnr', 'lrsigma', 'lrsigma_phase',
-          'rrllvis', 'rrllamp', 'rrllphase', 'rrllsnr', 'rrllsigma', 'rrllsigma_phase']
+          'rrllvis', 'rrllamp', 'rrllphase', 'rrllsnr', 'rrllsigma', 'rrllsigma_phase',
+          'xxvis', 'xxamp', 'xxphase', 'xxsnr', 'xxsigma', 'xxsigma_phase',
+          'yyvis', 'yyamp', 'yyphase', 'yysnr', 'yysigma', 'yysigma_phase',
+          'xyvis', 'xyamp', 'xyphase', 'xysnr', 'xysigma', 'xysigma_phase',
+          'yxvis', 'yxamp', 'yxphase', 'yxsnr', 'yxsigma', 'yxsigma_phase',
+          'p1p1vis', 'p1p1amp', 'p1p1phase', 'p1p1snr', 'p1p1sigma', 'p1p1sigma_phase',
+          'p2p2vis', 'p2p2amp', 'p2p2phase', 'p2p2snr', 'p2p2sigma', 'p2p2sigma_phase',
+          'p1p2vis', 'p1p2amp', 'p1p2phase', 'p1p2snr', 'p1p2sigma', 'p1p2sigma_phase',
+          'p2p1vis', 'p2p1amp', 'p2p1phase', 'p2p1snr', 'p2p1sigma', 'p2p1sigma_phase']
 
 FIELDS_AMPS = ["amp", "qamp", "uamp", "vamp",
-               "pamp", "mamp", "rramp", "llamp", "rlamp", "lramp", "rrllamp"]
+               "pamp", "mamp", "rramp", "llamp", "rlamp", "lramp", "rrllamp",
+               "xxamp", "yyamp", "xyamp", "yxamp",
+               "p1p1amp", "p2p2amp", "p1p2amp", "p2p1amp"]
 FIELDS_SIGS = ["sigma", "qsigma", "usigma", "vsigma",
-               "psigma", "msigma", "rrsigma", "llsigma", "rlsigma", "lrsigma", "rrllsigma"]
+               "psigma", "msigma", "rrsigma", "llsigma", "rlsigma", "lrsigma", "rrllsigma",
+               "xxsigma", "yysigma", "xysigma", "yxsigma",
+               "p1p1sigma", "p2p2sigma", "p1p2sigma", "p2p1sigma"]
 FIELDS_PHASE = ["phase", "qphase", "uphase", "vphase", "pphase", "mphase",
-                "rrphase", "llphase", "rlphase", "lrphase", "rrllphase"]
+                "rrphase", "llphase", "rlphase", "lrphase", "rrllphase",
+                "xxphase", "yyphase", "xyphase", "yxphase",
+                "p1p1phase", "p2p2phase", "p1p2phase", "p2p1phase"]
 FIELDS_SIGPHASE = ["sigma_phase", "qsigma_phase", "usigma_phase", "vsigma_phase",
                    "psigma_phase", "msigma_phase", "rrsigma_phase", "llsigma_phase",
-                   "rlsigma_phase", "lrsigma_phase", "rrllsigma_phase"]
+                   "rlsigma_phase", "lrsigma_phase", "rrllsigma_phase",
+                   "xxsigma_phase", "yysigma_phase", "xysigma_phase", "yxsigma_phase",
+                   "p1p1sigma_phase", "p2p2sigma_phase", "p1p2sigma_phase", "p2p1sigma_phase"]
 FIELDS_SNRS = ["snr", "qsnr", "usnr", "vsnr", "psnr", "msnr",
-               "rrsnr", "llsnr", "rlsnr", "lrsnr", "rrllsnr"]
+               "rrsnr", "llsnr", "rlsnr", "lrsnr", "rrllsnr",
+               "xxsnr", "yysnr", "xysnr", "yxsnr",
+               "p1p1snr", "p2p2snr", "p1p2snr", "p2p1snr"]
 
 # Plotting
 MARKERSIZE = 3
