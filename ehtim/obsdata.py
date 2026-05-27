@@ -1314,6 +1314,11 @@ class Obsdata:
            Returns:
                 (Obsdata): Obsdata object containing averaged data
         """
+        if self.polrep in ('lin', 'mixed'):
+            raise NotImplementedError(
+                f"avg_coherent is not yet supported on polrep={self.polrep!r}; "
+                "the averaging code is currently CIRC/STOKES-only."
+            )
 
         if (scan_avg) and (getattr(self.scans, "shape", None) is None or len(self.scans) == 0):
             print('No scan data, ignoring scan_avg!')
@@ -1347,6 +1352,11 @@ class Obsdata:
            Returns:
                 (Obsdata): Obsdata object containing averaged data
         """
+        if self.polrep in ('lin', 'mixed'):
+            raise NotImplementedError(
+                f"avg_incoherent is not yet supported on polrep={self.polrep!r}; "
+                "the averaging code is currently CIRC/STOKES-only."
+            )
 
         print('Incoherently averaging data, putting phases to zero!')
         amp_rec = ehdf.incoh_avg_vis(self, dt=inttime, debias=debias, scan_avg=scan_avg,
