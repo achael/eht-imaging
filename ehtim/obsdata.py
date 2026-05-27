@@ -328,8 +328,12 @@ class Obsdata:
                (Obsdata): new Obsdata object with potentially different polrep
         """
 
-        if polrep_out not in ['stokes', 'circ']:
-            raise Exception("polrep_out must be either 'stokes' or 'circ'")
+        if polrep_out not in ('stokes', 'circ', 'lin'):
+            raise Exception("polrep_out must be 'stokes', 'circ', or 'lin'")
+        if self.polrep == 'mixed':
+            raise NotImplementedError(
+                "conversion from polrep='mixed' is not yet implemented"
+            )
         if polrep_out == self.polrep:
             return self.copy()
         elif polrep_out == 'stokes':  # circ -> stokes

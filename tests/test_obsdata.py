@@ -195,7 +195,7 @@ def test_switch_polrep_noop_returns_copy(obs_direct):
 
 def test_switch_polrep_invalid_raises(obs_direct):
     with pytest.raises(Exception, match="polrep_out"):
-        obs_direct.switch_polrep("lin")
+        obs_direct.switch_polrep("bogus")
 
 
 def test_switch_polrep_singlepol_hand_invalid(obs_direct):
