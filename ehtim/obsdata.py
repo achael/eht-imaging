@@ -173,7 +173,11 @@ class Obsdata:
         self.tarr = ehc.upgrade_tarr(tarr)
         self.tkey = {self.tarr[i]['site']: i for i in range(len(self.tarr))}
 
-        # Validate tarr feed_type values and agreement with polrep.
+        # Validate tarr feed_type values. polrep declares the data-layout
+        # basis (DTPOL_*); tarr.feed_type describes the physical array. The
+        # two need not match -- switch_polrep transforms data across bases
+        # without touching tarr -- but we warn on the mismatch to flag the
+        # discrepancy.
         feed_types = {str(ft) for ft in self.tarr['feed_type']}
         if '??' in feed_types:
             raise ValueError(
@@ -187,14 +191,18 @@ class Obsdata:
                 f"valid values are {sorted(ehc.VALID_FEED_TYPES)}"
             )
         if self.polrep == 'circ' and feed_types != {'rl'}:
-            raise ValueError(
-                f"polrep='circ' requires all stations to have feed_type='rl'; "
-                f"tarr has feed_types={sorted(feed_types)}"
+            warnings.warn(
+                f"polrep='circ' Obsdata constructed on a tarr with "
+                f"feed_types={sorted(feed_types)}; the data is in the circular "
+                f"basis but the physical array is not all-circular.",
+                stacklevel=2,
             )
         if self.polrep == 'lin' and feed_types != {'xy'}:
-            raise ValueError(
-                f"polrep='lin' requires all stations to have feed_type='xy'; "
-                f"tarr has feed_types={sorted(feed_types)}"
+            warnings.warn(
+                f"polrep='lin' Obsdata constructed on a tarr with "
+                f"feed_types={sorted(feed_types)}; the data is in the linear "
+                f"basis but the physical array is not all-linear.",
+                stacklevel=2,
             )
         if self.polrep == 'mixed':
             if len(feed_types) < 2:
@@ -451,8 +459,22 @@ class Obsdata:
                 _warn_singlepol(int(np.sum(Vmask)),
                                 f"copied Stokes I into {prefix}vis where vvis was missing")
 
+        elif (self.polrep, polrep_out) in (('circ', 'lin'), ('lin', 'circ')):
+            # No direct kernel between linear and circular feed bases; route
+            # through Stokes. Both legs share the same allow_singlepol /
+            # singlepol_hand kwargs (singlepol_hand only fires on the
+            # stokes -> target leg, which validates it for the target basis).
+            return self.switch_polrep(
+                'stokes',
+                allow_singlepol=allow_singlepol,
+                singlepol_hand=singlepol_hand,
+            ).switch_polrep(
+                polrep_out,
+                allow_singlepol=allow_singlepol,
+                singlepol_hand=singlepol_hand,
+            )
+
         else:
-            # circ <-> lin: implemented in a follow-up via two-step composition.
             raise NotImplementedError(
                 f"switch_polrep({self.polrep!r} -> {polrep_out!r}) is not yet implemented"
             )

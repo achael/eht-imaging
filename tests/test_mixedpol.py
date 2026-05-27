@@ -1083,19 +1083,19 @@ def test_phase4a_init_mixed_from_synthetic_table():
     assert set(obs.data['polbasis']) == {'rlrl', 'rlxy'}
 
 
-def test_phase4a_init_circ_rejects_xy_tarr():
+def test_phase4a_init_circ_warns_on_non_rl_tarr():
     d = np.zeros(1, dtype=ehc.DTPOL_CIRC)
     d['t1'] = 'S0'
     d['t2'] = 'S1'
     tarr = _phase4a_tarr(['rl', 'xy'])
-    with pytest.raises(ValueError, match="polrep='circ' requires all stations to have feed_type='rl'"):
+    with pytest.warns(UserWarning, match="polrep='circ' Obsdata constructed on a tarr"):
         eo.Obsdata(0., 0., 230e9, 1e9, d, tarr, polrep='circ')
 
 
-def test_phase4a_init_lin_rejects_rl_tarr():
+def test_phase4a_init_lin_warns_on_non_xy_tarr():
     d = _phase4a_lin_data(['S0'], ['S1'])
     tarr = _phase4a_tarr(['rl', 'rl'])
-    with pytest.raises(ValueError, match="polrep='lin' requires all stations to have feed_type='xy'"):
+    with pytest.warns(UserWarning, match="polrep='lin' Obsdata constructed on a tarr"):
         eo.Obsdata(0., 0., 230e9, 1e9, d, tarr, polrep='lin')
 
 
