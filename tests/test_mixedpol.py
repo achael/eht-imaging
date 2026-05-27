@@ -6,6 +6,7 @@ under matching headers.
 """
 import os
 import pickle
+import warnings
 
 import numpy as np
 import pytest
@@ -1267,3 +1268,193 @@ def test_phase4a_dirtyimage_mixed_raises():
 # LIN dirtyimage smoke coverage is deferred: unpack_dat does not yet handle
 # LIN sigma/Stokes-derived fields, so dirtyimage falls over before it can
 # build the image. Will be exercised once unpack_dat gains the LIN branch.
+
+
+# ============================================================================
+# Phase 4b — Obsdata.switch_polrep extensions
+# ============================================================================
+
+
+# ----- Helpers --------------------------------------------------------------
+
+def _phase4b_stokes_obs(tarr_feeds=('rl', 'rl'), with_nan_v=False):
+    """Stokes Obsdata on a 2-station tarr with the given feed_types."""
+    tarr = _phase4a_tarr(list(tarr_feeds))
+    d = np.zeros(2, dtype=ehc.DTPOL_STOKES)
+    d['time'] = [0.0, 0.5]
+    d['t1'] = ['S0', 'S0']
+    d['t2'] = ['S1', 'S1']
+    d['u'] = [1e6, 2e6]
+    d['v'] = [1e5, 2e5]
+    d['vis'] = [1.0 + 0j, 1.2 + 0j]
+    d['qvis'] = [0.3 + 0.1j, 0.4 + 0.1j]
+    d['uvis'] = [0.2 - 0.1j, 0.25 - 0.1j]
+    d['vvis'] = [0.05 + 0j, 0.06 + 0j] if not with_nan_v else [np.nan, np.nan]
+    d['sigma'] = 0.01
+    d['qsigma'] = 0.01
+    d['usigma'] = 0.01
+    d['vsigma'] = 0.01
+    return eo.Obsdata(0., 0., 230e9, 1e9, d, tarr, polrep='stokes')
+
+
+def _phase4b_circ_obs():
+    """A non-trivial circ Obsdata on an rl tarr."""
+    return _phase4b_stokes_obs().switch_polrep('circ')
+
+
+def _phase4b_lin_obs(with_nan_xx=False):
+    """A non-trivial lin Obsdata on an xy tarr (built from stokes)."""
+    obs_s = _phase4b_stokes_obs(tarr_feeds=('xy', 'xy'))
+    obs_l = obs_s.switch_polrep('lin', singlepol_hand='X')
+    if with_nan_xx:
+        obs_l.data['xxvis'] = np.nan
+    return obs_l
+
+
+# ----- Direct lin <-> stokes round-trips ------------------------------------
+
+def test_phase4b_switch_polrep_lin_stokes_lin_roundtrip():
+    obs = _phase4b_lin_obs()
+    rt = obs.switch_polrep('stokes').switch_polrep('lin', singlepol_hand='X')
+    for f in ('xxvis', 'yyvis', 'xyvis', 'yxvis'):
+        np.testing.assert_allclose(rt.data[f], obs.data[f], atol=1e-12)
+
+
+def test_phase4b_switch_polrep_cross_convention_check():
+    """Build matched circ + lin obs from the same Stokes; both -> stokes match."""
+    obs_s = _phase4b_stokes_obs()
+    obs_c = obs_s.switch_polrep('circ')
+    obs_l = obs_s.switch_polrep('lin', singlepol_hand='X')
+    s_from_c = obs_c.switch_polrep('stokes')
+    s_from_l = obs_l.switch_polrep('stokes')
+    for f in ('vis', 'qvis', 'uvis', 'vvis'):
+        np.testing.assert_allclose(s_from_c.data[f], s_from_l.data[f], atol=1e-12)
+
+
+# ----- circ <-> lin composition ---------------------------------------------
+
+def test_phase4b_switch_polrep_circ_to_lin_equals_explicit():
+    obs_c = _phase4b_circ_obs()
+    composed = obs_c.switch_polrep('lin', singlepol_hand='X')
+    explicit = obs_c.switch_polrep('stokes').switch_polrep('lin', singlepol_hand='X')
+    for f in ('xxvis', 'yyvis', 'xyvis', 'yxvis'):
+        np.testing.assert_allclose(composed.data[f], explicit.data[f], atol=1e-12)
+
+
+def test_phase4b_switch_polrep_lin_to_circ_equals_explicit():
+    obs_l = _phase4b_lin_obs()
+    composed = obs_l.switch_polrep('circ', singlepol_hand='R')
+    explicit = obs_l.switch_polrep('stokes').switch_polrep('circ', singlepol_hand='R')
+    for f in ('rrvis', 'llvis', 'rlvis', 'lrvis'):
+        np.testing.assert_allclose(composed.data[f], explicit.data[f], atol=1e-12)
+
+
+def test_phase4b_switch_polrep_circ_lin_circ_roundtrip():
+    obs_c = _phase4b_circ_obs()
+    rt = obs_c.switch_polrep('lin', singlepol_hand='X').switch_polrep('circ', singlepol_hand='R')
+    for f in ('rrvis', 'llvis', 'rlvis', 'lrvis'):
+        np.testing.assert_allclose(rt.data[f], obs_c.data[f], atol=1e-12)
+
+
+# ----- Mixed source / invalid output ----------------------------------------
+
+def test_phase4b_switch_polrep_mixed_source_raises():
+    obs_m = _phase4a_mixed_obs()
+    with pytest.raises(NotImplementedError, match="polrep='mixed' is not yet implemented"):
+        obs_m.switch_polrep('stokes')
+
+
+def test_phase4b_switch_polrep_invalid_output_raises():
+    obs_c = _phase4b_circ_obs()
+    with pytest.raises(Exception, match="polrep_out must be"):
+        obs_c.switch_polrep('mixed')
+    with pytest.raises(Exception, match="polrep_out must be"):
+        obs_c.switch_polrep('bogus')
+
+
+# ----- allow_singlepol on lin -> stokes -------------------------------------
+
+def test_phase4b_switch_polrep_allow_singlepol_lin_to_stokes_fills_xx_with_yy():
+    obs = _phase4b_lin_obs(with_nan_xx=True)
+    with warnings.catch_warnings():
+        warnings.simplefilter('ignore')
+        out = obs.switch_polrep('stokes', allow_singlepol=True)
+    # vis should equal yyvis where xxvis was NaN (the surviving parallel-hand)
+    np.testing.assert_allclose(out.data['vis'], obs.data['yyvis'], atol=1e-12)
+
+
+def test_phase4b_switch_polrep_allow_singlepol_false_leaves_nan():
+    obs = _phase4b_lin_obs(with_nan_xx=True)
+    with warnings.catch_warnings():
+        warnings.simplefilter('ignore')
+        out = obs.switch_polrep('stokes', allow_singlepol=False)
+    assert np.all(np.isnan(out.data['vis']))
+
+
+# ----- singlepol warning behaviour ------------------------------------------
+
+def test_phase4b_switch_polrep_singlepol_warns_on_substitution():
+    obs = _phase4b_stokes_obs(with_nan_v=True)
+    with pytest.warns(UserWarning, match="allow_singlepol substituted"):
+        obs.switch_polrep('circ', singlepol_hand='R')
+
+
+def test_phase4b_switch_polrep_singlepol_no_warn_when_disabled():
+    obs = _phase4b_stokes_obs(with_nan_v=True)
+    with warnings.catch_warnings(record=True) as w:
+        warnings.simplefilter('always')
+        obs.switch_polrep('circ', allow_singlepol=False, singlepol_hand='R')
+        assert not any('allow_singlepol substituted' in str(wi.message) for wi in w)
+
+
+def test_phase4b_switch_polrep_singlepol_no_warn_when_no_substitution():
+    obs = _phase4b_stokes_obs(with_nan_v=False)
+    with warnings.catch_warnings(record=True) as w:
+        warnings.simplefilter('always')
+        obs.switch_polrep('circ', allow_singlepol=True, singlepol_hand='R')
+        assert not any('allow_singlepol substituted' in str(wi.message) for wi in w)
+
+
+# ----- singlepol_hand validation --------------------------------------------
+
+def test_phase4b_switch_polrep_singlepol_hand_X_invalid_for_circ():
+    obs = _phase4b_stokes_obs(with_nan_v=True)
+    with pytest.raises(Exception, match="singlepol_hand must be 'R' or 'L'"):
+        obs.switch_polrep('circ', singlepol_hand='X')
+
+
+def test_phase4b_switch_polrep_singlepol_hand_R_invalid_for_lin():
+    obs = _phase4b_stokes_obs(with_nan_v=True)
+    with pytest.raises(Exception, match="singlepol_hand must be 'X' or 'Y'"):
+        obs.switch_polrep('lin', singlepol_hand='R')
+
+
+def test_phase4b_switch_polrep_singlepol_hand_case_insensitive():
+    obs = _phase4b_stokes_obs(with_nan_v=True)
+    with warnings.catch_warnings():
+        warnings.simplefilter('ignore')
+        out_r = obs.switch_polrep('circ', singlepol_hand='r')
+        out_x = obs.switch_polrep('lin', singlepol_hand='x')
+    # lowercase accepted -- xxvis (lin) / rrvis (circ) should hold the Stokes I fill
+    assert not np.all(np.isnan(out_r.data['rrvis']))
+    assert not np.all(np.isnan(out_x.data['xxvis']))
+
+
+def test_phase4b_switch_polrep_singlepol_hand_unused_when_disabled():
+    """When allow_singlepol=False, singlepol_hand is not validated."""
+    obs = _phase4b_stokes_obs(with_nan_v=True)
+    with warnings.catch_warnings():
+        warnings.simplefilter('ignore')
+        # 'X' would be invalid for circ if validated; with allow_singlepol=False
+        # it's never used and never validated.
+        obs.switch_polrep('circ', allow_singlepol=False, singlepol_hand='X')
+
+
+# ----- tarr preservation ----------------------------------------------------
+
+def test_phase4b_switch_polrep_tarr_unchanged():
+    obs_c = _phase4b_circ_obs()
+    obs_l = obs_c.switch_polrep('lin', singlepol_hand='X')
+    # tarr.feed_type is physical-array description; switch_polrep does not
+    # touch it.
+    np.testing.assert_array_equal(obs_l.tarr['feed_type'], obs_c.tarr['feed_type'])
