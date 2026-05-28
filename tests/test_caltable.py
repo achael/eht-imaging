@@ -171,3 +171,173 @@ class TestInvertGains:
     def test_invert_returns_self(self, unity_caltable):
         ct = unity_caltable.copy()
         assert ct.invert_gains() is ct
+
+
+# ---------------------------------------------------------------------------
+# Section 4: applycal
+# ---------------------------------------------------------------------------
+
+
+def _caltable_with_times(obs, times, rscale=1.0 + 0j, lscale=1.0 + 0j):
+    """Helper: build a Caltable with arbitrary per-time gains for every site."""
+    times = np.asarray(times, dtype=float)
+    n = len(times)
+    r = np.broadcast_to(np.asarray(rscale, dtype=complex), (n,))
+    ll = np.broadcast_to(np.asarray(lscale, dtype=complex), (n,))
+    caldict = {
+        site: np.array(
+            [(times[k], r[k], ll[k]) for k in range(n)], dtype=DTCAL,
+        ).view(np.recarray)
+        for site in obs.tarr['site']
+    }
+    return eh.caltable.Caltable(
+        obs.ra, obs.dec, obs.rf, obs.bw, caldict, obs.tarr,
+        source=obs.source, mjd=obs.mjd, timetype=obs.timetype,
+    )
+
+
+class TestApplycalConstantGain:
+
+    def test_real_gain_scales_amp_by_g_squared(self, obs_direct,
+                                               constant_gain_caltable_factory):
+        # Constant rscale = lscale = g (real) ⇒ vis_out = vis_in * g**2 on
+        # every baseline (the per-station product is g_i * conj(g_j) = g**2).
+        g = 2.0 + 0j
+        out = constant_gain_caltable_factory(g).applycal(obs_direct, interp='nearest')
+        for f in ('vis', 'qvis', 'uvis', 'vvis'):
+            np.testing.assert_allclose(
+                out.data[f], obs_direct.data[f] * np.abs(g) ** 2,
+                rtol=1e-12, atol=1e-12,
+            )
+
+    def test_pure_phase_gain_preserves_amplitude(self, obs_direct):
+        # rscale = lscale = exp(i phi) ⇒ |vis_out| = |vis_in| (phase is
+        # absorbed since g_i * conj(g_j) magnitude is 1).
+        phi = 0.37
+        g = np.exp(1j * phi)
+        ct = _caltable_with_times(
+            obs_direct,
+            [obs_direct.data['time'].min() - 1.0,
+             obs_direct.data['time'].max() + 1.0],
+            rscale=g, lscale=g,
+        )
+        out = ct.applycal(obs_direct, interp='nearest')
+        np.testing.assert_allclose(
+            np.abs(out.data['vis']), np.abs(obs_direct.data['vis']),
+            rtol=1e-12, atol=1e-12,
+        )
+
+
+class TestApplycalSiteSubset:
+
+    def test_missing_site_baselines_unscaled(self, obs_direct,
+                                             constant_gain_caltable_factory):
+        # If a site is absent from caltable.data, applycal warns and treats its
+        # gain as 1 ⇒ baselines touching that site get scaled by g_other^1 only,
+        # not g_other * conj(g_dropped) = g_other.
+        g = 2.0 + 0j
+        ct = constant_gain_caltable_factory(g)
+        dropped = obs_direct.tarr['site'][0]
+        ct.data.pop(dropped)
+
+        out = ct.applycal(obs_direct, interp='nearest')
+        # Baselines with neither station dropped scale by g**2; baselines with
+        # one station dropped scale by g (the surviving station's g, conj(1)).
+        both_present = (out.data['t1'] != dropped) & (out.data['t2'] != dropped)
+        one_dropped = ~both_present
+        if both_present.any():
+            np.testing.assert_allclose(
+                out.data['vis'][both_present],
+                obs_direct.data['vis'][both_present] * np.abs(g) ** 2,
+                rtol=1e-12,
+            )
+        if one_dropped.any():
+            np.testing.assert_allclose(
+                out.data['vis'][one_dropped],
+                obs_direct.data['vis'][one_dropped] * g,
+                rtol=1e-12,
+            )
+
+
+class TestApplycalPolrep:
+
+    def test_stokes_input_returns_stokes(self, obs_direct, unity_caltable):
+        out = unity_caltable.applycal(obs_direct, interp='nearest')
+        assert out.polrep == 'stokes'
+
+    def test_circ_input_returns_circ(self, obs_direct, unity_caltable):
+        obs_circ = obs_direct.switch_polrep('circ')
+        out = unity_caltable.applycal(obs_circ, interp='nearest')
+        assert out.polrep == 'circ'
+
+
+class TestApplycalRejectsMismatchedTarr:
+
+    def test_different_tarr_raises(self, obs_direct, unity_caltable):
+        obs_mut = obs_direct.copy()
+        obs_mut.tarr['x'][0] += 1.0
+        with pytest.raises(Exception, match="telescope array"):
+            unity_caltable.applycal(obs_mut, interp='nearest')
+
+
+class TestApplycalInterpModes:
+
+    @pytest.mark.parametrize("interp", ["nearest", "linear"])
+    def test_interp_at_boundary_matches_boundary_gain(self, obs_direct, interp):
+        # When the caltable spans the obs and the gain is constant within
+        # the spanned interval, all three interp modes recover the boundary
+        # gain at every observed time.
+        g = 1.7 + 0.3j
+        ct = _caltable_with_times(
+            obs_direct,
+            [obs_direct.data['time'].min() - 1.0,
+             obs_direct.data['time'].max() + 1.0],
+            rscale=g, lscale=g,
+        )
+        out = ct.applycal(obs_direct, interp=interp)
+        np.testing.assert_allclose(
+            out.data['vis'], obs_direct.data['vis'] * np.abs(g) ** 2,
+            rtol=1e-10, atol=1e-12,
+        )
+
+    def test_cubic_requires_four_points(self, obs_direct):
+        # cubic interpolation needs >= 4 anchor points; with a 4-time caltable
+        # of constant g, applycal returns g**2-scaled visibilities.
+        g = 1.5 + 0j
+        t0 = obs_direct.data['time'].min() - 1.0
+        t1 = obs_direct.data['time'].max() + 1.0
+        times = np.linspace(t0, t1, 4)
+        ct = _caltable_with_times(obs_direct, times, rscale=g, lscale=g)
+        out = ct.applycal(obs_direct, interp='cubic')
+        np.testing.assert_allclose(
+            out.data['vis'], obs_direct.data['vis'] * np.abs(g) ** 2,
+            rtol=1e-10, atol=1e-12,
+        )
+
+
+class TestApplycalExtrapolation:
+
+    @pytest.mark.xfail(reason="applycal silently fills out-of-span samples with "
+                              "NaN when extrapolate is None and the caltable "
+                              "doesn't span the obs times. Tracked for a "
+                              "follow-up fix PR.",
+                       strict=True)
+    def test_undersized_caltable_does_not_silently_nan(self, obs_direct):
+        # Caltable covers only the first half of the obs; with extrapolate=None
+        # the second half should not silently come back NaN.
+        t0 = obs_direct.data['time'].min()
+        t_mid = (obs_direct.data['time'].min()
+                 + obs_direct.data['time'].max()) / 2.0
+        ct = _caltable_with_times(obs_direct, [t0 - 1.0, t_mid])
+        out = ct.applycal(obs_direct, interp='linear', extrapolate=None)
+        assert not np.any(np.isnan(out.data['vis']))
+
+    def test_extrapolate_true_fills_outside_span(self, obs_direct):
+        # With extrapolate=True, the scipy 'extrapolate' fill value is used
+        # and the calibrated visibilities are finite everywhere.
+        t0 = obs_direct.data['time'].min()
+        t_mid = (obs_direct.data['time'].min()
+                 + obs_direct.data['time'].max()) / 2.0
+        ct = _caltable_with_times(obs_direct, [t0 - 1.0, t_mid])
+        out = ct.applycal(obs_direct, interp='linear', extrapolate=True)
+        assert np.all(np.isfinite(out.data['vis']))
