@@ -6,6 +6,41 @@ import pytest
 import ehtim as eh
 from ehtim.const_def import DTCAL
 
+# ---------------------------------------------------------------------------
+# Constants used across the module
+# ---------------------------------------------------------------------------
+
+# Bit-clean numerical-equality tolerances for applycal scaling and gain
+# round-trips. 1e-12 is the float-roundoff floor for products and inversions
+# of double-precision complex numbers across this module.
+BIT_CLEAN_RTOL = 1e-12
+BIT_CLEAN_ATOL = 1e-12
+
+# Interpolated-path tolerance (scipy.interp1d adds a small kernel error).
+INTERP_RTOL = 1e-10
+
+# Save/load round-trip precision floors. Gains save as 17-digit floats so
+# they read back near float-roundoff. Times go through MJD + time/24 then a
+# subtraction, so the floor is ~1e-10.
+GAIN_RTOL = BIT_CLEAN_RTOL
+TIME_RTOL = 1e-9
+
+# Synthetic gain values for characterization.
+CONST_REAL_GAIN = 2.0 + 0j        # used in applycal, invert_gains, enforce
+CONST_LOW_GAIN = 0.5 + 0j         # below DEFAULT_MIN_GAIN; triggers rescaling
+CONST_INTERP_GAIN = 1.7 + 0.3j    # complex gain for interp-mode tests
+CONST_CUBIC_GAIN = 1.5 + 0j       # used in the cubic-interp test
+CONST_PHASE = 0.37                # pure-phase rotation for amp-preservation
+
+# enforce_positive threshold (matches the Caltable default).
+DEFAULT_MIN_GAIN = 0.9
+
+# RNG seeds for reproducible injected-gain caltables.
+SEED_INVERT_ROUNDTRIP = 7
+SEED_SAVE_LOAD_ROUNDTRIP = 3
+SEED_SAVE_TXT_MATCH = 5
+SEED_SQRT_ROUNDTRIP = 11
+
 
 def _unity_caltable(obs):
     """A Caltable with rscale = lscale = 1 for every site, spanning the obs times.
@@ -43,7 +78,7 @@ def test_applycal_unity_preserves_data(obs_direct):
         np.testing.assert_allclose(
             np.sort(np.abs(cal_c.data[field])),
             np.sort(np.abs(obs_c.data[field])),
-            rtol=1e-10, atol=1e-12,
+            rtol=INTERP_RTOL, atol=BIT_CLEAN_ATOL,
         )
 
 
@@ -154,19 +189,20 @@ class TestInvertGains:
             np.testing.assert_allclose(ct.data[site]['lscale'], 1 + 0j)
 
     def test_invert_constant_g_yields_reciprocal(self, constant_gain_caltable_factory):
-        ct = constant_gain_caltable_factory(2.0 + 0j)
+        ct = constant_gain_caltable_factory(CONST_REAL_GAIN)
         ct.invert_gains()
         for site in ct.data:
-            np.testing.assert_allclose(ct.data[site]['rscale'], 0.5 + 0j)
-            np.testing.assert_allclose(ct.data[site]['lscale'], 0.5 + 0j)
+            np.testing.assert_allclose(ct.data[site]['rscale'], 1 / CONST_REAL_GAIN)
+            np.testing.assert_allclose(ct.data[site]['lscale'], 1 / CONST_REAL_GAIN)
 
     def test_invert_twice_is_identity(self, injected_gain_caltable_factory):
-        ct = injected_gain_caltable_factory(seed=7)
+        ct = injected_gain_caltable_factory(seed=SEED_INVERT_ROUNDTRIP)
         ref = {site: ct.data[site]['rscale'].copy() for site in ct.data}
         ct.invert_gains()
         ct.invert_gains()
         for site, expected in ref.items():
-            np.testing.assert_allclose(ct.data[site]['rscale'], expected, rtol=1e-12)
+            np.testing.assert_allclose(ct.data[site]['rscale'], expected,
+                                       rtol=BIT_CLEAN_RTOL)
 
     def test_invert_returns_self(self, unity_caltable):
         ct = unity_caltable.copy()
@@ -200,21 +236,18 @@ class TestApplycalConstantGain:
 
     def test_real_gain_scales_amp_by_g_squared(self, obs_direct,
                                                constant_gain_caltable_factory):
-        # Constant rscale = lscale = g (real) ⇒ vis_out = vis_in * g**2 on
-        # every baseline (the per-station product is g_i * conj(g_j) = g**2).
-        g = 2.0 + 0j
+        # g_i * conj(g_j) = g**2 for every baseline when all stations share g.
+        g = CONST_REAL_GAIN
         out = constant_gain_caltable_factory(g).applycal(obs_direct, interp='nearest')
         for f in ('vis', 'qvis', 'uvis', 'vvis'):
             np.testing.assert_allclose(
                 out.data[f], obs_direct.data[f] * np.abs(g) ** 2,
-                rtol=1e-12, atol=1e-12,
+                rtol=BIT_CLEAN_RTOL, atol=BIT_CLEAN_ATOL,
             )
 
     def test_pure_phase_gain_preserves_amplitude(self, obs_direct):
-        # rscale = lscale = exp(i phi) ⇒ |vis_out| = |vis_in| (phase is
-        # absorbed since g_i * conj(g_j) magnitude is 1).
-        phi = 0.37
-        g = np.exp(1j * phi)
+        # |g_i * conj(g_j)| = 1 for any common phase ⇒ amplitudes invariant.
+        g = np.exp(1j * CONST_PHASE)
         ct = _caltable_with_times(
             obs_direct,
             [obs_direct.data['time'].min() - 1.0,
@@ -224,7 +257,7 @@ class TestApplycalConstantGain:
         out = ct.applycal(obs_direct, interp='nearest')
         np.testing.assert_allclose(
             np.abs(out.data['vis']), np.abs(obs_direct.data['vis']),
-            rtol=1e-12, atol=1e-12,
+            rtol=BIT_CLEAN_RTOL, atol=BIT_CLEAN_ATOL,
         )
 
 
@@ -232,30 +265,27 @@ class TestApplycalSiteSubset:
 
     def test_missing_site_baselines_unscaled(self, obs_direct,
                                              constant_gain_caltable_factory):
-        # If a site is absent from caltable.data, applycal warns and treats its
-        # gain as 1 ⇒ baselines touching that site get scaled by g_other^1 only,
-        # not g_other * conj(g_dropped) = g_other.
-        g = 2.0 + 0j
+        # Sites absent from caltable.data fall back to gain = 1.
+        g = CONST_REAL_GAIN
         ct = constant_gain_caltable_factory(g)
         dropped = obs_direct.tarr['site'][0]
         ct.data.pop(dropped)
 
         out = ct.applycal(obs_direct, interp='nearest')
-        # Baselines with neither station dropped scale by g**2; baselines with
-        # one station dropped scale by g (the surviving station's g, conj(1)).
+        # Both present: g**2.  One dropped: g (the survivor) * conj(1).
         both_present = (out.data['t1'] != dropped) & (out.data['t2'] != dropped)
         one_dropped = ~both_present
         if both_present.any():
             np.testing.assert_allclose(
                 out.data['vis'][both_present],
                 obs_direct.data['vis'][both_present] * np.abs(g) ** 2,
-                rtol=1e-12,
+                rtol=BIT_CLEAN_RTOL,
             )
         if one_dropped.any():
             np.testing.assert_allclose(
                 out.data['vis'][one_dropped],
                 obs_direct.data['vis'][one_dropped] * g,
-                rtol=1e-12,
+                rtol=BIT_CLEAN_RTOL,
             )
 
 
@@ -283,11 +313,9 @@ class TestApplycalRejectsMismatchedTarr:
 class TestApplycalInterpModes:
 
     @pytest.mark.parametrize("interp", ["nearest", "linear"])
-    def test_interp_at_boundary_matches_boundary_gain(self, obs_direct, interp):
-        # When the caltable spans the obs and the gain is constant within
-        # the spanned interval, all three interp modes recover the boundary
-        # gain at every observed time.
-        g = 1.7 + 0.3j
+    def test_constant_gain_recovered_at_every_time(self, obs_direct, interp):
+        # Both modes return g**2 at every obs time when the caltable is flat.
+        g = CONST_INTERP_GAIN
         ct = _caltable_with_times(
             obs_direct,
             [obs_direct.data['time'].min() - 1.0,
@@ -297,13 +325,12 @@ class TestApplycalInterpModes:
         out = ct.applycal(obs_direct, interp=interp)
         np.testing.assert_allclose(
             out.data['vis'], obs_direct.data['vis'] * np.abs(g) ** 2,
-            rtol=1e-10, atol=1e-12,
+            rtol=INTERP_RTOL, atol=BIT_CLEAN_ATOL,
         )
 
     def test_cubic_requires_four_points(self, obs_direct):
-        # cubic interpolation needs >= 4 anchor points; with a 4-time caltable
-        # of constant g, applycal returns g**2-scaled visibilities.
-        g = 1.5 + 0j
+        # cubic interp needs >= 4 anchor points; constant g recovers g**2.
+        g = CONST_CUBIC_GAIN
         t0 = obs_direct.data['time'].min() - 1.0
         t1 = obs_direct.data['time'].max() + 1.0
         times = np.linspace(t0, t1, 4)
@@ -311,7 +338,7 @@ class TestApplycalInterpModes:
         out = ct.applycal(obs_direct, interp='cubic')
         np.testing.assert_allclose(
             out.data['vis'], obs_direct.data['vis'] * np.abs(g) ** 2,
-            rtol=1e-10, atol=1e-12,
+            rtol=INTERP_RTOL, atol=BIT_CLEAN_ATOL,
         )
 
 
@@ -341,3 +368,148 @@ class TestApplycalExtrapolation:
         ct = _caltable_with_times(obs_direct, [t0 - 1.0, t_mid])
         out = ct.applycal(obs_direct, interp='linear', extrapolate=True)
         assert np.all(np.isfinite(out.data['vis']))
+
+
+# ---------------------------------------------------------------------------
+# Section 5: Save / load round-trip
+# ---------------------------------------------------------------------------
+
+
+class TestSaveLoadRoundtrip:
+
+    def test_save_caltable_load_caltable_roundtrip(self, obs_direct,
+                                                   injected_gain_caltable_factory,
+                                                   tmp_path):
+        ct = injected_gain_caltable_factory(seed=SEED_SAVE_LOAD_ROUNDTRIP)
+        eh.caltable.save_caltable(ct, obs_direct, datadir=str(tmp_path))
+        loaded = eh.caltable.load_caltable(obs_direct, str(tmp_path))
+        assert isinstance(loaded, eh.caltable.Caltable)
+        for site in ct.data:
+            np.testing.assert_allclose(loaded.data[site]['rscale'],
+                                       ct.data[site]['rscale'], rtol=GAIN_RTOL)
+            np.testing.assert_allclose(loaded.data[site]['lscale'],
+                                       ct.data[site]['lscale'], rtol=GAIN_RTOL)
+            np.testing.assert_allclose(loaded.data[site]['time'],
+                                       ct.data[site]['time'], rtol=TIME_RTOL)
+
+    def test_sqrt_gains_roundtrip_preserves_squared_gain(self, obs_direct,
+                                                        injected_gain_caltable_factory,
+                                                        tmp_path):
+        # On-disk quantity is the squared gain, so loaded**2 == original**2
+        # is the exact round-trip. Comparing squares also sidesteps the
+        # principal-branch sqrt sign flip outside (-pi/2, pi/2).
+        ct = injected_gain_caltable_factory(seed=SEED_SQRT_ROUNDTRIP)
+        eh.caltable.save_caltable(ct, obs_direct, datadir=str(tmp_path),
+                                  sqrt_gains=True)
+        loaded = eh.caltable.load_caltable(obs_direct, str(tmp_path),
+                                           sqrt_gains=True)
+        for site in ct.data:
+            np.testing.assert_allclose(loaded.data[site]['rscale'] ** 2,
+                                       ct.data[site]['rscale'] ** 2,
+                                       rtol=GAIN_RTOL, atol=BIT_CLEAN_ATOL)
+            np.testing.assert_allclose(loaded.data[site]['lscale'] ** 2,
+                                       ct.data[site]['lscale'] ** 2,
+                                       rtol=GAIN_RTOL, atol=BIT_CLEAN_ATOL)
+            np.testing.assert_allclose(loaded.data[site]['time'],
+                                       ct.data[site]['time'], rtol=TIME_RTOL)
+
+    def test_save_txt_method_matches_module_function(self, obs_direct,
+                                                     injected_gain_caltable_factory,
+                                                     tmp_path):
+        # Caltable.save_txt is a thin wrapper; files should be byte-identical.
+        ct = injected_gain_caltable_factory(seed=SEED_SAVE_TXT_MATCH)
+        out_a = tmp_path / "a"
+        out_b = tmp_path / "b"
+        out_a.mkdir()
+        out_b.mkdir()
+        ct.save_txt(obs_direct, datadir=str(out_a))
+        eh.caltable.save_caltable(ct, obs_direct, datadir=str(out_b))
+        for site in ct.data:
+            fa = out_a / f"{obs_direct.source}_{site}.txt"
+            fb = out_b / f"{obs_direct.source}_{site}.txt"
+            assert fa.read_bytes() == fb.read_bytes()
+
+
+# ---------------------------------------------------------------------------
+# Section 6: enforce_positive
+# ---------------------------------------------------------------------------
+
+
+class TestEnforcePositive:
+
+    def test_no_op_when_all_gains_above_min(self, unity_caltable):
+        out = unity_caltable.enforce_positive(method='median', min_gain=0.5,
+                                              verbose=False)
+        for site in unity_caltable.data:
+            np.testing.assert_allclose(out.data[site]['rscale'],
+                                       unity_caltable.data[site]['rscale'])
+            np.testing.assert_allclose(out.data[site]['lscale'],
+                                       unity_caltable.data[site]['lscale'])
+
+    def test_rescales_low_gains_above_threshold(self, constant_gain_caltable_factory):
+        # All gains g = CONST_LOW_GAIN < DEFAULT_MIN_GAIN ⇒ median |g| = |g|,
+        # rescale by 1/|g| ⇒ new |gain| = 1.
+        ct = constant_gain_caltable_factory(CONST_LOW_GAIN)
+        out = ct.enforce_positive(method='median', min_gain=DEFAULT_MIN_GAIN,
+                                  verbose=False)
+        for site in out.data:
+            np.testing.assert_allclose(np.abs(out.data[site]['rscale']), 1.0)
+            np.testing.assert_allclose(np.abs(out.data[site]['lscale']), 1.0)
+
+    def test_unknown_method_returns_unchanged_copy(self, constant_gain_caltable_factory):
+        ct = constant_gain_caltable_factory(CONST_LOW_GAIN)
+        out = ct.enforce_positive(method='nope', min_gain=DEFAULT_MIN_GAIN,
+                                  verbose=False)
+        first = next(iter(out.data))
+        np.testing.assert_allclose(out.data[first]['rscale'],
+                                   ct.data[first]['rscale'])
+
+    def test_sites_subset_only_affects_listed(self, constant_gain_caltable_factory):
+        ct = constant_gain_caltable_factory(CONST_LOW_GAIN)
+        first, second = list(ct.data.keys())[:2]
+        out = ct.enforce_positive(method='median', min_gain=DEFAULT_MIN_GAIN,
+                                  sites=[first], verbose=False)
+        np.testing.assert_allclose(np.abs(out.data[first]['rscale']), 1.0)
+        np.testing.assert_allclose(np.abs(out.data[second]['rscale']),
+                                   np.abs(CONST_LOW_GAIN))
+
+    def test_returns_independent_copy(self, constant_gain_caltable_factory):
+        ct = constant_gain_caltable_factory(CONST_LOW_GAIN)
+        out = ct.enforce_positive(method='median', min_gain=DEFAULT_MIN_GAIN,
+                                  verbose=False)
+        first = next(iter(ct.data))
+        out.data[first]['rscale'] *= 7
+        assert ct.data[first]['rscale'][0] == CONST_LOW_GAIN
+
+
+# ---------------------------------------------------------------------------
+# Section 7: relaxed_interp1d utility
+# ---------------------------------------------------------------------------
+
+
+class TestRelaxedInterp1d:
+
+    def test_single_point_falls_back_to_constant(self):
+        f = eh.caltable.relaxed_interp1d(np.array([3.0]), np.array([2.5]),
+                                         kind='linear')
+        # The helper expands a 1-point input to a 2-point [x-0.5, x+0.5]
+        # constant fan so the value is recovered at the anchor and nearby.
+        assert f(3.0) == pytest.approx(2.5)
+        assert f(2.7) == pytest.approx(2.5)
+        assert f(3.3) == pytest.approx(2.5)
+
+    def test_scalar_x_y_are_promoted_to_arrays(self):
+        # The bare-scalar code path catches TypeError on len(x) and recovers.
+        f = eh.caltable.relaxed_interp1d(0.0, 1.5, kind='linear')
+        assert f(0.0) == pytest.approx(1.5)
+
+    def test_multi_point_matches_scipy_interp1d(self):
+        # When len(x) > 1, relaxed_interp1d delegates straight to
+        # scipy.interpolate.interp1d ⇒ bit-identical outputs.
+        import scipy.interpolate as spi
+        x = np.linspace(0.0, 1.0, 5)
+        y = x ** 2
+        f_ehtim = eh.caltable.relaxed_interp1d(x, y, kind='linear')
+        f_scipy = spi.interp1d(x, y, kind='linear')
+        probes = np.linspace(0.1, 0.9, 7)
+        np.testing.assert_array_equal(f_ehtim(probes), f_scipy(probes))
