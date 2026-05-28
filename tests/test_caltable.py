@@ -40,6 +40,25 @@ SEED_INVERT_ROUNDTRIP = 7
 SEED_SAVE_LOAD_ROUNDTRIP = 3
 SEED_SAVE_TXT_MATCH = 5
 SEED_SQRT_ROUNDTRIP = 11
+SEED_SCAN_AVG_PHASES = 0
+
+# pad_scans synthetic-block geometry.
+PAD_SCAN_NSAMPLES = 3
+PAD_SCAN_DT_SEC = 10.0          # spacing between samples within one scan
+PAD_SCAN_GAP_SEC = 300.0        # gap between consecutive scans (> maxdiff)
+PAD_SCAN_MAXDIFF_SEC = 60       # default applied in pad_scans tests
+# Per-scan median gains used in the median-padding test.
+PAD_SCAN_MEDIAN_GAINS = (0.5 + 0j, 0.7 + 0j)
+# Constant gain seeded into each per-scan block for the endval-padding test.
+PAD_SCAN_ENDVAL_GAIN = 1.3 + 0j
+
+# scan_avg synthetic data.
+SCAN_INCOH_MAGNITUDES = (0.6, 1.2)
+SCAN_COH_GAINS = (0.5 + 0.5j, -0.8 + 0.2j)
+
+# merge test gains.
+MERGE_GAIN_A = 1.7 + 0j
+MERGE_GAIN_B = 0.5 + 0j
 
 
 def _stack_gains(ct):
@@ -530,3 +549,181 @@ class TestRelaxedInterp1d:
         f_scipy = spi.interp1d(x, y, kind='linear')
         probes = np.linspace(0.1, 0.9, 7)
         np.testing.assert_array_equal(f_ehtim(probes), f_scipy(probes))
+
+
+# ---------------------------------------------------------------------------
+# Section 8: pad_scans
+# ---------------------------------------------------------------------------
+
+
+def _multi_scan_caltable(obs, n_scans, samples_per_scan=PAD_SCAN_NSAMPLES,
+                         dt_in_scan_sec=PAD_SCAN_DT_SEC,
+                         gap_sec=PAD_SCAN_GAP_SEC,
+                         rscale=1.0 + 0j, lscale=1.0 + 0j):
+    """Build a Caltable whose times form `n_scans` blocks separated by `gap_sec`.
+
+    Each block has `samples_per_scan` points spaced by `dt_in_scan_sec`. The
+    block structure is purely time-gap-driven and does not need to align with
+    obs.scans (pad_scans only looks at gaps in the caltable times).
+    """
+    block_dt_hr = dt_in_scan_sec / 3600.0
+    gap_hr = gap_sec / 3600.0
+    t0 = obs.data['time'].min()
+    block_offsets = t0 + np.arange(n_scans) * (samples_per_scan * block_dt_hr + gap_hr)
+    inner = np.arange(samples_per_scan) * block_dt_hr
+    times = (block_offsets[:, None] + inner[None, :]).reshape(-1)
+    n = len(times)
+    template = np.empty(n, dtype=DTCAL)
+    template['time'] = times
+    template['rscale'] = np.broadcast_to(np.asarray(rscale, dtype=complex), (n,))
+    template['lscale'] = np.broadcast_to(np.asarray(lscale, dtype=complex), (n,))
+    caldict = {site: template.copy().view(np.recarray) for site in obs.tarr['site']}
+    return eh.caltable.Caltable(
+        obs.ra, obs.dec, obs.rf, obs.bw, caldict, obs.tarr,
+        source=obs.source, mjd=obs.mjd, timetype=obs.timetype,
+    )
+
+
+def _scan_aligned_caltable(obs, gains_per_scan, samples_per_scan=PAD_SCAN_NSAMPLES):
+    """Build a Caltable whose times fall inside the first len(gains_per_scan)
+    scans of `obs` (so scan_avg's per-scan bucketing finds the samples).
+
+    `gains_per_scan` may be scalars (one constant per scan, broadcast across
+    its samples) or already shape (n_scans, samples_per_scan).
+    """
+    obs2 = obs.copy()
+    obs2.add_scans()
+    scans = obs2.scans[:len(gains_per_scan)]
+    inner = np.linspace(0.0, 1.0, samples_per_scan + 2)[1:-1]  # interior
+    times = np.concatenate([
+        scan_start + (scan_stop - scan_start) * inner
+        for scan_start, scan_stop in scans
+    ])
+    gains_per_scan = np.asarray(gains_per_scan, dtype=complex)
+    if gains_per_scan.ndim == 1:
+        gains = np.repeat(gains_per_scan, samples_per_scan)
+    else:
+        gains = gains_per_scan.reshape(-1)
+    n = len(times)
+    template = np.empty(n, dtype=DTCAL)
+    template['time'] = times
+    template['rscale'] = gains
+    template['lscale'] = gains
+    caldict = {site: template.copy().view(np.recarray) for site in obs.tarr['site']}
+    return eh.caltable.Caltable(
+        obs.ra, obs.dec, obs.rf, obs.bw, caldict, obs.tarr,
+        source=obs.source, mjd=obs.mjd, timetype=obs.timetype,
+    )
+
+
+class TestPadScans:
+
+    def test_endval_padding_inserts_endpoint_gains(self, obs_direct):
+        # Constant gains within each scan; endval padding ⇒ the pre and post
+        # rows must equal the first/last sample of the scan (= the constant).
+        n_scans = len(PAD_SCAN_MEDIAN_GAINS)
+        ct = _multi_scan_caltable(obs_direct, n_scans=n_scans,
+                                  rscale=PAD_SCAN_ENDVAL_GAIN,
+                                  lscale=PAD_SCAN_ENDVAL_GAIN)
+        out = ct.pad_scans(maxdiff=PAD_SCAN_MAXDIFF_SEC, padtype='endval')
+        block_len = PAD_SCAN_NSAMPLES + 2
+        for site in out.data:
+            assert len(out.data[site]) == n_scans * block_len
+        out_r, out_l = _stack_gains(out)
+        np.testing.assert_allclose(out_r, PAD_SCAN_ENDVAL_GAIN)
+        np.testing.assert_allclose(out_l, PAD_SCAN_ENDVAL_GAIN)
+
+    def test_median_padding_uses_per_scan_median(self, obs_direct):
+        # Each scan gets its own constant gain ⇒ that constant is the median.
+        gains = np.repeat(np.array(PAD_SCAN_MEDIAN_GAINS), PAD_SCAN_NSAMPLES)
+        ct = _multi_scan_caltable(obs_direct, n_scans=len(PAD_SCAN_MEDIAN_GAINS),
+                                  rscale=gains, lscale=gains)
+        out = ct.pad_scans(maxdiff=PAD_SCAN_MAXDIFF_SEC, padtype='median')
+        block_len = PAD_SCAN_NSAMPLES + 2
+        # Each padded scan repeats its scan-median across all block_len rows.
+        expected = np.repeat(np.array(PAD_SCAN_MEDIAN_GAINS), block_len)
+        for site in out.data:
+            np.testing.assert_allclose(out.data[site]['rscale'], expected)
+            np.testing.assert_allclose(out.data[site]['lscale'], expected)
+
+
+# ---------------------------------------------------------------------------
+# Section 9: scan_avg
+# ---------------------------------------------------------------------------
+
+
+class TestScanAvg:
+
+    # scan_avg emits one row per scan in obs.scans (regardless of caltable
+    # coverage). Scans without caltable data come back as NaN, so the tests
+    # below assert (i) the first n_scans rows recover the input values and
+    # (ii) every other row is NaN.
+
+    def test_incoherent_avg_recovers_per_scan_magnitudes(self, obs_direct):
+        magnitudes = np.array(SCAN_INCOH_MAGNITUDES)
+        n_scans = len(magnitudes)
+        rng = np.random.default_rng(SEED_SCAN_AVG_PHASES)
+        phases = rng.uniform(-np.pi, np.pi,
+                             size=(n_scans, PAD_SCAN_NSAMPLES))
+        gains = magnitudes[:, None] * np.exp(1j * phases)
+        ct = _scan_aligned_caltable(obs_direct, gains)
+        out = ct.scan_avg(obs_direct, incoherent=True)
+        for site in out.data:
+            rscale = out.data[site]['rscale']
+            lscale = out.data[site]['lscale']
+            np.testing.assert_allclose(np.abs(rscale[:n_scans]), magnitudes,
+                                       rtol=INTERP_RTOL)
+            np.testing.assert_allclose(np.abs(lscale[:n_scans]), magnitudes,
+                                       rtol=INTERP_RTOL)
+            assert np.all(np.isnan(rscale[n_scans:]))
+            assert np.all(np.isnan(lscale[n_scans:]))
+
+    def test_coherent_avg_keeps_phase(self, obs_direct):
+        per_scan = np.array(SCAN_COH_GAINS)
+        n_scans = len(per_scan)
+        ct = _scan_aligned_caltable(obs_direct, per_scan)
+        out = ct.scan_avg(obs_direct, incoherent=False)
+        for site in out.data:
+            rscale = out.data[site]['rscale']
+            lscale = out.data[site]['lscale']
+            np.testing.assert_allclose(rscale[:n_scans], per_scan,
+                                       rtol=INTERP_RTOL)
+            np.testing.assert_allclose(lscale[:n_scans], per_scan,
+                                       rtol=INTERP_RTOL)
+            assert np.all(np.isnan(rscale[n_scans:]))
+            assert np.all(np.isnan(lscale[n_scans:]))
+
+
+# ---------------------------------------------------------------------------
+# Section 10: merge
+# ---------------------------------------------------------------------------
+
+
+class TestMerge:
+
+    def test_two_constant_caltables_multiply(self, obs_direct,
+                                             constant_gain_caltable_factory):
+        # Caltable.merge interpolates each input over the union of times and
+        # multiplies pointwise. Two flat caltables a, b ⇒ merged gain = a*b.
+        ct_a = constant_gain_caltable_factory(MERGE_GAIN_A)
+        ct_b = constant_gain_caltable_factory(MERGE_GAIN_B)
+        out = ct_a.merge([ct_b])
+        out_r, out_l = _stack_gains(out)
+        np.testing.assert_allclose(out_r, MERGE_GAIN_A * MERGE_GAIN_B,
+                                   rtol=INTERP_RTOL)
+        np.testing.assert_allclose(out_l, MERGE_GAIN_A * MERGE_GAIN_B,
+                                   rtol=INTERP_RTOL)
+
+    def test_disjoint_sites_are_unioned(self, obs_direct,
+                                        constant_gain_caltable_factory):
+        # Drop site x from ct_a and site y from ct_b ⇒ the merged caltable's
+        # data dict must contain every site that appeared in either input.
+        ct_a = constant_gain_caltable_factory(MERGE_GAIN_A)
+        ct_b = constant_gain_caltable_factory(MERGE_GAIN_B)
+        sites = list(ct_a.data.keys())
+        x, y = sites[0], sites[1]
+        ct_a.data.pop(x)
+        ct_b.data.pop(y)
+        out = ct_a.merge([ct_b])
+        assert x in out.data
+        assert y in out.data
