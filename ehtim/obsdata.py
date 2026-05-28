@@ -132,20 +132,22 @@ class Obsdata:
         # Silently upgrade legacy DTPOL_CIRC (no title aliases) to the
         # current dtype; zero-copy view-cast when applicable.
         datatable = ehc.upgrade_dtpol_circ(datatable)
-        if datatable.dtype not in [ehc.DTPOL_STOKES, ehc.DTPOL_CIRC]:
-            raise Exception("Data table dtype should be DTPOL_STOKES or DTPOL_CIRC")
 
         # Polarization Representation
-        if polrep == 'stokes':
-            self.polrep = 'stokes'
-            self.poldict = ehc.POLDICT_STOKES
-            self.poltype = ehc.DTPOL_STOKES
-        elif polrep == 'circ':
-            self.polrep = 'circ'
-            self.poldict = ehc.POLDICT_CIRC
-            self.poltype = ehc.DTPOL_CIRC
-        else:
-            raise Exception("only 'stokes' and 'circ' are supported polreps!")
+        if polrep not in ehc.polrep_to_poldict:
+            raise Exception(
+                f"polrep must be one of {sorted(ehc.polrep_to_poldict.keys())}; "
+                f"got {polrep!r}"
+            )
+        self.polrep = polrep
+        self.poldict = ehc.polrep_to_poldict[polrep]
+        self.poltype = ehc.feed_dtype_for_polrep(polrep)
+
+        # Validate the datatable dtype matches the declared polrep.
+        if datatable.dtype != np.dtype(self.poltype):
+            raise Exception(
+                f"datatable dtype {datatable.dtype} does not match polrep={polrep!r}"
+            )
 
         # Set the various observation parameters
         self.source = str(source)
@@ -170,6 +172,61 @@ class Obsdata:
         # Telescope array: default ordering is by sefd
         self.tarr = ehc.upgrade_tarr(tarr)
         self.tkey = {self.tarr[i]['site']: i for i in range(len(self.tarr))}
+
+        # Validate tarr feed_type values. polrep declares the data-layout
+        # basis (DTPOL_*); tarr.feed_type describes the physical array. The
+        # two need not match -- switch_polrep transforms data across bases
+        # without touching tarr -- but we warn on the mismatch to flag the
+        # discrepancy.
+        feed_types = {str(ft) for ft in self.tarr['feed_type']}
+        if '??' in feed_types:
+            raise ValueError(
+                "tarr contains unset feed_type='??'; all stations must "
+                "declare a feed_type before constructing an Obsdata"
+            )
+        unknown = feed_types - ehc.VALID_FEED_TYPES
+        if unknown:
+            raise ValueError(
+                f"tarr contains unknown feed_type(s): {sorted(unknown)}; "
+                f"valid values are {sorted(ehc.VALID_FEED_TYPES)}"
+            )
+        if self.polrep == 'circ' and feed_types != {'rl'}:
+            warnings.warn(
+                f"polrep='circ' Obsdata constructed on a tarr with "
+                f"feed_types={sorted(feed_types)}; the data is in the circular "
+                f"basis but the physical array is not all-circular.",
+                stacklevel=2,
+            )
+        if self.polrep == 'lin' and feed_types != {'xy'}:
+            warnings.warn(
+                f"polrep='lin' Obsdata constructed on a tarr with "
+                f"feed_types={sorted(feed_types)}; the data is in the linear "
+                f"basis but the physical array is not all-linear.",
+                stacklevel=2,
+            )
+        if self.polrep == 'mixed':
+            if len(feed_types) < 2:
+                raise ValueError(
+                    f"polrep='mixed' requires at least two distinct feed types; "
+                    f"tarr has feed_types={sorted(feed_types)}"
+                )
+            sites_in_tarr = set(self.tarr['site'])
+            data_sites = set(self.data['t1']).union(self.data['t2'])
+            missing = data_sites - sites_in_tarr
+            if missing:
+                raise ValueError(
+                    f"polrep='mixed' data references stations not in tarr: "
+                    f"{sorted(missing)}"
+                )
+            # Populate polbasis: full feed_type of each station, concatenated.
+            # E.g. ('rl','rl') -> 'rlrl'; ('rl','xy') -> 'rlxy'.
+            t1_idx = np.fromiter((self.tkey[t] for t in self.data['t1']),
+                                 dtype=int, count=len(self.data))
+            t2_idx = np.fromiter((self.tkey[t] for t in self.data['t2']),
+                                 dtype=int, count=len(self.data))
+            ft_arr = self.tarr['feed_type']
+            self.data['polbasis'] = np.char.add(ft_arr[t1_idx], ft_arr[t2_idx])
+
         if np.any(self.tarr['sefdr'] != 0) or np.any(self.tarr['sefdl'] != 0):
             self.reorder_tarr_sefd(reorder_baselines=False)
 
@@ -269,21 +326,36 @@ class Obsdata:
         """Return a new observation with the polarization representation changed
 
            Args:
-               polrep_out (str):  the polrep of the output data
-               allow_singlepol (bool): If True, treat single-polarization data as Stokes I
-                                       when converting from 'circ' polrep to 'stokes'
-               singlepol_hand (str): 'R' or 'L'; determines which parallel-hand is assumed
-                                       when converting 'stokes' to 'circ' if only I is present
+               polrep_out (str):  the polrep of the output data ('stokes', 'circ', 'lin')
+               allow_singlepol (bool): If True, fill missing parallel-hand rows with the
+                                       surviving one (or with Stokes I) when converting.
+                                       Emits a warning whenever any substitution occurs.
+               singlepol_hand (str): For 'stokes' -> 'circ', 'R' or 'L'; for 'stokes' ->
+                                     'lin', 'X' or 'Y'. Case-insensitive. Selects which
+                                     parallel-hand receives Stokes I when only I is present.
 
            Returns:
                (Obsdata): new Obsdata object with potentially different polrep
         """
 
-        if polrep_out not in ['stokes', 'circ']:
-            raise Exception("polrep_out must be either 'stokes' or 'circ'")
+        if polrep_out not in ('stokes', 'circ', 'lin'):
+            raise Exception("polrep_out must be 'stokes', 'circ', or 'lin'")
+        if self.polrep == 'mixed':
+            raise NotImplementedError(
+                "conversion from polrep='mixed' is not yet implemented"
+            )
         if polrep_out == self.polrep:
             return self.copy()
-        elif polrep_out == 'stokes':  # circ -> stokes
+
+        def _warn_singlepol(n, msg):
+            if n > 0:
+                warnings.warn(
+                    f"switch_polrep: allow_singlepol substituted {n} row(s) "
+                    f"({msg}); cross-hand visibilities are not modified",
+                    stacklevel=3,
+                )
+
+        if polrep_out == 'stokes' and self.polrep == 'circ':  # circ -> stokes
             data = np.empty(len(self.data), dtype=ehc.DTPOL_STOKES)
             rrmask = np.isnan(self.data['rrvis'])
             llmask = np.isnan(self.data['llvis'])
@@ -300,15 +372,38 @@ class Obsdata:
                 self.data['rlsigma'], self.data['lrsigma'])
 
             if allow_singlepol:
-                # In cases where only one polarization is present
-                # use it as an estimator for Stokes I
                 data['vis'][rrmask] = self.data['llvis'][rrmask]
                 data['sigma'][rrmask] = self.data['llsigma'][rrmask]
-
                 data['vis'][llmask] = self.data['rrvis'][llmask]
                 data['sigma'][llmask] = self.data['rrsigma'][llmask]
+                _warn_singlepol(int(np.sum(rrmask | llmask)),
+                                "filled missing rrvis/llvis with surviving parallel-hand")
 
-        elif polrep_out == 'circ':  # stokes -> circ
+        elif polrep_out == 'stokes' and self.polrep == 'lin':  # lin -> stokes
+            data = np.empty(len(self.data), dtype=ehc.DTPOL_STOKES)
+            xxmask = np.isnan(self.data['xxvis'])
+            yymask = np.isnan(self.data['yyvis'])
+
+            for f in ['time', 'tint', 't1', 't2', 'tau1', 'tau2', 'u', 'v']:
+                data[f] = self.data[f]
+            (data['vis'], data['qvis'],
+             data['uvis'], data['vvis']) = pol_conventions.lin_to_stokes(
+                self.data['xxvis'], self.data['yyvis'],
+                self.data['xyvis'], self.data['yxvis'])
+            (data['sigma'], data['qsigma'],
+             data['usigma'], data['vsigma']) = pol_conventions.lin_to_stokes_sigma(
+                self.data['xxsigma'], self.data['yysigma'],
+                self.data['xysigma'], self.data['yxsigma'])
+
+            if allow_singlepol:
+                data['vis'][xxmask] = self.data['yyvis'][xxmask]
+                data['sigma'][xxmask] = self.data['yysigma'][xxmask]
+                data['vis'][yymask] = self.data['xxvis'][yymask]
+                data['sigma'][yymask] = self.data['xxsigma'][yymask]
+                _warn_singlepol(int(np.sum(xxmask | yymask)),
+                                "filled missing xxvis/yyvis with surviving parallel-hand")
+
+        elif polrep_out == 'circ' and self.polrep == 'stokes':  # stokes -> circ
             data = np.empty(len(self.data), dtype=ehc.DTPOL_CIRC)
             Vmask = np.isnan(self.data['vvis'])
 
@@ -324,13 +419,65 @@ class Obsdata:
                 self.data['usigma'], self.data['vsigma'])
 
             if allow_singlepol:
-                # In cases where only Stokes I is present, copy it to a specified parallel-hand
-                prefix = singlepol_hand.lower() + singlepol_hand.lower()  # rr or ll
-                if prefix not in ['rr', 'll']:
-                    raise Exception('singlepol_hand must be R or L')
-
+                hand = singlepol_hand.upper() if isinstance(singlepol_hand, str) else None
+                if hand not in ('R', 'L'):
+                    raise Exception(
+                        f"singlepol_hand must be 'R' or 'L' when converting to circ; "
+                        f"got {singlepol_hand!r}"
+                    )
+                prefix = hand.lower() * 2  # 'rr' or 'll'
                 data[prefix + 'vis'][Vmask] = self.data['vis'][Vmask]
                 data[prefix + 'sigma'][Vmask] = self.data['sigma'][Vmask]
+                _warn_singlepol(int(np.sum(Vmask)),
+                                f"copied Stokes I into {prefix}vis where vvis was missing")
+
+        elif polrep_out == 'lin' and self.polrep == 'stokes':  # stokes -> lin
+            data = np.empty(len(self.data), dtype=ehc.DTPOL_LIN)
+            Vmask = np.isnan(self.data['vvis'])
+
+            for f in ['time', 'tint', 't1', 't2', 'tau1', 'tau2', 'u', 'v']:
+                data[f] = self.data[f]
+            (data['xxvis'], data['yyvis'],
+             data['xyvis'], data['yxvis']) = pol_conventions.stokes_to_lin(
+                self.data['vis'], self.data['qvis'],
+                self.data['uvis'], self.data['vvis'])
+            (data['xxsigma'], data['yysigma'],
+             data['xysigma'], data['yxsigma']) = pol_conventions.stokes_to_lin_sigma(
+                self.data['sigma'], self.data['qsigma'],
+                self.data['usigma'], self.data['vsigma'])
+
+            if allow_singlepol:
+                hand = singlepol_hand.upper() if isinstance(singlepol_hand, str) else None
+                if hand not in ('X', 'Y'):
+                    raise Exception(
+                        f"singlepol_hand must be 'X' or 'Y' when converting to lin; "
+                        f"got {singlepol_hand!r}"
+                    )
+                prefix = hand.lower() * 2  # 'xx' or 'yy'
+                data[prefix + 'vis'][Vmask] = self.data['vis'][Vmask]
+                data[prefix + 'sigma'][Vmask] = self.data['sigma'][Vmask]
+                _warn_singlepol(int(np.sum(Vmask)),
+                                f"copied Stokes I into {prefix}vis where vvis was missing")
+
+        elif (self.polrep, polrep_out) in (('circ', 'lin'), ('lin', 'circ')):
+            # No direct kernel between linear and circular feed bases; route
+            # through Stokes. Both legs share the same allow_singlepol /
+            # singlepol_hand kwargs (singlepol_hand only fires on the
+            # stokes -> target leg, which validates it for the target basis).
+            return self.switch_polrep(
+                'stokes',
+                allow_singlepol=allow_singlepol,
+                singlepol_hand=singlepol_hand,
+            ).switch_polrep(
+                polrep_out,
+                allow_singlepol=allow_singlepol,
+                singlepol_hand=singlepol_hand,
+            )
+
+        else:
+            raise NotImplementedError(
+                f"switch_polrep({self.polrep!r} -> {polrep_out!r}) is not yet implemented"
+            )
 
         arglist, argdict = self.obsdata_args()
         arglist[DATPOS] = data
@@ -340,147 +487,139 @@ class Obsdata:
         return newobs
 
     def reorder_baselines(self, trial_speedups=False):
-        """Reorder baselines to match uvfits convention, based on the telescope array ordering
+        """Reorder baselines to canonical order (tkey[t1] < tkey[t2]) and handle duplicates.
+
+        Within each timestep, any row whose baseline is in reversed order is swapped
+        so it appears as (t1, t2) with tkey[t1] < tkey[t2], conjugating the
+        visibilities and negating (u, v) as needed.
+
+        After the swap, rows that collide on (time, t1, t2) are classified:
+          - **Conjugate pair**: one row was originally (A, B), the other (B, A) at
+            the same time. The two rows represent the same measurement; one is
+            silently dropped.
+          - **True duplicate or multi-channel data**: anything else. A
+            ``UserWarning`` is emitted and only the first row is kept. The
+            single-frequency Obsdata schema cannot represent per-channel data,
+            so loaders that flatten multi-channel files lose information here.
+
+        Args:
+            trial_speedups (bool): kept for API compatibility; the implementation
+                is now always vectorized and this flag has no effect.
         """
-        if trial_speedups:
-            self.reorder_baselines_trial_speedups()
-
-        else: # original code
-
-            # Time partition the datatable
-            datatable = self.data.copy()
-            datalist = []
-            for key, group in it.groupby(datatable, lambda x: x['time']):
-                #print(key*60*60,len(list(group)))
-                datalist.append(np.array([obs for obs in group]))
-
-            # loop through all data
-            obsdata = []
-            for tlist in datalist:
-                blpairs = []
-                for dat in tlist:
-                    # Remove conjugate baselines
-                    if (set((dat['t1'], dat['t2']))) not in blpairs:
-
-                        # Reverse the baseline in the right order for uvfits:
-                        if(self.tkey[dat['t2']] < self.tkey[dat['t1']]):
-
-                            (dat['t1'], dat['t2']) = (dat['t2'], dat['t1'])
-                            (dat['tau1'], dat['tau2']) = (dat['tau2'], dat['tau1'])
-                            dat['u'] = -dat['u']
-                            dat['v'] = -dat['v']
-
-                            if self.polrep == 'stokes':
-                                dat['vis'] = np.conj(dat['vis'])
-                                dat['qvis'] = np.conj(dat['qvis'])
-                                dat['uvis'] = np.conj(dat['uvis'])
-                                dat['vvis'] = np.conj(dat['vvis'])
-                            elif self.polrep == 'circ':
-                                dat['rrvis'] = np.conj(dat['rrvis'])
-                                dat['llvis'] = np.conj(dat['llvis'])
-                                # must switch l & r !!
-                                rl = dat['rlvis'].copy()
-                                lr = dat['lrvis'].copy()
-                                dat['rlvis'] = np.conj(lr)
-                                dat['lrvis'] = np.conj(rl)
-
-                                # You also have to switch the errors for the coherency!
-                                rlerr = dat['rlsigma'].copy()
-                                lrerr = dat['lrsigma'].copy()
-                                dat["rlsigma"] = lrerr
-                                dat["lrsigma"] = rlerr
-
-                            else:
-                                raise Exception("polrep must be either 'stokes' or 'circ'")
-
-                        # Append the data point
-                        blpairs.append(set((dat['t1'], dat['t2'])))
-                        obsdata.append(dat)
-
-            obsdata = np.array(obsdata, dtype=self.poltype)
-
-            # Timesort data
-            obsdata = obsdata[np.argsort(obsdata, order=['time', 't1'])]
-
-            # Save the data
-            self.data = obsdata
-
-        return
-
-    def reorder_baselines_trial_speedups(self):
-        """Reorder baselines to match uvfits convention, based on the telescope array ordering
-        """
-
         dat = self.data.copy()
 
-        ############ Ensure correct baseline order
-        # TODO can these be faster?
-        t1nums = np.fromiter([self.tkey[t] for t in dat['t1']],int)
-        t2nums = np.fromiter([self.tkey[t] for t in dat['t2']],int)
-
-        # which entries are in the wrong telescope order?
+        t1nums = np.fromiter((self.tkey[t] for t in dat['t1']), int, count=len(dat))
+        t2nums = np.fromiter((self.tkey[t] for t in dat['t2']), int, count=len(dat))
         ordermask = t2nums < t1nums
 
-        # flip the order of these entries
-        t1 = dat['t1'].copy()
-        t2 = dat['t2'].copy()
-        tau1 = dat['tau1'].copy()
-        tau2 = dat['tau2'].copy()
-
-        dat['t1'][ordermask] = t2[ordermask]
-        dat['t2'][ordermask] = t1[ordermask]
-        dat['tau1'][ordermask] = tau2[ordermask]
-        dat['tau2'][ordermask] = tau1[ordermask]
+        # Swap reversed rows: site labels, opacities, (u,v), and the visibilities.
+        t1_orig = dat['t1'].copy()
+        t2_orig = dat['t2'].copy()
+        tau1_orig = dat['tau1'].copy()
+        tau2_orig = dat['tau2'].copy()
+        dat['t1'][ordermask] = t2_orig[ordermask]
+        dat['t2'][ordermask] = t1_orig[ordermask]
+        dat['tau1'][ordermask] = tau2_orig[ordermask]
+        dat['tau2'][ordermask] = tau1_orig[ordermask]
         dat['u'][ordermask] *= -1
         dat['v'][ordermask] *= -1
 
-        if self.polrep=='stokes':
-            dat['vis'][ordermask]  = np.conj(dat['vis'][ordermask])
-            dat['qvis'][ordermask] = np.conj(dat['qvis'][ordermask])
-            dat['uvis'][ordermask] = np.conj(dat['uvis'][ordermask])
-            dat['vvis'][ordermask] = np.conj(dat['vvis'][ordermask])
-
+        if self.polrep == 'stokes':
+            for f in ('vis', 'qvis', 'uvis', 'vvis'):
+                dat[f][ordermask] = np.conj(dat[f][ordermask])
         elif self.polrep == 'circ':
             dat['rrvis'][ordermask] = np.conj(dat['rrvis'][ordermask])
             dat['llvis'][ordermask] = np.conj(dat['llvis'][ordermask])
-            rl = dat['rlvis'].copy()
-            lr = dat['lrvis'].copy()
-            dat['rlvis'][ordermask] = np.conj(lr[ordermask])
-            dat['lrvis'][ordermask] = np.conj(rl[ordermask])
-
-            # Also need to switch error matrix
-            rle = dat['rlsigma'].copy()
-            lre = dat['lrsigma'].copy()
-            dat['rlsigma'][ordermask] = lre[ordermask]
-            dat['lrsigma'][ordermask] = rle[ordermask]
-
+            rl_orig = dat['rlvis'].copy()
+            lr_orig = dat['lrvis'].copy()
+            dat['rlvis'][ordermask] = np.conj(lr_orig[ordermask])
+            dat['lrvis'][ordermask] = np.conj(rl_orig[ordermask])
+            rls_orig = dat['rlsigma'].copy()
+            lrs_orig = dat['lrsigma'].copy()
+            dat['rlsigma'][ordermask] = lrs_orig[ordermask]
+            dat['lrsigma'][ordermask] = rls_orig[ordermask]
+        elif self.polrep == 'lin':
+            dat['xxvis'][ordermask] = np.conj(dat['xxvis'][ordermask])
+            dat['yyvis'][ordermask] = np.conj(dat['yyvis'][ordermask])
+            xy_orig = dat['xyvis'].copy()
+            yx_orig = dat['yxvis'].copy()
+            dat['xyvis'][ordermask] = np.conj(yx_orig[ordermask])
+            dat['yxvis'][ordermask] = np.conj(xy_orig[ordermask])
+            xys_orig = dat['xysigma'].copy()
+            yxs_orig = dat['yxsigma'].copy()
+            dat['xysigma'][ordermask] = yxs_orig[ordermask]
+            dat['yxsigma'][ordermask] = xys_orig[ordermask]
+        elif self.polrep == 'mixed':
+            # Same conjugate/swap algebra as circ/lin, in generic-slot names.
+            dat['p1p1vis'][ordermask] = np.conj(dat['p1p1vis'][ordermask])
+            dat['p2p2vis'][ordermask] = np.conj(dat['p2p2vis'][ordermask])
+            p12_orig = dat['p1p2vis'].copy()
+            p21_orig = dat['p2p1vis'].copy()
+            dat['p1p2vis'][ordermask] = np.conj(p21_orig[ordermask])
+            dat['p2p1vis'][ordermask] = np.conj(p12_orig[ordermask])
+            p12s_orig = dat['p1p2sigma'].copy()
+            p21s_orig = dat['p2p1sigma'].copy()
+            dat['p1p2sigma'][ordermask] = p21s_orig[ordermask]
+            dat['p2p1sigma'][ordermask] = p12s_orig[ordermask]
+            # polbasis encodes t1_feed+t2_feed; swap the two halves on
+            # reordered rows so the encoding stays consistent with (t1,t2).
+            pb_swapped = np.array([s[2:] + s[:2] for s in dat['polbasis']],
+                                  dtype='U4')
+            dat['polbasis'][ordermask] = pb_swapped[ordermask]
         else:
-            raise Exception("polrep must be either 'stokes' or 'circ'")
+            raise Exception(f"reorder_baselines: unsupported polrep={self.polrep!r}")
 
-        # Remove duplicate or conjugate entries at any timestep
-        # Since telescope order has been sorted conjugates should appear as duplicates
-        timeblcombos = np.vstack((dat['time'],t1nums,t2nums)).T
-        uniqdat, uniqdatinv = np.unique(timeblcombos,axis=0, return_inverse=True)
+        # Group rows by canonical (time, t1, t2). np.unique with axis=0 collapses
+        # repeated rows in `keys` and returns:
+        #   first_idx[g] -> index in `keys` of the first occurrence of group g
+        #   inverse[i]   -> the group id that row i belongs to
+        #   counts[g]    -> number of rows belonging to group g
+        canon_t1 = np.minimum(t1nums, t2nums)
+        canon_t2 = np.maximum(t1nums, t2nums)
+        keys = np.stack(
+            (dat['time'], canon_t1.astype(float), canon_t2.astype(float)), axis=1,
+        )
+        _, first_idx, inverse, counts = np.unique(
+            keys, axis=0, return_index=True, return_inverse=True, return_counts=True,
+        )
 
-        if len(uniqdat) != len(dat):
-            print("WARNING: removing duplicate/conjuagte points in reorder_baselines!")
-            deletemask = np.ones(len(dat)).astype(bool)
+        if np.any(counts > 1):
+            # Start by keeping only the first occurrence of each group.
+            keep = np.zeros(len(dat), dtype=bool)
+            keep[first_idx] = True
 
-            for j in range(len(uniqdat)):
-                idxs = np.argwhere(uniqdatinv==j)[:,0]
-                for idx in idxs[1:]: # delete all but first occurance
-                    deletemask[idx] = False
+            # True conjugate pair: exactly two rows, opposite original
+            # orderings (one had ordermask=True, one False), with matching
+            # (u, v) after the swap negates (u, v) on the reversed row. Drop
+            # one silently. Any other collision -- including same-side
+            # duplicates with matching uv (data inconsistency), or more than
+            # two rows, or mismatched (u, v) (multi-channel data flattened
+            # into a single-frequency schema) -- is real data loss; warn.
+            n_true_dupes_dropped = 0
+            for g in np.where(counts > 1)[0]:
+                members = np.where(inverse == g)[0]
+                uv = np.stack((dat['u'][members], dat['v'][members]), axis=1)
+                is_conj_pair = (
+                    len(members) == 2
+                    and ordermask[members].sum() == 1
+                    and np.allclose(uv[0], uv[1])
+                )
+                if is_conj_pair:
+                    pass
+                else:
+                    n_true_dupes_dropped += len(members) - 1
 
-            # remove duplicates
-            dat_unique = dat[deletemask]
+            if n_true_dupes_dropped > 0:
+                warnings.warn(
+                    f"reorder_baselines: dropped {n_true_dupes_dropped} duplicate "
+                    "row(s) at matching (time, t1, t2) that aren't a conjugate pair "
+                    "(e.g. flattened multi-channel or duplicate data) "
+                    "Inspect your loader.",
+                    stacklevel=2,
+                )
+            dat = dat[keep]
 
-        # sort data
-        dat = dat[np.argsort(dat, order=['time', 't1'])]
-
-        # save the data
-        self.data = dat
-
-        return
+        self.data = dat[np.argsort(dat, order=['time', 't1'])]
 
     def reorder_tarr_sefd(self, reorder_baselines=True):
         """Reorder the telescope array by SEFD minimal to maximum.
@@ -1265,6 +1404,11 @@ class Obsdata:
            Returns:
                 (Obsdata): Obsdata object containing averaged data
         """
+        if self.polrep in ('lin', 'mixed'):
+            raise NotImplementedError(
+                f"avg_coherent is not yet supported on polrep={self.polrep!r}; "
+                "the averaging code is currently CIRC/STOKES-only."
+            )
 
         if (scan_avg) and (getattr(self.scans, "shape", None) is None or len(self.scans) == 0):
             print('No scan data, ignoring scan_avg!')
@@ -1298,6 +1442,11 @@ class Obsdata:
            Returns:
                 (Obsdata): Obsdata object containing averaged data
         """
+        if self.polrep in ('lin', 'mixed'):
+            raise NotImplementedError(
+                f"avg_incoherent is not yet supported on polrep={self.polrep!r}; "
+                "the averaging code is currently CIRC/STOKES-only."
+            )
 
         print('Incoherently averaging data, putting phases to zero!')
         amp_rec = ehdf.incoh_avg_vis(self, dt=inttime, debias=debias, scan_avg=scan_avg,
@@ -1508,6 +1657,12 @@ class Obsdata:
            Returns:
                (Image): an Image object with dirty image.
         """
+        if self.polrep == 'mixed':
+            raise NotImplementedError(
+                "dirtyimage is not supported on polrep='mixed' observations: "
+                "per-baseline feed-basis interpretation varies and Image has no "
+                "'mixed' polrep. Call obs.switch_polrep('stokes') first."
+            )
 
         pdim = fov / npix
         u = self.unpack('u')['u']

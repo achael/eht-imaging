@@ -35,23 +35,15 @@ from ehtim.caltable import plot_tarr_dterms
 # Array object
 ###################################################################################################
 
-# Valid two-character feed_type strings for a single station (lowercase).
-# Mixed-basis stations (e.g. Effelsberg R+X) are explicitly enumerated.
-VALID_FEED_TYPES = frozenset({
-    'rl', 'lr', 'xy', 'yx',
-    'rx', 'ry', 'lx', 'ly',
-    'xr', 'xl', 'yr', 'yl',
-})
-
 # Default symmetric SEFD when none is supplied (legacy convention).
 _DEFAULT_SEFD = 10000.0
 
 
 def _validate_feed_type(feed_type):
     """Raise ValueError if feed_type is not a recognised 2-char feed string."""
-    if not isinstance(feed_type, str) or feed_type.lower() not in VALID_FEED_TYPES:
+    if not isinstance(feed_type, str) or feed_type.lower() not in ehc.VALID_FEED_TYPES:
         raise ValueError(
-            f"feed_type must be one of {sorted(VALID_FEED_TYPES)}; "
+            f"feed_type must be one of {sorted(ehc.VALID_FEED_TYPES)}; "
             f"got {feed_type!r}")
 
 
@@ -95,7 +87,7 @@ class TarrView:
 
     Note: this guard catches whole-column access (tarr['sefdr']). It does
     not catch row-form access (tarr[i]['sefdr']) — the row is a numpy
-    void object owned by numpy. Phase 2+ code should prefer
+    void object owned by numpy. New code should prefer
     Array.sefd_for_feed / Array.dterm_for_feed for per-station lookups.
     """
 
@@ -401,7 +393,7 @@ class Array:
                              all-RL feeds; 'lin' requires all-XY feeds; 'mixed'
                              requires at least two distinct feed types. 'lin'
                              and 'mixed' are not yet wired through the
-                             simulation backend (Phase 5).
+                             simulation backend.
                elevmin (float): station minimum elevation in degrees
                elevmax (float): station maximum elevation in degrees
                no_elevcut_space (bool): if True, do not apply elevation cut to orbiters
@@ -433,8 +425,7 @@ class Array:
         if polrep in ('lin', 'mixed'):
             raise NotImplementedError(
                 f"Array.obsdata(polrep={polrep!r}) is not yet supported by "
-                f"the simulation backend (see Phase 5 of "
-                f"obsdata_mixedpol_plan_v2.md)")
+                f"the simulation backend")
 
         obsarr = simobs.make_uvpoints(self, ra, dec, rf, bw,
                                       tint, tadv, tstart, tstop,
