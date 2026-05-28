@@ -808,7 +808,7 @@ def make_caltable(obs, gains, sites, times):
     for s in range(0, ntele):
         datatable = []
         for t in range(0, ntimes):
-            gain = gains[s * ntele + t]
+            gain = gains[s * ntimes + t]
             datatable.append(np.array((times[t], gain, gain), dtype=ehc.DTCAL))
         datatables[sites[s]] = np.array(datatable)
     if len(datatables) > 0:

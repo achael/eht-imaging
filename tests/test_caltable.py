@@ -131,19 +131,20 @@ class TestCaltableConstruction:
     def test_make_caltable_returns_false_on_empty(self, obs_direct):
         assert eh.caltable.make_caltable(obs_direct, [], [], []) is False
 
-    @pytest.mark.xfail(reason="make_caltable uses gains[s*ntele + t] instead of "
-                              "s*ntimes + t; rect (ntele != ntimes) yields a "
-                              "transposed/OOB indexing. Separate fix PR.",
-                       strict=True)
     def test_make_caltable_rect_ntele_ne_ntimes(self, obs_direct):
+        # ntele=2, ntimes=3. With the correct s*ntimes + t indexing, gain at
+        # (site i, time j) is gains[i*ntimes + j].
         sites = list(obs_direct.tarr['site'])[:2]
         times = [obs_direct.data['time'].min(),
                  (obs_direct.data['time'].min() + obs_direct.data['time'].max()) / 2,
                  obs_direct.data['time'].max()]
-        gains = [complex(idx) for idx in range(6)]   # s*ntimes + t
+        gains = np.arange(6, dtype=complex)
         ct = eh.caltable.make_caltable(obs_direct, gains, sites, times)
-        # site sites[1], time times[0] -> gains[1*3 + 0] = 3
-        assert ct.data[sites[1]][0]['rscale'] == 3 + 0j
+        expected = gains.reshape(2, 3)
+        got_r = np.stack([ct.data[site]['rscale'] for site in sites])
+        got_l = np.stack([ct.data[site]['lscale'] for site in sites])
+        np.testing.assert_array_equal(got_r, expected)
+        np.testing.assert_array_equal(got_l, expected)
 
 
 # ---------------------------------------------------------------------------
