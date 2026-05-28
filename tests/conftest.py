@@ -252,22 +252,19 @@ def _make_caldict(tarr_sites, times, rscale=1.0 + 0j, lscale=1.0 + 0j):
 
     Each site's entry is a length-len(times) recarray of (time, rscale, lscale).
     Uniform gains by default; pass scalars or arrays-of-length-len(times).
+    All sites share the same per-time gain array (one fill, dict copies).
     """
     import numpy as np
 
     from ehtim.const_def import DTCAL
 
-
     times = np.asarray(times, dtype=float)
     n = len(times)
-    r = np.broadcast_to(np.asarray(rscale, dtype=complex), (n,))
-    ll = np.broadcast_to(np.asarray(lscale, dtype=complex), (n,))
-    return {
-        site: np.array(
-            [(times[k], r[k], ll[k]) for k in range(n)], dtype=DTCAL,
-        ).view(np.recarray)
-        for site in tarr_sites
-    }
+    template = np.empty(n, dtype=DTCAL)
+    template['time'] = times
+    template['rscale'] = np.broadcast_to(np.asarray(rscale, dtype=complex), (n,))
+    template['lscale'] = np.broadcast_to(np.asarray(lscale, dtype=complex), (n,))
+    return {site: template.copy().view(np.recarray) for site in tarr_sites}
 
 
 def _caltable_from(obs, caldict):
@@ -321,19 +318,22 @@ def injected_gain_caltable_factory(obs_direct):
         t0 = target.data["time"].min() - 1.0
         t1 = target.data["time"].max() + 1.0
         times = np.linspace(t0, t1, n_times)
+        sites = target.tarr["site"]
+        n_sites = len(sites)
+        # Sample all sites at once: shape (n_sites, n_times).
+        r_amp = rng.lognormal(0.0, amp_sigma, size=(n_sites, n_times))
+        l_amp = rng.lognormal(0.0, amp_sigma, size=(n_sites, n_times))
+        r_phi = rng.uniform(-np.pi, np.pi, size=(n_sites, n_times))
+        l_phi = rng.uniform(-np.pi, np.pi, size=(n_sites, n_times))
+        r = r_amp * np.exp(1j * r_phi)
+        ll = l_amp * np.exp(1j * l_phi)
         caldict = {}
-        for site in target.tarr["site"]:
-            r_amp = rng.lognormal(0.0, amp_sigma, size=n_times)
-            l_amp = rng.lognormal(0.0, amp_sigma, size=n_times)
-            r_phi = rng.uniform(-np.pi, np.pi, size=n_times)
-            l_phi = rng.uniform(-np.pi, np.pi, size=n_times)
-            caldict[site] = np.array(
-                [(times[k],
-                  r_amp[k] * np.exp(1j * r_phi[k]),
-                  l_amp[k] * np.exp(1j * l_phi[k]))
-                 for k in range(n_times)],
-                dtype=DTCAL,
-            ).view(np.recarray)
+        for k, site in enumerate(sites):
+            arr = np.empty(n_times, dtype=DTCAL)
+            arr['time'] = times
+            arr['rscale'] = r[k]
+            arr['lscale'] = ll[k]
+            caldict[site] = arr.view(np.recarray)
         return _caltable_from(target, caldict)
     return _factory
 

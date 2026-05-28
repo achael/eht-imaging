@@ -42,6 +42,18 @@ SEED_SAVE_TXT_MATCH = 5
 SEED_SQRT_ROUNDTRIP = 11
 
 
+def _stack_gains(ct):
+    """Return (rscale_stack, lscale_stack) concatenated across sites.
+
+    Many tests assert a single property uniformly over all sites; flattening
+    the per-site arrays into one buffer turns the assertion into one vectorised
+    call instead of a per-site loop.
+    """
+    rs = np.concatenate([arr['rscale'] for arr in ct.data.values()])
+    ls = np.concatenate([arr['lscale'] for arr in ct.data.values()])
+    return rs, ls
+
+
 def _unity_caltable(obs):
     """A Caltable with rscale = lscale = 1 for every site, spanning the obs times.
 
@@ -101,8 +113,9 @@ class TestCaltableConstruction:
 
     def test_init_builds_tkey_from_tarr(self, unity_caltable):
         ct = unity_caltable
-        for i, row in enumerate(ct.tarr):
-            assert ct.tkey[row['site']] == i
+        idx = np.fromiter((ct.tkey[s] for s in ct.tarr['site']),
+                          dtype=int, count=len(ct.tarr))
+        np.testing.assert_array_equal(idx, np.arange(len(ct.tarr)))
 
     def test_init_rejects_bad_timetype(self, obs_direct):
         with pytest.raises(Exception, match="GMST"):
@@ -185,25 +198,24 @@ class TestInvertGains:
     def test_invert_unity_is_unity(self, unity_caltable):
         ct = unity_caltable.copy()
         ct.invert_gains()
-        for site in ct.data:
-            np.testing.assert_allclose(ct.data[site]['rscale'], 1 + 0j)
-            np.testing.assert_allclose(ct.data[site]['lscale'], 1 + 0j)
+        r_stack, l_stack = _stack_gains(ct)
+        np.testing.assert_allclose(r_stack, 1 + 0j)
+        np.testing.assert_allclose(l_stack, 1 + 0j)
 
     def test_invert_constant_g_yields_reciprocal(self, constant_gain_caltable_factory):
         ct = constant_gain_caltable_factory(CONST_REAL_GAIN)
         ct.invert_gains()
-        for site in ct.data:
-            np.testing.assert_allclose(ct.data[site]['rscale'], 1 / CONST_REAL_GAIN)
-            np.testing.assert_allclose(ct.data[site]['lscale'], 1 / CONST_REAL_GAIN)
+        r_stack, l_stack = _stack_gains(ct)
+        np.testing.assert_allclose(r_stack, 1 / CONST_REAL_GAIN)
+        np.testing.assert_allclose(l_stack, 1 / CONST_REAL_GAIN)
 
     def test_invert_twice_is_identity(self, injected_gain_caltable_factory):
         ct = injected_gain_caltable_factory(seed=SEED_INVERT_ROUNDTRIP)
-        ref = {site: ct.data[site]['rscale'].copy() for site in ct.data}
+        ref_r, _ = _stack_gains(ct)
         ct.invert_gains()
         ct.invert_gains()
-        for site, expected in ref.items():
-            np.testing.assert_allclose(ct.data[site]['rscale'], expected,
-                                       rtol=BIT_CLEAN_RTOL)
+        r_stack, _ = _stack_gains(ct)
+        np.testing.assert_allclose(r_stack, ref_r, rtol=BIT_CLEAN_RTOL)
 
     def test_invert_returns_self(self, unity_caltable):
         ct = unity_caltable.copy()
@@ -216,17 +228,19 @@ class TestInvertGains:
 
 
 def _caltable_with_times(obs, times, rscale=1.0 + 0j, lscale=1.0 + 0j):
-    """Helper: build a Caltable with arbitrary per-time gains for every site."""
+    """Helper: build a Caltable with arbitrary per-time gains for every site.
+
+    All sites share the same gain template; per-site arrays are copies so
+    mutating one site's gains doesn't leak across sites.
+    """
     times = np.asarray(times, dtype=float)
     n = len(times)
-    r = np.broadcast_to(np.asarray(rscale, dtype=complex), (n,))
-    ll = np.broadcast_to(np.asarray(lscale, dtype=complex), (n,))
-    caldict = {
-        site: np.array(
-            [(times[k], r[k], ll[k]) for k in range(n)], dtype=DTCAL,
-        ).view(np.recarray)
-        for site in obs.tarr['site']
-    }
+    template = np.empty(n, dtype=DTCAL)
+    template['time'] = times
+    template['rscale'] = np.broadcast_to(np.asarray(rscale, dtype=complex), (n,))
+    template['lscale'] = np.broadcast_to(np.asarray(lscale, dtype=complex), (n,))
+    caldict = {site: template.copy().view(np.recarray)
+               for site in obs.tarr['site']}
     return eh.caltable.Caltable(
         obs.ra, obs.dec, obs.rf, obs.bw, caldict, obs.tarr,
         source=obs.source, mjd=obs.mjd, timetype=obs.timetype,
@@ -441,11 +455,10 @@ class TestEnforcePositive:
     def test_no_op_when_all_gains_above_min(self, unity_caltable):
         out = unity_caltable.enforce_positive(method='median', min_gain=0.5,
                                               verbose=False)
-        for site in unity_caltable.data:
-            np.testing.assert_allclose(out.data[site]['rscale'],
-                                       unity_caltable.data[site]['rscale'])
-            np.testing.assert_allclose(out.data[site]['lscale'],
-                                       unity_caltable.data[site]['lscale'])
+        out_r, out_l = _stack_gains(out)
+        in_r, in_l = _stack_gains(unity_caltable)
+        np.testing.assert_allclose(out_r, in_r)
+        np.testing.assert_allclose(out_l, in_l)
 
     def test_rescales_low_gains_above_threshold(self, constant_gain_caltable_factory):
         # All gains g = CONST_LOW_GAIN < DEFAULT_MIN_GAIN ⇒ median |g| = |g|,
@@ -453,9 +466,9 @@ class TestEnforcePositive:
         ct = constant_gain_caltable_factory(CONST_LOW_GAIN)
         out = ct.enforce_positive(method='median', min_gain=DEFAULT_MIN_GAIN,
                                   verbose=False)
-        for site in out.data:
-            np.testing.assert_allclose(np.abs(out.data[site]['rscale']), 1.0)
-            np.testing.assert_allclose(np.abs(out.data[site]['lscale']), 1.0)
+        out_r, out_l = _stack_gains(out)
+        np.testing.assert_allclose(np.abs(out_r), 1.0)
+        np.testing.assert_allclose(np.abs(out_l), 1.0)
 
     def test_unknown_method_returns_unchanged_copy(self, constant_gain_caltable_factory):
         ct = constant_gain_caltable_factory(CONST_LOW_GAIN)
