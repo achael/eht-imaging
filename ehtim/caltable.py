@@ -622,7 +622,7 @@ class Caltable:
            Returns:
                (Caltable): the averaged Caltable object
         """
-        sites = self.data.keys()
+        sites = list(self.data.keys())
         ntele = len(sites)
 
         datatables = {}
