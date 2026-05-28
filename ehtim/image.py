@@ -3453,7 +3453,7 @@ class Image:
                 rgbstring = color
             cs = plt.contour(x, y, z, levels=[level * maxz], colors=rgbstring, cmap=None)
             count += 1
-            cs.collections[0].set_label(str(int(level * 100)) + '%')
+            cs.set_label(str(int(level * 100)) + '%')
         if legend:
             plt.legend()
 
