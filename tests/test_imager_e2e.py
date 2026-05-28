@@ -195,11 +195,11 @@ class TestEndToEndReconstruction:
 
 
 def test_imager_fast_ttype_warns_deprecated(gauss_im, observe):
-    """Constructing an Imager with ttype='fast' emits a DeprecationWarning
-    pointing to nfft (the FFT imaging gradients are inaccurate)."""
+    """Constructing an Imager with ttype='fast' emits the imaging-context
+    DeprecationWarning noting that gradients are inaccurate."""
     obs = observe(gauss_im, ttype="nfft")
     prior = _independent_prior(gauss_im.total_flux())
-    with pytest.warns(DeprecationWarning, match=r"ttype='fast'"):
+    with pytest.warns(DeprecationWarning, match=r"gradients are inaccurate"):
         eh.imager.Imager(
             obs, prior, prior_im=prior, flux=gauss_im.total_flux(),
             **_imager_kwargs_stokes_i("fast"),

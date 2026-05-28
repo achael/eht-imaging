@@ -196,7 +196,7 @@ class Imager:
         # FFT / Fourier-grid parameters (consumed by the backend via self._fft_params())
         ttype = kwargs.get('ttype', 'nfft')
         if ttype == 'fast':
-            obsh.warn_fast_ttype_deprecated()
+            obsh.warn_fast_ttype_deprecated_imaging()
         self._fft_gridder_prad = kwargs.get('fft_gridder_prad', GRIDDER_P_RAD_DEFAULT)
         self._fft_conv_func = kwargs.get('fft_conv_func', GRIDDER_CONV_FUNC_DEFAULT)
         self._fft_pad_factor = kwargs.get('fft_pad_factor', FFT_PAD_DEFAULT)

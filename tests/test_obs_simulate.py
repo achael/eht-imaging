@@ -881,13 +881,21 @@ class TestAddNoiseLegacy:
 
 
 def test_observe_fast_ttype_warns_deprecated(gauss_im, observe):
-    """Forward sampling with ttype='fast' emits a DeprecationWarning pointing
-    to nfft (the FFT sampler/gridder are not adjoint operators)."""
-    with pytest.warns(DeprecationWarning, match=r"ttype='fast'"):
+    """Forward sampling with ttype='fast' emits the sampling-context
+    DeprecationWarning (no gradient note — those values are correct)."""
+    with pytest.warns(DeprecationWarning, match=r"ttype='fast'") as w:
         observe(gauss_im, ttype="fast")
+    assert "gradient" not in str(w.list[0].message)
 
 
 def test_warn_fast_ttype_deprecated_helper():
-    """The shared helper emits a DeprecationWarning."""
-    with pytest.warns(DeprecationWarning, match=r"ttype='fast'"):
+    """The sampling helper does not mention gradients."""
+    with pytest.warns(DeprecationWarning, match=r"ttype='fast'") as w:
         obsh.warn_fast_ttype_deprecated()
+    assert "gradient" not in str(w.list[0].message)
+
+
+def test_warn_fast_ttype_deprecated_imaging_helper():
+    """The imaging helper additionally notes that gradients are inaccurate."""
+    with pytest.warns(DeprecationWarning, match=r"gradients are inaccurate"):
+        obsh.warn_fast_ttype_deprecated_imaging()

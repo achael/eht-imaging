@@ -47,18 +47,28 @@ warnings.filterwarnings("ignore", message="divide by zero encountered in double_
 def warn_fast_ttype_deprecated():
     """Emit a DeprecationWarning for the ``ttype='fast'`` (plain FFT) path.
 
-    The plain-FFT transform is deprecated: its imaging gradients are
-    inaccurate because the forward sampler (cubic-spline interpolation of the
-    FFT grid) and the adjoint gridder (Gaussian convolution) are not transpose
-    operators, so the FFT gradient does not match the FFT chi-squared. Use
-    ``ttype='nfft'`` (accurate, recommended) or ``ttype='direct'`` (small
-    problems) instead.
+    Used at forward-sampling sites where the path is deprecated but otherwise
+    correct. For imaging callers, use :func:`warn_fast_ttype_deprecated_imaging`,
+    which additionally notes that the FFT imaging gradients are inaccurate.
     """
     warnings.warn(
         "ttype='fast' (plain FFT) is deprecated and will be removed in a "
-        "future release. Its imaging gradients are inaccurate (the FFT sampler "
-        "and gridder are not adjoint operators). Use ttype='nfft' (recommended) "
-        "or ttype='direct' instead.",
+        "future release. Use ttype='nfft' (recommended) or ttype='direct' "
+        "instead.",
+        DeprecationWarning, stacklevel=2,
+    )
+
+
+def warn_fast_ttype_deprecated_imaging():
+    """Emit a DeprecationWarning for ``ttype='fast'`` from imaging callers.
+
+    Same as :func:`warn_fast_ttype_deprecated` but adds the imaging-specific
+    note that FFT gradients are inaccurate.
+    """
+    warnings.warn(
+        "ttype='fast' (plain FFT) is deprecated and will be removed in a "
+        "future release; its imaging gradients are inaccurate. Use "
+        "ttype='nfft' (recommended) or ttype='direct' instead.",
         DeprecationWarning, stacklevel=2,
     )
 
