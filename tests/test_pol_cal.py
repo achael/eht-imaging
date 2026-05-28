@@ -12,10 +12,13 @@ LEAKAGE_RECOVERY_ATOL = 5e-2
 LEAKAGE_TOL = 0.1
 SHOW_SOLUTION = False
 
-# Minimum cross-hand residual reduction. Sites whose PA coverage cannot lift
-# the D-term/source-pol degeneracy cap how far the residual can drop; the
-# observed reduction at EHT2017 + this declination is ~40%.
-RESIDUAL_REDUCTION_FRAC = 0.3
+# Cross-hand residual reduction must land inside this window after cal.
+# Lower bound: leakage_cal is doing useful work (sites with PA coverage on
+# this fixture reduce ~40% even with PV/SPT/SMA being PA-degenerate).
+# Upper bound: catches a regression where leakage_cal stops calibrating but
+# the residual still drops by chance (e.g. an internal noop returning zeros).
+RESIDUAL_REDUCTION_FRAC_MIN = 0.3
+RESIDUAL_REDUCTION_FRAC_MAX = 0.9
 
 # Full 24h obs so all sites get enough parallactic-angle coverage to lift the
 # D-term / source-pol degeneracy.
@@ -87,8 +90,8 @@ class TestLeakageCalInjectedDterms:
     def test_cross_hand_residual_drops_after_cal(
         self, obs_pol_dense_dterm_corrupted, obs_pol_dense, gauss_im_pol,
     ):
-        # Gauge-invariant check: the cross-hand residual against the clean
-        # source obs must shrink by at least RESIDUAL_REDUCTION_FRAC.
+        # Gauge-invariant: the cross-hand residual must drop into the
+        # documented [MIN, MAX] window after leakage_cal.
         corrupt = obs_pol_dense_dterm_corrupted
         before = _cross_hand_residual(corrupt, obs_pol_dense)
         out = polcal.leakage_cal(
@@ -96,7 +99,8 @@ class TestLeakageCalInjectedDterms:
             leakage_tol=LEAKAGE_TOL, show_solution=SHOW_SOLUTION,
         )
         after = _cross_hand_residual(out, obs_pol_dense)
-        assert after < before * (1 - RESIDUAL_REDUCTION_FRAC)
+        reduction = 1.0 - after / before
+        assert RESIDUAL_REDUCTION_FRAC_MIN <= reduction <= RESIDUAL_REDUCTION_FRAC_MAX
 
 
 class TestLeakageCalReturnType:
