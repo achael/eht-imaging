@@ -240,3 +240,115 @@ def initialize_imager():
         imcur = transform_imarr(imcur, imgr._config.transforms, imgr._which_solve)
         return imgr, imcur
     return _factory
+
+
+# ---------------------------------------------------------------------------
+# Calibration-cluster fixtures (Caltable + cal modules)
+# ---------------------------------------------------------------------------
+
+
+def _make_caldict(tarr_sites, times, rscale=1.0 + 0j, lscale=1.0 + 0j):
+    """Build a DTCAL datadict keyed by site name.
+
+    Each site's entry is a length-len(times) recarray of (time, rscale, lscale).
+    Uniform gains by default; pass scalars or arrays-of-length-len(times).
+    """
+    import numpy as np
+
+    from ehtim.const_def import DTCAL
+
+
+    times = np.asarray(times, dtype=float)
+    n = len(times)
+    r = np.broadcast_to(np.asarray(rscale, dtype=complex), (n,))
+    ll = np.broadcast_to(np.asarray(lscale, dtype=complex), (n,))
+    return {
+        site: np.array(
+            [(times[k], r[k], ll[k]) for k in range(n)], dtype=DTCAL,
+        ).view(np.recarray)
+        for site in tarr_sites
+    }
+
+
+def _caltable_from(obs, caldict):
+    return eh.caltable.Caltable(
+        obs.ra, obs.dec, obs.rf, obs.bw, caldict, obs.tarr,
+        source=obs.source, mjd=obs.mjd, timetype=obs.timetype,
+    )
+
+
+@pytest.fixture(scope="session")
+def unity_caltable(obs_direct):
+    """Caltable with rscale = lscale = 1+0j for every site, spanning obs times."""
+    times = [obs_direct.data["time"].min() - 1.0,
+             obs_direct.data["time"].max() + 1.0]
+    return _caltable_from(obs_direct,
+                          _make_caldict(obs_direct.tarr["site"], times))
+
+
+@pytest.fixture(scope="session")
+def constant_gain_caltable_factory(obs_direct):
+    """Factory: caltable with rscale = lscale = g across all sites/times.
+
+    Tests call as ``constant_gain_caltable_factory(2.0)`` or
+    ``constant_gain_caltable_factory(2.0, obs=obs_other)``. Returns a fresh
+    Caltable per call.
+    """
+    def _factory(g, obs=None):
+        target = obs if obs is not None else obs_direct
+        times = [target.data["time"].min() - 1.0,
+                 target.data["time"].max() + 1.0]
+        return _caltable_from(target,
+                              _make_caldict(target.tarr["site"], times,
+                                            rscale=g, lscale=g))
+    return _factory
+
+
+@pytest.fixture(scope="session")
+def injected_gain_caltable_factory(obs_direct):
+    """Factory: caltable with per-site, per-time random gains from a seeded RNG.
+
+    Magnitudes log-normal (mean 1, sigma=amp_sigma), phases uniform in
+    [-pi, pi]. Used for self_cal recovery tests. Returns a fresh Caltable.
+    """
+    def _factory(obs=None, seed=42, n_times=4, amp_sigma=0.1):
+        import numpy as np
+
+        from ehtim.const_def import DTCAL
+
+        target = obs if obs is not None else obs_direct
+        rng = np.random.default_rng(seed)
+        t0 = target.data["time"].min() - 1.0
+        t1 = target.data["time"].max() + 1.0
+        times = np.linspace(t0, t1, n_times)
+        caldict = {}
+        for site in target.tarr["site"]:
+            r_amp = rng.lognormal(0.0, amp_sigma, size=n_times)
+            l_amp = rng.lognormal(0.0, amp_sigma, size=n_times)
+            r_phi = rng.uniform(-np.pi, np.pi, size=n_times)
+            l_phi = rng.uniform(-np.pi, np.pi, size=n_times)
+            caldict[site] = np.array(
+                [(times[k],
+                  r_amp[k] * np.exp(1j * r_phi[k]),
+                  l_amp[k] * np.exp(1j * l_phi[k]))
+                 for k in range(n_times)],
+                dtype=DTCAL,
+            ).view(np.recarray)
+        return _caltable_from(target, caldict)
+    return _factory
+
+
+@pytest.fixture(scope="session")
+def obs_with_dterms(obs_pol_direct):
+    """obs_pol_direct with synthetic complex D-terms injected into tarr['dr']/['dl'].
+
+    Deterministic seed; ~0.05 magnitude per hand per site. For leakage_cal
+    recovery tests.
+    """
+    import numpy as np
+    out = obs_pol_direct.copy()
+    rng = np.random.default_rng(123)
+    n = len(out.tarr)
+    out.tarr["dr"][:] = 0.05 * (rng.standard_normal(n) + 1j * rng.standard_normal(n))
+    out.tarr["dl"][:] = 0.05 * (rng.standard_normal(n) + 1j * rng.standard_normal(n))
+    return out
