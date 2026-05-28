@@ -593,6 +593,9 @@ def _scan_aligned_caltable(obs, gains_per_scan, samples_per_scan=PAD_SCAN_NSAMPL
     """
     obs2 = obs.copy()
     obs2.add_scans()
+    assert len(obs2.scans) >= len(gains_per_scan), (
+        f"obs has {len(obs2.scans)} scans but {len(gains_per_scan)} are needed"
+    )
     scans = obs2.scans[:len(gains_per_scan)]
     inner = np.linspace(0.0, 1.0, samples_per_scan + 2)[1:-1]  # interior
     times = np.concatenate([
