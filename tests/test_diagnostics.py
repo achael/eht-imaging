@@ -4,6 +4,14 @@ import numpy as np
 
 import ehtim.diagnostics as ds
 
+# Sizes for the sumdown tests. The 1D length is non-trivial (not a multiple
+# of N) so the piecewise-linear cumulative bin boundaries are exercised; the
+# image padding path likewise needs nx, ny not multiples of N.
+SUMDOWN_LINE_LEN = 100
+SUMDOWN_IMG_SHAPE = (45, 37)
+SUMDOWN_N = 16
+SUMDOWN_TOTAL_RTOL = 1e-10
+
 
 def gauss(x0, sx):
     n = 128
@@ -39,15 +47,6 @@ class TestOnedimize:
         imgs = [gauss2(0.0, 0.0, 0.1, 0.1)]
         oneds, ref = ds.onedimize(imgs, n=32)
         assert np.all(ref[:-1] >= ref[1:])
-
-
-# Sizes for the sumdown tests. The 1D length is non-trivial (not a multiple
-# of N) so the piecewise-linear cumulative bin boundaries are exercised; the
-# image padding path likewise needs nx, ny not multiples of N.
-SUMDOWN_LINE_LEN = 100
-SUMDOWN_IMG_SHAPE = (45, 37)
-SUMDOWN_N = 16
-SUMDOWN_TOTAL_RTOL = 1e-10
 
 
 class TestSumdownLin:
