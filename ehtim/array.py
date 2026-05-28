@@ -253,7 +253,7 @@ class Array(object):
         arr_out = Array(tarr_new, ephem_new)
         return arr_out
 
-    def add_satellite_tle(self, tlelist, sefd=10000):
+    def add_satellite_tle(self, tlearr, sefd=10000):
     
         """Add an earth-orbiting satellite to the array from a TLE
         
