@@ -1,8 +1,5 @@
 """Tests for the mixed-polarization data infrastructure.
 
-Tests are grouped by the phase of obsdata_mixedpol_plan_v2.md they cover.
-Subsequent phases (2, 2.5, 3, ...) should append their tests to this file
-under matching headers.
 """
 import os
 import pickle
@@ -17,7 +14,7 @@ import ehtim.const_def as ehc
 import ehtim.obsdata as eo
 import ehtim.warnings as ehw
 
-# Legacy (pre-Phase-1) dtypes — used to verify upgrade plumbing.
+# Legacy dtypes — used to verify upgrade plumbing.
 _LEGACY_DTARR = [('site', 'U32'), ('x', 'f8'), ('y', 'f8'), ('z', 'f8'),
                  ('sefdr', 'f8'), ('sefdl', 'f8'), ('dr', 'c16'), ('dl', 'c16'),
                  ('fr_par', 'f8'), ('fr_elev', 'f8'), ('fr_off', 'f8')]
@@ -53,10 +50,9 @@ def _legacy_circ_datatable():
 
 
 # ============================================================================
-# Phase 1 — Schema additions and warnings module
+# Schema additions and warnings module
 # ============================================================================
 #
-# Plan reference: obsdata_mixedpol_plan_v2.md, "Phase 1".
 # Scope:
 #   - ehtim/warnings.py module + warning classes
 #   - DTARR migration to 12 fields with feed_type
@@ -72,14 +68,14 @@ def _legacy_circ_datatable():
 
 # ----- Warnings module -----------------------------------------------------
 
-def test_phase1_warning_classes_are_user_warning_subclasses():
+def test_warning_classes_are_user_warning_subclasses():
     assert issubclass(ehw.MixedPolConventionWarning, UserWarning)
     assert issubclass(ehw.MixedPolClosureSkipWarning, UserWarning)
 
 
 # ----- DTARR ---------------------------------------------------------------
 
-def test_phase1_dtarr_alias_equivalence():
+def test_dtarr_alias_equivalence():
     a = np.zeros(2, dtype=ehc.DTARR)
     a['sefd_p1'] = [1000., 2000.]
     assert np.array_equal(a['sefdr'], a['sefd_p1'])
@@ -87,7 +83,7 @@ def test_phase1_dtarr_alias_equivalence():
     assert np.array_equal(a['dr'], a['d_p1'])
 
 
-def test_phase1_dtarr_primary_names_are_generic():
+def test_dtarr_primary_names_are_generic():
     names = np.dtype(ehc.DTARR).names
     assert 'sefd_p1' in names and 'sefd_p2' in names
     assert 'd_p1' in names and 'd_p2' in names
@@ -97,7 +93,7 @@ def test_phase1_dtarr_primary_names_are_generic():
     assert 'sefdl' not in names
 
 
-def test_phase1_dtarr_default_feed_type_is_empty_until_filled():
+def test_dtarr_default_feed_type_is_empty_until_filled():
     a = np.zeros(1, dtype=ehc.DTARR)
     # np.zeros gives an empty unicode string; ehtim's constructors fill 'rl'.
     assert a['feed_type'][0] == ''
@@ -105,7 +101,7 @@ def test_phase1_dtarr_default_feed_type_is_empty_until_filled():
 
 # ----- DTPOL_CIRC ----------------------------------------------------------
 
-def test_phase1_dtpol_circ_alias_equivalence():
+def test_dtpol_circ_alias_equivalence():
     d = np.zeros(2, dtype=ehc.DTPOL_CIRC)
     d['rrvis'] = [1 + 0j, 2 + 0j]
     assert np.array_equal(d['p1p1vis'], d['rrvis'])
@@ -115,13 +111,13 @@ def test_phase1_dtpol_circ_alias_equivalence():
     assert np.array_equal(d['p1p1sigma'], d['rrsigma'])
 
 
-def test_phase1_dtpol_circ_primary_names_are_physical():
+def test_dtpol_circ_primary_names_are_physical():
     names = np.dtype(ehc.DTPOL_CIRC).names
     assert 'rrvis' in names and 'lrvis' in names
     assert 'p1p1vis' not in names  # generic is a title alias, not primary
 
 
-def test_phase1_dtpol_circ_wrong_feed_access_raises():
+def test_dtpol_circ_wrong_feed_access_raises():
     d = np.zeros(1, dtype=ehc.DTPOL_CIRC)
     with pytest.raises((ValueError, KeyError)):
         d['xxvis']
@@ -129,7 +125,7 @@ def test_phase1_dtpol_circ_wrong_feed_access_raises():
 
 # ----- DTPOL_LIN -----------------------------------------------------------
 
-def test_phase1_dtpol_lin_alias_equivalence():
+def test_dtpol_lin_alias_equivalence():
     d = np.zeros(2, dtype=ehc.DTPOL_LIN)
     d['xxvis'] = [1 + 0j, 2 + 0j]
     assert np.array_equal(d['p1p1vis'], d['xxvis'])
@@ -137,7 +133,7 @@ def test_phase1_dtpol_lin_alias_equivalence():
     assert np.array_equal(d['p2p1vis'], d['yxvis'])
 
 
-def test_phase1_dtpol_lin_wrong_feed_access_raises():
+def test_dtpol_lin_wrong_feed_access_raises():
     d = np.zeros(1, dtype=ehc.DTPOL_LIN)
     with pytest.raises((ValueError, KeyError)):
         d['rrvis']
@@ -145,7 +141,7 @@ def test_phase1_dtpol_lin_wrong_feed_access_raises():
 
 # ----- DTPOL_MIXED ---------------------------------------------------------
 
-def test_phase1_dtpol_mixed_has_only_generic_names_and_polbasis():
+def test_dtpol_mixed_has_only_generic_names_and_polbasis():
     names = np.dtype(ehc.DTPOL_MIXED).names
     assert 'p1p1vis' in names and 'p2p2vis' in names
     assert 'p1p2vis' in names and 'p2p1vis' in names
@@ -156,7 +152,7 @@ def test_phase1_dtpol_mixed_has_only_generic_names_and_polbasis():
 
 # ----- DTCAL ---------------------------------------------------------------
 
-def test_phase1_dtcal_circ_alias_equivalence():
+def test_dtcal_circ_alias_equivalence():
     c = np.zeros(2, dtype=ehc.DTCAL_CIRC)
     c['rscale'] = [1 + 0j, 2 + 0j]
     assert np.array_equal(c['p1scale'], c['rscale'])
@@ -164,19 +160,19 @@ def test_phase1_dtcal_circ_alias_equivalence():
     assert np.array_equal(c['d_p1'], c['dr'])
 
 
-def test_phase1_dtcal_lin_alias_equivalence():
+def test_dtcal_lin_alias_equivalence():
     c = np.zeros(2, dtype=ehc.DTCAL_LIN)
     c['xscale'] = [1 + 0j, 2 + 0j]
     assert np.array_equal(c['p1scale'], c['xscale'])
 
 
-def test_phase1_dtcal_legacy_alias_is_dtcal_circ():
+def test_dtcal_legacy_alias_is_dtcal_circ():
     assert ehc.DTCAL is ehc.DTCAL_CIRC
 
 
 # ----- Polrep / feed dispatch helpers --------------------------------------
 
-def test_phase1_feed_dtype_for_polrep():
+def test_feed_dtype_for_polrep():
     assert ehc.feed_dtype_for_polrep('stokes') is ehc.DTPOL_STOKES
     assert ehc.feed_dtype_for_polrep('circ') is ehc.DTPOL_CIRC
     assert ehc.feed_dtype_for_polrep('lin') is ehc.DTPOL_LIN
@@ -185,7 +181,7 @@ def test_phase1_feed_dtype_for_polrep():
         ehc.feed_dtype_for_polrep('bogus')
 
 
-def test_phase1_feed_poldict_circular_pair():
+def test_feed_poldict_circular_pair():
     d = ehc.feed_poldict('rl', 'rl')
     assert d['vis1'] == 'rrvis'
     assert d['vis2'] == 'llvis'
@@ -193,7 +189,7 @@ def test_phase1_feed_poldict_circular_pair():
     assert d['vis4'] == 'lrvis'
 
 
-def test_phase1_feed_poldict_linear_pair():
+def test_feed_poldict_linear_pair():
     d = ehc.feed_poldict('xy', 'xy')
     assert d['vis1'] == 'xxvis'
     assert d['vis2'] == 'yyvis'
@@ -201,7 +197,7 @@ def test_phase1_feed_poldict_linear_pair():
     assert d['vis4'] == 'yxvis'
 
 
-def test_phase1_feed_poldict_mixed_pair():
+def test_feed_poldict_mixed_pair():
     d = ehc.feed_poldict('rl', 'xy')
     assert d['vis1'] == 'rxvis'
     assert d['vis2'] == 'lyvis'
@@ -209,7 +205,7 @@ def test_phase1_feed_poldict_mixed_pair():
     assert d['vis4'] == 'lxvis'
 
 
-def test_phase1_feed_poldict_unknown_raises():
+def test_feed_poldict_unknown_raises():
     with pytest.raises(ValueError):
         ehc.feed_poldict('rl', '??')
     with pytest.raises(ValueError):
@@ -218,7 +214,7 @@ def test_phase1_feed_poldict_unknown_raises():
 
 # ----- Schema upgrade helpers ---------------------------------------------
 
-def test_phase1_upgrade_tarr_from_legacy():
+def test_upgrade_tarr_from_legacy():
     ot = np.zeros(2, dtype=_LEGACY_DTARR)
     ot['site'] = ['A', 'B']
     ot['sefdr'] = [1000., 2000.]
@@ -233,13 +229,13 @@ def test_phase1_upgrade_tarr_from_legacy():
     assert np.array_equal(nt['d_p1'], ot['dr'])
 
 
-def test_phase1_upgrade_tarr_idempotent():
+def test_upgrade_tarr_idempotent():
     a = np.zeros(1, dtype=ehc.DTARR)
     a['feed_type'] = 'rl'
     assert ehc.upgrade_tarr(a) is a
 
 
-def test_phase1_upgrade_dtpol_circ_zero_copy_view():
+def test_upgrade_dtpol_circ_zero_copy_view():
     od = np.zeros(3, dtype=_LEGACY_DTPOL_CIRC)
     od['rrvis'] = [1 + 0j, 2 + 0j, 3 + 0j]
     nd = ehc.upgrade_dtpol_circ(od)
@@ -250,13 +246,13 @@ def test_phase1_upgrade_dtpol_circ_zero_copy_view():
     assert np.array_equal(nd['p1p1vis'], od['rrvis'])
 
 
-def test_phase1_upgrade_dtpol_circ_idempotent():
+def test_upgrade_dtpol_circ_idempotent():
     d = np.zeros(1, dtype=ehc.DTPOL_CIRC)
     out = ehc.upgrade_dtpol_circ(d)
     assert out.dtype == d.dtype
 
 
-def test_phase1_upgrade_dtcal_circ_from_legacy_adds_dterm_fields():
+def test_upgrade_dtcal_circ_from_legacy_adds_dterm_fields():
     oc = np.zeros(2, dtype=_LEGACY_DTCAL)
     oc['rscale'] = [1 + 0j, 2 + 0j]
     nc = ehc.upgrade_dtcal_circ(oc)
@@ -269,20 +265,20 @@ def test_phase1_upgrade_dtcal_circ_from_legacy_adds_dterm_fields():
 
 # ----- End-to-end: Array / Obsdata / Caltable upgrade through __init__ ----
 
-def test_phase1_array_upgrades_legacy_tarr():
+def test_array_upgrades_legacy_tarr():
     arr = ea.Array(_legacy_tarr())
     assert 'feed_type' in arr.tarr.dtype.names
     assert np.all(arr.tarr['feed_type'] == 'rl')
 
 
-def test_phase1_array_pickle_roundtrip_from_new():
+def test_array_pickle_roundtrip_from_new():
     arr = ea.Array(_legacy_tarr())
     arr2 = pickle.loads(pickle.dumps(arr))
     assert np.all(arr2.tarr['feed_type'] == 'rl')
     assert np.array_equal(arr2.tarr['sefd_p1'], arr.tarr['sefd_p1'])
 
 
-def test_phase1_array_setstate_upgrades_legacy_pickle():
+def test_array_setstate_upgrades_legacy_pickle():
     # Simulate a pickle made before the schema migration:
     legacy_state = {'_tarr': _legacy_tarr(), 'ephem': {},
                     'tkey': {'A': 0, 'B': 1}}
@@ -292,7 +288,7 @@ def test_phase1_array_setstate_upgrades_legacy_pickle():
     assert np.all(arr.tarr['feed_type'] == 'rl')
 
 
-def test_phase1_obsdata_upgrades_legacy_datatable_and_tarr():
+def test_obsdata_upgrades_legacy_datatable_and_tarr():
     obs = eo.Obsdata(ra=0., dec=0., rf=230e9, bw=1e9,
                      datatable=_legacy_circ_datatable(),
                      tarr=_legacy_tarr(), polrep='circ')
@@ -303,7 +299,7 @@ def test_phase1_obsdata_upgrades_legacy_datatable_and_tarr():
     assert np.array_equal(obs.data['p1p1vis'], obs.data['rrvis'])
 
 
-def test_phase1_obsdata_pickle_roundtrip_legacy_recarrays():
+def test_obsdata_pickle_roundtrip_legacy_recarrays():
     obs = eo.Obsdata(ra=0., dec=0., rf=230e9, bw=1e9,
                      datatable=_legacy_circ_datatable(),
                      tarr=_legacy_tarr(), polrep='circ')
@@ -312,7 +308,7 @@ def test_phase1_obsdata_pickle_roundtrip_legacy_recarrays():
     assert np.array_equal(obs2.data['p1p1vis'], obs.data['rrvis'])
 
 
-def test_phase1_caltable_upgrades_legacy_dtcal():
+def test_caltable_upgrades_legacy_dtcal():
     oc = np.zeros(2, dtype=_LEGACY_DTCAL)
     oc['rscale'] = [1 + 0j, 1.1 + 0j]
     caltab = ec.Caltable(ra=0., dec=0., rf=230e9, bw=1e9,
@@ -324,7 +320,7 @@ def test_phase1_caltable_upgrades_legacy_dtcal():
         assert np.all(caltab.data[site]['dr'] == 0)
 
 
-def test_phase1_caltable_pickle_roundtrip_legacy_dtcal():
+def test_caltable_pickle_roundtrip_legacy_dtcal():
     oc = np.zeros(2, dtype=_LEGACY_DTCAL)
     oc['rscale'] = [1 + 0j, 1.1 + 0j]
     caltab = ec.Caltable(ra=0., dec=0., rf=230e9, bw=1e9,
@@ -336,10 +332,9 @@ def test_phase1_caltable_pickle_roundtrip_legacy_dtcal():
 
 
 # ============================================================================
-# Phase 2 — Array class migration
+# Array class migration
 # ============================================================================
 #
-# Plan reference: obsdata_mixedpol_plan_v2.md, "Phase 2".
 # Scope:
 #   - Array query methods: is_homogeneous_feeds, feed_types,
 #     sefd_for_feed, dterm_for_feed
@@ -375,74 +370,74 @@ def _xy_tarr():
 
 # ----- Array query methods --------------------------------------------------
 
-def test_phase2_is_homogeneous_feeds_legacy_array_true():
+def test_is_homogeneous_feeds_legacy_array_true():
     arr = ea.Array(_legacy_tarr())
     assert arr.is_homogeneous_feeds() is True
 
 
-def test_phase2_is_homogeneous_feeds_xy_array_true():
+def test_is_homogeneous_feeds_xy_array_true():
     arr = ea.Array(_xy_tarr())
     assert arr.is_homogeneous_feeds() is True
 
 
-def test_phase2_is_homogeneous_feeds_mixed_array_false():
+def test_is_homogeneous_feeds_mixed_array_false():
     arr = ea.Array(_mixed_tarr())
     assert arr.is_homogeneous_feeds() is False
 
 
-def test_phase2_feed_types_legacy_array():
+def test_feed_types_legacy_array():
     arr = ea.Array(_legacy_tarr())
     assert arr.feed_types() == {'rl'}
 
 
-def test_phase2_feed_types_mixed_array():
+def test_feed_types_mixed_array():
     arr = ea.Array(_mixed_tarr())
     assert arr.feed_types() == {'rl', 'xy'}
 
 
-def test_phase2_sefd_for_feed_rl_station_returns_p1_p2():
+def test_sefd_for_feed_rl_station_returns_p1_p2():
     arr = ea.Array(_mixed_tarr())
     assert arr.sefd_for_feed('APEX', 'R') == 4000.
     assert arr.sefd_for_feed('APEX', 'L') == 4100.
 
 
-def test_phase2_sefd_for_feed_xy_station_returns_p1_p2():
+def test_sefd_for_feed_xy_station_returns_p1_p2():
     arr = ea.Array(_mixed_tarr())
     assert arr.sefd_for_feed('ALMA', 'X') == 100.
     assert arr.sefd_for_feed('ALMA', 'Y') == 110.
 
 
-def test_phase2_sefd_for_feed_case_insensitive():
+def test_sefd_for_feed_case_insensitive():
     arr = ea.Array(_mixed_tarr())
     assert arr.sefd_for_feed('ALMA', 'x') == arr.sefd_for_feed('ALMA', 'X')
 
 
-def test_phase2_sefd_for_feed_wrong_feed_raises():
+def test_sefd_for_feed_wrong_feed_raises():
     arr = ea.Array(_mixed_tarr())
     # ALMA is 'xy'; asking for R should raise.
     with pytest.raises(ValueError, match="feed 'R' not in feed_type 'xy'"):
         arr.sefd_for_feed('ALMA', 'R')
 
 
-def test_phase2_sefd_for_feed_unknown_site_raises():
+def test_sefd_for_feed_unknown_site_raises():
     arr = ea.Array(_mixed_tarr())
     with pytest.raises(KeyError, match="site 'NOSITE' not in array"):
         arr.sefd_for_feed('NOSITE', 'R')
 
 
-def test_phase2_dterm_for_feed_rl_station_dispatch():
+def test_dterm_for_feed_rl_station_dispatch():
     arr = ea.Array(_mixed_tarr())
     assert arr.dterm_for_feed('APEX', 'R') == 0.03 + 0.04j
     assert arr.dterm_for_feed('APEX', 'L') == 0.07 + 0.08j
 
 
-def test_phase2_dterm_for_feed_xy_station_dispatch():
+def test_dterm_for_feed_xy_station_dispatch():
     arr = ea.Array(_mixed_tarr())
     assert arr.dterm_for_feed('ALMA', 'X') == 0.01 + 0.02j
     assert arr.dterm_for_feed('ALMA', 'Y') == 0.05 + 0.06j
 
 
-def test_phase2_dterm_for_feed_wrong_feed_raises():
+def test_dterm_for_feed_wrong_feed_raises():
     arr = ea.Array(_mixed_tarr())
     with pytest.raises(ValueError, match="not in feed_type"):
         arr.dterm_for_feed('APEX', 'X')
@@ -454,7 +449,7 @@ def _empty_array():
     return ea.Array(np.zeros(0, dtype=ehc.DTARR))
 
 
-def test_phase2_add_site_default_kwargs_bit_identical_to_legacy():
+def test_add_site_default_kwargs_bit_identical_to_legacy():
     arr = _empty_array().add_site('A', (1.0, 2.0, 3.0))
     row = arr.tarr[arr.tkey['A']]
     assert row['sefd_p1'] == 10000.0
@@ -464,7 +459,7 @@ def test_phase2_add_site_default_kwargs_bit_identical_to_legacy():
     assert str(row['feed_type']) == 'rl'
 
 
-def test_phase2_add_site_legacy_sefd_and_dr_dl_still_work():
+def test_add_site_legacy_sefd_and_dr_dl_still_work():
     arr = _empty_array().add_site('A', (1., 2., 3.),
                                   sefd=5000, dr=0.1 + 0.2j, dl=0.3 + 0.4j)
     row = arr.tarr[arr.tkey['A']]
@@ -475,7 +470,7 @@ def test_phase2_add_site_legacy_sefd_and_dr_dl_still_work():
     assert str(row['feed_type']) == 'rl'
 
 
-def test_phase2_add_site_with_feed_type_xy_and_generic_sefds():
+def test_add_site_with_feed_type_xy_and_generic_sefds():
     arr = _empty_array().add_site('A', (1., 2., 3.),
                                   feed_type='xy',
                                   sefd_p1=100., sefd_p2=110.,
@@ -488,50 +483,50 @@ def test_phase2_add_site_with_feed_type_xy_and_generic_sefds():
     assert row['d_p2'] == 0.02 + 0j
 
 
-def test_phase2_add_site_dr_with_non_rl_feed_raises():
+def test_add_site_dr_with_non_rl_feed_raises():
     with pytest.raises(ValueError, match="dr/dl kwargs are only valid"):
         _empty_array().add_site('A', (0., 0., 0.),
                                 feed_type='xy', dr=0.1 + 0j)
 
 
-def test_phase2_add_site_dl_with_non_rl_feed_raises():
+def test_add_site_dl_with_non_rl_feed_raises():
     with pytest.raises(ValueError, match="dr/dl kwargs are only valid"):
         _empty_array().add_site('A', (0., 0., 0.),
                                 feed_type='xy', dl=0.1 + 0j)
 
 
-def test_phase2_add_site_dr_and_d_p1_both_raises():
+def test_add_site_dr_and_d_p1_both_raises():
     with pytest.raises(ValueError, match="dr.*d_p1"):
         _empty_array().add_site('A', (0., 0., 0.),
                                 dr=0.1 + 0j, d_p1=0.2 + 0j)
 
 
-def test_phase2_add_site_dl_and_d_p2_both_raises():
+def test_add_site_dl_and_d_p2_both_raises():
     with pytest.raises(ValueError, match="dl.*d_p2"):
         _empty_array().add_site('A', (0., 0., 0.),
                                 dl=0.1 + 0j, d_p2=0.2 + 0j)
 
 
-def test_phase2_add_site_sefd_and_sefd_p1_both_raises():
+def test_add_site_sefd_and_sefd_p1_both_raises():
     with pytest.raises(ValueError, match="sefd.*sefd_p1"):
         _empty_array().add_site('A', (0., 0., 0.),
                                 sefd=5000, sefd_p1=100., sefd_p2=110.)
 
 
-def test_phase2_add_site_sefd_p1_without_p2_raises():
+def test_add_site_sefd_p1_without_p2_raises():
     with pytest.raises(ValueError, match="sefd_p1 and sefd_p2"):
         _empty_array().add_site('A', (0., 0., 0.),
                                 feed_type='xy', sefd_p1=100.)
 
 
-def test_phase2_add_site_invalid_feed_type_raises():
+def test_add_site_invalid_feed_type_raises():
     with pytest.raises(ValueError, match="feed_type must be one of"):
         _empty_array().add_site('A', (0., 0., 0.), feed_type='zz')
 
 
 # ----- add_satellite_* signature extension ----------------------------------
 
-def test_phase2_add_satellite_tle_default_feed_type_rl():
+def test_add_satellite_tle_default_feed_type_rl():
     tle = ['SAT1', 'line1', 'line2']
     arr = _empty_array().add_satellite_tle(tle, sefd=10000)
     row = arr.tarr[arr.tkey['SAT1']]
@@ -540,7 +535,7 @@ def test_phase2_add_satellite_tle_default_feed_type_rl():
     assert row['sefd_p2'] == 10000.0
 
 
-def test_phase2_add_satellite_tle_with_feed_type_xy():
+def test_add_satellite_tle_with_feed_type_xy():
     tle = ['SAT1', 'line1', 'line2']
     arr = _empty_array().add_satellite_tle(tle, feed_type='xy',
                                             sefd_p1=500., sefd_p2=600.)
@@ -550,14 +545,14 @@ def test_phase2_add_satellite_tle_with_feed_type_xy():
     assert row['sefd_p2'] == 600.0
 
 
-def test_phase2_add_satellite_elements_default_feed_type_rl():
+def test_add_satellite_elements_default_feed_type_rl():
     arr = _empty_array().add_satellite_elements('SAT2', sefd=2000)
     row = arr.tarr[arr.tkey['SAT2']]
     assert str(row['feed_type']) == 'rl'
     assert row['sefd_p1'] == 2000.0
 
 
-def test_phase2_add_satellite_elements_with_feed_type_xy_and_dterms():
+def test_add_satellite_elements_with_feed_type_xy_and_dterms():
     arr = _empty_array().add_satellite_elements('SAT2', feed_type='xy',
                                                  sefd_p1=300., sefd_p2=400.,
                                                  d_p1=0.05 + 0.01j,
@@ -570,7 +565,7 @@ def test_phase2_add_satellite_elements_with_feed_type_xy_and_dterms():
     assert row['d_p2'] == 0.06 + 0.02j
 
 
-def test_phase2_add_satellite_tle_invalid_feed_type_raises():
+def test_add_satellite_tle_invalid_feed_type_raises():
     tle = ['SAT1', 'line1', 'line2']
     with pytest.raises(ValueError, match="feed_type must be one of"):
         _empty_array().add_satellite_tle(tle, feed_type='qq')
@@ -578,63 +573,63 @@ def test_phase2_add_satellite_tle_invalid_feed_type_raises():
 
 # ----- TarrView wrapper -----------------------------------------------------
 
-def test_phase2_tarrview_is_returned_by_tarr_property():
+def test_tarrview_is_returned_by_tarr_property():
     arr = ea.Array(_legacy_tarr())
     assert isinstance(arr.tarr, ea.TarrView)
 
 
-def test_phase2_tarrview_sefdr_on_homogeneous_rl_works():
+def test_tarrview_sefdr_on_homogeneous_rl_works():
     arr = ea.Array(_legacy_tarr())
     # Legacy title-alias access still works on an all-RL array.
     np.testing.assert_array_equal(arr.tarr['sefdr'], [1000., 2000.])
     np.testing.assert_array_equal(arr.tarr['sefdl'], [1100., 2100.])
 
 
-def test_phase2_tarrview_sefdr_on_xy_array_raises():
+def test_tarrview_sefdr_on_xy_array_raises():
     arr = ea.Array(_xy_tarr())
     with pytest.raises(KeyError, match=r"tarr\['sefdr'\].*xy"):
         _ = arr.tarr['sefdr']
 
 
-def test_phase2_tarrview_sefdl_on_xy_array_raises():
+def test_tarrview_sefdl_on_xy_array_raises():
     arr = ea.Array(_xy_tarr())
     with pytest.raises(KeyError, match=r"tarr\['sefdl'\].*xy"):
         _ = arr.tarr['sefdl']
 
 
-def test_phase2_tarrview_sefdr_on_mixed_array_raises():
+def test_tarrview_sefdr_on_mixed_array_raises():
     arr = ea.Array(_mixed_tarr())
     with pytest.raises(KeyError, match=r"tarr\['sefdr'\].*"):
         _ = arr.tarr['sefdr']
 
 
-def test_phase2_tarrview_dr_on_mixed_array_raises():
+def test_tarrview_dr_on_mixed_array_raises():
     arr = ea.Array(_mixed_tarr())
     with pytest.raises(KeyError, match="dterm_for_feed"):
         _ = arr.tarr['dr']
 
 
-def test_phase2_tarrview_generic_names_always_work():
+def test_tarrview_generic_names_always_work():
     # Generic per-feed names are never guarded.
     arr = ea.Array(_mixed_tarr())
     np.testing.assert_array_equal(arr.tarr['sefd_p1'], [100., 4000.])
     np.testing.assert_array_equal(arr.tarr['sefd_p2'], [110., 4100.])
 
 
-def test_phase2_tarrview_dtype_attribute_forwarded():
+def test_tarrview_dtype_attribute_forwarded():
     arr = ea.Array(_legacy_tarr())
     assert 'feed_type' in arr.tarr.dtype.names
     assert arr.tarr.dtype == ehc.DTARR
 
 
-def test_phase2_tarrview_len_iter_forwarded():
+def test_tarrview_len_iter_forwarded():
     arr = ea.Array(_legacy_tarr())
     assert len(arr.tarr) == 2
     sites = [str(row['site']) for row in arr.tarr]
     assert sites == ['A', 'B']
 
 
-def test_phase2_tarrview_row_index_returns_void():
+def test_tarrview_row_index_returns_void():
     arr = ea.Array(_legacy_tarr())
     row = arr.tarr[0]
     # Single-row index returns a numpy void; field access on it bypasses
@@ -642,7 +637,7 @@ def test_phase2_tarrview_row_index_returns_void():
     assert str(row['site']) == 'A'
 
 
-def test_phase2_tarrview_boolean_mask_returns_wrapped_view():
+def test_tarrview_boolean_mask_returns_wrapped_view():
     arr = ea.Array(_mixed_tarr())
     mask = np.array([True, False])
     sub = arr.tarr[mask]
@@ -651,7 +646,7 @@ def test_phase2_tarrview_boolean_mask_returns_wrapped_view():
     assert str(sub[0]['site']) == 'ALMA'
 
 
-def test_phase2_tarrview_boolean_mask_preserves_guard():
+def test_tarrview_boolean_mask_preserves_guard():
     # Slicing a mixed array down to one xy station: legacy 'sefdr'
     # still raises on the subview (feed_types still non-RL).
     arr = ea.Array(_mixed_tarr())
@@ -660,27 +655,27 @@ def test_phase2_tarrview_boolean_mask_preserves_guard():
         _ = sub['sefdr']
 
 
-def test_phase2_tarrview_equality_recarray_lhs():
+def test_tarrview_equality_recarray_lhs():
     arr = ea.Array(_legacy_tarr())
     raw = arr.tarr._tarr.copy()
     cmp = raw == arr.tarr
     assert np.all(cmp)
 
 
-def test_phase2_tarrview_equality_recarray_rhs():
+def test_tarrview_equality_recarray_rhs():
     arr = ea.Array(_legacy_tarr())
     raw = arr.tarr._tarr.copy()
     cmp = arr.tarr == raw
     assert np.all(cmp)
 
 
-def test_phase2_tarrview_equality_both_views():
+def test_tarrview_equality_both_views():
     arr1 = ea.Array(_legacy_tarr())
     arr2 = ea.Array(_legacy_tarr())
     assert np.all(arr1.tarr == arr2.tarr)
 
 
-def test_phase2_tarrview_pickle_roundtrip():
+def test_tarrview_pickle_roundtrip():
     arr = ea.Array(_legacy_tarr())
     view = arr.tarr
     view2 = pickle.loads(pickle.dumps(view))
@@ -688,13 +683,13 @@ def test_phase2_tarrview_pickle_roundtrip():
     assert np.all(view == view2)
 
 
-def test_phase2_tarrview_unhashable():
+def test_tarrview_unhashable():
     arr = ea.Array(_legacy_tarr())
     with pytest.raises(TypeError):
         hash(arr.tarr)
 
 
-def test_phase2_tarrview_numpy_interop_via_array_protocol():
+def test_tarrview_numpy_interop_via_array_protocol():
     arr = ea.Array(_legacy_tarr())
     # np.asarray should produce a recarray view (no copy required by spec).
     asarr = np.asarray(arr.tarr)
@@ -702,7 +697,7 @@ def test_phase2_tarrview_numpy_interop_via_array_protocol():
     assert asarr.dtype.names == arr.tarr.dtype.names
 
 
-def test_phase2_tarrview_setter_unwraps_view():
+def test_tarrview_setter_unwraps_view():
     # Assigning a TarrView via the property setter unwraps it so _tarr
     # remains a plain ndarray (the storage truth).
     arr = ea.Array(_legacy_tarr())
@@ -713,7 +708,7 @@ def test_phase2_tarrview_setter_unwraps_view():
     assert arr._tarr.dtype.names is not None  # structured dtype preserved
 
 
-def test_phase2_tarrview_array_pickle_roundtrip_preserves_ndarray_storage():
+def test_tarrview_array_pickle_roundtrip_preserves_ndarray_storage():
     # The Array itself round-trips through pickle: storage stays as an
     # ndarray (not a TarrView), so the on-disk format is unchanged.
     arr = ea.Array(_legacy_tarr())
@@ -757,62 +752,62 @@ def _obs_kwargs():
                 tint=60.0, tadv=600.0, tstart=0.0, tstop=24.0)
 
 
-def test_phase2_obsdata_polrep_invalid_raises():
+def test_obsdata_polrep_invalid_raises():
     arr = ea.Array(_eht_like_rl_array())
     with pytest.raises(ValueError, match="polrep must be one of"):
         arr.obsdata(polrep='bogus', **_obs_kwargs())
 
 
-def test_phase2_obsdata_polrep_stokes_on_rl_array_succeeds():
+def test_obsdata_polrep_stokes_on_rl_array_succeeds():
     arr = ea.Array(_eht_like_rl_array())
     obs = arr.obsdata(polrep='stokes', **_obs_kwargs())
     assert obs.polrep == 'stokes'
 
 
-def test_phase2_obsdata_polrep_circ_on_rl_array_succeeds():
+def test_obsdata_polrep_circ_on_rl_array_succeeds():
     arr = ea.Array(_eht_like_rl_array())
     obs = arr.obsdata(polrep='circ', **_obs_kwargs())
     assert obs.polrep == 'circ'
 
 
-def test_phase2_obsdata_polrep_circ_on_xy_array_raises():
+def test_obsdata_polrep_circ_on_xy_array_raises():
     arr = ea.Array(_eht_like_xy_array())
     with pytest.raises(ValueError,
                        match="polrep='circ' requires all stations.*'rl'"):
         arr.obsdata(polrep='circ', **_obs_kwargs())
 
 
-def test_phase2_obsdata_polrep_circ_on_mixed_array_raises():
+def test_obsdata_polrep_circ_on_mixed_array_raises():
     arr = ea.Array(_eht_like_mixed_array())
     with pytest.raises(ValueError, match="polrep='circ'"):
         arr.obsdata(polrep='circ', **_obs_kwargs())
 
 
-def test_phase2_obsdata_polrep_lin_on_rl_array_raises():
+def test_obsdata_polrep_lin_on_rl_array_raises():
     arr = ea.Array(_eht_like_rl_array())
     with pytest.raises(ValueError,
                        match="polrep='lin' requires all stations.*'xy'"):
         arr.obsdata(polrep='lin', **_obs_kwargs())
 
 
-def test_phase2_obsdata_polrep_lin_on_xy_array_raises_not_implemented():
+def test_obsdata_polrep_lin_on_xy_array_raises_not_implemented():
     # Validation passes (all xy) but simulation backend doesn't support
     # 'lin' yet — should raise NotImplementedError pointing to Phase 5.
     arr = ea.Array(_eht_like_xy_array())
-    with pytest.raises(NotImplementedError, match="Phase 5"):
+    with pytest.raises(NotImplementedError, match="is not yet supported"):
         arr.obsdata(polrep='lin', **_obs_kwargs())
 
 
-def test_phase2_obsdata_polrep_mixed_on_homogeneous_array_raises():
+def test_obsdata_polrep_mixed_on_homogeneous_array_raises():
     arr = ea.Array(_eht_like_rl_array())
     with pytest.raises(ValueError,
                        match="polrep='mixed' requires at least two"):
         arr.obsdata(polrep='mixed', **_obs_kwargs())
 
 
-def test_phase2_obsdata_polrep_mixed_on_mixed_array_raises_not_implemented():
+def test_obsdata_polrep_mixed_on_mixed_array_raises_not_implemented():
     arr = ea.Array(_eht_like_mixed_array())
-    with pytest.raises(NotImplementedError, match="Phase 5"):
+    with pytest.raises(NotImplementedError, match="is not yet supported"):
         arr.obsdata(polrep='mixed', **_obs_kwargs())
 
 
@@ -858,7 +853,7 @@ def _assert_tarr_round_trip(arr_before, arr_after, atol_sefd=1e-2,
     np.testing.assert_allclose(a['fr_off'], b['fr_off'], atol=atol_fr)
 
 
-def test_phase2_save_array_txt_emits_v2_header(tmp_path):
+def test_save_array_txt_emits_v2_header(tmp_path):
     arr = ea.Array(_full_tarr(['rl', 'rl']))
     fname = str(tmp_path / 'a.txt')
     arr.save_txt(fname)
@@ -867,7 +862,7 @@ def test_phase2_save_array_txt_emits_v2_header(tmp_path):
     assert first == '# ehtim array format v2'
 
 
-def test_phase2_save_load_array_txt_roundtrip_rl(tmp_path):
+def test_save_load_array_txt_roundtrip_rl(tmp_path):
     arr = ea.Array(_full_tarr(['rl', 'rl']))
     fname = str(tmp_path / 'a.txt')
     arr.save_txt(fname)
@@ -876,7 +871,7 @@ def test_phase2_save_load_array_txt_roundtrip_rl(tmp_path):
     assert set(arr2.feed_types()) == {'rl'}
 
 
-def test_phase2_save_load_array_txt_roundtrip_xy(tmp_path):
+def test_save_load_array_txt_roundtrip_xy(tmp_path):
     arr = ea.Array(_full_tarr(['xy', 'xy', 'xy']))
     fname = str(tmp_path / 'a.txt')
     arr.save_txt(fname)
@@ -885,7 +880,7 @@ def test_phase2_save_load_array_txt_roundtrip_xy(tmp_path):
     assert set(arr2.feed_types()) == {'xy'}
 
 
-def test_phase2_save_load_array_txt_roundtrip_mixed(tmp_path):
+def test_save_load_array_txt_roundtrip_mixed(tmp_path):
     arr = ea.Array(_full_tarr(['rl', 'xy', 'lx']))
     fname = str(tmp_path / 'a.txt')
     arr.save_txt(fname)
@@ -902,10 +897,10 @@ _LEGACY_ARRAY_FILES = sorted([
 
 
 @pytest.mark.parametrize('fname', _LEGACY_ARRAY_FILES)
-def test_phase2_load_array_txt_legacy_bit_identical(fname):
+def test_load_array_txt_legacy_bit_identical(fname):
     """For every existing arrays/*.txt file, the loaded tarr's numeric
     columns match a fresh np.loadtxt read of the same file byte-for-byte
-    (Phase 1 added a feed_type column; nothing else may differ).
+    (mixpol added a feed_type column; nothing else may differ).
     """
     path = os.path.join(ARRAYS_DIR, fname)
     # SITES.txt is a non-array reference file (site name → code table).
@@ -967,7 +962,7 @@ def test_phase2_load_array_txt_legacy_bit_identical(fname):
 
 # ----- save_obs_txt / load_obs_txt embedded-tarr round-trip -----------------
 
-def test_phase2_save_load_obs_txt_embedded_tarr_with_feed_type(tmp_path):
+def test_save_load_obs_txt_embedded_tarr_with_feed_type(tmp_path):
     """The obs.txt embedded tarr block now emits feed_type; round-trip
     must preserve it for non-trivial values."""
     tarr = _full_tarr(['rl', 'xy', 'lx'])
@@ -990,13 +985,13 @@ def test_phase2_save_load_obs_txt_embedded_tarr_with_feed_type(tmp_path):
 
 
 # ============================================================================
-# Phase 4a — Obsdata polrep enum + dtype dispatch
+# Obsdata polrep enum + dtype dispatch
 # ============================================================================
 
 
 # ----- Helpers --------------------------------------------------------------
 
-def _phase4a_tarr(feed_types, sites=None):
+def _tarr(feed_types, sites=None):
     """Minimal valid tarr with the given feed_type list (one per station)."""
     n = len(feed_types)
     if sites is None:
@@ -1007,7 +1002,7 @@ def _phase4a_tarr(feed_types, sites=None):
     return t
 
 
-def _phase4a_lin_data(t1s, t2s, times=None):
+def _lin_data(t1s, t2s, times=None):
     """DTPOL_LIN datatable with non-trivial visibility values."""
     n = len(t1s)
     d = np.zeros(n, dtype=ehc.DTPOL_LIN)
@@ -1027,7 +1022,7 @@ def _phase4a_lin_data(t1s, t2s, times=None):
     return d
 
 
-def _phase4a_mixed_data(t1s, t2s, times=None):
+def _mixed_data(t1s, t2s, times=None):
     """DTPOL_MIXED datatable; polbasis is left empty (populated in __init__)."""
     n = len(t1s)
     d = np.zeros(n, dtype=ehc.DTPOL_MIXED)
@@ -1047,26 +1042,26 @@ def _phase4a_mixed_data(t1s, t2s, times=None):
     return d
 
 
-def _phase4a_lin_obs(t1s=('S0',), t2s=('S1',)):
+def _lin_obs(t1s=('S0',), t2s=('S1',)):
     return eo.Obsdata(0., 0., 230e9, 1e9,
-                      _phase4a_lin_data(list(t1s), list(t2s)),
-                      _phase4a_tarr(['xy', 'xy']),
+                      _lin_data(list(t1s), list(t2s)),
+                      _tarr(['xy', 'xy']),
                       polrep='lin')
 
 
-def _phase4a_mixed_obs():
+def _mixed_obs():
     """3-station mixed array: S0/S1 are 'rl', S2 is 'xy'. 3 baselines."""
     return eo.Obsdata(0., 0., 230e9, 1e9,
-                      _phase4a_mixed_data(['S0', 'S0', 'S1'],
+                      _mixed_data(['S0', 'S0', 'S1'],
                                           ['S1', 'S2', 'S2']),
-                      _phase4a_tarr(['rl', 'rl', 'xy']),
+                      _tarr(['rl', 'rl', 'xy']),
                       polrep='mixed')
 
 
 # ----- Construction & validation --------------------------------------------
 
-def test_phase4a_init_lin_from_synthetic_table():
-    obs = _phase4a_lin_obs()
+def test_init_lin_from_synthetic_table():
+    obs = _lin_obs()
     assert obs.polrep == 'lin'
     assert obs.poltype is ehc.DTPOL_LIN
     assert obs.poldict is ehc.POLDICT_LIN
@@ -1074,8 +1069,8 @@ def test_phase4a_init_lin_from_synthetic_table():
     np.testing.assert_array_equal(obs.data['p2p1vis'], obs.data['yxvis'])
 
 
-def test_phase4a_init_mixed_from_synthetic_table():
-    obs = _phase4a_mixed_obs()
+def test_init_mixed_from_synthetic_table():
+    obs = _mixed_obs()
     assert obs.polrep == 'mixed'
     assert obs.poltype is ehc.DTPOL_MIXED
     assert obs.poldict is ehc.POLDICT_MIXED
@@ -1084,75 +1079,75 @@ def test_phase4a_init_mixed_from_synthetic_table():
     assert set(obs.data['polbasis']) == {'rlrl', 'rlxy'}
 
 
-def test_phase4a_init_circ_warns_on_non_rl_tarr():
+def test_init_circ_warns_on_non_rl_tarr():
     d = np.zeros(1, dtype=ehc.DTPOL_CIRC)
     d['t1'] = 'S0'
     d['t2'] = 'S1'
-    tarr = _phase4a_tarr(['rl', 'xy'])
+    tarr = _tarr(['rl', 'xy'])
     with pytest.warns(UserWarning, match="polrep='circ' Obsdata constructed on a tarr"):
         eo.Obsdata(0., 0., 230e9, 1e9, d, tarr, polrep='circ')
 
 
-def test_phase4a_init_lin_warns_on_non_xy_tarr():
-    d = _phase4a_lin_data(['S0'], ['S1'])
-    tarr = _phase4a_tarr(['rl', 'rl'])
+def test_init_lin_warns_on_non_xy_tarr():
+    d = _lin_data(['S0'], ['S1'])
+    tarr = _tarr(['rl', 'rl'])
     with pytest.warns(UserWarning, match="polrep='lin' Obsdata constructed on a tarr"):
         eo.Obsdata(0., 0., 230e9, 1e9, d, tarr, polrep='lin')
 
 
-def test_phase4a_init_mixed_rejects_homogeneous_tarr():
-    d = _phase4a_mixed_data(['S0'], ['S1'])
-    tarr = _phase4a_tarr(['rl', 'rl'])
+def test_init_mixed_rejects_homogeneous_tarr():
+    d = _mixed_data(['S0'], ['S1'])
+    tarr = _tarr(['rl', 'rl'])
     with pytest.raises(ValueError, match="polrep='mixed' requires at least two distinct feed types"):
         eo.Obsdata(0., 0., 230e9, 1e9, d, tarr, polrep='mixed')
 
 
-def test_phase4a_init_rejects_unset_feed_type_qq():
+def test_init_rejects_unset_feed_type_qq():
     d = np.zeros(1, dtype=ehc.DTPOL_STOKES)
     d['t1'] = 'S0'
     d['t2'] = 'S1'
-    tarr = _phase4a_tarr(['??', '??'])
+    tarr = _tarr(['??', '??'])
     with pytest.raises(ValueError, match="unset feed_type='\\?\\?'"):
         eo.Obsdata(0., 0., 230e9, 1e9, d, tarr, polrep='stokes')
 
 
-def test_phase4a_init_rejects_unknown_feed_type():
+def test_init_rejects_unknown_feed_type():
     d = np.zeros(1, dtype=ehc.DTPOL_STOKES)
     d['t1'] = 'S0'
     d['t2'] = 'S1'
-    tarr = _phase4a_tarr(['rl', 'zz'])
+    tarr = _tarr(['rl', 'zz'])
     with pytest.raises(ValueError, match="unknown feed_type"):
         eo.Obsdata(0., 0., 230e9, 1e9, d, tarr, polrep='stokes')
 
 
-def test_phase4a_init_mixed_rejects_missing_station():
-    d = _phase4a_mixed_data(['SX'], ['S1'])
-    tarr = _phase4a_tarr(['rl', 'xy'])
+def test_init_mixed_rejects_missing_station():
+    d = _mixed_data(['SX'], ['S1'])
+    tarr = _tarr(['rl', 'xy'])
     with pytest.raises(ValueError, match="data references stations not in tarr"):
         eo.Obsdata(0., 0., 230e9, 1e9, d, tarr, polrep='mixed')
 
 
-def test_phase4a_dtype_polrep_mismatch_raises():
+def test_dtype_polrep_mismatch_raises():
     d = np.zeros(1, dtype=ehc.DTPOL_STOKES)
     d['t1'] = 'S0'
     d['t2'] = 'S1'
-    tarr = _phase4a_tarr(['xy', 'xy'])
+    tarr = _tarr(['xy', 'xy'])
     with pytest.raises(Exception, match="does not match polrep='lin'"):
         eo.Obsdata(0., 0., 230e9, 1e9, d, tarr, polrep='lin')
 
 
 # ----- Round-trip & query methods -------------------------------------------
 
-def test_phase4a_copy_roundtrip_lin():
-    obs = _phase4a_lin_obs()
+def test_copy_roundtrip_lin():
+    obs = _lin_obs()
     other = obs.copy()
     assert other.polrep == 'lin'
     assert other.poltype == ehc.DTPOL_LIN
     np.testing.assert_array_equal(other.data['xxvis'], obs.data['xxvis'])
 
 
-def test_phase4a_copy_roundtrip_mixed():
-    obs = _phase4a_mixed_obs()
+def test_copy_roundtrip_mixed():
+    obs = _mixed_obs()
     other = obs.copy()
     assert other.polrep == 'mixed'
     assert other.poltype == ehc.DTPOL_MIXED
@@ -1160,11 +1155,11 @@ def test_phase4a_copy_roundtrip_mixed():
     np.testing.assert_array_equal(other.data['p1p1vis'], obs.data['p1p1vis'])
 
 
-def test_phase4a_tlist_bllist_lin():
+def test_tlist_bllist_lin():
     obs = eo.Obsdata(0., 0., 230e9, 1e9,
-                     _phase4a_lin_data(['S0', 'S0'], ['S1', 'S1'],
+                     _lin_data(['S0', 'S0'], ['S1', 'S1'],
                                        times=[0.0, 1.0]),
-                     _phase4a_tarr(['xy', 'xy']),
+                     _tarr(['xy', 'xy']),
                      polrep='lin')
     tl = obs.tlist()
     bl = obs.bllist()
@@ -1172,32 +1167,32 @@ def test_phase4a_tlist_bllist_lin():
     assert len(bl) == 1
 
 
-def test_phase4a_tlist_bllist_mixed():
-    obs = _phase4a_mixed_obs()
+def test_tlist_bllist_mixed():
+    obs = _mixed_obs()
     tl = obs.tlist()
     bl = obs.bllist()
     assert len(tl) == 1
     assert len(bl) == 3
 
 
-def test_phase4a_flag_uvdist_lin():
-    obs = _phase4a_lin_obs()
+def test_flag_uvdist_lin():
+    obs = _lin_obs()
     kept = obs.flag_uvdist(uv_min=0., uv_max=1e20)
     assert len(kept.data) == len(obs.data)
 
 
-def test_phase4a_flag_sites_mixed():
-    obs = _phase4a_mixed_obs()
+def test_flag_sites_mixed():
+    obs = _mixed_obs()
     kept = obs.flag_sites(['S2'])
     assert 'S2' not in set(kept.data['t1']) | set(kept.data['t2'])
 
 
 # ----- reorder_baselines ----------------------------------------------------
 
-def test_phase4a_reorder_baselines_lin_swap():
+def test_reorder_baselines_lin_swap():
     # t1=S1, t2=S0 is reversed; reorder swaps and applies LIN conj/cross-swap.
-    d = _phase4a_lin_data(['S1'], ['S0'])
-    obs = eo.Obsdata(0., 0., 230e9, 1e9, d, _phase4a_tarr(['xy', 'xy']),
+    d = _lin_data(['S1'], ['S0'])
+    obs = eo.Obsdata(0., 0., 230e9, 1e9, d, _tarr(['xy', 'xy']),
                      polrep='lin')
     row = obs.data[0]
     assert row['t1'] == 'S0'
@@ -1212,11 +1207,11 @@ def test_phase4a_reorder_baselines_lin_swap():
     assert row['yxsigma'] == 0.3
 
 
-def test_phase4a_reorder_baselines_mixed_swap_and_polbasis_flip():
+def test_reorder_baselines_mixed_swap_and_polbasis_flip():
     # t1=S1 (xy), t2=S0 (rl); reorder swaps and flips polbasis 'xyrl' -> 'rlxy'.
-    d = _phase4a_mixed_data(['S1'], ['S0'])
+    d = _mixed_data(['S1'], ['S0'])
     obs = eo.Obsdata(0., 0., 230e9, 1e9, d,
-                     _phase4a_tarr(['rl', 'xy']),
+                     _tarr(['rl', 'xy']),
                      polrep='mixed')
     row = obs.data[0]
     assert row['t1'] == 'S0'
@@ -1233,34 +1228,34 @@ def test_phase4a_reorder_baselines_mixed_swap_and_polbasis_flip():
 
 # ----- avg_coherent / avg_incoherent guards ---------------------------------
 
-def test_phase4a_avg_coherent_lin_raises():
-    obs = _phase4a_lin_obs()
+def test_avg_coherent_lin_raises():
+    obs = _lin_obs()
     with pytest.raises(NotImplementedError, match="not yet supported on polrep='lin'"):
         obs.avg_coherent(60.0)
 
 
-def test_phase4a_avg_coherent_mixed_raises():
-    obs = _phase4a_mixed_obs()
+def test_avg_coherent_mixed_raises():
+    obs = _mixed_obs()
     with pytest.raises(NotImplementedError, match="not yet supported on polrep='mixed'"):
         obs.avg_coherent(60.0)
 
 
-def test_phase4a_avg_incoherent_lin_raises():
-    obs = _phase4a_lin_obs()
+def test_avg_incoherent_lin_raises():
+    obs = _lin_obs()
     with pytest.raises(NotImplementedError, match="not yet supported on polrep='lin'"):
         obs.avg_incoherent(60.0)
 
 
-def test_phase4a_avg_incoherent_mixed_raises():
-    obs = _phase4a_mixed_obs()
+def test_avg_incoherent_mixed_raises():
+    obs = _mixed_obs()
     with pytest.raises(NotImplementedError, match="not yet supported on polrep='mixed'"):
         obs.avg_incoherent(60.0)
 
 
 # ----- dirtyimage -----------------------------------------------------------
 
-def test_phase4a_dirtyimage_mixed_raises():
-    obs = _phase4a_mixed_obs()
+def test_dirtyimage_mixed_raises():
+    obs = _mixed_obs()
     with pytest.raises(NotImplementedError, match="dirtyimage is not supported on polrep='mixed'"):
         obs.dirtyimage(npix=8, fov=1e-6)
 
@@ -1271,15 +1266,15 @@ def test_phase4a_dirtyimage_mixed_raises():
 
 
 # ============================================================================
-# Phase 4b — Obsdata.switch_polrep extensions
+#  Obsdata.switch_polrep extensions
 # ============================================================================
 
 
 # ----- Helpers --------------------------------------------------------------
 
-def _phase4b_stokes_obs(tarr_feeds=('rl', 'rl'), with_nan_v=False):
+def _stokes_obs(tarr_feeds=('rl', 'rl'), with_nan_v=False):
     """Stokes Obsdata on a 2-station tarr with the given feed_types."""
-    tarr = _phase4a_tarr(list(tarr_feeds))
+    tarr = _tarr(list(tarr_feeds))
     d = np.zeros(2, dtype=ehc.DTPOL_STOKES)
     d['time'] = [0.0, 0.5]
     d['t1'] = ['S0', 'S0']
@@ -1297,14 +1292,14 @@ def _phase4b_stokes_obs(tarr_feeds=('rl', 'rl'), with_nan_v=False):
     return eo.Obsdata(0., 0., 230e9, 1e9, d, tarr, polrep='stokes')
 
 
-def _phase4b_circ_obs():
+def _circ_obs():
     """A non-trivial circ Obsdata on an rl tarr."""
-    return _phase4b_stokes_obs().switch_polrep('circ')
+    return _stokes_obs().switch_polrep('circ')
 
 
-def _phase4b_lin_obs(with_nan_xx=False):
+def _lin_obs(with_nan_xx=False):
     """A non-trivial lin Obsdata on an xy tarr (built from stokes)."""
-    obs_s = _phase4b_stokes_obs(tarr_feeds=('xy', 'xy'))
+    obs_s = _stokes_obs(tarr_feeds=('xy', 'xy'))
     obs_l = obs_s.switch_polrep('lin', singlepol_hand='X')
     if with_nan_xx:
         obs_l.data['xxvis'] = np.nan
@@ -1313,16 +1308,16 @@ def _phase4b_lin_obs(with_nan_xx=False):
 
 # ----- Direct lin <-> stokes round-trips ------------------------------------
 
-def test_phase4b_switch_polrep_lin_stokes_lin_roundtrip():
-    obs = _phase4b_lin_obs()
+def test_switch_polrep_lin_stokes_lin_roundtrip():
+    obs = _lin_obs()
     rt = obs.switch_polrep('stokes').switch_polrep('lin', singlepol_hand='X')
     for f in ('xxvis', 'yyvis', 'xyvis', 'yxvis'):
         np.testing.assert_allclose(rt.data[f], obs.data[f], atol=1e-12)
 
 
-def test_phase4b_switch_polrep_cross_convention_check():
+def test_switch_polrep_cross_convention_check():
     """Build matched circ + lin obs from the same Stokes; both -> stokes match."""
-    obs_s = _phase4b_stokes_obs()
+    obs_s = _stokes_obs()
     obs_c = obs_s.switch_polrep('circ')
     obs_l = obs_s.switch_polrep('lin', singlepol_hand='X')
     s_from_c = obs_c.switch_polrep('stokes')
@@ -1333,24 +1328,24 @@ def test_phase4b_switch_polrep_cross_convention_check():
 
 # ----- circ <-> lin composition ---------------------------------------------
 
-def test_phase4b_switch_polrep_circ_to_lin_equals_explicit():
-    obs_c = _phase4b_circ_obs()
+def test_switch_polrep_circ_to_lin_equals_explicit():
+    obs_c = _circ_obs()
     composed = obs_c.switch_polrep('lin', singlepol_hand='X')
     explicit = obs_c.switch_polrep('stokes').switch_polrep('lin', singlepol_hand='X')
     for f in ('xxvis', 'yyvis', 'xyvis', 'yxvis'):
         np.testing.assert_allclose(composed.data[f], explicit.data[f], atol=1e-12)
 
 
-def test_phase4b_switch_polrep_lin_to_circ_equals_explicit():
-    obs_l = _phase4b_lin_obs()
+def test_switch_polrep_lin_to_circ_equals_explicit():
+    obs_l = _lin_obs()
     composed = obs_l.switch_polrep('circ', singlepol_hand='R')
     explicit = obs_l.switch_polrep('stokes').switch_polrep('circ', singlepol_hand='R')
     for f in ('rrvis', 'llvis', 'rlvis', 'lrvis'):
         np.testing.assert_allclose(composed.data[f], explicit.data[f], atol=1e-12)
 
 
-def test_phase4b_switch_polrep_circ_lin_circ_roundtrip():
-    obs_c = _phase4b_circ_obs()
+def test_switch_polrep_circ_lin_circ_roundtrip():
+    obs_c = _circ_obs()
     rt = obs_c.switch_polrep('lin', singlepol_hand='X').switch_polrep('circ', singlepol_hand='R')
     for f in ('rrvis', 'llvis', 'rlvis', 'lrvis'):
         np.testing.assert_allclose(rt.data[f], obs_c.data[f], atol=1e-12)
@@ -1358,14 +1353,14 @@ def test_phase4b_switch_polrep_circ_lin_circ_roundtrip():
 
 # ----- Mixed source / invalid output ----------------------------------------
 
-def test_phase4b_switch_polrep_mixed_source_raises():
-    obs_m = _phase4a_mixed_obs()
+def test_switch_polrep_mixed_source_raises():
+    obs_m = _mixed_obs()
     with pytest.raises(NotImplementedError, match="polrep='mixed' is not yet implemented"):
         obs_m.switch_polrep('stokes')
 
 
-def test_phase4b_switch_polrep_invalid_output_raises():
-    obs_c = _phase4b_circ_obs()
+def test_switch_polrep_invalid_output_raises():
+    obs_c = _circ_obs()
     with pytest.raises(Exception, match="polrep_out must be"):
         obs_c.switch_polrep('mixed')
     with pytest.raises(Exception, match="polrep_out must be"):
@@ -1374,8 +1369,8 @@ def test_phase4b_switch_polrep_invalid_output_raises():
 
 # ----- allow_singlepol on lin -> stokes -------------------------------------
 
-def test_phase4b_switch_polrep_allow_singlepol_lin_to_stokes_fills_xx_with_yy():
-    obs = _phase4b_lin_obs(with_nan_xx=True)
+def test_switch_polrep_allow_singlepol_lin_to_stokes_fills_xx_with_yy():
+    obs = _lin_obs(with_nan_xx=True)
     with warnings.catch_warnings():
         warnings.simplefilter('ignore')
         out = obs.switch_polrep('stokes', allow_singlepol=True)
@@ -1383,8 +1378,8 @@ def test_phase4b_switch_polrep_allow_singlepol_lin_to_stokes_fills_xx_with_yy():
     np.testing.assert_allclose(out.data['vis'], obs.data['yyvis'], atol=1e-12)
 
 
-def test_phase4b_switch_polrep_allow_singlepol_false_leaves_nan():
-    obs = _phase4b_lin_obs(with_nan_xx=True)
+def test_switch_polrep_allow_singlepol_false_leaves_nan():
+    obs = _lin_obs(with_nan_xx=True)
     with warnings.catch_warnings():
         warnings.simplefilter('ignore')
         out = obs.switch_polrep('stokes', allow_singlepol=False)
@@ -1393,22 +1388,22 @@ def test_phase4b_switch_polrep_allow_singlepol_false_leaves_nan():
 
 # ----- singlepol warning behaviour ------------------------------------------
 
-def test_phase4b_switch_polrep_singlepol_warns_on_substitution():
-    obs = _phase4b_stokes_obs(with_nan_v=True)
+def test_switch_polrep_singlepol_warns_on_substitution():
+    obs = _stokes_obs(with_nan_v=True)
     with pytest.warns(UserWarning, match="allow_singlepol substituted"):
         obs.switch_polrep('circ', singlepol_hand='R')
 
 
-def test_phase4b_switch_polrep_singlepol_no_warn_when_disabled():
-    obs = _phase4b_stokes_obs(with_nan_v=True)
+def test_switch_polrep_singlepol_no_warn_when_disabled():
+    obs = _stokes_obs(with_nan_v=True)
     with warnings.catch_warnings(record=True) as w:
         warnings.simplefilter('always')
         obs.switch_polrep('circ', allow_singlepol=False, singlepol_hand='R')
         assert not any('allow_singlepol substituted' in str(wi.message) for wi in w)
 
 
-def test_phase4b_switch_polrep_singlepol_no_warn_when_no_substitution():
-    obs = _phase4b_stokes_obs(with_nan_v=False)
+def test_switch_polrep_singlepol_no_warn_when_no_substitution():
+    obs = _stokes_obs(with_nan_v=False)
     with warnings.catch_warnings(record=True) as w:
         warnings.simplefilter('always')
         obs.switch_polrep('circ', allow_singlepol=True, singlepol_hand='R')
@@ -1417,20 +1412,20 @@ def test_phase4b_switch_polrep_singlepol_no_warn_when_no_substitution():
 
 # ----- singlepol_hand validation --------------------------------------------
 
-def test_phase4b_switch_polrep_singlepol_hand_X_invalid_for_circ():
-    obs = _phase4b_stokes_obs(with_nan_v=True)
+def test_switch_polrep_singlepol_hand_X_invalid_for_circ():
+    obs = _stokes_obs(with_nan_v=True)
     with pytest.raises(Exception, match="singlepol_hand must be 'R' or 'L'"):
         obs.switch_polrep('circ', singlepol_hand='X')
 
 
-def test_phase4b_switch_polrep_singlepol_hand_R_invalid_for_lin():
-    obs = _phase4b_stokes_obs(with_nan_v=True)
+def test_switch_polrep_singlepol_hand_R_invalid_for_lin():
+    obs = _stokes_obs(with_nan_v=True)
     with pytest.raises(Exception, match="singlepol_hand must be 'X' or 'Y'"):
         obs.switch_polrep('lin', singlepol_hand='R')
 
 
-def test_phase4b_switch_polrep_singlepol_hand_case_insensitive():
-    obs = _phase4b_stokes_obs(with_nan_v=True)
+def test_switch_polrep_singlepol_hand_case_insensitive():
+    obs = _stokes_obs(with_nan_v=True)
     with warnings.catch_warnings():
         warnings.simplefilter('ignore')
         out_r = obs.switch_polrep('circ', singlepol_hand='r')
@@ -1440,9 +1435,9 @@ def test_phase4b_switch_polrep_singlepol_hand_case_insensitive():
     assert not np.all(np.isnan(out_x.data['xxvis']))
 
 
-def test_phase4b_switch_polrep_singlepol_hand_unused_when_disabled():
+def test_switch_polrep_singlepol_hand_unused_when_disabled():
     """When allow_singlepol=False, singlepol_hand is not validated."""
-    obs = _phase4b_stokes_obs(with_nan_v=True)
+    obs = _stokes_obs(with_nan_v=True)
     with warnings.catch_warnings():
         warnings.simplefilter('ignore')
         # 'X' would be invalid for circ if validated; with allow_singlepol=False
@@ -1452,8 +1447,8 @@ def test_phase4b_switch_polrep_singlepol_hand_unused_when_disabled():
 
 # ----- tarr preservation ----------------------------------------------------
 
-def test_phase4b_switch_polrep_tarr_unchanged():
-    obs_c = _phase4b_circ_obs()
+def test_switch_polrep_tarr_unchanged():
+    obs_c = _circ_obs()
     obs_l = obs_c.switch_polrep('lin', singlepol_hand='X')
     # tarr.feed_type is physical-array description; switch_polrep does not
     # touch it.

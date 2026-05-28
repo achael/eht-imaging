@@ -355,7 +355,7 @@ def test_switch_polrep_raises_if_output_pol_missing(gauss_im):
 
 
 # ---------------------------------------------------------------------------
-# Section 5b: lin polrep (Phase 3)
+# Section 5b: lin polrep 
 # ---------------------------------------------------------------------------
 
 

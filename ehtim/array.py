@@ -87,7 +87,7 @@ class TarrView:
 
     Note: this guard catches whole-column access (tarr['sefdr']). It does
     not catch row-form access (tarr[i]['sefdr']) — the row is a numpy
-    void object owned by numpy. Phase 2+ code should prefer
+    void object owned by numpy. New code should prefer
     Array.sefd_for_feed / Array.dterm_for_feed for per-station lookups.
     """
 
@@ -393,7 +393,7 @@ class Array:
                              all-RL feeds; 'lin' requires all-XY feeds; 'mixed'
                              requires at least two distinct feed types. 'lin'
                              and 'mixed' are not yet wired through the
-                             simulation backend (Phase 5).
+                             simulation backend.
                elevmin (float): station minimum elevation in degrees
                elevmax (float): station maximum elevation in degrees
                no_elevcut_space (bool): if True, do not apply elevation cut to orbiters
@@ -425,8 +425,7 @@ class Array:
         if polrep in ('lin', 'mixed'):
             raise NotImplementedError(
                 f"Array.obsdata(polrep={polrep!r}) is not yet supported by "
-                f"the simulation backend (see Phase 5 of "
-                f"obsdata_mixedpol_plan_v2.md)")
+                f"the simulation backend")
 
         obsarr = simobs.make_uvpoints(self, ra, dec, rf, bw,
                                       tint, tadv, tstart, tstop,
