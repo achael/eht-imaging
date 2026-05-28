@@ -17,24 +17,20 @@
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-from __future__ import division
-from __future__ import print_function
 
-from builtins import str
-from builtins import range
-from builtins import object
+import copy
+import time
+from multiprocessing import Pool, cpu_count
 
 import numpy as np
 import scipy.optimize as opt
-import time
-import copy
-from multiprocessing import cpu_count, Pool
 
-import ehtim.obsdata
-import ehtim.parloop as parloop
-from . import cal_helpers as calh
-import ehtim.observing.obs_helpers as obsh
 import ehtim.const_def as ehc
+import ehtim.obsdata
+import ehtim.observing.obs_helpers as obsh
+import ehtim.parloop as parloop
+
+from . import cal_helpers as calh
 
 ZBLCUTOFF = 1.e7
 MAXIT = 5000
@@ -109,14 +105,14 @@ def network_cal(obs, zbl, sites=[], zbl_uvdist_max=ZBLCUTOFF, method="amp", mini
         counter = parloop.Counter(initval=0, maxval=len(scans))
         if processes > len(scans):
             processes = len(scans)
-        print("Using Multiprocessing with %d Processes" % processes)
+        print(f"Using Multiprocessing with {processes} Processes")
         pool = Pool(processes=processes, initializer=init, initargs=(counter,))
     elif processes == 0:
         counter = parloop.Counter(initval=0, maxval=len(scans))
         processes = int(cpu_count())
         if processes > len(scans):
             processes = len(scans)
-        print("Using Multiprocessing with %d Processes" % processes)
+        print(f"Using Multiprocessing with {processes} Processes")
         pool = Pool(processes=processes, initializer=init, initargs=(counter,))
     else:
         print("Not Using Multiprocessing")
@@ -143,7 +139,7 @@ def network_cal(obs, zbl, sites=[], zbl_uvdist_max=ZBLCUTOFF, method="amp", mini
                                             pad_amp=pad_amp, gain_tol=gain_tol, debias=debias)
 
     tstop = time.time()
-    print("\nnetwork_cal time: %f s" % (tstop - tstart))
+    print(f"\nnetwork_cal time: {tstop - tstart:f} s")
 
     if caltable:  # create and return  a caltable
         allsites = obs.tarr['site']
@@ -305,7 +301,7 @@ def network_cal_scan(scan, zbl, sites, clustered_sites, polrep='stokes', pol='I'
     n_gains = len(sites)
     n_clusterbls = len(clusterbls)
     if show_solution:
-        print('%d Gains; %d Clusters' % (n_gains, n_clusterbls))
+        print(f'{n_gains} Gains; {n_clusterbls} Clusters')
 
     gpar_guess = np.ones(n_gains, dtype=np.complex128).view(dtype=np.float64)
     vpar_guess = np.ones(n_clusterbls, dtype=np.complex128)
