@@ -13,6 +13,30 @@ import pytest
 import ehtim as eh
 
 # ---------------------------------------------------------------------------
+# Constants used across the module
+# ---------------------------------------------------------------------------
+
+# Image-level flux conservation through interp / FFT-shift / blur. Loose
+# enough to absorb the discretisation noise of resampling onto a coarser
+# grid, tight enough to catch a sign flip or a half-pixel offset.
+FLUX_RTOL = 5e-2
+
+# Target grid for regrid_image tests: lower-res, larger FOV than gauss_im.
+REGRID_FOV_UAS = 300.0
+REGRID_NPIX = 24
+
+# blur_mf settings.
+BLUR_MF_FWHM_UAS = 40.0
+BLUR_MF_FREQS_HZ = (220e9, 250e9, 280e9)
+
+# Sub-pixel shift for shift_fft tests.
+SHIFT_FFT_SUBPIXEL = (1.3, -0.7)
+
+# Absolute tolerance for pol channels that should be zero after a 90 deg
+# tensor rotation.
+POL_TENSOR_ATOL = 1e-9
+
+# ---------------------------------------------------------------------------
 # Section 1: Construction, basic state, image_args, copy
 # ---------------------------------------------------------------------------
 
@@ -975,3 +999,132 @@ def test_get_specim_invalid_fit_order(gauss_im):
     im_350 = im_mf.get_image_mf(350e9)
     with pytest.raises(Exception):
         eh.image.get_specim([im_mf, im_350], reffreq=gauss_im.rf, fit_order=3)
+
+
+# ---------------------------------------------------------------------------
+# regrid_image — interpolation orders + multi-pol flux conservation
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.parametrize("interp", ["linear", "cubic", "quintic"])
+def test_regrid_image_interp_preserves_flux(gauss_im, interp):
+    out = gauss_im.regrid_image(REGRID_FOV_UAS * eh.RADPERUAS, REGRID_NPIX,
+                                interp=interp)
+    np.testing.assert_allclose(out.total_flux(), gauss_im.total_flux(),
+                               rtol=FLUX_RTOL)
+
+
+def test_regrid_image_preserves_polarized_flux(gauss_im_pol):
+    out = gauss_im_pol.regrid_image(REGRID_FOV_UAS * eh.RADPERUAS, REGRID_NPIX)
+    for pol in ("Q", "U", "V"):
+        before = float(np.sum(gauss_im_pol._imdict[pol]))
+        after = float(np.sum(out._imdict[pol]))
+        np.testing.assert_allclose(after, before, rtol=FLUX_RTOL)
+
+
+def test_regrid_image_changes_psize_to_targetfov(gauss_im):
+    out = gauss_im.regrid_image(REGRID_FOV_UAS * eh.RADPERUAS, REGRID_NPIX)
+    expected_psize = REGRID_FOV_UAS * eh.RADPERUAS / REGRID_NPIX
+    assert out.psize == pytest.approx(expected_psize)
+    assert out.xdim == REGRID_NPIX
+    assert out.ydim == REGRID_NPIX
+
+
+# ---------------------------------------------------------------------------
+# rotate — polarimetric tensor transform
+# ---------------------------------------------------------------------------
+
+
+def _qu_asymmetric_image(n=32, psize_uas=5.0):
+    """Stokes I square + off-centre Q patch so rotation has a non-trivial
+    spatial AND polarimetric effect (gauss_im_pol's Q is rotationally
+    symmetric, which hides any tensor-rotation bug)."""
+    ps = psize_uas * eh.RADPERUAS
+    I = np.zeros((n, n))
+    I[10:22, 10:22] = 1.0
+    Q = np.zeros_like(I)
+    Q[12:16, 14:20] = 1.0
+    U = np.zeros_like(I)
+    im = eh.image.Image(I, ps, 0.0, 0.0)
+    im.add_qu(Q, U)
+    return im
+
+
+def test_rotate_90deg_negates_q_and_u_on_qu_image():
+    # Polarization is a spin-2 quantity, so an image rotation by alpha
+    # rotates the Stokes (Q, U) tensor by 2*alpha. For alpha = pi/2 that
+    # gives Q' = -Q and U' = -U. Cross-check against TMS Ch. 4.7 conventions.
+    im = _qu_asymmetric_image()
+    out = im.rotate(np.pi / 2)
+    np.testing.assert_allclose(out._imdict['Q'].sum(),
+                               -im._imdict['Q'].sum(), rtol=FLUX_RTOL)
+    np.testing.assert_allclose(out._imdict['U'].sum(), 0.0,
+                               atol=POL_TENSOR_ATOL + FLUX_RTOL * np.abs(im._imdict['Q'].sum()))
+
+
+def test_rotate_arbitrary_angle_matches_tensor_formula():
+    # General check: Q' + i U' = exp(2 i alpha) (Q + i U) at the integrated
+    # (sum-over-pixels) level. Pick an angle that isn't a multiple of pi/2
+    # so cos and sin both contribute.
+    alpha = 0.37
+    im = _qu_asymmetric_image()
+    out = im.rotate(alpha)
+    qiu_in = im._imdict['Q'].sum() + 1j * im._imdict['U'].sum()
+    qiu_out = out._imdict['Q'].sum() + 1j * out._imdict['U'].sum()
+    expected = np.exp(1j * 2 * alpha) * qiu_in
+    np.testing.assert_allclose(qiu_out, expected, rtol=FLUX_RTOL)
+
+
+# ---------------------------------------------------------------------------
+# shift_fft — multi-pol sub-pixel shift preserves polarized flux
+# ---------------------------------------------------------------------------
+
+
+def test_shift_fft_preserves_polarized_flux(gauss_im_pol):
+    out = gauss_im_pol.shift_fft(SHIFT_FFT_SUBPIXEL)
+    for pol in ("Q", "U", "V"):
+        before = float(np.sum(gauss_im_pol._imdict[pol]))
+        after = float(np.sum(out._imdict[pol]))
+        np.testing.assert_allclose(after, before, rtol=FLUX_RTOL)
+
+
+# ---------------------------------------------------------------------------
+# blur_mf fit_order=2
+# ---------------------------------------------------------------------------
+
+
+def test_blur_mf_fit_order_2_runs_and_populates_specvec(gauss_im):
+    out = gauss_im.blur_mf(BLUR_MF_FREQS_HZ, BLUR_MF_FWHM_UAS * eh.RADPERUAS,
+                           fit_order=2)
+    assert len(out.specvec) == len(gauss_im.imvec)
+    assert np.any(out.specvec != 0)
+
+
+# ---------------------------------------------------------------------------
+# Plotting smokes — Agg backend, no display side effects
+# ---------------------------------------------------------------------------
+
+
+@pytest.fixture(scope="module")
+def _agg_backend():
+    import matplotlib
+    matplotlib.use("Agg")
+    import matplotlib.pyplot as plt
+    yield plt
+    plt.close("all")
+
+
+def test_contour_renders_without_error(gauss_im, _agg_backend):
+    fig = gauss_im.contour(show=False)
+    assert fig is not None
+
+
+def test_display_renders_without_error(gauss_im, _agg_backend):
+    fig = gauss_im.display(show=False, export_pdf="")
+    assert fig is not None
+
+
+def test_overlay_display_renders_without_error(gauss_im, _agg_backend):
+    other = gauss_im.copy()
+    fig = gauss_im.overlay_display([other], show=False, export_pdf="")
+    assert fig is not None
