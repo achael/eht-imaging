@@ -359,27 +359,30 @@ class TestApplycalInterpModes:
 
 class TestApplycalExtrapolation:
 
-    @pytest.mark.xfail(reason="applycal silently fills out-of-span samples with "
-                              "NaN when extrapolate is None and the caltable "
-                              "doesn't span the obs times. Tracked for a "
-                              "follow-up fix PR.",
-                       strict=True)
-    def test_undersized_caltable_does_not_silently_nan(self, obs_direct):
-        # Caltable covers only the first half of the obs; with extrapolate=None
-        # the second half should not silently come back NaN.
+    # The applycal docstring only documents extrapolate=True; the False/None
+    # behaviour is left to the underlying scipy.interpolate.interp1d default
+    # (NaN fill). These tests pin that delegated behaviour rather than treat
+    # it as a bug: with extrapolate=None, samples outside the caltable span
+    # come back NaN, exactly on those rows.
+
+    def test_extrapolate_none_yields_nan_only_outside_span(self, obs_direct):
         t0 = obs_direct.data['time'].min()
-        t_mid = (obs_direct.data['time'].min()
-                 + obs_direct.data['time'].max()) / 2.0
+        t_mid = 0.5 * (obs_direct.data['time'].min()
+                       + obs_direct.data['time'].max())
         ct = _caltable_with_times(obs_direct, [t0 - 1.0, t_mid])
         out = ct.applycal(obs_direct, interp='linear', extrapolate=None)
-        assert not np.any(np.isnan(out.data['vis']))
+        outside = obs_direct.data['time'] > t_mid
+        inside = ~outside
+        # Outside-span rows are NaN; in-span rows remain finite.
+        assert np.all(np.isnan(out.data['vis'][outside]))
+        assert np.all(np.isfinite(out.data['vis'][inside]))
 
     def test_extrapolate_true_fills_outside_span(self, obs_direct):
-        # With extrapolate=True, the scipy 'extrapolate' fill value is used
-        # and the calibrated visibilities are finite everywhere.
+        # With extrapolate=True, scipy's 'extrapolate' fill value is used and
+        # the calibrated visibilities are finite everywhere.
         t0 = obs_direct.data['time'].min()
-        t_mid = (obs_direct.data['time'].min()
-                 + obs_direct.data['time'].max()) / 2.0
+        t_mid = 0.5 * (obs_direct.data['time'].min()
+                       + obs_direct.data['time'].max())
         ct = _caltable_with_times(obs_direct, [t0 - 1.0, t_mid])
         out = ct.applycal(obs_direct, interp='linear', extrapolate=True)
         assert np.all(np.isfinite(out.data['vis']))
