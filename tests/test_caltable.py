@@ -126,9 +126,6 @@ class TestCaltableCopy:
         for attr in ('source', 'ra', 'dec', 'rf', 'bw', 'mjd', 'timetype'):
             assert getattr(ct, attr) == getattr(unity_caltable, attr)
 
-    @pytest.mark.xfail(reason="Caltable.copy() is shallow; data dict aliases the "
-                              "original. Fixed in next commit.",
-                       strict=True)
     def test_copy_data_is_independent(self, constant_gain_caltable_factory):
         original = constant_gain_caltable_factory(2.0 + 0j)
         cp = original.copy()
@@ -136,9 +133,6 @@ class TestCaltableCopy:
         cp.data[first_site]['rscale'] *= 10
         assert original.data[first_site]['rscale'][0] == 2 + 0j
 
-    @pytest.mark.xfail(reason="Caltable.copy() is shallow; tarr aliases the "
-                              "original. Fixed in next commit.",
-                       strict=True)
     def test_copy_tarr_is_independent(self, unity_caltable):
         cp = unity_caltable.copy()
         cp.tarr['sefdr'][0] = -1234.0

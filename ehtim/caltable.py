@@ -99,11 +99,9 @@ class Caltable:
            Args:
 
            Returns:
-               (Caltable): a copy of the Caltable object.
+               (Caltable): a deep copy of the Caltable object.
         """
-        new_caltable = Caltable(self.ra, self.dec, self.rf, self.bw, self.data, self.tarr,
-                                source=self.source, mjd=self.mjd, timetype=self.timetype)
-        return new_caltable
+        return copy.deepcopy(self)
 
     def plot_dterms(self, sites='all', label=None, legend=True, clist=ehc.SCOLORS,
                     rangex=False, rangey=False, markersize=2 * ehc.MARKERSIZE,
