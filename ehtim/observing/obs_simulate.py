@@ -227,6 +227,7 @@ def sample_vis(im_org, uv, sgrscat=False, polrep_obs='stokes',
 
     # Get visibilities from straightforward FFT
     if ttype == "fast":
+        obsh.warn_fast_ttype_deprecated()
 
         # Padded image size
         npad = fft_pad_factor * np.max((im.xdim, im.ydim))

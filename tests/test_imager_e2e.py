@@ -192,3 +192,15 @@ class TestEndToEndReconstruction:
         p_truth = np.sum(np.sqrt(gauss_im_pol.qvec**2 + gauss_im_pol.uvec**2)) * gauss_im_pol.psize**2
         assert p_total == pytest.approx(p_truth, rel=0.5), (
             f"total polarized flux {p_total:.3e} off from truth {p_truth:.3e}")
+
+
+def test_imager_fast_ttype_warns_deprecated(gauss_im, observe):
+    """Constructing an Imager with ttype='fast' emits the imaging-context
+    DeprecationWarning noting that gradients are inaccurate."""
+    obs = observe(gauss_im, ttype="nfft")
+    prior = _independent_prior(gauss_im.total_flux())
+    with pytest.warns(DeprecationWarning, match=r"gradients are inaccurate"):
+        eh.imager.Imager(
+            obs, prior, prior_im=prior, flux=gauss_im.total_flux(),
+            **_imager_kwargs_stokes_i("fast"),
+        )
