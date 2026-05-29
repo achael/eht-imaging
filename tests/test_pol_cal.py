@@ -83,6 +83,7 @@ def _cross_hand_residual(obs_a, obs_b):
                              + np.abs(obs_a.data['lrvis'] - obs_b.data['lrvis']) ** 2))
 
 
+@pytest.mark.filterwarnings("ignore:leakage_cal is deprecated:DeprecationWarning")
 class TestLeakageCalIdentity:
 
     def test_clean_obs_recovers_dterms_near_zero(self, obs_pol_dense, gauss_im_pol):
@@ -97,6 +98,7 @@ class TestLeakageCalIdentity:
                                    atol=LEAKAGE_RECOVERY_ATOL)
 
 
+@pytest.mark.filterwarnings("ignore:leakage_cal is deprecated:DeprecationWarning")
 class TestLeakageCalInjectedDterms:
 
     def test_cross_hand_residual_drops_after_cal(
@@ -115,6 +117,7 @@ class TestLeakageCalInjectedDterms:
         assert RESIDUAL_REDUCTION_FRAC_MIN <= reduction <= RESIDUAL_REDUCTION_FRAC_MAX
 
 
+@pytest.mark.filterwarnings("ignore:leakage_cal is deprecated:DeprecationWarning")
 class TestLeakageCalReturnType:
 
     def test_default_returns_obsdata_with_dcal_set(self, obs_pol_dense,
@@ -125,6 +128,21 @@ class TestLeakageCalReturnType:
         )
         assert isinstance(out, eh.obsdata.Obsdata)
         assert out.dcal is True
+
+
+class TestLeakageCalDeprecation:
+
+    def test_calling_leakage_cal_emits_deprecation_warning(
+        self, obs_pol_dense, gauss_im_pol,
+    ):
+        # dtype='bogus' triggers the dtype guard right after the deprecation
+        # warning fires, so the optimizer never runs.
+        with pytest.warns(DeprecationWarning, match="leakage_cal is deprecated"):
+            with pytest.raises(Exception, match="dtype must be vis or amp"):
+                polcal.leakage_cal(
+                    obs_pol_dense, gauss_im_pol, dtype="bogus",
+                    leakage_tol=LEAKAGE_TOL, show_solution=SHOW_SOLUTION,
+                )
 
 
 # ---------------------------------------------------------------------------

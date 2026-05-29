@@ -19,6 +19,7 @@
 
 
 import time
+import warnings
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -64,6 +65,11 @@ def leakage_cal(obs, im=None, sites=[], leakage_tol=.1, pol_fit=['RL', 'LR'], dt
        Returns:
            (Obsdata): the calibrated observation, with computed leakage values added to the obs.tarr
     """
+    warnings.warn(
+        "leakage_cal is deprecated; use ehtim.calibrating.pol_cal_new.leakage_cal_new instead "
+        "(faster, explicit analytic gradient).",
+        DeprecationWarning, stacklevel=2,
+    )
     tstart = time.time()
 
     mask = []
