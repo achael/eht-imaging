@@ -1089,15 +1089,21 @@ def test_shift_fft_preserves_polarized_flux(gauss_im_pol):
 
 
 # ---------------------------------------------------------------------------
-# blur_mf fit_order=2
+# blur_mf
 # ---------------------------------------------------------------------------
 
 
-def test_blur_mf_fit_order_2_runs_and_populates_specvec(gauss_im):
+@pytest.mark.parametrize("fit_order", [1, 2])
+def test_blur_mf_runs_and_populates_specvec(gauss_im, fit_order):
     out = gauss_im.blur_mf(BLUR_MF_FREQS_HZ, BLUR_MF_FWHM_UAS * eh.RADPERUAS,
-                           fit_order=2)
+                           fit_order=fit_order)
     assert len(out.specvec) == len(gauss_im.imvec)
     assert np.any(out.specvec != 0)
+    if fit_order == 1:
+        # Linear log-log fit; curvature term beta must be identically 0.
+        np.testing.assert_array_equal(out.curvvec, 0)
+    else:
+        assert np.any(out.curvvec != 0)
 
 
 # ---------------------------------------------------------------------------
