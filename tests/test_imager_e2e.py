@@ -22,6 +22,8 @@ import pytest
 
 import ehtim as eh
 
+pytestmark = pytest.mark.slow
+
 # Independent prior FWHM (μas). Larger than gauss_im's 50 μas truth, so the
 # imager has to actually shrink + resharpen rather than just refine.
 PRIOR_FWHM_UAS = 80

@@ -72,6 +72,9 @@ script-files = [                    # replaces scripts=[...] — installs raw sc
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 addopts = "-v --tb=short"
+markers = [
+    "slow: optimizer-bound tests (scipy.optimize / Imager.make_image). Skip with -m 'not slow'.",
+]
 
 # --- ruff ---
 

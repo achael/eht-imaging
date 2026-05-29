@@ -35,17 +35,35 @@ is exercised by `test_chisquared`/`test_gradients`/`test_regularizers`/`test_ima
 `observing/obs_helpers.py` (52%), `scattering/stochastic_optics.py` (59%, via `test_scattering`),
 `io/load.py` (36%) + `io/save.py` (24%, via `test_io`) sit between these tiers.
 
+## Calibration cluster — characterized in PR #276
+
+| Module | Was | Now | Test file | New tests |
+|---|---|---|---|---|
+| `caltable.py` | 12% | 55% | `test_caltable` | 44 |
+| `calibrating/pol_cal.py` (`leakage_cal`) | 5% | 37% | `test_pol_cal` | 3 |
+| `calibrating/polgains_cal.py` | 14% | 34% | `test_polgains_cal` | 5 |
+| `calibrating/network_cal.py` | 10% | 22% | `test_network_cal` | 7 |
+| `calibrating/self_cal.py` | 8% | 21% | `test_self_cal` | 8 |
+
+Public API (entry points, return types, method branches, identity, gauge-invariant
+recovery) is covered. The remaining uncovered lines are dominated by the per-scan
+workers (`self_cal_scan`, `network_cal_scan`, `polgains_cal_scan`) called inside
+multiprocessing, and the plotting helpers (`plot_dterms`, `plot_gains`,
+`plot_compare_gains`, `plot_tarr_dterms`) explicitly deferred to the post-release
+fillout. `pol_cal_new.py` (7%) is the experimental duplicate and out of scope.
+
+Numbers measured via `coverage run --source=ehtim -m pytest ...` (the
+`pytest-cov` plugin path hits a "cannot load module more than once" error on
+numpy 2 — this reproduces on the latest `pytest-cov 7.1`/`coverage 7.13`/
+`numpy 2.4` so the workaround is to use `coverage run` directly, not an
+upgrade).
+
 ## No dedicated tests — candidates for new suites
 
 Highest value (core, actively developed):
 
 | Module | Cover | Note |
 |---|---|---|
-| `caltable.py` | 12% | calibration tables; MixPol Phase 4 rewrites this — worth a suite first |
-| `calibrating/self_cal.py` | 8% | |
-| `calibrating/network_cal.py` | 10% | |
-| `calibrating/pol_cal.py` / `pol_cal_new.py` | 5% / 7% | MixPol Phase 4 territory |
-| `calibrating/polgains_cal.py` | 14% | |
 | `statistics/dataframes.py` / `stats.py` | 24% / 29% | `test_averaging` (PR #252) will lift these once it lands |
 
 Lower priority:
