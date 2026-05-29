@@ -46,6 +46,17 @@ MIN_SOLVED_FRACTION = 0.5          # at least half the rows must be solved
 INJECT_AMP = 1.3
 INJECT_PHASE = 0.4                 # radians
 
+# Analytic-gradient (use_grad=True) finite-difference parity.
+# Only method='both' supports an explicit gradient; phase/amp raise.
+GRAD_FD_STEP = 1e-6
+GRAD_FD_RTOL = 1e-6
+GRAD_FD_ATOL = 1e-9
+GRAD_TEST_N_SITES = 4
+GRAD_TEST_SIGMA = 0.1
+# Test points kept away from the |g|=1 kink in the prior tolerance term.
+GRAD_TEST_GPARS = ((0.95, 0.05), (1.10, -0.08), (0.85, 0.20))
+SEED_GRAD = 11
+
 
 @pytest.fixture(scope="module")
 def obs_dense(gauss_im, observe):
@@ -219,3 +230,57 @@ class TestSelfCalMethods:
             processes=SELF_CAL_PROCESSES, show_solution=SHOW_SOLUTION,
         )
         assert len(out.data) == len(obs_dense.data)
+
+
+# ---------------------------------------------------------------------------
+# Section 5: Analytic gradient (use_grad path)
+# ---------------------------------------------------------------------------
+
+
+class TestErrfuncGradient:
+    """errfunc_grad_full vs central FD on errfunc_full.
+
+    Validates the analytic gradient scipy.optimize uses as jac= when
+    self_cal is invoked with use_grad=True. Only method='both' is supported.
+    """
+
+    @pytest.fixture(scope="class")
+    def grad_inputs(self):
+        from itertools import combinations
+        rng = np.random.default_rng(SEED_GRAD)
+        sites = [f"s{i}" for i in range(GRAD_TEST_N_SITES)]
+        pairs = list(combinations(range(GRAD_TEST_N_SITES), 2))
+        n = len(pairs)
+        v_scan = rng.standard_normal(n) + 1j * rng.standard_normal(n)
+        # vis = perturbed model so the data-term gradient is non-trivial.
+        vis = v_scan * (1.0 + 0.1 * rng.standard_normal(n))
+        return dict(
+            vis=vis,
+            v_scan=v_scan,
+            sigma_inv=np.full(n, 1.0 / GRAD_TEST_SIGMA),
+            gain_tol={"default": (0.2, 0.5)},
+            sites=sites,
+            g1_keys=[p[0] for p in pairs],
+            g2_keys=[p[1] for p in pairs],
+        )
+
+    @pytest.mark.parametrize("gr,gi", GRAD_TEST_GPARS)
+    def test_matches_finite_difference(self, grad_inputs, gr, gi):
+        gpar = np.tile([gr, gi], GRAD_TEST_N_SITES)
+        analytic = scal.errfunc_grad_full(gpar, method="both", **grad_inputs)
+        fd = np.empty_like(gpar)
+        for i in range(len(gpar)):
+            xp = gpar.copy()
+            xm = gpar.copy()
+            xp[i] += GRAD_FD_STEP
+            xm[i] -= GRAD_FD_STEP
+            fd[i] = (scal.errfunc_full(xp, method="both", **grad_inputs)
+                     - scal.errfunc_full(xm, method="both", **grad_inputs)) / (2 * GRAD_FD_STEP)
+        np.testing.assert_allclose(analytic, fd,
+                                    rtol=GRAD_FD_RTOL, atol=GRAD_FD_ATOL)
+
+    @pytest.mark.parametrize("method", ["phase", "amp"])
+    def test_raises_for_unsupported_method(self, grad_inputs, method):
+        gpar = np.tile([0.95, 0.05], GRAD_TEST_N_SITES)
+        with pytest.raises(Exception, match="method=='both'"):
+            scal.errfunc_grad_full(gpar, method=method, **grad_inputs)
