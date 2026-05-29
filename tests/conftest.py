@@ -344,6 +344,10 @@ def obs_with_dterms(obs_pol_direct):
 
     Deterministic seed; ~0.05 magnitude per hand per site. For leakage_cal
     recovery tests.
+
+    TODO(mixpol): the mixpol branch carries time-dependent D-terms as a
+    separate attribute (not embedded in tarr). Update the injection schema
+    when porting these fixtures to dev-backend-mixpol.
     """
     import numpy as np
     out = obs_pol_direct.copy()
