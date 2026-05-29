@@ -1,10 +1,11 @@
-"""Tests for ehtim.calibrating.pol_cal.leakage_cal."""
+"""Tests for ehtim.calibrating.pol_cal.leakage_cal and pol_cal_new.leakage_cal_new."""
 
 import numpy as np
 import pytest
 
 import ehtim as eh
 import ehtim.calibrating.pol_cal as polcal
+import ehtim.calibrating.pol_cal_new as polcal_new
 import ehtim.observing.obs_simulate as simobs
 
 pytestmark = pytest.mark.slow
@@ -13,6 +14,15 @@ pytestmark = pytest.mark.slow
 LEAKAGE_RECOVERY_ATOL = 5e-2
 LEAKAGE_TOL = 0.1
 SHOW_SOLUTION = False
+
+# leakage_cal_new analytic-gradient finite-difference parity. The inner
+# closures depend on FT-of-image and field-rotation terms; rtol below absorbs
+# the resulting error budget. Atol backstops near-zero gradient entries.
+LEAKAGE_GRAD_FD_STEP = 1e-6
+LEAKAGE_GRAD_FD_RTOL = 1e-4
+LEAKAGE_GRAD_FD_ATOL = 1e-10
+LEAKAGE_GRAD_TEST_SEEDS = (0, 1, 2)
+LEAKAGE_GRAD_DPAR_MAG = 0.05
 
 # Cross-hand residual reduction must land inside this window after cal.
 # Lower bound: leakage_cal is doing useful work (sites with PA coverage on
@@ -115,3 +125,72 @@ class TestLeakageCalReturnType:
         )
         assert isinstance(out, eh.obsdata.Obsdata)
         assert out.dcal is True
+
+
+# ---------------------------------------------------------------------------
+# leakage_cal_new — analytic gradient parity
+# ---------------------------------------------------------------------------
+
+
+class TestLeakageCalNewGradient:
+    """Finite-difference parity for leakage_cal_new's internal errfunc_grad.
+
+    The errfunc / errfunc_grad pair are closures inside leakage_cal_new that
+    capture FT-of-image, gains, and field-rotation angles. We intercept
+    scipy.optimize.minimize to grab the closures and run central-difference
+    FD parity at multiple random Dpar points.
+    """
+
+    @pytest.fixture(scope="class")
+    def captured_closures(self, obs_pol_dense_dterm_corrupted, gauss_im_pol):
+        captured = {}
+
+        class _StubResult:
+            def __init__(self, x, fun):
+                self.x = x
+                self.fun = fun
+                self.success = True
+                self.message = "spy"
+                self.nit = 0
+                self.nfev = 1
+
+        def spy(fun, x0, *args, **kwargs):
+            captured["fun"] = fun
+            captured["jac"] = kwargs.get("jac")
+            captured["x0"] = x0
+            return _StubResult(x0, fun(x0))
+
+        original = polcal_new.opt.minimize
+        polcal_new.opt.minimize = spy
+        try:
+            polcal_new.leakage_cal_new(
+                obs_pol_dense_dterm_corrupted, gauss_im_pol,
+                sites=list(obs_pol_dense_dterm_corrupted.tarr["site"]),
+                leakage_tol=LEAKAGE_TOL, use_grad=True, ttype="direct",
+                show_solution=False, apply_solution=False,
+            )
+        finally:
+            polcal_new.opt.minimize = original
+
+        assert captured.get("jac") is not None, \
+            "spy did not capture jac — use_grad path was bypassed"
+        return captured
+
+    @pytest.mark.parametrize("seed", LEAKAGE_GRAD_TEST_SEEDS)
+    def test_matches_finite_difference(self, captured_closures, seed):
+        errfunc = captured_closures["fun"]
+        errfunc_grad = captured_closures["jac"]
+        n = len(captured_closures["x0"])
+        rng = np.random.default_rng(seed)
+        Dpar = LEAKAGE_GRAD_DPAR_MAG * rng.standard_normal(n)
+        analytic = errfunc_grad(Dpar)
+        fd = np.empty_like(Dpar)
+        for i in range(n):
+            xp = Dpar.copy()
+            xm = Dpar.copy()
+            xp[i] += LEAKAGE_GRAD_FD_STEP
+            xm[i] -= LEAKAGE_GRAD_FD_STEP
+            fd[i] = (errfunc(xp) - errfunc(xm)) / (2 * LEAKAGE_GRAD_FD_STEP)
+        np.testing.assert_allclose(analytic, fd,
+                                    rtol=LEAKAGE_GRAD_FD_RTOL,
+                                    atol=LEAKAGE_GRAD_FD_ATOL)
