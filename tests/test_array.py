@@ -33,6 +33,20 @@ import ehtim as eh
 import ehtim.const_def as ehc
 
 # ---------------------------------------------------------------------------
+# Constants used across the module
+# ---------------------------------------------------------------------------
+
+# Synthetic satellite parameters for the plot_satellite_orbits + elements
+# coverage. Values chosen to be a plausible LEO orbit so skyfield's element
+# constructor doesn't reject the inputs as unphysical.
+SAT_NAME = "TESTSAT"
+SAT_PERIOD_DAYS = 0.0625        # ~90 minutes, LEO
+SAT_INCLINATION_DEG = 51.6      # ISS-like
+SAT_TSTART_MJD = 60000.0
+SAT_TSTOP_MJD = 60000.05        # ~72 minutes of orbit propagation
+SAT_NPOINTS = 32                # keep the smoke fast
+
+# ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
 
@@ -295,9 +309,6 @@ def test_remove_site_also_removes_ephem_entry():
 # ---------------------------------------------------------------------------
 
 
-@pytest.mark.xfail(reason="Bug in Array.add_satellite_tle (array.py:264): "
-                          "body references `tlearr` but the kwarg is `tlelist`. "
-                          "Fixed by PR #260 which renames the kwarg to `tlearr`.")
 def test_add_satellite_tle_appends_row(eht_array):
     tle = ["SAT1", "tle_line_1", "tle_line_2"]
     out = eht_array.add_satellite_tle(tle, sefd=8000)
@@ -464,3 +475,46 @@ def test_array_pickle_roundtrip(eht_array):
         b = _site_row(rt, site)
         assert a["x"] == b["x"]
         assert a["sefdr"] == b["sefdr"]
+
+
+# ---------------------------------------------------------------------------
+# Plotting + satellite-elements
+# ---------------------------------------------------------------------------
+
+
+@pytest.fixture(scope="module")
+def _agg_backend():
+    import matplotlib
+    matplotlib.use("Agg")
+    import matplotlib.pyplot as plt
+    yield plt
+    plt.close("all")
+
+
+def test_plot_dterms_smoke(eht_array, _agg_backend):
+    axes = eht_array.plot_dterms(show=False, legend=False, export_pdf="")
+    assert axes is not None
+
+
+def test_add_satellite_elements_populates_keplerian_ephem(eht_array):
+    out = eht_array.add_satellite_elements(
+        SAT_NAME,
+        perigee_mjd=SAT_TSTART_MJD,
+        period_days=SAT_PERIOD_DAYS,
+        inclination=SAT_INCLINATION_DEG,
+    )
+    assert SAT_NAME in out.ephem
+    # Keplerian ephem entries are 6-tuples (perigee_mjd, period, e, i, omega, Omega).
+    assert len(out.ephem[SAT_NAME]) == 6
+
+
+def test_plot_satellite_orbits_smoke(eht_array, _agg_backend):
+    arr = eht_array.add_satellite_elements(
+        SAT_NAME,
+        perigee_mjd=SAT_TSTART_MJD,
+        period_days=SAT_PERIOD_DAYS,
+        inclination=SAT_INCLINATION_DEG,
+    )
+    arr.plot_satellite_orbits(tstart_mjd=SAT_TSTART_MJD,
+                              tstop_mjd=SAT_TSTOP_MJD,
+                              npoints=SAT_NPOINTS)
