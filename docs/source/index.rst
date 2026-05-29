@@ -21,7 +21,7 @@ The package contains several primary classes for loading, simulating, and manipu
 Installation
 ------------
 
-The latest stable version (`1.4 <https://github.com/achael/eht-imaging/releases/tag/v1.4>`_) is available on `PyPi <https://pypi.org/project/ehtim/>`_. Requires Python 3.11 or 3.12. Simply install pip and run
+The latest development version (`1.4 <https://github.com/achael/eht-imaging/releases/tag/v1.4>`_) requires Python 3.11 or 3.12. Simply install pip and run
 
 .. code-block:: bash
 
