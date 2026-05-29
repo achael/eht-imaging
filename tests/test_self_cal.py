@@ -6,6 +6,8 @@ import pytest
 import ehtim as eh
 import ehtim.calibrating.self_cal as scal
 
+pytestmark = pytest.mark.slow
+
 # ---------------------------------------------------------------------------
 # Constants used across the module
 # ---------------------------------------------------------------------------

@@ -6,6 +6,8 @@ import pytest
 import ehtim as eh
 import ehtim.calibrating.polgains_cal as pgcal
 
+pytestmark = pytest.mark.slow
+
 # Tolerances + knobs.
 RESIDUAL_RTOL = 5e-2
 POLGAINS_PAD_AMP = 0.0

@@ -7,6 +7,8 @@ import ehtim as eh
 import ehtim.calibrating.pol_cal as polcal
 import ehtim.observing.obs_simulate as simobs
 
+pytestmark = pytest.mark.slow
+
 # Tolerances + knobs.
 LEAKAGE_RECOVERY_ATOL = 5e-2
 LEAKAGE_TOL = 0.1

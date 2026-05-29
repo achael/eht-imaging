@@ -6,6 +6,8 @@ import pytest
 import ehtim as eh
 import ehtim.calibrating.network_cal as netcal
 
+pytestmark = pytest.mark.slow
+
 # ---------------------------------------------------------------------------
 # Constants used across the module
 # ---------------------------------------------------------------------------
