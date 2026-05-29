@@ -16,20 +16,12 @@
 #    You should have received a copy of the GNU General Public License
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-
-import numpy as np
-
-try:
-    import pandas as pd
-except ImportError:
-    print("Warning: pandas not installed!")
-    print("Please install pandas to use statistics package!")
-
 import datetime as datetime
 
+import numpy as np
 from astropy.time import Time
 
-from ehtim.statistics.stats import (
+from ehtim.const_def import (
     DTAMP,
     DTBIS,
     DTCAMP,
@@ -39,11 +31,28 @@ from ehtim.statistics.stats import (
     DTPOL_CIRC,
     DTPOL_STOKES,
     EP,
-    bootstrap,
-    circular_mean,
-    mean_incoh_avg,
 )
+from ehtim.statistics.stats import bootstrap, circular_mean, mean_incoh_avg
 
+
+# pandas is required for the closure-quantity helpers in this module but is
+# otherwise optional for ehtim — visibility averaging lives in
+# `ehtim.statistics.averaging` and is pandas-free.  Make the import lazy: on
+# ImportError, substitute a stub that raises a clear message on first use, so
+# `import ehtim` keeps working without pandas installed.
+class _PandasStub:
+    def __getattr__(self, name):
+        raise ImportError(
+            "pandas is required for closure-quantity helpers in "
+            "ehtim.statistics.dataframes; install via `pip install pandas`. "
+            "Visibility averaging routines live in ehtim.statistics.averaging "
+            "and do not need pandas.")
+
+
+try:
+    import pandas as pd
+except ImportError:
+    pd = _PandasStub()
 
 def make_df(obs,polarization='unknown',band='unknown',round_s=0.1):
 
@@ -64,11 +73,11 @@ def make_df(obs,polarization='unknown',band='unknown',round_s=0.1):
     telescopes = [(x[0],x[1]) for x in telescopes]
     df['baseline'] = [x[0]+'-'+x[1] for x in telescopes]
     if obs.polrep=='stokes':
-        vis1='vis'
-        sig1='sigma'
+        vis1 = 'vis'
+        sig1 = 'sigma'
     elif obs.polrep=='circ':
-        vis1='rrvis'
-        sig1='rrsigma'
+        vis1 = 'rrvis'
+        sig1 = 'rrsigma'
         df['vis']=df[vis1]
         df['sigma']=df[sig1]
         df['rramp']=np.abs(df['rrvis'])
@@ -139,7 +148,7 @@ def coh_avg_vis(obs,dt=0,scan_avg=False,return_type='rec',err_type='predicted',n
     Returns:
         vis_avg: coherently averaged visibilities
     """
-    if (dt<=0)&(not scan_avg):
+    if (dt<=0) & (not scan_avg):
         return obs.data
     else:
         vis = make_df(obs)
@@ -164,23 +173,11 @@ def coh_avg_vis(obs,dt=0,scan_avg=False,return_type='rec',err_type='predicted',n
             err_type='predicted'
 
         if obs.polrep=='stokes':
-            vis1='vis'
-            vis2='qvis'
-            vis3='uvis'
-            vis4='vvis'
-            sig1='sigma'
-            sig2='qsigma'
-            sig3='usigma'
-            sig4='vsigma'
+            vis1, vis2, vis3, vis4 = 'vis', 'qvis', 'uvis', 'vvis'
+            sig1, sig2, sig3, sig4 = 'sigma', 'qsigma', 'usigma', 'vsigma'
         elif obs.polrep=='circ':
-            vis1='rrvis'
-            vis2='llvis'
-            vis3='rlvis'
-            vis4='lrvis'
-            sig1='rrsigma'
-            sig2='llsigma'
-            sig3='rlsigma'
-            sig4='lrsigma'
+            vis1, vis2, vis3, vis4 = 'rrvis', 'llvis', 'rlvis', 'lrvis'
+            sig1, sig2, sig3, sig4 = 'rrsigma', 'llsigma', 'rlsigma', 'lrsigma'
 
         #AVERAGING-------------------------------
         if err_type=='measured':
@@ -190,8 +187,9 @@ def coh_avg_vis(obs,dt=0,scan_avg=False,return_type='rec',err_type='predicted',n
             vis['vdummy'] = vis[vis4]
             def meanF(x):
                 return np.nanmean(np.asarray(x))
+
             def meanerrF(x):
-                return bootstrap(np.abs(x), np.mean, num_samples=num_samples,wrapping_variable=False)
+                return bootstrap(np.abs(x), np.mean, num_samples=num_samples, wrapping_variable=False)
             aggregated[vis1] = meanF
             aggregated[vis2] = meanF
             aggregated[vis3] = meanF
@@ -209,10 +207,10 @@ def coh_avg_vis(obs,dt=0,scan_avg=False,return_type='rec',err_type='predicted',n
                 x = np.asarray(x)
                 x = x[x==x]
 
-                if len(x)>0:
-                    ret = np.sqrt(np.sum(x**2)/len(x)**2)
+                if len(x) > 0:
+                    ret = np.sqrt(np.sum(x**2) / len(x)**2)
                 else:
-                    ret = np.nan +1j*np.nan
+                    ret = np.nan + 1j * np.nan
                 return ret
 
             aggregated[vis1] = meanF
@@ -269,23 +267,11 @@ def coh_moving_avg_vis(obs,dt=50,return_type='rec'):
     if dt <= 0:
         raise Exception('Time dt must be positive!')
     if obs.polrep=='stokes':
-        vis1='vis'
-        vis2='qvis'
-        vis3='uvis'
-        vis4='vvis'
-        sig1='sigma'
-        sig2='qsigma'
-        sig3='usigma'
-        sig4='vsigma'
+        vis1, vis2, vis3, vis4 = 'vis', 'qvis', 'uvis', 'vvis'
+        sig1, sig2, sig3, sig4 = 'sigma', 'qsigma', 'usigma', 'vsigma'
     elif obs.polrep=='circ':
-        vis1='rrvis'
-        vis2='llvis'
-        vis3='rlvis'
-        vis4='lrvis'
-        sig1='rrsigma'
-        sig2='llsigma'
-        sig3='rlsigma'
-        sig4='lrsigma'
+        vis1, vis2, vis3, vis4 = 'rrvis', 'llvis', 'rlvis', 'lrvis'
+        sig1, sig2, sig3, sig4 = 'rrsigma', 'llsigma', 'rlsigma', 'lrsigma'
 
     vis = make_df(obs)
     vis = vis.sort_values(['baseline','datetime']).reset_index().copy()
@@ -295,9 +281,10 @@ def coh_moving_avg_vis(obs,dt=50,return_type='rec'):
     vis['roll_sig'] = list(zip(vis['total_seconds'],vis[sig1],vis[sig2],vis[sig3],vis[sig4],vis['datetime']))
 
     def roll_vis_local(x):
-        return roll_vis(x,dt=str(int(dt))+'s',min_periods=min_periods)
+        return roll_vis(x, dt=str(int(dt)) + 's', min_periods=min_periods)
+
     def roll_sig_local(x):
-        return roll_sig(x,dt=str(int(dt))+'s',min_periods=min_periods)
+        return roll_sig(x, dt=str(int(dt)) + 's', min_periods=min_periods)
     vis_avg_roll_vis = vis[['baseline','roll_vis']].groupby('baseline').transform(roll_vis_local)['roll_vis'].copy()
     vis_avg_roll_sig = vis[['baseline','roll_sig']].groupby('baseline').transform(roll_sig_local)['roll_sig'].copy()
 
@@ -359,7 +346,7 @@ def incoh_avg_vis(obs,dt=0,debias=True,scan_avg=False,return_type='rec',rec_type
     Returns:
         vis_avg: coherently averaged visibilities
     """
-    if (dt<=0)&(not scan_avg):
+    if (dt<=0) & (not scan_avg):
         print('Either averaging time must be positive, or scan_avg option should be selected!')
         return obs.data
     else:
