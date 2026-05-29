@@ -123,3 +123,78 @@ def test_findcenter_locates_ring_center(ring_image):
     assert np.all(np.isfinite(res))
     assert abs(res[0] - center) < 8.0
     assert abs(res[1] - center) < 8.0
+
+
+# ---------------------------------------------------------------------------
+# Off-centre ring + FindProfile entry point
+# ---------------------------------------------------------------------------
+
+
+# Offset for the off-centre ring test: shift the ring by 8 uas in (+x, -y)
+# so findCenter has to actually search rather than pick the geometric centre.
+RING_OFFSET_UAS = (8.0, -8.0)
+
+
+@pytest.fixture(scope="module")
+def off_centre_ring_image():
+    """Gaussian annulus centred off the image's geometric centre."""
+    im = eh.image.make_empty(NPIX, FOV_UAS * eh.RADPERUAS, 17.761, -29.0, rf=230e9)
+    psize_uas = im.psize / eh.RADPERUAS
+    coords = np.arange(NPIX) * psize_uas
+    cx = 0.5 * (NPIX - 1) * psize_uas + RING_OFFSET_UAS[0]
+    cy = 0.5 * (NPIX - 1) * psize_uas + RING_OFFSET_UAS[1]
+    xx, yy = np.meshgrid(coords, coords)
+    rr = np.sqrt((xx - cx) ** 2 + (yy - cy) ** 2)
+    ring = np.exp(-0.5 * ((rr - R_RING_UAS) / RING_WIDTH_UAS) ** 2)
+    im.imvec = ring.ravel()
+    return im, (cx, cy)
+
+
+def test_findcenter_locates_off_centre_ring(off_centre_ring_image):
+    im, (cx, cy) = off_centre_ring_image
+    x0, y0 = rex.findCenter(im)[:2]
+    # findCenter returns the ring centre in uas in REX's flipped-row frame.
+    # Recovery within one psize is enough to pin "the search actually moves".
+    psize_uas = im.psize / eh.RADPERUAS
+    assert abs(x0 - cx) < psize_uas
+    # y centre in flipped frame: the row flip mirrors y about the centre, so
+    # compare to the mirrored coordinate.
+    cy_flipped = (NPIX - 1) * psize_uas - cy
+    assert abs(y0 - cy_flipped) < psize_uas
+
+
+def test_findprofile_returns_ringprofile_with_populated_meanprof(ring_image):
+    im, _ = ring_image
+    pp = rex.FindProfile(im)
+    assert hasattr(pp, "meanprof")
+    assert np.any(pp.meanprof != 0)
+    assert pp.meanprof.shape == pp.rs.shape
+
+
+# ---------------------------------------------------------------------------
+# RingProfile plotting — Agg smoke
+# ---------------------------------------------------------------------------
+
+
+@pytest.fixture(scope="module")
+def _agg_backend():
+    import matplotlib
+    matplotlib.use("Agg")
+    import matplotlib.pyplot as plt
+    yield plt
+    plt.close("all")
+
+
+@pytest.fixture(scope="module")
+def ring_profile(ring_image):
+    im, _ = ring_image
+    return rex.FindProfile(im)
+
+
+@pytest.mark.parametrize("method", [
+    "plot_img", "plot_unwrapped", "plot_profs",
+    "plot_prof_band", "plot_meanprof", "plot_meanprof_theta",
+])
+def test_ringprofile_plot_smoke(ring_profile, _agg_backend, method):
+    # Render with save_png=False so no files land on disk.
+    getattr(ring_profile, method)(save_png=False)
