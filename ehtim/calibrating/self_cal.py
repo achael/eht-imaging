@@ -554,8 +554,8 @@ def errfunc_grad_full(gpar, vis, v_scan, sigma_inv, gain_tol, sites, g1_keys, g2
         g1idx = np.argwhere(np.array(g1_keys)==i)
         g2idx = np.argwhere(np.array(g2_keys)==i)
 
-        dchisq_dgr[i] = np.sum(dchisq_dg1r[g1idx]) + np.sum(dchisq_dg2r[g2idx])
-        dchisq_dgi[i] = np.sum(dchisq_dg1i[g1idx]) + np.sum(dchisq_dg2i[g2idx])
+        dchisq_dgr[i] = (np.sum(dchisq_dg1r[g1idx]) + np.sum(dchisq_dg2r[g2idx])).real
+        dchisq_dgi[i] = (np.sum(dchisq_dg1i[g1idx]) + np.sum(dchisq_dg2i[g2idx])).real
 
     ###################################
     # prior term chi^2 derivitive
