@@ -1007,46 +1007,31 @@ class Obsdata:
                 tdata = self.tarr[keys]
                 out = sites
                 ty = 'U32'
+            elif self.polrep == 'mixed':
+                # MIXED unpack (row-aligned NaN-fill) lands in the next commit.
+                raise NotImplementedError(
+                    "unpack on polrep='mixed' is not yet implemented")
             elif field in ['vis', 'amp', 'phase', 'snr', 'sigma', 'sigma_phase']:
                 ty = 'c16'
-                if self.polrep == 'stokes':
-                    out = data['vis']
-                    sig = data['sigma']
-                elif self.polrep == 'circ':
-                    out = 0.5 * (data['rrvis'] + data['llvis'])
-                    sig = 0.5 * np.sqrt(data['rrsigma']**2 + data['llsigma']**2)
+                out, sig = obsh.vis_component(data, 'vis', self.polrep)
             elif field in ['qvis', 'qamp', 'qphase', 'qsnr', 'qsigma', 'qsigma_phase']:
                 ty = 'c16'
-                if self.polrep == 'stokes':
-                    out = data['qvis']
-                    sig = data['qsigma']
-                elif self.polrep == 'circ':
-                    out = 0.5 * (data['lrvis'] + data['rlvis'])
-                    sig = 0.5 * np.sqrt(data['lrsigma']**2 + data['rlsigma']**2)
+                out, sig = obsh.vis_component(data, 'qvis', self.polrep)
             elif field in ['uvis', 'uamp', 'uphase', 'usnr', 'usigma', 'usigma_phase']:
                 ty = 'c16'
-                if self.polrep == 'stokes':
-                    out = data['uvis']
-                    sig = data['usigma']
-                elif self.polrep == 'circ':
-                    out = 0.5j * (data['lrvis'] - data['rlvis'])
-                    sig = 0.5 * np.sqrt(data['lrsigma']**2 + data['rlsigma']**2)
+                out, sig = obsh.vis_component(data, 'uvis', self.polrep)
             elif field in ['vvis', 'vamp', 'vphase', 'vsnr', 'vsigma', 'vsigma_phase']:
                 ty = 'c16'
-                if self.polrep == 'stokes':
-                    out = data['vvis']
-                    sig = data['vsigma']
-                elif self.polrep == 'circ':
-                    out = 0.5 * (data['rrvis'] - data['llvis'])
-                    sig = 0.5 * np.sqrt(data['rrsigma']**2 + data['llsigma']**2)
+                out, sig = obsh.vis_component(data, 'vvis', self.polrep)
             elif field in ['pvis', 'pamp', 'pphase', 'psnr', 'psigma', 'psigma_phase']:
                 ty = 'c16'
-                if self.polrep == 'stokes':
-                    out = data['qvis'] + 1j * data['uvis']
-                    sig = np.sqrt(data['qsigma']**2 + data['usigma']**2)
-                elif self.polrep == 'circ':
-                    out = data['rlvis']
-                    sig = data['rlsigma']
+                if self.polrep in ('stokes', 'circ'):
+                    out, sig = obsh.vis_component(data, 'rlvis', self.polrep)  # P = RL
+                elif self.polrep == 'lin':
+                    q, qsig = obsh.vis_component(data, 'qvis', 'lin')
+                    u, usig = obsh.vis_component(data, 'uvis', 'lin')
+                    out = q + 1j * u
+                    sig = np.sqrt(qsig**2 + usig**2)
             elif field in ['m', 'mamp', 'mphase', 'msnr', 'msigma', 'msigma_phase']:
                 ty = 'c16'
                 if self.polrep == 'stokes':
@@ -1056,68 +1041,38 @@ class Obsdata:
                     out = 2 * data['rlvis'] / (data['rrvis'] + data['llvis'])
                     sig = obsh.merr2(data['rlsigma'], data['rrsigma'], data['llsigma'],
                                      0.5 * (data['rrvis'] + data['llvis']), out)
+                elif self.polrep == 'lin':
+                    ivis, isig = obsh.vis_component(data, 'vis', 'lin')
+                    q, qsig = obsh.vis_component(data, 'qvis', 'lin')
+                    u, usig = obsh.vis_component(data, 'uvis', 'lin')
+                    out = (q + 1j * u) / ivis
+                    sig = obsh.merr(isig, qsig, usig, ivis, out)
             elif field in ['evis', 'eamp', 'ephase', 'esnr', 'esigma', 'esigma_phase']:
                 ty = 'c16'
                 ang = np.arctan2(data['u'], data['v'])  # TODO: correct convention EofN?
-                if self.polrep == 'stokes':
-                    q = data['qvis']
-                    u = data['uvis']
-                    qsig = data['qsigma']
-                    usig = data['usigma']
-                elif self.polrep == 'circ':
-                    q = 0.5 * (data['lrvis'] + data['rlvis'])
-                    u = 0.5j * (data['lrvis'] - data['rlvis'])
-                    qsig = 0.5 * np.sqrt(data['lrsigma']**2 + data['rlsigma']**2)
-                    usig = qsig
+                q, qsig = obsh.vis_component(data, 'qvis', self.polrep)
+                u, usig = obsh.vis_component(data, 'uvis', self.polrep)
                 out = (np.cos(2 * ang) * q + np.sin(2 * ang) * u)
                 sig = np.sqrt(0.5 * ((np.cos(2 * ang) * qsig)**2 + (np.sin(2 * ang) * usig)**2))
             elif field in ['bvis', 'bamp', 'bphase', 'bsnr', 'bsigma', 'bsigma_phase']:
                 ty = 'c16'
                 ang = np.arctan2(data['u'], data['v'])  # TODO: correct convention EofN?
-                if self.polrep == 'stokes':
-                    q = data['qvis']
-                    u = data['uvis']
-                    qsig = data['qsigma']
-                    usig = data['usigma']
-                elif self.polrep == 'circ':
-                    q = 0.5 * (data['lrvis'] + data['rlvis'])
-                    u = 0.5j * (data['lrvis'] - data['rlvis'])
-                    qsig = 0.5 * np.sqrt(data['lrsigma']**2 + data['rlsigma']**2)
-                    usig = qsig
+                q, qsig = obsh.vis_component(data, 'qvis', self.polrep)
+                u, usig = obsh.vis_component(data, 'uvis', self.polrep)
                 out = (-np.sin(2 * ang) * q + np.cos(2 * ang) * u)
                 sig = np.sqrt(0.5 * ((np.sin(2 * ang) * qsig)**2 + (np.cos(2 * ang) * usig)**2))
             elif field in ['rrvis', 'rramp', 'rrphase', 'rrsnr', 'rrsigma', 'rrsigma_phase']:
                 ty = 'c16'
-                if self.polrep == 'stokes':
-                    out = data['vis'] + data['vvis']
-                    sig = np.sqrt(data['sigma']**2 + data['vsigma']**2)
-                elif self.polrep == 'circ':
-                    out = data['rrvis']
-                    sig = data['rrsigma']
+                out, sig = obsh.vis_component(data, 'rrvis', self.polrep)
             elif field in ['llvis', 'llamp', 'llphase', 'llsnr', 'llsigma', 'llsigma_phase']:
                 ty = 'c16'
-                if self.polrep == 'stokes':
-                    out = data['vis'] - data['vvis']
-                    sig = np.sqrt(data['sigma']**2 + data['vsigma']**2)
-                elif self.polrep == 'circ':
-                    out = data['llvis']
-                    sig = data['llsigma']
+                out, sig = obsh.vis_component(data, 'llvis', self.polrep)
             elif field in ['rlvis', 'rlamp', 'rlphase', 'rlsnr', 'rlsigma', 'rlsigma_phase']:
                 ty = 'c16'
-                if self.polrep == 'stokes':
-                    out = data['qvis'] + 1j * data['uvis']
-                    sig = np.sqrt(data['qsigma']**2 + data['usigma']**2)
-                elif self.polrep == 'circ':
-                    out = data['rlvis']
-                    sig = data['rlsigma']
+                out, sig = obsh.vis_component(data, 'rlvis', self.polrep)
             elif field in ['lrvis', 'lramp', 'lrphase', 'lrsnr', 'lrsigma', 'lrsigma_phase']:
                 ty = 'c16'
-                if self.polrep == 'stokes':
-                    out = data['qvis'] - 1j * data['uvis']
-                    sig = np.sqrt(data['qsigma']**2 + data['usigma']**2)
-                elif self.polrep == 'circ':
-                    out = data['lrvis']
-                    sig = data['lrsigma']
+                out, sig = obsh.vis_component(data, 'lrvis', self.polrep)
             elif field in ['rrllvis', 'rrllamp', 'rrllphase', 'rrllsnr',
                            'rrllsigma', 'rrllsigma_phase']:
                 ty = 'c16'
@@ -1130,6 +1085,39 @@ class Obsdata:
                     out = data['rrvis'] / data['llvis']
                     sig = np.sqrt(np.abs(data['rrsigma'] / data['llvis'])**2
                                   + np.abs(data['llsigma'] * data['rrvis'] / data['llvis'])**2)
+                else:
+                    raise Exception(f"unpack: field {field!r} not supported for "
+                                    f"polrep {self.polrep!r}")
+
+            elif field in ['xxvis', 'xxamp', 'xxphase', 'xxsnr', 'xxsigma', 'xxsigma_phase']:
+                ty = 'c16'
+                out, sig = obsh.vis_component(data, 'xxvis', self.polrep)
+            elif field in ['yyvis', 'yyamp', 'yyphase', 'yysnr', 'yysigma', 'yysigma_phase']:
+                ty = 'c16'
+                out, sig = obsh.vis_component(data, 'yyvis', self.polrep)
+            elif field in ['xyvis', 'xyamp', 'xyphase', 'xysnr', 'xysigma', 'xysigma_phase']:
+                ty = 'c16'
+                out, sig = obsh.vis_component(data, 'xyvis', self.polrep)
+            elif field in ['yxvis', 'yxamp', 'yxphase', 'yxsnr', 'yxsigma', 'yxsigma_phase']:
+                ty = 'c16'
+                out, sig = obsh.vis_component(data, 'yxvis', self.polrep)
+
+            elif field in ['p1p1vis', 'p1p1amp', 'p1p1phase', 'p1p1snr',
+                           'p1p1sigma', 'p1p1sigma_phase']:
+                ty = 'c16'
+                out, sig = self._unpack_generic_slot(data, 'p1p1')
+            elif field in ['p2p2vis', 'p2p2amp', 'p2p2phase', 'p2p2snr',
+                           'p2p2sigma', 'p2p2sigma_phase']:
+                ty = 'c16'
+                out, sig = self._unpack_generic_slot(data, 'p2p2')
+            elif field in ['p1p2vis', 'p1p2amp', 'p1p2phase', 'p1p2snr',
+                           'p1p2sigma', 'p1p2sigma_phase']:
+                ty = 'c16'
+                out, sig = self._unpack_generic_slot(data, 'p1p2')
+            elif field in ['p2p1vis', 'p2p1amp', 'p2p1phase', 'p2p1snr',
+                           'p2p1sigma', 'p2p1sigma_phase']:
+                ty = 'c16'
+                out, sig = self._unpack_generic_slot(data, 'p2p1')
 
             else:
                 raise Exception(f"{field} is not a valid field \n" +
@@ -1170,28 +1158,39 @@ class Obsdata:
 
             # Get arg/amps/snr
             if field in ["amp", "qamp", "uamp", "vamp", "pamp", "mamp", "bamp", "eamp",
-                         "rramp", "llamp", "rlamp", "lramp", "rrllamp"]:
+                         "rramp", "llamp", "rlamp", "lramp", "rrllamp",
+                         "xxamp", "yyamp", "xyamp", "yxamp",
+                         "p1p1amp", "p2p2amp", "p1p2amp", "p2p1amp"]:
                 out = np.abs(out)
                 if debias:
                     out = obsh.amp_debias(out, sig)
                 ty = 'f8'
             elif field in ["sigma", "qsigma", "usigma", "vsigma",
                            "psigma", "msigma", "bsigma", "esigma",
-                           "rrsigma", "llsigma", "rlsigma", "lrsigma", "rrllsigma"]:
+                           "rrsigma", "llsigma", "rlsigma", "lrsigma", "rrllsigma",
+                           "xxsigma", "yysigma", "xysigma", "yxsigma",
+                           "p1p1sigma", "p2p2sigma", "p1p2sigma", "p2p1sigma"]:
                 out = np.abs(sig)
                 ty = 'f8'
             elif field in ["phase", "qphase", "uphase", "vphase", "pphase", "bphase", "ephase",
-                           "mphase", "rrphase", "llphase", "lrphase", "rlphase", "rrllphase"]:
+                           "mphase", "rrphase", "llphase", "lrphase", "rlphase", "rrllphase",
+                           "xxphase", "yyphase", "xyphase", "yxphase",
+                           "p1p1phase", "p2p2phase", "p1p2phase", "p2p1phase"]:
                 out = np.angle(out) / angle
                 ty = 'f8'
             elif field in ["sigma_phase", "qsigma_phase", "usigma_phase", "vsigma_phase",
                            "psigma_phase", "msigma_phase", "bsigma_phase", "esigma_phase",
                            "rrsigma_phase", "llsigma_phase", "rlsigma_phase", "lrsigma_phase",
-                           "rrllsigma_phase"]:
+                           "rrllsigma_phase",
+                           "xxsigma_phase", "yysigma_phase", "xysigma_phase", "yxsigma_phase",
+                           "p1p1sigma_phase", "p2p2sigma_phase", "p1p2sigma_phase",
+                           "p2p1sigma_phase"]:
                 out = np.abs(sig) / np.abs(out) / angle
                 ty = 'f8'
             elif field in ["snr", "qsnr", "usnr", "vsnr", "psnr", "bsnr", "esnr",
-                           "msnr", "rrsnr", "llsnr", "rlsnr", "lrsnr", "rrllsnr"]:
+                           "msnr", "rrsnr", "llsnr", "rlsnr", "lrsnr", "rrllsnr",
+                           "xxsnr", "yysnr", "xysnr", "yxsnr",
+                           "p1p1snr", "p2p2snr", "p1p2snr", "p2p1snr"]:
                 out = np.abs(out) / np.abs(sig)
                 ty = 'f8'
 
@@ -1204,6 +1203,16 @@ class Obsdata:
                 allout = out
 
         return allout
+
+    def _unpack_generic_slot(self, data, slot):
+        """Return (vis, sigma) for a generic feed slot ('p1p1'/'p2p2'/'p1p2'/
+           'p2p1'), read directly via the DTPOL title alias. Defined for circ
+           and lin (where the slot aliases the physical correlation); stokes
+           has no feed slots. (mixed is handled before this is reached.)"""
+        if self.polrep == 'stokes':
+            raise Exception(f"unpack: generic slot {slot}vis has no meaning "
+                            "for polrep 'stokes'")
+        return data[slot + 'vis'], data[slot + 'sigma']
 
     def sourcevec(self):
         """Return the source position vector in geocentric coordinates at 0h GMST.

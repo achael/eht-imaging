@@ -1762,3 +1762,49 @@ def test_c_phases_diag_mixed_skips_cross_feed():
     with pytest.warns(ehw.MixedPolClosureSkipWarning):
         d = obs.c_phases_diag(vtype='rrvis')
     assert len(d) >= 1
+
+
+# ============================================================================
+#  unpack on lin / mixed
+# ============================================================================
+
+
+def test_unpack_lin_vis_matches_switch_polrep():
+    # unpack('vis') on a lin obs must equal switch_polrep('stokes') then unpack
+    # (both route through pol_conventions), the key lin<->circ symmetry.
+    obs_l = _lin_obs()
+    obs_s = obs_l.switch_polrep('stokes')
+    for f in ['vis', 'qvis', 'uvis', 'vvis']:
+        np.testing.assert_allclose(obs_l.unpack(f)[f], obs_s.unpack(f)[f], atol=1e-12)
+
+
+def test_unpack_lin_native_and_amp():
+    obs_l = _lin_obs()
+    np.testing.assert_array_equal(obs_l.unpack('xxvis')['xxvis'], obs_l.data['xxvis'])
+    # Stokes-I amplitude from linear feeds: 0.5|XX + YY|
+    expected = np.abs(0.5 * (obs_l.data['xxvis'] + obs_l.data['yyvis']))
+    np.testing.assert_allclose(obs_l.unpack('amp')['amp'], expected, atol=1e-12)
+
+
+def test_unpack_generic_slot_lin():
+    obs_l = _lin_obs()
+    np.testing.assert_array_equal(obs_l.unpack('p1p1vis')['p1p1vis'], obs_l.data['xxvis'])
+    np.testing.assert_array_equal(obs_l.unpack('p2p1vis')['p2p1vis'], obs_l.data['yxvis'])
+
+
+def test_unpack_lin_rejects_circular_name():
+    obs_l = _lin_obs()
+    with pytest.raises(Exception, match="not supported"):
+        obs_l.unpack('rrvis')
+
+
+def test_unpack_generic_slot_stokes_raises():
+    obs_s = _stokes_obs()
+    with pytest.raises(Exception, match="no meaning"):
+        obs_s.unpack('p1p1vis')
+
+
+def test_unpack_mixed_not_yet_implemented():
+    obs = _mixed_obs()
+    with pytest.raises(NotImplementedError, match="mixed"):
+        obs.unpack('vis')
