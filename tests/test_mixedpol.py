@@ -1453,3 +1453,129 @@ def test_switch_polrep_tarr_unchanged():
     # tarr.feed_type is physical-array description; switch_polrep does not
     # touch it.
     np.testing.assert_array_equal(obs_l.tarr['feed_type'], obs_c.tarr['feed_type'])
+
+
+# ============================================================================
+#  data_conj — conjugate-baseline generalization (lin / mixed)
+# ============================================================================
+
+
+def _circ_data_1bl():
+    """Single-baseline (S0, S1) DTPOL_CIRC table with known values."""
+    d = np.zeros(1, dtype=ehc.DTPOL_CIRC)
+    d['t1'] = 'S0'
+    d['t2'] = 'S1'
+    d['u'] = 1e6
+    d['v'] = 1e5
+    d['rrvis'] = 1 + 2j
+    d['llvis'] = 3 + 4j
+    d['rlvis'] = 5 + 6j
+    d['lrvis'] = 7 + 8j
+    d['rrsigma'] = 0.1
+    d['llsigma'] = 0.2
+    d['rlsigma'] = 0.3
+    d['lrsigma'] = 0.4
+    return d
+
+
+def _stokes_data_1bl():
+    """Single-baseline (S0, S1) DTPOL_STOKES table with known values."""
+    d = np.zeros(1, dtype=ehc.DTPOL_STOKES)
+    d['t1'] = 'S0'
+    d['t2'] = 'S1'
+    d['u'] = 1e6
+    d['v'] = 1e5
+    d['vis'] = 1 + 2j
+    d['qvis'] = 3 + 4j
+    d['uvis'] = 5 + 6j
+    d['vvis'] = 7 + 8j
+    d['sigma'] = 0.1
+    d['qsigma'] = 0.2
+    d['usigma'] = 0.3
+    d['vsigma'] = 0.4
+    return d
+
+
+def test_data_conj_circ_unchanged():
+    # Regression: the circ conjugate transform is the same as before 4c.
+    obs = eo.Obsdata(0., 0., 230e9, 1e9, _circ_data_1bl(),
+                     _tarr(['rl', 'rl']), polrep='circ')
+    dc = obs.data_conj()
+    assert len(dc) == 2
+    conj = dc[dc['u'] < 0][0]
+    assert conj['t1'] == 'S1' and conj['t2'] == 'S0'
+    # diagonal slots: conjugate only
+    assert conj['rrvis'] == np.conj(1 + 2j)
+    assert conj['llvis'] == np.conj(3 + 4j)
+    # cross-hand slots: conjugate and swap
+    assert conj['rlvis'] == np.conj(7 + 8j)
+    assert conj['lrvis'] == np.conj(5 + 6j)
+    # diagonal sigmas unchanged; cross-hand sigmas swap
+    assert conj['rrsigma'] == 0.1
+    assert conj['llsigma'] == 0.2
+    assert conj['rlsigma'] == 0.4
+    assert conj['lrsigma'] == 0.3
+
+
+def test_data_conj_stokes_unchanged():
+    # Regression: stokes conjugates all four vis fields, no sigma swap.
+    obs = eo.Obsdata(0., 0., 230e9, 1e9, _stokes_data_1bl(),
+                     _tarr(['rl', 'rl']), polrep='stokes')
+    dc = obs.data_conj()
+    conj = dc[dc['u'] < 0][0]
+    assert conj['vis'] == np.conj(1 + 2j)
+    assert conj['qvis'] == np.conj(3 + 4j)
+    assert conj['uvis'] == np.conj(5 + 6j)
+    assert conj['vvis'] == np.conj(7 + 8j)
+    # stokes sigmas are not swapped
+    assert conj['usigma'] == 0.3
+    assert conj['vsigma'] == 0.4
+
+
+def test_data_conj_lin():
+    # xx/yy conjugate; xy <-> yx conjugate-and-swap; cross sigmas swap.
+    obs = eo.Obsdata(0., 0., 230e9, 1e9, _lin_data(['S0'], ['S1']),
+                     _tarr(['xy', 'xy']), polrep='lin')
+    dc = obs.data_conj()
+    conj = dc[dc['u'] < 0][0]
+    assert conj['xxvis'] == np.conj(1 + 2j)
+    assert conj['yyvis'] == np.conj(3 + 4j)
+    assert conj['xyvis'] == np.conj(7 + 8j)
+    assert conj['yxvis'] == np.conj(5 + 6j)
+    assert conj['xxsigma'] == 0.1
+    assert conj['yysigma'] == 0.2
+    assert conj['xysigma'] == 0.4
+    assert conj['yxsigma'] == 0.3
+
+
+def test_data_conj_mixed_swap_and_polbasis_flip():
+    # Heterogeneous baseline (S0='rl', S1='xy'): generic-slot conj/swap, and
+    # the polbasis halves flip on the conjugate row ('rlxy' -> 'xyrl').
+    obs = eo.Obsdata(0., 0., 230e9, 1e9, _mixed_data(['S0'], ['S1']),
+                     _tarr(['rl', 'xy']), polrep='mixed')
+    dc = obs.data_conj()
+    orig = dc[dc['u'] > 0][0]
+    conj = dc[dc['u'] < 0][0]
+    assert orig['polbasis'] == 'rlxy'
+    assert conj['polbasis'] == 'xyrl'
+    assert conj['p1p1vis'] == np.conj(1 + 2j)
+    assert conj['p2p2vis'] == np.conj(3 + 4j)
+    assert conj['p1p2vis'] == np.conj(7 + 8j)
+    assert conj['p2p1vis'] == np.conj(5 + 6j)
+    assert conj['p1p2sigma'] == 0.4
+    assert conj['p2p1sigma'] == 0.3
+
+
+def test_data_conj_mixed_multibaseline_polbasis():
+    # 3-station mixed array: every conjugate row's polbasis is the half-swap
+    # of its original, and the table doubles in length.
+    obs = eo.Obsdata(0., 0., 230e9, 1e9,
+                     _mixed_data(['S0', 'S0', 'S1'], ['S1', 'S2', 'S2']),
+                     _tarr(['rl', 'rl', 'xy']), polrep='mixed')
+    dc = obs.data_conj()
+    assert len(dc) == 2 * len(obs.data)
+    for row in dc:
+        pb = str(row['polbasis'])
+        # the reverse-station row must also be present with swapped halves
+        mate = pb[2:] + pb[:2]
+        assert mate in set(str(s) for s in dc['polbasis'])

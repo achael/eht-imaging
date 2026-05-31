@@ -670,7 +670,15 @@ class Obsdata:
                (numpy.recarray): a copy of the Obsdata.data table including all conjugate baselines.
         """
 
+        if self.polrep not in ('stokes', 'circ', 'lin', 'mixed'):
+            raise Exception("polrep must be 'stokes', 'circ', 'lin', or 'mixed'")
+
         data = np.empty(2 * len(self.data), dtype=self.poltype)
+
+        # Generic polarization slot names for this polrep
+        vis1, vis2 = self.poldict['vis1'], self.poldict['vis2']
+        vis3, vis4 = self.poldict['vis3'], self.poldict['vis4']
+        sig3, sig4 = self.poldict['sigma3'], self.poldict['sigma4']
 
         # Add the conjugate baseline data
         for f in self.data.dtype.names:
@@ -684,26 +692,35 @@ class Obsdata:
             elif f in ['u', 'v']:
                 data[f] = np.hstack((self.data[f], -self.data[f]))
 
-            elif f in [self.poldict['vis1'], self.poldict['vis2'],
-                       self.poldict['vis3'], self.poldict['vis4']]:
-                if self.polrep == 'stokes':
-                    data[f] = np.hstack((self.data[f], np.conj(self.data[f])))
-                elif self.polrep == 'circ':
-                    if f in ['rrvis', 'llvis']:
-                        data[f] = np.hstack((self.data[f], np.conj(self.data[f])))
-                    elif f == 'rlvis':
-                        data[f] = np.hstack((self.data['rlvis'], np.conj(self.data['lrvis'])))
-                    elif f == 'lrvis':
-                        data[f] = np.hstack((self.data['lrvis'], np.conj(self.data['rlvis'])))
+            elif f == 'polbasis':
+                # The conjugate baseline swaps the two stations, so the two
+                # halves of the per-row feed-type code swap (e.g. 'rlxy' -> 'xyrl').
+                pb = self.data['polbasis']
+                pb_swapped = np.array([s[2:] + s[:2] for s in pb], dtype=pb.dtype)
+                data[f] = np.hstack((pb, pb_swapped))
 
-                    # ALSO SWITCH THE ERRORS!
+            elif f in (vis1, vis2, vis3, vis4):
+                if self.polrep == 'stokes':
+                    # Stokes visibilities are Hermitian: conjugate all four.
+                    data[f] = np.hstack((self.data[f], np.conj(self.data[f])))
                 else:
-                    raise Exception("polrep must be either 'stokes' or 'circ'")
-            # The conjugate baselines need the transpose error terms.
-            elif f == "rlsigma":
-                data[f] = np.hstack((self.data["rlsigma"], self.data["lrsigma"]))
-            elif f == "lrsigma":
-                data[f] = np.hstack((self.data["lrsigma"], self.data["rlsigma"]))
+                    # Coherency matrix transforms as V_ji = V_ij^dagger under
+                    # baseline reversal: diagonal slots conjugate, cross-hand
+                    # slots conjugate and swap. Expressed in generic slot names,
+                    # this holds for circ, lin, and every mixed-feed row.
+                    if f in (vis1, vis2):
+                        data[f] = np.hstack((self.data[f], np.conj(self.data[f])))
+                    elif f == vis3:
+                        data[f] = np.hstack((self.data[vis3], np.conj(self.data[vis4])))
+                    elif f == vis4:
+                        data[f] = np.hstack((self.data[vis4], np.conj(self.data[vis3])))
+
+            # The conjugate baselines need the transposed cross-hand error terms
+            # (the diagonal sigmas are unchanged). Stokes has no cross-hand swap.
+            elif self.polrep != 'stokes' and f == sig3:
+                data[f] = np.hstack((self.data[sig3], self.data[sig4]))
+            elif self.polrep != 'stokes' and f == sig4:
+                data[f] = np.hstack((self.data[sig4], self.data[sig3]))
 
             else:
                 data[f] = np.hstack((self.data[f], self.data[f]))
