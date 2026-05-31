@@ -36,6 +36,7 @@ import scipy.ndimage as nd
 import scipy.spatial.distance
 
 import ehtim.const_def as ehc
+import ehtim.observing.pol_conventions as pc
 
 warnings.filterwarnings("ignore", message="divide by zero encountered in double_scalars")
 
@@ -218,132 +219,137 @@ def compute_uv_coordinates(array, site1, site2, time, mjd, ra, dec, rf, timetype
     return (time, u, v)
 
 
+##################################################################################################
+# Closure Quantity Construction
+##################################################################################################
+
+_STOKES_VTYPES = ('vis', 'qvis', 'uvis', 'vvis')
+_CIRC_VTYPES = ('rrvis', 'llvis', 'rlvis', 'lrvis')
+_LIN_VTYPES = ('xxvis', 'yyvis', 'xyvis', 'yxvis')
+_GENERIC_VTYPES = ('p1p1vis', 'p2p2vis', 'p1p2vis', 'p2p1vis')
+
+# Maps a single-correlation feed-basis vtype to the generic DTPOL_MIXED slot
+# that holds it on a homogeneous baseline of the matching feed basis.
+_MIXED_SLOT = {'rrvis': 'p1p1vis', 'xxvis': 'p1p1vis',
+               'llvis': 'p2p2vis', 'yyvis': 'p2p2vis',
+               'rlvis': 'p1p2vis', 'xyvis': 'p1p2vis',
+               'lrvis': 'p2p1vis', 'yxvis': 'p2p1vis',
+               'pvis': 'p1p2vis'}
+
+
+def valid_closure_vtypes(polrep):
+    """Visibility types from which closure quantities can be formed for a polrep.
+
+       Stokes is the complete basis: it can synthesize both circular and linear
+       correlations. Each feed basis can give its own correlations plus Stokes,
+       but not the other feed basis directly (that would need the two-step
+       circ<->stokes<->lin composition, which is out of scope for the kernels).
+    """
+    if polrep == 'stokes':
+        return _STOKES_VTYPES + _CIRC_VTYPES + _LIN_VTYPES
+    if polrep == 'circ':
+        return _CIRC_VTYPES + _STOKES_VTYPES
+    if polrep == 'lin':
+        return _LIN_VTYPES + _STOKES_VTYPES
+    if polrep == 'mixed':
+        # Permissive: feed-basis names pass here so the per-triangle filter
+        # (closure_skip_polbasis) can reject Stokes/generic vtypes in the body.
+        return _STOKES_VTYPES + _CIRC_VTYPES + _LIN_VTYPES + _GENERIC_VTYPES
+    raise Exception(f"unsupported polrep {polrep!r} for closure quantities")
+
+
+def closure_skip_polbasis(vtype):
+    """For a mixed-feed observation, the homogeneous per-baseline polbasis that a
+       closure of this vtype requires. Raises for vtypes with no single-baseline
+       feed-basis meaning (Stokes or generic p1p1vis-style)."""
+    if vtype in _CIRC_VTYPES or vtype == 'pvis':
+        return 'rlrl'
+    if vtype in _LIN_VTYPES:
+        return 'xyxy'
+    raise Exception(
+        f"closure quantity vtype={vtype!r} is not physical on a mixed-feed "
+        "observation: only single-correlation feed-basis vtypes "
+        "(rrvis/llvis/rlvis/lrvis or xxvis/yyvis/xyvis/yxvis) can be formed per "
+        "triangle. Stokes and generic p1p1vis-style closures need a homogeneous "
+        "feed basis; use switch_polrep('stokes') after calibration instead.")
+
+
+def closure_skip_message(n_skipped, count, kind='triangles'):
+    """Message for MixedPolClosureSkipWarning when feed-mixing baselines are
+       dropped. For minimal sets, note that the (site-based) minimal set is not
+       baseline-aware, so some recoverable closures may be lost."""
+    msg = (f"{n_skipped} {kind} skipped: closures require baselines between "
+           "stations with the same polarization basis.")
+    if count in ('min', 'min-cut0bl'):
+        msg += " Minimal set is site-based, not baseline-aware; use count='max' to keep all."
+    return msg
+
+
+def vis_component(l, vtype, polrep):
+    """Return (visibility, sigma) for a single correlation `vtype` from one
+       datatable `l`. Native correlations are read directly; correlations in a
+       different basis are synthesized through ehtim.observing.pol_conventions
+       so the basis-transform conventions live in exactly one place.
+    """
+    if vtype == 'pvis':  # polarized visibility == RL == Q + iU
+        vtype = 'rlvis'
+
+    if polrep == 'mixed':
+        slot = _MIXED_SLOT.get(vtype)
+        if slot is None:
+            raise Exception("mixed-feed closures support only single-correlation "
+                            f"feed-basis vtypes; got {vtype!r}")
+        return l[slot], l[slot[:-3] + 'sigma']
+
+    if polrep == 'stokes':
+        if vtype in _STOKES_VTYPES:
+            return l[vtype], l[vtype[:-3] + 'sigma']
+        i, q, u, v = l['vis'], l['qvis'], l['uvis'], l['vvis']
+        si, sq, su, sv = l['sigma'], l['qsigma'], l['usigma'], l['vsigma']
+        if vtype in _CIRC_VTYPES:
+            vals = dict(zip(_CIRC_VTYPES, pc.stokes_to_circ(i, q, u, v)))
+            sigs = dict(zip(_CIRC_VTYPES, pc.stokes_to_circ_sigma(si, sq, su, sv)))
+            return vals[vtype], sigs[vtype]
+        if vtype in _LIN_VTYPES:
+            vals = dict(zip(_LIN_VTYPES, pc.stokes_to_lin(i, q, u, v)))
+            sigs = dict(zip(_LIN_VTYPES, pc.stokes_to_lin_sigma(si, sq, su, sv)))
+            return vals[vtype], sigs[vtype]
+
+    elif polrep == 'circ':
+        if vtype in _CIRC_VTYPES:
+            return l[vtype], l[vtype[:-3] + 'sigma']
+        if vtype in _STOKES_VTYPES:
+            rr, ll, rl, lr = l['rrvis'], l['llvis'], l['rlvis'], l['lrvis']
+            srr, sll, srl, slr = l['rrsigma'], l['llsigma'], l['rlsigma'], l['lrsigma']
+            vals = dict(zip(_STOKES_VTYPES, pc.circ_to_stokes(rr, ll, rl, lr)))
+            sigs = dict(zip(_STOKES_VTYPES, pc.circ_to_stokes_sigma(srr, sll, srl, slr)))
+            return vals[vtype], sigs[vtype]
+
+    elif polrep == 'lin':
+        if vtype in _LIN_VTYPES:
+            return l[vtype], l[vtype[:-3] + 'sigma']
+        if vtype in _STOKES_VTYPES:
+            xx, yy, xy, yx = l['xxvis'], l['yyvis'], l['xyvis'], l['yxvis']
+            sxx, syy, sxy, syx = l['xxsigma'], l['yysigma'], l['xysigma'], l['yxsigma']
+            vals = dict(zip(_STOKES_VTYPES, pc.lin_to_stokes(xx, yy, xy, yx)))
+            sigs = dict(zip(_STOKES_VTYPES, pc.lin_to_stokes_sigma(sxx, syy, sxy, syx)))
+            return vals[vtype], sigs[vtype]
+
+    raise Exception(f"vtype {vtype!r} not supported for polrep {polrep!r}")
+
+
 def make_bispectrum(l1, l2, l3, vistype, polrep='stokes'):
     """Make a list of bispectra and errors
        l1,l2,l3 are full datatables of visibility entries
        vtype is visibility types
     """
 
-    if vistype == 'pvis':
-        vtype = 'rlvis'
-    else:
-        vtype = vistype
+    # Per-correlation values and sigmas (synthesis routed via pol_conventions)
+    p1, s1 = vis_component(l1, vistype, polrep)
+    p2, s2 = vis_component(l2, vistype, polrep)
+    p3, s3 = vis_component(l3, vistype, polrep)
 
-    # Choose the appropriate polarization and compute the bs and err
-    if polrep == 'stokes':
-        if vtype in ["vis", "qvis", "uvis", "vvis"]:
-            if vtype == 'vis':
-                sigmatype = 'sigma'
-            elif vtype == 'qvis':
-                sigmatype = 'qsigma'
-            elif vtype == 'uvis':
-                sigmatype = 'usigma'
-            elif vtype == 'vvis':
-                sigmatype = 'vsigma'
-
-            p1 = l1[vtype]
-            p2 = l2[vtype]
-            p3 = l3[vtype]
-
-            var1 = l1[sigmatype]**2
-            var2 = l2[sigmatype]**2
-            var3 = l3[sigmatype]**2
-
-        elif vtype == "rrvis":
-            p1 = l1['vis'] + l1['vvis']
-            p2 = l2['vis'] + l2['vvis']
-            p3 = l3['vis'] + l3['vvis']
-
-            var1 = l1['sigma']**2 + l1['vsigma']**2
-            var2 = l2['sigma']**2 + l2['vsigma']**2
-            var3 = l3['sigma']**2 + l3['vsigma']**2
-
-        elif vtype == "llvis":
-            p1 = l1['vis'] - l1['vvis']
-            p2 = l2['vis'] - l2['vvis']
-            p3 = l3['vis'] - l3['vvis']
-
-            var1 = l1['sigma']**2 + l1['vsigma']**2
-            var2 = l2['sigma']**2 + l2['vsigma']**2
-            var3 = l3['sigma']**2 + l3['vsigma']**2
-
-        elif vtype == "lrvis":
-            p1 = l1['qvis'] - 1j*l1['uvis']
-            p2 = l2['qvis'] - 1j*l2['uvis']
-            p3 = l3['qvis'] - 1j*l3['uvis']
-
-            var1 = l1['qsigma']**2 + l1['usigma']**2
-            var2 = l2['qsigma']**2 + l2['usigma']**2
-            var3 = l3['qsigma']**2 + l3['usigma']**2
-
-        elif vtype == "rlvis":
-            p1 = l1['qvis'] + 1j*l1['uvis']
-            p2 = l2['qvis'] + 1j*l2['uvis']
-            p3 = l3['qvis'] + 1j*l3['uvis']
-
-            var1 = l1['qsigma']**2 + l1['usigma']**2
-            var2 = l2['qsigma']**2 + l2['usigma']**2
-            var3 = l3['qsigma']**2 + l3['usigma']**2
-
-    elif polrep == 'circ':
-        if vtype in ["rrvis", "llvis", "rlvis", "lrvis"]:
-
-
-
-            if vtype == 'rrvis':
-                sigmatype = 'rrsigma'
-            elif vtype == 'llvis':
-                sigmatype = 'llsigma'
-            elif vtype == 'rlvis':
-                sigmatype = 'rlsigma'
-            elif vtype == 'lrvis':
-                sigmatype = 'lrsigma'
-
-            p1 = l1[vtype]
-            p2 = l2[vtype]
-            p3 = l3[vtype]
-
-            var1 = l1[sigmatype]**2
-            var2 = l2[sigmatype]**2
-            var3 = l3[sigmatype]**2
-
-        elif vtype == "vis":
-            p1 = 0.5*(l1['rrvis'] + l1['llvis'])
-            p2 = 0.5*(l2['rrvis'] + l2['llvis'])
-            p3 = 0.5*(l3['rrvis'] + l3['llvis'])
-
-            var1 = 0.25*(l1['rrsigma']**2 + l1['llsigma']**2)
-            var2 = 0.25*(l2['rrsigma']**2 + l2['llsigma']**2)
-            var3 = 0.25*(l3['rrsigma']**2 + l3['llsigma']**2)
-
-        elif vtype == "vvis":
-            p1 = 0.5*(l1['rrvis'] - l1['llvis'])
-            p2 = 0.5*(l2['rrvis'] - l2['llvis'])
-            p3 = 0.5*(l3['rrvis'] - l3['llvis'])
-
-            var1 = 0.25*(l1['rrsigma']**2 + l1['llsigma']**2)
-            var2 = 0.25*(l2['rrsigma']**2 + l2['llsigma']**2)
-            var3 = 0.25*(l3['rrsigma']**2 + l3['llsigma']**2)
-
-        elif vtype == "qvis":
-            p1 = 0.5*(l1['lrvis'] + l1['rlvis'])
-            p2 = 0.5*(l2['lrvis'] + l2['rlvis'])
-            p3 = 0.5*(l3['lrvis'] + l3['rlvis'])
-
-            var1 = 0.25*(l1['lrsigma']**2 + l1['rlsigma']**2)
-            var2 = 0.25*(l2['lrsigma']**2 + l2['rlsigma']**2)
-            var3 = 0.25*(l3['lrsigma']**2 + l3['rlsigma']**2)
-
-        elif vtype == "uvis":
-            p1 = 0.5j*(l1['lrvis'] - l1['rlvis'])
-            p2 = 0.5j*(l2['lrvis'] - l2['rlvis'])
-            p3 = 0.5j*(l3['lrvis'] - l3['rlvis'])
-
-            var1 = 0.25*(l1['lrsigma']**2 + l1['rlsigma']**2)
-            var2 = 0.25*(l2['lrsigma']**2 + l2['rlsigma']**2)
-            var3 = 0.25*(l3['lrsigma']**2 + l3['rlsigma']**2)
-    else:
-        raise Exception("only 'stokes' and 'circ' are supported polreps!")
+    var1, var2, var3 = s1**2, s2**2, s3**2
 
     # Make the bispectrum and its uncertainty
     bi = p1*p2*p3
@@ -365,176 +371,50 @@ def make_closure_amplitude(blue1, blue2, red1, red2, vtype,
     if ctype not in ['camp', 'logcamp']:
         raise Exception("closure amplitude type must be 'camp' or 'logcamp'!")
 
-    if polrep == 'stokes':
-
-        if vtype in ["vis", "qvis", "uvis", "vvis"]:
-            if vtype == 'vis':
-                sigmatype = 'sigma'
-            if vtype == 'qvis':
-                sigmatype = 'qsigma'
-            if vtype == 'uvis':
-                sigmatype = 'usigma'
-            if vtype == 'vvis':
-                sigmatype = 'vsigma'
-
-            sig1 = blue1[sigmatype]
-            sig2 = blue2[sigmatype]
-            sig3 = red1[sigmatype]
-            sig4 = red2[sigmatype]
-
-            p1 = np.abs(blue1[vtype])
-            p2 = np.abs(blue2[vtype])
-            p3 = np.abs(red1[vtype])
-            p4 = np.abs(red2[vtype])
-
-        elif vtype == "rrvis":
-            sig1 = np.sqrt(blue1['sigma']**2 + blue1['vsigma']**2)
-            sig2 = np.sqrt(blue2['sigma']**2 + blue2['vsigma']**2)
-            sig3 = np.sqrt(red1['sigma']**2 + red1['vsigma']**2)
-            sig4 = np.sqrt(red2['sigma']**2 + red2['vsigma']**2)
-
-            p1 = np.abs(blue1['vis'] + blue1['vvis'])
-            p2 = np.abs(blue2['vis'] + blue2['vvis'])
-            p3 = np.abs(red1['vis'] + red1['vvis'])
-            p4 = np.abs(red2['vis'] + red2['vvis'])
-
-        elif vtype == "llvis":
-            sig1 = np.sqrt(blue1['sigma']**2 + blue1['vsigma']**2)
-            sig2 = np.sqrt(blue2['sigma']**2 + blue2['vsigma']**2)
-            sig3 = np.sqrt(red1['sigma']**2 + red1['vsigma']**2)
-            sig4 = np.sqrt(red2['sigma']**2 + red2['vsigma']**2)
-
-            p1 = np.abs(blue1['vis'] - blue1['vvis'])
-            p2 = np.abs(blue2['vis'] - blue2['vvis'])
-            p3 = np.abs(red1['vis'] - red1['vvis'])
-            p4 = np.abs(red2['vis'] - red2['vvis'])
-
-        elif vtype == "lrvis":
-            sig1 = np.sqrt(blue1['qsigma']**2 + blue1['usigma']**2)
-            sig2 = np.sqrt(blue2['qsigma']**2 + blue2['usigma']**2)
-            sig3 = np.sqrt(red1['qsigma']**2 + red1['usigma']**2)
-            sig4 = np.sqrt(red2['qsigma']**2 + red2['usigma']**2)
-
-            p1 = np.abs(blue1['qvis'] - 1j*blue1['uvis'])
-            p2 = np.abs(blue2['qvis'] - 1j*blue2['uvis'])
-            p3 = np.abs(red1['qvis'] - 1j*red1['uvis'])
-            p4 = np.abs(red2['qvis'] - 1j*red2['uvis'])
-
-        elif vtype in ["pvis", "rlvis"]:
-            sig1 = np.sqrt(blue1['qsigma']**2 + blue1['usigma']**2)
-            sig2 = np.sqrt(blue2['qsigma']**2 + blue2['usigma']**2)
-            sig3 = np.sqrt(red1['qsigma']**2 + red1['usigma']**2)
-            sig4 = np.sqrt(red2['qsigma']**2 + red2['usigma']**2)
-
-            p1 = np.abs(blue1['qvis'] + 1j*blue1['uvis'])
-            p2 = np.abs(blue2['qvis'] + 1j*blue2['uvis'])
-            p3 = np.abs(red1['qvis'] + 1j*red1['uvis'])
-            p4 = np.abs(red2['qvis'] + 1j*red2['uvis'])
-
-    elif polrep == 'circ':
-        if vtype in ["rrvis", "llvis", "rlvis", "lrvis", 'pvis']:
-            if vtype == 'pvis':
-                vtype = 'rlvis'  # p = rl
-
-            if vtype == 'rrvis':
-                sigmatype = 'rrsigma'
-            if vtype == 'llvis':
-                sigmatype = 'llsigma'
-            if vtype == 'rlvis':
-                sigmatype = 'rlsigma'
-            if vtype == 'lrvis':
-                sigmatype = 'lrsigma'
-
-            sig1 = blue1[sigmatype]
-            sig2 = blue2[sigmatype]
-            sig3 = red1[sigmatype]
-            sig4 = red2[sigmatype]
-
-            p1 = np.abs(blue1[vtype])
-            p2 = np.abs(blue2[vtype])
-            p3 = np.abs(red1[vtype])
-            p4 = np.abs(red2[vtype])
-
-        elif vtype == "vis":
-            sig1 = 0.5*np.sqrt(blue1['rrsigma']**2 + blue1['llsigma']**2)
-            sig2 = 0.5*np.sqrt(blue2['rrsigma']**2 + blue2['llsigma']**2)
-            sig3 = 0.5*np.sqrt(red1['rrsigma']**2 + red1['llsigma']**2)
-            sig4 = 0.5*np.sqrt(red2['rrsigma']**2 + red2['llsigma']**2)
-
-            p1 = 0.5*np.abs(blue1['rrvis'] + blue1['llvis'])
-            p2 = 0.5*np.abs(blue2['rrvis'] + blue2['llvis'])
-            p3 = 0.5*np.abs(red1['rrvis'] + red1['llvis'])
-            p4 = 0.5*np.abs(red2['rrvis'] + red2['llvis'])
-
-        elif vtype == "vvis":
-            sig1 = 0.5*np.sqrt(blue1['rrsigma']**2 + blue1['llsigma']**2)
-            sig2 = 0.5*np.sqrt(blue2['rrsigma']**2 + blue2['llsigma']**2)
-            sig3 = 0.5*np.sqrt(red1['rrsigma']**2 + red1['llsigma']**2)
-            sig4 = 0.5*np.sqrt(red2['rrsigma']**2 + red2['llsigma']**2)
-
-            p1 = 0.5*np.abs(blue1['rrvis'] - blue1['llvis'])
-            p2 = 0.5*np.abs(blue2['rrvis'] - blue2['llvis'])
-            p3 = 0.5*np.abs(red1['rrvis'] - red1['llvis'])
-            p4 = 0.5*np.abs(red2['rrvis'] - red2['llvis'])
-
-        elif vtype == "qvis":
-            sig1 = 0.5*np.sqrt(blue1['lrsigma']**2 + blue1['rlsigma']**2)
-            sig2 = 0.5*np.sqrt(blue2['lrsigma']**2 + blue2['rlsigma']**2)
-            sig3 = 0.5*np.sqrt(red1['lrsigma']**2 + red1['rlsigma']**2)
-            sig4 = 0.5*np.sqrt(red2['lrsigma']**2 + red2['rlsigma']**2)
-
-            p1 = 0.5*np.abs(blue1['lrvis'] + blue1['rlvis'])
-            p2 = 0.5*np.abs(blue2['lrvis'] + blue2['rlvis'])
-            p3 = 0.5*np.abs(red1['lrvis'] + red1['rlvis'])
-            p4 = 0.5*np.abs(red2['lrvis'] + red2['rlvis'])
-
-        elif vtype == "uvis":
-            sig1 = 0.5*np.sqrt(blue1['lrsigma']**2 + blue1['rlsigma']**2)
-            sig2 = 0.5*np.sqrt(blue2['lrsigma']**2 + blue2['rlsigma']**2)
-            sig3 = 0.5*np.sqrt(red1['lrsigma']**2 + red1['rlsigma']**2)
-            sig4 = 0.5*np.sqrt(red2['lrsigma']**2 + red2['rlsigma']**2)
-
-            p1 = 0.5*np.abs(blue1['lrvis'] - blue1['rlvis'])
-            p2 = 0.5*np.abs(blue2['lrvis'] - blue2['rlvis'])
-            p3 = 0.5*np.abs(red1['lrvis'] - red1['rlvis'])
-            p4 = 0.5*np.abs(red2['lrvis'] - red2['rlvis'])
-    else:
-        raise Exception("only 'stokes' and 'circ' are supported polreps!")
+    # Per-correlation values and sigmas (synthesis routed via pol_conventions).
+    # blue1/blue2 are numerator baselines; red1/red2 are denominator baselines.
+    cblue1, sigblue1 = vis_component(blue1, vtype, polrep)
+    cblue2, sigblue2 = vis_component(blue2, vtype, polrep)
+    cred1, sigred1 = vis_component(red1, vtype, polrep)
+    cred2, sigred2 = vis_component(red2, vtype, polrep)
 
     # Debias the amplitude
     if debias:
-        p1 = amp_debias(p1, sig1, force_nonzero=True)
-        p2 = amp_debias(p2, sig2, force_nonzero=True)
-        p3 = amp_debias(p3, sig3, force_nonzero=True)
-        p4 = amp_debias(p4, sig4, force_nonzero=True)
+        pblue1 = amp_debias(np.abs(cblue1), sigblue1, force_nonzero=True)
+        pblue2 = amp_debias(np.abs(cblue2), sigblue2, force_nonzero=True)
+        pred1 = amp_debias(np.abs(cred1), sigred1, force_nonzero=True)
+        pred2 = amp_debias(np.abs(cred2), sigred2, force_nonzero=True)
     else:
-        p1 = np.abs(p1)
-        p2 = np.abs(p2)
-        p3 = np.abs(p3)
-        p4 = np.abs(p4)
+        pblue1 = np.abs(cblue1)
+        pblue2 = np.abs(cblue2)
+        pred1 = np.abs(cred1)
+        pred2 = np.abs(cred2)
 
     # Get snrs
-    snr1 = p1/sig1
-    snr2 = p2/sig2
-    snr3 = p3/sig3
-    snr4 = p4/sig4
+    snrblue1 = pblue1/sigblue1
+    snrblue2 = pblue2/sigblue2
+    snrred1 = pred1/sigred1
+    snrred2 = pred2/sigred2
 
     # Compute the closure amplitude and its uncertainty
     if ctype == 'camp':
-        camp = np.abs((p1*p2)/(p3*p4))
-        camperr = camp * np.sqrt(1./(snr1**2) + 1./(snr2**2) + 1./(snr3**2) + 1./(snr4**2))
+        camp = np.abs((pblue1*pblue2)/(pred1*pred2))
+        camperr = camp * np.sqrt(1./(snrblue1**2) + 1./(snrblue2**2) +
+                                 1./(snrred1**2) + 1./(snrred2**2))
 
         # Debias
         if debias:
-            camp = camp_debias(camp, snr3, snr4)
+            camp = camp_debias(camp, snrred1, snrred2)
 
     elif ctype == 'logcamp':
-        camp = np.log(np.abs(p1)) + np.log(np.abs(p2)) - np.log(np.abs(p3)) - np.log(np.abs(p4))
-        camperr = np.sqrt(1./(snr1**2) + 1./(snr2**2) + 1./(snr3**2) + 1./(snr4**2))
+        camp = (np.log(np.abs(pblue1)) + np.log(np.abs(pblue2)) -
+                np.log(np.abs(pred1)) - np.log(np.abs(pred2)))
+        camperr = np.sqrt(1./(snrblue1**2) + 1./(snrblue2**2) +
+                          1./(snrred1**2) + 1./(snrred2**2))
 
         # Debias
         if debias:
-            camp = logcamp_debias(camp, snr1, snr2, snr3, snr4)
+            camp = logcamp_debias(camp, snrblue1, snrblue2, snrred1, snrred2)
 
     return (camp, camperr)
 

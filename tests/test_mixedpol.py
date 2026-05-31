@@ -1579,3 +1579,186 @@ def test_data_conj_mixed_multibaseline_polbasis():
         # the reverse-station row must also be present with swapped halves
         mate = pb[2:] + pb[:2]
         assert mate in set(str(s) for s in dc['polbasis'])
+
+
+# ============================================================================
+#  Closures (bispectra / c_phases / c_amplitudes) on lin / mixed
+# ============================================================================
+
+
+def _lin_tri_obs():
+    """3-station all-'xy' LIN obs, one timestamp -> one triangle."""
+    d = _lin_data(['S0', 'S0', 'S1'], ['S1', 'S2', 'S2'])
+    return eo.Obsdata(0., 0., 230e9, 1e9, d, _tarr(['xy', 'xy', 'xy']),
+                      polrep='lin')
+
+
+def _lin_4st_obs():
+    """4-station all-'xy' LIN obs, one timestamp -> non-trivial closure set."""
+    t1s = ['S0', 'S0', 'S0', 'S1', 'S1', 'S2']
+    t2s = ['S1', 'S2', 'S3', 'S2', 'S3', 'S3']
+    d = _lin_data(t1s, t2s)
+    return eo.Obsdata(0., 0., 230e9, 1e9, d, _tarr(['xy', 'xy', 'xy', 'xy']),
+                      polrep='lin')
+
+
+def _mixed_tri_obs():
+    """3-station mixed obs (S0,S1='rl', S2='xy'): the only triangle is feed-mixing."""
+    d = _mixed_data(['S0', 'S0', 'S1'], ['S1', 'S2', 'S2'])
+    return eo.Obsdata(0., 0., 230e9, 1e9, d, _tarr(['rl', 'rl', 'xy']),
+                      polrep='mixed')
+
+
+def _mixed_4st_obs():
+    """4-station mixed obs (S0,S1,S2='rl', S3='xy'): exactly one all-circular
+       triangle (S0,S1,S2); the other three triangles touch the linear station."""
+    t1s = ['S0', 'S0', 'S0', 'S1', 'S1', 'S2']
+    t2s = ['S1', 'S2', 'S3', 'S2', 'S3', 'S3']
+    d = _mixed_data(t1s, t2s)
+    return eo.Obsdata(0., 0., 230e9, 1e9, d, _tarr(['rl', 'rl', 'rl', 'xy']),
+                      polrep='mixed')
+
+
+# ----- lin closures match the stokes-converted observation ------------------
+
+def test_bispectra_lin_matches_stokes():
+    obs_l = _lin_tri_obs()
+    with warnings.catch_warnings():
+        warnings.simplefilter('ignore')
+        bl = obs_l.bispectra(vtype='vis')
+        bs = obs_l.switch_polrep('stokes').bispectra(vtype='vis')
+    assert len(bl) == len(bs) == 1
+    np.testing.assert_allclose(bl['bispec'], bs['bispec'], rtol=1e-10)
+
+
+def test_bispectra_lin_native_slot():
+    # vtype='xxvis' bispectrum is the product of xxvis around the triangle.
+    obs_l = _lin_tri_obs()
+    with warnings.catch_warnings():
+        warnings.simplefilter('ignore')
+        b = obs_l.bispectra(vtype='xxvis')
+    d = obs_l.data
+    expected = d['xxvis'][0] * d['xxvis'][2] * np.conj(d['xxvis'][1])
+    # triangle (S0,S1),(S1,S2),(S2,S0): third leg is conj of (S0,S2)
+    assert len(b) == 1
+    np.testing.assert_allclose(np.abs(b['bispec'][0]), np.abs(expected), rtol=1e-10)
+
+
+def test_c_phases_lin_matches_stokes():
+    obs_l = _lin_tri_obs()
+    with warnings.catch_warnings():
+        warnings.simplefilter('ignore')
+        cl = obs_l.c_phases(vtype='vis')
+        cs = obs_l.switch_polrep('stokes').c_phases(vtype='vis')
+    assert len(cl) == len(cs) == 1
+    np.testing.assert_allclose(cl['cphase'], cs['cphase'], rtol=1e-9)
+
+
+# ----- vtype validity is polrep-specific ------------------------------------
+
+def test_bispectra_lin_rejects_circular_vtype():
+    obs_l = _lin_tri_obs()
+    with pytest.raises(Exception, match="vtype"):
+        obs_l.bispectra(vtype='rrvis')
+
+
+def test_bispectra_circ_rejects_linear_vtype():
+    obs_c = _stokes_obs().switch_polrep('circ')
+    with pytest.raises(Exception, match="vtype"):
+        obs_c.bispectra(vtype='xxvis')
+
+
+# ----- mixed-feed: skip feed-mixing triangles -------------------------------
+
+def test_bispectra_mixed_skips_cross_feed_triangle():
+    obs = _mixed_tri_obs()
+    with pytest.warns(ehw.MixedPolClosureSkipWarning):
+        b = obs.bispectra(vtype='rrvis', count='max')
+    assert len(b) == 0
+
+
+def test_bispectra_mixed_keeps_homogeneous_subtriangle():
+    obs = _mixed_4st_obs()
+    with pytest.warns(ehw.MixedPolClosureSkipWarning):
+        b = obs.bispectra(vtype='rrvis', count='max')
+    # only the all-circular triangle survives
+    assert len(b) == 1
+    assert set((b['t1'][0], b['t2'][0], b['t3'][0])) == {'S0', 'S1', 'S2'}
+
+
+def test_c_phases_mixed_skips_cross_feed_triangle():
+    obs = _mixed_tri_obs()
+    with pytest.warns(ehw.MixedPolClosureSkipWarning):
+        c = obs.c_phases(vtype='rrvis', count='max')
+    assert len(c) == 0
+
+
+# ----- mixed-feed: Stokes / generic vtypes are not closure-able -------------
+
+def test_bispectra_mixed_stokes_vtype_raises():
+    obs = _mixed_tri_obs()
+    with pytest.raises(Exception, match="mixed-feed"):
+        obs.bispectra(vtype='vis')
+
+
+def test_bispectra_mixed_generic_vtype_raises():
+    obs = _mixed_tri_obs()
+    with pytest.raises(Exception, match="mixed-feed"):
+        obs.bispectra(vtype='p1p1vis')
+
+
+# ----- minimal-set caveat is surfaced ---------------------------------------
+
+def test_mixed_skip_warning_minimal_set_caveat():
+    obs = _mixed_4st_obs()
+    with pytest.warns(ehw.MixedPolClosureSkipWarning, match="baseline-aware"):
+        obs.bispectra(vtype='rrvis', count='min')
+
+
+def test_mixed_skip_warning_no_caveat_for_maxset():
+    obs = _mixed_4st_obs()
+    with warnings.catch_warnings(record=True) as rec:
+        warnings.simplefilter('always')
+        obs.bispectra(vtype='rrvis', count='max')
+    msgs = [str(w.message) for w in rec
+            if issubclass(w.category, ehw.MixedPolClosureSkipWarning)]
+    assert msgs and all('baseline-aware' not in m for m in msgs)
+
+
+# ----- single-triangle helper guards ----------------------------------------
+
+def test_cphase_tri_mixed_heterogeneous_returns_empty():
+    obs = _mixed_tri_obs()
+    with pytest.warns(ehw.MixedPolClosureSkipWarning):
+        out = obs.cphase_tri('S0', 'S1', 'S2', vtype='rrvis')
+    assert len(out) == 0
+
+
+# ----- diagonal closures on lin / mixed -------------------------------------
+
+def test_c_phases_diag_lin_matches_stokes():
+    obs_l = _lin_4st_obs()
+    with warnings.catch_warnings():
+        warnings.simplefilter('ignore')
+        dl = obs_l.c_phases_diag(vtype='vis')
+        ds = obs_l.switch_polrep('stokes').c_phases_diag(vtype='vis')
+    # one timestamp; compare the diagonalized closure-phase values
+    np.testing.assert_allclose(dl[0][0]['cphase'], ds[0][0]['cphase'], rtol=1e-8)
+    np.testing.assert_allclose(dl[0][0]['sigmacp'], ds[0][0]['sigmacp'], rtol=1e-8)
+
+
+def test_c_log_amplitudes_diag_lin_matches_stokes():
+    obs_l = _lin_4st_obs()
+    with warnings.catch_warnings():
+        warnings.simplefilter('ignore')
+        dl = obs_l.c_log_amplitudes_diag(vtype='vis')
+        ds = obs_l.switch_polrep('stokes').c_log_amplitudes_diag(vtype='vis')
+    np.testing.assert_allclose(dl[0][0]['camp'], ds[0][0]['camp'], rtol=1e-8)
+
+
+def test_c_phases_diag_mixed_skips_cross_feed():
+    # only the all-circular sub-triangle survives; diag runs on it with a warning
+    obs = _mixed_4st_obs()
+    with pytest.warns(ehw.MixedPolClosureSkipWarning):
+        d = obs.c_phases_diag(vtype='rrvis')
+    assert len(d) >= 1
