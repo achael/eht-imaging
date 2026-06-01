@@ -17,6 +17,8 @@ Covers all three transform types (direct / fast / nfft) and both
 Stokes-I and polarimetric (IP) imaging.
 """
 
+import warnings
+
 import numpy as np
 import pytest
 
@@ -152,12 +154,14 @@ class TestEndToEndReconstruction:
         )
         assert errors[0] > STOKES_I_NXCORR_MIN
 
-    def test_stokes_i_closure_imaging_polrep_transparent(self, gauss_im, observe):
+    @pytest.mark.parametrize("polrep", ["circ", "lin"])
+    def test_stokes_i_closure_imaging_polrep_transparent(self, gauss_im, observe, polrep):
         """Stokes-I closure imaging is independent of the obs polrep.
 
-        Imaging from a circ-polrep observation forms its amp/cphase/logcamp
-        data terms by synthesizing Stokes I from rr/ll (the mixed-pol closure
-        kernels), and must reproduce the stokes-obs reconstruction exactly.
+        Imaging from a circ- or lin-polrep observation forms its amp/cphase/
+        logcamp data terms by synthesizing Stokes I from rr/ll (or xx/yy) via
+        the mixed-pol unpack path, and must reproduce the stokes-obs
+        reconstruction. The source is unpolarized, so the synthesis is exact.
         """
         obs_stokes = observe(gauss_im, ttype="direct", seed=42)
         prior = _independent_prior(gauss_im.total_flux())
@@ -170,13 +174,17 @@ class TestEndToEndReconstruction:
             return imgr.make_image_I(niter=3, show_updates=False)
 
         out_stokes = image(obs_stokes)
-        out_circ = image(obs_stokes.switch_polrep("circ"))
+        # singlepol_hand selects the surviving parallel hand: R for circ, X for lin
+        hand = 'X' if polrep == 'lin' else 'R'
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore")  # polrep vs feed_type mismatch + convention
+            out_other = image(obs_stokes.switch_polrep(polrep, singlepol_hand=hand))
 
-        (errors, _, _) = out_circ.compare_images(
+        (errors, _, _) = out_other.compare_images(
             gauss_im, metric=["nxcorr"], blur_frac=0.0)
         assert errors[0] > STOKES_I_NXCORR_MIN
-        # circ closures synthesize I exactly, so the reconstruction is identical
-        np.testing.assert_allclose(out_circ.imvec, out_stokes.imvec,
+        # unpolarized source -> exact I synthesis -> identical reconstruction
+        np.testing.assert_allclose(out_other.imvec, out_stokes.imvec,
                                    rtol=0, atol=1e-10)
 
     def test_recovers_gaussian_polarimetric_ip(self, gauss_im_pol, observe):
