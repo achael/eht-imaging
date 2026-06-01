@@ -6,6 +6,7 @@ and the 'plot_*' methods on 'Obsdata' / 'Caltable'.
 Plotly is imported at module load; installing it is required to use this
 module. The error message names the install command.
 """
+
 from __future__ import annotations
 
 import json
@@ -17,10 +18,7 @@ try:
     import plotly.graph_objects as go
     from plotly.subplots import make_subplots
 except ImportError as e:
-    raise ImportError(
-        "Plotly is required for ehtim.plotting.interactive. "
-        "Install with `pip install plotly`."
-    ) from e
+    raise ImportError("Plotly is required for ehtim.plotting.interactive. Install with `pip install plotly`.") from e
 
 import ehtim.const_def as ehc
 import ehtim.observing.obs_helpers as obsh
@@ -38,23 +36,28 @@ if TYPE_CHECKING:
 _THEME = {
     "width": 820,
     "height": 460,
-    "font_family": ('Inter, system-ui, -apple-system, BlinkMacSystemFont, '
-                    '"Segoe UI", Roboto, sans-serif'),
+    "font_family": ('Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif'),
     "font_size": 12,
     "title_size": 16,
     # Matplotlib 'bmh' (Bayesian Methods for Hackers) palette + extensions.
     "colorway": [
-        "#348ABD", "#A60628", "#7A68A6", "#4B8022",
-        "#D55E00", "#CC79A7", "#1F471F", "#2C825D",
+        "#348ABD",
+        "#A60628",
+        "#7A68A6",
+        "#4B8022",
+        "#D55E00",
+        "#CC79A7",
+        "#1F471F",
+        "#2C825D",
     ],
     "plot_bgcolor": "#eeeeee",
     "paper_bgcolor": "#ffffff",
-    "grid_color":   "#ffffff",
-    "zero_color":   "#ffffff",
-    "edge_color":   "#bcbcbc",
-    "font_color":   "#333333",
-    "marker_edge":  "rgba(0,0,0,0.4)",
-    "error_color":  "rgba(0,0,0,0.3)",
+    "grid_color": "#ffffff",
+    "zero_color": "#ffffff",
+    "edge_color": "#bcbcbc",
+    "font_color": "#333333",
+    "marker_edge": "rgba(0,0,0,0.4)",
+    "error_color": "rgba(0,0,0,0.3)",
 }
 
 # Fallback symbols when a plot has more traces than the colorway has colors.
@@ -83,56 +86,77 @@ def _format_uv_axis(values: np.ndarray) -> tuple[np.ndarray, str]:
     return arr / 1e6, "Mλ"
 
 
-def _apply_theme(fig, *, title, xaxis_title, yaxis_title,
-                 rangex=None, rangey=None, y_type="linear",
-                 legend_title="", show_legend=True,
-                 add_reset_button=False, n_traces=0):
+def _apply_theme(
+    fig,
+    *,
+    title,
+    xaxis_title,
+    yaxis_title,
+    rangex=None,
+    rangey=None,
+    y_type="linear",
+    legend_title="",
+    show_legend=True,
+    add_reset_button=False,
+):
     """Apply the BMH visual theme to a plotly Figure.
 
     `add_reset_button=True` installs a "Show all / reset" button that
-    restores visibility for every trace and paints them all gray —
-    pairs with the click-to-colour JS in `_legend_click_js`.
+    restores managed (gray-tagged) traces to visible + gray. The set of
+    managed indices is read from `fig.data` at theme-application time:
+    every trace with `meta.legend_kind="gray"` is included.
     """
     layout = dict(
-        title=dict(text=title, x=0.5, xanchor="center",
-                   font=dict(size=_THEME["title_size"],
-                             family=_THEME["font_family"],
-                             color=_THEME["font_color"])),
-        xaxis=dict(title=xaxis_title, range=rangex,
-                   gridcolor=_THEME["grid_color"],
-                   zerolinecolor=_THEME["zero_color"],
-                   zerolinewidth=1.5,
-                   linecolor=_THEME["edge_color"],
-                   linewidth=1,
-                   ticks="inside",
-                   tickcolor=_THEME["edge_color"],
-                   showline=True,
-                   mirror=True),
-        yaxis=dict(title=yaxis_title, range=rangey, type=y_type,
-                   gridcolor=_THEME["grid_color"],
-                   zerolinecolor=_THEME["zero_color"],
-                   zerolinewidth=1.5,
-                   linecolor=_THEME["edge_color"],
-                   linewidth=1,
-                   ticks="inside",
-                   tickcolor=_THEME["edge_color"],
-                   showline=True,
-                   mirror=True),
+        title=dict(
+            text=title,
+            x=0.5,
+            xanchor="center",
+            font=dict(size=_THEME["title_size"], family=_THEME["font_family"], color=_THEME["font_color"]),
+        ),
+        xaxis=dict(
+            title=xaxis_title,
+            range=rangex,
+            gridcolor=_THEME["grid_color"],
+            zerolinecolor=_THEME["zero_color"],
+            zerolinewidth=1.5,
+            linecolor=_THEME["edge_color"],
+            linewidth=1,
+            ticks="inside",
+            tickcolor=_THEME["edge_color"],
+            showline=True,
+            mirror=True,
+        ),
+        yaxis=dict(
+            title=yaxis_title,
+            range=rangey,
+            type=y_type,
+            gridcolor=_THEME["grid_color"],
+            zerolinecolor=_THEME["zero_color"],
+            zerolinewidth=1.5,
+            linecolor=_THEME["edge_color"],
+            linewidth=1,
+            ticks="inside",
+            tickcolor=_THEME["edge_color"],
+            showline=True,
+            mirror=True,
+        ),
         template="none",
         plot_bgcolor=_THEME["plot_bgcolor"],
         paper_bgcolor=_THEME["paper_bgcolor"],
-        font=dict(family=_THEME["font_family"],
-                  size=_THEME["font_size"],
-                  color=_THEME["font_color"]),
+        font=dict(family=_THEME["font_family"], size=_THEME["font_size"], color=_THEME["font_color"]),
         margin=dict(l=70, r=160, t=80 if add_reset_button else 60, b=60),
-        width=_THEME["width"], height=_THEME["height"],
+        width=_THEME["width"],
+        height=_THEME["height"],
         hovermode="closest",
         colorway=_THEME["colorway"],
         showlegend=show_legend,
         legend=dict(
             title=dict(text=legend_title),
             orientation="v",
-            x=1.02, y=1, xanchor="left", yanchor="top",
+            x=1.02,
+            y=1,
+            xanchor="left",
+            yanchor="top",
             font=dict(size=11, color=_THEME["font_color"]),
             bgcolor="rgba(238,238,238,0.85)",
             bordercolor=_THEME["edge_color"],
@@ -140,89 +164,228 @@ def _apply_theme(fig, *, title, xaxis_title, yaxis_title,
             itemsizing="constant",
         ),
     )
-    if add_reset_button and n_traces > 0:
-        layout["updatemenus"] = [_reset_button_menu(n_traces)]
+    # The "Color" / "Show all / reset" toolbar is injected by the
+    # post-script JS as HTML buttons (siblings of the plotly div), so we
+    # don't add anything to fig.layout here. `add_reset_button` only
+    # changes the top margin so the injected toolbar has breathing room.
     fig.update_layout(**layout)
 
 
-def _reset_button_menu(n_traces: int) -> dict:
-    """Build the 'Show all / reset' updatemenu spec for `n_traces` traces."""
-    return dict(
-        type="buttons",
-        direction="left",
-        buttons=[
-            dict(
-                label="Show all / reset",
-                method="restyle",
-                args=[{"visible": True,
-                       "marker.color": [_GRAY] * n_traces}],
-            ),
-        ],
-        showactive=False,
-        x=0.0, xanchor="left",
-        y=1.10, yanchor="bottom",
-        pad=dict(l=4, r=4, t=2, b=2),
-        bgcolor="rgba(238,238,238,0.85)",
-        bordercolor=_THEME["edge_color"],
-        borderwidth=1,
-        font=dict(size=10, color=_THEME["font_color"]),
-    )
+_GRAY_OPACITY = 0.6
+_COLOR_OPACITY = 0.85
+_OPACITY_THRESHOLD = 0.7  # < threshold → "gray", >= threshold → "coloured"
 
 
 # --- Click-to-highlight JS ------------------------------------------------
 
-# Legend interaction (replaces the old tri-state cycle):
-#   single click  → gray ↔ colour for a trace that started gray,
-#                   colour → hidden ↔ colour for already-coloured traces
-#   double click  → paint *all* traces from the palette
-#   "Show all / reset" button (top-left) → reset everything to gray + visible.
+# Legend interaction follows an explicit two-mode design:
 #
-# `{plot_id}` is the placeholder plotly substitutes when this is passed as
-# `post_script` to `to_html` / `write_html`.
+#   - **Color mode OFF (default).** Single-click on a legend entry uses
+#     plotly's built-in toggle (visible ↔ legendonly). No custom JS in
+#     the click path — plotly's defaults are predictable.
+#
+#   - **Color mode ON.** The "Color" toolbar button toggles a JS flag.
+#     While the flag is on, single-click on a managed trace (one tagged
+#     `meta.legend_kind="gray"` Python-side) paints it from the palette
+#     (gray → coloured) or returns it to gray (coloured → gray); plotly's
+#     default visibility toggle is suppressed via `return false`.
+#
+#   - **Show all / reset.** Restyles every managed trace back to gray +
+#     visible and exits color mode.
+#
+# Why HTML buttons instead of plotly `updatemenus`: plotly re-renders its
+# layout DOM on certain updates and (depending on plotly.js version) may
+# drop custom event listeners attached via `gd.on(...)`. Siblings of the
+# plotly div live outside plotly's React tree and survive re-renders.
+# We also re-bind the legend handler on `plotly_afterplot` as a defensive
+# safeguard.
+#
+# Robustness fixes (per the user's debugging notes on PR #269):
+#   - `isGray()` accepts both scalar opacity and the vectorised
+#     `[0.6, 0.6, ...]` form plotly emits during rapid updates.
+#   - Toolbar buttons own their state explicitly (no closure-shared dict
+#     that depends on plotly's normalization of color strings).
+#
+# `{plot_id}` is the placeholder plotly substitutes when this is passed
+# as `post_script` to `to_html` / `write_html`.
 
 
-def _legend_click_js() -> str:
+def _legend_click_js(managed_indices: list[int] | None = None) -> str:
+    """Build the post-script JS that wires up the Color/Reset toolbar.
+
+    `managed_indices` are the trace indices that participate in the
+    gray↔colour flow — baked into the JS as a constant so detection does
+    *not* depend on `tr.meta` surviving plotly's internal restyles
+    (it doesn't, reliably).
+    """
+    indices = list(managed_indices or [])
     palette = json.dumps(_THEME["colorway"])
     gray = json.dumps(_GRAY)
+    indices_json = json.dumps(indices)
     return f"""
 (function() {{
     var gd = document.getElementById('{{plot_id}}');
     if (!gd) return;
     var PALETTE = {palette};
     var GRAY = {gray};
-    gd.on('plotly_legendclick', function(ev) {{
+    var THRESHOLD = {_OPACITY_THRESHOLD};
+    var GRAY_OPACITY = {_GRAY_OPACITY};
+    var COLOR_OPACITY = {_COLOR_OPACITY};
+    var MANAGED_LIST = {indices_json};
+    var MANAGED = {{}};
+    for (var _i = 0; _i < MANAGED_LIST.length; _i++) MANAGED[MANAGED_LIST[_i]] = true;
+    var colorMode = false;
+
+    if (MANAGED_LIST.length === 0) return;
+
+    function isManaged(idx) {{
+        return MANAGED[idx] === true;
+    }}
+
+    // Robust gray check: plotly can vectorise opacity into an array
+    // ([0.6, 0.6, ...]) during rapid restyles; pull a scalar safely
+    // and default to "gray" on uncertainty so a hidden-but-managed
+    // trace gets repainted on click.
+    function isGray(tr) {{
+        if (!tr || !tr.marker) return true;
+        var op = tr.marker.opacity;
+        if (Array.isArray(op)) op = op.length ? op[0] : undefined;
+        if (typeof op !== 'number') return true;
+        return op < THRESHOLD;
+    }}
+
+    // --- Toolbar (HTML siblings of the plotly div) -----------------------
+
+    var colorBtn, resetBtn;
+    function syncColorBtn() {{
+        if (!colorBtn) return;
+        colorBtn.textContent = colorMode
+            ? 'Color: on — click a baseline'
+            : 'Color: off';
+        colorBtn.style.background = colorMode
+            ? 'rgba(180,220,180,0.95)'
+            : 'rgba(238,238,238,0.92)';
+    }}
+
+    if (gd.parentNode &&
+        !gd.parentNode.querySelector('[data-ehtim-toolbar="1"]')) {{
+        var bar = document.createElement('div');
+        bar.dataset.ehtimToolbar = '1';
+        bar.style.cssText = (
+            'margin: 6px 0 4px 8px; ' +
+            'font-family: Inter, system-ui, sans-serif; ' +
+            'display: flex; gap: 6px; align-items: center;'
+        );
+
+        function makeBtn(label) {{
+            var b = document.createElement('button');
+            b.type = 'button';
+            b.textContent = label;
+            b.style.cssText = (
+                'font: 11px Inter, system-ui, sans-serif; ' +
+                'padding: 4px 10px; ' +
+                'background: rgba(238,238,238,0.92); color: #333; ' +
+                'border: 1px solid #bcbcbc; border-radius: 3px; ' +
+                'cursor: pointer; user-select: none;'
+            );
+            b.addEventListener('mouseenter', function() {{
+                b.style.borderColor = '#888';
+            }});
+            b.addEventListener('mouseleave', function() {{
+                b.style.borderColor = '#bcbcbc';
+            }});
+            return b;
+        }}
+
+        colorBtn = makeBtn('Color: off');
+        colorBtn.addEventListener('click', function() {{
+            colorMode = !colorMode;
+            syncColorBtn();
+            ensureBindings();  // defensive: keep listeners live
+        }});
+
+        resetBtn = makeBtn('Show all / reset');
+        resetBtn.addEventListener('click', function() {{
+            if (MANAGED_LIST.length === 0) return;
+            Plotly.restyle(gd, {{
+                visible: true,
+                'marker.color': GRAY,
+                'marker.opacity': GRAY_OPACITY
+            }}, MANAGED_LIST.slice());
+            colorMode = false;
+            syncColorBtn();
+            // Plotly's restyle can drop user listeners in some builds;
+            // re-attach immediately so subsequent legend clicks work.
+            ensureBindings();
+        }});
+
+        bar.appendChild(colorBtn);
+        bar.appendChild(resetBtn);
+        gd.parentNode.insertBefore(bar, gd);
+    }} else if (gd.parentNode) {{
+        // Toolbar already exists (e.g. cell re-rendered). Grab refs so
+        // the colorMode toggle stays wired.
+        var existing = gd.parentNode.querySelector('[data-ehtim-toolbar="1"]');
+        var btns = existing ? existing.querySelectorAll('button') : [];
+        if (btns.length >= 2) {{ colorBtn = btns[0]; resetBtn = btns[1]; }}
+    }}
+
+    // --- Legend click handler (active only in color mode) ---------------
+
+    function legendClick(ev) {{
         var idx = ev.curveNumber;
-        var tr = gd.data[idx];
-        var base = (tr.marker && tr.marker.color) || '';
-        var hidden = (tr.visible === 'legendonly');
-        if (hidden) {{
-            Plotly.restyle(gd, {{visible: true,
-                                'marker.color': PALETTE[idx % PALETTE.length]}}, [idx]);
-            return false;
+        if (!isManaged(idx) || !colorMode) return true;  // plotly default
+        var tr = gd.data && gd.data[idx];
+        if (isGray(tr)) {{
+            Plotly.restyle(gd, {{
+                'marker.color': PALETTE[idx % PALETTE.length],
+                'marker.opacity': COLOR_OPACITY
+            }}, [idx]);
+        }} else {{
+            Plotly.restyle(gd, {{
+                'marker.color': GRAY,
+                'marker.opacity': GRAY_OPACITY
+            }}, [idx]);
         }}
-        if (base === GRAY) {{
-            Plotly.restyle(gd, {{'marker.color': PALETTE[idx % PALETTE.length]}}, [idx]);
-            return false;
-        }}
-        return true;  // already-coloured + visible → plotly default toggle (hide)
-    }});
-    gd.on('plotly_legenddoubleclick', function(ev) {{
-        var n = gd.data.length;
-        var colors = [];
-        for (var i = 0; i < n; i++) colors.push(PALETTE[i % PALETTE.length]);
-        Plotly.restyle(gd, {{visible: true, 'marker.color': colors}});
-        return false;
-    }});
+        return false;  // suppress plotly's hide
+    }}
+
+    // Re-bind both the legend handler and the afterplot watchdog after
+    // every event that could have wiped them. Uses removeListener with
+    // the same function reference so we always have exactly one of each.
+    function ensureBindings() {{
+        try {{ gd.removeListener('plotly_legendclick', legendClick); }}
+        catch (e) {{ /* ignore */ }}
+        gd.on('plotly_legendclick', legendClick);
+        try {{ gd.removeListener('plotly_afterplot', ensureBindings); }}
+        catch (e) {{ /* ignore */ }}
+        gd.on('plotly_afterplot', ensureBindings);
+    }}
+    ensureBindings();
 }})();
 """
 
 
-def write_html(fig, path: str | PathLike[str], *,
-               include_plotlyjs: bool | str = True) -> None:
+def _managed_indices(fig) -> list[int]:
+    """Indices of traces tagged `meta.legend_kind="gray"`.
+
+    Computed Python-side once at display/write_html time so the JS no
+    longer has to read `tr.meta` at runtime (plotly can drop meta
+    during restyles in some builds).
+    """
+    out = []
+    for i, tr in enumerate(fig.data):
+        meta = getattr(tr, "meta", None)
+        if meta and dict(meta).get("legend_kind") == "gray":
+            out.append(i)
+    return out
+
+
+def write_html(fig, path: str | PathLike[str], *, include_plotlyjs: bool | str = True) -> None:
     """Write `fig` to an HTML file with the click-to-highlight JS embedded.
 
-    The resulting file is self-contained and reproduces the same legend-click
-    UX you get in a notebook via `interactive.display(fig)`.
+    The resulting file is self-contained and reproduces the same Color
+    toolbar UX you get in a notebook via `interactive.display(fig)`.
 
     Parameters
     ----------
@@ -233,47 +396,45 @@ def write_html(fig, path: str | PathLike[str], *,
         Forwarded to plotly. True embeds plotly.js (offline-friendly but big);
         'cdn' uses a script tag (smaller file, needs internet).
     """
-    fig.write_html(str(path), post_script=_legend_click_js(),
-                   include_plotlyjs=include_plotlyjs)
+    js = _legend_click_js(_managed_indices(fig))
+    fig.write_html(str(path), post_script=js, include_plotlyjs=include_plotlyjs)
 
 
 def display(fig) -> None:
-    """Render `fig` inline in a Jupyter cell with click-to-highlight JS.
+    """Render `fig` inline in a Jupyter cell with the Color toolbar JS.
 
-    Use this instead of letting Jupyter render `fig` directly when you want
-    the legend single/double-click highlight UX.
+    Use this instead of letting Jupyter render `fig` directly when you
+    want the gray↔colour interaction. Returns nothing — the figure is
+    shown as a side effect.
     """
     try:
         from IPython.display import HTML
         from IPython.display import display as _ipy_display
     except ImportError as e:
         raise ImportError(
-            "IPython is required for ehtim.plotting.interactive.display(). "
-            "Install with `pip install ipython`."
+            "IPython is required for ehtim.plotting.interactive.display(). Install with `pip install ipython`."
         ) from e
-    html = fig.to_html(post_script=_legend_click_js(), include_plotlyjs="cdn")
+    js = _legend_click_js(_managed_indices(fig))
+    html = fig.to_html(post_script=js, include_plotlyjs="cdn")
     _ipy_display(HTML(html))
 
 
 # --- plot_bl --------------------------------------------------------------
 
-def _extract_baseline_data(obs, site1, site2, field, sigtype, *,
-                           snrcut, ang_unit, debias, timetype):
+
+def _extract_baseline_data(obs, site1, site2, field, sigtype, *, snrcut, ang_unit, debias, timetype):
     """Return (times, values, errors) for a baseline after SNR filtering, or None."""
-    plotdata = obs.unpack_bl(site1, site2, field, ang_unit=ang_unit,
-                             debias=debias, timetype=timetype)
-    errdata = (obs.unpack_bl(site1, site2, sigtype,
-                             ang_unit=ang_unit, debias=debias)
-               if sigtype else None)
+    plotdata = obs.unpack_bl(site1, site2, field, ang_unit=ang_unit, debias=debias, timetype=timetype)
+    errdata = obs.unpack_bl(site1, site2, sigtype, ang_unit=ang_unit, debias=debias) if sigtype else None
 
     mask = ~np.isnan(plotdata[field][:, 0])
     if snrcut > 0 and errdata is not None:
         if field in ehc.FIELDS_AMPS:
-            mask &= (plotdata[field][:, 0] / errdata[sigtype][:, 0] > snrcut)
+            mask &= plotdata[field][:, 0] / errdata[sigtype][:, 0] > snrcut
         elif field in ehc.FIELDS_PHASE:
-            mask &= (errdata[sigtype][:, 0] < (180.0 / np.pi / snrcut))
+            mask &= errdata[sigtype][:, 0] < (180.0 / np.pi / snrcut)
         elif field in ehc.FIELDS_SNRS:
-            mask &= (plotdata[field][:, 0] > snrcut)
+            mask &= plotdata[field][:, 0] > snrcut
 
     if not mask.any():
         return None
@@ -288,27 +449,31 @@ def _extract_baseline_data(obs, site1, site2, field, sigtype, *,
     return times, values, errors
 
 
-def _make_baseline_trace(site1, site2, times, values, errors, *,
-                         field, timetype, value_unit_suffix):
-    customdata = np.column_stack([
-        np.full(len(times), site1, dtype=object),
-        np.full(len(times), site2, dtype=object),
-        times, values,
-        errors if errors is not None else np.full(len(times), np.nan),
-    ])
+def _make_baseline_trace(site1, site2, times, values, errors, *, field, timetype, value_unit_suffix):
+    customdata = np.column_stack(
+        [
+            np.full(len(times), site1, dtype=object),
+            np.full(len(times), site2, dtype=object),
+            times,
+            values,
+            errors if errors is not None else np.full(len(times), np.nan),
+        ]
+    )
 
-    error_y = (dict(type="data", array=errors, visible=True,
-                    thickness=1, width=2, color=_THEME["error_color"])
-               if errors is not None else dict(visible=False))
+    error_y = (
+        dict(type="data", array=errors, visible=True, thickness=1, width=2, color=_THEME["error_color"])
+        if errors is not None
+        else dict(visible=False)
+    )
 
-    err_line = ("<br>Error: %{customdata[4]:.4g}"
-                if errors is not None else "")
+    err_line = "<br>Error: %{customdata[4]:.4g}" if errors is not None else ""
 
     return go.Scatter(
-        x=times, y=values, mode="markers",
+        x=times,
+        y=values,
+        mode="markers",
         name=f"{site1}-{site2}",
-        marker=dict(size=7, opacity=0.85,
-                    line=dict(width=0.5, color=_THEME["marker_edge"])),
+        marker=dict(size=7, opacity=0.85, line=dict(width=0.5, color=_THEME["marker_edge"])),
         error_y=error_y,
         customdata=customdata,
         hovertemplate=(
@@ -360,33 +525,33 @@ def plot_bl(
 
     # Resolve which baselines to plot.
     if site1 is None and site2 is None:
-        pairs = sorted({tuple(sorted((str(a), str(b))))
-                        for a, b in zip(obs.data["t1"], obs.data["t2"])})
+        pairs = sorted({tuple(sorted((str(a), str(b)))) for a, b in zip(obs.data["t1"], obs.data["t2"])})
         title_suffix = "all baselines"
         show_legend = True
     elif site1 is not None and site2 is not None:
         known = set(obs.tarr["site"])
         missing = [s for s in (site1, site2) if s not in known]
         if missing:
-            raise ValueError(
-                f"site(s) {missing} not in obs.tarr; "
-                f"available sites: {sorted(known)}"
-            )
+            raise ValueError(f"site(s) {missing} not in obs.tarr; available sites: {sorted(known)}")
         pairs = [(site1, site2)]
         title_suffix = f"{site1}–{site2}"
         show_legend = False
     else:
-        raise ValueError(
-            "Provide both site1 and site2 for a single baseline, "
-            "or neither for all baselines."
-        )
+        raise ValueError("Provide both site1 and site2 for a single baseline, or neither for all baselines.")
 
     # First pass: extract data so we can pick a single uv-unit across baselines.
     extracted: list[tuple[str, str, np.ndarray, np.ndarray, np.ndarray | None]] = []
     for s1, s2 in pairs:
         ext = _extract_baseline_data(
-            obs, s1, s2, field, sigtype,
-            snrcut=snrcut, ang_unit=ang_unit, debias=debias, timetype=timetype,
+            obs,
+            s1,
+            s2,
+            field,
+            sigtype,
+            snrcut=snrcut,
+            ang_unit=ang_unit,
+            debias=debias,
+            timetype=timetype,
         )
         if ext is None:
             continue
@@ -401,16 +566,26 @@ def plot_bl(
         values_s = values / y_div
         errors_s = (errors / y_div) if errors is not None else None
         trace = _make_baseline_trace(
-            s1, s2, times, values_s, errors_s,
-            field=field, timetype=timetype, value_unit_suffix=y_suffix,
+            s1,
+            s2,
+            times,
+            values_s,
+            errors_s,
+            field=field,
+            timetype=timetype,
+            value_unit_suffix=y_suffix,
         )
         if len(pairs) > 1:
             # Uniform muted colour so the palette never runs out on large
             # arrays. Single-click a legend entry to paint one baseline,
             # double-click to paint all, or use the "Show all / reset"
-            # button to restore the uniform gray state.
+            # button to restore the uniform gray state. The `meta` tag
+            # marks this trace as participating in the gray↔colour flow,
+            # and marker.opacity doubles as the state indicator the JS
+            # reads (`< _OPACITY_THRESHOLD` → gray) — see `_legend_click_js`.
             trace.marker.color = _GRAY
-            trace.marker.opacity = 0.6
+            trace.marker.opacity = _GRAY_OPACITY
+            trace.meta = dict(legend_kind="gray")
         fig.add_trace(trace)
 
     if not fig.data:
@@ -428,11 +603,11 @@ def plot_bl(
         title=f"{obs.source}: {title_suffix} ({field})",
         xaxis_title=f"{timetype} (hr)",
         yaxis_title=y_title,
-        rangex=rangex, rangey=rangey,
+        rangex=rangex,
+        rangey=rangey,
         legend_title="Baseline",
         show_legend=show_legend,
         add_reset_button=show_legend,
-        n_traces=len(fig.data),
     )
 
     if show:
@@ -441,6 +616,7 @@ def plot_bl(
 
 
 # --- plotall --------------------------------------------------------------
+
 
 def plotall(
     obs: Obsdata,
@@ -511,13 +687,9 @@ def plotall(
         for bl in obs.bllist(conj=conj):
             t1 = str(bl["t1"][0])
             t2 = str(bl["t2"][0])
-            data = obs.unpack_dat(bl, [field1, field2],
-                                  ang_unit=ang_unit, debias=debias,
-                                  timetype=timetype)
-            sigx = (obs.unpack_dat(bl, [sigtype1], ang_unit=ang_unit)[sigtype1]
-                    if sigtype1 else None)
-            sigy = (obs.unpack_dat(bl, [sigtype2], ang_unit=ang_unit)[sigtype2]
-                    if sigtype2 else None)
+            data = obs.unpack_dat(bl, [field1, field2], ang_unit=ang_unit, debias=debias, timetype=timetype)
+            sigx = obs.unpack_dat(bl, [sigtype1], ang_unit=ang_unit)[sigtype1] if sigtype1 else None
+            sigy = obs.unpack_dat(bl, [sigtype2], ang_unit=ang_unit)[sigtype2] if sigtype2 else None
 
             mask = _filter_mask(data, sigx, sigy)
             if not mask.any():
@@ -528,18 +700,20 @@ def plotall(
             if sigy is not None:
                 sigy = sigy[mask]
 
-            raw_traces.append(dict(
-                t1=t1, t2=t2,
-                x=data[field1], y=data[field2],
-                sigx=sigx, sigy=sigy,
-            ))
+            raw_traces.append(
+                dict(
+                    t1=t1,
+                    t2=t2,
+                    x=data[field1],
+                    y=data[field2],
+                    sigx=sigx,
+                    sigy=sigy,
+                )
+            )
     else:
-        data = obs.unpack([field1, field2], conj=conj,
-                          ang_unit=ang_unit, debias=debias, timetype=timetype)
-        sigx = (obs.unpack(sigtype1, conj=conj, ang_unit=ang_unit)[sigtype1]
-                if sigtype1 else None)
-        sigy = (obs.unpack(sigtype2, conj=conj, ang_unit=ang_unit)[sigtype2]
-                if sigtype2 else None)
+        data = obs.unpack([field1, field2], conj=conj, ang_unit=ang_unit, debias=debias, timetype=timetype)
+        sigx = obs.unpack(sigtype1, conj=conj, ang_unit=ang_unit)[sigtype1] if sigtype1 else None
+        sigy = obs.unpack(sigtype2, conj=conj, ang_unit=ang_unit)[sigtype2] if sigtype2 else None
 
         mask = _filter_mask(data, sigx, sigy)
         data = data[mask]
@@ -548,11 +722,16 @@ def plotall(
         if sigy is not None:
             sigy = sigy[mask]
         if len(data) > 0:
-            raw_traces.append(dict(
-                t1=None, t2=None,
-                x=data[field1], y=data[field2],
-                sigx=sigx, sigy=sigy,
-            ))
+            raw_traces.append(
+                dict(
+                    t1=None,
+                    t2=None,
+                    x=data[field1],
+                    y=data[field2],
+                    sigx=sigx,
+                    sigy=sigy,
+                )
+            )
 
     # Global scaling factor for each axis (uv fields only).
     x_unit, x_div = _axis_unit_global([t["x"] for t in raw_traces], field1)
@@ -566,38 +745,52 @@ def plotall(
         name = f"{t['t1']}-{t['t2']}" if t["t1"] is not None else "all baselines"
 
         if t["t1"] is not None:
-            customdata = np.column_stack([
-                np.full(len(x), t["t1"], dtype=object),
-                np.full(len(x), t["t2"], dtype=object),
-                sigx if sigx is not None else np.full(len(x), np.nan),
-                sigy if sigy is not None else np.full(len(x), np.nan),
-            ])
+            customdata = np.column_stack(
+                [
+                    np.full(len(x), t["t1"], dtype=object),
+                    np.full(len(x), t["t2"], dtype=object),
+                    sigx if sigx is not None else np.full(len(x), np.nan),
+                    sigy if sigy is not None else np.full(len(x), np.nan),
+                ]
+            )
             hover_label = f"<b>{t['t1']}–{t['t2']}</b><br>"
         else:
             customdata = None
             hover_label = ""
 
-        fig.add_trace(go.Scatter(
-            x=x, y=y, mode="markers",
-            name=name,
-            marker=dict(size=6,
-                        opacity=0.6 if tag_bl else 0.7,
-                        color=_GRAY if tag_bl else None,
-                        line=dict(width=0.5, color=_THEME["marker_edge"])),
-            error_x=(dict(type="data", array=sigx, visible=True,
-                          thickness=1, width=2, color=_THEME["error_color"])
-                     if sigx is not None else dict(visible=False)),
-            error_y=(dict(type="data", array=sigy, visible=True,
-                          thickness=1, width=2, color=_THEME["error_color"])
-                     if sigy is not None else dict(visible=False)),
-            customdata=customdata,
-            hovertemplate=(
-                f"{hover_label}"
-                f"{field1}: %{{x:.4g}}{(' ' + x_unit) if x_unit else ''}<br>"
-                f"{field2}: %{{y:.4g}}{(' ' + y_unit) if y_unit else ''}"
-                "<extra></extra>"
-            ),
-        ))
+        fig.add_trace(
+            go.Scatter(
+                x=x,
+                y=y,
+                mode="markers",
+                name=name,
+                marker=dict(
+                    size=6,
+                    opacity=_GRAY_OPACITY if tag_bl else 0.7,
+                    color=_GRAY if tag_bl else None,
+                    line=dict(width=0.5, color=_THEME["marker_edge"]),
+                ),
+                error_x=(
+                    dict(type="data", array=sigx, visible=True, thickness=1, width=2, color=_THEME["error_color"])
+                    if sigx is not None
+                    else dict(visible=False)
+                ),
+                error_y=(
+                    dict(type="data", array=sigy, visible=True, thickness=1, width=2, color=_THEME["error_color"])
+                    if sigy is not None
+                    else dict(visible=False)
+                ),
+                customdata=customdata,
+                # Tag participates in the gray↔colour flow (see _legend_click_js).
+                meta=dict(legend_kind="gray") if tag_bl else None,
+                hovertemplate=(
+                    f"{hover_label}"
+                    f"{field1}: %{{x:.4g}}{(' ' + x_unit) if x_unit else ''}<br>"
+                    f"{field2}: %{{y:.4g}}{(' ' + y_unit) if y_unit else ''}"
+                    "<extra></extra>"
+                ),
+            )
+        )
 
     if not fig.data:
         print(f"No valid data after filtering (snrcut={snrcut}).")
@@ -619,11 +812,11 @@ def plotall(
         title=f"{obs.source}: {field1} vs {field2}",
         xaxis_title=x_title,
         yaxis_title=y_title,
-        rangex=rangex, rangey=rangey,
+        rangex=rangex,
+        rangey=rangey,
         legend_title="Baseline" if tag_bl else "",
         show_legend=tag_bl,
         add_reset_button=tag_bl,
-        n_traces=len(fig.data),
     )
 
     if xscale == "log":
@@ -640,8 +833,7 @@ def _axis_unit_global(arrays: list[np.ndarray], field: str) -> tuple[str, float]
     """Choose (unit_label, divisor) for a uv-field given many traces; else ('', 1)."""
     if field not in _UV_FIELDS or not arrays:
         return "", 1.0
-    finite = np.concatenate([np.abs(np.asarray(a, dtype=float))
-                             for a in arrays if len(a)])
+    finite = np.concatenate([np.abs(np.asarray(a, dtype=float)) for a in arrays if len(a)])
     finite = finite[np.isfinite(finite)]
     if finite.size == 0:
         return "λ", 1.0
@@ -652,6 +844,7 @@ def _axis_unit_global(arrays: list[np.ndarray], field: str) -> tuple[str, float]
 
 
 # --- plot_gains -----------------------------------------------------------
+
 
 def plot_gains(
     caltable: Caltable,
@@ -696,8 +889,7 @@ def plot_gains(
         raise ValueError(f"pol must be 'R', 'L', or 'both', got {pol!r}")
 
     if isinstance(sites, str):
-        sites = (sorted(caltable.data.keys())
-                 if sites.lower() == "all" else [sites])
+        sites = sorted(caltable.data.keys()) if sites.lower() == "all" else [sites]
     elif len(sites) == 0:
         sites = sorted(caltable.data.keys())
 
@@ -726,31 +918,35 @@ def plot_gains(
             else:
                 gains = np.angle(gains_complex) / angle_div
 
-            customdata = np.column_stack([
-                np.full(len(times), site, dtype=object),
-                np.full(len(times), pol_ch, dtype=object),
-                gains_complex.real,
-                gains_complex.imag,
-            ])
+            customdata = np.column_stack(
+                [
+                    np.full(len(times), site, dtype=object),
+                    np.full(len(times), pol_ch, dtype=object),
+                    gains_complex.real,
+                    gains_complex.imag,
+                ]
+            )
 
             trace_name = f"{site} ({pol_ch})" if pol == "both" else site
-            symbol = (_SYMBOLS[j % len(_SYMBOLS)]
-                      if pol == "both" else "circle")
+            symbol = _SYMBOLS[j % len(_SYMBOLS)] if pol == "both" else "circle"
 
-            fig.add_trace(go.Scatter(
-                x=times, y=gains, mode="markers",
-                name=trace_name,
-                marker=dict(size=7, opacity=0.85, symbol=symbol,
-                            line=dict(width=0.5, color=_THEME["marker_edge"])),
-                customdata=customdata,
-                hovertemplate=(
-                    "<b>%{customdata[0]} (%{customdata[1]})</b><br>"
-                    f"{timetype}: %{{x:.3f}} hr<br>"
-                    f"{gain_type}: %{{y:.4g}}<br>"
-                    "Re/Im: %{customdata[2]:.3g} + %{customdata[3]:.3g}i"
-                    "<extra></extra>"
-                ),
-            ))
+            fig.add_trace(
+                go.Scatter(
+                    x=times,
+                    y=gains,
+                    mode="markers",
+                    name=trace_name,
+                    marker=dict(size=7, opacity=0.85, symbol=symbol, line=dict(width=0.5, color=_THEME["marker_edge"])),
+                    customdata=customdata,
+                    hovertemplate=(
+                        "<b>%{customdata[0]} (%{customdata[1]})</b><br>"
+                        f"{timetype}: %{{x:.3f}} hr<br>"
+                        f"{gain_type}: %{{y:.4g}}<br>"
+                        "Re/Im: %{customdata[2]:.3g} + %{customdata[3]:.3g}i"
+                        "<extra></extra>"
+                    ),
+                )
+            )
 
     if gain_type == "amp":
         y_title = "|G|"
@@ -764,7 +960,9 @@ def plot_gains(
         title=f"Caltable gains — {gain_type}, pol={pol}",
         xaxis_title=f"{timetype} (hr)",
         yaxis_title=y_title,
-        rangex=rangex, rangey=rangey, y_type=y_type,
+        rangex=rangex,
+        rangey=rangey,
+        y_type=y_type,
         legend_title="Site" if pol != "both" else "Site (pol)",
     )
 
@@ -790,47 +988,79 @@ _DASH_PRODUCT_ORDER = (
 )
 
 _DASH_PRODUCT_LABELS = {
-    "amp_vs_uvdist":       "Amplitude vs uv-distance",
-    "vis_vs_uvdist":       "Re(vis) vs uv-distance",
-    "phase_vs_uvdist":     "Phase vs uv-distance",
-    "chisq_vs_uvdist":     "χ residual vs uv-distance",
-    "cphase_vs_time":      "Closure phase vs time",
-    "logcamp_vs_time":     "Log closure amp vs time",
-    "cphase_vs_triarea":   "Closure phase vs triangle area",
+    "amp_vs_uvdist": "Amplitude vs uv-distance",
+    "vis_vs_uvdist": "Re(vis) vs uv-distance",
+    "phase_vs_uvdist": "Phase vs uv-distance",
+    "chisq_vs_uvdist": "χ residual vs uv-distance",
+    "cphase_vs_time": "Closure phase vs time",
+    "logcamp_vs_time": "Log closure amp vs time",
+    "cphase_vs_triarea": "Closure phase vs triangle area",
     "logcamp_vs_quadarea": "Log closure amp vs quadrangle area",
 }
 
 
-def _pick_default_triangle(obs: Obsdata) -> tuple[str, str, str] | None:
-    """Return the triangle with the most cphase samples; None if none exist."""
+def _enumerate_triangles(obs: Obsdata, filter_: tuple | None, limit: int | None) -> list[tuple[str, str, str]]:
+    """Return triangles sorted by sample count, optionally filtered/limited.
+
+    `filter_=(s1, s2, s3)` → return only that triangle (if it has samples).
+    `limit=None` → all triangles; otherwise the top-`limit` by sample count.
+    """
     try:
         cph = obs.c_phases(mode="all", count="max")
     except Exception:
-        return None
+        return []
     if len(cph) == 0:
-        return None
-    keys: dict[tuple[str, str, str], int] = {}
+        return []
+    counts: dict[tuple[str, str, str], int] = {}
     for row in cph:
         tri = tuple(sorted((str(row["t1"]), str(row["t2"]), str(row["t3"]))))
-        keys[tri] = keys.get(tri, 0) + 1
-    best = max(keys, key=keys.get)
-    return best
+        counts[tri] = counts.get(tri, 0) + 1
+    if filter_ is not None:
+        key = tuple(sorted(str(s) for s in filter_))
+        return [key] if key in counts else []
+    sorted_tris = sorted(counts, key=lambda k: counts[k], reverse=True)
+    return sorted_tris[:limit] if limit else sorted_tris
 
 
-def _pick_default_quad(obs: Obsdata) -> tuple[str, str, str, str] | None:
+def _enumerate_quads(obs: Obsdata, filter_: tuple | None, limit: int | None) -> list[tuple[str, str, str, str]]:
+    """Return quadrangles sorted by sample count, optionally filtered/limited."""
     try:
         camps = obs.c_amplitudes(mode="all", count="max", ctype="logcamp")
     except Exception:
-        return None
+        return []
     if len(camps) == 0:
-        return None
-    keys: dict[tuple[str, str, str, str], int] = {}
+        return []
+    counts: dict[tuple[str, str, str, str], int] = {}
     for row in camps:
-        quad = tuple(sorted((str(row["t1"]), str(row["t2"]),
-                             str(row["t3"]), str(row["t4"]))))
-        keys[quad] = keys.get(quad, 0) + 1
-    best = max(keys, key=keys.get)
-    return best
+        quad = tuple(sorted((str(row["t1"]), str(row["t2"]), str(row["t3"]), str(row["t4"]))))
+        counts[quad] = counts.get(quad, 0) + 1
+    if filter_ is not None:
+        key = tuple(sorted(str(s) for s in filter_))
+        return [key] if key in counts else []
+    sorted_quads = sorted(counts, key=lambda k: counts[k], reverse=True)
+    return sorted_quads[:limit] if limit else sorted_quads
+
+
+def _pick_default_triangle(obs: Obsdata) -> tuple[str, str, str] | None:
+    """Triangle with the most cphase samples; None if none exist."""
+    tris = _enumerate_triangles(obs, None, 1)
+    return tris[0] if tris else None
+
+
+def _pick_default_quad(obs: Obsdata) -> tuple[str, str, str, str] | None:
+    """Quadrangle with the most logcamp samples; None if none exist."""
+    qs = _enumerate_quads(obs, None, 1)
+    return qs[0] if qs else None
+
+
+def _empty_spec(label: str = "") -> dict:
+    return {
+        "label": label,
+        "x_data": np.array([]),
+        "y_data": np.array([]),
+        "x_model": np.array([]),
+        "y_model": np.array([]),
+    }
 
 
 def _build_dashboard_products(
@@ -839,14 +1069,27 @@ def _build_dashboard_products(
     *,
     triangle: tuple[str, str, str] | None,
     quadrangle: tuple[str, str, str, str] | None,
+    n_triangles: int | None,
+    n_quadrangles: int | None,
 ):
-    """Compute (x_data, y_data, x_model, y_model, x_title, y_title, label) for
-    each product. Returns a list keyed by `_DASH_PRODUCT_ORDER`. Products with
-    no data (e.g. cphase when no triangle has data) are returned with empty
-    arrays — they still get traces, just nothing to plot."""
+    """Build per-product trace specs for the dashboard panel-2 dropdown.
+
+    Returns a dict keyed by `_DASH_PRODUCT_ORDER`; each value has:
+        ``x_title``, ``y_title``       — panel axis labels for that product
+        ``style``                       — "single" (gray data + red model) or
+                                          "multi" (per-trace palette colour)
+        ``traces``                      — list of trace specs (≥ 1), each a
+                                          dict with ``label``, ``x_data``,
+                                          ``y_data``, ``x_model``, ``y_model``
+
+    Closure-quantity products (cphase / logcamp) enumerate all triangles
+    (or quadrangles) and emit one trace per closure path. Use the
+    ``triangle`` / ``quadrangle`` kwargs to filter to a specific one,
+    or set ``n_triangles`` / ``n_quadrangles`` to cap the count.
+    """
     products: dict[str, dict[str, Any]] = {}
 
-    # uv-distance unit shared between vis/amp/phase/chisq panels.
+    # --- uv-distance products (one spec each) ------------------------------
     udata = obs.unpack(["uvdist", "amp", "vis", "phase"])
     uvdist_scaled, uv_unit = _format_uv_axis(udata["uvdist"])
     if obs_model is not None:
@@ -858,156 +1101,223 @@ def _build_dashboard_products(
         mdata = None
         uvdist_m_scaled = np.array([])
 
-    products["amp_vs_uvdist"] = dict(
-        x_data=uvdist_scaled, y_data=udata["amp"],
-        x_model=uvdist_m_scaled, y_model=(mdata["amp"] if mdata is not None else np.array([])),
-        x_title=f"uv-distance ({uv_unit})", y_title="Amplitude (Jy)",
+    def _single(x_data, y_data, x_model, y_model, x_title, y_title):
+        return dict(
+            x_title=x_title,
+            y_title=y_title,
+            style="single",
+            traces=[dict(label="data", x_data=x_data, y_data=y_data, x_model=x_model, y_model=y_model)],
+        )
+
+    products["amp_vs_uvdist"] = _single(
+        uvdist_scaled,
+        udata["amp"],
+        uvdist_m_scaled,
+        (mdata["amp"] if mdata is not None else np.array([])),
+        f"uv-distance ({uv_unit})",
+        "Amplitude (Jy)",
     )
-    products["vis_vs_uvdist"] = dict(
-        x_data=uvdist_scaled, y_data=np.real(udata["vis"]),
-        x_model=uvdist_m_scaled,
-        y_model=(np.real(mdata["vis"]) if mdata is not None else np.array([])),
-        x_title=f"uv-distance ({uv_unit})", y_title="Re(vis) (Jy)",
+    products["vis_vs_uvdist"] = _single(
+        uvdist_scaled,
+        np.real(udata["vis"]),
+        uvdist_m_scaled,
+        (np.real(mdata["vis"]) if mdata is not None else np.array([])),
+        f"uv-distance ({uv_unit})",
+        "Re(vis) (Jy)",
     )
-    products["phase_vs_uvdist"] = dict(
-        x_data=uvdist_scaled, y_data=udata["phase"],
-        x_model=uvdist_m_scaled,
-        y_model=(mdata["phase"] if mdata is not None else np.array([])),
-        x_title=f"uv-distance ({uv_unit})", y_title="Phase (deg)",
+    products["phase_vs_uvdist"] = _single(
+        uvdist_scaled,
+        udata["phase"],
+        uvdist_m_scaled,
+        (mdata["phase"] if mdata is not None else np.array([])),
+        f"uv-distance ({uv_unit})",
+        "Phase (deg)",
     )
 
-    # χ residual = (data − model) / sigma_amp. Requires model.
     if mdata is not None and len(udata["amp"]) == len(mdata["amp"]):
         sigma = obs.unpack(["sigma"])["sigma"]
         sigma_safe = np.where(sigma > 0, sigma, np.nan)
         residual = (udata["amp"] - mdata["amp"]) / sigma_safe
-        products["chisq_vs_uvdist"] = dict(
-            x_data=uvdist_scaled, y_data=residual,
-            x_model=np.array([]), y_model=np.array([]),
-            x_title=f"uv-distance ({uv_unit})", y_title="(data − model) / σ",
+        products["chisq_vs_uvdist"] = _single(
+            uvdist_scaled,
+            residual,
+            np.array([]),
+            np.array([]),
+            f"uv-distance ({uv_unit})",
+            "(data − model) / σ",
         )
     else:
-        products["chisq_vs_uvdist"] = dict(
-            x_data=np.array([]), y_data=np.array([]),
-            x_model=np.array([]), y_model=np.array([]),
-            x_title=f"uv-distance ({uv_unit})", y_title="(data − model) / σ",
+        products["chisq_vs_uvdist"] = _single(
+            np.array([]),
+            np.array([]),
+            np.array([]),
+            np.array([]),
+            f"uv-distance ({uv_unit})",
+            "(data − model) / σ",
         )
 
-    # Closure phase vs time + triangle area.
-    if triangle is not None:
+    # --- closure-phase products (one spec per triangle) --------------------
+    triangles = _enumerate_triangles(obs, triangle, n_triangles)
+
+    cph_time_specs: list[dict] = []
+    cph_area_specs: list[dict] = []
+    all_tri_areas: list[np.ndarray] = []
+
+    # First pass: pull raw cphase data + raw areas (un-scaled) so we can
+    # pick a single area unit across all triangles.
+    cph_buf: list[tuple[tuple[str, str, str], Any, Any, np.ndarray]] = []
+    for tri in triangles:
         try:
-            cph_data = obs.cphase_tri(*triangle)
+            cph_data = obs.cphase_tri(*tri)
         except Exception:
-            cph_data = None
-        if obs_model is not None and cph_data is not None:
-            try:
-                cph_model = obs_model.cphase_tri(*triangle)
-            except Exception:
-                cph_model = None
-        else:
+            continue
+        if len(cph_data) == 0:
+            continue
+        try:
+            cph_model = obs_model.cphase_tri(*tri) if obs_model is not None else None
+        except Exception:
             cph_model = None
-    else:
-        cph_data = None
-        cph_model = None
+        if cph_model is not None and len(cph_model) == 0:
+            cph_model = None
+        tri_area = obsh.uv_area_triangle(cph_data["u1"], cph_data["v1"], cph_data["u2"], cph_data["v2"])
+        cph_buf.append((tri, cph_data, cph_model, tri_area))
+        all_tri_areas.append(tri_area)
 
-    if cph_data is not None and len(cph_data) > 0:
-        tri_str = "–".join(triangle) if triangle else ""
-        products["cphase_vs_time"] = dict(
-            x_data=cph_data["time"], y_data=cph_data["cphase"],
-            x_model=(cph_model["time"] if cph_model is not None else np.array([])),
-            y_model=(cph_model["cphase"] if cph_model is not None else np.array([])),
-            x_title=f"time (hr) — triangle {tri_str}", y_title="Closure phase (deg)",
-        )
-        tri_area = obsh.uv_area_triangle(
-            cph_data["u1"], cph_data["v1"], cph_data["u2"], cph_data["v2"])
-        _, tri_unit = _format_uv_axis(np.sqrt(tri_area))
-        # Display the area itself (squared), with units derived from the
-        # one-baseline auto-scale to keep numbers readable.
-        area_div = (1e9 ** 2) if tri_unit == "Gλ" else (1e6 ** 2)
-        tri_area_disp = tri_area / area_div
-        tri_area_model = np.array([])
-        if cph_model is not None and len(cph_model) > 0:
-            tri_area_model = obsh.uv_area_triangle(
-                cph_model["u1"], cph_model["v1"],
-                cph_model["u2"], cph_model["v2"]) / area_div
-        products["cphase_vs_triarea"] = dict(
-            x_data=tri_area_disp, y_data=cph_data["cphase"],
-            x_model=tri_area_model,
-            y_model=(cph_model["cphase"] if cph_model is not None else np.array([])),
-            x_title=f"triangle uv-area ({tri_unit}²)",
-            y_title="Closure phase (deg)",
-        )
-    else:
-        # Empty placeholders so the dropdown can still switch to them.
-        for key in ("cphase_vs_time", "cphase_vs_triarea"):
-            products[key] = dict(
-                x_data=np.array([]), y_data=np.array([]),
-                x_model=np.array([]), y_model=np.array([]),
-                x_title=("time (hr)" if "time" in key
-                         else "triangle uv-area (Gλ²)"),
-                y_title="Closure phase (deg)",
+    if cph_buf:
+        # Pick a global area unit (Gλ² vs Mλ²) by linearizing to baseline.
+        flat_area = np.concatenate(all_tri_areas) if all_tri_areas else np.array([])
+        _, tri_unit = _format_uv_axis(np.sqrt(flat_area))
+        area_div = (1e9**2) if tri_unit == "Gλ" else (1e6**2)
+        for tri, cph_data, cph_model, tri_area in cph_buf:
+            tri_str = "–".join(tri)
+            x_model_t = cph_model["time"] if cph_model is not None else np.array([])
+            y_model_t = cph_model["cphase"] if cph_model is not None else np.array([])
+            cph_time_specs.append(
+                dict(
+                    label=tri_str,
+                    x_data=cph_data["time"],
+                    y_data=cph_data["cphase"],
+                    x_model=x_model_t,
+                    y_model=y_model_t,
+                )
             )
+            tri_area_disp = tri_area / area_div
+            tri_area_model = np.array([])
+            if cph_model is not None and len(cph_model) > 0:
+                tri_area_model = (
+                    obsh.uv_area_triangle(cph_model["u1"], cph_model["v1"], cph_model["u2"], cph_model["v2"]) / area_div
+                )
+            cph_area_specs.append(
+                dict(
+                    label=tri_str,
+                    x_data=tri_area_disp,
+                    y_data=cph_data["cphase"],
+                    x_model=tri_area_model,
+                    y_model=y_model_t,
+                )
+            )
+        x_title_area = f"triangle uv-area ({tri_unit}²)"
+    else:
+        x_title_area = "triangle uv-area (Gλ²)"
 
-    # Log closure amplitude vs time + quad area.
-    if quadrangle is not None:
+    products["cphase_vs_time"] = dict(
+        x_title="time (hr)",
+        y_title="Closure phase (deg)",
+        style="multi",
+        traces=cph_time_specs or [_empty_spec()],
+    )
+    products["cphase_vs_triarea"] = dict(
+        x_title=x_title_area,
+        y_title="Closure phase (deg)",
+        style="multi",
+        traces=cph_area_specs or [_empty_spec()],
+    )
+
+    # --- log closure-amplitude products (one spec per quadrangle) ----------
+    quads = _enumerate_quads(obs, quadrangle, n_quadrangles)
+
+    camp_time_specs: list[dict] = []
+    camp_area_specs: list[dict] = []
+    camp_buf: list[tuple[tuple[str, str, str, str], Any, Any, np.ndarray]] = []
+    for quad in quads:
         try:
-            camp_data = obs.camp_quad(*quadrangle, ctype="logcamp")
+            camp_data = obs.camp_quad(*quad, ctype="logcamp")
         except Exception:
-            camp_data = None
-        if obs_model is not None and camp_data is not None:
-            try:
-                camp_model = obs_model.camp_quad(*quadrangle, ctype="logcamp")
-            except Exception:
-                camp_model = None
-        else:
+            continue
+        if len(camp_data) == 0:
+            continue
+        try:
+            camp_model = obs_model.camp_quad(*quad, ctype="logcamp") if obs_model is not None else None
+        except Exception:
             camp_model = None
-    else:
-        camp_data = None
-        camp_model = None
-
-    if camp_data is not None and len(camp_data) > 0:
-        quad_str = "–".join(quadrangle) if quadrangle else ""
-        products["logcamp_vs_time"] = dict(
-            x_data=camp_data["time"], y_data=camp_data["camp"],
-            x_model=(camp_model["time"] if camp_model is not None else np.array([])),
-            y_model=(camp_model["camp"] if camp_model is not None else np.array([])),
-            x_title=f"time (hr) — quad {quad_str}", y_title="Log closure amplitude",
-        )
+        if camp_model is not None and len(camp_model) == 0:
+            camp_model = None
         quad_area = obsh.uv_area_quadrangle(
-            camp_data["u1"], camp_data["v1"],
-            camp_data["u2"], camp_data["v2"],
-            camp_data["u3"], camp_data["v3"])
-        _, quad_unit = _format_uv_axis(np.sqrt(quad_area))
-        area_div = (1e9 ** 2) if quad_unit == "Gλ" else (1e6 ** 2)
-        quad_area_disp = quad_area / area_div
-        quad_area_model = np.array([])
-        if camp_model is not None and len(camp_model) > 0:
-            quad_area_model = obsh.uv_area_quadrangle(
-                camp_model["u1"], camp_model["v1"],
-                camp_model["u2"], camp_model["v2"],
-                camp_model["u3"], camp_model["v3"]) / area_div
-        products["logcamp_vs_quadarea"] = dict(
-            x_data=quad_area_disp, y_data=camp_data["camp"],
-            x_model=quad_area_model,
-            y_model=(camp_model["camp"] if camp_model is not None else np.array([])),
-            x_title=f"quadrangle uv-area ({quad_unit}²)",
-            y_title="Log closure amplitude",
+            camp_data["u1"], camp_data["v1"], camp_data["u2"], camp_data["v2"], camp_data["u3"], camp_data["v3"]
         )
-    else:
-        for key in ("logcamp_vs_time", "logcamp_vs_quadarea"):
-            products[key] = dict(
-                x_data=np.array([]), y_data=np.array([]),
-                x_model=np.array([]), y_model=np.array([]),
-                x_title=("time (hr)" if "time" in key
-                         else "quadrangle uv-area (Gλ²)"),
-                y_title="Log closure amplitude",
+        camp_buf.append((quad, camp_data, camp_model, quad_area))
+
+    if camp_buf:
+        flat_qarea = np.concatenate([q[3] for q in camp_buf])
+        _, quad_unit = _format_uv_axis(np.sqrt(flat_qarea))
+        qarea_div = (1e9**2) if quad_unit == "Gλ" else (1e6**2)
+        for quad, camp_data, camp_model, quad_area in camp_buf:
+            quad_str = "–".join(quad)
+            x_model_t = camp_model["time"] if camp_model is not None else np.array([])
+            y_model_t = camp_model["camp"] if camp_model is not None else np.array([])
+            camp_time_specs.append(
+                dict(
+                    label=quad_str,
+                    x_data=camp_data["time"],
+                    y_data=camp_data["camp"],
+                    x_model=x_model_t,
+                    y_model=y_model_t,
+                )
             )
+            quad_area_disp = quad_area / qarea_div
+            quad_area_model = np.array([])
+            if camp_model is not None and len(camp_model) > 0:
+                quad_area_model = (
+                    obsh.uv_area_quadrangle(
+                        camp_model["u1"],
+                        camp_model["v1"],
+                        camp_model["u2"],
+                        camp_model["v2"],
+                        camp_model["u3"],
+                        camp_model["v3"],
+                    )
+                    / qarea_div
+                )
+            camp_area_specs.append(
+                dict(
+                    label=quad_str,
+                    x_data=quad_area_disp,
+                    y_data=camp_data["camp"],
+                    x_model=quad_area_model,
+                    y_model=y_model_t,
+                )
+            )
+        qarea_title = f"quadrangle uv-area ({quad_unit}²)"
+    else:
+        qarea_title = "quadrangle uv-area (Gλ²)"
+
+    products["logcamp_vs_time"] = dict(
+        x_title="time (hr)",
+        y_title="Log closure amplitude",
+        style="multi",
+        traces=camp_time_specs or [_empty_spec()],
+    )
+    products["logcamp_vs_quadarea"] = dict(
+        x_title=qarea_title,
+        y_title="Log closure amplitude",
+        style="multi",
+        traces=camp_area_specs or [_empty_spec()],
+    )
 
     return products
 
 
-def _pol_ticks_traces(im: Image, *, nvec: int, pcut: float, mcut: float,
-                      colour_by_m: bool):
+def _pol_ticks_traces(im: Image, *, nvec: int, pcut: float, mcut: float, colour_by_m: bool):
     """Build (lines_trace, dots_trace) for EVPA tick overlay; either may be None.
 
     Mirrors the per-pixel sampling, gating, and angle convention from
@@ -1071,7 +1381,8 @@ def _pol_ticks_traces(im: Image, *, nvec: int, pcut: float, mcut: float,
     seg_y[2::3] = np.nan
 
     lines = go.Scatter(
-        x=seg_x.tolist(), y=seg_y.tolist(),
+        x=seg_x.tolist(),
+        y=seg_y.tolist(),
         mode="lines",
         line=dict(color="white", width=1.4),
         hoverinfo="skip",
@@ -1083,7 +1394,8 @@ def _pol_ticks_traces(im: Image, *, nvec: int, pcut: float, mcut: float,
     if colour_by_m:
         m_sub = M2[::thin, ::thin][sub]
         dots = go.Scatter(
-            x=x_centers.tolist(), y=y_centers.tolist(),
+            x=x_centers.tolist(),
+            y=y_centers.tolist(),
             mode="markers",
             marker=dict(
                 size=4,
@@ -1091,7 +1403,10 @@ def _pol_ticks_traces(im: Image, *, nvec: int, pcut: float, mcut: float,
                 colorscale="Viridis",
                 colorbar=dict(
                     title=dict(text="|m|"),
-                    x=0.40, y=0.32, yanchor="middle", len=0.30,
+                    x=0.40,
+                    y=0.32,
+                    yanchor="middle",
+                    len=0.30,
                     thickness=8,
                 ),
                 showscale=True,
@@ -1119,6 +1434,8 @@ def dashboard(
     vec_cfun: bool = False,
     triangle: tuple[str, str, str] | None = None,
     quadrangle: tuple[str, str, str, str] | None = None,
+    n_triangles: int | None = 12,
+    n_quadrangles: int | None = 12,
     default_product: str = "amp_vs_uvdist",
     show: bool = True,
 ) -> Any:
@@ -1156,10 +1473,15 @@ def dashboard(
     vec_cfun : bool
         Colour ticks by |m| via a small marker overlay with a side colorbar.
     triangle : (s1, s2, s3) or None
-        Triangle used for closure-phase products. None auto-picks the
-        triangle with the most samples.
+        If provided, the cphase products show *only* this triangle.
+        None (default) shows all triangles overlaid, each in a palette
+        colour, capped at `n_triangles`.
     quadrangle : (s1, s2, s3, s4) or None
-        Quadrangle used for closure-amplitude products. None auto-picks.
+        Same semantics for the logcamp products.
+    n_triangles, n_quadrangles : int or None
+        Cap on the number of distinct closure paths shown when
+        `triangle` / `quadrangle` are None. None = unlimited.
+        Default 12 keeps the legend readable on typical EHT arrays.
     default_product : str
         Initially-visible data product in panel 2. One of
         `interactive._DASH_PRODUCT_ORDER`.
@@ -1171,25 +1493,22 @@ def dashboard(
     if pol not in ("R", "L"):
         raise ValueError(f"pol must be 'R' or 'L', got {pol!r}")
     if default_product not in _DASH_PRODUCT_ORDER:
-        raise ValueError(
-            f"default_product must be one of {_DASH_PRODUCT_ORDER}, "
-            f"got {default_product!r}"
-        )
-
-    if triangle is None:
-        triangle = _pick_default_triangle(obs)
-    if quadrangle is None:
-        quadrangle = _pick_default_quad(obs)
+        raise ValueError(f"default_product must be one of {_DASH_PRODUCT_ORDER}, got {default_product!r}")
 
     obs_model = im.observe_same_nonoise(obs, ttype=ttype) if show_model else None
 
     products = _build_dashboard_products(
-        obs, obs_model,
-        triangle=triangle, quadrangle=quadrangle,
+        obs,
+        obs_model,
+        triangle=triangle,
+        quadrangle=quadrangle,
+        n_triangles=n_triangles,
+        n_quadrangles=n_quadrangles,
     )
 
     fig = make_subplots(
-        rows=2, cols=2,
+        rows=2,
+        cols=2,
         subplot_titles=(
             "Image (Stokes I)",
             _DASH_PRODUCT_LABELS[default_product],
@@ -1198,16 +1517,19 @@ def dashboard(
         ),
         # Narrower left column so the (square) image fills its cell; column
         # 2 picks up the slack and gives the panel + D-terms more room.
-        column_widths=[0.42, 0.58],
-        horizontal_spacing=0.13, vertical_spacing=0.14,
-        specs=[[{"type": "heatmap"}, {"type": "scatter"}],
-               [{"type": "scatter"}, {"type": "scatter"}]],
+        # horizontal_spacing kept generous so the panel-2 y-axis labels +
+        # title don't crowd against the Stokes-I heatmap edge / colorbar.
+        column_widths=[0.40, 0.60],
+        horizontal_spacing=0.20,
+        vertical_spacing=0.14,
+        specs=[[{"type": "heatmap"}, {"type": "scatter"}], [{"type": "scatter"}, {"type": "scatter"}]],
     )
 
     # --- Panel 1: image ---
     img2d = im.imvec.reshape(im.ydim, im.xdim)
     heatmap_kwargs = dict(
-        z=img2d, colorscale="hot",
+        z=img2d,
+        colorscale="hot",
         hovertemplate="x=%{x}<br>y=%{y}<br>I=%{z:.3g}<extra></extra>",
     )
     if plotp:
@@ -1215,7 +1537,10 @@ def dashboard(
             showscale=True,
             colorbar=dict(
                 title=dict(text="Jy/px"),
-                x=0.40, y=0.78, yanchor="middle", len=0.32,
+                x=0.40,
+                y=0.78,
+                yanchor="middle",
+                len=0.32,
                 thickness=10,
             ),
         )
@@ -1224,38 +1549,91 @@ def dashboard(
     fig.add_trace(go.Heatmap(**heatmap_kwargs), row=1, col=1)
 
     if plotp:
-        lines, dots = _pol_ticks_traces(
-            im, nvec=nvec, pcut=pcut, mcut=mcut, colour_by_m=vec_cfun)
+        lines, dots = _pol_ticks_traces(im, nvec=nvec, pcut=pcut, mcut=mcut, colour_by_m=vec_cfun)
         if lines is not None:
             fig.add_trace(lines, row=1, col=1)
         if dots is not None:
             fig.add_trace(dots, row=1, col=1)
 
-    # --- Panel 2: data product selector (data + model traces per product) ---
-    # Two traces per product, in `_DASH_PRODUCT_ORDER`. Only the
-    # `default_product` pair is visible at start; the dropdown toggles.
+    # Panel 2: data product selector 
+    # Each product owns 1+ trace pairs; closure products enumerate all
+    # triangles/quadrangles so the user sees every closure quantity, not just one
+    # Only the `default_product`'s traces are visible at start; the
+    # dropdown switches which group is shown.
+    panel2_indices: dict[str, list[int]] = {key: [] for key in _DASH_PRODUCT_ORDER}
     panel2_start = len(fig.data)
     for key in _DASH_PRODUCT_ORDER:
         p = products[key]
-        is_default = (key == default_product)
-        fig.add_trace(go.Scatter(
-            x=p["x_data"], y=p["y_data"], mode="markers",
-            name="data",
-            marker=dict(size=4, color=_GRAY, opacity=0.6,
-                        line=dict(width=0.3, color=_THEME["marker_edge"])),
-            hovertemplate=("data<br>" + "x=%{x:.3g}<br>y=%{y:.3g}<extra></extra>"),
-            legend="legend2",
-            visible=is_default,
-        ), row=1, col=2)
-        fig.add_trace(go.Scatter(
-            x=p["x_model"], y=p["y_model"], mode="markers",
-            name="model",
-            marker=dict(size=4, color=_THEME["colorway"][1], opacity=0.85,
-                        line=dict(width=0.3, color=_THEME["marker_edge"])),
-            hovertemplate=("model<br>" + "x=%{x:.3g}<br>y=%{y:.3g}<extra></extra>"),
-            legend="legend2",
-            visible=is_default,
-        ), row=1, col=2)
+        is_default = key == default_product
+        style = p.get("style", "multi")
+        for i, spec in enumerate(p["traces"]):
+            if style == "single":
+                data_color = _GRAY
+                data_opacity = 0.6
+                model_color = _THEME["colorway"][1]
+                data_name = "data"
+                model_name = "model"
+                model_symbol = "circle"
+                show_model_in_legend = True
+            else:
+                data_color = _THEME["colorway"][i % len(_THEME["colorway"])]
+                data_opacity = 0.85
+                model_color = data_color
+                data_name = spec["label"]
+                model_name = f"{spec['label']} (model)"
+                model_symbol = "x"
+                # Share a legendgroup so toggling one legend entry hides
+                # both the data and model trace for that triangle/quad.
+                show_model_in_legend = False
+            legendgroup = f"{key}_{i}"
+
+            fig.add_trace(
+                go.Scatter(
+                    x=spec["x_data"],
+                    y=spec["y_data"],
+                    mode="markers",
+                    name=data_name,
+                    marker=dict(
+                        size=5,
+                        color=data_color,
+                        opacity=data_opacity,
+                        line=dict(width=0.3, color=_THEME["marker_edge"]),
+                    ),
+                    hovertemplate=("<b>" + data_name + "</b><br>x=%{x:.3g}<br>y=%{y:.3g}<extra></extra>"),
+                    legend="legend2",
+                    legendgroup=legendgroup,
+                    visible=is_default,
+                ),
+                row=1,
+                col=2,
+            )
+            panel2_indices[key].append(len(fig.data) - 1)
+
+            x_model = spec.get("x_model")
+            if x_model is not None and len(x_model) > 0:
+                fig.add_trace(
+                    go.Scatter(
+                        x=spec["x_model"],
+                        y=spec["y_model"],
+                        mode="markers",
+                        name=model_name,
+                        marker=dict(
+                            size=5,
+                            color=model_color,
+                            opacity=0.55,
+                            symbol=model_symbol,
+                            line=dict(width=0.3, color=_THEME["marker_edge"]),
+                        ),
+                        hovertemplate=("<b>" + model_name + "</b><br>x=%{x:.3g}<br>y=%{y:.3g}<extra></extra>"),
+                        legend="legend2",
+                        legendgroup=legendgroup,
+                        showlegend=show_model_in_legend,
+                        visible=is_default,
+                    ),
+                    row=1,
+                    col=2,
+                )
+                panel2_indices[key].append(len(fig.data) - 1)
     panel2_end = len(fig.data)
 
     # --- Panel 3: gains per site (own legend) ---
@@ -1263,136 +1641,175 @@ def dashboard(
     pol_key = "rscale" if pol == "R" else "lscale"
     for site in sorted(caltable.data.keys()):
         gain = np.abs(caltable.data[site][pol_key])
-        fig.add_trace(go.Scatter(
-            x=caltable.data[site]["time"], y=gain,
-            mode="markers", name=site,
-            marker=dict(size=5,
-                        line=dict(width=0.3, color=_THEME["marker_edge"])),
-            hovertemplate=(
-                f"<b>{site}</b><br>t=%{{x:.2f}} hr<br>|G|=%{{y:.3g}}<extra></extra>"
+        fig.add_trace(
+            go.Scatter(
+                x=caltable.data[site]["time"],
+                y=gain,
+                mode="markers",
+                name=site,
+                marker=dict(size=5, line=dict(width=0.3, color=_THEME["marker_edge"])),
+                hovertemplate=(f"<b>{site}</b><br>t=%{{x:.2f}} hr<br>|G|=%{{y:.3g}}<extra></extra>"),
+                legend="legend3",
             ),
-            legend="legend3",
-        ), row=2, col=1)
+            row=2,
+            col=1,
+        )
 
     # --- Panel 4: D-terms (R and L) in complex plane (own legend) ---
     # TODO: schema-coupled — tarr['dr'] / tarr['dl'] move to caltable.dterms
     # in MixPol Phase 1; this lookup needs to follow.
     tarr = caltable.tarr
     sites = [str(s) for s in tarr["site"]]
-    fig.add_trace(go.Scatter(
-        x=np.real(tarr["dr"]), y=np.imag(tarr["dr"]),
-        mode="markers+text", text=sites, textposition="top center",
-        textfont=dict(size=9, color=_THEME["font_color"]),
-        name="D_R",
-        marker=dict(size=10, symbol="circle",
-                    line=dict(width=0.5, color=_THEME["marker_edge"])),
-        hovertemplate=(
-            "<b>%{text}</b><br>Re(D_R)=%{x:.3g}<br>Im(D_R)=%{y:.3g}<extra></extra>"
+    fig.add_trace(
+        go.Scatter(
+            x=np.real(tarr["dr"]),
+            y=np.imag(tarr["dr"]),
+            mode="markers+text",
+            text=sites,
+            textposition="top center",
+            textfont=dict(size=9, color=_THEME["font_color"]),
+            name="D_R",
+            marker=dict(size=10, symbol="circle", line=dict(width=0.5, color=_THEME["marker_edge"])),
+            hovertemplate=("<b>%{text}</b><br>Re(D_R)=%{x:.3g}<br>Im(D_R)=%{y:.3g}<extra></extra>"),
+            legend="legend4",
         ),
-        legend="legend4",
-    ), row=2, col=2)
-    fig.add_trace(go.Scatter(
-        x=np.real(tarr["dl"]), y=np.imag(tarr["dl"]),
-        mode="markers+text", text=sites, textposition="bottom center",
-        textfont=dict(size=9, color=_THEME["font_color"]),
-        name="D_L",
-        marker=dict(size=10, symbol="square",
-                    line=dict(width=0.5, color=_THEME["marker_edge"])),
-        hovertemplate=(
-            "<b>%{text}</b><br>Re(D_L)=%{x:.3g}<br>Im(D_L)=%{y:.3g}<extra></extra>"
+        row=2,
+        col=2,
+    )
+    fig.add_trace(
+        go.Scatter(
+            x=np.real(tarr["dl"]),
+            y=np.imag(tarr["dl"]),
+            mode="markers+text",
+            text=sites,
+            textposition="bottom center",
+            textfont=dict(size=9, color=_THEME["font_color"]),
+            name="D_L",
+            marker=dict(size=10, symbol="square", line=dict(width=0.5, color=_THEME["marker_edge"])),
+            hovertemplate=("<b>%{text}</b><br>Re(D_L)=%{x:.3g}<br>Im(D_L)=%{y:.3g}<extra></extra>"),
+            legend="legend4",
         ),
-        legend="legend4",
-    ), row=2, col=2)
+        row=2,
+        col=2,
+    )
 
     # --- Layout (multi-legend: one per scatter panel) ---
     fig.update_layout(
-        title=dict(text=f"Reconstruction dashboard — {obs.source}",
-                   x=0.5, xanchor="center",
-                   font=dict(size=_THEME["title_size"],
-                             family=_THEME["font_family"],
-                             color=_THEME["font_color"])),
+        title=dict(
+            text=f"Reconstruction dashboard — {obs.source}",
+            x=0.5,
+            xanchor="center",
+            font=dict(size=_THEME["title_size"], family=_THEME["font_family"], color=_THEME["font_color"]),
+        ),
         template="none",
         plot_bgcolor=_THEME["plot_bgcolor"],
         paper_bgcolor=_THEME["paper_bgcolor"],
-        font=dict(family=_THEME["font_family"], size=_THEME["font_size"],
-                  color=_THEME["font_color"]),
-        width=1280, height=1000,
+        font=dict(family=_THEME["font_family"], size=_THEME["font_size"], color=_THEME["font_color"]),
+        width=1280,
+        height=1000,
         margin=dict(l=70, r=200, t=120, b=60),
         showlegend=True,
         colorway=_THEME["colorway"],
         # legend2 (data/model), legend3 (gains), legend4 (D-terms).
         legend2=dict(
             title=dict(text="Panel 2"),
-            x=1.02, y=0.98, xanchor="left", yanchor="top",
+            x=1.02,
+            y=0.98,
+            xanchor="left",
+            yanchor="top",
             font=dict(size=10, color=_THEME["font_color"]),
             bgcolor="rgba(238,238,238,0.85)",
-            bordercolor=_THEME["edge_color"], borderwidth=1,
+            bordercolor=_THEME["edge_color"],
+            borderwidth=1,
         ),
         legend3=dict(
             title=dict(text="Sites"),
-            x=1.02, y=0.50, xanchor="left", yanchor="middle",
+            x=1.02,
+            y=0.42,
+            xanchor="left",
+            yanchor="middle",
             font=dict(size=10, color=_THEME["font_color"]),
             bgcolor="rgba(238,238,238,0.85)",
-            bordercolor=_THEME["edge_color"], borderwidth=1,
+            bordercolor=_THEME["edge_color"],
+            borderwidth=1,
         ),
         legend4=dict(
             title=dict(text="D-terms"),
-            x=1.02, y=0.04, xanchor="left", yanchor="bottom",
+            x=1.02,
+            y=0.04,
+            xanchor="left",
+            yanchor="bottom",
             font=dict(size=10, color=_THEME["font_color"]),
             bgcolor="rgba(238,238,238,0.85)",
-            bordercolor=_THEME["edge_color"], borderwidth=1,
+            bordercolor=_THEME["edge_color"],
+            borderwidth=1,
         ),
     )
 
     # Common axis styling per subplot.
     for r, c in [(1, 1), (1, 2), (2, 1), (2, 2)]:
-        fig.update_xaxes(gridcolor=_THEME["grid_color"],
-                         linecolor=_THEME["edge_color"],
-                         tickcolor=_THEME["edge_color"],
-                         showline=True, mirror=True, row=r, col=c)
-        fig.update_yaxes(gridcolor=_THEME["grid_color"],
-                         linecolor=_THEME["edge_color"],
-                         tickcolor=_THEME["edge_color"],
-                         showline=True, mirror=True, row=r, col=c)
+        fig.update_xaxes(
+            gridcolor=_THEME["grid_color"],
+            linecolor=_THEME["edge_color"],
+            tickcolor=_THEME["edge_color"],
+            showline=True,
+            mirror=True,
+            row=r,
+            col=c,
+        )
+        fig.update_yaxes(
+            gridcolor=_THEME["grid_color"],
+            linecolor=_THEME["edge_color"],
+            tickcolor=_THEME["edge_color"],
+            showline=True,
+            mirror=True,
+            row=r,
+            col=c,
+        )
 
     # Per-panel axis labels and aspect.
     fig.update_xaxes(title_text="x (pixel)", row=1, col=1)
-    fig.update_yaxes(title_text="y (pixel)", row=1, col=1,
-                     scaleanchor="x", scaleratio=1, autorange="reversed")
+    fig.update_yaxes(title_text="y (pixel)", row=1, col=1, scaleanchor="x", scaleratio=1, autorange="reversed")
     fig.update_xaxes(title_text=products[default_product]["x_title"], row=1, col=2)
     fig.update_yaxes(title_text=products[default_product]["y_title"], row=1, col=2)
     fig.update_xaxes(title_text="time (hr)", row=2, col=1)
     fig.update_yaxes(title_text="|G|", row=2, col=1, type="log")
-    fig.update_xaxes(title_text="Re(D)", row=2, col=2, zeroline=True,
-                     zerolinecolor=_THEME["edge_color"])
-    fig.update_yaxes(title_text="Im(D)", row=2, col=2,
-                     scaleanchor="x4", scaleratio=1,
-                     zeroline=True, zerolinecolor=_THEME["edge_color"])
+    fig.update_xaxes(title_text="Re(D)", row=2, col=2, zeroline=True, zerolinecolor=_THEME["edge_color"])
+    fig.update_yaxes(
+        title_text="Im(D)",
+        row=2,
+        col=2,
+        scaleanchor="x4",
+        scaleratio=1,
+        zeroline=True,
+        zerolinecolor=_THEME["edge_color"],
+    )
 
     # --- Data-product dropdown for panel 2 ---
+    # Each product owns an arbitrary number of traces (1 for the uvdist
+    # products; N for the closure products, one per triangle/quad). The
+    # dropdown sets visibility per index from the precomputed group map.
     buttons = []
     for key in _DASH_PRODUCT_ORDER:
         p = products[key]
-        vis = [tr.visible if tr.visible is not False else False
-               for tr in fig.data]
-        # Anything outside panel 2 (image + ticks + gains + D-terms) stays
-        # visible regardless of selection.
+        selected = set(panel2_indices[key])
+        vis = []
         for i in range(len(fig.data)):
             if i < panel2_start or i >= panel2_end:
-                vis[i] = True
+                # Outside panel 2 (image + ticks + gains + D-terms): leave on.
+                vis.append(True)
             else:
-                # Two consecutive traces (data, model) per product.
-                product_idx = (i - panel2_start) // 2
-                vis[i] = (_DASH_PRODUCT_ORDER[product_idx] == key)
-        buttons.append(dict(
-            label=_DASH_PRODUCT_LABELS[key],
-            method="update",
-            args=[
-                {"visible": vis},
-                {"xaxis2.title.text": p["x_title"],
-                 "yaxis2.title.text": p["y_title"]},
-            ],
-        ))
+                vis.append(i in selected)
+        buttons.append(
+            dict(
+                label=_DASH_PRODUCT_LABELS[key],
+                method="update",
+                args=[
+                    {"visible": vis},
+                    {"xaxis2.title.text": p["x_title"], "yaxis2.title.text": p["y_title"]},
+                ],
+            )
+        )
 
     fig.update_layout(
         updatemenus=[
@@ -1401,11 +1818,16 @@ def dashboard(
                 direction="down",
                 buttons=buttons,
                 showactive=True,
-                x=0.58, xanchor="left",
-                y=1.06, yanchor="bottom",
+                # Top-left corner — the title is centered (x=0.5), so anchor
+                # the dropdown to the far left to keep them separated.
+                x=0.0,
+                xanchor="left",
+                y=1.06,
+                yanchor="bottom",
                 pad=dict(l=4, r=4, t=2, b=2),
                 bgcolor="rgba(238,238,238,0.85)",
-                bordercolor=_THEME["edge_color"], borderwidth=1,
+                bordercolor=_THEME["edge_color"],
+                borderwidth=1,
                 font=dict(size=10, color=_THEME["font_color"]),
             ),
         ],
