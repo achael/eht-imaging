@@ -1837,3 +1837,34 @@ def test_unpack_mixed_correlation_absent_everywhere():
     with pytest.warns(ehw.MixedPolUnpackNaNWarning):
         xx = obs.unpack('xxvis')['xxvis']
     assert np.all(np.isnan(xx))
+
+
+# ============================================================================
+#  load_uvfits mixed-pol detection stop-gap
+# ============================================================================
+
+def test_load_uvfits_rejects_noncircular_poltya():
+    from astropy.io import fits
+    path = os.path.join(os.path.dirname(__file__), '..', 'data', 'sample.uvfits')
+    hdul = fits.open(path)
+    hdul['AIPS AN'].data['POLTYA'][:] = 'X'   # pretend the AN table flags linear feeds
+    with pytest.raises(NotImplementedError, match="mixed-pol"):
+        eo.load_uvfits(hdul)
+
+
+def test_load_uvfits_rejects_hybrid_poltyb():
+    # POLTYA stays circular but POLTYB is linear (a hybrid R/X feed) -> caught
+    from astropy.io import fits
+    path = os.path.join(os.path.dirname(__file__), '..', 'data', 'sample.uvfits')
+    hdul = fits.open(path)
+    hdul['AIPS AN'].data['POLTYB'][:] = 'X'
+    with pytest.raises(NotImplementedError, match="mixed-pol"):
+        eo.load_uvfits(hdul)
+
+
+def test_load_uvfits_circular_unaffected():
+    # all-'R' POLTYA (the sample file) loads normally through the new check
+    path = os.path.join(os.path.dirname(__file__), '..', 'data', 'sample.uvfits')
+    obs = eo.load_uvfits(path)
+    assert obs.polrep in ('stokes', 'circ')
+    assert set(obs.tarr['feed_type']) == {'rl'}

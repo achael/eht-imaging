@@ -1093,7 +1093,27 @@ def load_obs_uvfits(filename, polrep='stokes', flipbl=False,
     dr = np.zeros(len(tnames)) + 1j * np.zeros(len(tnames))
     dl = np.zeros(len(tnames)) + 1j * np.zeros(len(tnames))
 
-    # TODO (Phase 3c/6 mixed-pol): read POLTYA/POLTYB from the AIPS AN table
+    # Detect antenna feed types and raise if the observation is mixed-polarization
+    # (full POLTYA/POLTYB -> feed_type parsing is not yet implemented). Both feed
+    # columns are checked, so a hybrid station (e.g. POLTYA='R', POLTYB='X') is
+    # caught rather than silently loaded as circular.
+    feeds = set()
+    for col in ('POLTYA', 'POLTYB'):
+        try:
+            poltys = hdulist['AIPS AN'].data[col]
+        except KeyError:
+            continue
+        for p in poltys:
+            s = (p.decode() if isinstance(p, bytes) else str(p)).strip().upper()
+            if s:
+                feeds.add(s)
+    if not feeds <= {'R', 'L'}:
+        raise NotImplementedError(
+            "mixed-pol / linear-feed uvfits load is not yet supported; "
+            f"detected feed types {sorted(feeds)} in POLTYA/POLTYB. "
+            "See obsdata_mixedpol_plan.md.")
+
+    # TODO (Phase 7 mixed-pol): read POLTYA/POLTYB from the AIPS AN table
     # to populate per-station feed_type. Until then, assume circular feeds.
     tarr = [np.array((
             str(tnames[i]), xyz[i][0], xyz[i][1], xyz[i][2],
