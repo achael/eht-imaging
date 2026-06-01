@@ -42,9 +42,8 @@ import ehtim.warnings as ehw
 warnings.filterwarnings("ignore", message="divide by zero encountered in double_scalars")
 
 ##################################################################################################
-# Other Functions
+# Observing & uv Functions
 ##################################################################################################
-
 
 def compute_uv_coordinates(array, site1, site2, time, mjd, ra, dec, rf, timetype='UTC',
                            elevmin=ehc.ELEV_LOW,  elevmax=ehc.ELEV_HIGH, no_elevcut_space=False,
@@ -219,7 +218,228 @@ def compute_uv_coordinates(array, site1, site2, time, mjd, ra, dec, rf, timetype
     # return times and uv points where we have  data
     return (time, u, v)
 
+def earthrot(vecs, thetas):
+    """Rotate a vector / array of vectors about the z-direction by theta / array of thetas (radian)
+    """
 
+    if len(vecs.shape) == 1:
+        vecs = np.array([vecs])
+    if np.isscalar(thetas):
+        thetas = np.array([thetas for i in range(len(vecs))])
+
+    # equal numbers of sites and angles
+    if len(thetas) == len(vecs):
+        rotvec = np.array([np.dot(np.array(((np.cos(thetas[i]), -np.sin(thetas[i]), 0),
+                                            (np.sin(thetas[i]), np.cos(thetas[i]), 0),
+                                            (0, 0, 1))),
+                                  vecs[i])
+                           for i in range(len(vecs))])
+
+    # only one rotation angle, many sites
+    elif len(thetas) == 1:
+        rotvec = np.array([np.dot(np.array(((np.cos(thetas[0]), -np.sin(thetas[0]), 0),
+                                            (np.sin(thetas[0]), np.cos(thetas[0]), 0),
+                                            (0, 0, 1))),
+                                  vecs[i])
+                           for i in range(len(vecs))])
+
+    # only one site, many angles
+    elif len(vecs) == 1:
+        rotvec = np.array([np.dot(np.array(((np.cos(thetas[i]), -np.sin(thetas[i]), 0),
+                                            (np.sin(thetas[i]), np.cos(thetas[i]), 0),
+                                            (0, 0, 1))),
+                                  vecs[0])
+                           for i in range(len(thetas))])
+    else:
+        raise Exception("Unequal numbers of vectors and angles in earthrot(vecs, thetas)!")
+
+    return rotvec
+
+
+def earthshadow_mask(obsvecs, sourcevec):
+    """Return a mask corresponding to obsvecs which are not Earth-shadowed
+       along the line of sight to sourcevec.
+       obsvec can be an array of vectors but sourcevec can ONLY be a single vector
+
+    """
+
+    if len(obsvecs.shape) == 1:
+        obsvecs = np.array([obsvecs])
+    LOS_projection = np.array([np.dot(obsvec,sourcevec) for obsvec in obsvecs])
+    norms = np.array([np.linalg.norm(obsvec) for obsvec in obsvecs])
+    projected_radii = np.sqrt(norms**2-LOS_projection**2)
+    #Earth-shadowed points must have projected radii < earth radius and a negative LOS projection
+    bad_mask = (LOS_projection<0) * (projected_radii < 6.371e6)
+    return ~bad_mask
+
+
+def elev(obsvecs, sourcevec):
+    """Return the elevation of a source with respect to an observer/observers in radians
+       obsvec can be an array of vectors but sourcevec can ONLY be a single vector
+    """
+
+    if len(obsvecs.shape) == 1:
+        obsvecs = np.array([obsvecs])
+
+    anglebtw = np.array([np.dot(obsvec, sourcevec)/np.linalg.norm(obsvec) /
+                         np.linalg.norm(sourcevec) for obsvec in obsvecs])
+    el = 0.5*np.pi - np.arccos(anglebtw)
+
+    return el
+
+
+def elevcut(obsvecs, sourcevec, elevmin=ehc.ELEV_LOW, elevmax=ehc.ELEV_HIGH):
+    """Return True if a source is observable by a telescope vector
+    """
+
+    angles = elev(obsvecs, sourcevec)/ehc.DEGREE
+
+    return (angles > elevmin) * (angles < elevmax)
+
+
+def hr_angle(gst, lon, ra):
+    """Computes the hour angle for a source at RA, observer at longitude long, and GMST time gst
+       gst in hours, ra & lon ALL in radian, longitude positive east
+    """
+
+    hr_angle = np.mod(gst + lon - ra, 2*np.pi)
+
+    return hr_angle
+
+
+def par_angle(hr_angle, lat, dec):
+    """Compute the parallactic angle for a source at hr_angle and dec
+       for an observer with latitude lat.
+       All angles in radian
+    """
+
+    num = np.sin(hr_angle)*np.cos(lat)
+    denom = np.sin(lat)*np.cos(dec) - np.cos(lat)*np.sin(dec)*np.cos(hr_angle)
+
+    return np.arctan2(num, denom)
+
+
+def xyz_2_latlong(obsvecs):
+    """Compute the (geocentric) latitude and longitude of a site at geocentric position x,y,z
+       The output is in radians
+    """
+
+    if len(obsvecs.shape) == 1:
+        obsvecs = np.array([obsvecs])
+    out = []
+    for obsvec in obsvecs:
+        x = obsvec[0]
+        y = obsvec[1]
+        z = obsvec[2]
+        lon = np.array(np.arctan2(y, x))
+        lat = np.array(np.arctan2(z, np.sqrt(x**2+y**2)))
+        out.append([lat, lon])
+
+    out = np.array(out)
+
+    return out
+
+def sat_skyfield_from_elements(satname, epoch_mjd, perigee_mjd,
+                               period_days, eccentricity,
+                               inclination, arg_perigee, long_ascending):
+
+    """skyfield EarthSatellite object from keplerian orbital elements
+       perfect keplerian orbit is assumed, no derivatives
+       epoch, pericenter given in mjd
+       period given in days
+       inclination, arg_perigee, long_ascending given in degrees
+    """
+
+    if not(0<=eccentricity<1):
+        raise Exception("eccentricity must be between 0 and 1")
+    if not(0<=inclination<=180):
+        raise Exception("inclination must be between 0 and 180")
+    if not(0<=arg_perigee<=180):
+        raise Exception("arg_perigee must be between 0 and 180")
+    if not(0<=long_ascending<=360):
+        raise Exception("arg_perigee must be between 0 and 360")
+
+    satrec = Satrec()
+    ts = skyfield.api.load.timescale()
+    ref_mjd = 33281. # mjd 1949 December 31 00:00 UT
+    epoch_wrt_ref = epoch_mjd - ref_mjd
+
+    inclination_rad = inclination*ehc.DEGREE
+    arg_perigee_rad = arg_perigee*ehc.DEGREE
+    long_ascending_rad = long_ascending*ehc.DEGREE
+
+    mean_motion = 2*np.pi/(period_days*24.*60.) # radians/minute
+
+    mean_anomaly = mean_motion*(epoch_mjd - perigee_mjd)
+    mean_anomaly = np.mod(mean_anomaly, 2*np.pi)
+
+    satrec.sgp4init(
+        WGS72,           # gravity model
+        'i',             # 'a' = old AFSPC mode, 'i' = improved mode
+        1,               # satnum: Satellite number
+        epoch_wrt_ref,     # epoch: days since 1949 December 31 00:00 UT
+        0.0,             # bstar: drag coefficient (/earth radii)
+        0.0,             # ndot: ballistic coefficient (revs/day)
+        0.0,             # nddot: second derivative of mean motion (revs/day^3)
+        eccentricity,    # ecco: eccentricity
+        arg_perigee_rad,     # argpo: argument of perigee (radians)
+        inclination_rad,     # inclo: inclination (radians)
+        mean_anomaly,    # mo: mean anomaly (radians)
+        mean_motion,     # no_kozai: mean motion (radians/minute)
+        long_ascending_rad,    # nodeo: right ascension of ascending node (radians)
+    )
+    sat_skyfield = skyfield.api.EarthSatellite.from_satrec(satrec, ts)
+
+    return sat_skyfield
+
+def sat_skyfield_from_tle(satname, line1, line2):
+    ts = skyfield.api.load.timescale()
+    sat_skyfield = skyfield.api.EarthSatellite(line1, line2, satname, ts)
+    return sat_skyfield
+
+def sat_skyfield_from_ephementry(satname, ephem, epoch_mjd):
+    if len(ephem[satname])==3: # TLE
+        line1 = ephem[satname][1]
+        line2 = ephem[satname][2]
+        sat = sat_skyfield_from_tle(satname, line1, line2)
+    elif len(ephem[satname])==6: #keplerian elements
+        elements = ephem[satname]
+        sat = sat_skyfield_from_elements(satname, epoch_mjd,
+                                         elements[0],elements[1],elements[2],elements[3],elements[4],elements[5])
+    else:
+        raise Exception(f"ephemeris format not recognized for {satname}")
+
+    return sat
+
+def orbit_skyfield(sat, fracmjds, whichout='itrs'):
+
+    """uses skyfield to propagate a earth satellite orbit and return x,y,z coordinates in co-rotating earth frame
+       sat is a skyfield.sgp4lib.EarthSatellite object
+       times is a list of fractional mjds
+       whichout is 'itrs' (co-rotating) or 'gcrs' (fixed x-axis to equinox)
+    """
+
+    #fractional days of orbit in jd
+    mjd_to_jd = 2400000.5
+    ts = skyfield.api.load.timescale()
+    t = ts.ut1_jd(mjd_to_jd+fracmjds)
+
+    # propagate orbit
+    time_data = sat.at(t)
+
+    if whichout=='gcrs':
+        # GCRS coordinates in km
+        positions = time_data.xyz.m
+
+    elif whichout=='itrs':
+        # get coordinates in earth frame (WGS84 ellipsiod)
+        geographic_position = skyfield.api.wgs84.geographic_position_of(time_data)
+        positions = geographic_position.itrs_xyz.m
+
+    else:
+        raise Exception("orbit_skyfield whichout must be 'itrs' or 'gcrs'")
+
+    return positions
 ##################################################################################################
 # Unpack Helpers
 ##################################################################################################
@@ -658,597 +878,6 @@ def make_closure_amplitude(blue1, blue2, red1, red2, vtype,
 
     return (camp, camperr)
 
-
-def amp_debias(amp, sigma, force_nonzero=False):
-    """Return debiased visibility amplitudes
-    """
-
-    deb2 = np.abs(amp)**2 - np.abs(sigma)**2
-
-    # puts amplitude at 0 if snr < 1
-    deb2 *= (np.nan_to_num(np.abs(amp)) > np.nan_to_num(np.abs(sigma)))
-
-    # raises amplitude to sigma to force nonzero
-    if force_nonzero:
-        deb2 += (np.nan_to_num(np.abs(amp)) < np.nan_to_num(np.abs(sigma))) * np.abs(sigma)**2
-    out = np.sqrt(deb2)
-
-    return out
-
-
-def camp_debias(camp, snr3, snr4):
-    """Debias closure amplitudes
-       snr3 and snr4 are snr of visibility amplitudes #3 and 4.
-    """
-
-    camp_debias = camp / (1 + 1./(snr3**2) + 1./(snr4**2))
-    return camp_debias
-
-
-def logcamp_debias(log_camp, snr1, snr2, snr3, snr4):
-    """Debias log closure amplitudes
-       The snrs are the snr of the component visibility amplitudes
-    """
-
-    log_camp_debias = log_camp + 0.5*(1./(snr1**2) + 1./(snr2**2) - 1./(snr3**2) - 1./(snr4**2))
-    return log_camp_debias
-
-
-def gauss_uv(u, v, flux, beamparams, x=0., y=0.):
-    """Return the value of the Gaussian FT with
-       beamparams is [FWHMmaj, FWHMmin, theta, x, y], all in radian
-       x,y are the center coordinates
-    """
-
-    sigma_maj = beamparams[0]/(2*np.sqrt(2*np.log(2)))
-    sigma_min = beamparams[1]/(2*np.sqrt(2*np.log(2)))
-    theta = -beamparams[2]  # theta needs to be negative in this convention!
-
-    # Covariance matrix
-    a = (sigma_min * np.cos(theta))**2 + (sigma_maj*np.sin(theta))**2
-    b = (sigma_maj * np.cos(theta))**2 + (sigma_min*np.sin(theta))**2
-    c = (sigma_min**2 - sigma_maj**2) * np.cos(theta) * np.sin(theta)
-    m = np.array([[a, c], [c, b]])
-
-    uv = np.array([[u[i], v[i]] for i in range(len(u))])
-    x2 = np.array([np.dot(uvi, np.dot(m, uvi)) for uvi in uv])
-
-    g = np.exp(-2 * np.pi**2 * x2)
-    p = np.exp(-2j * np.pi * (u*x + v*y))
-
-    return flux * g * p
-
-
-def rbf_kernel_covariance(x, sigma):
-    """Compute a covariance matrix from an RBF kernel
-
-    Args:
-        x (ndarray): 1D data points for which to compute the covariance
-        sigma (float): std for the covariance. Controls correlation length / time.
-
-    Returns:
-       cov (ndarray): Covariance matrix
-    """
-    x = np.expand_dims(x, 1) if x.ndim == 1 else x
-    norm = -0.5 * scipy.spatial.distance.cdist(x, x, 'sqeuclidean') / sigma**2
-    cov = np.exp(norm)
-    cov *= 1.0 / cov.sum(axis=0)
-    return cov
-
-
-def sgra_kernel_uv(rf, u, v):
-    """Return the value of the Sgr A* scattering kernel at a given u,v (in lambda)
-
-    Args:
-        rf (float): The observation frequency in Hz
-        u (float or ndarray): an array of u coordinates
-        v (float or ndarray): an array of v coordinates
-
-    Returns:
-       g (float ndarray): Sgr A* scattering kernel
-    """
-    u = np.array(u)
-    v = np.array(v)
-    assert u.size == v.size, 'u and v should have the same size'
-
-    lcm = (ehc.C / rf) * 100  # in cm
-    sigma_maj = ehc.FWHM_MAJ * (lcm ** 2) / (2 * np.sqrt(2 * np.log(2))) * ehc.RADPERUAS
-    sigma_min = ehc.FWHM_MIN * (lcm ** 2) / (2 * np.sqrt(2 * np.log(2))) * ehc.RADPERUAS
-    theta = -ehc.POS_ANG * ehc.DEGREE  # theta needs to be negative in this convention!
-
-    # Covariance matrix
-    a = (sigma_min * np.cos(theta)) ** 2 + (sigma_maj * np.sin(theta)) ** 2
-    b = (sigma_maj * np.cos(theta)) ** 2 + (sigma_min * np.sin(theta)) ** 2
-    c = (sigma_min ** 2 - sigma_maj ** 2) * np.cos(theta) * np.sin(theta)
-    m = np.array([[a, c], [c, b]])
-    uv = np.array([u, v])
-
-    x2 = (uv * np.dot(m, uv)).sum(axis=0)
-    g = np.exp(-2 * np.pi ** 2 * x2)
-
-    return g
-
-
-def sgra_kernel_params(rf):
-    """Return elliptical gaussian parameters in radian for the Sgr A* scattering ellipse
-       at a given frequency rf
-    """
-
-    lcm = (ehc.C/rf) * 100  # in cm
-    fwhm_maj_rf = ehc.FWHM_MAJ * (lcm**2) * ehc.RADPERUAS
-    fwhm_min_rf = ehc.FWHM_MIN * (lcm**2) * ehc.RADPERUAS
-    theta = ehc.POS_ANG * ehc.DEGREE
-
-    return np.array([fwhm_maj_rf, fwhm_min_rf, theta])
-
-
-def blnoise(sefd1, sefd2, tint, bw):
-    """Determine the standard deviation of Gaussian thermal noise on a baseline
-       This is the noise on the rr/ll/rl/lr product, not the Stokes parameter
-       2-bit quantization is responsible for the 0.88 factor
-    """
-
-    noise = np.sqrt(sefd1*sefd2/(2*bw*tint))/0.88
-    # noise = np.sqrt(sefd1*sefd2/(bw*tint))/0.88
-
-    return noise
-
-
-def merr(sigma, qsigma, usigma, I, m):
-    """Return the error in mbreve real and imaginary parts given stokes input
-    """
-
-    err = np.sqrt((qsigma**2 + usigma**2 + (sigma*np.abs(m))**2)/(np.abs(I) ** 2))
-
-    return err
-
-
-def merr2(rlsigma, rrsigma, llsigma, I, m):
-    """Return the error in mbreve real and imaginary parts given polprod input
-    """
-
-    err = np.sqrt((rlsigma**2 + (rrsigma**2 + llsigma**2)*np.abs(m)**2)/(np.abs(I) ** 2))
-
-    return err
-
-
-def cerror(sigma):
-    """Return a complex number drawn from a circular complex Gaussian of zero mean
-    """
-
-    noise = np.random.normal(loc=0, scale=sigma) + 1j*np.random.normal(loc=0, scale=sigma)
-    return noise
-
-
-def cerror_hash(sigma, *args):
-    """Return a complex number drawn from a circular complex Gaussian of zero mean
-    """
-
-    reargs = list(args)
-    reargs.append('re')
-    np.random.seed(hash(",".join(map(repr, reargs))) % 4294967295)
-    re = np.random.randn()
-
-    imargs = list(args)
-    imargs.append('im')
-    np.random.seed(hash(",".join(map(repr, imargs))) % 4294967295)
-    im = np.random.randn()
-
-    err = sigma * (re + 1j*im)
-
-    return err
-
-
-def hashmultivariaterandn(size, cov, *args):
-    """set the seed according to a collection of arguments and return random multivariate gaussian var
-    """
-    np.random.seed(hash(",".join(map(repr, args))) % 4294967295)
-    mean = np.zeros(size)
-    noise = np.random.multivariate_normal(mean, cov, check_valid='ignore')
-    return noise
-
-
-def hashrandn(*args):
-    """set the seed according to a collection of arguments and return random gaussian var
-    """
-
-    np.random.seed(hash(",".join(map(repr, args))) % 4294967295)
-    noise = np.random.randn()
-    return noise
-
-
-def hashrand(*args):
-    """set the seed according to a collection of arguments and return random number in 0,1
-    """
-
-    np.random.seed(hash(",".join(map(repr, args))) % 4294967295)
-    noise = np.random.rand()
-    return noise
-
-
-def image_centroid(im):
-    """Return the image centroid (in radians)
-    """
-
-    xlist = np.arange(0, -im.xdim, -1)*im.psize + (im.psize*im.xdim)/2.0 - im.psize/2.0
-    ylist = np.arange(0, -im.ydim, -1)*im.psize + (im.psize*im.ydim)/2.0 - im.psize/2.0
-
-    x0 = np.sum(np.outer(0.0*ylist+1.0, xlist).ravel()*im.imvec)/np.sum(im.imvec)
-    y0 = np.sum(np.outer(ylist, 0.0*xlist+1.0).ravel()*im.imvec)/np.sum(im.imvec)
-
-    return np.array([x0, y0])
-
-
-def ftmatrix(pdim, xdim, ydim, uvlist, pulse=ehc.PULSE_DEFAULT, mask=[]):
-    """Return a DFT matrix for the xdim*ydim image with pixel width pdim
-       that extracts spatial frequencies of the uv points in uvlist.
-    """
-
-    xlist = np.arange(0, -xdim, -1)*pdim + (pdim*xdim)/2.0 - pdim/2.0
-    ylist = np.arange(0, -ydim, -1)*pdim + (pdim*ydim)/2.0 - pdim/2.0
-
-    # original sign convention
-    # ftmatrices = [pulse(2*np.pi*uv[0], 2*np.pi*uv[1], pdim, dom="F") *
-    #              np.outer(np.exp(-2j*np.pi*ylist*uv[1]), np.exp(-2j*np.pi*xlist*uv[0]))
-    #              for uv in uvlist]
-
-    # changed the sign convention to agree with BU data (Jan 2017)
-    # this is correct for a u,v definition from site 1-2 as (x1-x2)/lambda
-    ftmatrices = [pulse(2*np.pi*uv[0], 2*np.pi*uv[1], pdim, dom="F") *
-                  np.outer(np.exp(2j*np.pi*ylist*uv[1]), np.exp(2j*np.pi*xlist*uv[0]))
-                  for uv in uvlist]
-    ftmatrices = np.reshape(np.array(ftmatrices), (len(uvlist), xdim*ydim))
-
-    if len(mask):
-        ftmatrices = ftmatrices[:, mask]
-
-    return ftmatrices
-
-
-def ftmatrix_centered(im, pdim, xdim, ydim, uvlist, pulse=ehc.PULSE_DEFAULT):
-    """Return a DFT matrix for the xdim*ydim image with pixel width pdim
-       that extracts spatial frequencies of the uv points in uvlist.
-       in this version, it puts the image centroid at the origin
-    """
-
-    # TODO : there is a residual value for the center being around 0,
-    # maybe we should chop this off to be exactly 0?
-    xlist = np.arange(0, -xdim, -1)*pdim + (pdim*xdim)/2.0 - pdim/2.0
-    ylist = np.arange(0, -ydim, -1)*pdim + (pdim*ydim)/2.0 - pdim/2.0
-    x0 = np.sum(np.outer(0.0*ylist+1.0, xlist).ravel()*im)/np.sum(im)
-    y0 = np.sum(np.outer(ylist, 0.0*xlist+1.0).ravel()*im)/np.sum(im)
-
-    # Now shift the lists
-    xlist = xlist - x0
-    ylist = ylist - y0
-
-    # list of matrices at each spatial freq
-    ftmatrices = [pulse(2*np.pi*uv[0], 2*np.pi*uv[1], pdim, dom="F") *
-                  np.outer(np.exp(-2j*np.pi*ylist*uv[1]), np.exp(-2j*np.pi*xlist*uv[0]))
-                  for uv in uvlist]
-    ftmatrices = np.reshape(np.array(ftmatrices), (len(uvlist), xdim*ydim))
-    return ftmatrices
-
-
-def ticks(axisdim, psize, nticks=8):
-    """Return a list of ticklocs and ticklabels
-       psize should be in desired units
-    """
-
-    axisdim = int(axisdim)
-    nticks = int(nticks)
-    if not axisdim % 2:
-        axisdim += 1
-    if nticks % 2:
-        nticks -= 1
-    tickspacing = float(axisdim-1)/nticks
-    ticklocs = np.arange(0, axisdim+1, tickspacing) - 0.5
-    ticklabels = np.around(psize * np.arange((axisdim-1)/2.0, -
-                                             (axisdim)/2.0, -tickspacing), decimals=1)
-
-    return (ticklocs, ticklabels)
-
-
-def power_of_two(target):
-    """Finds the next greatest power of two
-    """
-    cur = 1
-    if target > 1:
-        for i in range(0, int(target)):
-            if (cur >= target):
-                return cur
-            else:
-                cur *= 2
-    else:
-        return 1
-
-
-def paritycompare(perm1, perm2):
-    """Compare the parity of two permutations.
-       Assume both lists are equal length and with same elements
-       Copied from: http://stackoverflow.com/questions/1503072/how-to-check-if-permutations-have-equal-parity
-    """
-
-    perm2 = list(perm2)
-    perm2_map = dict((v, i) for i, v in enumerate(perm2))
-    transCount = 0
-    for loc, p1 in enumerate(perm1):
-        p2 = perm2[loc]
-        if p1 != p2:
-            sloc = perm2_map[p1]
-            perm2[loc], perm2[sloc] = p1, p2
-            perm2_map[p1], perm2_map[p2] = sloc, loc
-            transCount += 1
-
-    if not (transCount % 2):
-        return 1
-    else:
-        return -1
-
-
-def sigtype(datatype):
-    """Return the type of noise corresponding to the data type
-    """
-
-    datatype = str(datatype)
-    if datatype in ['vis', 'amp']:
-        sigmatype = 'sigma'
-    elif datatype in ['qvis', 'qamp']:
-        sigmatype = 'qsigma'
-    elif datatype in ['uvis', 'uamp']:
-        sigmatype = 'usigma'
-    elif datatype in ['vvis', 'vamp']:
-        sigmatype = 'vsigma'
-    elif datatype in ['pvis', 'pamp']:
-        sigmatype = 'psigma'
-    elif datatype in ['evis', 'eamp']:
-        sigmatype = 'esigma'
-    elif datatype in ['bvis', 'bamp']:
-        sigmatype = 'esigma'
-    elif datatype in ['rrvis', 'rramp']:
-        sigmatype = 'rrsigma'
-    elif datatype in ['llvis', 'llamp']:
-        sigmatype = 'llsigma'
-    elif datatype in ['rlvis', 'rlamp']:
-        sigmatype = 'rlsigma'
-    elif datatype in ['lrvis', 'lramp']:
-        sigmatype = 'lrsigma'
-    elif datatype in ['rrllvis', 'rrllamp']:
-        sigmatype = 'rrllsigma'
-    elif datatype in ['m', 'mamp']:
-        sigmatype = 'msigma'
-    elif datatype in ['phase']:
-        sigmatype = 'sigma_phase'
-    elif datatype in ['qphase']:
-        sigmatype = 'qsigma_phase'
-    elif datatype in ['uphase']:
-        sigmatype = 'usigma_phase'
-    elif datatype in ['vphase']:
-        sigmatype = 'vsigma_phase'
-    elif datatype in ['pphase']:
-        sigmatype = 'psigma_phase'
-    elif datatype in ['ephase']:
-        sigmatype = 'esigma_phase'
-    elif datatype in ['bphase']:
-        sigmatype = 'bsigma_phase'
-    elif datatype in ['mphase']:
-        sigmatype = 'msigma_phase'
-    elif datatype in ['rrphase']:
-        sigmatype = 'rrsigma_phase'
-    elif datatype in ['llphase']:
-        sigmatype = 'llsigma_phase'
-    elif datatype in ['rlphase']:
-        sigmatype = 'rlsigma_phase'
-    elif datatype in ['lrphase']:
-        sigmatype = 'lrsigma_phase'
-    elif datatype in ['rrllphase']:
-        sigmatype = 'rrllsigma_phase'
-
-    else:
-        sigmatype = False
-
-    return sigmatype
-
-
-def rastring(ra):
-    """Convert a ra in fractional hours to formatted string
-    """
-    h = int(ra)
-    m = int((ra-h)*60.)
-    s = (ra-h-m/60.)*3600.
-    out = f"{h:2d} h {m:2d} m {s:2.4f} s"
-
-    return out
-
-
-def decstring(dec):
-    """Convert a dec in fractional degrees to formatted string
-    """
-
-    deg = int(dec)
-    m = int((abs(dec)-abs(deg))*60.)
-    s = (abs(dec)-abs(deg)-m/60.)*3600.
-    out = f"{deg:2d} deg {m:2d} m {s:2.4f} s"
-
-    return out
-
-
-def gmtstring(gmt):
-    """Convert a gmt in fractional hours to formatted string
-    """
-
-    if gmt > 24.0:
-        gmt = gmt-24.0
-    h = int(gmt)
-    m = int((gmt-h)*60.)
-    s = (gmt-h-m/60.)*3600.
-    out = f"{h:02d}:{m:02d}:{s:2.4f}"
-
-    return out
-
-# TODO fix this hacky way to do it!!
-
-
-def gmst_to_utc(gmst, mjd):
-    """Convert gmst times in hours to utc hours using astropy.
-
-    Inverse of :func:`utc_to_gmst` on the canonical solar day of ``mjd``:
-    returns UTC in [0, 24). The local sidereal rate is sampled directly
-    from astropy across that day (mean GMST is polynomial in UT, so
-    within a day it's linear to ~1e-14 hours -- no iteration needed).
-
-    Note: an obs that spans > ~23.93 solar hours aliases in GMST and
-    cannot be uniquely round-tripped through this inverse; callers
-    must keep their obs inside a single sidereal day.
-    """
-
-    mjd = int(mjd)
-    t0 = at.Time(mjd, format='mjd', scale='utc')
-    t1 = at.Time(mjd + 1, format='mjd', scale='utc')
-    s0 = t0.sidereal_time('mean', 'greenwich').hour
-    s1 = t1.sidereal_time('mean', 'greenwich').hour
-    # Sidereal hours elapsed in 24 solar hours (~24.0657)
-    sidereal_per_day = ((s1 - s0) % 24.0) + 24.0
-    # Wrap into [0, 24) sidereal so utc lands in [0, 24) of mjd
-    delta_sidereal = (gmst - s0) % 24.0
-    time_utc = delta_sidereal * 24.0 / sidereal_per_day
-
-    return time_utc
-
-
-def utc_to_gmst(utc, mjd):
-    """Convert utc times in hours to gmst using astropy
-    """
-
-    mjd = int(mjd)  # MJD should always be an integer, but was float in older versions of the code
-    time_obj = at.Time(utc/24.0 + np.floor(mjd), format='mjd', scale='utc')
-    time_sidereal = time_obj.sidereal_time('mean', 'greenwich').hour
-
-    return time_sidereal
-
-
-def earthrot(vecs, thetas):
-    """Rotate a vector / array of vectors about the z-direction by theta / array of thetas (radian)
-    """
-
-    if len(vecs.shape) == 1:
-        vecs = np.array([vecs])
-    if np.isscalar(thetas):
-        thetas = np.array([thetas for i in range(len(vecs))])
-
-    # equal numbers of sites and angles
-    if len(thetas) == len(vecs):
-        rotvec = np.array([np.dot(np.array(((np.cos(thetas[i]), -np.sin(thetas[i]), 0),
-                                            (np.sin(thetas[i]), np.cos(thetas[i]), 0),
-                                            (0, 0, 1))),
-                                  vecs[i])
-                           for i in range(len(vecs))])
-
-    # only one rotation angle, many sites
-    elif len(thetas) == 1:
-        rotvec = np.array([np.dot(np.array(((np.cos(thetas[0]), -np.sin(thetas[0]), 0),
-                                            (np.sin(thetas[0]), np.cos(thetas[0]), 0),
-                                            (0, 0, 1))),
-                                  vecs[i])
-                           for i in range(len(vecs))])
-
-    # only one site, many angles
-    elif len(vecs) == 1:
-        rotvec = np.array([np.dot(np.array(((np.cos(thetas[i]), -np.sin(thetas[i]), 0),
-                                            (np.sin(thetas[i]), np.cos(thetas[i]), 0),
-                                            (0, 0, 1))),
-                                  vecs[0])
-                           for i in range(len(thetas))])
-    else:
-        raise Exception("Unequal numbers of vectors and angles in earthrot(vecs, thetas)!")
-
-    return rotvec
-
-
-def earthshadow_mask(obsvecs, sourcevec):
-    """Return a mask corresponding to obsvecs which are not Earth-shadowed
-       along the line of sight to sourcevec.
-       obsvec can be an array of vectors but sourcevec can ONLY be a single vector
-
-    """
-
-    if len(obsvecs.shape) == 1:
-        obsvecs = np.array([obsvecs])
-    LOS_projection = np.array([np.dot(obsvec,sourcevec) for obsvec in obsvecs])
-    norms = np.array([np.linalg.norm(obsvec) for obsvec in obsvecs])
-    projected_radii = np.sqrt(norms**2-LOS_projection**2)
-    #Earth-shadowed points must have projected radii < earth radius and a negative LOS projection
-    bad_mask = (LOS_projection<0) * (projected_radii < 6.371e6)
-    return ~bad_mask
-
-
-def elev(obsvecs, sourcevec):
-    """Return the elevation of a source with respect to an observer/observers in radians
-       obsvec can be an array of vectors but sourcevec can ONLY be a single vector
-    """
-
-    if len(obsvecs.shape) == 1:
-        obsvecs = np.array([obsvecs])
-
-    anglebtw = np.array([np.dot(obsvec, sourcevec)/np.linalg.norm(obsvec) /
-                         np.linalg.norm(sourcevec) for obsvec in obsvecs])
-    el = 0.5*np.pi - np.arccos(anglebtw)
-
-    return el
-
-
-def elevcut(obsvecs, sourcevec, elevmin=ehc.ELEV_LOW, elevmax=ehc.ELEV_HIGH):
-    """Return True if a source is observable by a telescope vector
-    """
-
-    angles = elev(obsvecs, sourcevec)/ehc.DEGREE
-
-    return (angles > elevmin) * (angles < elevmax)
-
-
-def hr_angle(gst, lon, ra):
-    """Computes the hour angle for a source at RA, observer at longitude long, and GMST time gst
-       gst in hours, ra & lon ALL in radian, longitude positive east
-    """
-
-    hr_angle = np.mod(gst + lon - ra, 2*np.pi)
-
-    return hr_angle
-
-
-def par_angle(hr_angle, lat, dec):
-    """Compute the parallactic angle for a source at hr_angle and dec
-       for an observer with latitude lat.
-       All angles in radian
-    """
-
-    num = np.sin(hr_angle)*np.cos(lat)
-    denom = np.sin(lat)*np.cos(dec) - np.cos(lat)*np.sin(dec)*np.cos(hr_angle)
-
-    return np.arctan2(num, denom)
-
-
-def xyz_2_latlong(obsvecs):
-    """Compute the (geocentric) latitude and longitude of a site at geocentric position x,y,z
-       The output is in radians
-    """
-
-    if len(obsvecs.shape) == 1:
-        obsvecs = np.array([obsvecs])
-    out = []
-    for obsvec in obsvecs:
-        x = obsvec[0]
-        y = obsvec[1]
-        z = obsvec[2]
-        lon = np.array(np.arctan2(y, x))
-        lat = np.array(np.arctan2(z, np.sqrt(x**2+y**2)))
-        out.append([lat, lon])
-
-    out = np.array(out)
-
-    return out
-
-
 def tri_minimal_set(sites, tarr, tkey):
     """returns a minimal set of triangles for bispectra and closure phase"""
 
@@ -1445,16 +1074,327 @@ def reduce_quad_minimal(obs, datarr, ctype='camp'):
         out = np.array(out, dtype=dtype)
     return out
 
+##################################################################################################
+# Debiasing Functions
+##################################################################################################
+def amp_debias(amp, sigma, force_nonzero=False):
+    """Return debiased visibility amplitudes
+    """
 
-def qimage(iimage, mimage, chiimage):
-    """Return the Q image from m and chi"""
-    return iimage * mimage * np.cos(2*chiimage)
+    deb2 = np.abs(amp)**2 - np.abs(sigma)**2
+
+    # puts amplitude at 0 if snr < 1
+    deb2 *= (np.nan_to_num(np.abs(amp)) > np.nan_to_num(np.abs(sigma)))
+
+    # raises amplitude to sigma to force nonzero
+    if force_nonzero:
+        deb2 += (np.nan_to_num(np.abs(amp)) < np.nan_to_num(np.abs(sigma))) * np.abs(sigma)**2
+    out = np.sqrt(deb2)
+
+    return out
+
+def camp_debias(camp, snr3, snr4):
+    """Debias closure amplitudes
+       snr3 and snr4 are snr of visibility amplitudes #3 and 4.
+    """
+
+    camp_debias = camp / (1 + 1./(snr3**2) + 1./(snr4**2))
+    return camp_debias
 
 
-def uimage(iimage, mimage, chiimage):
-    """Return the U image from m and chi"""
-    return iimage * mimage * np.sin(2*chiimage)
+def logcamp_debias(log_camp, snr1, snr2, snr3, snr4):
+    """Debias log closure amplitudes
+       The snrs are the snr of the component visibility amplitudes
+    """
 
+    log_camp_debias = log_camp + 0.5*(1./(snr1**2) + 1./(snr2**2) - 1./(snr3**2) - 1./(snr4**2))
+    return log_camp_debias
+
+##################################################################################################
+# Scattering Functions
+##################################################################################################
+
+def gauss_uv(u, v, flux, beamparams, x=0., y=0.):
+    """Return the value of the Gaussian FT with
+       beamparams is [FWHMmaj, FWHMmin, theta, x, y], all in radian
+       x,y are the center coordinates
+    """
+
+    sigma_maj = beamparams[0]/(2*np.sqrt(2*np.log(2)))
+    sigma_min = beamparams[1]/(2*np.sqrt(2*np.log(2)))
+    theta = -beamparams[2]  # theta needs to be negative in this convention!
+
+    # Covariance matrix
+    a = (sigma_min * np.cos(theta))**2 + (sigma_maj*np.sin(theta))**2
+    b = (sigma_maj * np.cos(theta))**2 + (sigma_min*np.sin(theta))**2
+    c = (sigma_min**2 - sigma_maj**2) * np.cos(theta) * np.sin(theta)
+    m = np.array([[a, c], [c, b]])
+
+    uv = np.array([[u[i], v[i]] for i in range(len(u))])
+    x2 = np.array([np.dot(uvi, np.dot(m, uvi)) for uvi in uv])
+
+    g = np.exp(-2 * np.pi**2 * x2)
+    p = np.exp(-2j * np.pi * (u*x + v*y))
+
+    return flux * g * p
+
+
+def rbf_kernel_covariance(x, sigma):
+    """Compute a covariance matrix from an RBF kernel
+
+    Args:
+        x (ndarray): 1D data points for which to compute the covariance
+        sigma (float): std for the covariance. Controls correlation length / time.
+
+    Returns:
+       cov (ndarray): Covariance matrix
+    """
+    x = np.expand_dims(x, 1) if x.ndim == 1 else x
+    norm = -0.5 * scipy.spatial.distance.cdist(x, x, 'sqeuclidean') / sigma**2
+    cov = np.exp(norm)
+    cov *= 1.0 / cov.sum(axis=0)
+    return cov
+
+
+def sgra_kernel_uv(rf, u, v):
+    """Return the value of the Sgr A* scattering kernel at a given u,v (in lambda)
+
+    Args:
+        rf (float): The observation frequency in Hz
+        u (float or ndarray): an array of u coordinates
+        v (float or ndarray): an array of v coordinates
+
+    Returns:
+       g (float ndarray): Sgr A* scattering kernel
+    """
+    u = np.array(u)
+    v = np.array(v)
+    assert u.size == v.size, 'u and v should have the same size'
+
+    lcm = (ehc.C / rf) * 100  # in cm
+    sigma_maj = ehc.FWHM_MAJ * (lcm ** 2) / (2 * np.sqrt(2 * np.log(2))) * ehc.RADPERUAS
+    sigma_min = ehc.FWHM_MIN * (lcm ** 2) / (2 * np.sqrt(2 * np.log(2))) * ehc.RADPERUAS
+    theta = -ehc.POS_ANG * ehc.DEGREE  # theta needs to be negative in this convention!
+
+    # Covariance matrix
+    a = (sigma_min * np.cos(theta)) ** 2 + (sigma_maj * np.sin(theta)) ** 2
+    b = (sigma_maj * np.cos(theta)) ** 2 + (sigma_min * np.sin(theta)) ** 2
+    c = (sigma_min ** 2 - sigma_maj ** 2) * np.cos(theta) * np.sin(theta)
+    m = np.array([[a, c], [c, b]])
+    uv = np.array([u, v])
+
+    x2 = (uv * np.dot(m, uv)).sum(axis=0)
+    g = np.exp(-2 * np.pi ** 2 * x2)
+
+    return g
+
+
+def sgra_kernel_params(rf):
+    """Return elliptical gaussian parameters in radian for the Sgr A* scattering ellipse
+       at a given frequency rf
+    """
+
+    lcm = (ehc.C/rf) * 100  # in cm
+    fwhm_maj_rf = ehc.FWHM_MAJ * (lcm**2) * ehc.RADPERUAS
+    fwhm_min_rf = ehc.FWHM_MIN * (lcm**2) * ehc.RADPERUAS
+    theta = ehc.POS_ANG * ehc.DEGREE
+
+    return np.array([fwhm_maj_rf, fwhm_min_rf, theta])
+
+##################################################################################################
+# Noise Functions
+##################################################################################################
+
+def blnoise(sefd1, sefd2, tint, bw):
+    """Determine the standard deviation of Gaussian thermal noise on a baseline
+       This is the noise on the rr/ll/rl/lr product, not the Stokes parameter
+       2-bit quantization is responsible for the 0.88 factor
+    """
+
+    noise = np.sqrt(sefd1*sefd2/(2*bw*tint))/0.88
+    # noise = np.sqrt(sefd1*sefd2/(bw*tint))/0.88
+
+    return noise
+
+
+def merr(sigma, qsigma, usigma, I, m):
+    """Return the error in mbreve real and imaginary parts given stokes input
+    """
+
+    err = np.sqrt((qsigma**2 + usigma**2 + (sigma*np.abs(m))**2)/(np.abs(I) ** 2))
+
+    return err
+
+
+def merr2(rlsigma, rrsigma, llsigma, I, m):
+    """Return the error in mbreve real and imaginary parts given polprod input
+    """
+
+    err = np.sqrt((rlsigma**2 + (rrsigma**2 + llsigma**2)*np.abs(m)**2)/(np.abs(I) ** 2))
+
+    return err
+
+
+def cerror(sigma):
+    """Return a complex number drawn from a circular complex Gaussian of zero mean
+    """
+
+    noise = np.random.normal(loc=0, scale=sigma) + 1j*np.random.normal(loc=0, scale=sigma)
+    return noise
+
+
+def cerror_hash(sigma, *args):
+    """Return a complex number drawn from a circular complex Gaussian of zero mean
+    """
+
+    reargs = list(args)
+    reargs.append('re')
+    np.random.seed(hash(",".join(map(repr, reargs))) % 4294967295)
+    re = np.random.randn()
+
+    imargs = list(args)
+    imargs.append('im')
+    np.random.seed(hash(",".join(map(repr, imargs))) % 4294967295)
+    im = np.random.randn()
+
+    err = sigma * (re + 1j*im)
+
+    return err
+
+
+def hashmultivariaterandn(size, cov, *args):
+    """set the seed according to a collection of arguments and return random multivariate gaussian var
+    """
+    np.random.seed(hash(",".join(map(repr, args))) % 4294967295)
+    mean = np.zeros(size)
+    noise = np.random.multivariate_normal(mean, cov, check_valid='ignore')
+    return noise
+
+
+def hashrandn(*args):
+    """set the seed according to a collection of arguments and return random gaussian var
+    """
+
+    np.random.seed(hash(",".join(map(repr, args))) % 4294967295)
+    noise = np.random.randn()
+    return noise
+
+
+def hashrand(*args):
+    """set the seed according to a collection of arguments and return random number in 0,1
+    """
+
+    np.random.seed(hash(",".join(map(repr, args))) % 4294967295)
+    noise = np.random.rand()
+    return noise
+
+##################################################################################################
+# Time Functions
+##################################################################################################
+
+def gmst_to_utc(gmst, mjd):
+    """Convert gmst times in hours to utc hours using astropy.
+
+    Inverse of :func:`utc_to_gmst` on the canonical solar day of ``mjd``:
+    returns UTC in [0, 24). The local sidereal rate is sampled directly
+    from astropy across that day (mean GMST is polynomial in UT, so
+    within a day it's linear to ~1e-14 hours -- no iteration needed).
+
+    Note: an obs that spans > ~23.93 solar hours aliases in GMST and
+    cannot be uniquely round-tripped through this inverse; callers
+    must keep their obs inside a single sidereal day.
+    """
+
+    mjd = int(mjd)
+    t0 = at.Time(mjd, format='mjd', scale='utc')
+    t1 = at.Time(mjd + 1, format='mjd', scale='utc')
+    s0 = t0.sidereal_time('mean', 'greenwich').hour
+    s1 = t1.sidereal_time('mean', 'greenwich').hour
+    # Sidereal hours elapsed in 24 solar hours (~24.0657)
+    sidereal_per_day = ((s1 - s0) % 24.0) + 24.0
+    # Wrap into [0, 24) sidereal so utc lands in [0, 24) of mjd
+    delta_sidereal = (gmst - s0) % 24.0
+    time_utc = delta_sidereal * 24.0 / sidereal_per_day
+
+    return time_utc
+
+
+def utc_to_gmst(utc, mjd):
+    """Convert utc times in hours to gmst using astropy
+    """
+
+    mjd = int(mjd)  # MJD should always be an integer, but was float in older versions of the code
+    time_obj = at.Time(utc/24.0 + np.floor(mjd), format='mjd', scale='utc')
+    time_sidereal = time_obj.sidereal_time('mean', 'greenwich').hour
+
+    return time_sidereal
+
+##################################################################################################
+# DFT Functions
+##################################################################################################
+
+def image_centroid(im):
+    """Return the image centroid (in radians)
+    """
+
+    xlist = np.arange(0, -im.xdim, -1)*im.psize + (im.psize*im.xdim)/2.0 - im.psize/2.0
+    ylist = np.arange(0, -im.ydim, -1)*im.psize + (im.psize*im.ydim)/2.0 - im.psize/2.0
+
+    x0 = np.sum(np.outer(0.0*ylist+1.0, xlist).ravel()*im.imvec)/np.sum(im.imvec)
+    y0 = np.sum(np.outer(ylist, 0.0*xlist+1.0).ravel()*im.imvec)/np.sum(im.imvec)
+
+    return np.array([x0, y0])
+
+
+def ftmatrix(pdim, xdim, ydim, uvlist, pulse=ehc.PULSE_DEFAULT, mask=[]):
+    """Return a DFT matrix for the xdim*ydim image with pixel width pdim
+       that extracts spatial frequencies of the uv points in uvlist.
+    """
+
+    xlist = np.arange(0, -xdim, -1)*pdim + (pdim*xdim)/2.0 - pdim/2.0
+    ylist = np.arange(0, -ydim, -1)*pdim + (pdim*ydim)/2.0 - pdim/2.0
+
+    # original sign convention
+    # ftmatrices = [pulse(2*np.pi*uv[0], 2*np.pi*uv[1], pdim, dom="F") *
+    #              np.outer(np.exp(-2j*np.pi*ylist*uv[1]), np.exp(-2j*np.pi*xlist*uv[0]))
+    #              for uv in uvlist]
+
+    # changed the sign convention to agree with BU data (Jan 2017)
+    # this is correct for a u,v definition from site 1-2 as (x1-x2)/lambda
+    ftmatrices = [pulse(2*np.pi*uv[0], 2*np.pi*uv[1], pdim, dom="F") *
+                  np.outer(np.exp(2j*np.pi*ylist*uv[1]), np.exp(2j*np.pi*xlist*uv[0]))
+                  for uv in uvlist]
+    ftmatrices = np.reshape(np.array(ftmatrices), (len(uvlist), xdim*ydim))
+
+    if len(mask):
+        ftmatrices = ftmatrices[:, mask]
+
+    return ftmatrices
+
+
+def ftmatrix_centered(im, pdim, xdim, ydim, uvlist, pulse=ehc.PULSE_DEFAULT):
+    """Return a DFT matrix for the xdim*ydim image with pixel width pdim
+       that extracts spatial frequencies of the uv points in uvlist.
+       in this version, it puts the image centroid at the origin
+    """
+
+    # TODO : there is a residual value for the center being around 0,
+    # maybe we should chop this off to be exactly 0?
+    xlist = np.arange(0, -xdim, -1)*pdim + (pdim*xdim)/2.0 - pdim/2.0
+    ylist = np.arange(0, -ydim, -1)*pdim + (pdim*ydim)/2.0 - pdim/2.0
+    x0 = np.sum(np.outer(0.0*ylist+1.0, xlist).ravel()*im)/np.sum(im)
+    y0 = np.sum(np.outer(ylist, 0.0*xlist+1.0).ravel()*im)/np.sum(im)
+
+    # Now shift the lists
+    xlist = xlist - x0
+    ylist = ylist - y0
+
+    # list of matrices at each spatial freq
+    ftmatrices = [pulse(2*np.pi*uv[0], 2*np.pi*uv[1], pdim, dom="F") *
+                  np.outer(np.exp(-2j*np.pi*ylist*uv[1]), np.exp(-2j*np.pi*xlist*uv[0]))
+                  for uv in uvlist]
+    ftmatrices = np.reshape(np.array(ftmatrices), (len(uvlist), xdim*ydim))
+    return ftmatrices
 
 ##################################################################################################
 # FFT & NFFT helper functions
@@ -1786,6 +1726,171 @@ def recarr_to_ndarr(x, typ):
     y = x.astype(dt).view(typ).reshape(shape)
     return y
 
+def qimage(iimage, mimage, chiimage):
+    """Return the Q image from m and chi"""
+    return iimage * mimage * np.cos(2*chiimage)
+
+
+def uimage(iimage, mimage, chiimage):
+    """Return the U image from m and chi"""
+    return iimage * mimage * np.sin(2*chiimage)
+
+
+def ticks(axisdim, psize, nticks=8):
+    """Return a list of ticklocs and ticklabels
+       psize should be in desired units
+    """
+
+    axisdim = int(axisdim)
+    nticks = int(nticks)
+    if not axisdim % 2:
+        axisdim += 1
+    if nticks % 2:
+        nticks -= 1
+    tickspacing = float(axisdim-1)/nticks
+    ticklocs = np.arange(0, axisdim+1, tickspacing) - 0.5
+    ticklabels = np.around(psize * np.arange((axisdim-1)/2.0, -
+                                             (axisdim)/2.0, -tickspacing), decimals=1)
+
+    return (ticklocs, ticklabels)
+
+
+def power_of_two(target):
+    """Finds the next greatest power of two
+    """
+    cur = 1
+    if target > 1:
+        for i in range(0, int(target)):
+            if (cur >= target):
+                return cur
+            else:
+                cur *= 2
+    else:
+        return 1
+
+
+def paritycompare(perm1, perm2):
+    """Compare the parity of two permutations.
+       Assume both lists are equal length and with same elements
+       Copied from: http://stackoverflow.com/questions/1503072/how-to-check-if-permutations-have-equal-parity
+    """
+
+    perm2 = list(perm2)
+    perm2_map = dict((v, i) for i, v in enumerate(perm2))
+    transCount = 0
+    for loc, p1 in enumerate(perm1):
+        p2 = perm2[loc]
+        if p1 != p2:
+            sloc = perm2_map[p1]
+            perm2[loc], perm2[sloc] = p1, p2
+            perm2_map[p1], perm2_map[p2] = sloc, loc
+            transCount += 1
+
+    if not (transCount % 2):
+        return 1
+    else:
+        return -1
+
+
+def sigtype(datatype):
+    """Return the type of noise corresponding to the data type
+    """
+
+    datatype = str(datatype)
+    if datatype in ['vis', 'amp']:
+        sigmatype = 'sigma'
+    elif datatype in ['qvis', 'qamp']:
+        sigmatype = 'qsigma'
+    elif datatype in ['uvis', 'uamp']:
+        sigmatype = 'usigma'
+    elif datatype in ['vvis', 'vamp']:
+        sigmatype = 'vsigma'
+    elif datatype in ['pvis', 'pamp']:
+        sigmatype = 'psigma'
+    elif datatype in ['evis', 'eamp']:
+        sigmatype = 'esigma'
+    elif datatype in ['bvis', 'bamp']:
+        sigmatype = 'esigma'
+    elif datatype in ['rrvis', 'rramp']:
+        sigmatype = 'rrsigma'
+    elif datatype in ['llvis', 'llamp']:
+        sigmatype = 'llsigma'
+    elif datatype in ['rlvis', 'rlamp']:
+        sigmatype = 'rlsigma'
+    elif datatype in ['lrvis', 'lramp']:
+        sigmatype = 'lrsigma'
+    elif datatype in ['rrllvis', 'rrllamp']:
+        sigmatype = 'rrllsigma'
+    elif datatype in ['m', 'mamp']:
+        sigmatype = 'msigma'
+    elif datatype in ['phase']:
+        sigmatype = 'sigma_phase'
+    elif datatype in ['qphase']:
+        sigmatype = 'qsigma_phase'
+    elif datatype in ['uphase']:
+        sigmatype = 'usigma_phase'
+    elif datatype in ['vphase']:
+        sigmatype = 'vsigma_phase'
+    elif datatype in ['pphase']:
+        sigmatype = 'psigma_phase'
+    elif datatype in ['ephase']:
+        sigmatype = 'esigma_phase'
+    elif datatype in ['bphase']:
+        sigmatype = 'bsigma_phase'
+    elif datatype in ['mphase']:
+        sigmatype = 'msigma_phase'
+    elif datatype in ['rrphase']:
+        sigmatype = 'rrsigma_phase'
+    elif datatype in ['llphase']:
+        sigmatype = 'llsigma_phase'
+    elif datatype in ['rlphase']:
+        sigmatype = 'rlsigma_phase'
+    elif datatype in ['lrphase']:
+        sigmatype = 'lrsigma_phase'
+    elif datatype in ['rrllphase']:
+        sigmatype = 'rrllsigma_phase'
+
+    else:
+        sigmatype = False
+
+    return sigmatype
+
+
+def rastring(ra):
+    """Convert a ra in fractional hours to formatted string
+    """
+    h = int(ra)
+    m = int((ra-h)*60.)
+    s = (ra-h-m/60.)*3600.
+    out = f"{h:2d} h {m:2d} m {s:2.4f} s"
+
+    return out
+
+
+def decstring(dec):
+    """Convert a dec in fractional degrees to formatted string
+    """
+
+    deg = int(dec)
+    m = int((abs(dec)-abs(deg))*60.)
+    s = (abs(dec)-abs(deg)-m/60.)*3600.
+    out = f"{deg:2d} deg {m:2d} m {s:2.4f} s"
+
+    return out
+
+
+def gmtstring(gmt):
+    """Convert a gmt in fractional hours to formatted string
+    """
+
+    if gmt > 24.0:
+        gmt = gmt-24.0
+    h = int(gmt)
+    m = int((gmt-h)*60.)
+    s = (gmt-h-m/60.)*3600.
+    out = f"{h:02d}:{m:02d}:{s:2.4f}"
+
+    return out
 
 def prog_msg(nscan, totscans, msgtype='bar', nscan_last=0):
     """print a progress method for calibration
@@ -1877,105 +1982,5 @@ def prog_msg(nscan, totscans, msgtype='bar', nscan_last=0):
         sys.stdout.write(printstr % barparams)
         sys.stdout.flush()
 
-def sat_skyfield_from_elements(satname, epoch_mjd, perigee_mjd,
-                               period_days, eccentricity,
-                               inclination, arg_perigee, long_ascending):
 
-    """skyfield EarthSatellite object from keplerian orbital elements
-       perfect keplerian orbit is assumed, no derivatives
-       epoch, pericenter given in mjd
-       period given in days
-       inclination, arg_perigee, long_ascending given in degrees
-    """
-
-    if not(0<=eccentricity<1):
-        raise Exception("eccentricity must be between 0 and 1")
-    if not(0<=inclination<=180):
-        raise Exception("inclination must be between 0 and 180")
-    if not(0<=arg_perigee<=180):
-        raise Exception("arg_perigee must be between 0 and 180")
-    if not(0<=long_ascending<=360):
-        raise Exception("arg_perigee must be between 0 and 360")
-
-    satrec = Satrec()
-    ts = skyfield.api.load.timescale()
-    ref_mjd = 33281. # mjd 1949 December 31 00:00 UT
-    epoch_wrt_ref = epoch_mjd - ref_mjd
-
-    inclination_rad = inclination*ehc.DEGREE
-    arg_perigee_rad = arg_perigee*ehc.DEGREE
-    long_ascending_rad = long_ascending*ehc.DEGREE
-
-    mean_motion = 2*np.pi/(period_days*24.*60.) # radians/minute
-
-    mean_anomaly = mean_motion*(epoch_mjd - perigee_mjd)
-    mean_anomaly = np.mod(mean_anomaly, 2*np.pi)
-
-    satrec.sgp4init(
-        WGS72,           # gravity model
-        'i',             # 'a' = old AFSPC mode, 'i' = improved mode
-        1,               # satnum: Satellite number
-        epoch_wrt_ref,     # epoch: days since 1949 December 31 00:00 UT
-        0.0,             # bstar: drag coefficient (/earth radii)
-        0.0,             # ndot: ballistic coefficient (revs/day)
-        0.0,             # nddot: second derivative of mean motion (revs/day^3)
-        eccentricity,    # ecco: eccentricity
-        arg_perigee_rad,     # argpo: argument of perigee (radians)
-        inclination_rad,     # inclo: inclination (radians)
-        mean_anomaly,    # mo: mean anomaly (radians)
-        mean_motion,     # no_kozai: mean motion (radians/minute)
-        long_ascending_rad,    # nodeo: right ascension of ascending node (radians)
-    )
-    sat_skyfield = skyfield.api.EarthSatellite.from_satrec(satrec, ts)
-
-    return sat_skyfield
-
-def sat_skyfield_from_tle(satname, line1, line2):
-    ts = skyfield.api.load.timescale()
-    sat_skyfield = skyfield.api.EarthSatellite(line1, line2, satname, ts)
-    return sat_skyfield
-
-def sat_skyfield_from_ephementry(satname, ephem, epoch_mjd):
-    if len(ephem[satname])==3: # TLE
-        line1 = ephem[satname][1]
-        line2 = ephem[satname][2]
-        sat = sat_skyfield_from_tle(satname, line1, line2)
-    elif len(ephem[satname])==6: #keplerian elements
-        elements = ephem[satname]
-        sat = sat_skyfield_from_elements(satname, epoch_mjd,
-                                         elements[0],elements[1],elements[2],elements[3],elements[4],elements[5])
-    else:
-        raise Exception(f"ephemeris format not recognized for {satname}")
-
-    return sat
-
-def orbit_skyfield(sat, fracmjds, whichout='itrs'):
-
-    """uses skyfield to propagate a earth satellite orbit and return x,y,z coordinates in co-rotating earth frame
-       sat is a skyfield.sgp4lib.EarthSatellite object
-       times is a list of fractional mjds
-       whichout is 'itrs' (co-rotating) or 'gcrs' (fixed x-axis to equinox)
-    """
-
-    #fractional days of orbit in jd
-    mjd_to_jd = 2400000.5
-    ts = skyfield.api.load.timescale()
-    t = ts.ut1_jd(mjd_to_jd+fracmjds)
-
-    # propagate orbit
-    time_data = sat.at(t)
-
-    if whichout=='gcrs':
-        # GCRS coordinates in km
-        positions = time_data.xyz.m
-
-    elif whichout=='itrs':
-        # get coordinates in earth frame (WGS84 ellipsiod)
-        geographic_position = skyfield.api.wgs84.geographic_position_of(time_data)
-        positions = geographic_position.itrs_xyz.m
-
-    else:
-        raise Exception("orbit_skyfield whichout must be 'itrs' or 'gcrs'")
-
-    return positions
 
