@@ -1008,16 +1008,10 @@ class Obsdata:
                 out = sites
                 ty = 'U32'
             else:
+                # all visibility logic for all polreps in obsh.unpack_vis
                 out, sig, ty = obsh.unpack_vis(data, field, self.polrep)
-                # vis-family fields (or invalid -> the helpers raise). MIXED needs
-                # per-row dispatch (unpack_vis_mixed); stokes/circ/lin use
-                # unpack_vis_standard. Both return the base complex value + sigma;
-                # the suffix stage below turns it into amp/phase/snr/etc.
-                #if self.polrep == 'mixed':
-                #    out, sig, ty = obsh.unpack_vis_standard(data, field, self.polrep)
-                #else:
-                #    out, sig, ty = obsh.unpack_vis_standard(data, field, self.polrep)
 
+            # time transforms
             if field in ["time_utc"] and self.timetype == 'GMST':
                 out = obsh.gmst_to_utc(out, self.mjd)
             if field in ["time_gmst"] and self.timetype == 'UTC':

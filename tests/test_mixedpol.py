@@ -1839,6 +1839,38 @@ def test_unpack_mixed_correlation_absent_everywhere():
     assert np.all(np.isnan(xx))
 
 
+# Stokes-derived fields (pvis/m/rrllvis) are recoverable on every mixed row
+# under the ideal-feed assumption. Each is checked as the algebraic
+# combination of the already-trusted Stokes components.
+
+def test_unpack_mixed_pvis():
+    obs = _mixed_obs()
+    q = obs.unpack('qvis')['qvis']
+    u = obs.unpack('uvis')['uvis']
+    pvis = obs.unpack('pvis')['pvis']
+    assert np.all(np.isfinite(pvis))
+    np.testing.assert_allclose(pvis, q + 1j * u, atol=1e-12)
+
+
+def test_unpack_mixed_m():
+    obs = _mixed_obs()
+    ivis = obs.unpack('vis')['vis']
+    q = obs.unpack('qvis')['qvis']
+    u = obs.unpack('uvis')['uvis']
+    m = obs.unpack('m')['m']
+    assert np.all(np.isfinite(m))
+    np.testing.assert_allclose(m, (q + 1j * u) / ivis, atol=1e-12)
+
+
+def test_unpack_mixed_rrllvis():
+    obs = _mixed_obs()
+    ivis = obs.unpack('vis')['vis']
+    v = obs.unpack('vvis')['vvis']
+    rrll = obs.unpack('rrllvis')['rrllvis']
+    assert np.all(np.isfinite(rrll))
+    np.testing.assert_allclose(rrll, (ivis + v) / (ivis - v), atol=1e-12)
+
+
 # ============================================================================
 #  load_uvfits mixed-pol detection stop-gap
 # ============================================================================

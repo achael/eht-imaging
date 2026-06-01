@@ -449,22 +449,12 @@ _CIRC_VTYPES = ('rrvis', 'llvis', 'rlvis', 'lrvis')
 _LIN_VTYPES = ('xxvis', 'yyvis', 'xyvis', 'yxvis')
 _GENERIC_VTYPES = ('p1p1vis', 'p2p2vis', 'p1p2vis', 'p2p1vis')
 
-# Maps a single-correlation feed-basis vtype to the generic DTPOL_MIXED slot
-# that holds it on a homogeneous baseline of the matching feed basis.
-_MIXED_SLOT = {'rrvis': 'p1p1vis', 'xxvis': 'p1p1vis',
-               'llvis': 'p2p2vis', 'yyvis': 'p2p2vis',
-               'rlvis': 'p1p2vis', 'xyvis': 'p1p2vis',
-               'lrvis': 'p2p1vis', 'yxvis': 'p2p1vis',
-               'pvis': 'p1p2vis'}
-
-# field-name suffixes shared by every vis-family group
-_UNPACK_SUFFIXES = ('vis', 'amp', 'phase', 'snr', 'sigma', 'sigma_phase')
-
 
 def vis_component(l, vtype, polrep):
     """Return (visibility, sigma) for a single correlation `vtype` from one
        datatable `l`. Native correlations are read directly; correlations in a
        different basis are synthesized through ehtim.observing.pol_conventions
+       so the basis-transform conventions live in exactly one place.
     """
     if vtype == 'pvis':  # polarized visibility == RL == Q + iU
         vtype = 'rlvis'
@@ -474,9 +464,6 @@ def vis_component(l, vtype, polrep):
             vals, sigs = unpack_mixed_stokes(l, vtype)
             return vals, sigs
 
-    #    if vtype not in _CIRC_VTYPES + _LIN_VTYPES:
-    #        raise Exception("vis_component with polrep=='mixed' supports only single-correlation "
-    #                        f"feed-basis vtypes; got {vtype!r}")
         if vtype in _CIRC_VTYPES + _LIN_VTYPES:
             pref = vtype[:-3]    # 'rrvis' -> 'rr'; the two chars are the feed letters
             vals, sigs, n_nan = unpack_mixed_correlation(l, pref[0], pref[1])
@@ -487,12 +474,6 @@ def vis_component(l, vtype, polrep):
                     ehw.MixedPolUnpackNaNWarning)
 
             return vals, sigs
-    
-    #    slot = _MIXED_SLOT.get(vtype)
-    #    if slot is None:
-    #        raise Exception("mixed-feed closures support only single-correlation "
-    #                        f"feed-basis vtypes; got {vtype!r}")
-    #    return l[slot], l[slot[:-3] + 'sigma']
 
     if polrep == 'stokes':
         if vtype in _STOKES_VTYPES:
@@ -533,8 +514,8 @@ def vis_component(l, vtype, polrep):
 
 def unpack_generic_slot(data, slot, polrep):
     """Return (vis, sigma) for a generic feed slot ('p1p1'/'p2p2'/'p1p2'/'p2p1')
-       directly via the DTPOL title alias. 
-       Defined for circ/lin/mixed (the slot aliases the physical correlation); 
+       directly via the DTPOL title alias.
+       Defined for circ/lin/mixed (the slot aliases the physical correlation);
        stokes has no feed slots."""
     if polrep == 'stokes':
         raise Exception(f"unpack: generic slot {slot}vis has no meaning "
@@ -542,16 +523,14 @@ def unpack_generic_slot(data, slot, polrep):
     return data[slot + 'vis'], data[slot + 'sigma']
 
 
-def unpack_mixed_stokes(data,vtype):
+def unpack_mixed_stokes(data, vtype):
     """Recover stokes vtype and sigma from a MIXED datatable via
-       coherency_to_stokes, grouped by polbasis. 
+       coherency_to_stokes, grouped by polbasis.
        Valid on every row (including heterogeneous baselines)
        under the ideal-feed assumption."""
     pb = data['polbasis']
-    if len(data.shape):
-        n = len(data) # multi row data table
-    else:
-        n = 1 # single row data table
+    scalar = not len(data.shape)   # single-row np.void record
+    n = 1 if scalar else len(data)
     ivis = np.empty(n, dtype='c16')
     q = np.empty(n, dtype='c16')
     u = np.empty(n, dtype='c16')
@@ -572,15 +551,19 @@ def unpack_mixed_stokes(data,vtype):
         ivis[m], q[m], u[m], v[m] = iv, qv, uv, vv
         si[m], sq[m], su[m], sv[m] = siv, sqv, suv, svv
 
-    if vtype=='vis':
-        return ivis, si
-    if vtype=='qvis':
-        return q, sq
-    if vtype=='uvis':
-        return u, su
-    if vtype=='vvis':
-        return v, sv
-    raise Exception(f"vtype {vtype!r} not recognized in unpack_mixed_stokes")
+    if vtype == 'vis':
+        val, sig = ivis, si
+    elif vtype == 'qvis':
+        val, sig = q, sq
+    elif vtype == 'uvis':
+        val, sig = u, su
+    elif vtype == 'vvis':
+        val, sig = v, sv
+    else:
+        raise Exception(f"vtype {vtype!r} not recognized in unpack_mixed_stokes")
+    # single-row input -> scalar out, matching a direct datatable slot read
+    # (make_bispectrum / make_closure_amplitude pass one row at a time)
+    return (val[0], sig[0]) if scalar else (val, sig)
 
 def unpack_mixed_correlation(data, feed_a, feed_b):
     """Recover physical correlation feed_a * conj(feed_b) (e.g. 'r','r' -> 'rrvis')
@@ -588,10 +571,8 @@ def unpack_mixed_correlation(data, feed_a, feed_b):
        provide it, NaN elsewhere; no coherency transformation.
        Returns (vis, sigma, n_nanfilled)."""
     pb = data['polbasis']
-    if len(data.shape):
-        n = len(data) # multi row data table
-    else:
-        n = 1 # single row data table
+    scalar = not len(data.shape)   # single-row np.void record
+    n = 1 if scalar else len(data)
     out = np.full(n, np.nan, dtype='c16')
     sig = np.full(n, np.nan, dtype='f8')
     n_nan = 0
@@ -604,64 +585,9 @@ def unpack_mixed_correlation(data, feed_a, feed_b):
             continue
         out[m] = data[slot][m]
         sig[m] = data[slot[:-3] + 'sigma'][m]
-    return out, sig, n_nan
-
-"""
-def unpack_vis_mixed(data, field):
-    #Return (out, sig, ty) for a vis-family field on a MIXED datatable.
-       Row-aligned NaN-fill; warns per field when a physical correlation is
-       absent on some rows. See the dispatch note in Obsdata.unpack_dat.
-    # generic slots: direct read, all rows
-    for slot in ('p1p1', 'p2p2', 'p1p2', 'p2p1'):
-        if field in [slot + s for s in _UNPACK_SUFFIXES]:
-            return data[slot + 'vis'], data[slot + 'sigma'], 'c16'
-
-    # physical / cross correlation names: matching slot where present, else NaN
-    for visname in _CIRC_VTYPES + _LIN_VTYPES:
-        pref = visname[:-3]    # 'rrvis' -> 'rr'; the two chars are the feed letters
-        if field in [pref + s for s in _UNPACK_SUFFIXES]:
-            out, sig, n_nan = unpack_mixed_correlation(data, pref[0], pref[1])
-            if n_nan > 0:
-                warnings.warn(
-                    f"unpack({field!r}) on a mixed-feed obs: {n_nan} rows have "
-                    f"no {pref.upper()} correlation and were returned as NaN.",
-                    ehw.MixedPolUnpackNaNWarning)
-            return out, sig, 'c16'
-
-    # Stokes-derived: recover (I, Q, U, V) per row, then form the field
-    ivis, q, u, v, si, sq, su, sv = unpack_mixed_stokes(data)
-    if field in ['vis', 'amp', 'phase', 'snr', 'sigma', 'sigma_phase']:
-        return ivis, si, 'c16'
-    if field in ['qvis', 'qamp', 'qphase', 'qsnr', 'qsigma', 'qsigma_phase']:
-        return q, sq, 'c16'
-    if field in ['uvis', 'uamp', 'uphase', 'usnr', 'usigma', 'usigma_phase']:
-        return u, su, 'c16'
-    if field in ['vvis', 'vamp', 'vphase', 'vsnr', 'vsigma', 'vsigma_phase']:
-        return v, sv, 'c16'
-    if field in ['pvis', 'pamp', 'pphase', 'psnr', 'psigma', 'psigma_phase']:
-        return q + 1j * u, np.sqrt(sq**2 + su**2), 'c16'
-    if field in ['m', 'mamp', 'mphase', 'msnr', 'msigma', 'msigma_phase']:
-        out = (q + 1j * u) / ivis
-        return out, merr(si, sq, su, ivis, out), 'c16'
-    if field in ['evis', 'eamp', 'ephase', 'esnr', 'esigma', 'esigma_phase']:
-        ang = np.arctan2(data['u'], data['v'])
-        out = np.cos(2 * ang) * q + np.sin(2 * ang) * u
-        sig = np.sqrt(0.5 * ((np.cos(2 * ang) * sq)**2 + (np.sin(2 * ang) * su)**2))
-        return out, sig, 'c16'
-    if field in ['bvis', 'bamp', 'bphase', 'bsnr', 'bsigma', 'bsigma_phase']:
-        ang = np.arctan2(data['u'], data['v'])
-        out = -np.sin(2 * ang) * q + np.cos(2 * ang) * u
-        sig = np.sqrt(0.5 * ((np.sin(2 * ang) * sq)**2 + (np.cos(2 * ang) * su)**2))
-        return out, sig, 'c16'
-    if field in ['rrllvis', 'rrllamp', 'rrllphase', 'rrllsnr',
-                 'rrllsigma', 'rrllsigma_phase']:
-        out = (ivis + v) / (ivis - v)
-        sig = (2.0**0.5 * (np.abs(ivis)**2 + np.abs(v)**2)**0.5
-               / np.abs(ivis - v)**2 * (si**2 + sv**2)**0.5)
-        return out, sig, 'c16'
-
-    raise Exception(f"{field} is not a valid field for polrep 'mixed'")
-"""
+    # single-row input -> scalar out, matching a direct datatable slot read
+    # (make_bispectrum / make_closure_amplitude pass one row at a time)
+    return (out[0], sig[0], n_nan) if scalar else (out, sig, n_nan)
 
 def unpack_vis(data, field, polrep):
     """Return (out, sig, ty) for a vis-family field on a stokes/circ/lin/mixed
@@ -670,7 +596,6 @@ def unpack_vis(data, field, polrep):
        bvis/rrllvis) keep their per-basis algebra.
        Mixed dtypes NaN fill correlations following unpack_mixed_correlation.
        Raises for unsupported fields and (field, polrep) combinations."""
-    
     if field in ['vis', 'amp', 'phase', 'snr', 'sigma', 'sigma_phase']:
         out, sig = vis_component(data, 'vis', polrep)
         return out, sig, 'c16'
@@ -686,9 +611,9 @@ def unpack_vis(data, field, polrep):
     if field in ['pvis', 'pamp', 'pphase', 'psnr', 'psigma', 'psigma_phase']:
         if polrep in ('stokes', 'circ'):
             out, sig = vis_component(data, 'rlvis', polrep)  # P = RL
-        elif polrep == 'lin':
-            q, qsig = vis_component(data, 'qvis', 'lin')
-            u, usig = vis_component(data, 'uvis', 'lin')
+        elif polrep in ('lin', 'mixed'):
+            q, qsig = vis_component(data, 'qvis', polrep)
+            u, usig = vis_component(data, 'uvis', polrep)
             out = q + 1j * u
             sig = np.sqrt(qsig**2 + usig**2)
         return out, sig, 'c16'
@@ -700,10 +625,10 @@ def unpack_vis(data, field, polrep):
             out = 2 * data['rlvis'] / (data['rrvis'] + data['llvis'])
             sig = merr2(data['rlsigma'], data['rrsigma'], data['llsigma'],
                         0.5 * (data['rrvis'] + data['llvis']), out)
-        elif polrep == 'lin':
-            ivis, isig = vis_component(data, 'vis', 'lin')
-            q, qsig = vis_component(data, 'qvis', 'lin')
-            u, usig = vis_component(data, 'uvis', 'lin')
+        elif polrep in ('lin', 'mixed'):
+            ivis, isig = vis_component(data, 'vis', polrep)
+            q, qsig = vis_component(data, 'qvis', polrep)
+            u, usig = vis_component(data, 'uvis', polrep)
             out = (q + 1j * u) / ivis
             sig = merr(isig, qsig, usig, ivis, out)
         return out, sig, 'c16'
@@ -756,6 +681,12 @@ def unpack_vis(data, field, polrep):
             out = data['rrvis'] / data['llvis']
             sig = np.sqrt(np.abs(data['rrsigma'] / data['llvis'])**2
                           + np.abs(data['llsigma'] * data['rrvis'] / data['llvis'])**2)
+        elif polrep == 'mixed':
+            ivis, isig = vis_component(data, 'vis', 'mixed')
+            v, vsig = vis_component(data, 'vvis', 'mixed')
+            out = (ivis + v) / (ivis - v)
+            sig = (2.0**0.5 * (np.abs(ivis)**2 + np.abs(v)**2)**0.5
+                   / np.abs(ivis - v)**2 * (isig**2 + vsig**2)**0.5)
         else:
             raise Exception(f"unpack: field {field!r} not supported for "
                             f"polrep {polrep!r}")
