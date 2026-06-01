@@ -1007,122 +1007,15 @@ class Obsdata:
                 tdata = self.tarr[keys]
                 out = sites
                 ty = 'U32'
-            elif self.polrep == 'mixed':
-                # MIXED has no single column formula (slot meaning varies per row
-                # with feed_type), so dispatch per row via polbasis: row-aligned
-                # NaN-fill, Stokes-derived recovered with coherency_to_stokes.
-                out, sig, ty = obsh.unpack_vis_mixed(data, field)
-            elif field in ['vis', 'amp', 'phase', 'snr', 'sigma', 'sigma_phase']:
-                ty = 'c16'
-                out, sig = obsh.vis_component(data, 'vis', self.polrep)
-            elif field in ['qvis', 'qamp', 'qphase', 'qsnr', 'qsigma', 'qsigma_phase']:
-                ty = 'c16'
-                out, sig = obsh.vis_component(data, 'qvis', self.polrep)
-            elif field in ['uvis', 'uamp', 'uphase', 'usnr', 'usigma', 'usigma_phase']:
-                ty = 'c16'
-                out, sig = obsh.vis_component(data, 'uvis', self.polrep)
-            elif field in ['vvis', 'vamp', 'vphase', 'vsnr', 'vsigma', 'vsigma_phase']:
-                ty = 'c16'
-                out, sig = obsh.vis_component(data, 'vvis', self.polrep)
-            elif field in ['pvis', 'pamp', 'pphase', 'psnr', 'psigma', 'psigma_phase']:
-                ty = 'c16'
-                if self.polrep in ('stokes', 'circ'):
-                    out, sig = obsh.vis_component(data, 'rlvis', self.polrep)  # P = RL
-                elif self.polrep == 'lin':
-                    q, qsig = obsh.vis_component(data, 'qvis', 'lin')
-                    u, usig = obsh.vis_component(data, 'uvis', 'lin')
-                    out = q + 1j * u
-                    sig = np.sqrt(qsig**2 + usig**2)
-            elif field in ['m', 'mamp', 'mphase', 'msnr', 'msigma', 'msigma_phase']:
-                ty = 'c16'
-                if self.polrep == 'stokes':
-                    out = (data['qvis'] + 1j * data['uvis']) / data['vis']
-                    sig = obsh.merr(data['sigma'], data['qsigma'], data['usigma'], data['vis'], out)
-                elif self.polrep == 'circ':
-                    out = 2 * data['rlvis'] / (data['rrvis'] + data['llvis'])
-                    sig = obsh.merr2(data['rlsigma'], data['rrsigma'], data['llsigma'],
-                                     0.5 * (data['rrvis'] + data['llvis']), out)
-                elif self.polrep == 'lin':
-                    ivis, isig = obsh.vis_component(data, 'vis', 'lin')
-                    q, qsig = obsh.vis_component(data, 'qvis', 'lin')
-                    u, usig = obsh.vis_component(data, 'uvis', 'lin')
-                    out = (q + 1j * u) / ivis
-                    sig = obsh.merr(isig, qsig, usig, ivis, out)
-            elif field in ['evis', 'eamp', 'ephase', 'esnr', 'esigma', 'esigma_phase']:
-                ty = 'c16'
-                ang = np.arctan2(data['u'], data['v'])  # TODO: correct convention EofN?
-                q, qsig = obsh.vis_component(data, 'qvis', self.polrep)
-                u, usig = obsh.vis_component(data, 'uvis', self.polrep)
-                out = (np.cos(2 * ang) * q + np.sin(2 * ang) * u)
-                sig = np.sqrt(0.5 * ((np.cos(2 * ang) * qsig)**2 + (np.sin(2 * ang) * usig)**2))
-            elif field in ['bvis', 'bamp', 'bphase', 'bsnr', 'bsigma', 'bsigma_phase']:
-                ty = 'c16'
-                ang = np.arctan2(data['u'], data['v'])  # TODO: correct convention EofN?
-                q, qsig = obsh.vis_component(data, 'qvis', self.polrep)
-                u, usig = obsh.vis_component(data, 'uvis', self.polrep)
-                out = (-np.sin(2 * ang) * q + np.cos(2 * ang) * u)
-                sig = np.sqrt(0.5 * ((np.sin(2 * ang) * qsig)**2 + (np.cos(2 * ang) * usig)**2))
-            elif field in ['rrvis', 'rramp', 'rrphase', 'rrsnr', 'rrsigma', 'rrsigma_phase']:
-                ty = 'c16'
-                out, sig = obsh.vis_component(data, 'rrvis', self.polrep)
-            elif field in ['llvis', 'llamp', 'llphase', 'llsnr', 'llsigma', 'llsigma_phase']:
-                ty = 'c16'
-                out, sig = obsh.vis_component(data, 'llvis', self.polrep)
-            elif field in ['rlvis', 'rlamp', 'rlphase', 'rlsnr', 'rlsigma', 'rlsigma_phase']:
-                ty = 'c16'
-                out, sig = obsh.vis_component(data, 'rlvis', self.polrep)
-            elif field in ['lrvis', 'lramp', 'lrphase', 'lrsnr', 'lrsigma', 'lrsigma_phase']:
-                ty = 'c16'
-                out, sig = obsh.vis_component(data, 'lrvis', self.polrep)
-            elif field in ['rrllvis', 'rrllamp', 'rrllphase', 'rrllsnr',
-                           'rrllsigma', 'rrllsigma_phase']:
-                ty = 'c16'
-                if self.polrep == 'stokes':
-                    out = (data['vis'] + data['vvis']) / (data['vis'] - data['vvis'])
-                    sig = (2.0**0.5 * (np.abs(data['vis'])**2 + np.abs(data['vvis'])**2)**0.5
-                           / np.abs(data['vis'] - data['vvis'])**2
-                           * (data['sigma']**2 + data['vsigma']**2)**0.5)
-                elif self.polrep == 'circ':
-                    out = data['rrvis'] / data['llvis']
-                    sig = np.sqrt(np.abs(data['rrsigma'] / data['llvis'])**2
-                                  + np.abs(data['llsigma'] * data['rrvis'] / data['llvis'])**2)
-                else:
-                    raise Exception(f"unpack: field {field!r} not supported for "
-                                    f"polrep {self.polrep!r}")
-
-            elif field in ['xxvis', 'xxamp', 'xxphase', 'xxsnr', 'xxsigma', 'xxsigma_phase']:
-                ty = 'c16'
-                out, sig = obsh.vis_component(data, 'xxvis', self.polrep)
-            elif field in ['yyvis', 'yyamp', 'yyphase', 'yysnr', 'yysigma', 'yysigma_phase']:
-                ty = 'c16'
-                out, sig = obsh.vis_component(data, 'yyvis', self.polrep)
-            elif field in ['xyvis', 'xyamp', 'xyphase', 'xysnr', 'xysigma', 'xysigma_phase']:
-                ty = 'c16'
-                out, sig = obsh.vis_component(data, 'xyvis', self.polrep)
-            elif field in ['yxvis', 'yxamp', 'yxphase', 'yxsnr', 'yxsigma', 'yxsigma_phase']:
-                ty = 'c16'
-                out, sig = obsh.vis_component(data, 'yxvis', self.polrep)
-
-            elif field in ['p1p1vis', 'p1p1amp', 'p1p1phase', 'p1p1snr',
-                           'p1p1sigma', 'p1p1sigma_phase']:
-                ty = 'c16'
-                out, sig = obsh.unpack_generic_slot(data, 'p1p1', self.polrep)
-            elif field in ['p2p2vis', 'p2p2amp', 'p2p2phase', 'p2p2snr',
-                           'p2p2sigma', 'p2p2sigma_phase']:
-                ty = 'c16'
-                out, sig = obsh.unpack_generic_slot(data, 'p2p2', self.polrep)
-            elif field in ['p1p2vis', 'p1p2amp', 'p1p2phase', 'p1p2snr',
-                           'p1p2sigma', 'p1p2sigma_phase']:
-                ty = 'c16'
-                out, sig = obsh.unpack_generic_slot(data, 'p1p2', self.polrep)
-            elif field in ['p2p1vis', 'p2p1amp', 'p2p1phase', 'p2p1snr',
-                           'p2p1sigma', 'p2p1sigma_phase']:
-                ty = 'c16'
-                out, sig = obsh.unpack_generic_slot(data, 'p2p1', self.polrep)
-
             else:
-                raise Exception(f"{field} is not a valid field \n" +
-                                "valid field values are: " + ' '.join(ehc.FIELDS))
+                # vis-family fields (or invalid -> the helpers raise). MIXED needs
+                # per-row dispatch (unpack_vis_mixed); stokes/circ/lin use
+                # unpack_vis_standard. Both return the base complex value + sigma;
+                # the suffix stage below turns it into amp/phase/snr/etc.
+                if self.polrep == 'mixed':
+                    out, sig, ty = obsh.unpack_vis_mixed(data, field)
+                else:
+                    out, sig, ty = obsh.unpack_vis_standard(data, field, self.polrep)
 
             if field in ["time_utc"] and self.timetype == 'GMST':
                 out = obsh.gmst_to_utc(out, self.mjd)

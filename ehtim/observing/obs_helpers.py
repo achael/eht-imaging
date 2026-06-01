@@ -409,6 +409,122 @@ def unpack_vis_mixed(data, field):
     raise Exception(f"{field} is not a valid field for polrep 'mixed'")
 
 
+def unpack_vis_standard(data, field, polrep):
+    """Return (out, sig, ty) for a vis-family field on a stokes/circ/lin
+       datatable. Direct correlations route through vis_component (so all basis
+       transforms come from pol_conventions); the derived fields (pvis/m/evis/
+       bvis/rrllvis) keep their per-basis algebra. Raises for unsupported fields
+       and (field, polrep) combinations."""
+    if field in ['vis', 'amp', 'phase', 'snr', 'sigma', 'sigma_phase']:
+        out, sig = vis_component(data, 'vis', polrep)
+        return out, sig, 'c16'
+    if field in ['qvis', 'qamp', 'qphase', 'qsnr', 'qsigma', 'qsigma_phase']:
+        out, sig = vis_component(data, 'qvis', polrep)
+        return out, sig, 'c16'
+    if field in ['uvis', 'uamp', 'uphase', 'usnr', 'usigma', 'usigma_phase']:
+        out, sig = vis_component(data, 'uvis', polrep)
+        return out, sig, 'c16'
+    if field in ['vvis', 'vamp', 'vphase', 'vsnr', 'vsigma', 'vsigma_phase']:
+        out, sig = vis_component(data, 'vvis', polrep)
+        return out, sig, 'c16'
+    if field in ['pvis', 'pamp', 'pphase', 'psnr', 'psigma', 'psigma_phase']:
+        if polrep in ('stokes', 'circ'):
+            out, sig = vis_component(data, 'rlvis', polrep)  # P = RL
+        elif polrep == 'lin':
+            q, qsig = vis_component(data, 'qvis', 'lin')
+            u, usig = vis_component(data, 'uvis', 'lin')
+            out = q + 1j * u
+            sig = np.sqrt(qsig**2 + usig**2)
+        return out, sig, 'c16'
+    if field in ['m', 'mamp', 'mphase', 'msnr', 'msigma', 'msigma_phase']:
+        if polrep == 'stokes':
+            out = (data['qvis'] + 1j * data['uvis']) / data['vis']
+            sig = merr(data['sigma'], data['qsigma'], data['usigma'], data['vis'], out)
+        elif polrep == 'circ':
+            out = 2 * data['rlvis'] / (data['rrvis'] + data['llvis'])
+            sig = merr2(data['rlsigma'], data['rrsigma'], data['llsigma'],
+                        0.5 * (data['rrvis'] + data['llvis']), out)
+        elif polrep == 'lin':
+            ivis, isig = vis_component(data, 'vis', 'lin')
+            q, qsig = vis_component(data, 'qvis', 'lin')
+            u, usig = vis_component(data, 'uvis', 'lin')
+            out = (q + 1j * u) / ivis
+            sig = merr(isig, qsig, usig, ivis, out)
+        return out, sig, 'c16'
+    if field in ['evis', 'eamp', 'ephase', 'esnr', 'esigma', 'esigma_phase']:
+        ang = np.arctan2(data['u'], data['v'])  # TODO: correct convention EofN?
+        q, qsig = vis_component(data, 'qvis', polrep)
+        u, usig = vis_component(data, 'uvis', polrep)
+        out = (np.cos(2 * ang) * q + np.sin(2 * ang) * u)
+        sig = np.sqrt(0.5 * ((np.cos(2 * ang) * qsig)**2 + (np.sin(2 * ang) * usig)**2))
+        return out, sig, 'c16'
+    if field in ['bvis', 'bamp', 'bphase', 'bsnr', 'bsigma', 'bsigma_phase']:
+        ang = np.arctan2(data['u'], data['v'])  # TODO: correct convention EofN?
+        q, qsig = vis_component(data, 'qvis', polrep)
+        u, usig = vis_component(data, 'uvis', polrep)
+        out = (-np.sin(2 * ang) * q + np.cos(2 * ang) * u)
+        sig = np.sqrt(0.5 * ((np.sin(2 * ang) * qsig)**2 + (np.cos(2 * ang) * usig)**2))
+        return out, sig, 'c16'
+    if field in ['rrvis', 'rramp', 'rrphase', 'rrsnr', 'rrsigma', 'rrsigma_phase']:
+        out, sig = vis_component(data, 'rrvis', polrep)
+        return out, sig, 'c16'
+    if field in ['llvis', 'llamp', 'llphase', 'llsnr', 'llsigma', 'llsigma_phase']:
+        out, sig = vis_component(data, 'llvis', polrep)
+        return out, sig, 'c16'
+    if field in ['rlvis', 'rlamp', 'rlphase', 'rlsnr', 'rlsigma', 'rlsigma_phase']:
+        out, sig = vis_component(data, 'rlvis', polrep)
+        return out, sig, 'c16'
+    if field in ['lrvis', 'lramp', 'lrphase', 'lrsnr', 'lrsigma', 'lrsigma_phase']:
+        out, sig = vis_component(data, 'lrvis', polrep)
+        return out, sig, 'c16'
+    if field in ['xxvis', 'xxamp', 'xxphase', 'xxsnr', 'xxsigma', 'xxsigma_phase']:
+        out, sig = vis_component(data, 'xxvis', polrep)
+        return out, sig, 'c16'
+    if field in ['yyvis', 'yyamp', 'yyphase', 'yysnr', 'yysigma', 'yysigma_phase']:
+        out, sig = vis_component(data, 'yyvis', polrep)
+        return out, sig, 'c16'
+    if field in ['xyvis', 'xyamp', 'xyphase', 'xysnr', 'xysigma', 'xysigma_phase']:
+        out, sig = vis_component(data, 'xyvis', polrep)
+        return out, sig, 'c16'
+    if field in ['yxvis', 'yxamp', 'yxphase', 'yxsnr', 'yxsigma', 'yxsigma_phase']:
+        out, sig = vis_component(data, 'yxvis', polrep)
+        return out, sig, 'c16'
+    if field in ['rrllvis', 'rrllamp', 'rrllphase', 'rrllsnr',
+                 'rrllsigma', 'rrllsigma_phase']:
+        if polrep == 'stokes':
+            out = (data['vis'] + data['vvis']) / (data['vis'] - data['vvis'])
+            sig = (2.0**0.5 * (np.abs(data['vis'])**2 + np.abs(data['vvis'])**2)**0.5
+                   / np.abs(data['vis'] - data['vvis'])**2
+                   * (data['sigma']**2 + data['vsigma']**2)**0.5)
+        elif polrep == 'circ':
+            out = data['rrvis'] / data['llvis']
+            sig = np.sqrt(np.abs(data['rrsigma'] / data['llvis'])**2
+                          + np.abs(data['llsigma'] * data['rrvis'] / data['llvis'])**2)
+        else:
+            raise Exception(f"unpack: field {field!r} not supported for "
+                            f"polrep {polrep!r}")
+        return out, sig, 'c16'
+    if field in ['p1p1vis', 'p1p1amp', 'p1p1phase', 'p1p1snr',
+                 'p1p1sigma', 'p1p1sigma_phase']:
+        out, sig = unpack_generic_slot(data, 'p1p1', polrep)
+        return out, sig, 'c16'
+    if field in ['p2p2vis', 'p2p2amp', 'p2p2phase', 'p2p2snr',
+                 'p2p2sigma', 'p2p2sigma_phase']:
+        out, sig = unpack_generic_slot(data, 'p2p2', polrep)
+        return out, sig, 'c16'
+    if field in ['p1p2vis', 'p1p2amp', 'p1p2phase', 'p1p2snr',
+                 'p1p2sigma', 'p1p2sigma_phase']:
+        out, sig = unpack_generic_slot(data, 'p1p2', polrep)
+        return out, sig, 'c16'
+    if field in ['p2p1vis', 'p2p1amp', 'p2p1phase', 'p2p1snr',
+                 'p2p1sigma', 'p2p1sigma_phase']:
+        out, sig = unpack_generic_slot(data, 'p2p1', polrep)
+        return out, sig, 'c16'
+
+    raise Exception(f"{field} is not a valid field \n" +
+                    "valid field values are: " + ' '.join(ehc.FIELDS))
+
+
 ##################################################################################################
 # Closure Quantity Construction
 ##################################################################################################
