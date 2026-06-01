@@ -465,17 +465,34 @@ def vis_component(l, vtype, polrep):
     """Return (visibility, sigma) for a single correlation `vtype` from one
        datatable `l`. Native correlations are read directly; correlations in a
        different basis are synthesized through ehtim.observing.pol_conventions
-       so the basis-transform conventions live in exactly one place.
     """
     if vtype == 'pvis':  # polarized visibility == RL == Q + iU
         vtype = 'rlvis'
 
     if polrep == 'mixed':
-        slot = _MIXED_SLOT.get(vtype)
-        if slot is None:
-            raise Exception("mixed-feed closures support only single-correlation "
-                            f"feed-basis vtypes; got {vtype!r}")
-        return l[slot], l[slot[:-3] + 'sigma']
+        if vtype in _STOKES_VTYPES:
+            vals, sigs = unpack_mixed_stokes(l, vtype)
+            return vals, sigs
+
+    #    if vtype not in _CIRC_VTYPES + _LIN_VTYPES:
+    #        raise Exception("vis_component with polrep=='mixed' supports only single-correlation "
+    #                        f"feed-basis vtypes; got {vtype!r}")
+        if vtype in _CIRC_VTYPES + _LIN_VTYPES:
+            pref = vtype[:-3]    # 'rrvis' -> 'rr'; the two chars are the feed letters
+            vals, sigs, n_nan = unpack_mixed_correlation(l, pref[0], pref[1])
+            if n_nan > 0:
+                warnings.warn(
+                    f"vis_component on a mixed-feed obs: {n_nan} rows have "
+                    f"no {pref.upper()} correlation and were returned as NaN.",
+                    ehw.MixedPolUnpackNaNWarning)
+
+            return vals, sigs
+    
+    #    slot = _MIXED_SLOT.get(vtype)
+    #    if slot is None:
+    #        raise Exception("mixed-feed closures support only single-correlation "
+    #                        f"feed-basis vtypes; got {vtype!r}")
+    #    return l[slot], l[slot[:-3] + 'sigma']
 
     if polrep == 'stokes':
         if vtype in _STOKES_VTYPES:
@@ -516,20 +533,25 @@ def vis_component(l, vtype, polrep):
 
 def unpack_generic_slot(data, slot, polrep):
     """Return (vis, sigma) for a generic feed slot ('p1p1'/'p2p2'/'p1p2'/'p2p1')
-       read directly via the DTPOL title alias. Defined for circ/lin/mixed (the
-       slot aliases the physical correlation); stokes has no feed slots."""
+       directly via the DTPOL title alias. 
+       Defined for circ/lin/mixed (the slot aliases the physical correlation); 
+       stokes has no feed slots."""
     if polrep == 'stokes':
         raise Exception(f"unpack: generic slot {slot}vis has no meaning "
                         "for polrep 'stokes'")
     return data[slot + 'vis'], data[slot + 'sigma']
 
 
-def unpack_mixed_stokes(data):
-    """Recover per-row (I, Q, U, V) and their sigmas from a MIXED datatable via
-       coherency_to_stokes, grouped by polbasis. Valid on every row (including
-       heterogeneous baselines) under the ideal-feed assumption."""
+def unpack_mixed_stokes(data,vtype):
+    """Recover stokes vtype and sigma from a MIXED datatable via
+       coherency_to_stokes, grouped by polbasis. 
+       Valid on every row (including heterogeneous baselines)
+       under the ideal-feed assumption."""
     pb = data['polbasis']
-    n = len(data)
+    if len(data.shape):
+        n = len(data) # multi row data table
+    else:
+        n = 1 # single row data table
     ivis = np.empty(n, dtype='c16')
     q = np.empty(n, dtype='c16')
     u = np.empty(n, dtype='c16')
@@ -549,15 +571,27 @@ def unpack_mixed_stokes(data):
             data['p1p2sigma'][m], data['p2p1sigma'][m], t1f, t2f)
         ivis[m], q[m], u[m], v[m] = iv, qv, uv, vv
         si[m], sq[m], su[m], sv[m] = siv, sqv, suv, svv
-    return ivis, q, u, v, si, sq, su, sv
 
+    if vtype=='vis':
+        return ivis, si
+    if vtype=='qvis':
+        return q, sq
+    if vtype=='uvis':
+        return u, su
+    if vtype=='vvis':
+        return v, sv
+    raise Exception(f"vtype {vtype!r} not recognized in unpack_mixed_stokes")
 
 def unpack_mixed_correlation(data, feed_a, feed_b):
-    """Per-row physical correlation feed_a * conj(feed_b) (e.g. 'r','r' -> RR)
-       from a MIXED datatable: the matching generic slot where the row's feeds
-       provide it, NaN elsewhere. Returns (vis, sigma, n_nanfilled)."""
+    """Recover physical correlation feed_a * conj(feed_b) (e.g. 'r','r' -> 'rrvis')
+       from a MIXED datatable. Return the matching generic slot where the row's feeds
+       provide it, NaN elsewhere; no coherency transformation.
+       Returns (vis, sigma, n_nanfilled)."""
     pb = data['polbasis']
-    n = len(data)
+    if len(data.shape):
+        n = len(data) # multi row data table
+    else:
+        n = 1 # single row data table
     out = np.full(n, np.nan, dtype='c16')
     sig = np.full(n, np.nan, dtype='f8')
     n_nan = 0
@@ -572,11 +606,11 @@ def unpack_mixed_correlation(data, feed_a, feed_b):
         sig[m] = data[slot[:-3] + 'sigma'][m]
     return out, sig, n_nan
 
-
+"""
 def unpack_vis_mixed(data, field):
-    """Return (out, sig, ty) for a vis-family field on a MIXED datatable.
+    #Return (out, sig, ty) for a vis-family field on a MIXED datatable.
        Row-aligned NaN-fill; warns per field when a physical correlation is
-       absent on some rows. See the dispatch note in Obsdata.unpack_dat."""
+       absent on some rows. See the dispatch note in Obsdata.unpack_dat.
     # generic slots: direct read, all rows
     for slot in ('p1p1', 'p2p2', 'p1p2', 'p2p1'):
         if field in [slot + s for s in _UNPACK_SUFFIXES]:
@@ -627,14 +661,16 @@ def unpack_vis_mixed(data, field):
         return out, sig, 'c16'
 
     raise Exception(f"{field} is not a valid field for polrep 'mixed'")
+"""
 
-
-def unpack_vis_standard(data, field, polrep):
-    """Return (out, sig, ty) for a vis-family field on a stokes/circ/lin
+def unpack_vis(data, field, polrep):
+    """Return (out, sig, ty) for a vis-family field on a stokes/circ/lin/mixed
        datatable. Direct correlations route through vis_component (so all basis
        transforms come from pol_conventions); the derived fields (pvis/m/evis/
-       bvis/rrllvis) keep their per-basis algebra. Raises for unsupported fields
-       and (field, polrep) combinations."""
+       bvis/rrllvis) keep their per-basis algebra.
+       Mixed dtypes NaN fill correlations following unpack_mixed_correlation.
+       Raises for unsupported fields and (field, polrep) combinations."""
+    
     if field in ['vis', 'amp', 'phase', 'snr', 'sigma', 'sigma_phase']:
         out, sig = vis_component(data, 'vis', polrep)
         return out, sig, 'c16'
@@ -765,14 +801,14 @@ def valid_closure_vtypes(polrep):
     if polrep == 'lin':
         return _LIN_VTYPES + _STOKES_VTYPES
     if polrep == 'mixed':
-        # Permissive: feed-basis names pass here so the per-triangle filter
+        # Permissive: all feed-basis names pass here so the per-triangle filter
         # (closure_skip_polbasis) can reject Stokes/generic vtypes in the body.
         return _STOKES_VTYPES + _CIRC_VTYPES + _LIN_VTYPES + _GENERIC_VTYPES
     raise Exception(f"unsupported polrep {polrep!r} for closure quantities")
 
 
 def closure_skip_polbasis(vtype):
-    """For a mixed-feed observation, the homogeneous per-baseline polbasis that a
+    """For a mixed-feed observation, return the homogeneous per-baseline polbasis that a
        closure of this vtype requires. Raises for vtypes with no single-baseline
        feed-basis meaning (Stokes or generic p1p1vis-style)."""
     if vtype in _CIRC_VTYPES or vtype == 'pvis':
@@ -780,7 +816,7 @@ def closure_skip_polbasis(vtype):
     if vtype in _LIN_VTYPES:
         return 'xyxy'
     raise Exception(
-        f"closure quantity vtype={vtype!r} is not physical on a mixed-feed "
+        f"closure quantity vtype={vtype!r} is not implemented on a mixed-feed "
         "observation: only single-correlation feed-basis vtypes "
         "(rrvis/llvis/rlvis/lrvis or xxvis/yyvis/xyvis/yxvis) can be formed per "
         "triangle. Stokes and generic p1p1vis-style closures need a homogeneous "
@@ -966,8 +1002,6 @@ def reduce_tri_minimal(obs, datarr):
 
 # TODO This returns A minimal set if input is maximal, but it is not necessarily the same
 # minimal set as we would from  calling c_amplitudes(count='min'). This is because of  inverses.
-
-
 def reduce_quad_minimal(obs, datarr, ctype='camp'):
     """Reduce a closure amplitude or log closure amplitude array
        FROM a maximal set TO a minimal set
