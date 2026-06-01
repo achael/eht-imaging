@@ -405,6 +405,20 @@ def coherency_to_stokes_sigma(s_p1p1, s_p2p2, s_p1p2, s_p2p1, t1_feed, t2_feed):
     return out[0], out[1], out[2], out[3]
 
 
+def correlation_slot(t1_feed, t2_feed, feed_a, feed_b):
+    """Return the generic DTPOL_MIXED slot name ('p1p1vis'/'p1p2vis'/'p2p1vis'/
+       'p2p2vis') holding the correlation feed_a * conj(feed_b) for a baseline
+       with these station feed types, or None if the baseline does not measure
+       it (a station lacks the required feed). Resolves by feed-letter position,
+       so it is correct for reordered/hybrid feeds (e.g. 'lr', 'rx') too."""
+    i = t1_feed.find(feed_a)
+    j = t2_feed.find(feed_b)
+    if i < 0 or j < 0:
+        return None
+    return {(0, 0): 'p1p1vis', (0, 1): 'p1p2vis',
+            (1, 0): 'p2p1vis', (1, 1): 'p2p2vis'}[(i, j)]
+
+
 # ---------------------------------------------------------------------------
 # Jones-matrix scaffolding
 # ---------------------------------------------------------------------------

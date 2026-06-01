@@ -1008,9 +1008,10 @@ class Obsdata:
                 out = sites
                 ty = 'U32'
             elif self.polrep == 'mixed':
-                # MIXED unpack (row-aligned NaN-fill) lands in the next commit.
-                raise NotImplementedError(
-                    "unpack on polrep='mixed' is not yet implemented")
+                # MIXED has no single column formula (slot meaning varies per row
+                # with feed_type), so dispatch per row via polbasis: row-aligned
+                # NaN-fill, Stokes-derived recovered with coherency_to_stokes.
+                out, sig, ty = obsh.unpack_vis_mixed(data, field)
             elif field in ['vis', 'amp', 'phase', 'snr', 'sigma', 'sigma_phase']:
                 ty = 'c16'
                 out, sig = obsh.vis_component(data, 'vis', self.polrep)
@@ -1105,19 +1106,19 @@ class Obsdata:
             elif field in ['p1p1vis', 'p1p1amp', 'p1p1phase', 'p1p1snr',
                            'p1p1sigma', 'p1p1sigma_phase']:
                 ty = 'c16'
-                out, sig = self._unpack_generic_slot(data, 'p1p1')
+                out, sig = obsh.unpack_generic_slot(data, 'p1p1', self.polrep)
             elif field in ['p2p2vis', 'p2p2amp', 'p2p2phase', 'p2p2snr',
                            'p2p2sigma', 'p2p2sigma_phase']:
                 ty = 'c16'
-                out, sig = self._unpack_generic_slot(data, 'p2p2')
+                out, sig = obsh.unpack_generic_slot(data, 'p2p2', self.polrep)
             elif field in ['p1p2vis', 'p1p2amp', 'p1p2phase', 'p1p2snr',
                            'p1p2sigma', 'p1p2sigma_phase']:
                 ty = 'c16'
-                out, sig = self._unpack_generic_slot(data, 'p1p2')
+                out, sig = obsh.unpack_generic_slot(data, 'p1p2', self.polrep)
             elif field in ['p2p1vis', 'p2p1amp', 'p2p1phase', 'p2p1snr',
                            'p2p1sigma', 'p2p1sigma_phase']:
                 ty = 'c16'
-                out, sig = self._unpack_generic_slot(data, 'p2p1')
+                out, sig = obsh.unpack_generic_slot(data, 'p2p1', self.polrep)
 
             else:
                 raise Exception(f"{field} is not a valid field \n" +
@@ -1203,16 +1204,6 @@ class Obsdata:
                 allout = out
 
         return allout
-
-    def _unpack_generic_slot(self, data, slot):
-        """Return (vis, sigma) for a generic feed slot ('p1p1'/'p2p2'/'p1p2'/
-           'p2p1'), read directly via the DTPOL title alias. Defined for circ
-           and lin (where the slot aliases the physical correlation); stokes
-           has no feed slots. (mixed is handled before this is reached.)"""
-        if self.polrep == 'stokes':
-            raise Exception(f"unpack: generic slot {slot}vis has no meaning "
-                            "for polrep 'stokes'")
-        return data[slot + 'vis'], data[slot + 'sigma']
 
     def sourcevec(self):
         """Return the source position vector in geocentric coordinates at 0h GMST.

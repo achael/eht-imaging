@@ -37,6 +37,7 @@ import scipy.spatial.distance
 
 import ehtim.const_def as ehc
 import ehtim.observing.pol_conventions as pc
+import ehtim.warnings as ehw
 
 warnings.filterwarnings("ignore", message="divide by zero encountered in double_scalars")
 
@@ -220,7 +221,7 @@ def compute_uv_coordinates(array, site1, site2, time, mjd, ra, dec, rf, timetype
 
 
 ##################################################################################################
-# Closure Quantity Construction
+# Unpack Helpers
 ##################################################################################################
 
 _STOKES_VTYPES = ('vis', 'qvis', 'uvis', 'vvis')
@@ -236,53 +237,8 @@ _MIXED_SLOT = {'rrvis': 'p1p1vis', 'xxvis': 'p1p1vis',
                'lrvis': 'p2p1vis', 'yxvis': 'p2p1vis',
                'pvis': 'p1p2vis'}
 
-
-def valid_closure_vtypes(polrep):
-    """Visibility types from which closure quantities can be formed for a polrep.
-
-       Stokes is the complete basis: it can synthesize both circular and linear
-       correlations. Each feed basis can give its own correlations plus Stokes,
-       but not the other feed basis directly (that would need the two-step
-       circ<->stokes<->lin composition, which is out of scope for the kernels).
-    """
-    if polrep == 'stokes':
-        return _STOKES_VTYPES + _CIRC_VTYPES + _LIN_VTYPES
-    if polrep == 'circ':
-        return _CIRC_VTYPES + _STOKES_VTYPES
-    if polrep == 'lin':
-        return _LIN_VTYPES + _STOKES_VTYPES
-    if polrep == 'mixed':
-        # Permissive: feed-basis names pass here so the per-triangle filter
-        # (closure_skip_polbasis) can reject Stokes/generic vtypes in the body.
-        return _STOKES_VTYPES + _CIRC_VTYPES + _LIN_VTYPES + _GENERIC_VTYPES
-    raise Exception(f"unsupported polrep {polrep!r} for closure quantities")
-
-
-def closure_skip_polbasis(vtype):
-    """For a mixed-feed observation, the homogeneous per-baseline polbasis that a
-       closure of this vtype requires. Raises for vtypes with no single-baseline
-       feed-basis meaning (Stokes or generic p1p1vis-style)."""
-    if vtype in _CIRC_VTYPES or vtype == 'pvis':
-        return 'rlrl'
-    if vtype in _LIN_VTYPES:
-        return 'xyxy'
-    raise Exception(
-        f"closure quantity vtype={vtype!r} is not physical on a mixed-feed "
-        "observation: only single-correlation feed-basis vtypes "
-        "(rrvis/llvis/rlvis/lrvis or xxvis/yyvis/xyvis/yxvis) can be formed per "
-        "triangle. Stokes and generic p1p1vis-style closures need a homogeneous "
-        "feed basis; use switch_polrep('stokes') after calibration instead.")
-
-
-def closure_skip_message(n_skipped, count, kind='triangles'):
-    """Message for MixedPolClosureSkipWarning when feed-mixing baselines are
-       dropped. For minimal sets, note that the (site-based) minimal set is not
-       baseline-aware, so some recoverable closures may be lost."""
-    msg = (f"{n_skipped} {kind} skipped: closures require baselines between "
-           "stations with the same polarization basis.")
-    if count in ('min', 'min-cut0bl'):
-        msg += " Minimal set is site-based, not baseline-aware; use count='max' to keep all."
-    return msg
+# field-name suffixes shared by every vis-family group
+_UNPACK_SUFFIXES = ('vis', 'amp', 'phase', 'snr', 'sigma', 'sigma_phase')
 
 
 def vis_component(l, vtype, polrep):
@@ -336,6 +292,174 @@ def vis_component(l, vtype, polrep):
             return vals[vtype], sigs[vtype]
 
     raise Exception(f"vtype {vtype!r} not supported for polrep {polrep!r}")
+
+
+def unpack_generic_slot(data, slot, polrep):
+    """Return (vis, sigma) for a generic feed slot ('p1p1'/'p2p2'/'p1p2'/'p2p1')
+       read directly via the DTPOL title alias. Defined for circ/lin/mixed (the
+       slot aliases the physical correlation); stokes has no feed slots."""
+    if polrep == 'stokes':
+        raise Exception(f"unpack: generic slot {slot}vis has no meaning "
+                        "for polrep 'stokes'")
+    return data[slot + 'vis'], data[slot + 'sigma']
+
+
+def unpack_mixed_stokes(data):
+    """Recover per-row (I, Q, U, V) and their sigmas from a MIXED datatable via
+       coherency_to_stokes, grouped by polbasis. Valid on every row (including
+       heterogeneous baselines) under the ideal-feed assumption."""
+    pb = data['polbasis']
+    n = len(data)
+    ivis = np.empty(n, dtype='c16')
+    q = np.empty(n, dtype='c16')
+    u = np.empty(n, dtype='c16')
+    v = np.empty(n, dtype='c16')
+    si = np.empty(n, dtype='f8')
+    sq = np.empty(n, dtype='f8')
+    su = np.empty(n, dtype='f8')
+    sv = np.empty(n, dtype='f8')
+    for code in np.unique(pb):    # loop over unique polbasis values
+        m = (pb == code)
+        t1f, t2f = str(code)[:2], str(code)[2:]    # t1 and t2 feed types
+        iv, qv, uv, vv = pc.coherency_to_stokes(
+            data['p1p1vis'][m], data['p2p2vis'][m],
+            data['p1p2vis'][m], data['p2p1vis'][m], t1f, t2f)
+        siv, sqv, suv, svv = pc.coherency_to_stokes_sigma(
+            data['p1p1sigma'][m], data['p2p2sigma'][m],
+            data['p1p2sigma'][m], data['p2p1sigma'][m], t1f, t2f)
+        ivis[m], q[m], u[m], v[m] = iv, qv, uv, vv
+        si[m], sq[m], su[m], sv[m] = siv, sqv, suv, svv
+    return ivis, q, u, v, si, sq, su, sv
+
+
+def unpack_mixed_correlation(data, feed_a, feed_b):
+    """Per-row physical correlation feed_a * conj(feed_b) (e.g. 'r','r' -> RR)
+       from a MIXED datatable: the matching generic slot where the row's feeds
+       provide it, NaN elsewhere. Returns (vis, sigma, n_nanfilled)."""
+    pb = data['polbasis']
+    n = len(data)
+    out = np.full(n, np.nan, dtype='c16')
+    sig = np.full(n, np.nan, dtype='f8')
+    n_nan = 0
+    for code in np.unique(pb):    # loop over unique polbasis values
+        m = (pb == code)
+        # which generic slot holds this correlation on this feed pairing (or None)
+        slot = pc.correlation_slot(str(code)[:2], str(code)[2:], feed_a, feed_b)
+        if slot is None:
+            n_nan += int(np.sum(m))
+            continue
+        out[m] = data[slot][m]
+        sig[m] = data[slot[:-3] + 'sigma'][m]
+    return out, sig, n_nan
+
+
+def unpack_vis_mixed(data, field):
+    """Return (out, sig, ty) for a vis-family field on a MIXED datatable.
+       Row-aligned NaN-fill; warns per field when a physical correlation is
+       absent on some rows. See the dispatch note in Obsdata.unpack_dat."""
+    # generic slots: direct read, all rows
+    for slot in ('p1p1', 'p2p2', 'p1p2', 'p2p1'):
+        if field in [slot + s for s in _UNPACK_SUFFIXES]:
+            return data[slot + 'vis'], data[slot + 'sigma'], 'c16'
+
+    # physical / cross correlation names: matching slot where present, else NaN
+    for visname in _CIRC_VTYPES + _LIN_VTYPES:
+        pref = visname[:-3]    # 'rrvis' -> 'rr'; the two chars are the feed letters
+        if field in [pref + s for s in _UNPACK_SUFFIXES]:
+            out, sig, n_nan = unpack_mixed_correlation(data, pref[0], pref[1])
+            if n_nan > 0:
+                warnings.warn(
+                    f"unpack({field!r}) on a mixed-feed obs: {n_nan} rows have "
+                    f"no {pref.upper()} correlation and were returned as NaN.",
+                    ehw.MixedPolUnpackNaNWarning)
+            return out, sig, 'c16'
+
+    # Stokes-derived: recover (I, Q, U, V) per row, then form the field
+    ivis, q, u, v, si, sq, su, sv = unpack_mixed_stokes(data)
+    if field in ['vis', 'amp', 'phase', 'snr', 'sigma', 'sigma_phase']:
+        return ivis, si, 'c16'
+    if field in ['qvis', 'qamp', 'qphase', 'qsnr', 'qsigma', 'qsigma_phase']:
+        return q, sq, 'c16'
+    if field in ['uvis', 'uamp', 'uphase', 'usnr', 'usigma', 'usigma_phase']:
+        return u, su, 'c16'
+    if field in ['vvis', 'vamp', 'vphase', 'vsnr', 'vsigma', 'vsigma_phase']:
+        return v, sv, 'c16'
+    if field in ['pvis', 'pamp', 'pphase', 'psnr', 'psigma', 'psigma_phase']:
+        return q + 1j * u, np.sqrt(sq**2 + su**2), 'c16'
+    if field in ['m', 'mamp', 'mphase', 'msnr', 'msigma', 'msigma_phase']:
+        out = (q + 1j * u) / ivis
+        return out, merr(si, sq, su, ivis, out), 'c16'
+    if field in ['evis', 'eamp', 'ephase', 'esnr', 'esigma', 'esigma_phase']:
+        ang = np.arctan2(data['u'], data['v'])
+        out = np.cos(2 * ang) * q + np.sin(2 * ang) * u
+        sig = np.sqrt(0.5 * ((np.cos(2 * ang) * sq)**2 + (np.sin(2 * ang) * su)**2))
+        return out, sig, 'c16'
+    if field in ['bvis', 'bamp', 'bphase', 'bsnr', 'bsigma', 'bsigma_phase']:
+        ang = np.arctan2(data['u'], data['v'])
+        out = -np.sin(2 * ang) * q + np.cos(2 * ang) * u
+        sig = np.sqrt(0.5 * ((np.sin(2 * ang) * sq)**2 + (np.cos(2 * ang) * su)**2))
+        return out, sig, 'c16'
+    if field in ['rrllvis', 'rrllamp', 'rrllphase', 'rrllsnr',
+                 'rrllsigma', 'rrllsigma_phase']:
+        out = (ivis + v) / (ivis - v)
+        sig = (2.0**0.5 * (np.abs(ivis)**2 + np.abs(v)**2)**0.5
+               / np.abs(ivis - v)**2 * (si**2 + sv**2)**0.5)
+        return out, sig, 'c16'
+
+    raise Exception(f"{field} is not a valid field for polrep 'mixed'")
+
+
+##################################################################################################
+# Closure Quantity Construction
+##################################################################################################
+
+
+def valid_closure_vtypes(polrep):
+    """Visibility types from which closure quantities can be formed for a polrep.
+
+       Stokes is the complete basis: it can synthesize both circular and linear
+       correlations. Each feed basis can give its own correlations plus Stokes,
+       but not the other feed basis directly (that would need the two-step
+       circ<->stokes<->lin composition, which is out of scope for the kernels).
+    """
+    if polrep == 'stokes':
+        return _STOKES_VTYPES + _CIRC_VTYPES + _LIN_VTYPES
+    if polrep == 'circ':
+        return _CIRC_VTYPES + _STOKES_VTYPES
+    if polrep == 'lin':
+        return _LIN_VTYPES + _STOKES_VTYPES
+    if polrep == 'mixed':
+        # Permissive: feed-basis names pass here so the per-triangle filter
+        # (closure_skip_polbasis) can reject Stokes/generic vtypes in the body.
+        return _STOKES_VTYPES + _CIRC_VTYPES + _LIN_VTYPES + _GENERIC_VTYPES
+    raise Exception(f"unsupported polrep {polrep!r} for closure quantities")
+
+
+def closure_skip_polbasis(vtype):
+    """For a mixed-feed observation, the homogeneous per-baseline polbasis that a
+       closure of this vtype requires. Raises for vtypes with no single-baseline
+       feed-basis meaning (Stokes or generic p1p1vis-style)."""
+    if vtype in _CIRC_VTYPES or vtype == 'pvis':
+        return 'rlrl'
+    if vtype in _LIN_VTYPES:
+        return 'xyxy'
+    raise Exception(
+        f"closure quantity vtype={vtype!r} is not physical on a mixed-feed "
+        "observation: only single-correlation feed-basis vtypes "
+        "(rrvis/llvis/rlvis/lrvis or xxvis/yyvis/xyvis/yxvis) can be formed per "
+        "triangle. Stokes and generic p1p1vis-style closures need a homogeneous "
+        "feed basis; use switch_polrep('stokes') after calibration instead.")
+
+
+def closure_skip_message(n_skipped, count, kind='triangles'):
+    """Message for MixedPolClosureSkipWarning when feed-mixing baselines are
+       dropped. For minimal sets, note that the (site-based) minimal set is not
+       baseline-aware, so some recoverable closures may be lost."""
+    msg = (f"{n_skipped} {kind} skipped: closures require baselines between "
+           "stations with the same polarization basis.")
+    if count in ('min', 'min-cut0bl'):
+        msg += " Minimal set is site-based, not baseline-aware; use count='max' to keep all."
+    return msg
 
 
 def make_bispectrum(l1, l2, l3, vistype, polrep='stokes'):

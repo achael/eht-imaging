@@ -1804,7 +1804,36 @@ def test_unpack_generic_slot_stokes_raises():
         obs_s.unpack('p1p1vis')
 
 
-def test_unpack_mixed_not_yet_implemented():
+def test_unpack_mixed_stokes_recovered_all_rows():
+    # Stokes I is recoverable on every row, including cross-feed (rlxy) ones.
     obs = _mixed_obs()
-    with pytest.raises(NotImplementedError, match="mixed"):
-        obs.unpack('vis')
+    vis = obs.unpack('vis')['vis']
+    assert np.all(np.isfinite(vis))
+    pb = obs.data['polbasis']
+    m = (pb == 'rlrl')  # on circular baselines I = 0.5(RR + LL)
+    np.testing.assert_allclose(
+        vis[m], 0.5 * (obs.data['p1p1vis'][m] + obs.data['p2p2vis'][m]), atol=1e-12)
+
+
+def test_unpack_mixed_generic_slot():
+    obs = _mixed_obs()
+    np.testing.assert_array_equal(obs.unpack('p1p1vis')['p1p1vis'], obs.data['p1p1vis'])
+    np.testing.assert_array_equal(obs.unpack('p2p1vis')['p2p1vis'], obs.data['p2p1vis'])
+
+
+def test_unpack_mixed_physical_nanfill_and_warns():
+    # rrvis exists only on rl-rl baselines; rl-xy baselines have no RR -> NaN.
+    obs = _mixed_obs()
+    pb = obs.data['polbasis']
+    with pytest.warns(ehw.MixedPolUnpackNaNWarning, match="RR correlation"):
+        rr = obs.unpack('rrvis')['rrvis']
+    np.testing.assert_array_equal(rr[pb == 'rlrl'], obs.data['p1p1vis'][pb == 'rlrl'])
+    assert np.all(np.isnan(rr[pb != 'rlrl']))
+
+
+def test_unpack_mixed_correlation_absent_everywhere():
+    # No baseline has two linear stations, so XX is NaN on every row.
+    obs = _mixed_obs()
+    with pytest.warns(ehw.MixedPolUnpackNaNWarning):
+        xx = obs.unpack('xxvis')['xxvis']
+    assert np.all(np.isnan(xx))
