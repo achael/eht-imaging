@@ -1876,77 +1876,86 @@ def dashboard(
         fig.add_trace(trace, row=1, col=1)
         pol_trace_indices.append(len(fig.data) - 1)
 
-    # Panel 2: data product selector
-    # Each product owns 1+ trace pairs; closure products enumerate all
-    # triangles/quadrangles so the user sees every closure quantity, not just one
-    # Only the `default_product`'s traces are visible at start; the
-    # dropdown switches which group is shown.
+    # Panel 2: data product selector.
+    # Closure products (cphase / logcamp) store one trace pair per
+    # triangle/quad; the legend collapses to a single "data"/"model" entry
+    # and a sub-dropdown picks which triangle/quad is visible.
+    CPHASE_PRODUCTS = ("cphase_vs_time", "cphase_chisq_vs_time", "cphase_vs_triarea")
+    LOGCAMP_PRODUCTS = ("logcamp_vs_time", "logcamp_chisq_vs_time", "logcamp_vs_quadarea")
+
     panel2_indices: dict[str, list[int]] = {key: [] for key in _DASH_PRODUCT_ORDER}
+    # panel2_spec_indices[key][spec_i] = trace indices for that spec.
+    panel2_spec_indices: dict[str, list[list[int]]] = {key: [] for key in _DASH_PRODUCT_ORDER}
     panel2_start = len(fig.data)
+
     for key in _DASH_PRODUCT_ORDER:
         p = products[key]
         is_default = key == default_product
-        style = p.get("style", "multi")
+        is_closure = key in CPHASE_PRODUCTS or key in LOGCAMP_PRODUCTS
         for i, spec in enumerate(p["traces"]):
-            if style == "single":
-                data_color = _GRAY
-                data_opacity = 0.6
-                model_color = _THEME["colorway"][1]
-                data_name = "data"
-                model_name = "model"
-                model_symbol = "circle"
-            else:
-                data_color = _THEME["colorway"][i % len(_THEME["colorway"])]
-                data_opacity = 0.85
-                model_color = data_color
-                data_name = spec["label"]
-                model_name = f"{spec['label']} (model)"
-                model_symbol = "x"
+            data_color = _GRAY
+            data_opacity = 0.6
+            model_color = _THEME["colorway"][1]
+            data_name = "data"
+            model_name = "model"
+            model_symbol = "circle"
+            # Show the data/model legend entry once per product (on the
+            # first spec) so the legend stays at two entries regardless of
+            # how many triangles/quads are loaded.
+            show_in_legend = (i == 0)
+            # For closure products, only spec 0 is visible at start; the
+            # sub-dropdown controls which spec the user sees.
+            visible = is_default and (not is_closure or i == 0)
+
+            spec_pair: list[int] = []
 
             fig.add_trace(
                 go.Scatter(
-                    x=spec["x_data"],
-                    y=spec["y_data"],
+                    x=spec["x_data"], y=spec["y_data"],
                     mode="markers",
                     name=data_name,
                     marker=dict(
-                        size=5,
-                        color=data_color,
-                        opacity=data_opacity,
+                        size=5, color=data_color, opacity=data_opacity,
                         line=dict(width=0.3, color=_THEME["marker_edge"]),
                     ),
-                    hovertemplate=("<b>" + data_name + "</b><br>x=%{x:.3g}<br>y=%{y:.3g}<extra></extra>"),
-                    legend="legend2",
-                    visible=is_default,
+                    hovertemplate=(
+                        f"<b>{spec.get('label', data_name)}</b><br>"
+                        "x=%{x:.3g}<br>y=%{y:.3g}<extra></extra>"
+                    ),
+                    legend="legend2", legendgroup="data",
+                    showlegend=show_in_legend,
+                    visible=visible,
                 ),
-                row=1,
-                col=2,
+                row=1, col=2,
             )
             panel2_indices[key].append(len(fig.data) - 1)
+            spec_pair.append(len(fig.data) - 1)
 
             x_model = spec.get("x_model")
             if x_model is not None and len(x_model) > 0:
                 fig.add_trace(
                     go.Scatter(
-                        x=spec["x_model"],
-                        y=spec["y_model"],
+                        x=spec["x_model"], y=spec["y_model"],
                         mode="markers",
                         name=model_name,
                         marker=dict(
-                            size=5,
-                            color=model_color,
-                            opacity=0.55,
+                            size=5, color=model_color, opacity=0.55,
                             symbol=model_symbol,
                             line=dict(width=0.3, color=_THEME["marker_edge"]),
                         ),
-                        hovertemplate=("<b>" + model_name + "</b><br>x=%{x:.3g}<br>y=%{y:.3g}<extra></extra>"),
-                        legend="legend2",
-                        visible=is_default,
+                        hovertemplate=(
+                            f"<b>{spec.get('label', model_name)} (model)</b><br>"
+                            "x=%{x:.3g}<br>y=%{y:.3g}<extra></extra>"
+                        ),
+                        legend="legend2", legendgroup="model",
+                        showlegend=show_in_legend,
+                        visible=visible,
                     ),
-                    row=1,
-                    col=2,
+                    row=1, col=2,
                 )
                 panel2_indices[key].append(len(fig.data) - 1)
+                spec_pair.append(len(fig.data) - 1)
+            panel2_spec_indices[key].append(spec_pair)
     panel2_end = len(fig.data)
 
     # --- Panel 3: gains per site, with amp/phase × R/L dropdown ---
@@ -2128,13 +2137,18 @@ def dashboard(
     # Each product owns an arbitrary number of traces (1 for the uvdist
     # products; N for the closure products, one per triangle/quad). The
     # dropdown sets visibility per index from the precomputed group map.
-    # Panel-2 dropdown - scoped to panel-2 traces only so it doesn't fight
-    # the gains dropdown or the pol toggle for other traces.
+    # Panel-2 dropdown. For closure products only the first spec (triangle
+    # or quad) is shown by default; the triangle/quad sub-dropdown swaps
+    # which spec is visible within that product.
     panel2_range = list(range(panel2_start, panel2_end))
     buttons = []
     for key in _DASH_PRODUCT_ORDER:
         p = products[key]
-        selected = set(panel2_indices[key])
+        is_closure = key in CPHASE_PRODUCTS or key in LOGCAMP_PRODUCTS
+        if is_closure and panel2_spec_indices[key]:
+            selected = set(panel2_spec_indices[key][0])
+        else:
+            selected = set(panel2_indices[key])
         vis_p2 = [(i in selected) for i in panel2_range]
         buttons.append(
             dict(
@@ -2208,6 +2222,56 @@ def dashboard(
         bordercolor=_THEME["edge_color"], borderwidth=1,
         font=dict(size=10, color=_THEME["font_color"]),
     ))
+
+    # Triangle / quadrangle sub-dropdowns for closure products. Each button
+    # makes spec i visible (and others invisible) across all triangle (or
+    # quad) products simultaneously. When the user picks a non-closure
+    # product from the main dropdown the sub-dropdown selection is
+    # irrelevant; the main dropdown defaults back to spec 0 on every click.
+    def _build_spec_subdropdown(product_keys, label_prefix, x_pos):
+        # Use the first product with non-empty specs to source labels.
+        n_specs = 0
+        sample_specs = []
+        for k in product_keys:
+            if products[k]["traces"] and "label" in products[k]["traces"][0]:
+                if len(products[k]["traces"]) > n_specs:
+                    n_specs = len(products[k]["traces"])
+                    sample_specs = products[k]["traces"]
+        if n_specs == 0:
+            return None
+        affected_indices = sorted({i for k in product_keys for i in panel2_indices[k]})
+        if not affected_indices:
+            return None
+        sub_buttons = []
+        for i in range(n_specs):
+            selected = set()
+            for k in product_keys:
+                if i < len(panel2_spec_indices[k]):
+                    selected.update(panel2_spec_indices[k][i])
+            vis = [(idx in selected) for idx in affected_indices]
+            label = sample_specs[i].get("label", f"#{i}")
+            sub_buttons.append(dict(
+                label=label,
+                method="restyle",
+                args=[{"visible": vis}, affected_indices],
+            ))
+        return dict(
+            type="dropdown", direction="down",
+            buttons=sub_buttons, showactive=True, active=0,
+            x=x_pos, xanchor="left",
+            y=1.02, yanchor="bottom",
+            pad=dict(l=4, r=4, t=2, b=2),
+            bgcolor="rgba(238,238,238,0.85)",
+            bordercolor=_THEME["edge_color"], borderwidth=1,
+            font=dict(size=10, color=_THEME["font_color"]),
+        )
+
+    tri_menu = _build_spec_subdropdown(CPHASE_PRODUCTS, "triangle", 0.72)
+    if tri_menu:
+        updatemenus_list.append(tri_menu)
+    quad_menu = _build_spec_subdropdown(LOGCAMP_PRODUCTS, "quadrangle", 0.87)
+    if quad_menu:
+        updatemenus_list.append(quad_menu)
 
     fig.update_layout(updatemenus=updatemenus_list)
 
