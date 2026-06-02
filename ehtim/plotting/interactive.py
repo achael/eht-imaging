@@ -467,6 +467,22 @@ def _managed_indices(fig) -> list[int]:
     return out
 
 
+def _attach_save_hooks(fig):
+    """Wrap fig.write_html so plain `fig.write_html(path)` still carries the
+    Color toolbar JS + 3x PNG save config. Jupyter rendering (to_html /
+    _repr_mimebundle_) is untouched.
+    """
+    orig_write_html = fig.write_html
+
+    def patched_write_html(*args, **kwargs):
+        kwargs.setdefault("post_script", _legend_click_js(_managed_indices(fig)))
+        kwargs.setdefault("config", _save_png_config(fig))
+        return orig_write_html(*args, **kwargs)
+
+    fig.write_html = patched_write_html
+    return fig
+
+
 def _save_png_config(fig, *, scale: float = 3.0) -> dict:
     """Plotly config for the modebar PNG-export button.
 
@@ -740,7 +756,7 @@ def plot_bl(
 
     if show:
         fig.show()
-    return fig
+    return _attach_save_hooks(fig)
 
 
 # --- plotall --------------------------------------------------------------
@@ -978,7 +994,7 @@ def plotall(
 
     if show:
         fig.show()
-    return fig
+    return _attach_save_hooks(fig)
 
 
 def _axis_unit_global(arrays: list[np.ndarray], field: str) -> tuple[str, float]:
@@ -1120,7 +1136,7 @@ def plot_gains(
 
     if show:
         fig.show()
-    return fig
+    return _attach_save_hooks(fig)
 
 
 # --- dashboard ------------------------------------------------------------
@@ -2044,4 +2060,4 @@ def dashboard(
 
     if show:
         fig.show()
-    return fig
+    return _attach_save_hooks(fig)
