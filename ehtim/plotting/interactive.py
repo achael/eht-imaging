@@ -268,9 +268,14 @@ def _legend_click_js(managed_indices: list[int] | None = None) -> str:
     gray = json.dumps(_GRAY)
     indices_json = json.dumps(indices)
     return f"""
-(function() {{
+(function initToolbar() {{
     var gd = document.getElementById('{{plot_id}}');
-    if (!gd) return;
+    // In standalone HTML the post_script can fire before plotly finishes
+    // attaching the plot div. Poll briefly until the div is present and
+    // plotly-initialised, then run the toolbar setup.
+    if (!gd || !gd.classList || !gd.classList.contains('js-plotly-plot')) {{
+        return setTimeout(initToolbar, 50);
+    }}
     var PALETTE = {palette};
     var GRAY = {gray};
     var THRESHOLD = {_OPACITY_THRESHOLD};
@@ -799,6 +804,20 @@ def plotall(
     # Global scaling factor for each axis (uv fields only).
     x_unit, x_div = _axis_unit_global([t["x"] for t in raw_traces], field1)
     y_unit, y_div = _axis_unit_global([t["y"] for t in raw_traces], field2)
+
+    # u-vs-v: pick a single symmetric range driven by max(|u|,|v|) so the
+    # data is centred and both axes share the same span (square frame).
+    if {field1, field2} <= {"u", "v"} and rangex is None and rangey is None and raw_traces:
+        scaled_max = 0.0
+        for t in raw_traces:
+            if len(t["x"]):
+                scaled_max = max(scaled_max, float(np.max(np.abs(t["x"] / x_div))))
+            if len(t["y"]):
+                scaled_max = max(scaled_max, float(np.max(np.abs(t["y"] / y_div))))
+        if scaled_max > 0:
+            pad = 0.05 * scaled_max
+            rangex = (-scaled_max - pad, scaled_max + pad)
+            rangey = (-scaled_max - pad, scaled_max + pad)
 
     for t in raw_traces:
         x = t["x"] / x_div
@@ -1774,38 +1793,34 @@ def dashboard(
         font=dict(family=_THEME["font_family"], size=_THEME["font_size"], color=_THEME["font_color"]),
         width=1280,
         height=1000,
-        margin=dict(l=70, r=200, t=120, b=60),
+        margin=dict(l=70, r=70, t=120, b=60),
         showlegend=True,
         colorway=_THEME["colorway"],
-        # legend2 (data/model), legend3 (gains), legend4 (D-terms).
-        legend2=dict(
+        # Each panel's legend is anchored inside that panel's top-right
+        # corner (paper coords). Layout assumes column_widths=[0.40, 0.60]
+        # + horizontal_spacing=0.20 + vertical_spacing=0.14 from make_subplots.
+        legend2=dict(  # data/model (panel 1,2 = top-right)
             title=dict(text="Panel 2"),
-            x=1.02,
-            y=0.98,
-            xanchor="left",
-            yanchor="top",
+            x=0.99, y=0.99,
+            xanchor="right", yanchor="top",
             font=dict(size=10, color=_THEME["font_color"]),
             bgcolor="rgba(238,238,238,0.85)",
             bordercolor=_THEME["edge_color"],
             borderwidth=1,
         ),
-        legend3=dict(
+        legend3=dict(  # gains (panel 2,1 = bottom-left)
             title=dict(text="Sites"),
-            x=1.02,
-            y=0.42,
-            xanchor="left",
-            yanchor="middle",
+            x=0.39, y=0.43,
+            xanchor="right", yanchor="top",
             font=dict(size=10, color=_THEME["font_color"]),
             bgcolor="rgba(238,238,238,0.85)",
             bordercolor=_THEME["edge_color"],
             borderwidth=1,
         ),
-        legend4=dict(
+        legend4=dict(  # D-terms (panel 2,2 = bottom-right)
             title=dict(text="D-terms"),
-            x=1.02,
-            y=0.04,
-            xanchor="left",
-            yanchor="bottom",
+            x=0.99, y=0.43,
+            xanchor="right", yanchor="top",
             font=dict(size=10, color=_THEME["font_color"]),
             bgcolor="rgba(238,238,238,0.85)",
             bordercolor=_THEME["edge_color"],
