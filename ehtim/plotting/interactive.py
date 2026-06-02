@@ -425,7 +425,9 @@ def _legend_click_js(managed_indices: list[int] | None = None,
         if (DTERM_TOGGLES[String(idx)]) {{
             var targets = DTERM_TOGGLES[String(idx)];
             var firstReal = gd.data[targets[0]];
-            var nextVis = (firstReal && firstReal.visible !== false) ? 'legendonly' : true;
+            // Treat undefined/true as currently visible; legendonly/false as hidden.
+            var currentlyVisible = !firstReal || firstReal.visible === undefined || firstReal.visible === true;
+            var nextVis = currentlyVisible ? 'legendonly' : true;
             var visArr = targets.map(function() {{ return nextVis; }});
             Plotly.restyle(gd, {{'visible': visArr}}, targets);
             return false;
@@ -435,10 +437,16 @@ def _legend_click_js(managed_indices: list[int] | None = None,
         var painting = isGray(tr);
         var nextColor = painting ? PALETTE[idx % PALETTE.length] : GRAY;
         var nextOpacity = painting ? COLOR_OPACITY : GRAY_OPACITY;
-        Plotly.restyle(gd,
-            {{'marker.color': nextColor, 'marker.opacity': nextOpacity}},
-            [idx]
-        ).then(function() {{ Plotly.redraw(gd); }});
+        // Visibility-bounce: flip to legendonly and back. The transition
+        // forces plotly to regenerate the legend swatch with the new color.
+        // restyle+redraw alone leaves the legend marker stale.
+        Plotly.restyle(gd, {{'visible': 'legendonly'}}, [idx]).then(function() {{
+            Plotly.restyle(gd, {{
+                'marker.color': nextColor,
+                'marker.opacity': nextOpacity,
+                'visible': true,
+            }}, [idx]);
+        }});
         return false;  // suppress plotly's hide
     }}
 
@@ -1309,13 +1317,39 @@ def _build_dashboard_products(
         f"uv-distance ({uv_unit})",
         "Amplitude (Jy)",
     )
-    products["amp_vs_time"] = _single(
-        udata["time"],
-        udata["amp"],
-        (mdata["time"] if mdata is not None else np.array([])),
-        (mdata["amp"] if mdata is not None else np.array([])),
-        "time (hr)",
-        "Amplitude (Jy)",
+    # amp_vs_time gets one spec per baseline (the baseline sub-dropdown
+    # picks which is visible); legend collapses to data/model.
+    amp_time_specs: list[dict] = []
+    for bl in obs.bllist(conj=False):
+        if len(bl) == 0:
+            continue
+        t1 = str(bl["t1"][0])
+        t2 = str(bl["t2"][0])
+        bl_data = obs.unpack_dat(bl, ["time", "amp"])
+        if obs_model is not None:
+            try:
+                bl_model = obs_model.unpack_bl(t1, t2, "amp")
+                # unpack_bl returns shape (N, 1); flatten and pull time too.
+                m_t = obs_model.unpack_bl(t1, t2, "time")["time"][:, 0]
+                m_a = bl_model["amp"][:, 0]
+            except Exception:
+                m_t = np.array([])
+                m_a = np.array([])
+        else:
+            m_t = np.array([])
+            m_a = np.array([])
+        amp_time_specs.append(dict(
+            label=f"{t1}-{t2}",
+            x_data=bl_data["time"],
+            y_data=bl_data["amp"],
+            x_model=m_t,
+            y_model=m_a,
+        ))
+    products["amp_vs_time"] = dict(
+        x_title="time (hr)",
+        y_title="Amplitude (Jy)",
+        style="multi",
+        traces=amp_time_specs or [_empty_spec()],
     )
     products["vis_vs_uvdist"] = _single(
         uvdist_scaled,
@@ -1850,19 +1884,22 @@ def dashboard(
     psize_uas = im.psize / ehc.RADPERUAS
     x_uas = (np.arange(im.xdim) - (im.xdim - 1) / 2.0) * psize_uas
     y_uas = (np.arange(im.ydim) - (im.ydim - 1) / 2.0) * psize_uas
-    # Build power-of-10 colorbar ticks with Unicode superscripts so the
-    # labels render as "10⁻³" everywhere (no MathJax required).
+    # Show colorbar ticks as scaled mantissa (1.0, 2.0, ...) and add the
+    # common exponent as ×10ⁿ in the title: "Jy/px x 10⁻³" etc.
     _sup = str.maketrans("0123456789-", "⁰¹²³⁴⁵⁶⁷⁸⁹⁻")
     _zmax = float(np.nanmax(img2d))
     if _zmax > 0:
-        _hi = int(np.ceil(np.log10(_zmax)))
-        _lo = _hi - 5
-        _tick_exps = list(range(_lo, _hi + 1))
-        _intensity_tickvals = [10.0 ** e for e in _tick_exps]
-        _intensity_ticktext = [f"10{str(e).translate(_sup)}" for e in _tick_exps]
+        _exp = int(np.floor(np.log10(_zmax)))
+        _scale = 10.0 ** _exp
+        _mant_max = _zmax / _scale  # in [1, 10)
+        _mantissas = [i + 1 for i in range(int(np.floor(_mant_max)))]
+        _intensity_tickvals = [m * _scale for m in _mantissas]
+        _intensity_ticktext = [f"{m:.1f}" for m in _mantissas]
+        _intensity_title = f"Jy/px x 10{str(_exp).translate(_sup)}"
     else:
         _intensity_tickvals = None
         _intensity_ticktext = None
+        _intensity_title = "Jy/px"
     # Black backdrop covering the panel-1 cell so the "hot" heatmap reads
     # against black rather than the figure's gray plot_bgcolor (visible as
     # strips when scaleanchor shrinks the plot domain).
@@ -1882,7 +1919,7 @@ def dashboard(
         hovertemplate="RA=%{x:.1f} μas<br>Dec=%{y:.1f} μas<br>I=%{z:.3g}<extra></extra>",
         showscale=True,
         colorbar=dict(
-            title=dict(text="Jy/px"),
+            title=dict(text=_intensity_title),
             x=0.34, y=0.785, yanchor="middle",
             len=0.43, thickness=10,
             tickmode=("array" if _intensity_tickvals else "auto"),
@@ -1910,11 +1947,13 @@ def dashboard(
         pol_trace_indices.append(len(fig.data) - 1)
 
     # Panel 2: data product selector.
-    # Closure products (cphase / logcamp) store one trace pair per
-    # triangle/quad; the legend collapses to a single "data"/"model" entry
-    # and a sub-dropdown picks which triangle/quad is visible.
+    # Multi-spec products store one trace pair per triangle/quad/baseline;
+    # the legend collapses to "data"/"model" and a sub-dropdown picks which
+    # spec is visible.
     CPHASE_PRODUCTS = ("cphase_vs_time", "cphase_chisq_vs_time", "cphase_vs_triarea")
     LOGCAMP_PRODUCTS = ("logcamp_vs_time", "logcamp_chisq_vs_time", "logcamp_vs_quadarea")
+    BASELINE_PRODUCTS = ("amp_vs_time",)
+    MULTI_SPEC_PRODUCTS = CPHASE_PRODUCTS + LOGCAMP_PRODUCTS + BASELINE_PRODUCTS
 
     panel2_indices: dict[str, list[int]] = {key: [] for key in _DASH_PRODUCT_ORDER}
     # panel2_spec_indices[key][spec_i] = trace indices for that spec.
@@ -1924,7 +1963,7 @@ def dashboard(
     for key in _DASH_PRODUCT_ORDER:
         p = products[key]
         is_default = key == default_product
-        is_closure = key in CPHASE_PRODUCTS or key in LOGCAMP_PRODUCTS
+        is_closure = key in MULTI_SPEC_PRODUCTS
         for i, spec in enumerate(p["traces"]):
             data_color = _GRAY
             data_opacity = 0.6
@@ -2188,7 +2227,7 @@ def dashboard(
     buttons = []
     for key in _DASH_PRODUCT_ORDER:
         p = products[key]
-        is_closure = key in CPHASE_PRODUCTS or key in LOGCAMP_PRODUCTS
+        is_closure = key in MULTI_SPEC_PRODUCTS
         if is_closure and panel2_spec_indices[key]:
             selected = set(panel2_spec_indices[key][0])
         else:
@@ -2200,7 +2239,12 @@ def dashboard(
                 method="update",
                 args=[
                     {"visible": vis_p2},
-                    {"xaxis2.title.text": p["x_title"], "yaxis2.title.text": p["y_title"]},
+                    {
+                        "xaxis2.title.text": p["x_title"],
+                        "yaxis2.title.text": p["y_title"],
+                        # Update the subplot title (panel 2 = annotation index 1).
+                        "annotations[1].text": _DASH_PRODUCT_LABELS[key],
+                    },
                     panel2_range,
                 ],
             )
@@ -2320,15 +2364,21 @@ def dashboard(
     if quad_menu:
         quad_menu["visible"] = (default_product in LOGCAMP_PRODUCTS)
         updatemenus_list.append(quad_menu)
+    bl_menu = _build_spec_subdropdown(BASELINE_PRODUCTS, "baseline", 0.72)
+    bl_idx = len(updatemenus_list) if bl_menu else None
+    if bl_menu:
+        bl_menu["visible"] = (default_product in BASELINE_PRODUCTS)
+        updatemenus_list.append(bl_menu)
 
-    # Make sub-dropdowns appear only for their relevant products. Each
-    # main-dropdown button gets layout updates that toggle the sub-menus.
+    # Sub-dropdowns appear only for their relevant products.
     for key, btn in zip(_DASH_PRODUCT_ORDER, buttons):
         layout_update = btn["args"][1]
         if tri_idx is not None:
             layout_update[f"updatemenus[{tri_idx}].visible"] = key in CPHASE_PRODUCTS
         if quad_idx is not None:
             layout_update[f"updatemenus[{quad_idx}].visible"] = key in LOGCAMP_PRODUCTS
+        if bl_idx is not None:
+            layout_update[f"updatemenus[{bl_idx}].visible"] = key in BASELINE_PRODUCTS
 
     fig.update_layout(updatemenus=updatemenus_list)
 
