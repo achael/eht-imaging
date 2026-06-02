@@ -5,8 +5,42 @@
 
 ehtim (eht-imaging)
 ===================
-.. image:: https://zenodo.org/badge/42943499.svg
+
+|pypi| |license| |docs| |doi|
+
+|ci| |coverage-main| |coverage-dev| |ruff|
+
+.. |pypi| image:: https://img.shields.io/pypi/v/ehtim.svg
+   :target: https://pypi.org/project/ehtim/
+   :alt: PyPI version
+
+.. |license| image:: https://img.shields.io/github/license/achael/eht-imaging.svg
+   :target: https://github.com/achael/eht-imaging/blob/main/LICENSE.txt
+   :alt: License: GPLv3
+
+.. |docs| image:: https://img.shields.io/badge/docs-stable-blue.svg
+   :target: https://achael.github.io/eht-imaging/
+   :alt: Documentation
+
+.. |doi| image:: https://zenodo.org/badge/42943499.svg
    :target: https://zenodo.org/badge/latestdoi/42943499
+   :alt: DOI
+
+.. |ci| image:: https://github.com/achael/eht-imaging/actions/workflows/ci.yml/badge.svg?branch=dev-backend
+   :target: https://github.com/achael/eht-imaging/actions/workflows/ci.yml
+   :alt: CI
+
+.. |coverage-main| image:: https://img.shields.io/codecov/c/github/achael/eht-imaging/main?label=coverage%20%28main%29
+   :target: https://codecov.io/gh/achael/eht-imaging/branch/main
+   :alt: Coverage (main)
+
+.. |coverage-dev| image:: https://img.shields.io/codecov/c/github/achael/eht-imaging/dev?label=coverage%20%28dev%29
+   :target: https://codecov.io/gh/achael/eht-imaging/branch/dev
+   :alt: Coverage (dev)
+
+.. |ruff| image:: https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json
+   :target: https://github.com/astral-sh/ruff
+   :alt: Code style: Ruff
 
 
 Python modules for simulating and manipulating VLBI data and producing images with regularized maximum likelihood methods. This version is an early release so please raise an issue, submit a pull request, or email achael@princeton.edu if you have trouble or need help for your application.
