@@ -12,6 +12,10 @@ go = pytest.importorskip("plotly.graph_objects")
 
 from ehtim.plotting import interactive  # noqa: E402  (importorskip above)
 
+# The dashboard smoke test runs self_cal; tag the whole file as slow so
+# `pytest -m "not slow"` skips it (consistent with the cal-cluster tests).
+pytestmark = pytest.mark.slow
+
 _ROOT = os.path.join(os.path.dirname(__file__), "..")
 SAMPLE_UVFITS = os.path.join(_ROOT, "data", "sample.uvfits")
 SAMPLE_IMAGE = os.path.join(_ROOT, "models", "avery_sgra_eofn.txt")
@@ -87,3 +91,15 @@ def test_uv_area_triangle_quadrangle():
     assert uv_area_triangle(1, 0, 0, 1) == pytest.approx(0.5)
     # Unit square area via three corners + origin.
     assert uv_area_quadrangle(1, 0, 1, 1, 0, 1) == pytest.approx(1.0)
+
+
+def test_plain_fig_write_html_carries_toolbar_js(obs, tmp_path):
+    """The instance-patched fig.write_html should inject the toolbar JS even
+    when the user calls plotly's native method directly (not the wrapper)."""
+    fig = interactive.plotall(obs, "uvdist", "amp")
+    path = tmp_path / "plain.html"
+    fig.write_html(str(path), include_plotlyjs="cdn")
+    body = path.read_text()
+    assert "initToolbar" in body
+    assert "Color all" in body
+    assert "data-ehtim-toolbar-for" in body

@@ -15,6 +15,7 @@ from typing import TYPE_CHECKING, Any
 import numpy as np
 
 try:
+    import plotly.colors as _plotly_colors
     import plotly.graph_objects as go
     from plotly.subplots import make_subplots
 except ImportError as e:
@@ -467,22 +468,6 @@ def _managed_indices(fig) -> list[int]:
     return out
 
 
-def _attach_save_hooks(fig):
-    """Wrap fig.write_html so plain `fig.write_html(path)` still carries the
-    Color toolbar JS + 3x PNG save config. Jupyter rendering (to_html /
-    _repr_mimebundle_) is untouched.
-    """
-    orig_write_html = fig.write_html
-
-    def patched_write_html(*args, **kwargs):
-        kwargs.setdefault("post_script", _legend_click_js(_managed_indices(fig)))
-        kwargs.setdefault("config", _save_png_config(fig))
-        return orig_write_html(*args, **kwargs)
-
-    fig.write_html = patched_write_html
-    return fig
-
-
 def _save_png_config(fig, *, scale: float = 3.0) -> dict:
     """Plotly config for the modebar PNG-export button.
 
@@ -500,6 +485,22 @@ def _save_png_config(fig, *, scale: float = 3.0) -> dict:
             "height": height,
         },
     }
+
+
+def _attach_save_hooks(fig):
+    """Wrap fig.write_html so plain `fig.write_html(path)` still carries the
+    Color toolbar JS + 3x PNG save config. Jupyter rendering (to_html /
+    _repr_mimebundle_) is untouched.
+    """
+    orig_write_html = fig.write_html
+
+    def patched_write_html(*args, **kwargs):
+        kwargs.setdefault("post_script", _legend_click_js(_managed_indices(fig)))
+        kwargs.setdefault("config", _save_png_config(fig))
+        return orig_write_html(*args, **kwargs)
+
+    fig.write_html = patched_write_html
+    return fig
 
 
 def write_html(
@@ -1503,7 +1504,7 @@ def _pol_ticks_traces(im: Image, *, nvec: int, pcut: float, mcut: float,
         uvec = np.asarray(im.uvec, dtype=float)
     except (AttributeError, KeyError):
         return []
-    if qvec.size == 0 or uvec.size == 0 or (not np.any(qvec) and not np.any(uvec)):
+    if qvec.size == 0 or uvec.size == 0 or (np.all(qvec == 0) and np.all(uvec == 0)):
         return []
 
     ydim, xdim = im.ydim, im.xdim
@@ -1571,8 +1572,8 @@ def _pol_ticks_traces(im: Image, *, nvec: int, pcut: float, mcut: float,
     edges = np.linspace(m_min, m_max, m_bins + 1)
     midpoints = 0.5 * (edges[:-1] + edges[1:])
 
-    import plotly.colors as pc
-    colors = pc.sample_colorscale("Rainbow", (midpoints - m_min) / max(m_max - m_min, 1e-12))
+    span = max(m_max - m_min, 1e-12)
+    colors = _plotly_colors.sample_colorscale("Rainbow", (midpoints - m_min) / span)
 
     traces: list = []
     for i in range(m_bins):
@@ -1733,6 +1734,17 @@ def dashboard(
     psize_uas = im.psize / ehc.RADPERUAS
     x_uas = (np.arange(im.xdim) - (im.xdim - 1) / 2.0) * psize_uas
     y_uas = (np.arange(im.ydim) - (im.ydim - 1) / 2.0) * psize_uas
+    # Black backdrop covering the panel-1 cell so the "hot" heatmap reads
+    # against black rather than the figure's gray plot_bgcolor (visible as
+    # strips when scaleanchor shrinks the plot domain).
+    # Panel-1 paper bounds derived from make_subplots config above.
+    _p1_x = (0.0, 0.40 * (1.0 - 0.20))
+    _p1_y = (1.0 - (1.0 - 0.14) / 2.0, 1.0)
+    fig.add_shape(
+        type="rect", xref="paper", yref="paper",
+        x0=_p1_x[0], x1=_p1_x[1], y0=_p1_y[0], y1=_p1_y[1],
+        fillcolor="black", line=dict(width=0), layer="below",
+    )
     fig.add_trace(go.Heatmap(
         z=img2d,
         x=x_uas,
@@ -1745,7 +1757,7 @@ def dashboard(
             x=0.34, y=0.785, yanchor="middle",
             len=0.43, thickness=10,
             exponentformat="power",
-            tickformat=".1f",
+            showexponent="all",
         ),
     ), row=1, col=1)
 
