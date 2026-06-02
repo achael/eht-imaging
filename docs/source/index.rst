@@ -8,7 +8,7 @@ ehtim (eht-imaging)
 
 |pypi| |license| |docs| |doi|
 
-|ci| |coverage-main| |coverage-dev| |ruff|
+|ci| |codecov| |ruff|
 
 .. |pypi| image:: https://img.shields.io/pypi/v/ehtim.svg
    :target: https://pypi.org/project/ehtim/
@@ -22,21 +22,17 @@ ehtim (eht-imaging)
    :target: https://achael.github.io/eht-imaging/
    :alt: Documentation
 
-.. |doi| image:: https://zenodo.org/badge/42943499.svg
-   :target: https://zenodo.org/badge/latestdoi/42943499
+.. |doi| image:: https://zenodo.org/badge/DOI/10.5281/zenodo.2614008.svg
+   :target: https://doi.org/10.5281/zenodo.2614008
    :alt: DOI
 
 .. |ci| image:: https://github.com/achael/eht-imaging/actions/workflows/ci.yml/badge.svg?branch=dev-backend
    :target: https://github.com/achael/eht-imaging/actions/workflows/ci.yml
    :alt: CI
 
-.. |coverage-main| image:: https://img.shields.io/codecov/c/github/achael/eht-imaging/main?label=coverage%20%28main%29
-   :target: https://codecov.io/gh/achael/eht-imaging/branch/main
-   :alt: Coverage (main)
-
-.. |coverage-dev| image:: https://img.shields.io/codecov/c/github/achael/eht-imaging/dev?label=coverage%20%28dev%29
+.. |codecov| image:: https://img.shields.io/codecov/c/github/achael/eht-imaging/dev
    :target: https://codecov.io/gh/achael/eht-imaging/branch/dev
-   :alt: Coverage (dev)
+   :alt: codecov
 
 .. |ruff| image:: https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json
    :target: https://github.com/astral-sh/ruff
