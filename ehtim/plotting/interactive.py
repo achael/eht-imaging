@@ -1471,18 +1471,15 @@ def _build_dashboard_products(
 
 def _pol_ticks_traces(im: Image, *, nvec: int, pcut: float, mcut: float,
                       colour_by_m: bool, m_bins: int = 12,
+                      coord_scale: float = 1.0,
+                      coord_origin: tuple[float, float] = (0.0, 0.0),
                       colorbar_kwargs: dict | None = None) -> list:
-    """Build EVPA tick traces for overlay on the Stokes-I heatmap.
+    """Return EVPA tick traces overlaying the Stokes-I heatmap.
 
-    Tick LENGTH ∝ |P|; tick COLOR encodes |m| (rainbow) when colour_by_m
-    is True. Sampling, gating, and angle convention mirror Image.display
-    (eht-imaging/ehtim/image.py:3820–3860). Returns [] if no tick passes
-    the pcut/mcut gating or the image carries no Q/U.
-
-    To get a single shared colorbar across the per-bin line traces, ticks
-    are partitioned into `m_bins` discretised m-bins; each bin becomes
-    one Scatter line trace with `line.color = rainbow(bin midpoint)`. A
-    final invisible marker trace exposes the continuous colorbar.
+    Tick length ∝ |P|; tick color encodes |m| (rainbow) when
+    colour_by_m=True. `coord_scale`/`coord_origin` map pixel indices to
+    plot coords — pass (psize_uas, (x0, y0)) for μas axes, else defaults
+    keep pixel coords.
     """
     try:
         imvec = np.asarray(im.imvec, dtype=float).copy()
@@ -1520,14 +1517,19 @@ def _pol_ticks_traces(im: Image, *, nvec: int, pcut: float, mcut: float,
 
     p_sub = P2[::thin, ::thin][sub]
     p_max = np.nanmax(p_sub) if np.nanmax(p_sub) > 0 else 1.0
-    # Tick length in pixel units; ~70% of a thinned-pixel scaled by |P|/Pmax
-    # so the longest tick fills most of its cell, the shortest is visible.
     L = thin * 0.70 * (p_sub / p_max)
 
     xs_a = x_centers - 0.5 * L * dx
     xs_b = x_centers + 0.5 * L * dx
     ys_a = y_centers - 0.5 * L * dy
     ys_b = y_centers + 0.5 * L * dy
+
+    # Pixel -> plot coords (heatmap axis units).
+    x0, y0 = coord_origin
+    xs_a = x0 + xs_a * coord_scale
+    xs_b = x0 + xs_b * coord_scale
+    ys_a = y0 + ys_a * coord_scale
+    ys_b = y0 + ys_b * coord_scale
 
     if not colour_by_m:
         # Single white-line trace (no m colorbar).
@@ -1710,14 +1712,17 @@ def dashboard(
     )
 
     # --- Panel 1: image ---
-    # Intensity heatmap always shows its colorbar; the m colorbar (if pol
-    # ticks present) sits immediately to its right so the two read together.
-    # Colorbars span the panel's full vertical extent (panel y ≈ [0.57, 1.00]).
+    # RA/Dec offsets in μas, like Image.display().
     img2d = im.imvec.reshape(im.ydim, im.xdim)
+    psize_uas = im.psize / ehc.RADPERUAS
+    x_uas = (np.arange(im.xdim) - (im.xdim - 1) / 2.0) * psize_uas
+    y_uas = (np.arange(im.ydim) - (im.ydim - 1) / 2.0) * psize_uas
     fig.add_trace(go.Heatmap(
         z=img2d,
+        x=x_uas,
+        y=y_uas,
         colorscale="hot",
-        hovertemplate="x=%{x}<br>y=%{y}<br>I=%{z:.3g}<extra></extra>",
+        hovertemplate="RA=%{x:.1f} μas<br>Dec=%{y:.1f} μas<br>I=%{z:.3g}<extra></extra>",
         showscale=True,
         colorbar=dict(
             title=dict(text="Jy/px"),
@@ -1732,6 +1737,8 @@ def dashboard(
     # button can hide/show them at runtime.
     pol_traces = _pol_ticks_traces(
         im, nvec=nvec, pcut=pcut, mcut=mcut, colour_by_m=vec_cfun,
+        coord_scale=psize_uas,
+        coord_origin=(-(im.xdim - 1) / 2.0 * psize_uas, -(im.ydim - 1) / 2.0 * psize_uas),
         colorbar_kwargs=dict(
             title=dict(text="|m|"),
             x=0.41, y=0.785, yanchor="middle",
@@ -1945,8 +1952,11 @@ def dashboard(
         )
 
     # Per-panel axis labels and aspect.
-    fig.update_xaxes(title_text="x (pixel)", row=1, col=1)
-    fig.update_yaxes(title_text="y (pixel)", row=1, col=1, scaleanchor="x", scaleratio=1, autorange="reversed")
+    # Panel 1: RA increases left, Dec increases up. Heatmap y is in pixel
+    # order top-down already, so flip via autorange='reversed' to put
+    # Dec increasing upward.
+    fig.update_xaxes(title_text="RA offset (μas)", row=1, col=1, autorange="reversed")
+    fig.update_yaxes(title_text="Dec offset (μas)", row=1, col=1, scaleanchor="x", scaleratio=1)
     fig.update_xaxes(title_text=products[default_product]["x_title"], row=1, col=2)
     fig.update_yaxes(title_text=products[default_product]["y_title"], row=1, col=2)
     fig.update_xaxes(title_text="time (hr)", row=2, col=1)
