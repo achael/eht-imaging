@@ -2091,11 +2091,13 @@ def dashboard(
         )
 
     # Per-panel axis labels and aspect.
-    # Panel 1: RA increases left, Dec increases up. Heatmap y is in pixel
-    # order top-down already, so flip via autorange='reversed' to put
-    # Dec increasing upward.
-    fig.update_xaxes(title_text="RA offset (μas)", row=1, col=1, autorange="reversed")
-    fig.update_yaxes(title_text="Dec offset (μas)", row=1, col=1, scaleanchor="x", scaleratio=1)
+    # Panel 1: RA left, Dec up. Suppress grid + zeroline so they don't show
+    # as white lines on the black backdrop.
+    fig.update_xaxes(title_text="RA offset (μas)", row=1, col=1,
+                     autorange="reversed", showgrid=False, zeroline=False)
+    fig.update_yaxes(title_text="Dec offset (μas)", row=1, col=1,
+                     scaleanchor="x", scaleratio=1,
+                     showgrid=False, zeroline=False)
     fig.update_xaxes(title_text=products[default_product]["x_title"], row=1, col=2)
     fig.update_yaxes(title_text=products[default_product]["y_title"], row=1, col=2)
     fig.update_xaxes(title_text="time (hr)", row=2, col=1)
