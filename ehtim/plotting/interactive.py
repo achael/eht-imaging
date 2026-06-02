@@ -2094,13 +2094,15 @@ def dashboard(
         )
 
     # Per-panel axis labels and aspect.
-    # Panel 1: RA left, Dec up. Suppress grid + zeroline so they don't show
-    # as white lines on the black backdrop.
+    # Panel 1: RA left, Dec up. Suppress grid + zeroline (white-on-black).
+    # Match tick count on x and y so a square FOV gets matching ticks.
     fig.update_xaxes(title_text="RA offset (μas)", row=1, col=1,
-                     autorange="reversed", showgrid=False, zeroline=False)
+                     autorange="reversed", showgrid=False, zeroline=False,
+                     nticks=5)
     fig.update_yaxes(title_text="Dec offset (μas)", row=1, col=1,
                      scaleanchor="x", scaleratio=1,
-                     showgrid=False, zeroline=False)
+                     showgrid=False, zeroline=False, constrain="domain",
+                     nticks=5)
     fig.update_xaxes(title_text=products[default_product]["x_title"], row=1, col=2)
     fig.update_yaxes(title_text=products[default_product]["y_title"], row=1, col=2)
     fig.update_xaxes(title_text="time (hr)", row=2, col=1)
@@ -2140,39 +2142,29 @@ def dashboard(
             )
         )
 
+    # Data-product dropdown sits above panel (1,2), the panel it drives.
     updatemenus_list = [
         dict(
-            type="dropdown",
-            direction="down",
-            buttons=buttons,
-            showactive=True,
-            # Top-left corner - the title is centered (x=0.5), so anchor
-            # the dropdown to the far left to keep them separated.
-            x=0.0,
-            xanchor="left",
-            y=1.06,
-            yanchor="bottom",
+            type="dropdown", direction="down",
+            buttons=buttons, showactive=True,
+            x=0.52, xanchor="left",
+            y=1.02, yanchor="bottom",
             pad=dict(l=4, r=4, t=2, b=2),
             bgcolor="rgba(238,238,238,0.85)",
-            bordercolor=_THEME["edge_color"],
-            borderwidth=1,
+            bordercolor=_THEME["edge_color"], borderwidth=1,
             font=dict(size=10, color=_THEME["font_color"]),
         ),
     ]
-    # Pol toggle: hides/shows the EVPA ticks + |m| colorbar overlay. Default
-    # state matches the `plotp` parameter; click flips between args/args2.
+    # Pol toggle sits above panel (1,1), the image it controls.
     if pol_trace_indices:
         updatemenus_list.append(
             dict(
-                type="buttons",
-                direction="left",
-                showactive=False,
-                x=0.20, xanchor="left",
-                y=1.06, yanchor="bottom",
+                type="buttons", direction="left", showactive=False,
+                x=0.0, xanchor="left",
+                y=1.02, yanchor="bottom",
                 pad=dict(l=4, r=4, t=2, b=2),
                 bgcolor="rgba(238,238,238,0.85)",
-                bordercolor=_THEME["edge_color"],
-                borderwidth=1,
+                bordercolor=_THEME["edge_color"], borderwidth=1,
                 font=dict(size=10, color=_THEME["font_color"]),
                 buttons=[dict(
                     label="Toggle polarization",
@@ -2183,7 +2175,7 @@ def dashboard(
             )
         )
 
-    # Gains dropdown (amp/phase x R/L). Scoped to gain traces only.
+    # Gains dropdown sits above panel (2,1).
     all_gain_indices = sorted({i for idxs in gain_indices.values() for i in idxs})
     gain_buttons = []
     for mode, _, _, ylabel in gain_modes:
@@ -2204,7 +2196,7 @@ def dashboard(
         buttons=gain_buttons, showactive=True,
         active=[m[0] for m in gain_modes].index(default_mode),
         x=0.0, xanchor="left",
-        y=0.50, yanchor="bottom",
+        y=0.46, yanchor="bottom",
         pad=dict(l=4, r=4, t=2, b=2),
         bgcolor="rgba(238,238,238,0.85)",
         bordercolor=_THEME["edge_color"], borderwidth=1,
