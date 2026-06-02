@@ -414,21 +414,25 @@ def _legend_click_js(managed_indices: list[int] | None = None) -> str:
 
     // --- Legend click handler (active only in color mode) ---------------
 
+    // Force the legend to redraw its swatches. Single-trace restyle updates
+    // marker.color in the plot but plotly skips legend regeneration as an
+    // optimisation; setting showlegend to its current value re-runs doLegend.
+    function refreshLegend() {{
+        var sl = (gd.layout && gd.layout.showlegend !== false);
+        Plotly.relayout(gd, {{'showlegend': sl}});
+    }}
+
     function legendClick(ev) {{
         var idx = ev.curveNumber;
         if (!isManaged(idx) || !colorMode) return true;  // plotly default
         var tr = gd.data && gd.data[idx];
-        if (isGray(tr)) {{
-            Plotly.restyle(gd, {{
-                'marker.color': PALETTE[idx % PALETTE.length],
-                'marker.opacity': COLOR_OPACITY
-            }}, [idx]);
-        }} else {{
-            Plotly.restyle(gd, {{
-                'marker.color': GRAY,
-                'marker.opacity': GRAY_OPACITY
-            }}, [idx]);
-        }}
+        var painting = isGray(tr);
+        var nextColor = painting ? PALETTE[idx % PALETTE.length] : GRAY;
+        var nextOpacity = painting ? COLOR_OPACITY : GRAY_OPACITY;
+        Plotly.restyle(gd, {{
+            'marker.color': nextColor,
+            'marker.opacity': nextOpacity
+        }}, [idx]).then(refreshLegend);
         return false;  // suppress plotly's hide
     }}
 
