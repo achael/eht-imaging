@@ -869,6 +869,10 @@ def plotall(
     if yscale == "log":
         fig.update_yaxes(type="log")
 
+    # u-vs-v coverage plot: lock data:pixel ratio so equal-span renders square.
+    if {field1, field2} <= {"u", "v"} and xscale != "log" and yscale != "log":
+        fig.update_xaxes(scaleanchor="y", scaleratio=1.0, constrain="domain")
+
     if show:
         fig.show()
     return fig
