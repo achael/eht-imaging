@@ -437,16 +437,15 @@ def _legend_click_js(managed_indices: list[int] | None = None,
         var painting = isGray(tr);
         var nextColor = painting ? PALETTE[idx % PALETTE.length] : GRAY;
         var nextOpacity = painting ? COLOR_OPACITY : GRAY_OPACITY;
-        // Visibility-bounce: flip to legendonly and back. The transition
-        // forces plotly to regenerate the legend swatch with the new color.
-        // restyle+redraw alone leaves the legend marker stale.
-        Plotly.restyle(gd, {{'visible': 'legendonly'}}, [idx]).then(function() {{
-            Plotly.restyle(gd, {{
-                'marker.color': nextColor,
-                'marker.opacity': nextOpacity,
-                'visible': true,
-            }}, [idx]);
-        }});
+        // Mutate the trace data directly then call Plotly.react. react
+        // is plotly's diff-and-update pass; unlike restyle it re-evaluates
+        // the legend layout, so the swatch picks up the new colour every
+        // click without needing the visibility-bounce trick.
+        var trace = gd.data[idx];
+        if (!trace.marker) trace.marker = {{}};
+        trace.marker.color = nextColor;
+        trace.marker.opacity = nextOpacity;
+        Plotly.react(gd, gd.data, gd.layout);
         return false;  // suppress plotly's hide
     }}
 
@@ -1179,6 +1178,7 @@ _DASH_PRODUCT_ORDER = (
     "cphase_vs_triarea",
     "logcamp_vs_quadarea",
     "mbreve_vs_uvdist",
+    "mbreve_vs_time",
     "mbreve_chisq_vs_uvdist",
 )
 
@@ -1195,6 +1195,7 @@ _DASH_PRODUCT_LABELS = {
     "cphase_vs_triarea": "Closure phase vs triangle area",
     "logcamp_vs_quadarea": "Log closure amp vs quadrangle area",
     "mbreve_vs_uvdist": "|m_breve| vs uv-distance",
+    "mbreve_vs_time": "|m_breve| vs time",
     "mbreve_chisq_vs_uvdist": "|m_breve| residual vs uv-distance",
 }
 
@@ -1317,39 +1318,47 @@ def _build_dashboard_products(
         f"uv-distance ({uv_unit})",
         "Amplitude (Jy)",
     )
-    # amp_vs_time gets one spec per baseline (the baseline sub-dropdown
-    # picks which is visible); legend collapses to data/model.
-    amp_time_specs: list[dict] = []
-    for bl in obs.bllist(conj=False):
-        if len(bl) == 0:
-            continue
-        t1 = str(bl["t1"][0])
-        t2 = str(bl["t2"][0])
-        bl_data = obs.unpack_dat(bl, ["time", "amp"])
-        if obs_model is not None:
+    # amp_vs_time + mbreve_vs_time: one spec per baseline, sub-dropdown
+    # selects which is visible, legend collapses to data/model.
+    def _per_baseline_specs(field):
+        """Build [{label, x_data, y_data, x_model, y_model}] per baseline."""
+        bls = list(obs.bllist(conj=False))
+        mbls = list(obs_model.bllist(conj=False)) if obs_model is not None else []
+        out = []
+        for i, bl in enumerate(bls):
+            if len(bl) == 0:
+                continue
+            t1, t2 = str(bl["t1"][0]), str(bl["t2"][0])
             try:
-                bl_model = obs_model.unpack_bl(t1, t2, "amp")
-                # unpack_bl returns shape (N, 1); flatten and pull time too.
-                m_t = obs_model.unpack_bl(t1, t2, "time")["time"][:, 0]
-                m_a = bl_model["amp"][:, 0]
+                d = obs.unpack_dat(bl, ["time", field])
             except Exception:
-                m_t = np.array([])
-                m_a = np.array([])
-        else:
-            m_t = np.array([])
-            m_a = np.array([])
-        amp_time_specs.append(dict(
-            label=f"{t1}-{t2}",
-            x_data=bl_data["time"],
-            y_data=bl_data["amp"],
-            x_model=m_t,
-            y_model=m_a,
-        ))
+                continue
+            if i < len(mbls) and len(mbls[i]) > 0:
+                try:
+                    m = obs_model.unpack_dat(mbls[i], ["time", field])
+                    mx, my = m["time"], m[field]
+                except Exception:
+                    mx, my = np.array([]), np.array([])
+            else:
+                mx, my = np.array([]), np.array([])
+            out.append(dict(
+                label=f"{t1}-{t2}",
+                x_data=d["time"], y_data=d[field],
+                x_model=mx, y_model=my,
+            ))
+        return out
+
     products["amp_vs_time"] = dict(
         x_title="time (hr)",
         y_title="Amplitude (Jy)",
         style="multi",
-        traces=amp_time_specs or [_empty_spec()],
+        traces=_per_baseline_specs("amp") or [_empty_spec()],
+    )
+    products["mbreve_vs_time"] = dict(
+        x_title="time (hr)",
+        y_title="|m_breve|",
+        style="multi",
+        traces=_per_baseline_specs("mamp") or [_empty_spec()],
     )
     products["vis_vs_uvdist"] = _single(
         uvdist_scaled,
@@ -1895,7 +1904,9 @@ def dashboard(
         _mantissas = [i + 1 for i in range(int(np.floor(_mant_max)))]
         _intensity_tickvals = [m * _scale for m in _mantissas]
         _intensity_ticktext = [f"{m:.1f}" for m in _mantissas]
-        _intensity_title = f"Jy/px x 10{str(_exp).translate(_sup)}"
+        _intensity_title = (
+            f'Jy/px <span style="font-size:0.8em">x 10{str(_exp).translate(_sup)}</span>'
+        )
     else:
         _intensity_tickvals = None
         _intensity_ticktext = None
@@ -1952,7 +1963,7 @@ def dashboard(
     # spec is visible.
     CPHASE_PRODUCTS = ("cphase_vs_time", "cphase_chisq_vs_time", "cphase_vs_triarea")
     LOGCAMP_PRODUCTS = ("logcamp_vs_time", "logcamp_chisq_vs_time", "logcamp_vs_quadarea")
-    BASELINE_PRODUCTS = ("amp_vs_time",)
+    BASELINE_PRODUCTS = ("amp_vs_time", "mbreve_vs_time")
     MULTI_SPEC_PRODUCTS = CPHASE_PRODUCTS + LOGCAMP_PRODUCTS + BASELINE_PRODUCTS
 
     panel2_indices: dict[str, list[int]] = {key: [] for key in _DASH_PRODUCT_ORDER}
