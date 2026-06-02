@@ -449,7 +449,32 @@ def _managed_indices(fig) -> list[int]:
     return out
 
 
-def write_html(fig, path: str | PathLike[str], *, include_plotlyjs: bool | str = True) -> None:
+def _save_png_config(fig, *, scale: float = 3.0) -> dict:
+    """Plotly config for the modebar PNG-export button.
+
+    Forces `scale` (≈ dpi multiplier — 3 ≈ 300 dpi) and sizes the export
+    canvas to match the figure's layout dimensions so the full legend is
+    inside the saved PNG rather than clipped.
+    """
+    width = int(fig.layout.width) if fig.layout.width else 820
+    height = int(fig.layout.height) if fig.layout.height else 460
+    return {
+        "toImageButtonOptions": {
+            "format": "png",
+            "scale": scale,
+            "width": width,
+            "height": height,
+        },
+    }
+
+
+def write_html(
+    fig,
+    path: str | PathLike[str],
+    *,
+    include_plotlyjs: bool | str = True,
+    save_scale: float = 3.0,
+) -> None:
     """Write `fig` to an HTML file with the click-to-highlight JS embedded.
 
     The resulting file is self-contained and reproduces the same Color
@@ -463,17 +488,30 @@ def write_html(fig, path: str | PathLike[str], *, include_plotlyjs: bool | str =
     include_plotlyjs : bool or 'cdn'
         Forwarded to plotly. True embeds plotly.js (offline-friendly but big);
         'cdn' uses a script tag (smaller file, needs internet).
+    save_scale : float
+        Scale for the modebar PNG-export button (3.0 ≈ 300 dpi).
     """
     js = _legend_click_js(_managed_indices(fig))
-    fig.write_html(str(path), post_script=js, include_plotlyjs=include_plotlyjs)
+    fig.write_html(
+        str(path),
+        post_script=js,
+        include_plotlyjs=include_plotlyjs,
+        config=_save_png_config(fig, scale=save_scale),
+    )
 
 
-def display(fig) -> None:
+def display(fig, *, save_scale: float = 3.0) -> None:
     """Render `fig` inline in a Jupyter cell with the Color toolbar JS.
 
     Use this instead of letting Jupyter render `fig` directly when you
     want the gray↔colour interaction. Returns nothing — the figure is
     shown as a side effect.
+
+    Parameters
+    ----------
+    fig : plotly.graph_objects.Figure
+    save_scale : float
+        Scale for the modebar PNG-export button (3.0 ≈ 300 dpi).
     """
     try:
         from IPython.display import HTML
@@ -483,7 +521,11 @@ def display(fig) -> None:
             "IPython is required for ehtim.plotting.interactive.display(). Install with `pip install ipython`."
         ) from e
     js = _legend_click_js(_managed_indices(fig))
-    html = fig.to_html(post_script=js, include_plotlyjs="cdn")
+    html = fig.to_html(
+        post_script=js,
+        include_plotlyjs="cdn",
+        config=_save_png_config(fig, scale=save_scale),
+    )
     _ipy_display(HTML(html))
 
 
