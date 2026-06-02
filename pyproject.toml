@@ -45,6 +45,7 @@ dev = [
     "ruff",
     "pandas",
     "paramsurvey",
+    "plotly",
 ]
 
 [project.urls]

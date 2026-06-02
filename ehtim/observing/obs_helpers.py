@@ -603,6 +603,43 @@ def logcamp_debias(log_camp, snr1, snr2, snr3, snr4):
     return log_camp_debias
 
 
+def uv_area_triangle(u1, v1, u2, v2):
+    """Signed-magnitude area of the uv-plane triangle spanned by two of its baseline vectors.
+
+       For a closure triangle 1-2-3 with baselines b12=(u1,v1) and b23=(u2,v2), the
+       enclosed uv-area is ``A = (1/2) * |u1*v2 - u2*v1|``. Independent of which two
+       of the three baselines are passed; sign-stripped so it can be used directly
+       as an x-axis variable.
+
+       Args:
+           u1, v1 (array-like): uv components of the first baseline (in lambda)
+           u2, v2 (array-like): uv components of the second baseline (in lambda)
+
+       Returns:
+           (numpy.ndarray): triangle uv-area in lambda^2 (>=0)
+    """
+    return 0.5 * np.abs(np.asarray(u1) * np.asarray(v2) - np.asarray(u2) * np.asarray(v1))
+
+
+def uv_area_quadrangle(u1, v1, u2, v2, u3, v3):
+    """Signed-magnitude area of the uv-plane quadrangle for a closure-amplitude quad.
+
+       A closure quadrangle 1-2-3-4 is built from four baselines whose vectors sum to
+       zero; any three are independent. Treating the quadrangle as two triangles
+       sharing a diagonal, ``A = (1/2) * |u1*v2 - u2*v1| + (1/2) * |u2*v3 - u3*v2|``.
+
+       Args:
+           u1..v3 (array-like): uv components of three independent baselines (in lambda)
+
+       Returns:
+           (numpy.ndarray): quadrangle uv-area in lambda^2 (>=0)
+    """
+    u1, v1 = np.asarray(u1), np.asarray(v1)
+    u2, v2 = np.asarray(u2), np.asarray(v2)
+    u3, v3 = np.asarray(u3), np.asarray(v3)
+    return 0.5 * (np.abs(u1 * v2 - u2 * v1) + np.abs(u2 * v3 - u3 * v2))
+
+
 def gauss_uv(u, v, flux, beamparams, x=0., y=0.):
     """Return the value of the Gaussian FT with
        beamparams is [FWHMmaj, FWHMmin, theta, x, y], all in radian
