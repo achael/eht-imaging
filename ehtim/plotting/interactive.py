@@ -1520,7 +1520,9 @@ def _pol_ticks_traces(im: Image, *, nvec: int, pcut: float, mcut: float,
 
     p_sub = P2[::thin, ::thin][sub]
     p_max = np.nanmax(p_sub) if np.nanmax(p_sub) > 0 else 1.0
-    L = thin * 0.45 * (p_sub / p_max)
+    # Tick length in pixel units; ~70% of a thinned-pixel scaled by |P|/Pmax
+    # so the longest tick fills most of its cell, the shortest is visible.
+    L = thin * 0.70 * (p_sub / p_max)
 
     xs_a = x_centers - 0.5 * L * dx
     xs_b = x_centers + 0.5 * L * dx
@@ -1540,7 +1542,7 @@ def _pol_ticks_traces(im: Image, *, nvec: int, pcut: float, mcut: float,
         return [go.Scatter(
             x=seg_x.tolist(), y=seg_y.tolist(),
             mode="lines",
-            line=dict(color="white", width=1.4),
+            line=dict(color="white", width=2.5),
             hoverinfo="skip", showlegend=False, name="EVPA",
         )]
 
@@ -1574,7 +1576,7 @@ def _pol_ticks_traces(im: Image, *, nvec: int, pcut: float, mcut: float,
         traces.append(go.Scatter(
             x=seg_x.tolist(), y=seg_y.tolist(),
             mode="lines",
-            line=dict(color=colors[i], width=1.6),
+            line=dict(color=colors[i], width=2.5),
             hoverinfo="skip", showlegend=False,
             name=f"EVPA m={midpoints[i]:.2f}",
         ))
@@ -1686,11 +1688,13 @@ def dashboard(
         n_quadrangles=n_quadrangles,
     )
 
+    source_name = str(getattr(im, "source", "") or getattr(obs, "source", "") or "")
+
     fig = make_subplots(
         rows=2,
         cols=2,
         subplot_titles=(
-            "Image (Stokes I)",
+            source_name or "Image",
             _DASH_PRODUCT_LABELS[default_product],
             f"Gains (|G|, pol={pol})",
             "D-terms (complex plane)",
@@ -1708,6 +1712,7 @@ def dashboard(
     # --- Panel 1: image ---
     # Intensity heatmap always shows its colorbar; the m colorbar (if pol
     # ticks present) sits immediately to its right so the two read together.
+    # Colorbars span the panel's full vertical extent (panel y ≈ [0.57, 1.00]).
     img2d = im.imvec.reshape(im.ydim, im.xdim)
     fig.add_trace(go.Heatmap(
         z=img2d,
@@ -1716,8 +1721,10 @@ def dashboard(
         showscale=True,
         colorbar=dict(
             title=dict(text="Jy/px"),
-            x=0.34, y=0.78, yanchor="middle",
-            len=0.32, thickness=10,
+            x=0.34, y=0.785, yanchor="middle",
+            len=0.43, thickness=10,
+            exponentformat="power",
+            tickformat=".1f",
         ),
     ), row=1, col=1)
 
@@ -1727,8 +1734,8 @@ def dashboard(
         im, nvec=nvec, pcut=pcut, mcut=mcut, colour_by_m=vec_cfun,
         colorbar_kwargs=dict(
             title=dict(text="|m|"),
-            x=0.40, y=0.78, yanchor="middle",
-            len=0.32, thickness=10,
+            x=0.41, y=0.785, yanchor="middle",
+            len=0.43, thickness=10,
         ),
     )
     pol_trace_indices: list[int] = []
@@ -1876,47 +1883,39 @@ def dashboard(
     )
 
     # --- Layout (multi-legend: one per scatter panel) ---
+    # Each panel's legend sits just OUTSIDE the panel (in the gap between
+    # cols, or in the right margin) rather than inside, so it doesn't
+    # occlude data. Right margin is generous to give the panel-1,2 and
+    # panel-2,2 legends room.
     fig.update_layout(
-        title=dict(
-            text=f"Reconstruction dashboard — {obs.source}",
-            x=0.5,
-            xanchor="center",
-            font=dict(size=_THEME["title_size"], family=_THEME["font_family"], color=_THEME["font_color"]),
-        ),
         template="none",
         plot_bgcolor=_THEME["plot_bgcolor"],
         paper_bgcolor=_THEME["paper_bgcolor"],
         font=dict(family=_THEME["font_family"], size=_THEME["font_size"], color=_THEME["font_color"]),
         width=1280,
         height=1000,
-        margin=dict(l=70, r=70, t=120, b=60),
+        margin=dict(l=70, r=200, t=80, b=60),
         showlegend=True,
         colorway=_THEME["colorway"],
-        # Each panel's legend is anchored inside that panel's top-right
-        # corner (paper coords). Layout assumes column_widths=[0.40, 0.60]
-        # + horizontal_spacing=0.20 + vertical_spacing=0.14 from make_subplots.
-        legend2=dict(  # data/model (panel 1,2 = top-right)
-            title=dict(text="Panel 2"),
-            x=0.99, y=0.99,
-            xanchor="right", yanchor="top",
+        legend2=dict(  # data/model (panel 1,2 = top-right): just outside right edge
+            x=1.01, y=0.99,
+            xanchor="left", yanchor="top",
             font=dict(size=10, color=_THEME["font_color"]),
             bgcolor="rgba(238,238,238,0.85)",
             bordercolor=_THEME["edge_color"],
             borderwidth=1,
         ),
-        legend3=dict(  # gains (panel 2,1 = bottom-left)
-            title=dict(text="Sites"),
-            x=0.39, y=0.43,
-            xanchor="right", yanchor="top",
+        legend3=dict(  # gains (panel 2,1 = bottom-left): in the col-gap
+            x=0.33, y=0.43,
+            xanchor="left", yanchor="top",
             font=dict(size=10, color=_THEME["font_color"]),
             bgcolor="rgba(238,238,238,0.85)",
             bordercolor=_THEME["edge_color"],
             borderwidth=1,
         ),
-        legend4=dict(  # D-terms (panel 2,2 = bottom-right)
-            title=dict(text="D-terms"),
-            x=0.99, y=0.43,
-            xanchor="right", yanchor="top",
+        legend4=dict(  # D-terms (panel 2,2 = bottom-right): just outside right edge
+            x=1.01, y=0.43,
+            xanchor="left", yanchor="top",
             font=dict(size=10, color=_THEME["font_color"]),
             bgcolor="rgba(238,238,238,0.85)",
             bordercolor=_THEME["edge_color"],
