@@ -349,6 +349,23 @@ def _legend_click_js(managed_indices: list[int] | None = None) -> str:
             ensureBindings();  // defensive: keep listeners live
         }});
 
+        var colorAllBtn = makeBtn('Color all');
+        colorAllBtn.addEventListener('click', function() {{
+            if (MANAGED_LIST.length === 0) return;
+            var colors = MANAGED_LIST.map(function(idx) {{
+                return PALETTE[idx % PALETTE.length];
+            }});
+            var opacities = MANAGED_LIST.map(function() {{ return COLOR_OPACITY; }});
+            Plotly.restyle(gd, {{
+                visible: true,
+                'marker.color': colors,
+                'marker.opacity': opacities
+            }}, MANAGED_LIST.slice());
+            colorMode = false;
+            syncColorBtn();
+            ensureBindings();
+        }});
+
         resetBtn = makeBtn('Show all / reset');
         resetBtn.addEventListener('click', function() {{
             if (MANAGED_LIST.length === 0) return;
@@ -365,14 +382,15 @@ def _legend_click_js(managed_indices: list[int] | None = None) -> str:
         }});
 
         bar.appendChild(colorBtn);
+        bar.appendChild(colorAllBtn);
         bar.appendChild(resetBtn);
         gd.parentNode.insertBefore(bar, gd);
     }} else if (gd.parentNode) {{
         // Toolbar already exists (e.g. cell re-rendered). Grab refs so
-        // the colorMode toggle stays wired.
+        // the colorMode toggle stays wired. Button order: Color, Color all, Reset.
         var existing = gd.parentNode.querySelector('[data-ehtim-toolbar="1"]');
         var btns = existing ? existing.querySelectorAll('button') : [];
-        if (btns.length >= 2) {{ colorBtn = btns[0]; resetBtn = btns[1]; }}
+        if (btns.length >= 3) {{ colorBtn = btns[0]; resetBtn = btns[2]; }}
     }}
 
     // --- Legend click handler (active only in color mode) ---------------
