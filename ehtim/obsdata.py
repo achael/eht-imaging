@@ -21,6 +21,7 @@
 import copy
 import itertools as it
 import sys
+import warnings
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -31,11 +32,14 @@ import scipy.spatial as spatial
 try:
     import pandas as pd
 except ImportError:
-    print("Warning: pandas not installed!")
-    print("Please install pandas to use statistics package!")
-
-
-import warnings
+    pd = None
+    warnings.warn(
+        "pandas is not installed; the legacy ehtim.statistics.dataframes helpers "
+        "and the Obsdata flag-file / scan-id helpers will be unavailable. "
+        "Install via `pip install pandas`.",
+        ImportWarning,
+        stacklevel=2,
+    )
 
 import ehtim.const_def as ehc
 import ehtim.image
