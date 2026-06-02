@@ -1618,8 +1618,9 @@ def _pol_ticks_traces(im: Image, *, nvec: int, pcut: float, mcut: float,
     y_centers = ys[sub].astype(float)
     angle = np.angle(qvec + 1j * uvec) / 2.0
     angle2 = angle.reshape(ydim, xdim)[::thin, ::thin][sub]
-    # Tick direction = (-sin θ, cos θ) per Image.display convention.
-    dx = -np.sin(angle2)
+    # Tick = (sin chi, cos chi) in sky coords; +y is north, +x is east
+    # because the RA axis is reversed to put east on the left.
+    dx = np.sin(angle2)
     dy = np.cos(angle2)
 
     p_sub = P2[::thin, ::thin][sub]
@@ -2058,6 +2059,8 @@ def dashboard(
             bgcolor="rgba(238,238,238,0.85)",
             bordercolor=_THEME["edge_color"],
             borderwidth=1,
+            # Clicking a site entry hides both R and L for that site.
+            groupclick="togglegroup",
         ),
         legend5=dict(  # D-term type (R-circle / L-square): below legend4
             x=1.01, y=0.20,
