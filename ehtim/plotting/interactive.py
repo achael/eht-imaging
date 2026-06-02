@@ -228,7 +228,7 @@ _OPACITY_THRESHOLD = 0.7  # < threshold → "gray", >= threshold → "coloured"
 #
 #   - **Color mode OFF (default).** Single-click on a legend entry uses
 #     plotly's built-in toggle (visible ↔ legendonly). No custom JS in
-#     the click path — plotly's defaults are predictable.
+#     the click path - plotly's defaults are predictable.
 #
 #   - **Color mode ON.** The "Color" toolbar button toggles a JS flag.
 #     While the flag is on, single-click on a managed trace (one tagged
@@ -260,7 +260,7 @@ def _legend_click_js(managed_indices: list[int] | None = None) -> str:
     """Build the post-script JS that wires up the Color/Reset toolbar.
 
     `managed_indices` are the trace indices that participate in the
-    gray↔colour flow — baked into the JS as a constant so detection does
+    gray↔colour flow - baked into the JS as a constant so detection does
     *not* depend on `tr.meta` surviving plotly's internal restyles
     (it doesn't, reliably).
     """
@@ -311,7 +311,7 @@ def _legend_click_js(managed_indices: list[int] | None = None) -> str:
     function syncColorBtn() {{
         if (!colorBtn) return;
         colorBtn.textContent = colorMode
-            ? 'Color: on — click a baseline'
+            ? 'Color: on - click a baseline'
             : 'Color: off';
         colorBtn.style.background = colorMode
             ? 'rgba(180,220,180,0.95)'
@@ -471,7 +471,7 @@ def _managed_indices(fig) -> list[int]:
 def _save_png_config(fig, *, scale: float = 3.0) -> dict:
     """Plotly config for the modebar PNG-export button.
 
-    Forces `scale` (≈ dpi multiplier — 3 ≈ 300 dpi) and sizes the export
+    Forces `scale` (≈ dpi multiplier - 3 ≈ 300 dpi) and sizes the export
     canvas to match the figure's layout dimensions so the full legend is
     inside the saved PNG rather than clipped.
     """
@@ -539,7 +539,7 @@ def display(fig, *, save_scale: float = 3.0) -> None:
     """Render `fig` inline in a Jupyter cell with the Color toolbar JS.
 
     Use this instead of letting Jupyter render `fig` directly when you
-    want the gray↔colour interaction. Returns nothing — the figure is
+    want the gray↔colour interaction. Returns nothing - the figure is
     shown as a side effect.
 
     Parameters
@@ -727,7 +727,7 @@ def plot_bl(
             # button to restore the uniform gray state. The `meta` tag
             # marks this trace as participating in the gray↔colour flow,
             # and marker.opacity doubles as the state indicator the JS
-            # reads (`< _OPACITY_THRESHOLD` → gray) — see `_legend_click_js`.
+            # reads (`< _OPACITY_THRESHOLD` → gray) - see `_legend_click_js`.
             trace.marker.color = _GRAY
             trace.marker.opacity = _GRAY_OPACITY
             trace.meta = dict(legend_kind="gray")
@@ -794,8 +794,8 @@ def plotall(
 
     Common uses:
 
-    - ``plotall(obs, 'u', 'v', conj=True)`` — uv coverage with conjugates
-    - ``plotall(obs, 'uvdist', 'amp')`` — amp vs baseline length (radplot)
+    - ``plotall(obs, 'u', 'v', conj=True)`` - uv coverage with conjugates
+    - ``plotall(obs, 'uvdist', 'amp')`` - amp vs baseline length (radplot)
     """
     field1 = field1.lower()
     field2 = field2.lower()
@@ -810,7 +810,7 @@ def plotall(
     sigtype2 = obsh.sigtype(field2)
 
     def _filter_mask(data, sigx, sigy):
-        # `|` not `+` for boolean OR — `+` works on numpy bool arrays but
+        # `|` not `+` for boolean OR - `+` works on numpy bool arrays but
         # promotes to int and reads as arithmetic.
         m = ~(np.isnan(data[field1]) | np.isnan(data[field2]))
         if snrcut > 0:
@@ -1031,7 +1031,7 @@ def plot_gains(
     """Interactive gains-vs-time plot.
 
     Plotly counterpart of `Caltable.plot_gains` (eht-imaging/ehtim/caltable.py:153).
-    One trace per (site, pol) — click legend entries to toggle visibility.
+    One trace per (site, pol) - click legend entries to toggle visibility.
 
     Parameters
     ----------
@@ -1041,7 +1041,7 @@ def plot_gains(
     gain_type : {'amp', 'phase'}
     pol : {'R', 'L', 'both'}
         'both' draws R and L as separate traces per site.
-        TODO: schema-coupled — replace with pol1/pol2 once the cal-table
+        TODO: schema-coupled - replace with pol1/pol2 once the cal-table
         mixed-pol schema lands.
     timetype : {'GMST', 'UTC'} or None
         None means use `caltable.timetype`.
@@ -1052,7 +1052,7 @@ def plot_gains(
     """
     if gain_type not in ("amp", "phase"):
         raise ValueError(f"gain_type must be 'amp' or 'phase', got {gain_type!r}")
-    # TODO: schema-coupled — replace R/L with pol1/pol2 lookup after the
+    # TODO: schema-coupled - replace R/L with pol1/pol2 lookup after the
     # cal-table mixed-pol rewrite.
     if pol not in ("R", "L", "both"):
         raise ValueError(f"pol must be 'R', 'L', or 'both', got {pol!r}")
@@ -1077,7 +1077,7 @@ def plot_gains(
             times = obsh.utc_to_gmst(times, caltable.mjd)
 
         for j, pol_ch in enumerate(pol_channels):
-            # TODO: schema-coupled — replace with caltable.data[site][pol_ch]
+            # TODO: schema-coupled - replace with caltable.data[site][pol_ch]
             # once the table keys by configurable basis names instead of R/L.
             key = "rscale" if pol_ch == "R" else "lscale"
             gains_complex = caltable.data[site][key]
@@ -1126,7 +1126,7 @@ def plot_gains(
 
     _apply_theme(
         fig,
-        title=f"Caltable gains — {gain_type}, pol={pol}",
+        title=f"Caltable gains - {gain_type}, pol={pol}",
         xaxis_title=f"{timetype} (hr)",
         yaxis_title=y_title,
         rangex=rangex,
@@ -1244,10 +1244,10 @@ def _build_dashboard_products(
     """Build per-product trace specs for the dashboard panel-2 dropdown.
 
     Returns a dict keyed by `_DASH_PRODUCT_ORDER`; each value has:
-        ``x_title``, ``y_title``       — panel axis labels for that product
-        ``style``                       — "single" (gray data + red model) or
+        ``x_title``, ``y_title``       - panel axis labels for that product
+        ``style``                       - "single" (gray data + red model) or
                                           "multi" (per-trace palette colour)
-        ``traces``                      — list of trace specs (≥ 1), each a
+        ``traces``                      - list of trace specs (≥ 1), each a
                                           dict with ``label``, ``x_data``,
                                           ``y_data``, ``x_model``, ``y_model``
 
@@ -1263,7 +1263,7 @@ def _build_dashboard_products(
     uvdist_scaled, uv_unit = _format_uv_axis(udata["uvdist"])
     if obs_model is not None:
         mdata = obs_model.unpack(["uvdist", "amp", "vis", "phase"])
-        # Same scaling factor as data — don't let the model rescale itself.
+        # Same scaling factor as data - don't let the model rescale itself.
         div = 1e9 if uv_unit == "Gλ" else 1e6
         uvdist_m_scaled = mdata["uvdist"] / div
     else:
@@ -1495,7 +1495,7 @@ def _pol_ticks_traces(im: Image, *, nvec: int, pcut: float, mcut: float,
 
     Tick length ∝ |P|; tick color encodes |m| (rainbow) when
     colour_by_m=True. `coord_scale`/`coord_origin` map pixel indices to
-    plot coords — pass (psize_uas, (x0, y0)) for μas axes, else defaults
+    plot coords - pass (psize_uas, (x0, y0)) for μas axes, else defaults
     keep pixel coords.
     """
     try:
@@ -1640,7 +1640,7 @@ def dashboard(
     default_product: str = "amp_vs_uvdist",
     show: bool = True,
 ) -> Any:
-    """Reconstruction dashboard — image + data fit + gains + D-terms.
+    """Reconstruction dashboard - image + data fit + gains + D-terms.
 
     2x2 layout: inspect a full reconstruction's model + data + calibration
     + leakage at a glance.
@@ -1658,7 +1658,7 @@ def dashboard(
     caltable : Caltable
         Calibration table; provides per-site gains and D-terms (from `tarr`).
     pol : {'R', 'L'}
-        Which gain channel to plot. TODO: schema-coupled — replace with
+        Which gain channel to plot. TODO: schema-coupled - replace with
         pol1/pol2 once the cal-table mixed-pol schema lands.
     show_model : bool
         Whether to compute and overlay model traces in panel 2.
@@ -1798,7 +1798,6 @@ def dashboard(
                 data_name = "data"
                 model_name = "model"
                 model_symbol = "circle"
-                show_model_in_legend = True
             else:
                 data_color = _THEME["colorway"][i % len(_THEME["colorway"])]
                 data_opacity = 0.85
@@ -1806,10 +1805,6 @@ def dashboard(
                 data_name = spec["label"]
                 model_name = f"{spec['label']} (model)"
                 model_symbol = "x"
-                # Share a legendgroup so toggling one legend entry hides
-                # both the data and model trace for that triangle/quad.
-                show_model_in_legend = False
-            legendgroup = f"{key}_{i}"
 
             fig.add_trace(
                 go.Scatter(
@@ -1825,7 +1820,6 @@ def dashboard(
                     ),
                     hovertemplate=("<b>" + data_name + "</b><br>x=%{x:.3g}<br>y=%{y:.3g}<extra></extra>"),
                     legend="legend2",
-                    legendgroup=legendgroup,
                     visible=is_default,
                 ),
                 row=1,
@@ -1850,8 +1844,6 @@ def dashboard(
                         ),
                         hovertemplate=("<b>" + model_name + "</b><br>x=%{x:.3g}<br>y=%{y:.3g}<extra></extra>"),
                         legend="legend2",
-                        legendgroup=legendgroup,
-                        showlegend=show_model_in_legend,
                         visible=is_default,
                     ),
                     row=1,
@@ -1860,62 +1852,84 @@ def dashboard(
                 panel2_indices[key].append(len(fig.data) - 1)
     panel2_end = len(fig.data)
 
-    # --- Panel 3: gains per site (own legend) ---
-    # TODO: schema-coupled — replace 'rscale'/'lscale' once mixed-pol lands.
-    pol_key = "rscale" if pol == "R" else "lscale"
+    # --- Panel 3: gains per site, with amp/phase × R/L dropdown ---
+    # TODO: schema-coupled - replace 'rscale'/'lscale' once mixed-pol lands.
+    gain_modes = [
+        ("amp_R",   "rscale", "amp",   "|G_R|"),
+        ("amp_L",   "lscale", "amp",   "|G_L|"),
+        ("phase_R", "rscale", "phase", "arg(G_R) (deg)"),
+        ("phase_L", "lscale", "phase", "arg(G_L) (deg)"),
+    ]
+    default_mode = f"amp_{pol}"
+    gain_indices: dict[str, list[int]] = {m[0]: [] for m in gain_modes}
+    gain_ytitle = {m[0]: m[3] for m in gain_modes}
     for site in sorted(caltable.data.keys()):
-        gain = np.abs(caltable.data[site][pol_key])
-        fig.add_trace(
-            go.Scatter(
-                x=caltable.data[site]["time"],
-                y=gain,
-                mode="markers",
-                name=site,
-                marker=dict(size=5, line=dict(width=0.3, color=_THEME["marker_edge"])),
-                hovertemplate=(f"<b>{site}</b><br>t=%{{x:.2f}} hr<br>|G|=%{{y:.3g}}<extra></extra>"),
-                legend="legend3",
-            ),
-            row=2,
-            col=1,
-        )
+        complex_R = caltable.data[site]["rscale"]
+        complex_L = caltable.data[site]["lscale"]
+        times = caltable.data[site]["time"]
+        for mode, key, gtype, ylabel in gain_modes:
+            cplx = complex_R if key == "rscale" else complex_L
+            y = np.abs(cplx) if gtype == "amp" else np.angle(cplx, deg=True)
+            fig.add_trace(
+                go.Scatter(
+                    x=times, y=y,
+                    mode="markers",
+                    name=site,
+                    marker=dict(size=5, line=dict(width=0.3, color=_THEME["marker_edge"])),
+                    hovertemplate=(
+                        f"<b>{site}</b><br>t=%{{x:.2f}} hr<br>{ylabel}=%{{y:.3g}}<extra></extra>"
+                    ),
+                    legend="legend3",
+                    visible=(mode == default_mode),
+                ),
+                row=2, col=1,
+            )
+            gain_indices[mode].append(len(fig.data) - 1)
 
-    # --- Panel 4: D-terms (R and L) in complex plane (own legend) ---
-    # TODO: schema-coupled — tarr['dr'] / tarr['dl'] move to caltable.dterms
+    # --- Panel 4: D-terms (R and L) in complex plane ---
+    # TODO: schema-coupled - tarr['dr'] / tarr['dl'] move to caltable.dterms
     # in MixPol Phase 1; this lookup needs to follow.
+    # Two legends: legend4 = per-site (toggle hides both R and L for that
+    # site via legendgroup); legend5 = R/L type (two dummy markers showing
+    # the symbol convention).
     tarr = caltable.tarr
     sites = [str(s) for s in tarr["site"]]
-    fig.add_trace(
-        go.Scatter(
-            x=np.real(tarr["dr"]),
-            y=np.imag(tarr["dr"]),
+    for i, site in enumerate(sites):
+        color = _THEME["colorway"][i % len(_THEME["colorway"])]
+        fig.add_trace(go.Scatter(
+            x=[np.real(tarr["dr"][i])], y=[np.imag(tarr["dr"][i])],
             mode="markers+text",
-            text=sites,
-            textposition="top center",
+            text=[site], textposition="top center",
             textfont=dict(size=9, color=_THEME["font_color"]),
-            name="D_R",
-            marker=dict(size=10, symbol="circle", line=dict(width=0.5, color=_THEME["marker_edge"])),
-            hovertemplate=("<b>%{text}</b><br>Re(D_R)=%{x:.3g}<br>Im(D_R)=%{y:.3g}<extra></extra>"),
-            legend="legend4",
-        ),
-        row=2,
-        col=2,
-    )
-    fig.add_trace(
-        go.Scatter(
-            x=np.real(tarr["dl"]),
-            y=np.imag(tarr["dl"]),
+            name=site,
+            marker=dict(size=10, symbol="circle", color=color,
+                        line=dict(width=0.5, color=_THEME["marker_edge"])),
+            hovertemplate=(f"<b>{site}</b> D_R<br>Re=%{{x:.3g}}<br>Im=%{{y:.3g}}<extra></extra>"),
+            legend="legend4", legendgroup=site,
+        ), row=2, col=2)
+        fig.add_trace(go.Scatter(
+            x=[np.real(tarr["dl"][i])], y=[np.imag(tarr["dl"][i])],
             mode="markers+text",
-            text=sites,
-            textposition="bottom center",
+            text=[site], textposition="bottom center",
             textfont=dict(size=9, color=_THEME["font_color"]),
-            name="D_L",
-            marker=dict(size=10, symbol="square", line=dict(width=0.5, color=_THEME["marker_edge"])),
-            hovertemplate=("<b>%{text}</b><br>Re(D_L)=%{x:.3g}<br>Im(D_L)=%{y:.3g}<extra></extra>"),
-            legend="legend4",
-        ),
-        row=2,
-        col=2,
-    )
+            name=site,
+            marker=dict(size=10, symbol="square", color=color,
+                        line=dict(width=0.5, color=_THEME["marker_edge"])),
+            hovertemplate=(f"<b>{site}</b> D_L<br>Re=%{{x:.3g}}<br>Im=%{{y:.3g}}<extra></extra>"),
+            legend="legend4", legendgroup=site,
+            showlegend=False,  # site already named once by the R-trace above
+        ), row=2, col=2)
+
+    # legend5: two dummy markers showing the R-circle / L-square convention.
+    for symbol, label in (("circle", "D_R"), ("square", "D_L")):
+        fig.add_trace(go.Scatter(
+            x=[None], y=[None], mode="markers",
+            name=label,
+            marker=dict(size=10, symbol=symbol, color=_THEME["font_color"],
+                        line=dict(width=0.5, color=_THEME["marker_edge"])),
+            hoverinfo="skip",
+            legend="legend5",
+        ), row=2, col=2)
 
     # --- Layout (multi-legend: one per scatter panel) ---
     # Each panel's legend sits just OUTSIDE the panel (in the gap between
@@ -1948,8 +1962,16 @@ def dashboard(
             bordercolor=_THEME["edge_color"],
             borderwidth=1,
         ),
-        legend4=dict(  # D-terms (panel 2,2 = bottom-right): just outside right edge
+        legend4=dict(  # D-terms sites (panel 2,2 = bottom-right): just outside right edge
             x=1.01, y=0.43,
+            xanchor="left", yanchor="top",
+            font=dict(size=10, color=_THEME["font_color"]),
+            bgcolor="rgba(238,238,238,0.85)",
+            bordercolor=_THEME["edge_color"],
+            borderwidth=1,
+        ),
+        legend5=dict(  # D-term type (R-circle / L-square): below legend4
+            x=1.01, y=0.20,
             xanchor="left", yanchor="top",
             font=dict(size=10, color=_THEME["font_color"]),
             bgcolor="rgba(238,238,238,0.85)",
@@ -2004,24 +2026,22 @@ def dashboard(
     # Each product owns an arbitrary number of traces (1 for the uvdist
     # products; N for the closure products, one per triangle/quad). The
     # dropdown sets visibility per index from the precomputed group map.
+    # Panel-2 dropdown - scoped to panel-2 traces only so it doesn't fight
+    # the gains dropdown or the pol toggle for other traces.
+    panel2_range = list(range(panel2_start, panel2_end))
     buttons = []
     for key in _DASH_PRODUCT_ORDER:
         p = products[key]
         selected = set(panel2_indices[key])
-        vis = []
-        for i in range(len(fig.data)):
-            if i < panel2_start or i >= panel2_end:
-                # Outside panel 2 (image + ticks + gains + D-terms): leave on.
-                vis.append(True)
-            else:
-                vis.append(i in selected)
+        vis_p2 = [(i in selected) for i in panel2_range]
         buttons.append(
             dict(
                 label=_DASH_PRODUCT_LABELS[key],
                 method="update",
                 args=[
-                    {"visible": vis},
+                    {"visible": vis_p2},
                     {"xaxis2.title.text": p["x_title"], "yaxis2.title.text": p["y_title"]},
+                    panel2_range,
                 ],
             )
         )
@@ -2032,7 +2052,7 @@ def dashboard(
             direction="down",
             buttons=buttons,
             showactive=True,
-            # Top-left corner — the title is centered (x=0.5), so anchor
+            # Top-left corner - the title is centered (x=0.5), so anchor
             # the dropdown to the far left to keep them separated.
             x=0.0,
             xanchor="left",
@@ -2068,6 +2088,35 @@ def dashboard(
                 )],
             )
         )
+
+    # Gains dropdown (amp/phase x R/L). Scoped to gain traces only.
+    all_gain_indices = sorted({i for idxs in gain_indices.values() for i in idxs})
+    gain_buttons = []
+    for mode, _, _, ylabel in gain_modes:
+        selected = set(gain_indices[mode])
+        vis_g = [(i in selected) for i in all_gain_indices]
+        gain_buttons.append(dict(
+            label=mode.replace("_", " "),
+            method="update",
+            args=[
+                {"visible": vis_g},
+                {"yaxis3.title.text": ylabel,
+                 "yaxis3.type": "log" if mode.startswith("amp") else "linear"},
+                all_gain_indices,
+            ],
+        ))
+    updatemenus_list.append(dict(
+        type="dropdown", direction="down",
+        buttons=gain_buttons, showactive=True,
+        active=[m[0] for m in gain_modes].index(default_mode),
+        x=0.0, xanchor="left",
+        y=0.50, yanchor="bottom",
+        pad=dict(l=4, r=4, t=2, b=2),
+        bgcolor="rgba(238,238,238,0.85)",
+        bordercolor=_THEME["edge_color"], borderwidth=1,
+        font=dict(size=10, color=_THEME["font_color"]),
+    ))
+
     fig.update_layout(updatemenus=updatemenus_list)
 
     if show:

@@ -7,7 +7,7 @@ import pytest
 
 import ehtim as eh
 
-# Module-level guard — skip the whole file when plotly is missing.
+# Module-level guard - skip the whole file when plotly is missing.
 go = pytest.importorskip("plotly.graph_objects")
 
 from ehtim.plotting import interactive  # noqa: E402  (importorskip above)
