@@ -415,14 +415,6 @@ def _legend_click_js(managed_indices: list[int] | None = None) -> str:
 
     // --- Legend click handler (active only in color mode) ---------------
 
-    // Force the legend to redraw its swatches. Single-trace restyle updates
-    // marker.color in the plot but plotly skips legend regeneration as an
-    // optimisation; setting showlegend to its current value re-runs doLegend.
-    function refreshLegend() {{
-        var sl = (gd.layout && gd.layout.showlegend !== false);
-        Plotly.relayout(gd, {{'showlegend': sl}});
-    }}
-
     function legendClick(ev) {{
         var idx = ev.curveNumber;
         if (!isManaged(idx) || !colorMode) return true;  // plotly default
@@ -430,10 +422,14 @@ def _legend_click_js(managed_indices: list[int] | None = None) -> str:
         var painting = isGray(tr);
         var nextColor = painting ? PALETTE[idx % PALETTE.length] : GRAY;
         var nextOpacity = painting ? COLOR_OPACITY : GRAY_OPACITY;
-        Plotly.restyle(gd, {{
-            'marker.color': nextColor,
-            'marker.opacity': nextOpacity
-        }}, [idx]).then(refreshLegend);
+        // Plotly.update (vs restyle) triggers a fuller redraw that also
+        // refreshes the legend swatch in plotly 5.x+. Restyle alone leaves
+        // the legend marker stale until a relayout fires.
+        Plotly.update(gd,
+            {{'marker.color': nextColor, 'marker.opacity': nextOpacity}},
+            {{}},
+            [idx]
+        );
         return false;  // suppress plotly's hide
     }}
 
@@ -1147,6 +1143,7 @@ def plot_gains(
 # updates the (x, y) axis titles in place.
 _DASH_PRODUCT_ORDER = (
     "amp_vs_uvdist",
+    "amp_vs_time",
     "vis_vs_uvdist",
     "phase_vs_uvdist",
     "amp_chisq_vs_uvdist",
@@ -1162,6 +1159,7 @@ _DASH_PRODUCT_ORDER = (
 
 _DASH_PRODUCT_LABELS = {
     "amp_vs_uvdist": "Amplitude vs uv-distance",
+    "amp_vs_time": "Amplitude vs time",
     "vis_vs_uvdist": "Re(vis) vs uv-distance",
     "phase_vs_uvdist": "Phase vs uv-distance",
     "amp_chisq_vs_uvdist": "Amplitude residual vs uv-distance",
@@ -1267,10 +1265,10 @@ def _build_dashboard_products(
     products: dict[str, dict[str, Any]] = {}
 
     # --- uv-distance products (one spec each) ------------------------------
-    udata = obs.unpack(["uvdist", "amp", "vis", "phase"])
+    udata = obs.unpack(["time", "uvdist", "amp", "vis", "phase"])
     uvdist_scaled, uv_unit = _format_uv_axis(udata["uvdist"])
     if obs_model is not None:
-        mdata = obs_model.unpack(["uvdist", "amp", "vis", "phase"])
+        mdata = obs_model.unpack(["time", "uvdist", "amp", "vis", "phase"])
         # Same scaling factor as data - don't let the model rescale itself.
         div = 1e9 if uv_unit == "Gλ" else 1e6
         uvdist_m_scaled = mdata["uvdist"] / div
@@ -1292,6 +1290,14 @@ def _build_dashboard_products(
         uvdist_m_scaled,
         (mdata["amp"] if mdata is not None else np.array([])),
         f"uv-distance ({uv_unit})",
+        "Amplitude (Jy)",
+    )
+    products["amp_vs_time"] = _single(
+        udata["time"],
+        udata["amp"],
+        (mdata["time"] if mdata is not None else np.array([])),
+        (mdata["amp"] if mdata is not None else np.array([])),
+        "time (hr)",
         "Amplitude (Jy)",
     )
     products["vis_vs_uvdist"] = _single(
@@ -2062,9 +2068,9 @@ def dashboard(
             # Clicking a site entry hides both R and L for that site.
             groupclick="togglegroup",
         ),
-        legend5=dict(  # D-term type (R-circle / L-square): below legend4
-            x=1.01, y=0.20,
-            xanchor="left", yanchor="top",
+        legend5=dict(  # D-term R/L symbol convention: below legend4
+            x=1.01, y=0.05,
+            xanchor="left", yanchor="bottom",
             font=dict(size=10, color=_THEME["font_color"]),
             bgcolor="rgba(238,238,238,0.85)",
             bordercolor=_THEME["edge_color"],
@@ -2093,16 +2099,16 @@ def dashboard(
             col=c,
         )
 
-    # Per-panel axis labels and aspect.
-    # Panel 1: RA left, Dec up. Suppress grid + zeroline (white-on-black).
-    # Match tick count on x and y so a square FOV gets matching ticks.
+    # Panel 1: RA left, Dec up. Hide axis line, grid, zeroline, and tick
+    # marks so nothing draws inside the black backdrop; tick labels (the
+    # μas numbers) still appear outside the plot.
     fig.update_xaxes(title_text="RA offset (μas)", row=1, col=1,
                      autorange="reversed", showgrid=False, zeroline=False,
-                     nticks=5)
+                     showline=False, ticks="", mirror=False, nticks=5)
     fig.update_yaxes(title_text="Dec offset (μas)", row=1, col=1,
                      scaleanchor="x", scaleratio=1,
                      showgrid=False, zeroline=False, constrain="domain",
-                     nticks=5)
+                     showline=False, ticks="", mirror=False, nticks=5)
     fig.update_xaxes(title_text=products[default_product]["x_title"], row=1, col=2)
     fig.update_yaxes(title_text=products[default_product]["y_title"], row=1, col=2)
     fig.update_xaxes(title_text="time (hr)", row=2, col=1)
