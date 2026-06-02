@@ -1149,22 +1149,30 @@ _DASH_PRODUCT_ORDER = (
     "amp_vs_uvdist",
     "vis_vs_uvdist",
     "phase_vs_uvdist",
-    "chisq_vs_uvdist",
+    "amp_chisq_vs_uvdist",
     "cphase_vs_time",
+    "cphase_chisq_vs_time",
     "logcamp_vs_time",
+    "logcamp_chisq_vs_time",
     "cphase_vs_triarea",
     "logcamp_vs_quadarea",
+    "mbreve_vs_uvdist",
+    "mbreve_chisq_vs_uvdist",
 )
 
 _DASH_PRODUCT_LABELS = {
     "amp_vs_uvdist": "Amplitude vs uv-distance",
     "vis_vs_uvdist": "Re(vis) vs uv-distance",
     "phase_vs_uvdist": "Phase vs uv-distance",
-    "chisq_vs_uvdist": "χ residual vs uv-distance",
+    "amp_chisq_vs_uvdist": "Amplitude residual vs uv-distance",
     "cphase_vs_time": "Closure phase vs time",
+    "cphase_chisq_vs_time": "Closure phase residual vs time",
     "logcamp_vs_time": "Log closure amp vs time",
+    "logcamp_chisq_vs_time": "Log closure amp residual vs time",
     "cphase_vs_triarea": "Closure phase vs triangle area",
     "logcamp_vs_quadarea": "Log closure amp vs quadrangle area",
+    "mbreve_vs_uvdist": "|m_breve| vs uv-distance",
+    "mbreve_chisq_vs_uvdist": "|m_breve| residual vs uv-distance",
 }
 
 
@@ -1307,22 +1315,63 @@ def _build_dashboard_products(
         sigma = obs.unpack(["sigma"])["sigma"]
         sigma_safe = np.where(sigma > 0, sigma, np.nan)
         residual = (udata["amp"] - mdata["amp"]) / sigma_safe
-        products["chisq_vs_uvdist"] = _single(
+        products["amp_chisq_vs_uvdist"] = _single(
             uvdist_scaled,
             residual,
             np.array([]),
             np.array([]),
             f"uv-distance ({uv_unit})",
-            "(data − model) / σ",
+            "(data - model) / sigma",
         )
     else:
-        products["chisq_vs_uvdist"] = _single(
+        products["amp_chisq_vs_uvdist"] = _single(
             np.array([]),
             np.array([]),
             np.array([]),
             np.array([]),
             f"uv-distance ({uv_unit})",
-            "(data − model) / σ",
+            "(data - model) / sigma",
+        )
+
+    # m_breve (linear-pol fraction) and its residual. Only meaningful for
+    # polarimetric obs; for stokes-only data both products will be empty.
+    try:
+        m_data = obs.unpack(["mamp"])["mamp"]
+        m_model = obs_model.unpack(["mamp"])["mamp"] if obs_model is not None else None
+    except Exception:
+        m_data, m_model = None, None
+    if m_data is not None and np.any(np.isfinite(m_data)):
+        products["mbreve_vs_uvdist"] = _single(
+            uvdist_scaled, m_data,
+            uvdist_m_scaled, m_model if m_model is not None else np.array([]),
+            f"uv-distance ({uv_unit})", "|m_breve|",
+        )
+        if m_model is not None and len(m_data) == len(m_model):
+            try:
+                m_sig = obs.unpack(["msigma"])["msigma"]
+                m_sig_safe = np.where(m_sig > 0, m_sig, np.nan)
+                m_resid = (m_data - m_model) / m_sig_safe
+            except Exception:
+                m_resid = np.array([])
+            products["mbreve_chisq_vs_uvdist"] = _single(
+                uvdist_scaled, m_resid,
+                np.array([]), np.array([]),
+                f"uv-distance ({uv_unit})", "(data - model) / sigma",
+            )
+        else:
+            products["mbreve_chisq_vs_uvdist"] = _single(
+                np.array([]), np.array([]), np.array([]), np.array([]),
+                f"uv-distance ({uv_unit})", "(data - model) / sigma",
+            )
+    else:
+        empty_mbreve = _single(
+            np.array([]), np.array([]), np.array([]), np.array([]),
+            f"uv-distance ({uv_unit})", "|m_breve|",
+        )
+        products["mbreve_vs_uvdist"] = empty_mbreve
+        products["mbreve_chisq_vs_uvdist"] = _single(
+            np.array([]), np.array([]), np.array([]), np.array([]),
+            f"uv-distance ({uv_unit})", "(data - model) / sigma",
         )
 
     # --- closure-phase products (one spec per triangle) --------------------
@@ -1330,6 +1379,7 @@ def _build_dashboard_products(
 
     cph_time_specs: list[dict] = []
     cph_area_specs: list[dict] = []
+    cph_chisq_specs: list[dict] = []
     all_tri_areas: list[np.ndarray] = []
 
     # First pass: pull raw cphase data + raw areas (un-scaled) so we can
@@ -1385,6 +1435,20 @@ def _build_dashboard_products(
                     y_model=y_model_t,
                 )
             )
+            # Per-point chi residual for this triangle, deg/deg in cphase.
+            if cph_model is not None and len(cph_model) == len(cph_data):
+                sig = cph_data["sigmacp"] if "sigmacp" in cph_data.dtype.names else np.ones_like(cph_data["cphase"])
+                sig_safe = np.where(sig > 0, sig, np.nan)
+                resid = (cph_data["cphase"] - cph_model["cphase"]) / sig_safe
+                cph_chisq_specs.append(
+                    dict(
+                        label=tri_str,
+                        x_data=cph_data["time"],
+                        y_data=resid,
+                        x_model=np.array([]),
+                        y_model=np.array([]),
+                    )
+                )
         x_title_area = f"triangle uv-area ({tri_unit}²)"
     else:
         x_title_area = "triangle uv-area (Gλ²)"
@@ -1401,12 +1465,19 @@ def _build_dashboard_products(
         style="multi",
         traces=cph_area_specs or [_empty_spec()],
     )
+    products["cphase_chisq_vs_time"] = dict(
+        x_title="time (hr)",
+        y_title="(data - model) / sigma",
+        style="multi",
+        traces=cph_chisq_specs or [_empty_spec()],
+    )
 
     # --- log closure-amplitude products (one spec per quadrangle) ----------
     quads = _enumerate_quads(obs, quadrangle, n_quadrangles)
 
     camp_time_specs: list[dict] = []
     camp_area_specs: list[dict] = []
+    camp_chisq_specs: list[dict] = []
     camp_buf: list[tuple[tuple[str, str, str, str], Any, Any, np.ndarray]] = []
     for quad in quads:
         try:
@@ -1466,6 +1537,19 @@ def _build_dashboard_products(
                     y_model=y_model_t,
                 )
             )
+            if camp_model is not None and len(camp_model) == len(camp_data):
+                sig = camp_data["sigmaca"] if "sigmaca" in camp_data.dtype.names else np.ones_like(camp_data["camp"])
+                sig_safe = np.where(sig > 0, sig, np.nan)
+                resid = (camp_data["camp"] - camp_model["camp"]) / sig_safe
+                camp_chisq_specs.append(
+                    dict(
+                        label=quad_str,
+                        x_data=camp_data["time"],
+                        y_data=resid,
+                        x_model=np.array([]),
+                        y_model=np.array([]),
+                    )
+                )
         qarea_title = f"quadrangle uv-area ({quad_unit}²)"
     else:
         qarea_title = "quadrangle uv-area (Gλ²)"
@@ -1481,6 +1565,12 @@ def _build_dashboard_products(
         y_title="Log closure amplitude",
         style="multi",
         traces=camp_area_specs or [_empty_spec()],
+    )
+    products["logcamp_chisq_vs_time"] = dict(
+        x_title="time (hr)",
+        y_title="(data - model) / sigma",
+        style="multi",
+        traces=camp_chisq_specs or [_empty_spec()],
     )
 
     return products
@@ -1862,7 +1952,6 @@ def dashboard(
     ]
     default_mode = f"amp_{pol}"
     gain_indices: dict[str, list[int]] = {m[0]: [] for m in gain_modes}
-    gain_ytitle = {m[0]: m[3] for m in gain_modes}
     for site in sorted(caltable.data.keys()):
         complex_R = caltable.data[site]["rscale"]
         complex_L = caltable.data[site]["lscale"]
