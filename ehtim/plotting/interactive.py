@@ -256,18 +256,20 @@ _OPACITY_THRESHOLD = 0.7  # < threshold → "gray", >= threshold → "coloured"
 # as `post_script` to `to_html` / `write_html`.
 
 
-def _legend_click_js(managed_indices: list[int] | None = None) -> str:
-    """Build the post-script JS that wires up the Color/Reset toolbar.
+def _legend_click_js(managed_indices: list[int] | None = None,
+                     dterm_toggles: dict | None = None) -> str:
+    """Post-script JS for the Color toolbar and legend-click bridges.
 
-    `managed_indices` are the trace indices that participate in the
-    gray↔colour flow - baked into the JS as a constant so detection does
-    *not* depend on `tr.meta` surviving plotly's internal restyles
-    (it doesn't, reliably).
+    `managed_indices` are the trace indices in the gray↔colour flow.
+    `dterm_toggles` is `{dummy_idx: [real_indices], ...}` so clicking a
+    legend-only dummy hides/shows the listed real traces (used for the
+    D_R / D_L pol-type entries in legend5).
     """
     indices = list(managed_indices or [])
     palette = json.dumps(_THEME["colorway"])
     gray = json.dumps(_GRAY)
     indices_json = json.dumps(indices)
+    dterm_json = json.dumps({str(k): v for k, v in (dterm_toggles or {}).items()})
     return f"""
 (function initToolbar() {{
     var gd = document.getElementById('{{plot_id}}');
@@ -415,21 +417,28 @@ def _legend_click_js(managed_indices: list[int] | None = None) -> str:
 
     // --- Legend click handler (active only in color mode) ---------------
 
+    var DTERM_TOGGLES = {dterm_json};
+
     function legendClick(ev) {{
         var idx = ev.curveNumber;
+        // Dterm-dummy click: toggle visibility of the matching real traces.
+        if (DTERM_TOGGLES[String(idx)]) {{
+            var targets = DTERM_TOGGLES[String(idx)];
+            var firstReal = gd.data[targets[0]];
+            var nextVis = (firstReal && firstReal.visible !== false) ? 'legendonly' : true;
+            var visArr = targets.map(function() {{ return nextVis; }});
+            Plotly.restyle(gd, {{'visible': visArr}}, targets);
+            return false;
+        }}
         if (!isManaged(idx) || !colorMode) return true;  // plotly default
         var tr = gd.data && gd.data[idx];
         var painting = isGray(tr);
         var nextColor = painting ? PALETTE[idx % PALETTE.length] : GRAY;
         var nextOpacity = painting ? COLOR_OPACITY : GRAY_OPACITY;
-        // Plotly.update (vs restyle) triggers a fuller redraw that also
-        // refreshes the legend swatch in plotly 5.x+. Restyle alone leaves
-        // the legend marker stale until a relayout fires.
-        Plotly.update(gd,
+        Plotly.restyle(gd,
             {{'marker.color': nextColor, 'marker.opacity': nextOpacity}},
-            {{}},
             [idx]
-        );
+        ).then(function() {{ Plotly.redraw(gd); }});
         return false;  // suppress plotly's hide
     }}
 
@@ -491,7 +500,9 @@ def _attach_save_hooks(fig):
     orig_write_html = fig.write_html
 
     def patched_write_html(*args, **kwargs):
-        kwargs.setdefault("post_script", _legend_click_js(_managed_indices(fig)))
+        dterm = getattr(fig, "_ehtim_dterm_toggles", None)
+        kwargs.setdefault("post_script",
+                          _legend_click_js(_managed_indices(fig), dterm_toggles=dterm))
         kwargs.setdefault("config", _save_png_config(fig))
         return orig_write_html(*args, **kwargs)
 
@@ -522,7 +533,10 @@ def write_html(
     save_scale : float
         Scale for the modebar PNG-export button (3.0 ≈ 300 dpi).
     """
-    js = _legend_click_js(_managed_indices(fig))
+    js = _legend_click_js(
+        _managed_indices(fig),
+        dterm_toggles=getattr(fig, "_ehtim_dterm_toggles", None),
+    )
     fig.write_html(
         str(path),
         post_script=js,
@@ -551,7 +565,10 @@ def display(fig, *, save_scale: float = 3.0) -> None:
         raise ImportError(
             "IPython is required for ehtim.plotting.interactive.display(). Install with `pip install ipython`."
         ) from e
-    js = _legend_click_js(_managed_indices(fig))
+    js = _legend_click_js(
+        _managed_indices(fig),
+        dterm_toggles=getattr(fig, "_ehtim_dterm_toggles", None),
+    )
     html = fig.to_html(
         post_script=js,
         include_plotlyjs="cdn",
@@ -1663,9 +1680,11 @@ def _pol_ticks_traces(im: Image, *, nvec: int, pcut: float, mcut: float,
         )]
 
     # Per-bin colored line traces: discretise m, one trace per non-empty bin.
+    # Colorbar pinned to [0, 0.5] for cross-image comparability.
     m_sub = M2[::thin, ::thin][sub]
+    m_sub = np.clip(m_sub, 0.0, 0.5)
     m_min = 0.0
-    m_max = float(max(np.nanmax(m_sub), 0.01))
+    m_max = 0.5
     edges = np.linspace(m_min, m_max, m_bins + 1)
     midpoints = 0.5 * (edges[:-1] + edges[1:])
 
@@ -1831,6 +1850,19 @@ def dashboard(
     psize_uas = im.psize / ehc.RADPERUAS
     x_uas = (np.arange(im.xdim) - (im.xdim - 1) / 2.0) * psize_uas
     y_uas = (np.arange(im.ydim) - (im.ydim - 1) / 2.0) * psize_uas
+    # Build power-of-10 colorbar ticks with Unicode superscripts so the
+    # labels render as "10⁻³" everywhere (no MathJax required).
+    _sup = str.maketrans("0123456789-", "⁰¹²³⁴⁵⁶⁷⁸⁹⁻")
+    _zmax = float(np.nanmax(img2d))
+    if _zmax > 0:
+        _hi = int(np.ceil(np.log10(_zmax)))
+        _lo = _hi - 5
+        _tick_exps = list(range(_lo, _hi + 1))
+        _intensity_tickvals = [10.0 ** e for e in _tick_exps]
+        _intensity_ticktext = [f"10{str(e).translate(_sup)}" for e in _tick_exps]
+    else:
+        _intensity_tickvals = None
+        _intensity_ticktext = None
     # Black backdrop covering the panel-1 cell so the "hot" heatmap reads
     # against black rather than the figure's gray plot_bgcolor (visible as
     # strips when scaleanchor shrinks the plot domain).
@@ -1853,8 +1885,9 @@ def dashboard(
             title=dict(text="Jy/px"),
             x=0.34, y=0.785, yanchor="middle",
             len=0.43, thickness=10,
-            exponentformat="power",
-            showexponent="all",
+            tickmode=("array" if _intensity_tickvals else "auto"),
+            tickvals=_intensity_tickvals,
+            ticktext=_intensity_ticktext,
         ),
     ), row=1, col=1)
 
@@ -1999,6 +2032,8 @@ def dashboard(
     # the symbol convention).
     tarr = caltable.tarr
     sites = [str(s) for s in tarr["site"]]
+    dr_indices: list[int] = []
+    dl_indices: list[int] = []
     for i, site in enumerate(sites):
         color = _THEME["colorway"][i % len(_THEME["colorway"])]
         fig.add_trace(go.Scatter(
@@ -2012,6 +2047,7 @@ def dashboard(
             hovertemplate=(f"<b>{site}</b> D_R<br>Re=%{{x:.3g}}<br>Im=%{{y:.3g}}<extra></extra>"),
             legend="legend4", legendgroup=site,
         ), row=2, col=2)
+        dr_indices.append(len(fig.data) - 1)
         fig.add_trace(go.Scatter(
             x=[np.real(tarr["dl"][i])], y=[np.imag(tarr["dl"][i])],
             mode="markers+text",
@@ -2024,9 +2060,15 @@ def dashboard(
             legend="legend4", legendgroup=site,
             showlegend=False,  # site already named once by the R-trace above
         ), row=2, col=2)
+        dl_indices.append(len(fig.data) - 1)
 
-    # legend5: two dummy markers showing the R-circle / L-square convention.
-    for symbol, label in (("circle", "D_R"), ("square", "D_L")):
+    # legend5 dummies (D_R circle / D_L square). Click toggles the real
+    # site traces' visibility via the dterm_toggles bridge in the post_script.
+    dterm_toggles: dict[int, list[int]] = {}
+    for symbol, label, targets in (
+        ("circle", "D_R", dr_indices),
+        ("square", "D_L", dl_indices),
+    ):
         fig.add_trace(go.Scatter(
             x=[None], y=[None], mode="markers",
             name=label,
@@ -2035,6 +2077,8 @@ def dashboard(
             hoverinfo="skip",
             legend="legend5",
         ), row=2, col=2)
+        dterm_toggles[len(fig.data) - 1] = targets
+    fig._ehtim_dterm_toggles = dterm_toggles
 
     # --- Layout (multi-legend: one per scatter panel) ---
     # Each panel's legend sits just OUTSIDE the panel (in the gap between
@@ -2267,11 +2311,24 @@ def dashboard(
         )
 
     tri_menu = _build_spec_subdropdown(CPHASE_PRODUCTS, "triangle", 0.72)
+    tri_idx = len(updatemenus_list) if tri_menu else None
     if tri_menu:
+        tri_menu["visible"] = (default_product in CPHASE_PRODUCTS)
         updatemenus_list.append(tri_menu)
     quad_menu = _build_spec_subdropdown(LOGCAMP_PRODUCTS, "quadrangle", 0.87)
+    quad_idx = len(updatemenus_list) if quad_menu else None
     if quad_menu:
+        quad_menu["visible"] = (default_product in LOGCAMP_PRODUCTS)
         updatemenus_list.append(quad_menu)
+
+    # Make sub-dropdowns appear only for their relevant products. Each
+    # main-dropdown button gets layout updates that toggle the sub-menus.
+    for key, btn in zip(_DASH_PRODUCT_ORDER, buttons):
+        layout_update = btn["args"][1]
+        if tri_idx is not None:
+            layout_update[f"updatemenus[{tri_idx}].visible"] = key in CPHASE_PRODUCTS
+        if quad_idx is not None:
+            layout_update[f"updatemenus[{quad_idx}].visible"] = key in LOGCAMP_PRODUCTS
 
     fig.update_layout(updatemenus=updatemenus_list)
 
