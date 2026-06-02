@@ -317,14 +317,19 @@ def _legend_click_js(managed_indices: list[int] | None = None) -> str:
             : 'rgba(238,238,238,0.92)';
     }}
 
-    if (gd.parentNode &&
-        !gd.parentNode.querySelector('[data-ehtim-toolbar="1"]')) {{
+    // Look for an existing toolbar anywhere in the document (in case the
+    // plot div's parent has been swapped by plotly since first insert).
+    var existingBar = document.querySelector('[data-ehtim-toolbar-for="' + gd.id + '"]');
+    if (!existingBar) {{
         var bar = document.createElement('div');
         bar.dataset.ehtimToolbar = '1';
+        bar.setAttribute('data-ehtim-toolbar-for', gd.id);
         bar.style.cssText = (
             'margin: 6px 0 4px 8px; ' +
             'font-family: Inter, system-ui, sans-serif; ' +
-            'display: flex; gap: 6px; align-items: center;'
+            'display: flex; gap: 6px; align-items: center; ' +
+            'position: relative; z-index: 10; ' +
+            'visibility: visible !important;'
         );
 
         function makeBtn(label) {{
@@ -389,12 +394,21 @@ def _legend_click_js(managed_indices: list[int] | None = None) -> str:
         bar.appendChild(colorBtn);
         bar.appendChild(colorAllBtn);
         bar.appendChild(resetBtn);
-        gd.parentNode.insertBefore(bar, gd);
-    }} else if (gd.parentNode) {{
+        // Insertion fallback chain: parent.insertBefore is the clean path
+        // (Jupyter, plain HTML). If for any reason that fails (parent has
+        // been replaced, no parent, etc.), fall back to body.prepend.
+        var inserted = false;
+        if (gd.parentNode && typeof gd.parentNode.insertBefore === 'function') {{
+            try {{ gd.parentNode.insertBefore(bar, gd); inserted = true; }}
+            catch (e) {{ /* fall through */ }}
+        }}
+        if (!inserted) {{
+            document.body.insertBefore(bar, document.body.firstChild);
+        }}
+    }} else {{
         // Toolbar already exists (e.g. cell re-rendered). Grab refs so
         // the colorMode toggle stays wired. Button order: Color, Color all, Reset.
-        var existing = gd.parentNode.querySelector('[data-ehtim-toolbar="1"]');
-        var btns = existing ? existing.querySelectorAll('button') : [];
+        var btns = existingBar.querySelectorAll('button');
         if (btns.length >= 3) {{ colorBtn = btns[0]; resetBtn = btns[2]; }}
     }}
 
@@ -949,8 +963,14 @@ def plotall(
         fig.update_yaxes(type="log")
 
     # u-vs-v coverage plot: lock data:pixel ratio so equal-span renders square.
+    # Also size the figure so the (square) plot area fills the available canvas
+    # without leaving a wide blank strip between the plot and the legend.
     if {field1, field2} <= {"u", "v"} and xscale != "log" and yscale != "log":
         fig.update_xaxes(scaleanchor="y", scaleratio=1.0, constrain="domain")
+        # Plot area = width - L - R = height - T - B   →   square plot.
+        # _apply_theme uses margin l=70, r=160, t=80, b=60 (with reset button).
+        side = 460  # target plot side in px
+        fig.update_layout(width=side + 70 + 160, height=side + 80 + 60)
 
     if show:
         fig.show()
@@ -1683,7 +1703,7 @@ def dashboard(
         if dots is not None:
             fig.add_trace(dots, row=1, col=1)
 
-    # Panel 2: data product selector 
+    # Panel 2: data product selector
     # Each product owns 1+ trace pairs; closure products enumerate all
     # triangles/quadrangles so the user sees every closure quantity, not just one
     # Only the `default_product`'s traces are visible at start; the
