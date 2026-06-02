@@ -438,14 +438,14 @@ def _legend_click_js(managed_indices: list[int] | None = None,
         var nextColor = painting ? PALETTE[idx % PALETTE.length] : GRAY;
         var nextOpacity = painting ? COLOR_OPACITY : GRAY_OPACITY;
         // Mutate the trace data directly then call Plotly.react. react
-        // is plotly's diff-and-update pass; unlike restyle it re-evaluates
-        // the legend layout, so the swatch picks up the new colour every
-        // click without needing the visibility-bounce trick.
+        // re-runs plotly's full diff pipeline including legend layout, so
+        // the swatch picks up the new colour every click. The .then()
+        // re-binds the legend listener because react drops it.
         var trace = gd.data[idx];
         if (!trace.marker) trace.marker = {{}};
         trace.marker.color = nextColor;
         trace.marker.opacity = nextOpacity;
-        Plotly.react(gd, gd.data, gd.layout);
+        Plotly.react(gd, gd.data, gd.layout).then(ensureBindings);
         return false;  // suppress plotly's hide
     }}
 
@@ -1176,7 +1176,9 @@ _DASH_PRODUCT_ORDER = (
     "logcamp_vs_time",
     "logcamp_chisq_vs_time",
     "cphase_vs_triarea",
+    "cphase_chisq_vs_triarea",
     "logcamp_vs_quadarea",
+    "logcamp_chisq_vs_quadarea",
     "mbreve_vs_uvdist",
     "mbreve_vs_time",
     "mbreve_chisq_vs_uvdist",
@@ -1193,7 +1195,9 @@ _DASH_PRODUCT_LABELS = {
     "logcamp_vs_time": "Log closure amp vs time",
     "logcamp_chisq_vs_time": "Log closure amp residual vs time",
     "cphase_vs_triarea": "Closure phase vs triangle area",
+    "cphase_chisq_vs_triarea": "Closure phase residual vs triangle area",
     "logcamp_vs_quadarea": "Log closure amp vs quadrangle area",
+    "logcamp_chisq_vs_quadarea": "Log closure amp residual vs quadrangle area",
     "mbreve_vs_uvdist": "|m_breve| vs uv-distance",
     "mbreve_vs_time": "|m_breve| vs time",
     "mbreve_chisq_vs_uvdist": "|m_breve| residual vs uv-distance",
@@ -1446,6 +1450,7 @@ def _build_dashboard_products(
     cph_time_specs: list[dict] = []
     cph_area_specs: list[dict] = []
     cph_chisq_specs: list[dict] = []
+    cph_chisq_area_specs: list[dict] = []
     all_tri_areas: list[np.ndarray] = []
 
     # First pass: pull raw cphase data + raw areas (un-scaled) so we can
@@ -1501,7 +1506,8 @@ def _build_dashboard_products(
                     y_model=y_model_t,
                 )
             )
-            # Per-point chi residual for this triangle, deg/deg in cphase.
+            # Per-point chi residual for this triangle (data minus model
+            # over sigma), shown vs time and vs triangle area.
             if cph_model is not None and len(cph_model) == len(cph_data):
                 sig = cph_data["sigmacp"] if "sigmacp" in cph_data.dtype.names else np.ones_like(cph_data["cphase"])
                 sig_safe = np.where(sig > 0, sig, np.nan)
@@ -1510,6 +1516,15 @@ def _build_dashboard_products(
                     dict(
                         label=tri_str,
                         x_data=cph_data["time"],
+                        y_data=resid,
+                        x_model=np.array([]),
+                        y_model=np.array([]),
+                    )
+                )
+                cph_chisq_area_specs.append(
+                    dict(
+                        label=tri_str,
+                        x_data=tri_area_disp,
                         y_data=resid,
                         x_model=np.array([]),
                         y_model=np.array([]),
@@ -1537,6 +1552,12 @@ def _build_dashboard_products(
         style="multi",
         traces=cph_chisq_specs or [_empty_spec()],
     )
+    products["cphase_chisq_vs_triarea"] = dict(
+        x_title=x_title_area,
+        y_title="(data - model) / sigma",
+        style="multi",
+        traces=cph_chisq_area_specs or [_empty_spec()],
+    )
 
     # --- log closure-amplitude products (one spec per quadrangle) ----------
     quads = _enumerate_quads(obs, quadrangle, n_quadrangles)
@@ -1544,6 +1565,7 @@ def _build_dashboard_products(
     camp_time_specs: list[dict] = []
     camp_area_specs: list[dict] = []
     camp_chisq_specs: list[dict] = []
+    camp_chisq_area_specs: list[dict] = []
     camp_buf: list[tuple[tuple[str, str, str, str], Any, Any, np.ndarray]] = []
     for quad in quads:
         try:
@@ -1616,6 +1638,15 @@ def _build_dashboard_products(
                         y_model=np.array([]),
                     )
                 )
+                camp_chisq_area_specs.append(
+                    dict(
+                        label=quad_str,
+                        x_data=quad_area_disp,
+                        y_data=resid,
+                        x_model=np.array([]),
+                        y_model=np.array([]),
+                    )
+                )
         qarea_title = f"quadrangle uv-area ({quad_unit}²)"
     else:
         qarea_title = "quadrangle uv-area (Gλ²)"
@@ -1637,6 +1668,12 @@ def _build_dashboard_products(
         y_title="(data - model) / sigma",
         style="multi",
         traces=camp_chisq_specs or [_empty_spec()],
+    )
+    products["logcamp_chisq_vs_quadarea"] = dict(
+        x_title=qarea_title,
+        y_title="(data - model) / sigma",
+        style="multi",
+        traces=camp_chisq_area_specs or [_empty_spec()],
     )
 
     return products
@@ -1961,8 +1998,10 @@ def dashboard(
     # Multi-spec products store one trace pair per triangle/quad/baseline;
     # the legend collapses to "data"/"model" and a sub-dropdown picks which
     # spec is visible.
-    CPHASE_PRODUCTS = ("cphase_vs_time", "cphase_chisq_vs_time", "cphase_vs_triarea")
-    LOGCAMP_PRODUCTS = ("logcamp_vs_time", "logcamp_chisq_vs_time", "logcamp_vs_quadarea")
+    CPHASE_PRODUCTS = ("cphase_vs_time", "cphase_chisq_vs_time",
+                       "cphase_vs_triarea", "cphase_chisq_vs_triarea")
+    LOGCAMP_PRODUCTS = ("logcamp_vs_time", "logcamp_chisq_vs_time",
+                        "logcamp_vs_quadarea", "logcamp_chisq_vs_quadarea")
     BASELINE_PRODUCTS = ("amp_vs_time", "mbreve_vs_time")
     MULTI_SPEC_PRODUCTS = CPHASE_PRODUCTS + LOGCAMP_PRODUCTS + BASELINE_PRODUCTS
 
@@ -2112,23 +2151,12 @@ def dashboard(
         ), row=2, col=2)
         dl_indices.append(len(fig.data) - 1)
 
-    # legend5 dummies (D_R circle / D_L square). Click toggles the real
-    # site traces' visibility via the dterm_toggles bridge in the post_script.
-    dterm_toggles: dict[int, list[int]] = {}
-    for symbol, label, targets in (
-        ("circle", "D_R", dr_indices),
-        ("square", "D_L", dl_indices),
-    ):
-        fig.add_trace(go.Scatter(
-            x=[None], y=[None], mode="markers",
-            name=label,
-            marker=dict(size=10, symbol=symbol, color=_THEME["font_color"],
-                        line=dict(width=0.5, color=_THEME["marker_edge"])),
-            hoverinfo="skip",
-            legend="legend5",
-        ), row=2, col=2)
-        dterm_toggles[len(fig.data) - 1] = targets
-    fig._ehtim_dterm_toggles = dterm_toggles
+    # D_R / D_L toggle is implemented as native plotly updatemenu buttons
+    # (built later in the layout) rather than a dummy-trace legend. Track
+    # the real per-pol indices so the buttons can restyle them.
+    fig._ehtim_dterm_toggles = {}  # kept empty - JS bridge unused for dterms
+    fig._ehtim_dr_indices = dr_indices
+    fig._ehtim_dl_indices = dl_indices
 
     # --- Layout (multi-legend: one per scatter panel) ---
     # Each panel's legend sits just OUTSIDE the panel (in the gap between
@@ -2170,14 +2198,6 @@ def dashboard(
             borderwidth=1,
             # Clicking a site entry hides both R and L for that site.
             groupclick="togglegroup",
-        ),
-        legend5=dict(  # D-term R/L symbol convention: below legend4
-            x=1.01, y=0.05,
-            xanchor="left", yanchor="bottom",
-            font=dict(size=10, color=_THEME["font_color"]),
-            bgcolor="rgba(238,238,238,0.85)",
-            bordercolor=_THEME["edge_color"],
-            borderwidth=1,
         ),
     )
 
@@ -2380,6 +2400,35 @@ def dashboard(
     if bl_menu:
         bl_menu["visible"] = (default_product in BASELINE_PRODUCTS)
         updatemenus_list.append(bl_menu)
+
+    # D_R / D_L native toggle buttons above panel 4 (replaces the
+    # ambiguous dummy-trace legend5). args/args2 flips visible state.
+    if dr_indices or dl_indices:
+        dterm_btns = []
+        if dr_indices:
+            dterm_btns.append(dict(
+                label="D_R",
+                method="restyle",
+                args=[{"visible": "legendonly"}, dr_indices],
+                args2=[{"visible": True}, dr_indices],
+            ))
+        if dl_indices:
+            dterm_btns.append(dict(
+                label="D_L",
+                method="restyle",
+                args=[{"visible": "legendonly"}, dl_indices],
+                args2=[{"visible": True}, dl_indices],
+            ))
+        updatemenus_list.append(dict(
+            type="buttons", direction="left", showactive=False,
+            x=0.52, xanchor="left",
+            y=0.46, yanchor="bottom",
+            pad=dict(l=4, r=4, t=2, b=2),
+            bgcolor="rgba(238,238,238,0.85)",
+            bordercolor=_THEME["edge_color"], borderwidth=1,
+            font=dict(size=10, color=_THEME["font_color"]),
+            buttons=dterm_btns,
+        ))
 
     # Sub-dropdowns appear only for their relevant products.
     for key, btn in zip(_DASH_PRODUCT_ORDER, buttons):
