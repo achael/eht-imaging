@@ -331,7 +331,7 @@ _FEED_VEC = {
 }
 
 
-@functools.lru_cache(maxsize=None)
+@functools.cache
 def feed_matrix(feed_type):
     """2x2 matrix F mapping an (X, Y) field to a station's two feeds.
 
@@ -349,7 +349,7 @@ def feed_matrix(feed_type):
     return F
 
 
-@functools.lru_cache(maxsize=None)
+@functools.cache
 def _coherency_matrix(t1_feed, t2_feed):
     """Cached 4x4 complex operator M with
        (I, Q, U, V) = M @ (p1p1, p2p2, p1p2, p2p1)
