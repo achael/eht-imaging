@@ -57,7 +57,7 @@ class Array:
                 sitename = str(line['site'])
                 try:
                     elen = len(ephem[sitename])
-                except NameError:
+                except KeyError:
                     raise Exception(f'no ephemeris for site {sitename} !')
                 if elen != 3:
                     raise Exception(f'wrong ephemeris format for site {sitename} !')
