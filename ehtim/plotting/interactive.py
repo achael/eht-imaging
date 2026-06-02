@@ -69,6 +69,51 @@ _GRAY = "#888888"
 # Fields whose values are in raw λ and should auto-scale to Gλ/Mλ.
 _UV_FIELDS = frozenset({"u", "v", "uvdist"})
 
+# Plotly-friendly axis labels for fields whose `ehc.FIELD_LABELS` entry is
+# LaTeX-wrapped (`$...$`). Matplotlib renders the LaTeX; Plotly shows the
+# raw string. Subscripts become Plotly's `<sub>` HTML tags. Fields not
+# listed fall through to `ehc.FIELD_LABELS`.
+_PLOTLY_FIELD_LABELS = {
+    "u": "u",
+    "v": "v",
+    "uvdist": "u-v Distance",
+    "tau1": "τ<sub>1</sub>",
+    "tau2": "τ<sub>2</sub>",
+    "el1": "Elevation Angle<sub>1</sub>",
+    "el2": "Elevation Angle<sub>2</sub>",
+    "hr_ang1": "Hour Angle<sub>1</sub>",
+    "hr_ang2": "Hour Angle<sub>2</sub>",
+    "par_ang1": "Parallactic Angle<sub>1</sub>",
+    "par_ang2": "Parallactic Angle<sub>2</sub>",
+    "sigma": "σ",
+    "qsigma": "σ<sub>Q</sub>",
+    "usigma": "σ<sub>U</sub>",
+    "vsigma": "σ<sub>V</sub>",
+    "sigma_phase": "σ<sub>phase</sub>",
+    "qsigma_phase": "σ<sub>Q phase</sub>",
+    "usigma_phase": "σ<sub>U phase</sub>",
+    "vsigma_phase": "σ<sub>V phase</sub>",
+    "psigma_phase": "σ<sub>P phase</sub>",
+    "msigma_phase": "σ<sub>m phase</sub>",
+    "rrsigma": "σ<sub>RR</sub>",
+    "rrsigma_phase": "σ<sub>RR phase</sub>",
+    "llsigma": "σ<sub>LL</sub>",
+    "llsigma_phase": "σ<sub>LL phase</sub>",
+    "rlsigma": "σ<sub>RL</sub>",
+    "rlsigma_phase": "σ<sub>RL phase</sub>",
+    "lrsigma": "σ<sub>LR</sub>",
+    "lrsigma_phase": "σ<sub>LR phase</sub>",
+    "rrllsigma": "σ<sub>RR/LL</sub>",
+    "rrllsigma_phase": "σ<sub>RR/LL phase</sub>",
+}
+
+
+def _field_label(field: str) -> str:
+    """Plotly-friendly label for `field`, fallback to `ehc.FIELD_LABELS`."""
+    if field in _PLOTLY_FIELD_LABELS:
+        return _PLOTLY_FIELD_LABELS[field]
+    return ehc.FIELD_LABELS.get(field, field.capitalize())
+
 
 def _format_uv_axis(values: np.ndarray) -> tuple[np.ndarray, str]:
     """Auto-scale a uv array (λ) to Gλ or Mλ based on its dynamic range.
@@ -592,7 +637,7 @@ def plot_bl(
         print(f"No valid data after filtering (snrcut={snrcut}).")
         return fig
 
-    y_title = ehc.FIELD_LABELS.get(field, field.capitalize())
+    y_title = _field_label(field)
     if field in ehc.FIELDS_PHASE:
         y_title += f" ({ang_unit})"
     elif y_unit:
@@ -796,8 +841,8 @@ def plotall(
         print(f"No valid data after filtering (snrcut={snrcut}).")
         return fig
 
-    x_title = ehc.FIELD_LABELS.get(field1, field1.capitalize())
-    y_title = ehc.FIELD_LABELS.get(field2, field2.capitalize())
+    x_title = _field_label(field1)
+    y_title = _field_label(field2)
     if field1 in ehc.FIELDS_PHASE:
         x_title += f" ({ang_unit})"
     elif x_unit:
