@@ -618,7 +618,7 @@ def _make_baseline_trace(site1, site2, times, values, errors, *, field, timetype
         error_y=error_y,
         customdata=customdata,
         hovertemplate=(
-            f"<b>{site1}–{site2}</b><br>"
+            f"<b>{site1}-{site2}</b><br>"
             f"{timetype}: %{{x:.3f}} hr<br>"
             f"{field}: %{{y:.4g}}{value_unit_suffix}"
             f"{err_line}<extra></extra>"
@@ -675,7 +675,7 @@ def plot_bl(
         if missing:
             raise ValueError(f"site(s) {missing} not in obs.tarr; available sites: {sorted(known)}")
         pairs = [(site1, site2)]
-        title_suffix = f"{site1}–{site2}"
+        title_suffix = f"{site1}-{site2}"
         show_legend = False
     else:
         raise ValueError("Provide both site1 and site2 for a single baseline, or neither for all baselines.")
@@ -908,7 +908,7 @@ def plotall(
                     sigy if sigy is not None else np.full(len(x), np.nan),
                 ]
             )
-            hover_label = f"<b>{t['t1']}–{t['t2']}</b><br>"
+            hover_label = f"<b>{t['t1']}-{t['t2']}</b><br>"
         else:
             customdata = None
             hover_label = ""
@@ -1414,7 +1414,7 @@ def _build_dashboard_products(
         _, tri_unit = _format_uv_axis(np.sqrt(flat_area))
         area_div = (1e9**2) if tri_unit == "Gλ" else (1e6**2)
         for tri, cph_data, cph_model, tri_area in cph_buf:
-            tri_str = "–".join(tri)
+            tri_str = "-".join(tri)
             x_model_t = cph_model["time"] if cph_model is not None else np.array([])
             y_model_t = cph_model["cphase"] if cph_model is not None else np.array([])
             cph_time_specs.append(
@@ -1508,7 +1508,7 @@ def _build_dashboard_products(
         _, quad_unit = _format_uv_axis(np.sqrt(flat_qarea))
         qarea_div = (1e9**2) if quad_unit == "Gλ" else (1e6**2)
         for quad, camp_data, camp_model, quad_area in camp_buf:
-            quad_str = "–".join(quad)
+            quad_str = "-".join(quad)
             x_model_t = camp_model["time"] if camp_model is not None else np.array([])
             y_model_t = camp_model["camp"] if camp_model is not None else np.array([])
             camp_time_specs.append(
