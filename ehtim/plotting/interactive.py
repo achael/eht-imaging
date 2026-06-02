@@ -1469,25 +1469,32 @@ def _build_dashboard_products(
     return products
 
 
-def _pol_ticks_traces(im: Image, *, nvec: int, pcut: float, mcut: float, colour_by_m: bool):
-    """Build (lines_trace, dots_trace) for EVPA tick overlay; either may be None.
+def _pol_ticks_traces(im: Image, *, nvec: int, pcut: float, mcut: float,
+                      colour_by_m: bool, m_bins: int = 12,
+                      colorbar_kwargs: dict | None = None) -> list:
+    """Build EVPA tick traces for overlay on the Stokes-I heatmap.
 
-    Mirrors the per-pixel sampling, gating, and angle convention from
-    `Image.display` (eht-imaging/ehtim/image.py:3820–3860). The dots_trace
-    is only built when `colour_by_m=True`, and surfaces |m| via a colorbar.
+    Tick LENGTH ∝ |P|; tick COLOR encodes |m| (rainbow) when colour_by_m
+    is True. Sampling, gating, and angle convention mirror Image.display
+    (eht-imaging/ehtim/image.py:3820–3860). Returns [] if no tick passes
+    the pcut/mcut gating or the image carries no Q/U.
+
+    To get a single shared colorbar across the per-bin line traces, ticks
+    are partitioned into `m_bins` discretised m-bins; each bin becomes
+    one Scatter line trace with `line.color = rainbow(bin midpoint)`. A
+    final invisible marker trace exposes the continuous colorbar.
     """
     try:
         imvec = np.asarray(im.imvec, dtype=float).copy()
         qvec = np.asarray(im.qvec, dtype=float)
         uvec = np.asarray(im.uvec, dtype=float)
     except (AttributeError, KeyError):
-        return None, None
-    if qvec.size == 0 or uvec.size == 0 or not np.any(qvec) and not np.any(uvec):
-        return None, None
+        return []
+    if qvec.size == 0 or uvec.size == 0 or (not np.any(qvec) and not np.any(uvec)):
+        return []
 
     ydim, xdim = im.ydim, im.xdim
     thin = max(1, xdim // nvec)
-    # Avoid divide-by-zero in m gating.
     safe_I = np.where(imvec > 0, imvec, np.nan)
     p = np.abs(qvec + 1j * uvec)
     m = p / safe_I
@@ -1500,75 +1507,96 @@ def _pol_ticks_traces(im: Image, *, nvec: int, pcut: float, mcut: float, colour_
     mask = (I2 > pcut * Imax) & (M2 > mcut) & np.isfinite(M2)
     sub = mask[::thin, ::thin]
     if not sub.any():
-        return None, None
+        return []
 
-    # Pixel-coordinate grids matching Plotly's heatmap (z[i, j] → x=j, y=i).
     ys, xs = np.mgrid[:ydim:thin, :xdim:thin]
     x_centers = xs[sub].astype(float)
     y_centers = ys[sub].astype(float)
     angle = np.angle(qvec + 1j * uvec) / 2.0
     angle2 = angle.reshape(ydim, xdim)[::thin, ::thin][sub]
-    # Convention from Image.display: tick direction = (-sin θ, cos θ).
+    # Tick direction = (-sin θ, cos θ) per Image.display convention.
     dx = -np.sin(angle2)
     dy = np.cos(angle2)
 
-    # Segment length: half a thinned-pixel, scaled by |P|/Pmax.
     p_sub = P2[::thin, ::thin][sub]
-    p_norm = p_sub / np.nanmax(p_sub) if np.nanmax(p_sub) > 0 else p_sub
-    L = thin * 0.45 * p_norm
+    p_max = np.nanmax(p_sub) if np.nanmax(p_sub) > 0 else 1.0
+    L = thin * 0.45 * (p_sub / p_max)
 
     xs_a = x_centers - 0.5 * L * dx
     xs_b = x_centers + 0.5 * L * dx
     ys_a = y_centers - 0.5 * L * dy
     ys_b = y_centers + 0.5 * L * dy
 
-    # Build a single line trace with None separators between segments.
-    seg_x = np.empty(3 * len(x_centers))
-    seg_y = np.empty(3 * len(x_centers))
-    seg_x[0::3] = xs_a
-    seg_x[1::3] = xs_b
-    seg_x[2::3] = np.nan
-    seg_y[0::3] = ys_a
-    seg_y[1::3] = ys_b
-    seg_y[2::3] = np.nan
+    if not colour_by_m:
+        # Single white-line trace (no m colorbar).
+        seg_x = np.empty(3 * len(x_centers))
+        seg_y = np.empty(3 * len(x_centers))
+        seg_x[0::3] = xs_a
+        seg_x[1::3] = xs_b
+        seg_x[2::3] = np.nan
+        seg_y[0::3] = ys_a
+        seg_y[1::3] = ys_b
+        seg_y[2::3] = np.nan
+        return [go.Scatter(
+            x=seg_x.tolist(), y=seg_y.tolist(),
+            mode="lines",
+            line=dict(color="white", width=1.4),
+            hoverinfo="skip", showlegend=False, name="EVPA",
+        )]
 
-    lines = go.Scatter(
-        x=seg_x.tolist(),
-        y=seg_y.tolist(),
-        mode="lines",
-        line=dict(color="white", width=1.4),
-        hoverinfo="skip",
-        showlegend=False,
-        name="EVPA",
+    # Per-bin colored line traces: discretise m, one trace per non-empty bin.
+    m_sub = M2[::thin, ::thin][sub]
+    m_min = 0.0
+    m_max = float(max(np.nanmax(m_sub), 0.01))
+    edges = np.linspace(m_min, m_max, m_bins + 1)
+    midpoints = 0.5 * (edges[:-1] + edges[1:])
+
+    import plotly.colors as pc
+    colors = pc.sample_colorscale("Rainbow", (midpoints - m_min) / max(m_max - m_min, 1e-12))
+
+    traces: list = []
+    for i in range(m_bins):
+        if i < m_bins - 1:
+            in_bin = (m_sub >= edges[i]) & (m_sub < edges[i + 1])
+        else:
+            in_bin = (m_sub >= edges[i]) & (m_sub <= edges[i + 1])
+        if not in_bin.any():
+            continue
+        n = int(in_bin.sum())
+        seg_x = np.empty(3 * n)
+        seg_y = np.empty(3 * n)
+        seg_x[0::3] = xs_a[in_bin]
+        seg_x[1::3] = xs_b[in_bin]
+        seg_x[2::3] = np.nan
+        seg_y[0::3] = ys_a[in_bin]
+        seg_y[1::3] = ys_b[in_bin]
+        seg_y[2::3] = np.nan
+        traces.append(go.Scatter(
+            x=seg_x.tolist(), y=seg_y.tolist(),
+            mode="lines",
+            line=dict(color=colors[i], width=1.6),
+            hoverinfo="skip", showlegend=False,
+            name=f"EVPA m={midpoints[i]:.2f}",
+        ))
+
+    # Invisible scatter that owns the shared rainbow colorbar.
+    cbar = colorbar_kwargs or dict(
+        title=dict(text="|m|"), x=0.40, y=0.78, yanchor="middle",
+        len=0.32, thickness=10,
     )
-
-    dots = None
-    if colour_by_m:
-        m_sub = M2[::thin, ::thin][sub]
-        dots = go.Scatter(
-            x=x_centers.tolist(),
-            y=y_centers.tolist(),
-            mode="markers",
-            marker=dict(
-                size=4,
-                color=m_sub.tolist(),
-                colorscale="Viridis",
-                colorbar=dict(
-                    title=dict(text="|m|"),
-                    x=0.40,
-                    y=0.32,
-                    yanchor="middle",
-                    len=0.30,
-                    thickness=8,
-                ),
-                showscale=True,
-                line=dict(width=0),
-            ),
-            hovertemplate="|m|=%{marker.color:.3f}<extra></extra>",
-            showlegend=False,
-            name="|m|",
-        )
-    return lines, dots
+    traces.append(go.Scatter(
+        x=[None], y=[None], mode="markers",
+        marker=dict(
+            size=0,
+            color=[m_min, m_max],
+            colorscale="Rainbow",
+            cmin=m_min, cmax=m_max,
+            colorbar=cbar,
+            showscale=True,
+        ),
+        hoverinfo="skip", showlegend=False, name="|m|",
+    ))
+    return traces
 
 
 def dashboard(
@@ -1579,11 +1607,11 @@ def dashboard(
     pol: str = "R",
     show_model: bool = True,
     ttype: str = "direct",
-    plotp: bool = False,
+    plotp: bool = True,
     nvec: int = 20,
     pcut: float = 0.1,
     mcut: float = 0.01,
-    vec_cfun: bool = False,
+    vec_cfun: bool = True,
     triangle: tuple[str, str, str] | None = None,
     quadrangle: tuple[str, str, str, str] | None = None,
     n_triangles: int | None = 12,
@@ -1678,34 +1706,36 @@ def dashboard(
     )
 
     # --- Panel 1: image ---
+    # Intensity heatmap always shows its colorbar; the m colorbar (if pol
+    # ticks present) sits immediately to its right so the two read together.
     img2d = im.imvec.reshape(im.ydim, im.xdim)
-    heatmap_kwargs = dict(
+    fig.add_trace(go.Heatmap(
         z=img2d,
         colorscale="hot",
         hovertemplate="x=%{x}<br>y=%{y}<br>I=%{z:.3g}<extra></extra>",
-    )
-    if plotp:
-        heatmap_kwargs.update(
-            showscale=True,
-            colorbar=dict(
-                title=dict(text="Jy/px"),
-                x=0.40,
-                y=0.78,
-                yanchor="middle",
-                len=0.32,
-                thickness=10,
-            ),
-        )
-    else:
-        heatmap_kwargs["showscale"] = False
-    fig.add_trace(go.Heatmap(**heatmap_kwargs), row=1, col=1)
+        showscale=True,
+        colorbar=dict(
+            title=dict(text="Jy/px"),
+            x=0.34, y=0.78, yanchor="middle",
+            len=0.32, thickness=10,
+        ),
+    ), row=1, col=1)
 
-    if plotp:
-        lines, dots = _pol_ticks_traces(im, nvec=nvec, pcut=pcut, mcut=mcut, colour_by_m=vec_cfun)
-        if lines is not None:
-            fig.add_trace(lines, row=1, col=1)
-        if dots is not None:
-            fig.add_trace(dots, row=1, col=1)
+    # Build pol traces unconditionally (when im has Q/U) so the toggle
+    # button can hide/show them at runtime.
+    pol_traces = _pol_ticks_traces(
+        im, nvec=nvec, pcut=pcut, mcut=mcut, colour_by_m=vec_cfun,
+        colorbar_kwargs=dict(
+            title=dict(text="|m|"),
+            x=0.40, y=0.78, yanchor="middle",
+            len=0.32, thickness=10,
+        ),
+    )
+    pol_trace_indices: list[int] = []
+    for trace in pol_traces:
+        trace.visible = bool(plotp)
+        fig.add_trace(trace, row=1, col=1)
+        pol_trace_indices.append(len(fig.data) - 1)
 
     # Panel 2: data product selector
     # Each product owns 1+ trace pairs; closure products enumerate all
@@ -1959,27 +1989,49 @@ def dashboard(
             )
         )
 
-    fig.update_layout(
-        updatemenus=[
+    updatemenus_list = [
+        dict(
+            type="dropdown",
+            direction="down",
+            buttons=buttons,
+            showactive=True,
+            # Top-left corner — the title is centered (x=0.5), so anchor
+            # the dropdown to the far left to keep them separated.
+            x=0.0,
+            xanchor="left",
+            y=1.06,
+            yanchor="bottom",
+            pad=dict(l=4, r=4, t=2, b=2),
+            bgcolor="rgba(238,238,238,0.85)",
+            bordercolor=_THEME["edge_color"],
+            borderwidth=1,
+            font=dict(size=10, color=_THEME["font_color"]),
+        ),
+    ]
+    # Pol toggle: hides/shows the EVPA ticks + |m| colorbar overlay. Default
+    # state matches the `plotp` parameter; click flips between args/args2.
+    if pol_trace_indices:
+        updatemenus_list.append(
             dict(
-                type="dropdown",
-                direction="down",
-                buttons=buttons,
-                showactive=True,
-                # Top-left corner — the title is centered (x=0.5), so anchor
-                # the dropdown to the far left to keep them separated.
-                x=0.0,
-                xanchor="left",
-                y=1.06,
-                yanchor="bottom",
+                type="buttons",
+                direction="left",
+                showactive=False,
+                x=0.20, xanchor="left",
+                y=1.06, yanchor="bottom",
                 pad=dict(l=4, r=4, t=2, b=2),
                 bgcolor="rgba(238,238,238,0.85)",
                 bordercolor=_THEME["edge_color"],
                 borderwidth=1,
                 font=dict(size=10, color=_THEME["font_color"]),
-            ),
-        ],
-    )
+                buttons=[dict(
+                    label="Toggle polarization",
+                    method="restyle",
+                    args=[{"visible": not bool(plotp)}, pol_trace_indices],
+                    args2=[{"visible": bool(plotp)}, pol_trace_indices],
+                )],
+            )
+        )
+    fig.update_layout(updatemenus=updatemenus_list)
 
     if show:
         fig.show()
