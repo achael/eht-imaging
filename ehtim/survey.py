@@ -16,17 +16,33 @@
 #    You should have received a copy of the GNU General Public License
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-import matplotlib.pyplot as plt
-import numpy as np
-import pandas as pd
+import csv
 import os
 
-import ehtim as eh
-import paramsurvey
-import paramsurvey.params
+import matplotlib.pyplot as plt
+import numpy as np
 
-import warnings
+try:
+    import paramsurvey
+    import paramsurvey.params
+except ImportError:
+    print("Warning: paramsurvey not installed!")
+    print("Please install paramsurvey to use the survey package!")
+
+import ehtim as eh
+
 #warnings.filterwarnings("ignore", category=np.VisibleDeprecationWarning)
+
+
+def _save_row_csv(path, row):
+    """Write a one-row CSV matching pandas DataFrame.to_csv output: a leading
+    unnamed integer-index column (value 0), then one column per key in order.
+    A NaN value is written as an empty field, as pandas does.
+    """
+    with open(path, 'w', newline='') as f:
+        writer = csv.writer(f, lineterminator='\n')
+        writer.writerow([''] + list(row.keys()))
+        writer.writerow([0] + ['' if v != v else v for v in row.values()])
 
 
 ##################################################################################################
@@ -76,7 +92,7 @@ class ParameterSet:
         os.makedirs(self.outpath, exist_ok=True)
         self.paramset = paramset
         self.params_fixed = params_fixed
-        self.outfile = '%s_%0.7i' % (self.outfile_base, self.i)
+        self.outfile = f'{self.outfile_base}_{int(self.i):0.7}'
 
         self.fov *= eh.RADPERUAS
         self.reverse_taper_uas *= eh.RADPERUAS
@@ -149,7 +165,8 @@ class ParameterSet:
 
         if self.zbl != self.zbl_tot:
             for j in range(len(self.obs.data)):
-                if (self.obs.data['u'][j] ** 2 + self.obs.data['v'][j] ** 2) ** 0.5 >= self.uv_zblcut: continue
+                if (self.obs.data['u'][j] ** 2 + self.obs.data['v'][j] ** 2) ** 0.5 >= self.uv_zblcut:
+                    continue
                 for field in ['vis', 'qvis', 'uvis', 'vvis', 'sigma', 'qsigma', 'usigma', 'vsigma']:
                     self.obs.data[field][j] *= self.zbl / self.zbl_tot
 
@@ -339,29 +356,29 @@ class ParameterSet:
             self.im_out = self.im_out.blur_circ(self.reverse_taper_uas)
 
         # Save the final image
-        outfits = os.path.join(self.outpath, '%s.fits' % (self.outfile))
+        outfits = os.path.join(self.outpath, f'{self.outfile}.fits')
         self.im_out.save_fits(outfits)
 
         # Save caltab
-        if hasattr(self, 'save_caltab') and self.save_caltab == True:
-            outcal = os.path.join(self.outpath, '%s/' % (self.outfile))
+        if hasattr(self, 'save_caltab') and self.save_caltab:
+            outcal = os.path.join(self.outpath, f'{self.outfile}/')
             eh.caltable.save_caltable(self.caltab, self.obs_sc_init, outcal)
 
         # Save self-calibrated uvfits
         if self.save_uvfits:
-            outuvfits = os.path.join(self.outpath, '%s.uvfits' % (self.outfile))
+            outuvfits = os.path.join(self.outpath, f'{self.outfile}.uvfits')
             self.obs_sc_addcmp.save_uvfits(outuvfits)
 
         # Save pdf of final image
         if self.save_pdf:
-            outpdf = os.path.join(self.outpath, '%s.pdf' % (self.outfile))
+            outpdf = os.path.join(self.outpath, f'{self.outfile}.pdf')
             self.im_out.display(cbar_unit=['Tb'], label_type='scale', export_pdf=outpdf)
 
         # Save pdf of image summary
         if self.save_imgsums:
             # Save an image summary sheet
             plt.close('all')
-            outimgsum = os.path.join(self.outpath, '%s_imgsum.pdf' % (self.outfile))
+            outimgsum = os.path.join(self.outpath, f'{self.outfile}_imgsum.pdf')
             eh.imgsum(self.im_addcmp, self.obs_sc_addcmp, self.obs_orig, outimgsum, cp_uv_min=self.uv_zblcut,
                       processes=-1)
 
@@ -381,7 +398,7 @@ class ParameterSet:
         stats_dict = {}
         stats_dict['i'] = [self.i]
 
-        outstats = os.path.join(self.outpath, '%s_stats.csv' % (self.outfile))
+        outstats = os.path.join(self.outpath, f'{self.outfile}_stats.csv')
 
         # if ground truth image available, compute nxcorr
         if self.ground_truth_img != 'None':
@@ -443,8 +460,7 @@ class ParameterSet:
         stats_dict['chi2_lc_sys'] = [chi2_lc_sys]
         stats_dict['chi2_vis_sys'] = [chi2_vis_sys]
 
-        df = pd.DataFrame.from_dict(stats_dict)
-        df.to_csv(outstats)
+        _save_row_csv(outstats, {k: stats_dict[k][0] for k in stats_dict})
 
     def save_params(self):
         """
@@ -458,10 +474,8 @@ class ParameterSet:
         self.paramset['fov'] = self.fov
         self.paramset['zbl_tot'] = self.zbl_tot
 
-        df = pd.DataFrame.from_dict([self.paramset])
-
-        outparams = os.path.join(self.outpath, '%s_params.csv' % (self.outfile))
-        df.to_csv(outparams)
+        outparams = os.path.join(self.outpath, f'{self.outfile}_params.csv')
+        _save_row_csv(outparams, self.paramset)
 
     def run(self):
 
@@ -476,7 +490,7 @@ class ParameterSet:
 
         # if a *_params.csv file exists, it means this parameter has already been run and can be skipped
         # useful in case survey with multiple parameter sets gets interrupted
-        outcsv = os.path.join(self.outpath, '%s_params.csv' % (self.outfile))
+        outcsv = os.path.join(self.outpath, f'{self.outfile}_params.csv')
 
         if not self.overwrite:
             if os.path.exists(outcsv):

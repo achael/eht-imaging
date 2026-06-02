@@ -42,6 +42,7 @@ import ehtim.image
 import ehtim.io.load
 import ehtim.io.save
 import ehtim.observing.obs_helpers as obsh
+import ehtim.statistics.averaging as ehavg
 import ehtim.statistics.dataframes as ehdf
 
 warnings.filterwarnings("ignore",
@@ -338,147 +339,111 @@ class Obsdata:
         return newobs
 
     def reorder_baselines(self, trial_speedups=False):
-        """Reorder baselines to match uvfits convention, based on the telescope array ordering
+        """Reorder baselines to canonical order (tkey[t1] < tkey[t2]) and handle duplicates.
+
+        Within each timestep, any row whose baseline is in reversed order is swapped
+        so it appears as (t1, t2) with tkey[t1] < tkey[t2], conjugating the
+        visibilities and negating (u, v) as needed.
+
+        After the swap, rows that collide on (time, t1, t2) are classified:
+          - **Conjugate pair**: one row was originally (A, B), the other (B, A) at
+            the same time. The two rows represent the same measurement; one is
+            silently dropped.
+          - **True duplicate or multi-channel data**: anything else. A
+            ``UserWarning`` is emitted and only the first row is kept. The
+            single-frequency Obsdata schema cannot represent per-channel data,
+            so loaders that flatten multi-channel files lose information here.
+
+        Args:
+            trial_speedups (bool): kept for API compatibility; the implementation
+                is now always vectorized and this flag has no effect.
         """
-        if trial_speedups:
-            self.reorder_baselines_trial_speedups()
-
-        else: # original code
-
-            # Time partition the datatable
-            datatable = self.data.copy()
-            datalist = []
-            for key, group in it.groupby(datatable, lambda x: x['time']):
-                #print(key*60*60,len(list(group)))
-                datalist.append(np.array([obs for obs in group]))
-
-            # loop through all data
-            obsdata = []
-            for tlist in datalist:
-                blpairs = []
-                for dat in tlist:
-                    # Remove conjugate baselines
-                    if (set((dat['t1'], dat['t2']))) not in blpairs:
-
-                        # Reverse the baseline in the right order for uvfits:
-                        if(self.tkey[dat['t2']] < self.tkey[dat['t1']]):
-
-                            (dat['t1'], dat['t2']) = (dat['t2'], dat['t1'])
-                            (dat['tau1'], dat['tau2']) = (dat['tau2'], dat['tau1'])
-                            dat['u'] = -dat['u']
-                            dat['v'] = -dat['v']
-
-                            if self.polrep == 'stokes':
-                                dat['vis'] = np.conj(dat['vis'])
-                                dat['qvis'] = np.conj(dat['qvis'])
-                                dat['uvis'] = np.conj(dat['uvis'])
-                                dat['vvis'] = np.conj(dat['vvis'])
-                            elif self.polrep == 'circ':
-                                dat['rrvis'] = np.conj(dat['rrvis'])
-                                dat['llvis'] = np.conj(dat['llvis'])
-                                # must switch l & r !!
-                                rl = dat['rlvis'].copy()
-                                lr = dat['lrvis'].copy()
-                                dat['rlvis'] = np.conj(lr)
-                                dat['lrvis'] = np.conj(rl)
-
-                                # You also have to switch the errors for the coherency!
-                                rlerr = dat['rlsigma'].copy()
-                                lrerr = dat['lrsigma'].copy()
-                                dat["rlsigma"] = lrerr
-                                dat["lrsigma"] = rlerr
-
-                            else:
-                                raise Exception("polrep must be either 'stokes' or 'circ'")
-
-                        # Append the data point
-                        blpairs.append(set((dat['t1'], dat['t2'])))
-                        obsdata.append(dat)
-
-            obsdata = np.array(obsdata, dtype=self.poltype)
-
-            # Timesort data
-            obsdata = obsdata[np.argsort(obsdata, order=['time', 't1'])]
-
-            # Save the data
-            self.data = obsdata
-
-        return
-
-    def reorder_baselines_trial_speedups(self):
-        """Reorder baselines to match uvfits convention, based on the telescope array ordering
-        """
-
         dat = self.data.copy()
 
-        ############ Ensure correct baseline order
-        # TODO can these be faster?
-        t1nums = np.fromiter([self.tkey[t] for t in dat['t1']],int)
-        t2nums = np.fromiter([self.tkey[t] for t in dat['t2']],int)
-
-        # which entries are in the wrong telescope order?
+        t1nums = np.fromiter((self.tkey[t] for t in dat['t1']), int, count=len(dat))
+        t2nums = np.fromiter((self.tkey[t] for t in dat['t2']), int, count=len(dat))
         ordermask = t2nums < t1nums
 
-        # flip the order of these entries
-        t1 = dat['t1'].copy()
-        t2 = dat['t2'].copy()
-        tau1 = dat['tau1'].copy()
-        tau2 = dat['tau2'].copy()
-
-        dat['t1'][ordermask] = t2[ordermask]
-        dat['t2'][ordermask] = t1[ordermask]
-        dat['tau1'][ordermask] = tau2[ordermask]
-        dat['tau2'][ordermask] = tau1[ordermask]
+        # Swap reversed rows: site labels, opacities, (u,v), and the visibilities.
+        t1_orig = dat['t1'].copy()
+        t2_orig = dat['t2'].copy()
+        tau1_orig = dat['tau1'].copy()
+        tau2_orig = dat['tau2'].copy()
+        dat['t1'][ordermask] = t2_orig[ordermask]
+        dat['t2'][ordermask] = t1_orig[ordermask]
+        dat['tau1'][ordermask] = tau2_orig[ordermask]
+        dat['tau2'][ordermask] = tau1_orig[ordermask]
         dat['u'][ordermask] *= -1
         dat['v'][ordermask] *= -1
 
-        if self.polrep=='stokes':
-            dat['vis'][ordermask]  = np.conj(dat['vis'][ordermask])
-            dat['qvis'][ordermask] = np.conj(dat['qvis'][ordermask])
-            dat['uvis'][ordermask] = np.conj(dat['uvis'][ordermask])
-            dat['vvis'][ordermask] = np.conj(dat['vvis'][ordermask])
-
+        if self.polrep == 'stokes':
+            for f in ('vis', 'qvis', 'uvis', 'vvis'):
+                dat[f][ordermask] = np.conj(dat[f][ordermask])
         elif self.polrep == 'circ':
             dat['rrvis'][ordermask] = np.conj(dat['rrvis'][ordermask])
             dat['llvis'][ordermask] = np.conj(dat['llvis'][ordermask])
-            rl = dat['rlvis'].copy()
-            lr = dat['lrvis'].copy()
-            dat['rlvis'][ordermask] = np.conj(lr[ordermask])
-            dat['lrvis'][ordermask] = np.conj(rl[ordermask])
-
-            # Also need to switch error matrix
-            rle = dat['rlsigma'].copy()
-            lre = dat['lrsigma'].copy()
-            dat['rlsigma'][ordermask] = lre[ordermask]
-            dat['lrsigma'][ordermask] = rle[ordermask]
-
+            rl_orig = dat['rlvis'].copy()
+            lr_orig = dat['lrvis'].copy()
+            dat['rlvis'][ordermask] = np.conj(lr_orig[ordermask])
+            dat['lrvis'][ordermask] = np.conj(rl_orig[ordermask])
+            rls_orig = dat['rlsigma'].copy()
+            lrs_orig = dat['lrsigma'].copy()
+            dat['rlsigma'][ordermask] = lrs_orig[ordermask]
+            dat['lrsigma'][ordermask] = rls_orig[ordermask]
         else:
             raise Exception("polrep must be either 'stokes' or 'circ'")
 
-        # Remove duplicate or conjugate entries at any timestep
-        # Since telescope order has been sorted conjugates should appear as duplicates
-        timeblcombos = np.vstack((dat['time'],t1nums,t2nums)).T
-        uniqdat, uniqdatinv = np.unique(timeblcombos,axis=0, return_inverse=True)
+        # Group rows by canonical (time, t1, t2). np.unique with axis=0 collapses
+        # repeated rows in `keys` and returns:
+        #   first_idx[g] -> index in `keys` of the first occurrence of group g
+        #   inverse[i]   -> the group id that row i belongs to
+        #   counts[g]    -> number of rows belonging to group g
+        canon_t1 = np.minimum(t1nums, t2nums)
+        canon_t2 = np.maximum(t1nums, t2nums)
+        keys = np.stack(
+            (dat['time'], canon_t1.astype(float), canon_t2.astype(float)), axis=1,
+        )
+        _, first_idx, inverse, counts = np.unique(
+            keys, axis=0, return_index=True, return_inverse=True, return_counts=True,
+        )
 
-        if len(uniqdat) != len(dat):
-            print("WARNING: removing duplicate/conjuagte points in reorder_baselines!")
-            deletemask = np.ones(len(dat)).astype(bool)
+        if np.any(counts > 1):
+            # Start by keeping only the first occurrence of each group.
+            keep = np.zeros(len(dat), dtype=bool)
+            keep[first_idx] = True
 
-            for j in range(len(uniqdat)):
-                idxs = np.argwhere(uniqdatinv==j)[:,0]
-                for idx in idxs[1:]: # delete all but first occurance
-                    deletemask[idx] = False
+            # True conjugate pair: exactly two rows, opposite original
+            # orderings (one had ordermask=True, one False), with matching
+            # (u, v) after the swap negates (u, v) on the reversed row. Drop
+            # one silently. Any other collision -- including same-side
+            # duplicates with matching uv (data inconsistency), or more than
+            # two rows, or mismatched (u, v) (multi-channel data flattened
+            # into a single-frequency schema) -- is real data loss; warn.
+            n_true_dupes_dropped = 0
+            for g in np.where(counts > 1)[0]:
+                members = np.where(inverse == g)[0]
+                uv = np.stack((dat['u'][members], dat['v'][members]), axis=1)
+                is_conj_pair = (
+                    len(members) == 2
+                    and ordermask[members].sum() == 1
+                    and np.allclose(uv[0], uv[1])
+                )
+                if is_conj_pair:
+                    pass
+                else:
+                    n_true_dupes_dropped += len(members) - 1
 
-            # remove duplicates
-            dat_unique = dat[deletemask]
+            if n_true_dupes_dropped > 0:
+                warnings.warn(
+                    f"reorder_baselines: dropped {n_true_dupes_dropped} duplicate "
+                    "row(s) at matching (time, t1, t2) that aren't a conjugate pair "
+                    "(e.g. flattened multi-channel or duplicate data) "
+                    "Inspect your loader.",
+                    stacklevel=2,
+                )
+            dat = dat[keep]
 
-        # sort data
-        dat = dat[np.argsort(dat, order=['time', 't1'])]
-
-        # save the data
-        self.data = dat
-
-        return
+        self.data = dat[np.argsort(dat, order=['time', 't1'])]
 
     def reorder_tarr_sefd(self, reorder_baselines=True):
         """Reorder the telescope array by SEFD minimal to maximum.
@@ -613,7 +578,12 @@ class Obsdata:
                     data, lambda x: np.searchsorted(self.scans[:, 0], x['time'])):
                 datalist.append(np.array([obs for obs in group]))
 
-        return np.array(datalist, dtype=object)
+        # np.array(datalist, dtype=object) silently stacks into 2-D when all scans
+        # share a shape, dropping the recarray dtype; pre-allocate to force 1-D.
+        out = np.empty(len(datalist), dtype=object)
+        for i, d in enumerate(datalist):
+            out[i] = d
+        return out
 
 
     def split_obs(self, t_gather=0., scan_gather=False):
@@ -692,7 +662,10 @@ class Obsdata:
         for key, group in it.groupby(data[idx], lambda x: set((x['t1'], x['t2']))):
             datalist.append(np.array([obs for obs in group]))
 
-        return np.array(datalist, dtype=object)
+        out = np.empty(len(datalist), dtype=object)
+        for i, d in enumerate(datalist):
+            out[i] = d
+        return out
 
     def unpack_bl(self, site1, site2, fields, ang_unit='deg', debias=False, timetype=False):
         """Unpack the data over time on the selected baseline site1-site2.
@@ -1246,13 +1219,16 @@ class Obsdata:
 
         return out
 
-    def avg_coherent(self, inttime, scan_avg=False, moving=False):
+    def avg_coherent(self, inttime, scan_avg=False, moving=False, invvar_avg=True):
         """Coherently average data along u,v tracks in chunks of length inttime (sec)
 
            Args:
                 inttime (float): coherent integration time in seconds
                 scan_avg (bool): if True, average over scans in self.scans instead of intime
                 moving (bool): averaging with moving window (boxcar width in seconds)
+                invvar_avg (bool): if True (default), combine visibilities and sigmas with
+                    inverse-variance weights; if False, use the legacy unweighted mean and
+                    sqrt(sum sig^2)/N sigma
            Returns:
                 (Obsdata): Obsdata object containing averaged data
         """
@@ -1266,10 +1242,10 @@ class Obsdata:
             return self.copy()
 
         if moving:
-            vis_avg = ehdf.coh_moving_avg_vis(self, dt=inttime, return_type='rec')
+            vis_avg = ehavg.coh_moving_avg_vis(self, dt=inttime, invvar_avg=invvar_avg)
         else:
-            vis_avg = ehdf.coh_avg_vis(self, dt=inttime, return_type='rec',
-                                       err_type='predicted', scan_avg=scan_avg)
+            vis_avg = ehavg.coh_avg_vis(self, dt=inttime, err_type='predicted',
+                                        scan_avg=scan_avg, invvar_avg=invvar_avg)
 
         arglist, argdict = self.obsdata_args()
         arglist[DATPOS] = vis_avg
@@ -1277,7 +1253,8 @@ class Obsdata:
 
         return out
 
-    def avg_incoherent(self, inttime, scan_avg=False, debias=True, err_type='predicted'):
+    def avg_incoherent(self, inttime, scan_avg=False, debias=True, err_type='predicted',
+                       invvar_avg=True):
         """Incoherently average data along u,v tracks in chunks of length inttime (sec)
 
            Args:
@@ -1285,14 +1262,17 @@ class Obsdata:
                 scan_avg (bool): if True, average over scans in self.scans instead of intime
                 debias (bool): if True, debias the averaged amplitudes
                 err_type (str): 'predicted' or 'measured'
+                invvar_avg (bool): if True (default) and err_type='predicted', use the
+                    inverse-variance weighted amplitude + sigma; if False, the legacy
+                    deb_amp + inc_sig pair. No effect when err_type='measured'.
 
            Returns:
                 (Obsdata): Obsdata object containing averaged data
         """
 
         print('Incoherently averaging data, putting phases to zero!')
-        amp_rec = ehdf.incoh_avg_vis(self, dt=inttime, debias=debias, scan_avg=scan_avg,
-                                     return_type='rec', rec_type='vis', err_type=err_type)
+        amp_rec = ehavg.incoh_avg_vis(self, dt=inttime, debias=debias, scan_avg=scan_avg,
+                                      rec_type='vis', err_type=err_type, invvar_avg=invvar_avg)
         arglist, argdict = self.obsdata_args()
         arglist[DATPOS] = amp_rec
         out = Obsdata(*arglist, **argdict)
@@ -1552,6 +1532,12 @@ class Obsdata:
                (Obsdata): An Obsdata object with the inflated noise values.
         """
 
+        if self.polrep != 'stokes':
+            warnings.warn(
+                "rescale_zbl estimates the original total flux from the "
+                "primary-hand amplitude; for polrep != 'stokes' orig_totflux "
+                "may be incorrectly estimated.", stacklevel=2)
+
         # estimate the original total flux
         obs_zerobl = self.flag_uvdist(uv_max=uv_max)
         amps = obs_zerobl.unpack(['amp', 'sigma'], debias=debias)
@@ -1563,16 +1549,13 @@ class Obsdata:
         # Rescale short baselines to excise contributions from extended flux
         # Note: this does not do the proper thing for fractional polarization)
         obs = self.copy()
-        for j in range(len(obs.data)):
-            if (obs.data['u'][j]**2 + obs.data['v'][j]**2)**0.5 < uv_max:
-                obs.data['vis'][j] *= totflux / orig_totflux
-                obs.data['qvis'][j] *= totflux / orig_totflux
-                obs.data['uvis'][j] *= totflux / orig_totflux
-                obs.data['vvis'][j] *= totflux / orig_totflux
-                obs.data['sigma'][j] *= totflux / orig_totflux
-                obs.data['qsigma'][j] *= totflux / orig_totflux
-                obs.data['usigma'][j] *= totflux / orig_totflux
-                obs.data['vsigma'][j] *= totflux / orig_totflux
+        scale = totflux / orig_totflux
+        uvdist = np.sqrt(obs.data['u']**2 + obs.data['v']**2)
+        mask = uvdist < uv_max
+        fields = [self.poldict[key] for key in ('vis1', 'vis2', 'vis3', 'vis4',
+                                                'sigma1', 'sigma2', 'sigma3', 'sigma4')]
+        for field in fields:
+            obs.data[field][mask] *= scale
 
         return obs
 

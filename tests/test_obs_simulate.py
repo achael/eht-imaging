@@ -878,3 +878,24 @@ class TestAddNoiseLegacy:
         residual = out["vis"] - obs.data["vis"]
         ratio = np.std(residual.real) / np.mean(out["sigma"])
         assert 0.5 < ratio < 2.0
+
+
+def test_observe_fast_ttype_warns_deprecated(gauss_im, observe):
+    """Forward sampling with ttype='fast' emits the sampling-context
+    DeprecationWarning (no gradient note — those values are correct)."""
+    with pytest.warns(DeprecationWarning, match=r"ttype='fast'") as w:
+        observe(gauss_im, ttype="fast")
+    assert "gradient" not in str(w.list[0].message)
+
+
+def test_warn_fast_ttype_deprecated_helper():
+    """The sampling helper does not mention gradients."""
+    with pytest.warns(DeprecationWarning, match=r"ttype='fast'") as w:
+        obsh.warn_fast_ttype_deprecated()
+    assert "gradient" not in str(w.list[0].message)
+
+
+def test_warn_fast_ttype_deprecated_imaging_helper():
+    """The imaging helper additionally notes that gradients are inaccurate."""
+    with pytest.warns(DeprecationWarning, match=r"gradients are inaccurate"):
+        obsh.warn_fast_ttype_deprecated_imaging()

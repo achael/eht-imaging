@@ -236,16 +236,68 @@ def test_reorder_baselines_time_sorted(obs_direct):
 
 
 def test_trial_speedups_matches_default(obs_direct):
-    obs_default = obs_direct.copy()
+    # The trial_speedups flag in reorder_baselines is now a no-op; both
+    # invocations must produce byte-identical output, including when the
+    # input contains conjugate pairs and true duplicates.
+    extra = obs_direct.data[0].copy()
+    extra["t1"], extra["t2"] = obs_direct.data[0]["t2"], obs_direct.data[0]["t1"]
+    extra["u"], extra["v"] = -obs_direct.data[0]["u"], -obs_direct.data[0]["v"]
+    extra["vis"] = np.conj(obs_direct.data[0]["vis"])
+    seeded = obs_direct.copy()
+    seeded.data = np.concatenate([obs_direct.data, np.array([extra], dtype=obs_direct.data.dtype)])
+
+    obs_default = seeded.copy()
     obs_default.reorder_baselines(trial_speedups=False)
-    obs_trial = obs_direct.copy()
+    obs_trial = seeded.copy()
     obs_trial.reorder_baselines(trial_speedups=True)
-    np.testing.assert_array_equal(
-        obs_default.data["time"], obs_trial.data["time"]
+    np.testing.assert_array_equal(obs_default.data, obs_trial.data)
+
+
+def _seed_extra_row(obs, **overrides):
+    """Return a copy of `obs` with one extra row tacked on, fields overridden."""
+    row = obs.data[0].copy()
+    for k, v in overrides.items():
+        row[k] = v
+    new = obs.copy()
+    new.data = np.concatenate([obs.data, np.array([row], dtype=obs.data.dtype)])
+    return new
+
+
+def test_reorder_baselines_conjugate_pair_silent_merge(obs_direct):
+    # (A,B) and (B,A) at the same time with conjugate u,v are the same
+    # measurement; reorder_baselines must drop one without warning.
+    r0 = obs_direct.data[0]
+    seeded = _seed_extra_row(
+        obs_direct, t1=r0["t2"], t2=r0["t1"], u=-r0["u"], v=-r0["v"],
+        vis=np.conj(r0["vis"]),
     )
-    np.testing.assert_array_equal(obs_default.data["t1"], obs_trial.data["t1"])
-    np.testing.assert_array_equal(obs_default.data["t2"], obs_trial.data["t2"])
-    np.testing.assert_array_equal(obs_default.data["vis"], obs_trial.data["vis"])
+    n_before = len(seeded.data)
+    with warnings.catch_warnings():
+        warnings.simplefilter("error", UserWarning)
+        seeded.reorder_baselines()
+    assert len(seeded.data) == n_before - 1
+
+
+def test_reorder_baselines_true_duplicate_warns(obs_direct):
+    # Same canonical (time, t1, t2) and same (u, v) but different vis ->
+    # not a conjugate pair, the user supplied inconsistent data. Warn.
+    seeded = _seed_extra_row(obs_direct, vis=obs_direct.data[0]["vis"] + 100.0)
+    n_before = len(seeded.data)
+    with pytest.warns(UserWarning, match="reorder_baselines: dropped 1"):
+        seeded.reorder_baselines()
+    assert len(seeded.data) == n_before - 1
+
+
+def test_reorder_baselines_multichannel_like_warns(obs_direct):
+    # Five extra rows with the same canonical baseline but distinct (u, v) --
+    # mimics multi-channel data flattened into a single-frequency Obsdata.
+    rows = [obs_direct.data[0].copy() for _ in range(5)]
+    for k, r in enumerate(rows):
+        r["u"] = obs_direct.data[0]["u"] * (1.0 + 0.01 * (k + 1))
+    seeded = obs_direct.copy()
+    seeded.data = np.concatenate([obs_direct.data, np.array(rows, dtype=obs_direct.data.dtype)])
+    with pytest.warns(UserWarning, match="reorder_baselines: dropped 5"):
+        seeded.reorder_baselines()
 
 
 def test_reorder_tarr_sefd_monotonic(obs_direct):
@@ -372,6 +424,56 @@ def test_bllist_unique_baseline_per_chunk(obs_direct):
     for chunk in chunks:
         pairs = {frozenset((row["t1"], row["t2"])) for row in chunk}
         assert len(pairs) == 1
+
+
+# Regression: np.array(list_of_recarrays, dtype=object) silently stacks into 2-D
+# when every scan has the same shape, dropping the recarray dtype and breaking
+# field-name indexing downstream (e.g. bispectra() -> tdata[0]['time']). See PR #186.
+
+def test_tlist_returns_1d_object_array_single_scan(obs_direct):
+    chunks = obs_direct.tlist(t_gather=1e9)  # lump all data into one scan
+    assert chunks.ndim == 1
+    assert len(chunks) == 1
+    assert chunks[0].dtype.names is not None
+    # Field-name indexing must not raise.
+    assert chunks[0]["time"].shape == (len(chunks[0]),)
+
+
+def test_tlist_returns_1d_object_array_uniform_scans(obs_direct):
+    # Synthesize an obs whose scans all have the same baseline count by
+    # restricting to one baseline that's present at every time.
+    obs = obs_direct.copy()
+    pair = (obs.data[0]["t1"], obs.data[0]["t2"])
+    mask = (obs.data["t1"] == pair[0]) & (obs.data["t2"] == pair[1])
+    obs.data = obs.data[mask]
+    chunks = obs.tlist()
+    assert len(chunks) > 1  # multiple scans
+    assert chunks.ndim == 1
+    assert chunks[0].dtype.names is not None
+    assert chunks[0]["time"].shape == (1,)
+
+
+def test_bllist_returns_1d_object_array(obs_direct):
+    # Restrict to the (ALMA, APEX)/(ALMA, SPT)/(APEX, SPT) triangle, whose
+    # baselines all share the same row count -- triggers the auto-stacking bug.
+    obs = obs_direct.copy()
+    triangle = {"ALMA", "APEX", "SPT"}
+    mask = np.array([row["t1"] in triangle and row["t2"] in triangle for row in obs.data])
+    obs.data = obs.data[mask]
+    chunks = obs.bllist()
+    assert chunks.ndim == 1
+    assert len(chunks) == 3
+    assert chunks[0].dtype.names is not None
+    assert chunks[0]["t1"].shape == (len(chunks[0]),)
+
+
+def test_bispectra_runs_when_scans_have_uniform_shape(obs_direct):
+    # Direct repro from PR #186: bispectra() does `tdata[0]['time']`, which
+    # raised when tlist() collapsed to 2-D.
+    obs = obs_direct.copy()
+    obs.data = obs.data[obs.data["time"] == obs.data[0]["time"]]
+    bs = obs.bispectra(mode="all", count="min")
+    assert len(bs) > 0
 
 
 # ---------------------------------------------------------------------------
@@ -677,6 +779,28 @@ def test_rescale_zbl_scales_short_baselines(obs_direct):
     if long_mask.any():
         np.testing.assert_array_equal(
             out.data["vis"][long_mask], obs_direct.data["vis"][long_mask]
+        )
+
+
+def test_rescale_zbl_circ_polrep_scales_and_warns(obs_direct):
+    """rescale_zbl must scale the per-polrep visibility/sigma fields (via
+    self.poldict, not hardcoded Stokes names) and warn that orig_totflux may be
+    mis-estimated for polrep != 'stokes'."""
+    obs_circ = obs_direct.switch_polrep("circ")
+    with warnings.catch_warnings(record=True) as caught:
+        warnings.simplefilter("always")
+        out = obs_circ.rescale_zbl(totflux=2.0, uv_max=5e8)
+    assert any("orig_totflux" in str(w.message) for w in caught)
+
+    short_mask = (obs_circ.data["u"] ** 2 + obs_circ.data["v"] ** 2) ** 0.5 < 5e8
+    long_mask = ~short_mask
+    if short_mask.any():
+        assert not np.allclose(
+            out.data["rrvis"][short_mask], obs_circ.data["rrvis"][short_mask]
+        )
+    if long_mask.any():
+        np.testing.assert_array_equal(
+            out.data["rrvis"][long_mask], obs_circ.data["rrvis"][long_mask]
         )
 
 

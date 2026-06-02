@@ -44,6 +44,35 @@ warnings.filterwarnings("ignore", message="divide by zero encountered in double_
 ##################################################################################################
 
 
+def warn_fast_ttype_deprecated():
+    """Emit a DeprecationWarning for the ``ttype='fast'`` (plain FFT) path.
+
+    Used at forward-sampling sites where the path is deprecated but otherwise
+    correct. For imaging callers, use :func:`warn_fast_ttype_deprecated_imaging`,
+    which additionally notes that the FFT imaging gradients are inaccurate.
+    """
+    warnings.warn(
+        "ttype='fast' (plain FFT) is deprecated and will be removed in a "
+        "future release. Use ttype='nfft' (recommended) or ttype='direct' "
+        "instead.",
+        DeprecationWarning, stacklevel=2,
+    )
+
+
+def warn_fast_ttype_deprecated_imaging():
+    """Emit a DeprecationWarning for ``ttype='fast'`` from imaging callers.
+
+    Same as :func:`warn_fast_ttype_deprecated` but adds the imaging-specific
+    note that FFT gradients are inaccurate.
+    """
+    warnings.warn(
+        "ttype='fast' (plain FFT) is deprecated and will be removed in a "
+        "future release; its imaging gradients are inaccurate. Use "
+        "ttype='nfft' (recommended) or ttype='direct' instead.",
+        DeprecationWarning, stacklevel=2,
+    )
+
+
 def compute_uv_coordinates(array, site1, site2, time, mjd, ra, dec, rf, timetype='UTC',
                            elevmin=ehc.ELEV_LOW,  elevmax=ehc.ELEV_HIGH, no_elevcut_space=False,
                            fix_theta_GMST=False, earthshadow_space=True):

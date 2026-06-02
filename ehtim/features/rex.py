@@ -16,29 +16,23 @@
 #    You should have received a copy of the GNU General Public License
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-from __future__ import division
-from __future__ import print_function
 
-from builtins import str
-from builtins import range
-from builtins import object
-
-import os
 import glob
-import matplotlib.pyplot as plt
-import numpy as np
-import astropy.io.fits as fits
+import os
 import subprocess
 
+import astropy.io.fits as fits
+import matplotlib.pyplot as plt
+import numpy as np
 import scipy.interpolate
 import scipy.optimize
 import scipy.stats
 from astropy.stats import median_absolute_deviation
 
-from ehtim.image import load_image
+import ehtim.const_def as ehc
 import ehtim.imaging.dynamical_imaging as di
 import ehtim.parloop as ploop
-import ehtim.const_def as ehc
+from ehtim.image import load_image
 
 ###################################################################################################
 # Parameters
@@ -73,9 +67,9 @@ POSTPROCDIR = '.'  # default postprocessing directory
 ###################################################################################################
 
 
-class Profiles(object):
+class Profiles:
 
-    def __init__(self, im, x0, y0, profs, thetas, rmin=RMIN, rmax=RMAX, 
+    def __init__(self, im, x0, y0, profs, thetas, rmin=RMIN, rmax=RMAX,
                  interptype='cubic',flux_norm=NORMFLUX,
                  profsQ=[], profsU=[]):
 
@@ -104,7 +98,9 @@ class Profiles(object):
 
         self.xs = np.arange(im.xdim)*im.psize/ehc.RADPERUAS
         self.ys = np.arange(im.ydim)*im.psize/ehc.RADPERUAS
-        self.interp = scipy.interpolate.interp2d(self.ys, self.xs, self.imarr, kind=interptype)
+        self.interp = scipy.interpolate.RegularGridInterpolator(
+            (self.ys, self.xs), self.imarr,
+            method=interptype, bounds_error=False, fill_value=None)
 
         self.profiles = np.array(profs)
         self.profilesQ = np.array(profsQ)
@@ -382,27 +378,27 @@ class Profiles(object):
 
     def plot_img(self, postprocdir=POSTPROCDIR, save_png=False):
         plt.figure()
-        
+
         fovx = self.im.fovx()/ehc.RADPERUAS
         fovy = self.im.fovy()/ehc.RADPERUAS
         xsplot = self.xs - fovx/2.
         ysplot = self.ys - fovy/2.
         x0plot = self.x0 - fovx/2.
         y0plot = self.y0 - fovy/2.
-        
+
         plt.pcolormesh(xsplot,ysplot,self.imarr,cmap='afmhot')
-        plt.contour(xsplot,ysplot, self.imarr, colors='k',levels=5)        
-        
+        plt.contour(xsplot,ysplot, self.imarr, colors='k',levels=5)
+
         plt.xlabel(r"-RA ($\mu$as)")
         plt.ylabel(r"Dec ($\mu$as)")
-      
+
         plt.plot(x0plot,y0plot, 'r*', markersize=20)
 
         thetas = np.linspace(0, 2*np.pi, 100)
         plt.plot(x0plot+ np.cos(thetas) * self.RingSize1[0]/2,
                  y0plot + np.sin(thetas) * self.RingSize1[0]/2,
                  'r-', markersize=1)
-                         
+
         #plt.axes().set_aspect('equal', 'datalim')
 
         if save_png:
@@ -492,7 +488,7 @@ class Profiles(object):
         xticks = (360/imarr.shape[1])*xticklabels
 
         yticks = np.floor(np.arange(0, imarr.shape[0], imarr.shape[0]/5)).astype(int)
-        yticklabels = ["%0.0f" % r for r in self.rs[yticks]]
+        yticklabels = [f"{r:0.0f}" for r in self.rs[yticks]]
 
         if not xticklabel:
             xticklabels = []
@@ -724,13 +720,14 @@ def compute_ring_profile(im, x0, y0, title="",
     ys = np.arange(im.ydim)*im.psize/ehc.RADPERUAS
 
     # TODO: test fiducial images with linear?
-    interp = scipy.interpolate.interp2d(ys, xs, imarr, kind=interptype)
+    interp = scipy.interpolate.RegularGridInterpolator(
+        (ys, xs), imarr, method=interptype, bounds_error=False, fill_value=None)
 
     def ringVals(theta):
         xxs = x0 - rs*np.sin(theta)
         yys = y0 + rs*np.cos(theta)
 
-        vals = [interp(xxs[i], yys[i])[0] for i in np.arange(len(rs))]
+        vals = interp(np.column_stack([yys, xxs]))
         return vals
 
     profs = []
@@ -744,21 +741,23 @@ def compute_ring_profile(im, x0, y0, title="",
     if len(im.qvec) > 0 and len(im.uvec > 0) and pol_profs:
         qarr = im.qvec.reshape(im.ydim, im.xdim)[::-1] * factor  # in brightness temperature K
         uarr = im.uvec.reshape(im.ydim, im.xdim)[::-1] * factor  # in brightness temperature K
-        interpQ = scipy.interpolate.interp2d(ys, xs, qarr, kind=interptype)
-        interpU = scipy.interpolate.interp2d(ys, xs, uarr, kind=interptype)
+        interpQ = scipy.interpolate.RegularGridInterpolator(
+            (ys, xs), qarr, method=interptype, bounds_error=False, fill_value=None)
+        interpU = scipy.interpolate.RegularGridInterpolator(
+            (ys, xs), uarr, method=interptype, bounds_error=False, fill_value=None)
 
         def ringValsQ(theta):
             xxs = x0 - rs*np.sin(theta)
             yys = y0 + rs*np.cos(theta)
 
-            vals = [interpQ(xxs[i], yys[i])[0] for i in np.arange(len(rs))]
+            vals = interpQ(np.column_stack([yys, xxs]))
             return vals
 
         def ringValsU(theta):
             xxs = x0 - rs*np.sin(theta)
             yys = y0 + rs*np.cos(theta)
 
-            vals = [interpU(xxs[i], yys[i])[0] for i in np.arange(len(rs))]
+            vals = interpU(np.column_stack([yys, xxs]))
             return vals
 
         for j in range(nrays):
@@ -767,7 +766,7 @@ def compute_ring_profile(im, x0, y0, title="",
             valsU = ringValsU(thetas[j])
             profsU.append(valsU)
 
-    
+
     profiles = Profiles(im, x0, y0, profs, thetas, rmin=rmin, rmax=rmax, interptype=interptype,
                         flux_norm=flux_norm,profsQ=profsQ, profsU=profsU)
 
@@ -793,17 +792,16 @@ def findCenter(im,
     ys = np.arange(im.ydim)*im.psize/ehc.RADPERUAS
 
     # TODO: test fiducial images with linear?
-    #iminterp = scipy.interpolate.interp2d(ys, xs, imarr, kind='cubic')
-    iminterp = scipy.interpolate.interp2d(ys, xs, imarr, kind='linear')
-    #iminterp = scipy.interpolate.RegularGridInterpolator((ys,xs),imarr)
+    iminterp = scipy.interpolate.RegularGridInterpolator(
+        (ys, xs), imarr, method='linear', bounds_error=False, fill_value=None)
     def objFunc(pos):
         (x0, y0) = pos
         diameters = []
         for j in range(nrays_search):
             xxs = x0 - rs*np.sin(thetas[j])
             yys = y0 + rs*np.cos(thetas[j])
-            prof = np.array([iminterp(xxs[i], yys[i])[0] for i in np.arange(len(rs))])
-            
+            prof = iminterp(np.column_stack([yys, xxs]))
+
             args = np.argsort(prof)
             pkpos = args[-1]
             pk = rs[pkpos]
@@ -811,12 +809,12 @@ def findCenter(im,
             if pkpos > 0 and pkpos < nrs_search-1:
                 vals = [prof[pkpos-1], prof[pkpos], prof[pkpos+1]]
                 pk, vpk = quad_interp_radius(pk, dr, vals)
-            
+
             diameters.append(2*np.abs(pk))
-                    
+
         # ring size
         mean,std = (np.mean(diameters), np.std(diameters))
-        
+
         if mean < rmin_search or mean > rmax_search:
             return np.inf
         else:
@@ -844,7 +842,7 @@ def FindProfile(im, blur=0, pol_profs=False,
                 flux_norm=NORMFLUX,center=False):
     """find the best ring profile for an image object and save results
     """
-    
+
     im_raw = im.copy()
     # blur image if requested
     if blur > 0:
@@ -852,7 +850,7 @@ def FindProfile(im, blur=0, pol_profs=False,
 
     # center image and regrid to uniform pixel size and fox
     if center:
-        im = di.center_core(im_raw) # TODO -- why isn't this working? 
+        im = di.center_core(im_raw) # TODO -- why isn't this working?
     else:
         im = im_raw
 
@@ -878,16 +876,16 @@ def FindProfile(im, blur=0, pol_profs=False,
                      rmin_search=rmin_search,  rmax_search=rmax_search,
                      nrays_search=nrays_search, nrs_search=nrs_search,
                      fov_search=fov_search, n_search=n_search, flux_norm=flux_norm)
-                     
+
     # compute profiles using the original (regridded, flux centroid centered) image
     print("compute profile")
     pp = compute_ring_profile(im, res[0], res[1], nrs=nrs, nrays=nrays,
                               rmin=rmin, rmax=rmax, flux_norm=flux_norm,
                               pol_profs=pol_profs)
-    pp.calc_meanprof_and_stats()  
-    
-    return pp    
-                       
+    pp.calc_meanprof_and_stats()
+
+    return pp
+
 def FindProfileSingle(imname, postprocdir,
                       save_files=False, blur=0, aipscc=False, tag='',
                       rerun=True, return_pp=True,
@@ -912,7 +910,7 @@ def FindProfileSingle(imname, postprocdir,
         im_raw = load_image(imname, aipscc=aipscc)
 
         # calculate profile
-        pp = FindProfile(im, blur=blur, 
+        pp = FindProfile(im_raw, blur=blur,
                          imsize=imsize, npix=npix, rmin=rmin, rmax=rmax, nrays=nrays, nrs=nrs,
                          rmin_search=rmin_search, rmax_search=rmax_search,
                          nrays_search=nrays_search, nrs_search=nrs_search,
@@ -934,8 +932,8 @@ def FindProfileSingle(imname, postprocdir,
                 os.remove(txtname)
 
             f = open(txtname, 'a')
-            f.write('ring_x0 ' + str(res[0]) + '\n')
-            f.write('ring_y0 ' + str(res[1]) + '\n')
+            f.write('ring_x0 ' + str(pp.x0) + '\n')
+            f.write('ring_y0 ' + str(pp.y0) + '\n')
 
             f.write('ring_diameter ' + str(pp.RingSize1[0]) + '\n')
             f.write('ring_diameter_sigma ' + str(pp.RingSize1[1]) + '\n')
