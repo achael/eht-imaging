@@ -1708,6 +1708,47 @@ def test_c_phases_mixed_skips_cross_feed_triangle():
     assert len(c) == 0
 
 
+# ----- closure amplitudes match / skip on lin / mixed -----------------------
+
+def test_c_amplitudes_lin_matches_stokes():
+    # closure amplitudes from a lin obs match the stokes-converted obs
+    obs_l = _lin_4st_obs()
+    with warnings.catch_warnings():
+        warnings.simplefilter('ignore')
+        for ctype in ('camp', 'logcamp'):
+            cl = obs_l.c_amplitudes(vtype='vis', ctype=ctype)
+            cs = obs_l.switch_polrep('stokes').c_amplitudes(vtype='vis', ctype=ctype)
+            assert len(cl) == len(cs) >= 1
+            np.testing.assert_allclose(cl['camp'], cs['camp'], rtol=1e-9)
+
+
+def test_camp_quad_lin_matches_stokes():
+    obs_l = _lin_4st_obs()
+    with warnings.catch_warnings():
+        warnings.simplefilter('ignore')
+        q = obs_l.camp_quad('S0', 'S1', 'S2', 'S3', vtype='vis', ctype='logcamp')
+        qs = obs_l.switch_polrep('stokes').camp_quad(
+            'S0', 'S1', 'S2', 'S3', vtype='vis', ctype='logcamp')
+    assert len(q) == len(qs) >= 1
+    np.testing.assert_allclose(q['camp'], qs['camp'], rtol=1e-9)
+
+
+def test_c_amplitudes_mixed_skips_cross_feed_quad():
+    # no all-circular quadrangle survives on the 4-station mixed obs
+    obs = _mixed_4st_obs()
+    with pytest.warns(ehw.MixedPolClosureSkipWarning):
+        c = obs.c_amplitudes(vtype='rrvis', ctype='logcamp')
+    assert len(c) == 0
+
+
+def test_c_amplitudes_mixed_keeps_homogeneous_quad():
+    # the all-circular S0-S3 quadrangle survives
+    obs = _mixed_5st_obs()
+    with pytest.warns(ehw.MixedPolClosureSkipWarning):
+        c = obs.c_amplitudes(vtype='rrvis', ctype='logcamp')
+    assert len(c) >= 1
+
+
 # ----- mixed-feed: Stokes / generic vtypes are not closure-able -------------
 
 def test_bispectra_mixed_stokes_vtype_raises():
