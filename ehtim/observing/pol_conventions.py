@@ -342,8 +342,9 @@ def feed_matrix(feed_type):
     non-orthogonal) -- which is fine, coherency recovery uses inv(), not the
     adjoint. The returned array is cached and read-only.
     """
-    if len(feed_type) != 2 or any(c not in _FEED_VEC for c in feed_type):
-        raise ValueError(f"feed_matrix: unsupported feed_type {feed_type!r}")
+    if (len(feed_type) != 2 or feed_type[0] == feed_type[1]
+            or any(c not in _FEED_VEC for c in feed_type)):
+        raise ValueError(f"feed_matrix: degenerate or unsupported feed_type {feed_type!r}")
     F = np.array([_FEED_VEC[feed_type[0]], _FEED_VEC[feed_type[1]]])
     F.flags.writeable = False
     return F

@@ -329,6 +329,13 @@ def test_feed_matrix_rejects_bad_type():
         pc.feed_matrix('??')
 
 
+def test_feed_matrix_rejects_degenerate_feed():
+    # same-feed codes build a singular matrix; reject at the boundary
+    for ft in ('rr', 'll', 'xx', 'yy'):
+        with pytest.raises(ValueError):
+            pc.feed_matrix(ft)
+
+
 def test_coherency_to_stokes_matches_circ():
     # Homogeneous circular pairing must reproduce circ_to_stokes exactly.
     rr = np.array([1.05 + 0.0j, 1.16])
