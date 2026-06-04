@@ -1,7 +1,37 @@
 ehtim (eht-imaging)
 ===================
-.. image:: https://zenodo.org/badge/42943499.svg
-   :target: https://zenodo.org/badge/latestdoi/42943499
+
+|pypi| |license| |docs| |doi|
+
+|ci| |codecov| |ruff|
+
+.. |pypi| image:: https://img.shields.io/pypi/v/ehtim.svg
+   :target: https://pypi.org/project/ehtim/
+   :alt: PyPI version
+
+.. |license| image:: https://img.shields.io/github/license/achael/eht-imaging.svg
+   :target: https://github.com/achael/eht-imaging/blob/main/LICENSE.txt
+   :alt: License: GPLv3
+
+.. |docs| image:: https://img.shields.io/badge/docs-stable-blue.svg
+   :target: https://achael.github.io/eht-imaging/
+   :alt: Documentation
+
+.. |doi| image:: https://zenodo.org/badge/DOI/10.5281/zenodo.2614008.svg
+   :target: https://doi.org/10.5281/zenodo.2614008
+   :alt: DOI
+
+.. |ci| image:: https://github.com/achael/eht-imaging/actions/workflows/ci.yml/badge.svg?branch=dev-backend
+   :target: https://github.com/achael/eht-imaging/actions/workflows/ci.yml
+   :alt: CI
+
+.. |codecov| image:: https://img.shields.io/codecov/c/github/achael/eht-imaging/dev
+   :target: https://codecov.io/gh/achael/eht-imaging/branch/dev
+   :alt: codecov
+
+.. |ruff| image:: https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json
+   :target: https://github.com/astral-sh/ruff
+   :alt: Code style: Ruff
 
 Python modules for simulating and manipulating VLBI data and producing images with regularized maximum likelihood methods. This version is an early release so please raise an issue, submit a pull request, or email achael@outlook.com if you have trouble or need help for your application.
 
