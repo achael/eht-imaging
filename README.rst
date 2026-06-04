@@ -17,7 +17,7 @@ ehtim (eht-imaging)
    :target: https://achael.github.io/eht-imaging/
    :alt: Documentation
 
-.. |doi| image:: https://zenodo.org/badge/DOI/10.5281/zenodo.2614008.svg
+.. |doi| image:: https://zenodo.org/badge/42943499.svg
    :target: https://doi.org/10.5281/zenodo.2614008
    :alt: DOI
 
