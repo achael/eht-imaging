@@ -1619,6 +1619,21 @@ def _mixed_4st_obs():
                       polrep='mixed')
 
 
+def _mixed_5st_obs():
+    """5-station mixed obs (S0-S3='rl', S4='xy'): the all-circular S0-S3
+       quadrangle survives; every baseline touching S4 is cross-feed and
+       skipped. Exercises the diag covariance NaN-filter on a surviving quad."""
+    sites = ['S0', 'S1', 'S2', 'S3', 'S4']
+    t1s, t2s = [], []
+    for i in range(5):
+        for j in range(i + 1, 5):
+            t1s.append(sites[i])
+            t2s.append(sites[j])
+    d = _mixed_data(t1s, t2s)
+    return eo.Obsdata(0., 0., 230e9, 1e9, d,
+                      _tarr(['rl', 'rl', 'rl', 'rl', 'xy']), polrep='mixed')
+
+
 # ----- lin closures match the stokes-converted observation ------------------
 
 def test_bispectra_lin_matches_stokes():
@@ -1762,6 +1777,29 @@ def test_c_phases_diag_mixed_skips_cross_feed():
     with pytest.warns(ehw.MixedPolClosureSkipWarning):
         d = obs.c_phases_diag(vtype='rrvis')
     assert len(d) >= 1
+    # cross-feed baselines must not poison the surviving triangle's covariance
+    sigmacp = np.concatenate([x[0]['sigmacp'] for x in d])
+    assert np.all(np.isfinite(sigmacp))
+
+
+def test_c_log_amplitudes_diag_mixed_no_quad_returns_empty():
+    # 4 stations, only 3 circular -> no all-circular quadrangle survives.
+    # Must return empty without raising (previously crashed with IndexError).
+    obs = _mixed_4st_obs()
+    with pytest.warns(ehw.MixedPolClosureSkipWarning):
+        d = obs.c_log_amplitudes_diag(vtype='rrvis')
+    assert d == []
+
+
+def test_c_log_amplitudes_diag_mixed_skips_cross_feed():
+    # the all-circular S0-S3 quad survives; cross-feed baselines must not
+    # poison its covariance
+    obs = _mixed_5st_obs()
+    with pytest.warns(ehw.MixedPolClosureSkipWarning):
+        d = obs.c_log_amplitudes_diag(vtype='rrvis')
+    assert len(d) >= 1
+    sigmaca = np.concatenate([x[0]['sigmaca'] for x in d])
+    assert np.all(np.isfinite(sigmaca))
 
 
 # ============================================================================

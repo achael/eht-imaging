@@ -2777,6 +2777,10 @@ class Obsdata:
         cps = self.c_phases(vtype=vtype, mode='all', count=count, ang_unit=ang_unit,
                             timetype=timetype, uv_min=uv_min, snrcut=snrcut)
 
+        # no surviving closures (e.g. all triangles skipped on a mixed-feed obs)
+        if len(cps) == 0:
+            return []
+
         # get the unique timestamps for the closure phases
         T_cps = np.unique(cps['time'])
 
@@ -2829,6 +2833,13 @@ class Obsdata:
                 # matrix entry for third leg of triangle
                 ind3 = ((viss_here['t1'] == cp['t3']) & (viss_here['t2'] == cp['t1']))
                 design_mat[ic, ind3] = 1.0
+
+            # restrict to baselines actually used by the surviving closures; unused
+            # columns carry NaN visibilities on mixed-feed baselines and 0*NaN would
+            # poison the covariance of the surviving triangle
+            used = np.any(design_mat != 0.0, axis=0)
+            design_mat = design_mat[:, used]
+            viss_here = viss_here[used]
 
             # construct the covariance matrix (per-baseline visibility, sigma pair)
             vis_here, sig_here = obsh.vis_component(viss_here, vtype, self.polrep)
@@ -3438,6 +3449,10 @@ class Obsdata:
         lcas = self.c_amplitudes(vtype=vtype, mode=mode, count=count,
                                  ctype='logcamp', debias=debias, timetype=timetype, snrcut=snrcut)
 
+        # no surviving closures (e.g. all quadrangles skipped on a mixed-feed obs)
+        if len(lcas) == 0:
+            return []
+
         # get the unique timestamps for the log closure amplitudes
         T_lcas = np.unique(lcas['time'])
 
@@ -3495,6 +3510,13 @@ class Obsdata:
                 # matrix entry for fourth leg of quadrangle
                 ind4 = ((viss_here['t1'] == lca['t2']) & (viss_here['t2'] == lca['t3']))
                 design_mat[il, ind4] = -1.0
+
+            # restrict to baselines actually used by the surviving closures; unused
+            # columns carry NaN visibilities on mixed-feed baselines and 0*NaN would
+            # poison the covariance of the surviving quadrangle
+            used = np.any(design_mat != 0.0, axis=0)
+            design_mat = design_mat[:, used]
+            viss_here = viss_here[used]
 
             # construct the covariance matrix
             vis_here, sig_here = obsh.vis_component(viss_here, vtype, self.polrep)
