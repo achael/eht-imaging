@@ -671,9 +671,6 @@ class Obsdata:
                (numpy.recarray): a copy of the Obsdata.data table including all conjugate baselines.
         """
 
-        if self.polrep not in ('stokes', 'circ', 'lin', 'mixed'):
-            raise Exception("polrep must be 'stokes', 'circ', 'lin', or 'mixed'")
-
         data = np.empty(2 * len(self.data), dtype=self.poltype)
 
         # Generic polarization slot names for this polrep
