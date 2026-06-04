@@ -1950,6 +1950,31 @@ def test_unpack_mixed_rrllvis():
     np.testing.assert_allclose(rrll, (ivis + v) / (ivis - v), atol=1e-12)
 
 
+def test_unpack_mixed_recovers_known_stokes():
+    # independent ground truth: build the obs from KNOWN Stokes via
+    # stokes_to_coherency per row, assert unpack recovers them on the rlxy rows
+    from ehtim.observing import pol_conventions as pc
+    t1s, t2s = ['S0', 'S0', 'S1'], ['S1', 'S2', 'S2']
+    feeds = [('rl', 'rl'), ('rl', 'xy'), ('rl', 'xy')]  # rlrl, rlxy, rlxy
+    I = np.array([1.0, 2.0, 1.5])
+    Q = np.array([0.1, -0.2, 0.05])
+    U = np.array([-0.05, 0.15, 0.2])
+    V = np.array([0.02, -0.03, 0.01])
+    d = _mixed_data(t1s, t2s)
+    for k, (f1, f2) in enumerate(feeds):
+        with warnings.catch_warnings():
+            warnings.simplefilter('ignore')
+            p11, p22, p12, p21 = pc.stokes_to_coherency(I[k], Q[k], U[k], V[k], f1, f2)
+        d['p1p1vis'][k], d['p2p2vis'][k] = p11, p22
+        d['p1p2vis'][k], d['p2p1vis'][k] = p12, p21
+    obs = eo.Obsdata(0., 0., 230e9, 1e9, d, _tarr(['rl', 'rl', 'xy']), polrep='mixed')
+    assert set(obs.data['polbasis']) == {'rlrl', 'rlxy'}
+    with warnings.catch_warnings():
+        warnings.simplefilter('ignore')
+        for name, truth in [('vis', I), ('qvis', Q), ('uvis', U), ('vvis', V)]:
+            np.testing.assert_allclose(obs.unpack(name)[name], truth, atol=1e-12)
+
+
 # ============================================================================
 #  load_uvfits mixed-pol detection stop-gap
 # ============================================================================
