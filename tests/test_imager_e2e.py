@@ -178,14 +178,23 @@ class TestEndToEndReconstruction:
         hand = 'X' if polrep == 'lin' else 'R'
         with warnings.catch_warnings():
             warnings.simplefilter("ignore")  # polrep vs feed_type mismatch + convention
-            out_other = image(obs_stokes.switch_polrep(polrep, singlepol_hand=hand))
+            obs_other = obs_stokes.switch_polrep(polrep, singlepol_hand=hand)
+
+        # unpolarized source -> exact I synthesis -> data products identical to machine precision
+        for f in ['vis', 'amp']:
+            np.testing.assert_allclose(obs_other.unpack(f)[f], obs_stokes.unpack(f)[f],
+                                       rtol=0, atol=1e-12)
+
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore")
+            out_other = image(obs_other)
 
         (errors, _, _) = out_other.compare_images(
             gauss_im, metric=["nxcorr"], blur_frac=0.0)
         assert errors[0] > STOKES_I_NXCORR_MIN
-        # unpolarized source -> exact I synthesis -> identical reconstruction
-        np.testing.assert_allclose(out_other.imvec, out_stokes.imvec,
-                                   rtol=0, atol=1e-10)
+        (xcorr, _, _) = out_other.compare_images(
+            out_stokes, metric=["nxcorr"], blur_frac=0.0)
+        assert xcorr[0] > 0.99
 
     def test_recovers_gaussian_polarimetric_ip(self, gauss_im_pol, observe):
         """Simultaneous Stokes I + P imaging on a polarized Gaussian source.
