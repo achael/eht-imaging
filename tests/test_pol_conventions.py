@@ -336,6 +336,15 @@ def test_feed_matrix_rejects_degenerate_feed():
             pc.feed_matrix(ft)
 
 
+def test_correlation_slot_resolves_and_guards():
+    assert pc.correlation_slot('rl', 'rl', 'r', 'r') == 'p1p1vis'
+    assert pc.correlation_slot('rl', 'xy', 'l', 'x') == 'p2p1vis'
+    assert pc.correlation_slot('rl', 'xy', 'x', 'r') is None  # absent feed
+    for bad in ('rr', 'r', 'rrr'):  # corrupt polbasis fails loudly
+        with pytest.raises(ValueError):
+            pc.correlation_slot(bad, 'rl', 'r', 'r')
+
+
 def test_coherency_to_stokes_matches_circ():
     # Homogeneous circular pairing must reproduce circ_to_stokes exactly.
     rr = np.array([1.05 + 0.0j, 1.16])

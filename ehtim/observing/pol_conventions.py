@@ -412,6 +412,10 @@ def correlation_slot(t1_feed, t2_feed, feed_a, feed_b):
        with these station feed types, or None if the baseline does not measure
        it (a station lacks the required feed). Resolves by feed-letter position,
        so it is correct for reordered/hybrid feeds (e.g. 'lr', 'rx') too."""
+    if len(t1_feed) != 2 or t1_feed[0] == t1_feed[1]:
+        raise ValueError(f"correlation_slot: invalid feed {t1_feed!r}")
+    if len(t2_feed) != 2 or t2_feed[0] == t2_feed[1]:
+        raise ValueError(f"correlation_slot: invalid feed {t2_feed!r}")
     i = t1_feed.find(feed_a)
     j = t2_feed.find(feed_b)
     if i < 0 or j < 0:
