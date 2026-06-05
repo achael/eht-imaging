@@ -410,8 +410,9 @@ class Caltable:
                     preL = 1.
                     postL = 1.
 
-                valspre = np.array([(timepre, preR, preL)], dtype=ehc.DTCAL)
-                valspost = np.array([(timepost, postR, postL)], dtype=ehc.DTCAL)
+                # TODO: time-dependent D-term field added but unpopulated
+                valspre = np.array([(timepre, preR, preL, 0j, 0j)], dtype=ehc.DTCAL)
+                valspost = np.array([(timepost, postR, postL, 0j, 0j)], dtype=ehc.DTCAL)
 
                 gg = np.insert(gg, 0, valspre)
                 gg = np.append(gg, valspost)
@@ -594,8 +595,9 @@ class Caltable:
                     # TODO can we do this faster?
                     datatable = []
                     for i in range(len(times_merge)):
+                        # TODO: time-dependent D-term field added but unpopulated
                         datatable.append(
-                            np.array((times_merge[i], rscale_merge[i], lscale_merge[i]),
+                            np.array((times_merge[i], rscale_merge[i], lscale_merge[i], 0j, 0j),
                                      dtype=ehc.DTCAL))
                     data1[site] = np.array(datatable)
 
@@ -670,7 +672,8 @@ class Caltable:
                 gains_r_avg = np.mean(gains_r[np.array(times_stable == scan[0])])
 
                 # add them to a new datatable
-                datatable.append(np.array((scan[0], gains_r_avg, gains_l_avg), dtype=ehc.DTCAL))
+                # TODO: time-dependent D-term field added but unpopulated
+                datatable.append(np.array((scan[0], gains_r_avg, gains_l_avg, 0j, 0j), dtype=ehc.DTCAL))
 
             datatables[site] = np.array(datatable)
 
@@ -742,7 +745,8 @@ def load_caltable(obs, datadir, sqrt_gains=False):
             if sqrt_gains:
                 rscale = rscale**.5
                 lscale = lscale**.5
-            datatable.append(np.array((time, rscale, lscale), dtype=ehc.DTCAL))
+            # TODO: time-dependent D-term field added but unpopulated
+            datatable.append(np.array((time, rscale, lscale, 0j, 0j), dtype=ehc.DTCAL))
 
         datatables[site] = np.array(datatable)
     if len(datatables) > 0:
@@ -822,7 +826,8 @@ def make_caltable(obs, gains, sites, times):
         datatable = []
         for t in range(0, ntimes):
             gain = gains[s * ntimes + t]
-            datatable.append(np.array((times[t], gain, gain), dtype=ehc.DTCAL))
+            # TODO: time-dependent D-term field added but unpopulated
+            datatable.append(np.array((times[t], gain, gain, 0j, 0j), dtype=ehc.DTCAL))
         datatables[sites[s]] = np.array(datatable)
     if len(datatables) > 0:
         caltable = Caltable(obs.ra, obs.dec, obs.rf,

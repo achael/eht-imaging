@@ -83,7 +83,7 @@ def _unity_caltable(obs):
     caldict = {}
     for site in obs.tarr['site']:
         caldict[site] = np.array(
-            [(t, 1.0 + 0j, 1.0 + 0j) for t in times], dtype=DTCAL
+            [(t, 1.0 + 0j, 1.0 + 0j, 0j, 0j) for t in times], dtype=DTCAL
         ).view(np.recarray)
     return eh.caltable.Caltable(
         obs.ra, obs.dec, obs.rf, obs.bw, caldict, obs.tarr,
