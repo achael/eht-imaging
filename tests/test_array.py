@@ -297,9 +297,6 @@ def test_remove_site_also_removes_ephem_entry():
 # ---------------------------------------------------------------------------
 
 
-@pytest.mark.xfail(reason="Bug in Array.add_satellite_tle (array.py:264): "
-                          "body references `tlearr` but the kwarg is `tlelist`. "
-                          "Fixed by PR #260 which renames the kwarg to `tlearr`.")
 def test_add_satellite_tle_appends_row(eht_array):
     tle = ["SAT1", "tle_line_1", "tle_line_2"]
     out = eht_array.add_satellite_tle(tle, sefd=8000)

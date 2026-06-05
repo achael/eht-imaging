@@ -44,6 +44,7 @@ import ehtim.io.save
 import ehtim.observing.obs_helpers as obsh
 import ehtim.observing.pol_conventions as pol_conventions
 import ehtim.statistics.dataframes as ehdf
+import ehtim.warnings as ehw
 
 warnings.filterwarnings("ignore",
                         message="Casting complex values to real discards the imaginary part")
@@ -672,6 +673,11 @@ class Obsdata:
 
         data = np.empty(2 * len(self.data), dtype=self.poltype)
 
+        # Generic polarization slot names for this polrep
+        vis1, vis2 = self.poldict['vis1'], self.poldict['vis2']
+        vis3, vis4 = self.poldict['vis3'], self.poldict['vis4']
+        sig3, sig4 = self.poldict['sigma3'], self.poldict['sigma4']
+
         # Add the conjugate baseline data
         for f in self.data.dtype.names:
             if f in ['t1', 't2', 'tau1', 'tau2']:
@@ -684,26 +690,35 @@ class Obsdata:
             elif f in ['u', 'v']:
                 data[f] = np.hstack((self.data[f], -self.data[f]))
 
-            elif f in [self.poldict['vis1'], self.poldict['vis2'],
-                       self.poldict['vis3'], self.poldict['vis4']]:
-                if self.polrep == 'stokes':
-                    data[f] = np.hstack((self.data[f], np.conj(self.data[f])))
-                elif self.polrep == 'circ':
-                    if f in ['rrvis', 'llvis']:
-                        data[f] = np.hstack((self.data[f], np.conj(self.data[f])))
-                    elif f == 'rlvis':
-                        data[f] = np.hstack((self.data['rlvis'], np.conj(self.data['lrvis'])))
-                    elif f == 'lrvis':
-                        data[f] = np.hstack((self.data['lrvis'], np.conj(self.data['rlvis'])))
+            elif f == 'polbasis':
+                # The conjugate baseline swaps the two stations, so the two
+                # halves of the per-row feed-type code swap (e.g. 'rlxy' -> 'xyrl').
+                pb = self.data['polbasis']
+                pb_swapped = np.array([s[2:] + s[:2] for s in pb], dtype=pb.dtype)
+                data[f] = np.hstack((pb, pb_swapped))
 
-                    # ALSO SWITCH THE ERRORS!
+            elif f in (vis1, vis2, vis3, vis4):
+                if self.polrep == 'stokes':
+                    # Stokes visibilities are Hermitian: conjugate all four.
+                    data[f] = np.hstack((self.data[f], np.conj(self.data[f])))
                 else:
-                    raise Exception("polrep must be either 'stokes' or 'circ'")
-            # The conjugate baselines need the transpose error terms.
-            elif f == "rlsigma":
-                data[f] = np.hstack((self.data["rlsigma"], self.data["lrsigma"]))
-            elif f == "lrsigma":
-                data[f] = np.hstack((self.data["lrsigma"], self.data["rlsigma"]))
+                    # Coherency matrix transforms as V_ji = V_ij^dagger under
+                    # baseline reversal: diagonal slots conjugate, cross-hand
+                    # slots conjugate and swap. Expressed in generic slot names,
+                    # this holds for circ, lin, and every mixed-feed row.
+                    if f in (vis1, vis2):
+                        data[f] = np.hstack((self.data[f], np.conj(self.data[f])))
+                    elif f == vis3:
+                        data[f] = np.hstack((self.data[vis3], np.conj(self.data[vis4])))
+                    elif f == vis4:
+                        data[f] = np.hstack((self.data[vis4], np.conj(self.data[vis3])))
+
+            # The conjugate baselines need the transposed cross-hand error terms
+            # (the diagonal sigmas are unchanged). Stokes has no cross-hand swap.
+            elif self.polrep != 'stokes' and f == sig3:
+                data[f] = np.hstack((self.data[sig3], self.data[sig4]))
+            elif self.polrep != 'stokes' and f == sig4:
+                data[f] = np.hstack((self.data[sig4], self.data[sig3]))
 
             else:
                 data[f] = np.hstack((self.data[f], self.data[f]))
@@ -989,134 +1004,11 @@ class Obsdata:
                 tdata = self.tarr[keys]
                 out = sites
                 ty = 'U32'
-            elif field in ['vis', 'amp', 'phase', 'snr', 'sigma', 'sigma_phase']:
-                ty = 'c16'
-                if self.polrep == 'stokes':
-                    out = data['vis']
-                    sig = data['sigma']
-                elif self.polrep == 'circ':
-                    out = 0.5 * (data['rrvis'] + data['llvis'])
-                    sig = 0.5 * np.sqrt(data['rrsigma']**2 + data['llsigma']**2)
-            elif field in ['qvis', 'qamp', 'qphase', 'qsnr', 'qsigma', 'qsigma_phase']:
-                ty = 'c16'
-                if self.polrep == 'stokes':
-                    out = data['qvis']
-                    sig = data['qsigma']
-                elif self.polrep == 'circ':
-                    out = 0.5 * (data['lrvis'] + data['rlvis'])
-                    sig = 0.5 * np.sqrt(data['lrsigma']**2 + data['rlsigma']**2)
-            elif field in ['uvis', 'uamp', 'uphase', 'usnr', 'usigma', 'usigma_phase']:
-                ty = 'c16'
-                if self.polrep == 'stokes':
-                    out = data['uvis']
-                    sig = data['usigma']
-                elif self.polrep == 'circ':
-                    out = 0.5j * (data['lrvis'] - data['rlvis'])
-                    sig = 0.5 * np.sqrt(data['lrsigma']**2 + data['rlsigma']**2)
-            elif field in ['vvis', 'vamp', 'vphase', 'vsnr', 'vsigma', 'vsigma_phase']:
-                ty = 'c16'
-                if self.polrep == 'stokes':
-                    out = data['vvis']
-                    sig = data['vsigma']
-                elif self.polrep == 'circ':
-                    out = 0.5 * (data['rrvis'] - data['llvis'])
-                    sig = 0.5 * np.sqrt(data['rrsigma']**2 + data['llsigma']**2)
-            elif field in ['pvis', 'pamp', 'pphase', 'psnr', 'psigma', 'psigma_phase']:
-                ty = 'c16'
-                if self.polrep == 'stokes':
-                    out = data['qvis'] + 1j * data['uvis']
-                    sig = np.sqrt(data['qsigma']**2 + data['usigma']**2)
-                elif self.polrep == 'circ':
-                    out = data['rlvis']
-                    sig = data['rlsigma']
-            elif field in ['m', 'mamp', 'mphase', 'msnr', 'msigma', 'msigma_phase']:
-                ty = 'c16'
-                if self.polrep == 'stokes':
-                    out = (data['qvis'] + 1j * data['uvis']) / data['vis']
-                    sig = obsh.merr(data['sigma'], data['qsigma'], data['usigma'], data['vis'], out)
-                elif self.polrep == 'circ':
-                    out = 2 * data['rlvis'] / (data['rrvis'] + data['llvis'])
-                    sig = obsh.merr2(data['rlsigma'], data['rrsigma'], data['llsigma'],
-                                     0.5 * (data['rrvis'] + data['llvis']), out)
-            elif field in ['evis', 'eamp', 'ephase', 'esnr', 'esigma', 'esigma_phase']:
-                ty = 'c16'
-                ang = np.arctan2(data['u'], data['v'])  # TODO: correct convention EofN?
-                if self.polrep == 'stokes':
-                    q = data['qvis']
-                    u = data['uvis']
-                    qsig = data['qsigma']
-                    usig = data['usigma']
-                elif self.polrep == 'circ':
-                    q = 0.5 * (data['lrvis'] + data['rlvis'])
-                    u = 0.5j * (data['lrvis'] - data['rlvis'])
-                    qsig = 0.5 * np.sqrt(data['lrsigma']**2 + data['rlsigma']**2)
-                    usig = qsig
-                out = (np.cos(2 * ang) * q + np.sin(2 * ang) * u)
-                sig = np.sqrt(0.5 * ((np.cos(2 * ang) * qsig)**2 + (np.sin(2 * ang) * usig)**2))
-            elif field in ['bvis', 'bamp', 'bphase', 'bsnr', 'bsigma', 'bsigma_phase']:
-                ty = 'c16'
-                ang = np.arctan2(data['u'], data['v'])  # TODO: correct convention EofN?
-                if self.polrep == 'stokes':
-                    q = data['qvis']
-                    u = data['uvis']
-                    qsig = data['qsigma']
-                    usig = data['usigma']
-                elif self.polrep == 'circ':
-                    q = 0.5 * (data['lrvis'] + data['rlvis'])
-                    u = 0.5j * (data['lrvis'] - data['rlvis'])
-                    qsig = 0.5 * np.sqrt(data['lrsigma']**2 + data['rlsigma']**2)
-                    usig = qsig
-                out = (-np.sin(2 * ang) * q + np.cos(2 * ang) * u)
-                sig = np.sqrt(0.5 * ((np.sin(2 * ang) * qsig)**2 + (np.cos(2 * ang) * usig)**2))
-            elif field in ['rrvis', 'rramp', 'rrphase', 'rrsnr', 'rrsigma', 'rrsigma_phase']:
-                ty = 'c16'
-                if self.polrep == 'stokes':
-                    out = data['vis'] + data['vvis']
-                    sig = np.sqrt(data['sigma']**2 + data['vsigma']**2)
-                elif self.polrep == 'circ':
-                    out = data['rrvis']
-                    sig = data['rrsigma']
-            elif field in ['llvis', 'llamp', 'llphase', 'llsnr', 'llsigma', 'llsigma_phase']:
-                ty = 'c16'
-                if self.polrep == 'stokes':
-                    out = data['vis'] - data['vvis']
-                    sig = np.sqrt(data['sigma']**2 + data['vsigma']**2)
-                elif self.polrep == 'circ':
-                    out = data['llvis']
-                    sig = data['llsigma']
-            elif field in ['rlvis', 'rlamp', 'rlphase', 'rlsnr', 'rlsigma', 'rlsigma_phase']:
-                ty = 'c16'
-                if self.polrep == 'stokes':
-                    out = data['qvis'] + 1j * data['uvis']
-                    sig = np.sqrt(data['qsigma']**2 + data['usigma']**2)
-                elif self.polrep == 'circ':
-                    out = data['rlvis']
-                    sig = data['rlsigma']
-            elif field in ['lrvis', 'lramp', 'lrphase', 'lrsnr', 'lrsigma', 'lrsigma_phase']:
-                ty = 'c16'
-                if self.polrep == 'stokes':
-                    out = data['qvis'] - 1j * data['uvis']
-                    sig = np.sqrt(data['qsigma']**2 + data['usigma']**2)
-                elif self.polrep == 'circ':
-                    out = data['lrvis']
-                    sig = data['lrsigma']
-            elif field in ['rrllvis', 'rrllamp', 'rrllphase', 'rrllsnr',
-                           'rrllsigma', 'rrllsigma_phase']:
-                ty = 'c16'
-                if self.polrep == 'stokes':
-                    out = (data['vis'] + data['vvis']) / (data['vis'] - data['vvis'])
-                    sig = (2.0**0.5 * (np.abs(data['vis'])**2 + np.abs(data['vvis'])**2)**0.5
-                           / np.abs(data['vis'] - data['vvis'])**2
-                           * (data['sigma']**2 + data['vsigma']**2)**0.5)
-                elif self.polrep == 'circ':
-                    out = data['rrvis'] / data['llvis']
-                    sig = np.sqrt(np.abs(data['rrsigma'] / data['llvis'])**2
-                                  + np.abs(data['llsigma'] * data['rrvis'] / data['llvis'])**2)
-
             else:
-                raise Exception(f"{field} is not a valid field \n" +
-                                "valid field values are: " + ' '.join(ehc.FIELDS))
+                # all visibility logic for all polreps in obsh.unpack_vis
+                out, sig, ty = obsh.unpack_vis(data, field, self.polrep)
 
+            # time transforms
             if field in ["time_utc"] and self.timetype == 'GMST':
                 out = obsh.gmst_to_utc(out, self.mjd)
             if field in ["time_gmst"] and self.timetype == 'UTC':
@@ -1152,28 +1044,39 @@ class Obsdata:
 
             # Get arg/amps/snr
             if field in ["amp", "qamp", "uamp", "vamp", "pamp", "mamp", "bamp", "eamp",
-                         "rramp", "llamp", "rlamp", "lramp", "rrllamp"]:
+                         "rramp", "llamp", "rlamp", "lramp", "rrllamp",
+                         "xxamp", "yyamp", "xyamp", "yxamp",
+                         "p1p1amp", "p2p2amp", "p1p2amp", "p2p1amp"]:
                 out = np.abs(out)
                 if debias:
                     out = obsh.amp_debias(out, sig)
                 ty = 'f8'
             elif field in ["sigma", "qsigma", "usigma", "vsigma",
                            "psigma", "msigma", "bsigma", "esigma",
-                           "rrsigma", "llsigma", "rlsigma", "lrsigma", "rrllsigma"]:
+                           "rrsigma", "llsigma", "rlsigma", "lrsigma", "rrllsigma",
+                           "xxsigma", "yysigma", "xysigma", "yxsigma",
+                           "p1p1sigma", "p2p2sigma", "p1p2sigma", "p2p1sigma"]:
                 out = np.abs(sig)
                 ty = 'f8'
             elif field in ["phase", "qphase", "uphase", "vphase", "pphase", "bphase", "ephase",
-                           "mphase", "rrphase", "llphase", "lrphase", "rlphase", "rrllphase"]:
+                           "mphase", "rrphase", "llphase", "lrphase", "rlphase", "rrllphase",
+                           "xxphase", "yyphase", "xyphase", "yxphase",
+                           "p1p1phase", "p2p2phase", "p1p2phase", "p2p1phase"]:
                 out = np.angle(out) / angle
                 ty = 'f8'
             elif field in ["sigma_phase", "qsigma_phase", "usigma_phase", "vsigma_phase",
                            "psigma_phase", "msigma_phase", "bsigma_phase", "esigma_phase",
                            "rrsigma_phase", "llsigma_phase", "rlsigma_phase", "lrsigma_phase",
-                           "rrllsigma_phase"]:
+                           "rrllsigma_phase",
+                           "xxsigma_phase", "yysigma_phase", "xysigma_phase", "yxsigma_phase",
+                           "p1p1sigma_phase", "p2p2sigma_phase", "p1p2sigma_phase",
+                           "p2p1sigma_phase"]:
                 out = np.abs(sig) / np.abs(out) / angle
                 ty = 'f8'
             elif field in ["snr", "qsnr", "usnr", "vsnr", "psnr", "bsnr", "esnr",
-                           "msnr", "rrsnr", "llsnr", "rlsnr", "lrsnr", "rrllsnr"]:
+                           "msnr", "rrsnr", "llsnr", "rlsnr", "lrsnr", "rrllsnr",
+                           "xxsnr", "yysnr", "xysnr", "yxsnr",
+                           "p1p1snr", "p2p2snr", "p1p2snr", "p2p1snr"]:
                 out = np.abs(out) / np.abs(sig)
                 ty = 'f8'
 
@@ -2593,6 +2496,11 @@ class Obsdata:
                   timetype=False, uv_min=False, snrcut=0.):
         """Return a recarray of the equal time bispectra.
 
+           For a mixed-feed observation (polrep='mixed'), closures form only
+           across baselines whose two stations share one feed basis ('rlrl' for
+           circular vtypes, 'xyxy' for linear); cross-basis and hybrid or
+           reordered-feed baselines are skipped (MixedPolClosureSkipWarning).
+
            Args:
                vtype (str): The visibilty type from which to assemble bispectra
                             ('vis', 'qvis', 'uvis','vvis','rrvis','lrvis','rlvis','llvis')
@@ -2614,11 +2522,17 @@ class Obsdata:
             raise Exception("possible options for mode are 'time' and 'all'")
         if count not in ('max', 'min', 'min-cut0bl'):
             raise Exception("possible options for count are 'max', 'min', or 'min-cut0bl'")
-        if vtype not in ('vis', 'qvis', 'uvis', 'vvis', 'rrvis', 'lrvis', 'rlvis', 'llvis'):
-            raise Exception("possible options for vtype are" +
-                            " 'vis', 'qvis', 'uvis','vvis','rrvis','lrvis','rlvis','llvis'")
+        if vtype not in obsh.valid_closure_vtypes(self.polrep):
+            raise Exception(f"for polrep={self.polrep!r}, possible options for "
+                            f"vtype are {obsh.valid_closure_vtypes(self.polrep)}")
         if timetype not in ['GMST', 'UTC', 'gmst', 'utc']:
             raise Exception("timetype should be 'GMST' or 'UTC'!")
+
+        # On a mixed-feed observation, only triangles whose three baselines all
+        # share this feed basis can form a closure (raises for Stokes/generic).
+        required_polbasis = None
+        if self.polrep == 'mixed':
+            required_polbasis = obsh.closure_skip_polbasis(vtype)
 
         # Flag zero baselines
         obsdata = self.copy()
@@ -2632,6 +2546,7 @@ class Obsdata:
         tlist = obsdata.tlist(conj=True)
         out = []
         bis = []
+        n_tri_skipped = 0
         tt = 1
         for tdata in tlist:
 
@@ -2706,6 +2621,14 @@ class Obsdata:
                 except KeyError:
                     continue
 
+                # Mixed-feed: skip triangles that don't share one feed basis
+                if required_polbasis is not None and not (
+                        l1['polbasis'] == required_polbasis and
+                        l2['polbasis'] == required_polbasis and
+                        l3['polbasis'] == required_polbasis):
+                    n_tri_skipped += 1
+                    continue
+
                 (bi, bisig) = obsh.make_bispectrum(l1, l2, l3, vtype, polrep=self.polrep)
 
                 # Cut out low snr points
@@ -2725,6 +2648,10 @@ class Obsdata:
                 out.append(np.array(bis))
                 bis = []
 
+        if n_tri_skipped:
+            warnings.warn(obsh.closure_skip_message(n_tri_skipped, count, 'triangles'),
+                          ehw.MixedPolClosureSkipWarning)
+
         if mode == 'all':
             out = np.array(bis)
 
@@ -2733,6 +2660,11 @@ class Obsdata:
     def c_phases(self, vtype='vis', mode='all', count='min', ang_unit='deg',
                  timetype=False, uv_min=False, snrcut=0.):
         """Return a recarray of the equal time closure phases.
+
+           For a mixed-feed observation (polrep='mixed'), closures form only
+           across baselines whose two stations share one feed basis ('rlrl' for
+           circular vtypes, 'xyxy' for linear); cross-basis and hybrid or
+           reordered-feed baselines are skipped (MixedPolClosureSkipWarning).
 
            Args:
                vtype (str): The visibilty type from which to assemble closure phases
@@ -2756,9 +2688,9 @@ class Obsdata:
             raise Exception("possible options for mode are 'time' and 'all'")
         if count not in ('max', 'min', 'min-cut0bl'):
             raise Exception("possible options for count are 'max', 'min', or 'min-cut0bl'")
-        if vtype not in ('vis', 'qvis', 'uvis', 'vvis', 'rrvis', 'lrvis', 'rlvis', 'llvis'):
-            raise Exception("possible options for vtype are" +
-                            " 'vis', 'qvis', 'uvis','vvis','rrvis','lrvis','rlvis','llvis'")
+        if vtype not in obsh.valid_closure_vtypes(self.polrep):
+            raise Exception(f"for polrep={self.polrep!r}, possible options for "
+                            f"vtype are {obsh.valid_closure_vtypes(self.polrep)}")
         if timetype not in ['GMST', 'UTC', 'gmst', 'utc']:
             raise Exception("timetype should be 'GMST' or 'UTC'!")
 
@@ -2799,6 +2731,11 @@ class Obsdata:
                       timetype=False, uv_min=False, snrcut=0.):
         """Return a recarray of the equal time diagonalized closure phases.
 
+           For a mixed-feed observation (polrep='mixed'), closures form only
+           across baselines whose two stations share one feed basis ('rlrl' for
+           circular vtypes, 'xyxy' for linear); cross-basis and hybrid or
+           reordered-feed baselines are skipped (MixedPolClosureSkipWarning).
+
            Args:
                vtype (str): The visibilty type ('vis','qvis','uvis','vvis','pvis')
                             from which to assemble closure phases
@@ -2819,10 +2756,9 @@ class Obsdata:
         if count not in ('min', 'min-cut0bl'):
             raise Exception(
                 "possible options for count are 'min' or 'min-cut0bl' for diagonal closure phases")
-        if vtype not in ('vis', 'qvis', 'uvis', 'vvis', 'rrvis', 'lrvis', 'rlvis', 'llvis'):
-            raise Exception(
-                "possible options for vtype are 'vis', 'qvis', " +
-                "'uvis','vvis','rrvis','lrvis','rlvis','llvis'")
+        if vtype not in obsh.valid_closure_vtypes(self.polrep):
+            raise Exception(f"for polrep={self.polrep!r}, possible options for "
+                            f"vtype are {obsh.valid_closure_vtypes(self.polrep)}")
         if timetype not in ['GMST', 'UTC', 'gmst', 'utc']:
             raise Exception("timetype should be 'GMST' or 'UTC'!")
 
@@ -2831,32 +2767,16 @@ class Obsdata:
         else:
             angle = 1.0
 
-        # determine the appropriate sigmatype
-        if vtype in ["vis", "qvis", "uvis", "vvis"]:
-            if vtype == 'vis':
-                sigmatype = 'sigma'
-            if vtype == 'qvis':
-                sigmatype = 'qsigma'
-            if vtype == 'uvis':
-                sigmatype = 'usigma'
-            if vtype == 'vvis':
-                sigmatype = 'vsigma'
-        if vtype in ["rrvis", "llvis", "rlvis", "lrvis"]:
-            if vtype == 'rrvis':
-                sigmatype = 'rrsigma'
-            if vtype == 'llvis':
-                sigmatype = 'llsigma'
-            if vtype == 'rlvis':
-                sigmatype = 'rlsigma'
-            if vtype == 'lrvis':
-                sigmatype = 'lrsigma'
-
         # get the time-sorted visibility data including conjugate baselines
         viss = np.concatenate(self.tlist(conj=True))
 
         # get the closure phase data
         cps = self.c_phases(vtype=vtype, mode='all', count=count, ang_unit=ang_unit,
                             timetype=timetype, uv_min=uv_min, snrcut=snrcut)
+
+        # no surviving closures (e.g. all triangles skipped on a mixed-feed obs)
+        if len(cps) == 0:
+            return []
 
         # get the unique timestamps for the closure phases
         T_cps = np.unique(cps['time'])
@@ -2911,8 +2831,16 @@ class Obsdata:
                 ind3 = ((viss_here['t1'] == cp['t3']) & (viss_here['t2'] == cp['t1']))
                 design_mat[ic, ind3] = 1.0
 
-            # construct the covariance matrix
-            visphase_err = viss_here[sigmatype] / np.abs(viss_here[vtype])
+            # restrict to baselines actually used by the surviving closures; unused
+            # columns carry NaN visibilities on mixed-feed baselines and 0*NaN would
+            # poison the covariance of the surviving triangle
+            used = np.any(design_mat != 0.0, axis=0)
+            design_mat = design_mat[:, used]
+            viss_here = viss_here[used]
+
+            # construct the covariance matrix (per-baseline visibility, sigma pair)
+            vis_here, sig_here = obsh.vis_component(viss_here, vtype, self.polrep)
+            visphase_err = sig_here / np.abs(vis_here)
             sigma_mat = np.diag(visphase_err**2.0)
             covar_mat = np.matmul(np.matmul(design_mat, sigma_mat), np.transpose(design_mat))
 
@@ -2952,6 +2880,11 @@ class Obsdata:
 
         """Return complex bispectrum  over time on a triangle (1-2-3).
 
+           For a mixed-feed observation (polrep='mixed'), a closure is returned
+           only if all stations share one feed basis ('rl' for circular vtypes,
+           'xy' for linear); otherwise an empty array is returned with a
+           MixedPolClosureSkipWarning.
+
            Args:
                site1 (str): station 1 name
                site2 (str): station 2 name
@@ -2978,6 +2911,15 @@ class Obsdata:
 
         tri = (site1, site2, site3)
         outdata = []
+
+        # Mixed-feed: a closure exists only if all stations share one feed basis
+        if self.polrep == 'mixed':
+            req = obsh.closure_skip_polbasis(vtype)[:2]
+            feeds = {self.tarr[self.tkey[s]]['feed_type'] for s in tri}
+            if feeds != {req}:
+                warnings.warn("requested triangle mixes polarization bases; "
+                              "no closure formed.", ehw.MixedPolClosureSkipWarning)
+                return np.array(outdata)
 
         # get selected bispectra from the maximal set
         # TODO: verify consistency/performance of from_vis, and delete this method
@@ -3123,6 +3065,11 @@ class Obsdata:
                    cphases=[]):
         """Return closure phase  over time on a triangle (1-2-3).
 
+           For a mixed-feed observation (polrep='mixed'), a closure is returned
+           only if all stations share one feed basis ('rl' for circular vtypes,
+           'xy' for linear); otherwise an empty array is returned with a
+           MixedPolClosureSkipWarning.
+
            Args:
                site1 (str): station 1 name
                site2 (str): station 2 name
@@ -3151,6 +3098,15 @@ class Obsdata:
 
         tri = (site1, site2, site3)
         outdata = []
+
+        # Mixed-feed: a closure exists only if all stations share one feed basis
+        if self.polrep == 'mixed':
+            req = obsh.closure_skip_polbasis(vtype)[:2]
+            feeds = {self.tarr[self.tkey[s]]['feed_type'] for s in tri}
+            if feeds != {req}:
+                warnings.warn("requested triangle mixes polarization bases; "
+                              "no closure formed.", ehw.MixedPolClosureSkipWarning)
+                return np.array(outdata)
 
         # get selected closure phases from the maximal set
         # TODO: verify consistency/performance of from_vis, and delete this method
@@ -3300,6 +3256,11 @@ class Obsdata:
                      timetype=False, snrcut=0.):
         """Return a recarray of the equal time closure amplitudes.
 
+           For a mixed-feed observation (polrep='mixed'), closures form only
+           across baselines whose two stations share one feed basis ('rlrl' for
+           circular vtypes, 'xyxy' for linear); cross-basis and hybrid or
+           reordered-feed baselines are skipped (MixedPolClosureSkipWarning).
+
            Args:
                vtype (str): The visibilty type from which to assemble closure amplitudes
                             ('vis','qvis','uvis','vvis','pvis')
@@ -3323,18 +3284,25 @@ class Obsdata:
             raise Exception("possible options for mode are 'time' and 'all'")
         if count not in ('max', 'min'):
             raise Exception("possible options for count are 'max' and 'min'")
-        if vtype not in ('vis', 'qvis', 'uvis', 'vvis', 'rrvis', 'lrvis', 'rlvis', 'llvis'):
-            raise Exception("possible options for vtype are " +
-                            "'vis', 'qvis', 'uvis','vvis','rrvis','lrvis','rlvis','llvis'")
+        if vtype not in obsh.valid_closure_vtypes(self.polrep):
+            raise Exception(f"for polrep={self.polrep!r}, possible options for "
+                            f"vtype are {obsh.valid_closure_vtypes(self.polrep)}")
         if ctype not in ['camp', 'logcamp']:
             raise Exception("closure amplitude type must be 'camp' or 'logcamp'!")
         if timetype not in ['GMST', 'UTC', 'gmst', 'utc']:
             raise Exception("timetype should be 'GMST' or 'UTC'!")
 
+        # On a mixed-feed observation, only quadrangles whose four baselines all
+        # share this feed basis can form a closure (raises for Stokes/generic).
+        required_polbasis = None
+        if self.polrep == 'mixed':
+            required_polbasis = obsh.closure_skip_polbasis(vtype)
+
         # Get data sorted by time
         tlist = self.tlist(conj=True)
         out = []
         cas = []
+        n_quad_skipped = 0
         tt = 1
         for tdata in tlist:
 
@@ -3390,6 +3358,15 @@ class Obsdata:
                 except KeyError:
                     continue
 
+                # Mixed-feed: skip quadrangles that don't share one feed basis
+                if required_polbasis is not None and not (
+                        blue1['polbasis'] == required_polbasis and
+                        blue2['polbasis'] == required_polbasis and
+                        red1['polbasis'] == required_polbasis and
+                        red2['polbasis'] == required_polbasis):
+                    n_quad_skipped += 1
+                    continue
+
                 # Compute the closure amplitude and the error
                 (camp, camperr) = obsh.make_closure_amplitude(blue1, blue2, red1, red2, vtype,
                                                               polrep=self.polrep,
@@ -3414,6 +3391,10 @@ class Obsdata:
                 out.append(np.array(cas))
                 cas = []
 
+        if n_quad_skipped:
+            warnings.warn(obsh.closure_skip_message(n_quad_skipped, count, 'quadrangles'),
+                          ehw.MixedPolClosureSkipWarning)
+
         if mode == 'all':
             out = np.array(cas)
 
@@ -3422,6 +3403,11 @@ class Obsdata:
     def c_log_amplitudes_diag(self, vtype='vis', mode='all', count='min',
                               debias=True, timetype=False, snrcut=0.):
         """Return a recarray of the equal time diagonalized log closure amplitudes.
+
+           For a mixed-feed observation (polrep='mixed'), closures form only
+           across baselines whose two stations share one feed basis ('rlrl' for
+           circular vtypes, 'xyxy' for linear); cross-basis and hybrid or
+           reordered-feed baselines are skipped (MixedPolClosureSkipWarning).
 
            Args:
                vtype (str): The visibilty type ('vis','qvis','uvis','vvis','pvis')
@@ -3447,32 +3433,11 @@ class Obsdata:
             raise Exception("possible options for mode are 'time' and 'all'")
         if count not in ('min'):
             raise Exception("count can only be 'min' for diagonal log closure amplitudes")
-        if vtype not in ('vis', 'qvis', 'uvis', 'vvis', 'rrvis', 'lrvis', 'rlvis', 'llvis'):
-            raise Exception(
-                "possible options for vtype are 'vis', 'qvis', 'uvis', " +
-                "'vvis','rrvis','lrvis','rlvis','llvis'")
+        if vtype not in obsh.valid_closure_vtypes(self.polrep):
+            raise Exception(f"for polrep={self.polrep!r}, possible options for "
+                            f"vtype are {obsh.valid_closure_vtypes(self.polrep)}")
         if timetype not in ['GMST', 'UTC', 'gmst', 'utc']:
             raise Exception("timetype should be 'GMST' or 'UTC'!")
-
-        # determine the appropriate sigmatype
-        if vtype in ["vis", "qvis", "uvis", "vvis"]:
-            if vtype == 'vis':
-                sigmatype = 'sigma'
-            if vtype == 'qvis':
-                sigmatype = 'qsigma'
-            if vtype == 'uvis':
-                sigmatype = 'usigma'
-            if vtype == 'vvis':
-                sigmatype = 'vsigma'
-        if vtype in ["rrvis", "llvis", "rlvis", "lrvis"]:
-            if vtype == 'rrvis':
-                sigmatype = 'rrsigma'
-            if vtype == 'llvis':
-                sigmatype = 'llsigma'
-            if vtype == 'rlvis':
-                sigmatype = 'rlsigma'
-            if vtype == 'lrvis':
-                sigmatype = 'lrsigma'
 
         # get the time-sorted visibility data including conjugate baselines
         viss = np.concatenate(self.tlist(conj=True))
@@ -3480,6 +3445,10 @@ class Obsdata:
         # get the log closure amplitude data
         lcas = self.c_amplitudes(vtype=vtype, mode=mode, count=count,
                                  ctype='logcamp', debias=debias, timetype=timetype, snrcut=snrcut)
+
+        # no surviving closures (e.g. all quadrangles skipped on a mixed-feed obs)
+        if len(lcas) == 0:
+            return []
 
         # get the unique timestamps for the log closure amplitudes
         T_lcas = np.unique(lcas['time'])
@@ -3539,8 +3508,16 @@ class Obsdata:
                 ind4 = ((viss_here['t1'] == lca['t2']) & (viss_here['t2'] == lca['t3']))
                 design_mat[il, ind4] = -1.0
 
+            # restrict to baselines actually used by the surviving closures; unused
+            # columns carry NaN visibilities on mixed-feed baselines and 0*NaN would
+            # poison the covariance of the surviving quadrangle
+            used = np.any(design_mat != 0.0, axis=0)
+            design_mat = design_mat[:, used]
+            viss_here = viss_here[used]
+
             # construct the covariance matrix
-            logvisamp_err = viss_here[sigmatype] / np.abs(viss_here[vtype])
+            vis_here, sig_here = obsh.vis_component(viss_here, vtype, self.polrep)
+            logvisamp_err = sig_here / np.abs(vis_here)
             sigma_mat = np.diag(logvisamp_err**2.0)
             covar_mat = np.matmul(np.matmul(design_mat, sigma_mat), np.transpose(design_mat))
 
@@ -3578,6 +3555,11 @@ class Obsdata:
                   camps=[]):
         """Return closure phase over time on a quadrange (1-2)(3-4)/(1-4)(2-3).
 
+           For a mixed-feed observation (polrep='mixed'), a closure is returned
+           only if all stations share one feed basis ('rl' for circular vtypes,
+           'xy' for linear); otherwise an empty array is returned with a
+           MixedPolClosureSkipWarning.
+
            Args:
                site1 (str): station 1 name
                site2 (str): station 2 name
@@ -3609,6 +3591,15 @@ class Obsdata:
 
         quad = (site1, site2, site3, site4)
         outdata = []
+
+        # Mixed-feed: a closure exists only if all stations share one feed basis
+        if self.polrep == 'mixed':
+            req = obsh.closure_skip_polbasis(vtype)[:2]
+            feeds = {self.tarr[self.tkey[s]]['feed_type'] for s in quad}
+            if feeds != {req}:
+                warnings.warn("requested quadrangle mixes polarization bases; "
+                              "no closure formed.", ehw.MixedPolClosureSkipWarning)
+                return np.array(outdata)
 
         # get selected closure amplitudes from the maximal set
         # TODO: verify consistency/performance of from_vis, and delete this method

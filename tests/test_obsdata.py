@@ -551,6 +551,16 @@ def test_unpack_pvis_stokes_vs_circ(obs_pol_direct):
     np.testing.assert_allclose(stokes, circ, atol=1e-12)
 
 
+@pytest.mark.parametrize("field", ["evis", "bvis", "m", "rrllvis",
+                                   "rrvis", "llvis", "rlvis", "lrvis"])
+def test_unpack_moved_fields_stokes_vs_circ(obs_pol_direct, field):
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore")
+        stokes = obs_pol_direct.unpack([field])[field]
+        circ = obs_pol_direct.switch_polrep("circ").unpack([field])[field]
+    np.testing.assert_allclose(stokes, circ, atol=1e-12)
+
+
 def test_unpack_time_gmst_round_trips(obs_direct):
     utc_times = obs_direct.unpack(["time"], timetype="UTC")["time"]
     gmst_times = obs_direct.unpack(["time"], timetype="GMST")["time"]

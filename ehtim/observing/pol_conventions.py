@@ -42,6 +42,7 @@ A ``MixedPolConventionWarning`` fires once per session on the first
 non-identity transform call.
 """
 
+import functools
 import warnings
 
 import numpy as np
@@ -298,6 +299,129 @@ def stokes_to_lin_sigma(sigma, qsigma, usigma, vsigma):
     xx_yy = np.sqrt(sigma**2 + qsigma**2)
     xy_yx = np.sqrt(usigma**2 + vsigma**2)
     return xx_yy, xx_yy, xy_yx, xy_yx
+
+
+# ---------------------------------------------------------------------------
+# General coherency <-> Stokes for arbitrary feed pairings (mixed-pol)
+# ---------------------------------------------------------------------------
+#
+# Under ideal feeds (D = 0, gains calibrated -- the same assumption every
+# transform here makes), a baseline between stations with feed matrices F1, F2
+# measures the full coherency
+#
+#     V = F1 @ B @ F2^dagger,   B = [[XX, XY], [YX, YY]]   (sky brightness, XY basis)
+#
+# so B = F1^{-1} V (F2^dagger)^{-1} recovers Stokes from ANY feed pairing,
+# including heterogeneous ones (e.g. circular x linear) and hybrid feeds whose
+# F is invertible but not unitary. The feed matrices are built from
+# BASIS_LIN_TO_CIRC (engineering convention R = (X + iY)/sqrt(2)), so
+# these reduce to circ_to_stokes / lin_to_stokes on homogeneous pairings -- a
+# property asserted by the cross-validation tests.
+#
+# Field rotation / parallactic angle is assumed already corrected (as for all
+# transforms in this module). Slot order is the generic DTPOL_MIXED order
+# (p1p1, p2p2, p1p2, p2p1); Stokes order is (I, Q, U, V).
+
+# Each feed letter as its (X, Y) projection vector (rows of the feed matrix).
+_FEED_VEC = {
+    'x': np.array([1.0, 0.0], dtype=complex),
+    'y': np.array([0.0, 1.0], dtype=complex),
+    'r': BASIS_LIN_TO_CIRC[0].copy(),   # R = (X + iY)/sqrt(2)
+    'l': BASIS_LIN_TO_CIRC[1].copy(),   # L = (X - iY)/sqrt(2)
+}
+
+
+@functools.cache
+def feed_matrix(feed_type):
+    """2x2 matrix F mapping an (X, Y) field to a station's two feeds.
+
+    Rows are the station's feeds (in feed order), columns are (X, Y). Built
+    from BASIS_LIN_TO_CIRC, so feed_matrix('rl') == BASIS_LIN_TO_CIRC and
+    feed_matrix('xy') == identity. Always invertible; unitary for orthogonal
+    feed pairs (rl/lr/xy/yx) but NOT for hybrid feeds (e.g. 'rx': R and X are
+    non-orthogonal) -- which is fine, coherency recovery uses inv(), not the
+    adjoint. The returned array is cached and read-only.
+    """
+    if (len(feed_type) != 2 or feed_type[0] == feed_type[1]
+            or any(c not in _FEED_VEC for c in feed_type)):
+        raise ValueError(f"feed_matrix: degenerate or unsupported feed_type {feed_type!r}")
+    F = np.array([_FEED_VEC[feed_type[0]], _FEED_VEC[feed_type[1]]])
+    F.flags.writeable = False
+    return F
+
+
+@functools.cache
+def _coherency_matrix(t1_feed, t2_feed):
+    """Cached 4x4 complex operator M with
+       (I, Q, U, V) = M @ (p1p1, p2p2, p1p2, p2p1)
+       for a baseline of the given station feed types. Read-only."""
+    f1inv = np.linalg.inv(feed_matrix(t1_feed))
+    f2invH = np.linalg.inv(feed_matrix(t2_feed)).conj().T
+    M = np.zeros((4, 4), dtype=complex)
+    for j in range(4):
+        # j-th unit correlation in (p1p1, p2p2, p1p2, p2p1) order
+        slots = np.zeros(4, dtype=complex)
+        slots[j] = 1.0
+        Vmat = np.array([[slots[0], slots[2]],
+                         [slots[3], slots[1]]])
+        B = f1inv @ Vmat @ f2invH          # sky coherency in (X, Y) basis
+        M[0, j] = 0.5 * (B[0, 0] + B[1, 1])         # I = (XX + YY)/2
+        M[1, j] = 0.5 * (B[0, 0] - B[1, 1])         # Q = (XX - YY)/2
+        M[2, j] = 0.5 * (B[0, 1] + B[1, 0])         # U = (XY + YX)/2
+        M[3, j] = 0.5j * (B[1, 0] - B[0, 1])        # V = i(YX - XY)/2
+    M.flags.writeable = False
+    return M
+
+
+def coherency_to_stokes(p1p1, p2p2, p1p2, p2p1, t1_feed, t2_feed):
+    """Recover (I, Q, U, V) from the four generic-slot correlations of a single
+       feed pairing (arrays of equal shape, or scalars). Ideal-feed assumption."""
+    _maybe_warn_convention()
+    M = _coherency_matrix(t1_feed, t2_feed)
+    corr = np.stack([np.asarray(p1p1), np.asarray(p2p2),
+                     np.asarray(p1p2), np.asarray(p2p1)])
+    stokes = np.tensordot(M, corr, axes=([1], [0]))
+    return stokes[0], stokes[1], stokes[2], stokes[3]
+
+
+def stokes_to_coherency(i, q, u, v, t1_feed, t2_feed):
+    """Inverse of coherency_to_stokes: build the four generic-slot correlations
+       (p1p1, p2p2, p1p2, p2p1) for a feed pairing from Stokes."""
+    _maybe_warn_convention()
+    Minv = np.linalg.inv(_coherency_matrix(t1_feed, t2_feed))
+    stokes = np.stack([np.asarray(i), np.asarray(q),
+                       np.asarray(u), np.asarray(v)])
+    corr = np.tensordot(Minv, stokes, axes=([1], [0]))
+    return corr[0], corr[1], corr[2], corr[3]
+
+
+def coherency_to_stokes_sigma(s_p1p1, s_p2p2, s_p1p2, s_p2p1, t1_feed, t2_feed):
+    """Marginal (diagonal, covariance-dropping) sigma propagation of the four
+       slot sigmas to (sigma_I, sigma_Q, sigma_U, sigma_V), matching the lossy
+       convention of the other *_sigma helpers here."""
+    W = np.abs(_coherency_matrix(t1_feed, t2_feed))**2
+    var = np.stack([np.asarray(s_p1p1)**2, np.asarray(s_p2p2)**2,
+                    np.asarray(s_p1p2)**2, np.asarray(s_p2p1)**2])
+    out = np.sqrt(np.tensordot(W, var, axes=([1], [0])))
+    return out[0], out[1], out[2], out[3]
+
+
+def correlation_slot(t1_feed, t2_feed, feed_a, feed_b):
+    """Return the generic DTPOL_MIXED slot name ('p1p1vis'/'p1p2vis'/'p2p1vis'/
+       'p2p2vis') holding the correlation feed_a * conj(feed_b) for a baseline
+       with these station feed types, or None if the baseline does not measure
+       it (a station lacks the required feed). Resolves by feed-letter position,
+       so it is correct for reordered/hybrid feeds (e.g. 'lr', 'rx') too."""
+    if len(t1_feed) != 2 or t1_feed[0] == t1_feed[1]:
+        raise ValueError(f"correlation_slot: invalid feed {t1_feed!r}")
+    if len(t2_feed) != 2 or t2_feed[0] == t2_feed[1]:
+        raise ValueError(f"correlation_slot: invalid feed {t2_feed!r}")
+    i = t1_feed.find(feed_a)
+    j = t2_feed.find(feed_b)
+    if i < 0 or j < 0:
+        return None
+    return {(0, 0): 'p1p1vis', (0, 1): 'p1p2vis',
+            (1, 0): 'p2p1vis', (1, 1): 'p2p2vis'}[(i, j)]
 
 
 # ---------------------------------------------------------------------------

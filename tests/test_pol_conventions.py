@@ -283,3 +283,119 @@ def test_warning_fires_from_jones_application():
         warnings.simplefilter("always", category=MixedPolConventionWarning)
         pc.apply_inverse_jones_to_coherency(V, J, J)
     assert any(issubclass(w.category, MixedPolConventionWarning) for w in caught)
+
+
+# ---------------------------------------------------------------------------
+# General coherency <-> Stokes (arbitrary feed pairings)
+# ---------------------------------------------------------------------------
+
+def _stokes_sample():
+    return (np.array([1.0, 1.2]),    # I
+            np.array([0.3, -0.1]),   # Q
+            np.array([0.2, 0.25]),   # U
+            np.array([0.05, -0.04])) # V
+
+
+def test_feed_matrix_values():
+    np.testing.assert_allclose(pc.feed_matrix('rl'), pc.BASIS_LIN_TO_CIRC)
+    np.testing.assert_allclose(pc.feed_matrix('xy'), np.eye(2))
+
+
+def test_feed_matrix_unitary_for_orthogonal_pairs():
+    # Orthogonal feed pairs give unitary matrices...
+    for ft in ['rl', 'lr', 'xy', 'yx']:
+        F = pc.feed_matrix(ft)
+        np.testing.assert_allclose(F @ F.conj().T, np.eye(2), atol=1e-14)
+
+
+def test_feed_matrix_hybrid_invertible_not_unitary():
+    # ...but hybrid feeds (e.g. R and X) are non-orthogonal: still invertible,
+    # which is all coherency_to_stokes needs (it uses inv, not the adjoint).
+    for ft in ['rx', 'ly', 'xr', 'yr']:
+        F = pc.feed_matrix(ft)
+        assert not np.allclose(F @ F.conj().T, np.eye(2))
+        assert abs(np.linalg.det(F)) > 1e-9
+
+
+def test_feed_matrix_cached_readonly():
+    with pytest.raises(ValueError):
+        pc.feed_matrix('rl')[0, 0] = 0.0
+    with pytest.raises(ValueError):
+        pc._coherency_matrix('rl', 'xy')[0, 0] = 0.0
+
+
+def test_feed_matrix_rejects_bad_type():
+    with pytest.raises(ValueError):
+        pc.feed_matrix('??')
+
+
+def test_feed_matrix_rejects_degenerate_feed():
+    # same-feed codes build a singular matrix; reject at the boundary
+    for ft in ('rr', 'll', 'xx', 'yy'):
+        with pytest.raises(ValueError):
+            pc.feed_matrix(ft)
+
+
+def test_correlation_slot_resolves_and_guards():
+    assert pc.correlation_slot('rl', 'rl', 'r', 'r') == 'p1p1vis'
+    assert pc.correlation_slot('rl', 'xy', 'l', 'x') == 'p2p1vis'
+    assert pc.correlation_slot('rl', 'xy', 'x', 'r') is None  # absent feed
+    for bad in ('rr', 'r', 'rrr'):  # corrupt polbasis fails loudly
+        with pytest.raises(ValueError):
+            pc.correlation_slot(bad, 'rl', 'r', 'r')
+
+
+def test_coherency_to_stokes_matches_circ():
+    # Homogeneous circular pairing must reproduce circ_to_stokes exactly.
+    rr = np.array([1.05 + 0.0j, 1.16])
+    ll = np.array([0.95 + 0.0j, 1.24])
+    rl = np.array([0.05 + 0.02j, -0.1 + 0.0j])
+    lr = np.array([0.05 - 0.02j, -0.1 + 0.0j])
+    i0, q0, u0, v0 = pc.circ_to_stokes(rr, ll, rl, lr)
+    # generic-slot order: p1p1=rr, p2p2=ll, p1p2=rl, p2p1=lr
+    i1, q1, u1, v1 = pc.coherency_to_stokes(rr, ll, rl, lr, 'rl', 'rl')
+    np.testing.assert_allclose([i1, q1, u1, v1], [i0, q0, u0, v0], atol=1e-13)
+
+
+def test_coherency_to_stokes_matches_lin():
+    xx = np.array([1.3 + 0.0j, 0.9])
+    yy = np.array([0.7 + 0.0j, 1.1])
+    xy = np.array([0.1 + 0.05j, -0.03 + 0.0j])
+    yx = np.array([0.1 - 0.05j, -0.03 + 0.0j])
+    i0, q0, u0, v0 = pc.lin_to_stokes(xx, yy, xy, yx)
+    i1, q1, u1, v1 = pc.coherency_to_stokes(xx, yy, xy, yx, 'xy', 'xy')
+    np.testing.assert_allclose([i1, q1, u1, v1], [i0, q0, u0, v0], atol=1e-13)
+
+
+@pytest.mark.parametrize("t1,t2", [('rl', 'rl'), ('xy', 'xy'), ('rl', 'xy'),
+                                   ('xy', 'rl'), ('lr', 'xy'), ('rx', 'ly')])
+def test_stokes_coherency_roundtrip(t1, t2):
+    i, q, u, v = _stokes_sample()
+    p11, p22, p12, p21 = pc.stokes_to_coherency(i, q, u, v, t1, t2)
+    i2, q2, u2, v2 = pc.coherency_to_stokes(p11, p22, p12, p21, t1, t2)
+    np.testing.assert_allclose([i2, q2, u2, v2], [i, q, u, v], atol=1e-12)
+
+
+def test_coherency_recovers_stokes_on_heterogeneous_baseline():
+    # The whole point: a circular x linear baseline still carries full Stokes.
+    i, q, u, v = _stokes_sample()
+    p11, p22, p12, p21 = pc.stokes_to_coherency(i, q, u, v, 'rl', 'xy')
+    i2, q2, u2, v2 = pc.coherency_to_stokes(p11, p22, p12, p21, 'rl', 'xy')
+    np.testing.assert_allclose([i2, q2, u2, v2], [i, q, u, v], atol=1e-12)
+
+
+def test_coherency_sigma_matches_circ_and_lin():
+    s = (np.array([0.1, 0.2]), np.array([0.1, 0.2]),
+         np.array([0.3, 0.1]), np.array([0.3, 0.1]))
+    # circ: slot order p1p1=rr, p2p2=ll, p1p2=rl, p2p1=lr
+    ci, cq, cu, cv = pc.circ_to_stokes_sigma(s[0], s[1], s[2], s[3])
+    gi, gq, gu, gv = pc.coherency_to_stokes_sigma(s[0], s[1], s[2], s[3], 'rl', 'rl')
+    np.testing.assert_allclose([gi, gq, gu, gv], [ci, cq, cu, cv], atol=1e-13)
+    li, lq, lu, lv = pc.lin_to_stokes_sigma(s[0], s[1], s[2], s[3])
+    gi, gq, gu, gv = pc.coherency_to_stokes_sigma(s[0], s[1], s[2], s[3], 'xy', 'xy')
+    np.testing.assert_allclose([gi, gq, gu, gv], [li, lq, lu, lv], atol=1e-13)
+
+
+def test_coherency_to_stokes_scalar_inputs():
+    i, q, u, v = pc.coherency_to_stokes(1.0, 1.0, 0.0, 0.0, 'rl', 'rl')
+    assert np.isclose(i, 1.0) and np.isclose(v, 0.0)

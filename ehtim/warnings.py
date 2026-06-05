@@ -36,3 +36,13 @@ class MixedPolClosureSkipWarning(UserWarning):
     Jones-level conversion. The warning summarizes, per call, how many
     triangles or quadrangles were skipped and why.
     """
+
+
+class MixedPolUnpackNaNWarning(UserWarning):
+    """Emitted when ``Obsdata.unpack`` of a physical correlation (e.g. 'rrvis')
+    on a mixed-feed observation returns NaN for rows whose feed basis does not
+    measure that correlation (e.g. RR on a circular x linear baseline).
+
+    The warning reports, per field, how many rows were NaN-filled. It is
+    deliberately verbose; suppress with the standard machinery if needed.
+    """
