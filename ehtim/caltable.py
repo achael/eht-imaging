@@ -112,11 +112,9 @@ class Caltable:
            Args:
 
            Returns:
-               (Caltable): a copy of the Caltable object.
+               (Caltable): a deep copy of the Caltable object.
         """
-        new_caltable = Caltable(self.ra, self.dec, self.rf, self.bw, self.data, self.tarr,
-                                source=self.source, mjd=self.mjd, timetype=self.timetype)
-        return new_caltable
+        return copy.deepcopy(self)
 
     def plot_dterms(self, sites='all', label=None, legend=True, clist=ehc.SCOLORS,
                     rangex=False, rangey=False, markersize=2 * ehc.MARKERSIZE,
@@ -519,10 +517,10 @@ class Caltable:
             bl_obs['rlsigma'] = bl_obs['rlsigma'] * np.abs(rlscale)
             bl_obs['lrsigma'] = bl_obs['lrsigma'] * np.abs(lrscale)
 
-            if len(datatable):
-                datatable = np.hstack((datatable, bl_obs))
-            else:
-                datatable = bl_obs
+            datatable.append(bl_obs)
+
+        if len(datatable):
+            datatable = np.hstack(datatable)
 
         calobs = ehtim.obsdata.Obsdata(obs.ra, obs.dec, obs.rf, obs.bw,
                                        np.array(datatable), obs.tarr,
@@ -637,7 +635,7 @@ class Caltable:
            Returns:
                (Caltable): the averaged Caltable object
         """
-        sites = self.data.keys()
+        sites = list(self.data.keys())
         ntele = len(sites)
 
         datatables = {}
@@ -823,7 +821,7 @@ def make_caltable(obs, gains, sites, times):
     for s in range(0, ntele):
         datatable = []
         for t in range(0, ntimes):
-            gain = gains[s * ntele + t]
+            gain = gains[s * ntimes + t]
             datatable.append(np.array((times[t], gain, gain), dtype=ehc.DTCAL))
         datatables[sites[s]] = np.array(datatable)
     if len(datatables) > 0:

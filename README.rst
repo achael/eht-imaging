@@ -1,7 +1,37 @@
 ehtim (eht-imaging)
 ===================
-.. image:: https://zenodo.org/badge/42943499.svg
-   :target: https://zenodo.org/badge/latestdoi/42943499
+
+|pypi| |license| |docs| |doi|
+
+|ci| |codecov| |ruff|
+
+.. |pypi| image:: https://img.shields.io/pypi/v/ehtim.svg
+   :target: https://pypi.org/project/ehtim/
+   :alt: PyPI version
+
+.. |license| image:: https://img.shields.io/github/license/achael/eht-imaging.svg
+   :target: https://github.com/achael/eht-imaging/blob/main/LICENSE.txt
+   :alt: License: GPLv3
+
+.. |docs| image:: https://img.shields.io/badge/docs-stable-blue.svg
+   :target: https://achael.github.io/eht-imaging/
+   :alt: Documentation
+
+.. |doi| image:: https://zenodo.org/badge/42943499.svg
+   :target: https://doi.org/10.5281/zenodo.2614008
+   :alt: DOI
+
+.. |ci| image:: https://github.com/achael/eht-imaging/actions/workflows/ci.yml/badge.svg?branch=dev-backend
+   :target: https://github.com/achael/eht-imaging/actions/workflows/ci.yml
+   :alt: CI
+
+.. |codecov| image:: https://img.shields.io/codecov/c/github/achael/eht-imaging/dev
+   :target: https://codecov.io/gh/achael/eht-imaging/branch/dev
+   :alt: codecov
+
+.. |ruff| image:: https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json
+   :target: https://github.com/astral-sh/ruff
+   :alt: Code style: Ruff
 
 Python modules for simulating and manipulating VLBI data and producing images with regularized maximum likelihood methods. This version is an early release so please raise an issue, submit a pull request, or email achael@outlook.com if you have trouble or need help for your application.
 
@@ -10,7 +40,7 @@ The package contains several primary classes for loading, simulating, and manipu
 Installation
 ------------
 
-The latest stable version (`1.3 <https://github.com/achael/eht-imaging/releases/tag/v1.3>`_) is available on `PyPi <https://pypi.org/project/ehtim/>`_. Simply install pip and run
+The latest development version (`1.4 <https://github.com/achael/eht-imaging/releases/tag/v1.4>`_) requires Python 3.11 or 3.12. Simply install pip and run
 
 .. code-block:: bash
 
@@ -22,29 +52,21 @@ Incremental updates are developed on the `dev branch <https://github.com/achael/
 
     pip install .
 
-Installing with pip will update most of the required libraries automatically (`numpy <http://www.numpy.org/>`_, `scipy <http://www.scipy.org/>`_, `matplotlib <http://www.matplotlib.org/>`_, `astropy <http://www.astropy.org/>`_, `ephem <http://pypi.python.org/pypi/pyephem/>`_, `future <http://pypi.python.org/pypi/future>`_, `h5py <http://www.h5py.org/>`_, and `pandas <http://www.pandas.pydata.org/>`_).
+Installing with pip will install the required libraries automatically (`numpy <http://www.numpy.org/>`_, `scipy <http://www.scipy.org/>`_, `matplotlib <http://www.matplotlib.org/>`_, `astropy <http://www.astropy.org/>`_, `finufft <https://github.com/flatironinstitute/finufft>`_, `skyfield <https://rhodesmill.org/skyfield/>`_, `h5py <http://www.h5py.org/>`_, `networkx <https://networkx.github.io/>`_, `requests <http://docs.python-requests.org/en/master/>`_, and `future <http://pypi.python.org/pypi/future>`_).
 
 
-NFFT Installation
------------------
-**If you want to use fast fourier transforms, you will also need to separately install** `NFFT <https://github.com/NFFT/nfft>`_ **and its** `pyNFFT wrapper <https://github.com/ghisvail/pyNFFT/>`__.
+Optional Dependencies
+---------------------
+Certain functions require packages not in the default install:
 
-**Note that, unfortunately, pyNFFT is only supported for python versions <=3.11  and numpy versions <=1.26.4**
+- `pandas <http://www.pandas.pydata.org/>`_ for the legacy ``ehtim.statistics.dataframes`` utilities and the flag-file CSV reader / scan-id binning helpers in ``Obsdata``
+- `paramsurvey <https://github.com/wumpus/paramsurvey>`_ for the parameter-survey utilities in ``ehtim.survey``
 
-A new eht-imaging version 2.0 replacing pynfft with the actively maintained `finufft <https://github.com/flatironinstitute/finufft>`__ library is in active development.
-
-The simplest way is to use `conda <https://anaconda.org/conda-forge/pynfft/>`__ to install both NFFT and pyNFFT:
-
+Install individually as needed:
 
 .. code-block:: bash
 
-    conda install -c conda-forge pynfft
-
-Alternatively, first install NFFT manually following the instructions on the `readme <https://github.com/NFFT/nfft>`__, making sure to use the ``--enable-openmp`` flag in compilation. Then install `pynfft <https://github.com/ghisvail/pyNFFT/>`__, with pip, following the readme instructions to link the installation to where you installed NFFT. Finally, reinstall ehtim.
-
-**For M1 Macs and later (MacOS >= v12.0)**, install the updated Mac version of `pynfft <https://github.com/rohandahale/pyNFFT.git>`__ and follow the instructions on the `readme  <https://github.com/rohandahale/pyNFFT.git>`__ to manually install `fftw <http://www.fftw.org>`_, `nfft <https://github.com/NFFT/nfft>`__ and then `pynfft <https://github.com/rohandahale/pyNFFT.git>`__.
-
-**Certain eht-imaging functions require other external packages that are not automatically installed.** In addition to pynfft, these include  `networkx <https://networkx.github.io/>`_ (for image comparison functions), `requests <http://docs.python-requests.org/en/master/>`_ (for dynamical imaging), and `scikit-image <https://scikit-image.org/>`_ (for a few image analysis functions). However, the vast majority of the code will work without these dependencies.
+    pip install pandas paramsurvey
 
 Documentation and Tutorials
 ---------------------------

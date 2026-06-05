@@ -22,7 +22,6 @@ import itertools as it
 
 import matplotlib.pyplot as plt
 import numpy as np
-import numpy.matlib as matlib
 
 import ehtim.const_def as ehc
 from ehtim.obsdata import merge_obs
@@ -215,7 +214,7 @@ def plot_cphase_compare(obslist, imlist, site1, site2, site3,
         obslist = [obslist]
 
     if len(cphases) == 0:
-        cphases = matlib.repmat([], len(obslist), 1)
+        cphases = np.tile([], (len(obslist), 1))
 
     if len(cphases) != len(obslist):
         raise Exception("cphases list must be same length as obslist!")
@@ -299,7 +298,7 @@ def plot_camp_compare(obslist, imlist, site1, site2, site3, site4,
         obslist = [obslist]
 
     if len(camps) == 0:
-        camps = matlib.repmat([], len(obslist), 1)
+        camps = np.tile([], (len(obslist), 1))
 
     if len(camps) != len(obslist):
         raise Exception("camps list must be same length as obslist!")

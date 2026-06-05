@@ -9,6 +9,8 @@ import pytest
 import ehtim as eh
 from ehtim.imager import Imager, ImagerRunState
 
+pytestmark = pytest.mark.slow
+
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
