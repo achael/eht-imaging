@@ -2,9 +2,9 @@ name: CI
 
 on:
   push:
-    branches: [dev-backend, dev-backend-mixpol]
+    branches: [dev, dev-backend, dev-backend-mixpol]
   pull_request:
-    branches: [dev-backend, dev-backend-mixpol]
+    branches: [dev, dev-backend, dev-backend-mixpol]
 
 jobs:
   lint:
