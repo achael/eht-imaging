@@ -6,6 +6,8 @@
 .. moduleauthor:: Andrew Chael (achael@outlook.com)
 
 """
+# The import order below is constrained by circular dependencies between ehtim
+# submodules; alphabetical sorting breaks `import ehtim`, so isort is disabled.
 # isort: off
 import ehtim.observing as observing
 from ehtim.const_def import (

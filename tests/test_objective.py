@@ -22,6 +22,8 @@ DTYPES = ["vis", "amp", "bs", "cphase", "camp", "logcamp"]
 RECOVER_DTYPES = ["vis", "bs"]   # only vis recovers structure; bs checks the host-shim drives L-BFGS
 
 KERNEL_ATOL = 1e-12
+# Closure-term gradients (bs/cphase/camp/logcamp) span large magnitudes, so
+# gradient comparisons use a relative tolerance, not an absolute one alone.
 GRAD_RTOL = 1e-9
 GRAD_ATOL = 1e-12
 PARITY_ATOL = 1e-10
@@ -157,6 +159,8 @@ def test_no_retrace_same_shapes(term_data):
 @pytest.mark.parametrize("which", ["numpy", "jax"])
 @pytest.mark.parametrize("dtype", RECOVER_DTYPES)
 def test_lbfgsb_reduces_objective(obs_direct, gauss_im, dtype, which):
+    # Exercises the scipy host-shim end to end (gradient correctness is isolated
+    # in test_three_way_gradient). Only vis constrains absolute image structure.
     import scipy.optimize as opt
 
     truth = gauss_im.imvec.astype(np.float64)

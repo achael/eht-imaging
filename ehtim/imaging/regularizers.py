@@ -9,7 +9,7 @@ Spatial regularizers (tv, tvlog, cm, ...) call ``embed`` and are deferred.
 Params are kwargs: ``flux``, ``nprior`` (prior image vector), ``norm_reg``, and
 for lA also ``psize``, ``beam_size``, ``alpha_A``. The image is ``imvec = exp(x)``.
 """
-import numpy as np
+import math
 
 import ehtim.const_def as ehc
 from ehtim.backends import array_namespace
@@ -70,7 +70,7 @@ def reg_lA(imvec, **kwargs):
         norm = (weight_l1 + (beam_size / psize) ** 2 * weight_l0) / (weight_l0 + weight_l1)
     else:
         norm = 1
-    fa = 2.0 / np.pi * (1.0 + alpha_A) / alpha_A * xp.arctan(np.pi * alpha_A / 2.0 * xp.abs(imvec) / flux)
+    fa = 2.0 / math.pi * (1.0 + alpha_A) / alpha_A * xp.arctan(math.pi * alpha_A / 2.0 * xp.abs(imvec) / flux)
     return xp.sum(fa) / norm
 
 
