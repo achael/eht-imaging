@@ -71,9 +71,10 @@ def _notice_averaging_backend():
         _AVERAGING_NOTICE_SHOWN = True
         warnings.warn(
             "Visibility averaging now uses ehtim.statistics.averaging (NumPy); the "
-            "legacy pandas/dataframes path is no longer the default. Inverse-variance "
-            "weighting is on by default (invvar_avg=True); pass invvar_avg=False for "
-            "bit-identical legacy averaging.",
+            "legacy dataframes.py (Pandas) path is no longer the default. "
+            "Legacy averaging routines are still available in statistics/dataframes.py. "
+            "Inverse-variance weighting is now on by default (invvar_avg=True). "
+            "Pass invvar_avg=False for bit-identical legacy averaging.",
             FutureWarning, stacklevel=3)
 
 
