@@ -1,9 +1,10 @@
 # ehtim (eht-imaging)
 
 [![PyPI version](https://img.shields.io/pypi/v/ehtim.svg)](https://pypi.org/project/ehtim/)
-[![License: GPLv3](https://img.shields.io/github/license/achael/eht-imaging.svg)](https://github.com/achael/eht-imaging/blob/main/LICENSE.txt)
+[![Downloads](https://static.pepy.tech/badge/ehtim)](https://pepy.tech/project/ehtim)
+[![License: GPLv3](https://img.shields.io/badge/license-GPLv3-blue.svg)](https://github.com/achael/eht-imaging/blob/main/LICENSE.txt)
 [![Documentation](https://img.shields.io/badge/docs-stable-blue.svg)](https://achael.github.io/eht-imaging/)
-[![DOI](https://zenodo.org/badge/42943499.svg)](https://doi.org/10.5281/zenodo.2614008)
+[![DOI](https://img.shields.io/badge/DOI-10.5281%2Fzenodo.2614008-blue.svg)](https://doi.org/10.5281/zenodo.2614008)
 
 [![CI](https://github.com/achael/eht-imaging/actions/workflows/ci.yml/badge.svg?branch=dev)](https://github.com/achael/eht-imaging/actions/workflows/ci.yml)
 [![codecov](https://img.shields.io/codecov/c/github/achael/eht-imaging/dev)](https://codecov.io/gh/achael/eht-imaging/branch/dev)
