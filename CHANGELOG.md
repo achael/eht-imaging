@@ -19,7 +19,6 @@
 
 ### Bug fixes
 
-- `stv_pol_grad` factor-of-2 + neighbour-roll (#240).
 - `polchisq` `psi = arcsin(V / (I * rho))` + `gmst_to_utc` inverse (#251).
 - `_diag` chisq NumPy >= 1.24 compatibility (#233).
 - Simultaneous IP/IV imaging chain rule (#228).
@@ -31,3 +30,9 @@
 ### Tests
 
 1460+ tests; ~482 MB peak RSS baseline.
+
+## v1.3 (2026-05-13)
+
+### Bug fixes
+
+- `stv_pol_grad` factor-of-2 + neighbour-roll (#240). Urgent fix to the polarimetric total-variation (`ptv`) gradient; released as v1.3.
