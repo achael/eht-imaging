@@ -6,7 +6,7 @@ build-backend = "setuptools.build_meta"
 name = "ehtim"
 version = "1.4.0"
 description = "Imaging, analysis, and simulation software for radio interferometry"
-readme = "README.rst"
+readme = "README.md"
 requires-python = ">=3.11,<3.13"
 license = { text = "GPLv3" }
 keywords = ["imaging", "astronomy", "EHT", "polarimetry"]
