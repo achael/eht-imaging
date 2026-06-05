@@ -59,6 +59,24 @@ BWPOS = 3
 DATPOS = 4
 TARRPOS = 5
 
+_AVERAGING_NOTICE_SHOWN = False
+
+
+def _notice_averaging_backend():
+    """Warn once per session that visibility averaging uses the NumPy backend
+    (ehtim.statistics.averaging) and the legacy pandas path is no longer the
+    default. invvar_avg=False reproduces the legacy result bit-for-bit."""
+    global _AVERAGING_NOTICE_SHOWN
+    if not _AVERAGING_NOTICE_SHOWN:
+        _AVERAGING_NOTICE_SHOWN = True
+        warnings.warn(
+            "Visibility averaging now uses ehtim.statistics.averaging (NumPy); the "
+            "legacy pandas/dataframes path is no longer the default. Inverse-variance "
+            "weighting is on by default (invvar_avg=True); pass invvar_avg=False for "
+            "bit-identical legacy averaging.",
+            FutureWarning, stacklevel=3)
+
+
 ##################################################################################################
 # Obsdata object
 ##################################################################################################
@@ -1237,6 +1255,8 @@ class Obsdata:
                 (Obsdata): Obsdata object containing averaged data
         """
 
+        _notice_averaging_backend()
+
         if (scan_avg) and (getattr(self.scans, "shape", None) is None or len(self.scans) == 0):
             print('No scan data, ignoring scan_avg!')
             scan_avg = False
@@ -1274,6 +1294,7 @@ class Obsdata:
                 (Obsdata): Obsdata object containing averaged data
         """
 
+        _notice_averaging_backend()
         print('Incoherently averaging data, putting phases to zero!')
         amp_rec = ehavg.incoh_avg_vis(self, dt=inttime, debias=debias, scan_avg=scan_avg,
                                       rec_type='vis', err_type=err_type, invvar_avg=invvar_avg)
