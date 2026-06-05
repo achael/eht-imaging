@@ -35,11 +35,12 @@ Certain functions require packages not in the default install:
 
 - [pandas](http://www.pandas.pydata.org/) for the legacy `ehtim.statistics.dataframes` utilities and the flag-file CSV reader / scan-id binning helpers in `Obsdata`
 - [paramsurvey](https://github.com/wumpus/paramsurvey) for the parameter-survey utilities in `ehtim.survey`
+- [plotly](https://plotly.com/python/) for the interactive plotting module `ehtim.plotting.interactive`
 
 Install individually as needed:
 
 ```bash
-pip install pandas paramsurvey
+pip install pandas paramsurvey plotly
 ```
 
 ## Documentation and Tutorials
