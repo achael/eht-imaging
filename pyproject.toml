@@ -46,6 +46,10 @@ dev = [
     "pandas",
     "paramsurvey",
     "plotly",
+    "jax",
+]
+gpu = [
+    "jax[cuda12]",
 ]
 
 [project.urls]
@@ -75,6 +79,8 @@ testpaths = ["tests"]
 addopts = "-v --tb=short"
 markers = [
     "slow: optimizer-bound tests (scipy.optimize / Imager.make_image). Skip with -m 'not slow'.",
+    "gpu: requires a CUDA GPU. Run with -m gpu locally; deselect with -m 'not gpu'.",
+    "jax: needs the jax dependency. Run locally; CI deselects with -m 'not jax'.",
 ]
 
 # --- ruff ---
