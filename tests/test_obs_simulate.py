@@ -624,6 +624,12 @@ class TestAddJonesAndNoise:
         ratio = np.std(residual.real) / np.mean(obsdat["sigma"])
         assert 0.5 < ratio < 2.0
 
+    def test_seed_reproducible_with_noise(self, obs):
+        """Same seed gives bit-identical thermal noise."""
+        o1 = os_sim.add_jones_and_noise(obs, add_th_noise=True, verbose=False, seed=42)
+        o2 = os_sim.add_jones_and_noise(obs, add_th_noise=True, verbose=False, seed=42)
+        np.testing.assert_array_equal(o1["vis"], o2["vis"])
+
     def test_ampcal_false_deviates_amplitude(self, obs):
         out = os_sim.add_jones_and_noise(obs, add_th_noise=False, ampcal=False,
                                          verbose=False, seed=42)
@@ -878,3 +884,30 @@ class TestAddNoiseLegacy:
         residual = out["vis"] - obs.data["vis"]
         ratio = np.std(residual.real) / np.mean(out["sigma"])
         assert 0.5 < ratio < 2.0
+
+    def test_seed_reproducible_with_noise(self, obs):
+        """Same seed gives bit-identical thermal noise."""
+        o1 = os_sim.add_noise(obs, add_th_noise=True, verbose=False, seed=42)
+        o2 = os_sim.add_noise(obs, add_th_noise=True, verbose=False, seed=42)
+        np.testing.assert_array_equal(o1["vis"], o2["vis"])
+
+
+def test_observe_fast_ttype_warns_deprecated(gauss_im, observe):
+    """Forward sampling with ttype='fast' emits the sampling-context
+    DeprecationWarning (no gradient note — those values are correct)."""
+    with pytest.warns(DeprecationWarning, match=r"ttype='fast'") as w:
+        observe(gauss_im, ttype="fast")
+    assert "gradient" not in str(w.list[0].message)
+
+
+def test_warn_fast_ttype_deprecated_helper():
+    """The sampling helper does not mention gradients."""
+    with pytest.warns(DeprecationWarning, match=r"ttype='fast'") as w:
+        obsh.warn_fast_ttype_deprecated()
+    assert "gradient" not in str(w.list[0].message)
+
+
+def test_warn_fast_ttype_deprecated_imaging_helper():
+    """The imaging helper additionally notes that gradients are inaccurate."""
+    with pytest.warns(DeprecationWarning, match=r"gradients are inaccurate"):
+        obsh.warn_fast_ttype_deprecated_imaging()

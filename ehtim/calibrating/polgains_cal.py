@@ -17,23 +17,18 @@
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-from __future__ import division
-from __future__ import print_function
 
-from builtins import str
-from builtins import range
-from builtins import object
+import copy
+import time
+from multiprocessing import Pool, cpu_count
 
 import numpy as np
 import scipy.optimize as opt
-import time
-import copy
-from multiprocessing import cpu_count, Pool
 
-import ehtim.obsdata
-import ehtim.parloop as parloop
-import ehtim.observing.obs_helpers as obsh
 import ehtim.const_def as ehc
+import ehtim.obsdata
+import ehtim.observing.obs_helpers as obsh
+import ehtim.parloop as parloop
 
 MAXIT = 5000
 
@@ -96,14 +91,14 @@ def polgains_cal(obs, reference='AA', sites=[], method='phase', minimizer_method
         counter = parloop.Counter(initval=0, maxval=len(scans))
         if processes > len(scans):
             processes = len(scans)
-        print("Using Multiprocessing with %d Processes" % processes)
+        print(f"Using Multiprocessing with {processes} Processes")
         pool = Pool(processes=processes, initializer=init, initargs=(counter,))
     elif processes == 0:
         counter = parloop.Counter(initval=0, maxval=len(scans))
         processes = int(cpu_count())
         if processes > len(scans):
             processes = len(scans)
-        print("Using Multiprocessing with %d Processes" % processes)
+        print(f"Using Multiprocessing with {processes} Processes")
         pool = Pool(processes=processes, initializer=init, initargs=(counter,))
     else:
         print("Not Using Multiprocessing")
@@ -273,7 +268,8 @@ def polgains_cal_scan(scan, reference='AA', sites=[], method='phase', minimizer_
             rscale = g_fit[site_key]**-1
             lscale = 1. + 0.j
 
-            caldict[site] = np.array((scan['time'][0], rscale, lscale), dtype=ehc.DTCAL)
+            # TODO: time-dependent D-term field added but unpopulated
+            caldict[site] = np.array((scan['time'][0], rscale, lscale, 0j, 0j), dtype=ehc.DTCAL)
         out = caldict
     else:
         g1_fit = g_fit[g1_keys]

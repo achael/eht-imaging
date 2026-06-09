@@ -19,16 +19,15 @@
 
 import copy
 import math
+import warnings
 
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 import numpy as np
-import numpy.matlib as matlib
 import scipy.interpolate
-import scipy.ndimage.filters as filt
+import scipy.ndimage as ndi
 import scipy.optimize as opt
 import scipy.signal
-from scipy import ndimage as ndi
 
 import ehtim.const_def as ehc
 import ehtim.imaging.pol_imager_utils as polutils
@@ -1279,6 +1278,17 @@ class Image:
     def resample_square(self, xdim_new, ker_size=5):
         """Exactly resample a square image to new dimensions using the pulse function.
 
+           Deprecated in favor of :meth:`regrid_image`. The two differ:
+           ``resample_square`` convolves the pixel values with the pulse
+           function and resamples the continuous pixel*pulse image
+           representation exactly at the new pixel locations, while
+           ``regrid_image`` interpolates the pixel values directly with
+           scipy.interpolate.RectBivariateSpline. In practice ``regrid_image``
+           is the correct choice and is far faster; use ``resample_square``
+           only if you specifically need the exact continuous pixel*pulse
+           representation at intermediate points. This implementation is
+           O(N_pix^2) and is not used internally.
+
            Args:
                 xdim_new  (int): new pixel dimension
                 ker_size  (int): kernel size for resampling
@@ -1286,6 +1296,15 @@ class Image:
            Returns:
                 im_resampled (Image): resampled image
         """
+        warnings.warn(
+            "Image.resample_square is deprecated and slow (O(N_pix^2)). It "
+            "resamples the continuous pixel*pulse representation exactly at the "
+            "new pixel locations; for nearly all uses prefer Image.regrid_image, "
+            "which interpolates the pixel values directly and is far faster. Use "
+            "resample_square only if you need the exact pixel*pulse "
+            "representation at intermediate points.",
+            DeprecationWarning, stacklevel=2,
+        )
 
         if self.xdim != self.ydim:
             raise Exception("Image must be square to use Image.resample_square!")
@@ -1454,7 +1473,7 @@ class Image:
         def rot_imvec(imvec):
             if np.any(np.imag(imvec) != 0):
                 return rot_imvec(np.real(imvec)) + 1j * rot_imvec(np.imag(imvec))
-            imarr_rot = scipy.ndimage.interpolation.rotate(imvec.reshape((self.ydim, self.xdim)),
+            imarr_rot = ndi.rotate(imvec.reshape((self.ydim, self.xdim)),
                                                            angle * 180.0 / np.pi, reshape=False,
                                                            order=order, mode='constant',
                                                            cval=0.0, prefilter=True)
@@ -1701,7 +1720,7 @@ class Image:
             sigma = fwhmp / (2. * np.sqrt(2. * np.log(2.)))
             if np.any(np.imag(imarr) != 0):
                 return blur(np.real(imarr), sigma) + 1j * blur(np.imag(imarr), sigma)
-            imarr_blur = filt.gaussian_filter(imarr, (sigma, sigma))
+            imarr_blur = ndi.gaussian_filter(imarr, (sigma, sigma))
             return imarr_blur
 
         def blur_butter(imarr, size):
@@ -3532,7 +3551,7 @@ class Image:
                 rgbstring = color
             cs = plt.contour(x, y, z, levels=[level * maxz], colors=rgbstring, cmap=None)
             count += 1
-            cs.collections[0].set_label(str(int(level * 100)) + '%')
+            cs.set_label(str(int(level * 100)) + '%')
         if legend:
             plt.legend()
 
@@ -4212,7 +4231,7 @@ class Image:
             dynamic_range = dynamic_range * np.ones(len(im_list) + 1)
 
         if not isinstance(shift, np.ndarray) and not isinstance(shift, bool):
-            shift = matlib.repmat(shift, len(im_list), 1)
+            shift = np.tile(shift, (len(im_list), 1))
 
         psize = self.psize
         max_fov = np.max([self.xdim * self.psize, self.ydim * self.psize])

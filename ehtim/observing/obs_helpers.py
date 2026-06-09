@@ -45,6 +45,36 @@ warnings.filterwarnings("ignore", message="divide by zero encountered in double_
 # Observing & uv Functions
 ##################################################################################################
 
+
+def warn_fast_ttype_deprecated():
+    """Emit a DeprecationWarning for the ``ttype='fast'`` (plain FFT) path.
+
+    Used at forward-sampling sites where the path is deprecated but otherwise
+    correct. For imaging callers, use :func:`warn_fast_ttype_deprecated_imaging`,
+    which additionally notes that the FFT imaging gradients are inaccurate.
+    """
+    warnings.warn(
+        "ttype='fast' (plain FFT) is deprecated and will be removed in a "
+        "future release. Use ttype='nfft' (recommended) or ttype='direct' "
+        "instead.",
+        DeprecationWarning, stacklevel=2,
+    )
+
+
+def warn_fast_ttype_deprecated_imaging():
+    """Emit a DeprecationWarning for ``ttype='fast'`` from imaging callers.
+
+    Same as :func:`warn_fast_ttype_deprecated` but adds the imaging-specific
+    note that FFT gradients are inaccurate.
+    """
+    warnings.warn(
+        "ttype='fast' (plain FFT) is deprecated and will be removed in a "
+        "future release; its imaging gradients are inaccurate. Use "
+        "ttype='nfft' (recommended) or ttype='direct' instead.",
+        DeprecationWarning, stacklevel=2,
+    )
+
+
 def compute_uv_coordinates(array, site1, site2, time, mjd, ra, dec, rf, timetype='UTC',
                            elevmin=ehc.ELEV_LOW,  elevmax=ehc.ELEV_HIGH, no_elevcut_space=False,
                            fix_theta_GMST=False, earthshadow_space=True):
@@ -715,6 +745,43 @@ def unpack_vis(data, field, polrep):
 ##################################################################################################
 # Closure Quantity Construction
 ##################################################################################################
+
+
+def uv_area_triangle(u1, v1, u2, v2):
+    """Signed-magnitude area of the uv-plane triangle spanned by two of its baseline vectors.
+
+       For a closure triangle 1-2-3 with baselines b12=(u1,v1) and b23=(u2,v2), the
+       enclosed uv-area is ``A = (1/2) * |u1*v2 - u2*v1|``. Independent of which two
+       of the three baselines are passed; sign-stripped so it can be used directly
+       as an x-axis variable.
+
+       Args:
+           u1, v1 (array-like): uv components of the first baseline (in lambda)
+           u2, v2 (array-like): uv components of the second baseline (in lambda)
+
+       Returns:
+           (numpy.ndarray): triangle uv-area in lambda^2 (>=0)
+    """
+    return 0.5 * np.abs(np.asarray(u1) * np.asarray(v2) - np.asarray(u2) * np.asarray(v1))
+
+
+def uv_area_quadrangle(u1, v1, u2, v2, u3, v3):
+    """Signed-magnitude area of the uv-plane quadrangle for a closure-amplitude quad.
+
+       A closure quadrangle 1-2-3-4 is built from four baselines whose vectors sum to
+       zero; any three are independent. Treating the quadrangle as two triangles
+       sharing a diagonal, ``A = (1/2) * |u1*v2 - u2*v1| + (1/2) * |u2*v3 - u3*v2|``.
+
+       Args:
+           u1..v3 (array-like): uv components of three independent baselines (in lambda)
+
+       Returns:
+           (numpy.ndarray): quadrangle uv-area in lambda^2 (>=0)
+    """
+    u1, v1 = np.asarray(u1), np.asarray(v1)
+    u2, v2 = np.asarray(u2), np.asarray(v2)
+    u3, v3 = np.asarray(u3), np.asarray(v3)
+    return 0.5 * (np.abs(u1 * v2 - u2 * v1) + np.abs(u2 * v3 - u3 * v2))
 
 
 def valid_closure_vtypes(polrep):

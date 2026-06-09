@@ -2,9 +2,9 @@ name: CI
 
 on:
   push:
-    branches: [dev-backend, dev-backend-mixpol]
+    branches: [dev, dev-backend, dev-backend-mixpol]
   pull_request:
-    branches: [dev-backend, dev-backend-mixpol]
+    branches: [dev, dev-backend, dev-backend-mixpol]
 
 jobs:
   lint:
@@ -33,7 +33,7 @@ jobs:
     timeout-minutes: 30
     strategy:
       matrix:
-        python-version: ["3.10", "3.12"]
+        python-version: ["3.11", "3.12"]
     steps:
       - uses: actions/checkout@v4
         with:

@@ -151,15 +151,18 @@ def self_cal(obs, im, sites=[], pol='I', apply_singlepol=False, method="both",
     # loop over scans and calibrate
     tstart = time.time()
     if processes > 0:  # run on multiple cores with multiprocessing
-        scans_cal = np.array(pool.map(get_selfcal_scan_cal, [[i, len(scans), scans[i],
-                                                              im, V_scans[i], sites,
-                                                              obs.polrep, pol, apply_singlepol,
-                                                              method, minimizer_method,
-                                                              show_solution, pad_amp, gain_tol,
-                                                              debias, caltable, msgtype,
-                                                              use_grad
-                                                              ] for i in range(len(scans))]),
-                                                              dtype=object)
+        # Keep the per-scan results as a plain list. Wrapping in
+        # np.array(..., dtype=object) used to force an object outer dtype
+        # which corrupted the subsequent np.concatenate(scans_cal) for the
+        # caltable=False return path, causing the Obsdata dtype check to fail.
+        scans_cal = list(pool.map(get_selfcal_scan_cal, [[i, len(scans), scans[i],
+                                                          im, V_scans[i], sites,
+                                                          obs.polrep, pol, apply_singlepol,
+                                                          method, minimizer_method,
+                                                          show_solution, pad_amp, gain_tol,
+                                                          debias, caltable, msgtype,
+                                                          use_grad
+                                                          ] for i in range(len(scans))]))
 
     else:  # run on a single core
         for i in range(len(scans)):
@@ -362,7 +365,8 @@ def self_cal_scan(scan, im, V_scan=[], sites=[], polrep='stokes', pol='I', apply
 
             # TODO: we may want to give two entries for the start/stop times
             # when a non-zero interval is used
-            caldict[site] = np.array((scan['time'][0], rscale, lscale), dtype=ehc.DTCAL)
+            # TODO: time-dependent D-term field added but unpopulated
+            caldict[site] = np.array((scan['time'][0], rscale, lscale, 0j, 0j), dtype=ehc.DTCAL)
 
         out = caldict
 
@@ -551,8 +555,8 @@ def errfunc_grad_full(gpar, vis, v_scan, sigma_inv, gain_tol, sites, g1_keys, g2
         g1idx = np.argwhere(np.array(g1_keys)==i)
         g2idx = np.argwhere(np.array(g2_keys)==i)
 
-        dchisq_dgr[i] = np.sum(dchisq_dg1r[g1idx]) + np.sum(dchisq_dg2r[g2idx])
-        dchisq_dgi[i] = np.sum(dchisq_dg1i[g1idx]) + np.sum(dchisq_dg2i[g2idx])
+        dchisq_dgr[i] = (np.sum(dchisq_dg1r[g1idx]) + np.sum(dchisq_dg2r[g2idx])).real
+        dchisq_dgi[i] = (np.sum(dchisq_dg1i[g1idx]) + np.sum(dchisq_dg2i[g2idx])).real
 
     ###################################
     # prior term chi^2 derivitive

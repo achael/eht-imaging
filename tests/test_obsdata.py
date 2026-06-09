@@ -792,6 +792,28 @@ def test_rescale_zbl_scales_short_baselines(obs_direct):
         )
 
 
+def test_rescale_zbl_circ_polrep_scales_and_warns(obs_direct):
+    """rescale_zbl must scale the per-polrep visibility/sigma fields (via
+    self.poldict, not hardcoded Stokes names) and warn that orig_totflux may be
+    mis-estimated for polrep != 'stokes'."""
+    obs_circ = obs_direct.switch_polrep("circ")
+    with warnings.catch_warnings(record=True) as caught:
+        warnings.simplefilter("always")
+        out = obs_circ.rescale_zbl(totflux=2.0, uv_max=5e8)
+    assert any("orig_totflux" in str(w.message) for w in caught)
+
+    short_mask = (obs_circ.data["u"] ** 2 + obs_circ.data["v"] ** 2) ** 0.5 < 5e8
+    long_mask = ~short_mask
+    if short_mask.any():
+        assert not np.allclose(
+            out.data["rrvis"][short_mask], obs_circ.data["rrvis"][short_mask]
+        )
+    if long_mask.any():
+        np.testing.assert_array_equal(
+            out.data["rrvis"][long_mask], obs_circ.data["rrvis"][long_mask]
+        )
+
+
 def test_add_leakage_noise_increases_sigma(obs_pol_direct):
     out = obs_pol_direct.add_leakage_noise(Dterm_amp=0.1)
     assert np.all(out.data["sigma"] >= obs_pol_direct.data["sigma"])

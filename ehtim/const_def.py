@@ -193,6 +193,13 @@ def upgrade_tarr(tarr):
     if tarr is None:
         return tarr
     if tarr.dtype.names is not None and 'feed_type' in tarr.dtype.names:
+        # Field present (current DTARR). Fill blank feed_types -- e.g. from a
+        # zero-initialised np.zeros(dtype=DTARR) -- with the legacy 'rl'
+        # default; leave the '??' must-declare sentinel for validation.
+        blank = tarr['feed_type'] == ''
+        if blank.any():
+            tarr = tarr.copy()
+            tarr['feed_type'][blank] = 'rl'
         return tarr
     new = _np.zeros(len(tarr), dtype=DTARR)
     for name in ('site', 'x', 'y', 'z',

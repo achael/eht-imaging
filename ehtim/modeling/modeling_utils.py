@@ -1650,7 +1650,9 @@ def modeler_func(Obsdata, model_init, model_prior,
             caldict[site] = []
 
         for j in range(len(gains)):
-            caldict[gain_list[j][1]].append((gain_list[j][0], (1.0 + gains[j]), (1.0 + gains[j])))
+            # TODO: time-dependent D-term field added but unpopulated
+            caldict[gain_list[j][1]].append(
+                (gain_list[j][0], (1.0 + gains[j]), (1.0 + gains[j]), 0j, 0j))
 
         for site in caldict.keys():
             caldict[site] = np.array(caldict[site], dtype=DTCAL)
@@ -1951,7 +1953,7 @@ def chisqgrad_cphase_diag(model, uv, clphase_diag, sigma, pol='I', fit_pol=False
         term3 = np.dot(np.dot((np.sin(clphase_diag_measured-clphase_diag_samples)/(clphase_diag_sigma**2.0)),(tform_mats[iA]/i3)),i3_grad.T)
         deriv += -2.0*np.imag(term1 + term2 + term3)
 
-    deriv *= 1.0/np.float(len(np.concatenate(clphase_diag)))
+    deriv *= 1.0/float(len(np.concatenate(clphase_diag)))
 
     return deriv
 
@@ -2079,7 +2081,7 @@ def chisqgrad_logcamp_diag(model, uv, log_clamp_diag, sigma, pol='I', fit_pol=Fa
         term4 = np.dot(np.dot(((log_clamp_diag_measured-log_clamp_diag_samples)/(log_clamp_diag_sigma**2.0)),(tform_mats[iA]/i4)),i4_grad.T)
         deriv += -2.0*np.real(term1 + term2 - term3 - term4)
 
-    deriv *= 1.0/np.float(len(np.concatenate(log_clamp_diag)))
+    deriv *= 1.0/float(len(np.concatenate(log_clamp_diag)))
 
     return deriv
 

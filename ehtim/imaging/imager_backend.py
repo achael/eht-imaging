@@ -355,10 +355,8 @@ def pack_imarr(imarr, which_solve):
     if nsolve != len(which_solve):
         raise Exception("in pack_imarr, imarr has inconsistent shape with which_solve!")
 
-    vec = np.array([])
-    for kk in range(nsolve):
-        if which_solve[kk]!=0:
-            vec = np.hstack((vec,imarr[kk]))
+    blocks = [imarr[kk] for kk in range(nsolve) if which_solve[kk] != 0]
+    vec = np.concatenate(blocks) if blocks else np.array([])
 
     return vec
 

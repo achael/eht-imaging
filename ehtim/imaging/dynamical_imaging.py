@@ -31,7 +31,7 @@ from multiprocessing import Pool, cpu_count
 import matplotlib.pyplot as plt
 import numpy as np
 import requests
-import scipy.ndimage.filters as filt
+import scipy.ndimage as ndi
 import scipy.optimize as opt
 import scipy.signal
 
@@ -335,7 +335,7 @@ def blur_im_list(im_List, fwhm_x, fwhm_t):
     sigma_t = fwhm_t / (2. * np.sqrt(2. * np.log(2.)))
 
     arr = np.array([im.imvec.reshape(im.ydim, im.xdim) for im in im_List])
-    arr = filt.gaussian_filter(arr, (sigma_t, sigma_x, sigma_x))
+    arr = ndi.gaussian_filter(arr, (sigma_t, sigma_x, sigma_x))
 
     ret = []
     for j in range(len(im_List)):

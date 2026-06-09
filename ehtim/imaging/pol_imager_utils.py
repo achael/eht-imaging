@@ -244,8 +244,6 @@ def mcv_grad(imarr, gradarr):
     """
     vfrac = imarr[3]
     mfrac_max = 1 - np.abs(vfrac)
-    if np.any(mfrac_max > 1):
-        raise Exception("mfrac_max>1 in mcv_grad!")
 
     mprime = imarr[1]
     mfrac = mfrac_max * (0.5 + np.arctan(mprime / TANWIDTH_M) / np.pi)
@@ -319,8 +317,6 @@ def vcv_grad(imarr, gradarr):
     """
     mfrac = imarr[1]
     vfrac_max = 1 - np.abs(mfrac)
-    if np.any(vfrac_max > 1):
-        raise Exception("vfrac_max>1 in vcv_grad!")
 
     vprime = imarr[3]
     vfrac = 2 * vfrac_max * np.arctan(vprime / TANWIDTH_V) / np.pi

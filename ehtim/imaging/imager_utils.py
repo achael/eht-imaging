@@ -21,6 +21,7 @@
 
 import matplotlib.pyplot as plt
 import numpy as np
+import scipy.sparse as sps
 
 import ehtim.const_def as ehc
 import ehtim.observing.obs_helpers as obsh
@@ -652,9 +653,8 @@ def chisqgrad_cphase_diag_fft(imvec, A, clphase_diag, sigma):
         clphase_diag_measured = clphase_diag[count:count+len(tform_mat)]
         clphase_diag_sigma = sigma[count:count+len(tform_mat)]
 
-        for j in range(len(clphase_diag_measured)):
-            pref[count:count+len(tform_mat)] += 2.0 * tform_mat[j, :] * np.sin(
-                clphase_diag_measured[j] - clphase_diag_samples[j])/(clphase_diag_sigma[j]**2)
+        weight = 2.0 * np.sin(clphase_diag_measured - clphase_diag_samples) / (clphase_diag_sigma**2)
+        pref[count:count+len(tform_mat)] += np.dot(weight, tform_mat)
 
         count += len(tform_mat)
 
@@ -818,10 +818,8 @@ def chisqgrad_logcamp_diag_fft(imvec, A, log_clamp_diag, sigma):
         log_clamp_diag_measured = log_clamp_diag[count:count+len(tform_mat)]
         log_clamp_diag_sigma = sigma[count:count+len(tform_mat)]
 
-        for j in range(len(log_clamp_diag_measured)):
-            pref[count:count+len(tform_mat)] += -2.0 * tform_mat[j, :] * \
-                (log_clamp_diag_measured[j] - log_clamp_diag_samples[j]) / \
-                (log_clamp_diag_sigma[j]**2)
+        weight = -2.0 * (log_clamp_diag_measured - log_clamp_diag_samples) / (log_clamp_diag_sigma**2)
+        pref[count:count+len(tform_mat)] += np.dot(weight, tform_mat)
 
         count += len(tform_mat)
 
@@ -1169,7 +1167,7 @@ def chisq_cphase_diag_nfft(imvec, A, clphase_diag, sigma):
     sigma = np.concatenate(sigma) * ehc.DEGREE
 
     A3 = A[0]
-    tform_mats = A[1]
+    tform_blockdiag = A[1]
 
     # get nfft objects
     nfft_info1 = A3[0]
@@ -1199,14 +1197,7 @@ def chisq_cphase_diag_nfft(imvec, A, clphase_diag, sigma):
 
     clphase_samples = np.angle(samples1*samples2*samples3)
 
-    count = 0
-    clphase_diag_samples = []
-    for tform_mat in tform_mats:
-        clphase_samples_here = clphase_samples[count:count+len(tform_mat)]
-        clphase_diag_samples.append(np.dot(tform_mat, clphase_samples_here))
-        count += len(tform_mat)
-
-    clphase_diag_samples = np.concatenate(clphase_diag_samples)
+    clphase_diag_samples = tform_blockdiag.dot(clphase_samples)
 
     # compute chi^2
     chisq = (2.0/len(clphase_diag)) * \
@@ -1222,7 +1213,7 @@ def chisqgrad_cphase_diag_nfft(imvec, A, clphase_diag, sigma):
     sigma = np.concatenate(sigma) * ehc.DEGREE
 
     A3 = A[0]
-    tform_mats = A[1]
+    tform_blockdiag = A[1]
 
     # get nfft objects
     nfft_info1 = A3[0]
@@ -1253,19 +1244,9 @@ def chisqgrad_cphase_diag_nfft(imvec, A, clphase_diag, sigma):
     clphase_samples = np.angle(v1*v2*v3)
 
     # gradient vec for adjoint FT
-    count = 0
-    pref = np.zeros_like(clphase_samples)
-    for tform_mat in tform_mats:
-
-        clphase_diag_samples = np.dot(tform_mat, clphase_samples[count:count+len(tform_mat)])
-        clphase_diag_measured = clphase_diag[count:count+len(tform_mat)]
-        clphase_diag_sigma = sigma[count:count+len(tform_mat)]
-
-        for j in range(len(clphase_diag_measured)):
-            pref[count:count+len(tform_mat)] += 2.0 * tform_mat[j, :] * np.sin(
-                clphase_diag_measured[j] - clphase_diag_samples[j])/(clphase_diag_sigma[j]**2)
-
-        count += len(tform_mat)
+    clphase_diag_samples = tform_blockdiag.dot(clphase_samples)
+    weight = 2.0 * np.sin(clphase_diag - clphase_diag_samples) / (sigma**2)
+    pref = tform_blockdiag.T.dot(weight)
 
     pt1 = pref/v1.conj() * pulsefac1.conj()
     pt2 = pref/v2.conj() * pulsefac2.conj()
@@ -1523,7 +1504,7 @@ def chisq_logcamp_diag_nfft(imvec, A, log_clamp_diag, sigma):
     sigma = np.concatenate(sigma)
 
     A4 = A[0]
-    tform_mats = A[1]
+    tform_blockdiag = A[1]
 
     # get nfft objects
     nfft_info1 = A4[0]
@@ -1562,14 +1543,7 @@ def chisq_logcamp_diag_nfft(imvec, A, log_clamp_diag, sigma):
     log_clamp_samples = (np.log(np.abs(samples1)) + np.log(np.abs(samples2)) -
                          np.log(np.abs(samples3)) - np.log(np.abs(samples4)))
 
-    count = 0
-    log_clamp_diag_samples = []
-    for tform_mat in tform_mats:
-        log_clamp_samples_here = log_clamp_samples[count:count+len(tform_mat)]
-        log_clamp_diag_samples.append(np.dot(tform_mat, log_clamp_samples_here))
-        count += len(tform_mat)
-
-    log_clamp_diag_samples = np.concatenate(log_clamp_diag_samples)
+    log_clamp_diag_samples = tform_blockdiag.dot(log_clamp_samples)
 
     # compute chi^2
     chisq = np.sum(np.abs((log_clamp_diag - log_clamp_diag_samples)/sigma)**2) / \
@@ -1586,7 +1560,7 @@ def chisqgrad_logcamp_diag_nfft(imvec, A, log_clamp_diag, sigma):
     sigma = np.concatenate(sigma)
 
     A4 = A[0]
-    tform_mats = A[1]
+    tform_blockdiag = A[1]
 
     # get nfft objects
     nfft_info1 = A4[0]
@@ -1625,20 +1599,9 @@ def chisqgrad_logcamp_diag_nfft(imvec, A, log_clamp_diag, sigma):
     log_clamp_samples = np.log(np.abs((v1 * v2)/(v3 * v4)))
 
     # gradient vec for adjoint FT
-    count = 0
-    pp = np.zeros_like(log_clamp_samples)
-    for tform_mat in tform_mats:
-
-        log_clamp_diag_samples = np.dot(tform_mat, log_clamp_samples[count:count+len(tform_mat)])
-        log_clamp_diag_measured = log_clamp_diag[count:count+len(tform_mat)]
-        log_clamp_diag_sigma = sigma[count:count+len(tform_mat)]
-
-        for j in range(len(log_clamp_diag_measured)):
-            pp[count:count+len(tform_mat)] += -2.0 * tform_mat[j, :] * \
-                (log_clamp_diag_measured[j] - log_clamp_diag_samples[j]) / \
-                (log_clamp_diag_sigma[j]**2)
-
-        count += len(tform_mat)
+    log_clamp_diag_samples = tform_blockdiag.dot(log_clamp_samples)
+    weight = -2.0 * (log_clamp_diag - log_clamp_diag_samples) / (sigma**2)
+    pp = tform_blockdiag.T.dot(weight)
 
     pt1 = pp / v1.conj() * pulsefac1.conj()
     pt2 = pp / v2.conj() * pulsefac2.conj()
@@ -3273,9 +3236,9 @@ def chisqdata_cphase_diag_nfft(Obsdata, Prior, pol='I', **kwargs):
     A3 = obsh.NFFTInfo(Prior.xdim, Prior.ydim, Prior.psize, Prior.pulse, npad, p_rad, uv3, eps=nfft_eps)
     A = [A1, A2, A3]
 
-    # Per-timestamp transform matrices have varying shapes; NumPy >= 1.24
-    # requires explicit dtype=object for inhomogeneous arrays.
-    Amatrices = (A, np.array(tform_mats, dtype=object))
+    # Stack the per-time-block decorrelating transforms into one block-diagonal
+    # operator so the diag chisq/grad apply them as a single matmul, not a loop.
+    Amatrices = (A, sps.block_diag(tform_mats, format='csr'))
 
     return (np.array(clphase_diag, dtype=object), np.array(sigma_diag, dtype=object), Amatrices)
 
@@ -3452,9 +3415,9 @@ def chisqdata_logcamp_diag_nfft(Obsdata, Prior, pol='I', **kwargs):
     A4 = obsh.NFFTInfo(Prior.xdim, Prior.ydim, Prior.psize, Prior.pulse, npad, p_rad, uv4, eps=nfft_eps)
     A = [A1, A2, A3, A4]
 
-    # Per-timestamp transform matrices have varying shapes; NumPy >= 1.24
-    # requires explicit dtype=object for inhomogeneous arrays.
-    Amatrices = (A, np.array(tform_mats, dtype=object))
+    # Stack the per-time-block decorrelating transforms into one block-diagonal
+    # operator so the diag chisq/grad apply them as a single matmul, not a loop.
+    Amatrices = (A, sps.block_diag(tform_mats, format='csr'))
 
     return (np.array(clamp_diag, dtype=object), np.array(sigma_diag, dtype=object), Amatrices)
 

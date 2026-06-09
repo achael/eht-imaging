@@ -227,6 +227,7 @@ def sample_vis(im_org, uv, sgrscat=False, polrep_obs='stokes',
 
     # Get visibilities from straightforward FFT
     if ttype == "fast":
+        obsh.warn_fast_ttype_deprecated()
 
         # Padded image size
         npad = fft_pad_factor * np.max((im.xdim, im.ydim))
@@ -1019,8 +1020,12 @@ def add_jones_and_noise(obs, add_th_noise=True,
 
         # Add noise
         if add_th_noise:
-            noise_matrix = np.array([[obsh.cerror(sig_rr[i]), obsh.cerror(sig_rl[i])],
-                                     [obsh.cerror(sig_lr[i]), obsh.cerror(sig_ll[i])]])
+            noise_matrix = np.array([
+                [obsh.cerror_hash(sig_rr[i], t1[i], t2[i], times[i], 'rr', seed),
+                 obsh.cerror_hash(sig_rl[i], t1[i], t2[i], times[i], 'rl', seed)],
+                [obsh.cerror_hash(sig_lr[i], t1[i], t2[i], times[i], 'lr', seed),
+                 obsh.cerror_hash(sig_ll[i], t1[i], t2[i], times[i], 'll', seed)],
+            ])
             corr_matrix_corrupt += noise_matrix
 
         # Put the corrupted data back into the data table
@@ -1371,10 +1376,23 @@ def add_noise(obs, add_th_noise=True, opacitycal=True, ampcal=True, phasecal=Tru
     sigma_est4 = sigma_perf4 * gain_true * tau_est
 
     if add_th_noise:
-        vis1 = (vis1 + obsh.cerror(sigma_true1))
-        vis2 = (vis2 + obsh.cerror(sigma_true2))
-        vis3 = (vis3 + obsh.cerror(sigma_true3))
-        vis4 = (vis4 + obsh.cerror(sigma_true4))
+        n = len(times)
+        noise1 = np.fromiter(
+            (obsh.cerror_hash(sigma_true1[i], sites[i, 0], sites[i, 1], times[i], 'p1', seed)
+             for i in range(n)), complex, count=n)
+        noise2 = np.fromiter(
+            (obsh.cerror_hash(sigma_true2[i], sites[i, 0], sites[i, 1], times[i], 'p2', seed)
+             for i in range(n)), complex, count=n)
+        noise3 = np.fromiter(
+            (obsh.cerror_hash(sigma_true3[i], sites[i, 0], sites[i, 1], times[i], 'p3', seed)
+             for i in range(n)), complex, count=n)
+        noise4 = np.fromiter(
+            (obsh.cerror_hash(sigma_true4[i], sites[i, 0], sites[i, 1], times[i], 'p4', seed)
+             for i in range(n)), complex, count=n)
+        vis1 = vis1 + noise1
+        vis2 = vis2 + noise2
+        vis3 = vis3 + noise3
+        vis4 = vis4 + noise4
 
     # Add the gain error to the true visibilities
     vis1 = vis1 * gain_true * tau_est / tau_true
