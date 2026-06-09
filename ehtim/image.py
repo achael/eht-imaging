@@ -3965,11 +3965,11 @@ class Image:
                     plt.title('m')
                 plt.contour(imarr, colors='k', linewidths=.25)
                 plt.quiver(x, y, a, b,
-                           headaxislength=20, headwidth=1, headlength=.01, minlength=0, minshaft=1,
+                           headaxislength=0, headwidth=1, headlength=0, minlength=0, minshaft=1,
                            width=.01 * self.xdim, units='x', pivot='mid', color='k', angles='uv',
                            scale=1.0 / thin)
                 plt.quiver(x, y, a, b,
-                           headaxislength=20, headwidth=1, headlength=.01, minlength=0, minshaft=1,
+                           headaxislength=0, headwidth=1, headlength=0, minlength=0, minshaft=1,
                            width=.005 * self.xdim, units='x', pivot='mid', color='w', angles='uv',
                            scale=1.1 / thin)
 
@@ -3992,11 +3992,11 @@ class Image:
 
             if vec_cfun is None:
                 plt.quiver(x, y, a, b,
-                           headaxislength=20, headwidth=1, headlength=.01, minlength=0, minshaft=1,
+                           headaxislength=0, headwidth=1, headlength=0, minlength=0, minshaft=1,
                            width=.01 * self.xdim, units='x', pivot='mid', color='k', angles='uv',
                            scale=1.0 / thin)
                 plt.quiver(x, y, a, b,
-                           headaxislength=20, headwidth=1, headlength=.01, minlength=0, minshaft=1,
+                           headaxislength=0, headwidth=1, headlength=0, minlength=0, minshaft=1,
                            width=.005 * self.xdim, units='x', pivot='mid', color='w', angles='uv',
                            scale=1.1 / thin)
             else:
@@ -4012,12 +4012,12 @@ class Image:
                     ::thin]
                 mthin = mthin[mask2]
                 plt.quiver(x, y, a, b,
-                           headaxislength=20, headwidth=1, headlength=.01, minlength=0, minshaft=1,
+                           headaxislength=0, headwidth=1, headlength=0, minlength=0, minshaft=1,
                            width=.01 * self.xdim, units='x', pivot='mid', color='w', angles='uv',
                            scale=1.0 / thin)
                 plt.quiver(x, y, a, b, mthin,
                            norm=mpl.colors.Normalize(vmin=0, vmax=1.), cmap=vec_cfun,
-                           headaxislength=20, headwidth=1, headlength=.01, minlength=0, minshaft=1,
+                           headaxislength=0, headwidth=1, headlength=0, minlength=0, minshaft=1,
                            width=.007 * self.xdim, units='x', pivot='mid', angles='uv',
                            scale=1.1 / thin)
 
