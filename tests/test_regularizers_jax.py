@@ -71,9 +71,10 @@ def test_three_way_gradient(reg_setup, rtype):
     mask = np.ones(imvec.size, dtype=bool)
 
     g_jax = np.asarray(jax.grad(functools.partial(_reg_loss_log, rtype))(jnp.asarray(x), **params))
-    # transform_gradients: ["log"] is the exp(x) chain rule, np.array([1]) solves Stokes-I only
+    # transform_gradients: ["log"] is the exp(x) chain rule; which_solve is ignored for
+    # single-Stokes (nimage==1), so (1,0,0,0) is the nominal mask
     g_analytic = transform_gradients(
-        getattr(iu, "reggrad_" + rtype)(imvec, mask, **params), x, ["log"], np.array([1]),
+        getattr(iu, "reggrad_" + rtype)(imvec, mask, **params), x, ["log"], np.array((1, 0, 0, 0)),
     )
     assert np.allclose(g_jax, g_analytic, rtol=GRAD_RTOL, atol=GRAD_ATOL)
 

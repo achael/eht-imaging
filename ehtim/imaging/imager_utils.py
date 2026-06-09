@@ -1780,6 +1780,7 @@ def reggrad_l1w(imvec, mask, **kwargs):
 
 
 def reg_lA(imvec, mask, **kwargs):
+    xp = array_namespace(imvec)
     psize = kwargs['psize']
     flux = kwargs['flux']
     beam_size = kwargs.get('beam_size') or psize
@@ -1792,7 +1793,7 @@ def reg_lA(imvec, mask, **kwargs):
         norm = (norm_l1 * weight_l1 + norm_l0 * weight_l0) / (weight_l0 + weight_l1)
     else:
         norm = 1
-    return array_namespace(imvec).sum(fA(imvec, flux, alpha_A)) / norm
+    return xp.sum(fA(imvec, flux, alpha_A)) / norm
 
 
 def reggrad_lA(imvec, mask, **kwargs):

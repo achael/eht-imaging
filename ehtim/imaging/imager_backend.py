@@ -494,8 +494,9 @@ def transform_gradients(gradarr, imarr, transforms, which_solve):
     imarr is the current image in solver variables.
     transforms lists the active solver transforms: 'log' applies the
     imvec = exp(x) chain rule, 'mcv'/'vcv'/'polcv' the polarization ones.
-    which_solve is the per-Stokes solve mask; np.array([1]) means a single
-    Stokes-I image is the only solved-for component.
+    which_solve is the per-Stokes solve mask, used only for multi-polarization
+    imarr (nimage 4 or 10); for single-Stokes / single-pol (nimage 1 or 3) it is
+    ignored (treated as (1,0,0,0)).
     """
 
     if ('polcv' in transforms):

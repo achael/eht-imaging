@@ -116,9 +116,10 @@ def test_three_way_gradient(term_data):
 
     g_jax = _make_fun(dtype, A, data, sigma)(x)[1]
 
-    # transform_gradients: ["log"] is the exp(x) chain rule, np.array([1]) solves Stokes-I only
+    # transform_gradients: ["log"] is the exp(x) chain rule; which_solve is ignored for
+    # single-Stokes (nimage==1), so (1,0,0,0) is the nominal mask
     g_analytic = transform_gradients(
-        getattr(iu, "chisqgrad_" + dtype)(imvec, A, data, sigma), x, ["log"], np.array([1]),
+        getattr(iu, "chisqgrad_" + dtype)(imvec, A, data, sigma), x, ["log"], np.array((1, 0, 0, 0)),
     )
     assert np.allclose(g_jax, g_analytic, rtol=GRAD_RTOL, atol=GRAD_ATOL)
 

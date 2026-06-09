@@ -52,7 +52,7 @@ from ehtim.plotting import comp_plots
 import ehtim.plotting as plotting
 from ehtim.calibrating.network_cal import network_cal as netcal
 from ehtim.calibrating.self_cal import self_cal as selfcal
-# TODO: rename pol_cal to pol-cal in the near future.
+# TODO: replace pol_cal with pol_cal_new (validated D-term cal) in the near future.
 from ehtim.calibrating.pol_cal import (
     leakage_cal,
     plot_leakage,
