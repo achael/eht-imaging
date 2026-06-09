@@ -108,6 +108,9 @@ ignore = [
 # modeling_utils.py has deferred cleanup -- silence legacy-style noise
 # until the dedicated cleanup PR.
 "ehtim/modeling/modeling_utils.py" = ["E701", "E721", "E722", "F403", "F405", "UP031"]
+# __init__ star-imports const_def to auto-propagate its public constants; the
+# star (F403) and the names it provides (F405) are intrinsic to that design.
+"ehtim/__init__.py" = ["F403", "F405"]
 
 [tool.ruff.lint.isort]
 known-first-party = ["ehtim"]
