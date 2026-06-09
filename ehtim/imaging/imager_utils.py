@@ -1703,10 +1703,11 @@ def reggrad_gs(imvec, mask, **kwargs):
 
 
 def reg_patch(imvec, mask, **kwargs):
+    xp = array_namespace(imvec)
     priorvec = kwargs['nprior']
     flux = kwargs['flux']
     norm = flux**2 if kwargs.get('norm_reg', True) else 1
-    return 0.5 * np.sum((imvec - priorvec)**2) / norm
+    return 0.5 * xp.sum((imvec - priorvec)**2) / norm
 
 
 def reggrad_patch(imvec, mask, **kwargs):
@@ -1717,6 +1718,7 @@ def reggrad_patch(imvec, mask, **kwargs):
 
 
 def reg_cm(imvec, mask, **kwargs):
+    xp = array_namespace(imvec)
     if np.any(np.invert(mask)):
         imvec = embed(imvec, mask, randomfloor=True)
     nx, ny, psize = kwargs['xdim'], kwargs['ydim'], kwargs['psize']
@@ -1726,7 +1728,7 @@ def reg_cm(imvec, mask, **kwargs):
     xx, yy = np.meshgrid(range(nx//2, -nx//2, -1), range(ny//2, -ny//2, -1))
     xx = psize * xx.flatten()
     yy = psize * yy.flatten()
-    return (np.sum(imvec*xx)**2 + np.sum(imvec*yy)**2) / norm
+    return (xp.sum(imvec*xx)**2 + xp.sum(imvec*yy)**2) / norm
 
 
 def reggrad_cm(imvec, mask, **kwargs):
@@ -1744,6 +1746,7 @@ def reggrad_cm(imvec, mask, **kwargs):
 
 
 def reg_tv(imvec, mask, **kwargs):
+    xp = array_namespace(imvec)
     if np.any(np.invert(mask)):
         imvec = embed(imvec, mask, randomfloor=True)
     nx, ny, psize = kwargs['xdim'], kwargs['ydim'], kwargs['psize']
@@ -1752,10 +1755,10 @@ def reg_tv(imvec, mask, **kwargs):
     epsilon = kwargs.get('epsilon_tv', 0.)
     norm = flux * psize / beam_size if kwargs.get('norm_reg', True) else 1
     im = imvec.reshape(ny, nx)
-    impad = np.pad(im, 1, mode='constant', constant_values=0)
-    im_l1 = np.roll(impad, -1, axis=0)[1:ny+1, 1:nx+1]
-    im_l2 = np.roll(impad, -1, axis=1)[1:ny+1, 1:nx+1]
-    return np.sum(np.sqrt(np.abs(im_l1 - im)**2 + np.abs(im_l2 - im)**2 + epsilon)) / norm
+    impad = xp.pad(im, 1, mode='constant', constant_values=0)
+    im_l1 = xp.roll(impad, -1, axis=0)[1:ny+1, 1:nx+1]
+    im_l2 = xp.roll(impad, -1, axis=1)[1:ny+1, 1:nx+1]
+    return xp.sum(xp.sqrt(xp.abs(im_l1 - im)**2 + xp.abs(im_l2 - im)**2 + epsilon)) / norm
 
 
 def reggrad_tv(imvec, mask, **kwargs):
@@ -1790,6 +1793,7 @@ def reggrad_tv(imvec, mask, **kwargs):
 # tvlog / tv2log use clipfloor=epsilon_tv (not the default 0) so the log
 # transform stays defined where mask filled in values.
 def reg_tvlog(imvec, mask, **kwargs):
+    xp = array_namespace(imvec)
     epsilon = kwargs.get('epsilon_tv', 0.)
     if np.any(np.invert(mask)):
         imvec = embed(imvec, mask, clipfloor=epsilon, randomfloor=True)
@@ -1799,7 +1803,7 @@ def reg_tvlog(imvec, mask, **kwargs):
     logflux = npix * np.abs(np.log(flux / npix))
     log_kwargs = dict(kwargs)
     log_kwargs['flux'] = logflux
-    return reg_tv(np.log(imvec), np.ones_like(imvec, dtype=bool), **log_kwargs)
+    return reg_tv(xp.log(imvec), np.ones(imvec.shape, dtype=bool), **log_kwargs)
 
 
 def reggrad_tvlog(imvec, mask, **kwargs):
@@ -1817,6 +1821,7 @@ def reggrad_tvlog(imvec, mask, **kwargs):
 
 
 def reg_tv2(imvec, mask, **kwargs):
+    xp = array_namespace(imvec)
     if np.any(np.invert(mask)):
         imvec = embed(imvec, mask, randomfloor=True)
     nx, ny, psize = kwargs['xdim'], kwargs['ydim'], kwargs['psize']
@@ -1824,10 +1829,10 @@ def reg_tv2(imvec, mask, **kwargs):
     beam_size = kwargs.get('beam_size') or psize
     norm = psize**4 * flux**2 / beam_size**4 if kwargs.get('norm_reg', True) else 1
     im = imvec.reshape(ny, nx)
-    impad = np.pad(im, 1, mode='constant', constant_values=0)
-    im_l1 = np.roll(impad, -1, axis=0)[1:ny+1, 1:nx+1]
-    im_l2 = np.roll(impad, -1, axis=1)[1:ny+1, 1:nx+1]
-    return np.sum((im_l1 - im)**2 + (im_l2 - im)**2) / norm
+    impad = xp.pad(im, 1, mode='constant', constant_values=0)
+    im_l1 = xp.roll(impad, -1, axis=0)[1:ny+1, 1:nx+1]
+    im_l2 = xp.roll(impad, -1, axis=1)[1:ny+1, 1:nx+1]
+    return xp.sum((im_l1 - im)**2 + (im_l2 - im)**2) / norm
 
 
 def reggrad_tv2(imvec, mask, **kwargs):
@@ -1857,6 +1862,7 @@ def reggrad_tv2(imvec, mask, **kwargs):
 
 
 def reg_tv2log(imvec, mask, **kwargs):
+    xp = array_namespace(imvec)
     epsilon = kwargs.get('epsilon_tv', 0.)
     if np.any(np.invert(mask)):
         imvec = embed(imvec, mask, clipfloor=epsilon, randomfloor=True)
@@ -1866,7 +1872,7 @@ def reg_tv2log(imvec, mask, **kwargs):
     logflux = npix * np.abs(np.log(flux / npix))
     log_kwargs = dict(kwargs)
     log_kwargs['flux'] = logflux
-    return reg_tv2(np.log(imvec), np.ones_like(imvec, dtype=bool), **log_kwargs)
+    return reg_tv2(xp.log(imvec), np.ones(imvec.shape, dtype=bool), **log_kwargs)
 
 
 def reggrad_tv2log(imvec, mask, **kwargs):
@@ -1886,6 +1892,7 @@ def reggrad_tv2log(imvec, mask, **kwargs):
 # TODO: figure out normalizations for compact and compact2 regularizers
 # (carried over from legacy code; not formally verified).
 def reg_compact(imvec, mask, **kwargs):
+    xp = array_namespace(imvec)
     if np.any(np.invert(mask)):
         imvec = embed(imvec, mask, randomfloor=True)
     nx, ny, psize = kwargs['xdim'], kwargs['ydim'], kwargs['psize']
@@ -1896,9 +1903,9 @@ def reg_compact(imvec, mask, **kwargs):
     xx, yy = np.meshgrid(range(nx), range(ny))
     xxpsize = (xx - (nx-1)/2.0) * psize
     yypsize = (yy - (ny-1)/2.0) * psize
-    x0 = np.sum(im * xxpsize) / flux
-    y0 = np.sum(im * yypsize) / flux
-    return np.sum(im * ((xxpsize - x0)**2 + (yypsize - y0)**2)) / norm
+    x0 = xp.sum(im * xxpsize) / flux
+    y0 = xp.sum(im * yypsize) / flux
+    return xp.sum(im * ((xxpsize - x0)**2 + (yypsize - y0)**2)) / norm
 
 
 def reggrad_compact(imvec, mask, **kwargs):
@@ -1922,6 +1929,7 @@ def reggrad_compact(imvec, mask, **kwargs):
 
 
 def reg_compact2(imvec, mask, **kwargs):
+    xp = array_namespace(imvec)
     if np.any(np.invert(mask)):
         imvec = embed(imvec, mask, randomfloor=True)
     nx, ny, psize = kwargs['xdim'], kwargs['ydim'], kwargs['psize']
@@ -1932,7 +1940,7 @@ def reg_compact2(imvec, mask, **kwargs):
     xx, yy = np.meshgrid(range(nx), range(ny))
     xxpsize = (xx - (nx-1)/2.0) * psize
     yypsize = (yy - (ny-1)/2.0) * psize
-    return np.sum(im**2 * (xxpsize**2 + yypsize**2)) / norm
+    return xp.sum(im**2 * (xxpsize**2 + yypsize**2)) / norm
 
 
 def reggrad_compact2(imvec, mask, **kwargs):
@@ -1952,6 +1960,7 @@ def reggrad_compact2(imvec, mask, **kwargs):
 
 
 def reg_rgauss(imvec, mask, **kwargs):
+    xp = array_namespace(imvec)
     if np.any(np.invert(mask)):
         imvec = embed(imvec, mask, randomfloor=True)
     xdim, ydim, psize = kwargs['xdim'], kwargs['ydim'], kwargs['psize']
@@ -1967,12 +1976,12 @@ def reg_rgauss(imvec, mask, **kwargs):
     xlist, ylist = np.meshgrid(range(xdim), range(ydim))
     xx = (xlist - (xdim-1)/2.0) * psize
     yy = (ylist - (ydim-1)/2.0) * psize
-    S = np.sum(im)
-    x0 = np.sum(xx * im) / S
-    y0 = np.sum(yy * im) / S
-    sigxx = np.sum((xx - x0)**2 * im) / S
-    sigyy = np.sum((yy - y0)**2 * im) / S
-    sigxy = np.sum((xx - x0) * (yy - y0) * im) / S
+    S = xp.sum(im)
+    x0 = xp.sum(xx * im) / S
+    y0 = xp.sum(yy * im) / S
+    sigxx = xp.sum((xx - x0)**2 * im) / S
+    sigyy = xp.sum((yy - y0)**2 * im) / S
+    sigxy = xp.sum((xx - x0) * (yy - y0) * im) / S
     rgauss = (sigxx - sigxx_prime)**2 + (sigyy - sigyy_prime)**2 + 2*(sigxy - sigxy_prime)**2
     # reg_rgauss has no norm_reg option; always normalized by major^2 * minor^2.
     return rgauss / (major**2 * minor**2)
@@ -3362,20 +3371,23 @@ def plot_i(im, Prior, nit, chi2_dict, **kwargs):
 def embed(imvec, mask, clipfloor=0., randomfloor=False):
     """Embeds a 1d image vector into the size of boolean embed mask
     """
-
-    out = np.zeros(len(mask))
-
-    # Here's a much faster version than before
-    out[mask.nonzero()] = imvec
-
-    #if clipfloor != 0.0:
+    xp = array_namespace(imvec)
+    on = mask.nonzero()[0]
+    off = (mask - 1).nonzero()[0]
     if randomfloor:  # prevent total variation gradient singularities
-        out[(mask-1).nonzero()] = clipfloor * \
-            np.abs(np.random.normal(size=len((mask-1).nonzero()[0])))
+        floor = clipfloor * np.abs(np.random.normal(size=len(off)))
     else:
-        out[(mask-1).nonzero()] = clipfloor
+        floor = np.full(len(off), clipfloor)
 
-    return out
+    if xp is np:
+        out = np.zeros(len(mask))
+        out[on] = imvec
+        out[off] = floor
+        return out
+    # jax: functional scatter so embed is traceable under jax.grad/jit
+    out = xp.zeros(len(mask))
+    out = out.at[on].set(imvec)
+    return out.at[off].set(floor)
 
 
 def embed_imarr(imarr, mask, clipfloor=0., randomfloor=False):

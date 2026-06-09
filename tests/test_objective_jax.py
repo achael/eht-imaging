@@ -3,7 +3,8 @@
 unpack_imarr and transform_imarr are now functional, so jax.grad(compute_objective)
 is the jax objective gradient. These check it equals the hand-written
 compute_objective_grad (the gold standard), matches finite differences, and that
-the value agrees numpy<->jax. Stokes-I, ttype='direct' (the #291 kernel scope).
+the value agrees numpy<->jax. Stokes-I across ttype direct + nfft, all regularizers
+(embed-free + spatial), full and partial embed masks.
 
 The Imager wrappers objfunc/objgrad call compute_objective/compute_objective_grad,
 so jax.grad(imgr.objfunc) is exactly the autodiff objective gradient.
@@ -14,6 +15,7 @@ import numpy as np
 import pytest
 
 import ehtim as eh
+import ehtim.imaging.imager_utils as iu
 from ehtim.imaging.imager_backend import make_objective_jax
 
 pytestmark = pytest.mark.jax
@@ -37,7 +39,7 @@ RNG_SEED = 4
 PERTURB = 0.10
 
 DATA_TERM = {"amp": 100, "cphase": 100, "logcamp": 50}
-REG_TERM = {"simple": 1, "flux": 1}
+REG_TERM = {"simple": 1, "flux": 1, "tv": 10}  # tv exercises the spatial-reg path
 
 
 @pytest.fixture(scope="module", params=["direct", "nfft"])
@@ -120,3 +122,28 @@ def test_objective_traces_once_across_x(imager, x0):
     f(jnp.asarray(x0)).block_until_ready()
     f(jnp.asarray(x0 + 0.5)).block_until_ready()
     assert traces["n"] == 1
+
+
+def test_embed_functional_jax():
+    # embed's functional scatter is byte-identical on numpy and differentiable on jax
+    mask = np.array([True, False, True, False, True, True])
+    imvec = np.array([1.0, 2.0, 3.0, 4.0])
+    assert np.array_equal(iu.embed(imvec, mask), np.asarray(iu.embed(jnp.asarray(imvec), mask)))
+    g = jax.grad(lambda v: jnp.sum(iu.embed(v, mask) ** 2))(jnp.asarray(imvec))
+    assert np.allclose(np.asarray(g), 2 * imvec)  # grad routes only to on-mask pixels
+
+
+def test_spatial_reg_partial_mask_parity():
+    # reg_tv with a partial mask exercises the embed scatter under jax; clipfloor=0
+    # makes the off-mask fill deterministic (no seed needed for numpy<->jax parity).
+    rng = np.random.default_rng(0)
+    ny, nx = 6, 6
+    full = rng.uniform(0.1, 1.0, ny * nx)
+    mask = np.ones(ny * nx, dtype=bool)
+    mask[rng.choice(ny * nx, 8, replace=False)] = False
+    imvec = full[mask]
+    kw = dict(xdim=nx, ydim=ny, psize=1.0, flux=float(full.sum()), beam_size=2.0, norm_reg=True)
+    assert np.allclose(iu.reg_tv(imvec, mask, **kw),
+                       float(iu.reg_tv(jnp.asarray(imvec), mask, **kw)), rtol=1e-12)
+    g_jax = np.asarray(jax.grad(lambda v: iu.reg_tv(v, mask, **kw))(jnp.asarray(imvec)))
+    assert np.allclose(g_jax, iu.reggrad_tv(imvec, mask, **kw), rtol=1e-8, atol=1e-10)
