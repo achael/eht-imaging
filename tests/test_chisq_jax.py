@@ -116,6 +116,7 @@ def test_three_way_gradient(term_data):
 
     g_jax = _make_fun(dtype, A, data, sigma)(x)[1]
 
+    # transform_gradients: ["log"] is the exp(x) chain rule, np.array([1]) solves Stokes-I only
     g_analytic = transform_gradients(
         getattr(iu, "chisqgrad_" + dtype)(imvec, A, data, sigma), x, ["log"], np.array([1]),
     )

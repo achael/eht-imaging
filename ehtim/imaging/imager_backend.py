@@ -488,9 +488,15 @@ def transform_imarr_inverse(imarr, transforms, which_solve):
     return outarr
 
 def transform_gradients(gradarr, imarr, transforms, which_solve):
-    """Apply chain rule gradients for solver values for all polarizations
-       gradarr is objective func gradients w/r/t physical variables
-       imarr is the current image in solver variables """
+    """Apply chain rule gradients for solver values for all polarizations.
+
+    gradarr is objective func gradients w/r/t physical variables.
+    imarr is the current image in solver variables.
+    transforms lists the active solver transforms: 'log' applies the
+    imvec = exp(x) chain rule, 'mcv'/'vcv'/'polcv' the polarization ones.
+    which_solve is the per-Stokes solve mask; np.array([1]) means a single
+    Stokes-I image is the only solved-for component.
+    """
 
     if ('polcv' in transforms):
         if ('vcv' in transforms) or ('mcv' in transforms):
