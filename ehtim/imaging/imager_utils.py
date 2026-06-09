@@ -25,6 +25,7 @@ import scipy.sparse as sps
 
 import ehtim.const_def as ehc
 import ehtim.observing.obs_helpers as obsh
+from ehtim.backends import array_namespace
 
 ##################################################################################################
 # Constants & Definitions
@@ -130,9 +131,9 @@ def chisqdata(Obsdata, Prior, mask, dtype, pol='I', **kwargs):
 
 def chisq_vis(imvec, Amatrix, vis, sigma):
     """Visibility chi-squared"""
-
-    samples = np.dot(Amatrix, imvec)
-    chisq = np.sum(np.abs((samples-vis)/sigma)**2)/(2*len(vis))
+    xp = array_namespace(imvec)
+    samples = xp.dot(Amatrix, imvec)
+    chisq = xp.sum(xp.abs((samples-vis)/sigma)**2)/(2*len(vis))
     return chisq
 
 def chisqgrad_vis(imvec, Amatrix, vis, sigma):
@@ -147,9 +148,9 @@ def chisqgrad_vis(imvec, Amatrix, vis, sigma):
 
 def chisq_amp(imvec, A, amp, sigma):
     """Visibility Amplitudes (normalized) chi-squared"""
-
-    amp_samples = np.abs(np.dot(A, imvec))
-    return np.sum(np.abs((amp - amp_samples)/sigma)**2)/len(amp)
+    xp = array_namespace(imvec)
+    amp_samples = xp.abs(xp.dot(A, imvec))
+    return xp.sum(xp.abs((amp - amp_samples)/sigma)**2)/len(amp)
 
 
 def chisqgrad_amp(imvec, A, amp, sigma):
@@ -165,11 +166,11 @@ def chisqgrad_amp(imvec, A, amp, sigma):
 
 def chisq_bs(imvec, Amatrices, bis, sigma):
     """Bispectrum chi-squared"""
-
-    bisamples = (np.dot(Amatrices[0], imvec) *
-                 np.dot(Amatrices[1], imvec) *
-                 np.dot(Amatrices[2], imvec))
-    chisq = np.sum(np.abs((bis - bisamples)/sigma)**2)/(2.*len(bis))
+    xp = array_namespace(imvec)
+    bisamples = (xp.dot(Amatrices[0], imvec) *
+                 xp.dot(Amatrices[1], imvec) *
+                 xp.dot(Amatrices[2], imvec))
+    chisq = xp.sum(xp.abs((bis - bisamples)/sigma)**2)/(2.*len(bis))
     return chisq
 
 
@@ -194,15 +195,16 @@ def chisqgrad_bs(imvec, Amatrices, bis, sigma):
 
 def chisq_cphase(imvec, Amatrices, clphase, sigma):
     """Closure Phases (normalized) chi-squared"""
+    xp = array_namespace(imvec)
     clphase = clphase * ehc.DEGREE
     sigma = sigma * ehc.DEGREE
 
-    i1 = np.dot(Amatrices[0], imvec)
-    i2 = np.dot(Amatrices[1], imvec)
-    i3 = np.dot(Amatrices[2], imvec)
-    clphase_samples = np.angle(i1 * i2 * i3)
+    i1 = xp.dot(Amatrices[0], imvec)
+    i2 = xp.dot(Amatrices[1], imvec)
+    i3 = xp.dot(Amatrices[2], imvec)
+    clphase_samples = xp.angle(i1 * i2 * i3)
 
-    chisq = (2.0/len(clphase)) * np.sum((1.0 - np.cos(clphase-clphase_samples))/(sigma**2))
+    chisq = (2.0/len(clphase)) * xp.sum((1.0 - xp.cos(clphase-clphase_samples))/(sigma**2))
     return chisq
 
 
@@ -281,14 +283,14 @@ def chisqgrad_cphase_diag(imvec, Amatrices, clphase_diag, sigma):
 
 def chisq_camp(imvec, Amatrices, clamp, sigma):
     """Closure Amplitudes (normalized) chi-squared"""
+    xp = array_namespace(imvec)
+    i1 = xp.dot(Amatrices[0], imvec)
+    i2 = xp.dot(Amatrices[1], imvec)
+    i3 = xp.dot(Amatrices[2], imvec)
+    i4 = xp.dot(Amatrices[3], imvec)
+    clamp_samples = xp.abs((i1 * i2)/(i3 * i4))
 
-    i1 = np.dot(Amatrices[0], imvec)
-    i2 = np.dot(Amatrices[1], imvec)
-    i3 = np.dot(Amatrices[2], imvec)
-    i4 = np.dot(Amatrices[3], imvec)
-    clamp_samples = np.abs((i1 * i2)/(i3 * i4))
-
-    chisq = np.sum(np.abs((clamp - clamp_samples)/sigma)**2)/len(clamp)
+    chisq = xp.sum(xp.abs((clamp - clamp_samples)/sigma)**2)/len(clamp)
     return chisq
 
 
@@ -317,14 +319,14 @@ def chisqgrad_camp(imvec, Amatrices, clamp, sigma):
 
 def chisq_logcamp(imvec, Amatrices, log_clamp, sigma):
     """Log Closure Amplitudes (normalized) chi-squared"""
+    xp = array_namespace(imvec)
+    a1 = xp.abs(xp.dot(Amatrices[0], imvec))
+    a2 = xp.abs(xp.dot(Amatrices[1], imvec))
+    a3 = xp.abs(xp.dot(Amatrices[2], imvec))
+    a4 = xp.abs(xp.dot(Amatrices[3], imvec))
 
-    a1 = np.abs(np.dot(Amatrices[0], imvec))
-    a2 = np.abs(np.dot(Amatrices[1], imvec))
-    a3 = np.abs(np.dot(Amatrices[2], imvec))
-    a4 = np.abs(np.dot(Amatrices[3], imvec))
-
-    samples = np.log(a1) + np.log(a2) - np.log(a3) - np.log(a4)
-    chisq = np.sum(np.abs((log_clamp - samples)/sigma)**2) / (len(log_clamp))
+    samples = xp.log(a1) + xp.log(a2) - xp.log(a3) - xp.log(a4)
+    chisq = xp.sum(xp.abs((log_clamp - samples)/sigma)**2) / (len(log_clamp))
     return chisq
 
 
@@ -1692,7 +1694,8 @@ def fA(imvec, I_ref=1.0, alpha_A=1.0):
     """Function to take imvec to itself in the limit alpha_A -> 0
        and to a binary representation in the limit alpha_A -> infinity
     """
-    return 2.0/np.pi * (1.0 + alpha_A)/alpha_A * np.arctan(np.pi*alpha_A/2.0*np.abs(imvec)/I_ref)
+    xp = array_namespace(imvec)
+    return 2.0/xp.pi * (1.0 + alpha_A)/alpha_A * xp.arctan(xp.pi*alpha_A/2.0*xp.abs(imvec)/I_ref)
 
 
 def fAgrad(imvec, I_ref=1.0, alpha_A=1.0):
@@ -1717,9 +1720,10 @@ def fAgrad(imvec, I_ref=1.0, alpha_A=1.0):
 
 
 def reg_flux(imvec, mask, **kwargs):
+    xp = array_namespace(imvec)
     flux = kwargs['flux']
     norm = flux**2 if kwargs.get('norm_reg', True) else 1
-    return (np.sum(imvec) - flux)**2 / norm
+    return (xp.sum(imvec) - flux)**2 / norm
 
 
 def reggrad_flux(imvec, mask, **kwargs):
@@ -1729,10 +1733,11 @@ def reggrad_flux(imvec, mask, **kwargs):
 
 
 def reg_simple(imvec, mask, **kwargs):
+    xp = array_namespace(imvec)
     priorvec = kwargs['nprior']
     flux = kwargs['flux']
     norm = flux if kwargs.get('norm_reg', True) else 1
-    return np.sum(imvec * np.log(imvec / priorvec)) / norm
+    return xp.sum(imvec * xp.log(imvec / priorvec)) / norm
 
 
 def reggrad_simple(imvec, mask, **kwargs):
@@ -1743,9 +1748,10 @@ def reggrad_simple(imvec, mask, **kwargs):
 
 
 def reg_l1(imvec, mask, **kwargs):
+    xp = array_namespace(imvec)
     flux = kwargs['flux']
     norm = flux if kwargs.get('norm_reg', True) else 1
-    return np.sum(np.abs(imvec)) / norm
+    return xp.sum(xp.abs(imvec)) / norm
 
 
 def reggrad_l1(imvec, mask, **kwargs):
@@ -1755,12 +1761,13 @@ def reggrad_l1(imvec, mask, **kwargs):
 
 
 def reg_l1w(imvec, mask, **kwargs):
+    xp = array_namespace(imvec)
     priorvec = kwargs['nprior']
     epsilon = ehc.EP
     norm = 1  # placeholder: legacy sl1w normalized by unity in both norm_reg branches
-    num = np.sqrt(imvec**2 + epsilon)
-    denom = np.sqrt(priorvec**2 + epsilon) + epsilon
-    return np.sum(num / denom) / norm
+    num = xp.sqrt(imvec**2 + epsilon)
+    denom = xp.sqrt(priorvec**2 + epsilon) + epsilon
+    return xp.sum(num / denom) / norm
 
 
 def reggrad_l1w(imvec, mask, **kwargs):
@@ -1773,6 +1780,7 @@ def reggrad_l1w(imvec, mask, **kwargs):
 
 
 def reg_lA(imvec, mask, **kwargs):
+    xp = array_namespace(imvec)
     psize = kwargs['psize']
     flux = kwargs['flux']
     beam_size = kwargs.get('beam_size') or psize
@@ -1785,7 +1793,7 @@ def reg_lA(imvec, mask, **kwargs):
         norm = (norm_l1 * weight_l1 + norm_l0 * weight_l0) / (weight_l0 + weight_l1)
     else:
         norm = 1
-    return np.sum(fA(imvec, flux, alpha_A)) / norm
+    return xp.sum(fA(imvec, flux, alpha_A)) / norm
 
 
 def reggrad_lA(imvec, mask, **kwargs):
@@ -1805,10 +1813,11 @@ def reggrad_lA(imvec, mask, **kwargs):
 
 
 def reg_gs(imvec, mask, **kwargs):
+    xp = array_namespace(imvec)
     priorvec = kwargs['nprior']
     flux = kwargs['flux']
     norm = flux if kwargs.get('norm_reg', True) else 1
-    return -np.sum(imvec - priorvec - imvec * np.log(imvec / priorvec)) / norm
+    return -xp.sum(imvec - priorvec - imvec * xp.log(imvec / priorvec)) / norm
 
 
 def reggrad_gs(imvec, mask, **kwargs):

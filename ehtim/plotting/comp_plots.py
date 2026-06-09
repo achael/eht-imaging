@@ -26,7 +26,7 @@ import numpy as np
 import ehtim.const_def as ehc
 from ehtim.obsdata import merge_obs
 
-COLORLIST = ehc.SCOLORS
+COLORLIST = ehc.COLORLIST
 
 ##################################################################################################
 # Plotters

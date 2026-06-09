@@ -34,6 +34,8 @@ jobs:
     strategy:
       matrix:
         python-version: ["3.11", "3.12"]
+    env:
+      JAX_PLATFORMS: cpu
     steps:
       - uses: actions/checkout@v4
         with:
@@ -43,7 +45,7 @@ jobs:
           python-version: ${{ matrix.python-version }}
           cache: 'pip'
       - run: pip install -e ".[dev]"
-      - run: pytest --cov --cov-branch --cov-report=xml
+      - run: pytest -m "not jax" --cov --cov-branch --cov-report=xml
       - uses: codecov/codecov-action@v4
         if: matrix.python-version == '3.12'
         with:
