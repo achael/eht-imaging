@@ -17,6 +17,11 @@ DATATERMS = ["vis", "bs", "amp", "cphase", "camp", "logcamp"]
 REGULARIZERS = ["simple", "gs", "l1w", "tv", "tv2"]
 TTYPES = ["direct"]  # expand to ["direct", "fast", "nfft"] to test other transforms
 
+# Diagonalized closure gradients, checked on the supported transforms.
+# ('fast'/plain-FFT is omitted; that mode is slated for deprecation.)
+DATATERMS_DIAG = ["cphase_diag", "logcamp_diag"]
+TTYPES_DIAG = ["direct", "nfft"]
+
 # Tolerances (calibrated on 32x48 synthetic Gaussian with relative step size)
 CHISQ_GRAD_MEDIAN_TOL = 0.001
 CHISQ_GRAD_MAX_TOL = 0.01
@@ -88,8 +93,6 @@ class TestChisqGradientFiniteDiff:
     @pytest.mark.parametrize("dtype", DATATERMS)
     @pytest.mark.parametrize("ttype", TTYPES)
     def test_median_frac_diff(self, grad_setup, dtype, ttype):
-        if ttype == "nfft":
-            pytest.importorskip("pynfft")
         median_frac, _ = _chisq_gradient_check(grad_setup, dtype, ttype)
         assert median_frac < CHISQ_GRAD_MEDIAN_TOL, (
             f"{dtype} ({ttype}) median fractional gradient diff = {median_frac:.6f}"
@@ -98,11 +101,56 @@ class TestChisqGradientFiniteDiff:
     @pytest.mark.parametrize("dtype", DATATERMS)
     @pytest.mark.parametrize("ttype", TTYPES)
     def test_max_frac_diff(self, grad_setup, dtype, ttype):
-        if ttype == "nfft":
-            pytest.importorskip("pynfft")
         _, max_frac = _chisq_gradient_check(grad_setup, dtype, ttype)
         assert max_frac < CHISQ_GRAD_MAX_TOL, (
             f"{dtype} ({ttype}) max fractional gradient diff = {max_frac:.6f}"
+        )
+
+
+class TestChisqGradientFiniteDiffDiag:
+    """Diagonalized-closure gradients match finite differences.
+
+    Pins the vectorized per-time-block matvec in chisqgrad_{cphase,logcamp}_diag
+    against numeric finite differences, at the same tolerance as the standard
+    closures.
+    """
+
+    @pytest.mark.parametrize("dtype", DATATERMS_DIAG)
+    @pytest.mark.parametrize("ttype", TTYPES_DIAG)
+    def test_median_frac_diff(self, grad_setup, dtype, ttype):
+        median_frac, _ = _chisq_gradient_check(grad_setup, dtype, ttype)
+        assert median_frac < CHISQ_GRAD_MEDIAN_TOL, (
+            f"{dtype} ({ttype}) median fractional gradient diff = {median_frac:.6f}"
+        )
+
+    @pytest.mark.parametrize("dtype", DATATERMS_DIAG)
+    @pytest.mark.parametrize("ttype", TTYPES_DIAG)
+    def test_max_frac_diff(self, grad_setup, dtype, ttype):
+        _, max_frac = _chisq_gradient_check(grad_setup, dtype, ttype)
+        assert max_frac < CHISQ_GRAD_MAX_TOL, (
+            f"{dtype} ({ttype}) max fractional gradient diff = {max_frac:.6f}"
+        )
+
+
+def test_diag_chisq_nfft_matches_direct(grad_setup):
+    """Block-diagonal nfft diag chisq agrees with the direct-DFT diag chisq.
+
+    The nfft diagonalized-closure terms apply the per-block decorrelating
+    transforms as one block-diagonal matmul; the direct terms loop. Both share
+    the same transforms and measured closures and differ only by Fourier
+    accuracy, so their chi^2 must agree closely. Guards the block-diagonal
+    restructure against a self-consistent-but-wrong error (which finite
+    differences alone would not catch).
+    """
+    obs, prior, mask = grad_setup["obs"], grad_setup["prior"], grad_setup["mask"]
+    iv = grad_setup["test_imvec"]
+    for dtype in DATATERMS_DIAG:
+        cdir = chisqdata(obs, prior, mask, dtype, ttype="direct")
+        cnf = chisqdata(obs, prior, mask, dtype, ttype="nfft")
+        chi_dir = chisq(iv, cdir[2], cdir[0], cdir[1], dtype, ttype="direct", mask=mask)
+        chi_nf = chisq(iv, cnf[2], cnf[0], cnf[1], dtype, ttype="nfft", mask=mask)
+        assert abs(chi_dir - chi_nf) <= 1e-2 * abs(chi_dir), (
+            f"{dtype}: direct={chi_dir:.6g} vs nfft={chi_nf:.6g}"
         )
 
 

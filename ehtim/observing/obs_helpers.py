@@ -24,17 +24,13 @@ try:
 except ImportError:
     print("Warning: skyfield not installed: cannot simulate space VLBI")
 
-try:
-    from pynfft.nfft import NFFT
-except ImportError:
-    print("Warning: No NFFT installed!")
-
 import copy
 import itertools as it
 import sys
 import warnings
 
 import astropy.time as at
+import finufft
 import numpy as np
 import scipy.ndimage as nd
 import scipy.spatial.distance
@@ -46,6 +42,35 @@ warnings.filterwarnings("ignore", message="divide by zero encountered in double_
 ##################################################################################################
 # Other Functions
 ##################################################################################################
+
+
+def warn_fast_ttype_deprecated():
+    """Emit a DeprecationWarning for the ``ttype='fast'`` (plain FFT) path.
+
+    Used at forward-sampling sites where the path is deprecated but otherwise
+    correct. For imaging callers, use :func:`warn_fast_ttype_deprecated_imaging`,
+    which additionally notes that the FFT imaging gradients are inaccurate.
+    """
+    warnings.warn(
+        "ttype='fast' (plain FFT) is deprecated and will be removed in a "
+        "future release. Use ttype='nfft' (recommended) or ttype='direct' "
+        "instead.",
+        DeprecationWarning, stacklevel=2,
+    )
+
+
+def warn_fast_ttype_deprecated_imaging():
+    """Emit a DeprecationWarning for ``ttype='fast'`` from imaging callers.
+
+    Same as :func:`warn_fast_ttype_deprecated` but adds the imaging-specific
+    note that FFT gradients are inaccurate.
+    """
+    warnings.warn(
+        "ttype='fast' (plain FFT) is deprecated and will be removed in a "
+        "future release; its imaging gradients are inaccurate. Use "
+        "ttype='nfft' (recommended) or ttype='direct' instead.",
+        DeprecationWarning, stacklevel=2,
+    )
 
 
 def compute_uv_coordinates(array, site1, site2, time, mjd, ra, dec, rf, timetype='UTC',
@@ -578,6 +603,43 @@ def logcamp_debias(log_camp, snr1, snr2, snr3, snr4):
     return log_camp_debias
 
 
+def uv_area_triangle(u1, v1, u2, v2):
+    """Signed-magnitude area of the uv-plane triangle spanned by two of its baseline vectors.
+
+       For a closure triangle 1-2-3 with baselines b12=(u1,v1) and b23=(u2,v2), the
+       enclosed uv-area is ``A = (1/2) * |u1*v2 - u2*v1|``. Independent of which two
+       of the three baselines are passed; sign-stripped so it can be used directly
+       as an x-axis variable.
+
+       Args:
+           u1, v1 (array-like): uv components of the first baseline (in lambda)
+           u2, v2 (array-like): uv components of the second baseline (in lambda)
+
+       Returns:
+           (numpy.ndarray): triangle uv-area in lambda^2 (>=0)
+    """
+    return 0.5 * np.abs(np.asarray(u1) * np.asarray(v2) - np.asarray(u2) * np.asarray(v1))
+
+
+def uv_area_quadrangle(u1, v1, u2, v2, u3, v3):
+    """Signed-magnitude area of the uv-plane quadrangle for a closure-amplitude quad.
+
+       A closure quadrangle 1-2-3-4 is built from four baselines whose vectors sum to
+       zero; any three are independent. Treating the quadrangle as two triangles
+       sharing a diagonal, ``A = (1/2) * |u1*v2 - u2*v1| + (1/2) * |u2*v3 - u3*v2|``.
+
+       Args:
+           u1..v3 (array-like): uv components of three independent baselines (in lambda)
+
+       Returns:
+           (numpy.ndarray): quadrangle uv-area in lambda^2 (>=0)
+    """
+    u1, v1 = np.asarray(u1), np.asarray(v1)
+    u2, v2 = np.asarray(u2), np.asarray(v2)
+    u3, v3 = np.asarray(u3), np.asarray(v3)
+    return 0.5 * (np.abs(u1 * v2 - u2 * v1) + np.abs(u2 * v3 - u3 * v2))
+
+
 def gauss_uv(u, v, flux, beamparams, x=0., y=0.):
     """Return the value of the Gaussian FT with
        beamparams is [FWHMmaj, FWHMmin, theta, x, y], all in radian
@@ -974,13 +1036,28 @@ def gmtstring(gmt):
 
 
 def gmst_to_utc(gmst, mjd):
-    """Convert gmst times in hours to utc hours using astropy
+    """Convert gmst times in hours to utc hours using astropy.
+
+    Inverse of :func:`utc_to_gmst` on the canonical solar day of ``mjd``:
+    returns UTC in [0, 24). The local sidereal rate is sampled directly
+    from astropy across that day (mean GMST is polynomial in UT, so
+    within a day it's linear to ~1e-14 hours -- no iteration needed).
+
+    Note: an obs that spans > ~23.93 solar hours aliases in GMST and
+    cannot be uniquely round-tripped through this inverse; callers
+    must keep their obs inside a single sidereal day.
     """
 
     mjd = int(mjd)
-    time_obj_ref = at.Time(mjd, format='mjd', scale='utc')
-    time_sidereal_ref = time_obj_ref.sidereal_time('mean', 'greenwich').hour
-    time_utc = (gmst - time_sidereal_ref) * 0.9972695601848
+    t0 = at.Time(mjd, format='mjd', scale='utc')
+    t1 = at.Time(mjd + 1, format='mjd', scale='utc')
+    s0 = t0.sidereal_time('mean', 'greenwich').hour
+    s1 = t1.sidereal_time('mean', 'greenwich').hour
+    # Sidereal hours elapsed in 24 solar hours (~24.0657)
+    sidereal_per_day = ((s1 - s0) % 24.0) + 24.0
+    # Wrap into [0, 24) sidereal so utc lands in [0, 24) of mjd
+    delta_sidereal = (gmst - s0) % 24.0
+    time_utc = delta_sidereal * 24.0 / sidereal_per_day
 
     return time_utc
 
@@ -1328,30 +1405,73 @@ def uimage(iimage, mimage, chiimage):
 ##################################################################################################
 # FFT & NFFT helper functions
 ##################################################################################################
+class FINUFFTPlan:
+    """Stateful 2D NFFT at fixed nonuniform (u, v) points.
+
+    Set .f_hat (shape (xdim, ydim), complex128) and call .trafo() for the
+    forward transform; the result lands in .f. Set .f (length len(uv),
+    complex128) and call .adjoint(); the result lands in .f_hat.
+
+    The .f_hat / .f / .trafo() / .adjoint() API surface is preserved for
+    backwards compatibility with the old pynfft.NFFT implementation, so
+    every existing NFFT consumer in the codebase stays untouched.
+    """
+
+    def __init__(self, xdim, ydim, uv_finufft, eps=ehc.NFFT_EPS_DEFAULT):
+        x = np.ascontiguousarray(uv_finufft[:, 0])
+        y = np.ascontiguousarray(uv_finufft[:, 1])
+        self._fwd = finufft.Plan(2, (xdim, ydim), n_trans=1, eps=eps,
+                                 isign=-1, dtype='complex128')
+        self._fwd.setpts(x, y)
+        self._adj = finufft.Plan(1, (xdim, ydim), n_trans=1, eps=eps,
+                                 isign=+1, dtype='complex128')
+        self._adj.setpts(x, y)
+        self.f_hat = None
+        self.f = None
+
+    def trafo(self):
+        # pynfft silently promoted real f_hat to complex; finufft requires
+        # matching dtype, so cast here.
+        self.f = self._fwd.execute(np.ascontiguousarray(self.f_hat, dtype='complex128'))
+
+    def adjoint(self):
+        self.f_hat = self._adj.execute(np.ascontiguousarray(self.f, dtype='complex128'))
+
+
 class NFFTInfo:
-    def __init__(self, xdim, ydim, psize, pulse, npad, p_rad, uv):
+    """Precomputed NFFT plan + per-point pulse/centering factor.
+
+    eps is the requested relative accuracy of the NFFT. Default 1e-9 is
+    safe for high-dynamic-range imaging (ALMA polarimetry, SKA-scale
+    arrays). Tighten to 1e-12 for ~1e6 dynamic range; relax to 1e-6 for
+    faster low-SNR work where data noise dominates.
+
+    npad and p_rad are accepted for backwards compatibility with the
+    old pynfft.NFFT implementation but are unused under finufft, which
+    chooses its own oversampling and kernel width from eps.
+    """
+
+    def __init__(self, xdim, ydim, psize, pulse, npad, p_rad, uv,
+                 eps=ehc.NFFT_EPS_DEFAULT):
         self.xdim = int(xdim)
         self.ydim = int(ydim)
         self.psize = psize
         self.pulse = pulse
-
         self.npad = int(npad)
         self.p_rad = int(p_rad)
         self.uv = uv
         self.uvdim = len(uv)
 
-        # set nfft plan
-        uv_scaled = uv*psize
-        nfft_plan = NFFT([xdim, ydim], self.uvdim, m=p_rad, n=[npad, npad])
-        nfft_plan.x = uv_scaled
-        nfft_plan.precompute()
-        self.plan = nfft_plan
+        # uv in (-0.5, 0.5] is used by the centering phase below;
+        # (-pi, pi] form is what FINUFFTPlan expects.
+        uv_scaled = uv * psize
+        uv_finufft = 2 * np.pi * uv_scaled
+        self.plan = FINUFFTPlan(self.xdim, self.ydim, uv_finufft, eps=eps)
 
-        # compute phase and pulsefac
-        phases = np.exp(-1j*np.pi*(uv_scaled[:, 0]+uv_scaled[:, 1]))
+        phases = np.exp(-1j*np.pi*(uv_scaled[:, 0] + uv_scaled[:, 1]))
         pulses = np.fromiter((pulse(2*np.pi*uv_scaled[i, 0], 2*np.pi*uv_scaled[i, 1], 1., dom="F")
                               for i in range(self.uvdim)), 'c16')
-        self.pulsefac = (pulses*phases)
+        self.pulsefac = pulses * phases
 
 class SamplerInfo:
     def __init__(self, order, uv, pulsefac):

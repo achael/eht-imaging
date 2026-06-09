@@ -16,18 +16,11 @@
 #    You should have received a copy of the GNU General Public License
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-from __future__ import division
-from __future__ import print_function
 
-from builtins import str
-from builtins import range
-from builtins import object
 
-import numpy as np
 import astropy.io.fits as fits
-import datetime
 import h5py
-
+import numpy as np
 from astropy.time import Time
 
 import ehtim.const_def as ehc
@@ -96,12 +89,12 @@ def save_im_txt(im, fname, mjd=False, time=False):
         time = im.time
     mjd += (time/24.)
 
-    head = ("SRC: %s \n" % im.source +
+    head = (f"SRC: {im.source} \n" +
             "RA: " + obsh.rastring(im.ra) + "\n" + "DEC: " + obsh.decstring(im.dec) + "\n" +
-            "MJD: %.6f \n" % (float(mjd)) +
-            "RF: %.4f GHz \n" % (im.rf/1e9) +
-            "FOVX: %i pix %f as \n" % (im.xdim, pdimas * im.xdim) +
-            "FOVY: %i pix %f as \n" % (im.ydim, pdimas * im.ydim) +
+            f"MJD: {float(mjd):.6f} \n" +
+            f"RF: {im.rf/1e9:.4f} GHz \n" +
+            f"FOVX: {im.xdim:d} pix {pdimas * im.xdim:f} as \n" +
+            f"FOVY: {im.ydim:d} pix {pdimas * im.ydim:f} as \n" +
             "------------------------------------\n" + hf)
 
     # Save
@@ -201,14 +194,14 @@ def save_mov_hdf5(mov, fname, mjd=False):
         if mjd is False:
             mjd = mov.mjd
 
-        head.attrs['mjd'] = np.string_(str(mjd))
-        head.attrs['psize'] = np.string_(str(mov.psize))
-        head.attrs['source'] = np.string_(str(mov.source))
-        head.attrs['ra'] = np.string_(str(mov.ra))
-        head.attrs['dec'] = np.string_(str(mov.dec))
-        head.attrs['rf'] = np.string_(str(mov.rf))
-        head.attrs['polrep'] = np.string_(str(mov.polrep))
-        head.attrs['pol_prim'] = np.string_(str(mov.pol_prim))
+        head.attrs['mjd'] = np.bytes_(str(mjd))
+        head.attrs['psize'] = np.bytes_(str(mov.psize))
+        head.attrs['source'] = np.bytes_(str(mov.source))
+        head.attrs['ra'] = np.bytes_(str(mov.ra))
+        head.attrs['dec'] = np.bytes_(str(mov.dec))
+        head.attrs['rf'] = np.bytes_(str(mov.rf))
+        head.attrs['polrep'] = np.bytes_(str(mov.polrep))
+        head.attrs['pol_prim'] = np.bytes_(str(mov.pol_prim))
 
         name = 'times'
         times = mov.times
@@ -244,7 +237,7 @@ def save_mov_fits(mov, fname, mjd=False):
 
     for i in range(mov.nframes):
         time_frame = mov.times[i]
-        fname_frame = fname + "%05d" % i
+        fname_frame = fname + f"{i:05d}"
         print('saving file '+fname_frame)
         frame_im = mov.get_frame(i)
         save_im_fits(frame_im, fname_frame, mjd=mjd, time=time_frame)
@@ -268,7 +261,7 @@ def save_mov_txt(mov, fname, mjd=False):
 
     for i in range(mov.nframes):
         time_frame = mov.times[i]
-        fname_frame = fname + "%05d" % i
+        fname_frame = fname + f"{i:05d}"
         print('saving file '+fname_frame)
         frame_im = mov.get_frame(i)
         save_im_txt(frame_im, fname_frame, mjd=mjd, time=time_frame)
@@ -290,12 +283,12 @@ def save_array_txt(arr, fname):
        Returns:
     """
 
-    if type(arr) == np.ndarray:
+    if isinstance(arr, np.ndarray):
         tarr = arr
     else:
         try:
             tarr = arr.tarr
-        except:
+        except AttributeError:
             print("Array format not recognized!")
 
     out = ("#Site      X(m)             Y(m)             Z(m)           " +
@@ -309,7 +302,8 @@ def save_array_txt(arr, fname):
                tarr[scope]['dr'].real, tarr[scope]['dr'].imag,
                tarr[scope]['dl'].real, tarr[scope]['dl'].imag
                )
-        out += "%-8s %15.5f  %15.5f  %15.5f  %8.2f   %8.2f  %5.2f   %5.2f   %5.2f  %8.4f %8.4f %8.4f %8.4f \n" % dat
+        out += ("{:<8s} {:15.5f}  {:15.5f}  {:15.5f}  {:8.2f}   {:8.2f}  "
+                "{:5.2f}   {:5.2f}   {:5.2f}  {:8.4f} {:8.4f} {:8.4f} {:8.4f} \n").format(*dat)
     f = open(fname, 'w')
     f.write(out)
     f.close()
@@ -347,16 +341,16 @@ def save_obs_txt(obs, fname):
     else:
         raise Exception("obs.polrep not 'stokes' or 'circ'!")
 
-    head = ("SRC: %s \n" % obs.source +
+    head = (f"SRC: {obs.source} \n" +
             "RA: " + obsh.rastring(obs.ra) + "\n" + "DEC: " + obsh.decstring(obs.dec) + "\n" +
-            "MJD: %i \n" % obs.mjd +
-            "RF: %.4f GHz \n" % (obs.rf/1e9) +
-            "BW: %.4f GHz \n" % (obs.bw/1e9) +
-            "PHASECAL: %i \n" % obs.phasecal +
-            "AMPCAL: %i \n" % obs.ampcal +
-            "OPACITYCAL: %i \n" % obs.opacitycal +
-            "DCAL: %i \n" % obs.dcal +
-            "FRCAL: %i \n" % obs.frcal +
+            f"MJD: {obs.mjd:d} \n" +
+            f"RF: {obs.rf/1e9:.4f} GHz \n" +
+            f"BW: {obs.bw/1e9:.4f} GHz \n" +
+            f"PHASECAL: {obs.phasecal:d} \n" +
+            f"AMPCAL: {obs.ampcal:d} \n" +
+            f"OPACITYCAL: {obs.opacitycal:d} \n" +
+            f"DCAL: {obs.dcal:d} \n" +
+            f"FRCAL: {obs.frcal:d} \n" +
             "----------------------------------------------------------------------" +
             "------------------------------------------------------------------\n" +
             "Site       X(m)             Y(m)             Z(m)           " +
@@ -365,14 +359,15 @@ def save_obs_txt(obs, fname):
             )
 
     for i in range(len(obs.tarr)):
-        head += ("%-8s %15.5f  %15.5f  %15.5f  %8.2f   %8.2f  %5.2f   %5.2f   %5.2f  %8.4f %8.4f %8.4f %8.4f \n" %
-                 (obs.tarr[i]['site'],
+        head += ("{:<8s} {:15.5f}  {:15.5f}  {:15.5f}  {:8.2f}   {:8.2f}  "
+                 "{:5.2f}   {:5.2f}   {:5.2f}  {:8.4f} {:8.4f} {:8.4f} {:8.4f} \n").format(
+                  obs.tarr[i]['site'],
                   obs.tarr[i]['x'], obs.tarr[i]['y'], obs.tarr[i]['z'],
                   obs.tarr[i]['sefdr'], obs.tarr[i]['sefdl'],
                   obs.tarr[i]['fr_par'], obs.tarr[i]['fr_elev'], obs.tarr[i]['fr_off'],
                   (obs.tarr[i]['dr']).real, (obs.tarr[i]['dr']).imag,
                   (obs.tarr[i]['dl']).real, (obs.tarr[i]['dl']).imag
-                  ))
+                  )
 
     if obs.polrep == 'stokes':
         head += (
@@ -409,7 +404,7 @@ def save_obs_uvfits(obs, fname=None, force_singlepol=None, polrep_out='circ'):
             polrep_out (str): 'circ' or 'stokes': how data should be stored in the uvfits file
        Returns:
             hdulist (astropy.io.fits.HDUList)
-            
+
     """
 
     # output times must be in utc
@@ -680,7 +675,7 @@ def save_obs_uvfits(obs, fname=None, force_singlepol=None, polrep_out='circ'):
     # TODO change the reference date
     #rdate_tt_new = Time(obs.mjd + MJD_0, format='jd', scale='utc', out_subfmt='date')
     #rdate_out = rdate_tt_new.iso
-    
+
     rdate_tt_new = Time(obs.mjd + MJD_0, format='jd', scale='utc')
     rdate_out = rdate_tt_new.iso[0:10]
 
@@ -726,10 +721,10 @@ def save_obs_uvfits(obs, fname=None, force_singlepol=None, polrep_out='circ'):
     col5 = np.array([1], dtype=np.int32).reshape([nif])  # sideband
 
     col1 = fits.Column(name="FRQSEL", format="1J", array=col1)
-    col2 = fits.Column(name="IF FREQ", format="%dD" % (nif), array=col2)
-    col3 = fits.Column(name="CH WIDTH", format="%dE" % (nif), array=col3)
-    col4 = fits.Column(name="TOTAL BANDWIDTH", format="%dE" % (nif), array=col4)
-    col5 = fits.Column(name="SIDEBAND", format="%dJ" % (nif), array=col5)
+    col2 = fits.Column(name="IF FREQ", format=f"{nif}D", array=col2)
+    col3 = fits.Column(name="CH WIDTH", format=f"{nif}E", array=col3)
+    col4 = fits.Column(name="TOTAL BANDWIDTH", format=f"{nif}E", array=col4)
+    col5 = fits.Column(name="SIDEBAND", format=f"{nif}J", array=col5)
     cols = fits.ColDefs([col1, col2, col3, col4, col5])
 
     # create table
@@ -783,8 +778,8 @@ def save_obs_uvfits(obs, fname=None, force_singlepol=None, polrep_out='circ'):
                     scan_times.append(scan_start + 0.5*scan_dur)  # - rdate_jd_out)
                     scan_time_ints.append(scan_dur)
                     ceilcut = np.ceil(comp_fac*scan_stop)
-                    while ((jj < len(fractimes) and
-                            np.floor(round(fractimes[jj], ROUND_SCAN_INT)*comp_fac) <= ceilcut)):
+                    while (jj < len(fractimes) and
+                            np.floor(round(fractimes[jj], ROUND_SCAN_INT)*comp_fac) <= ceilcut):
                         jj += 1
                     stop_vis.append(jj-1)
                 else:
@@ -831,25 +826,59 @@ def save_obs_uvfits(obs, fname=None, force_singlepol=None, polrep_out='circ'):
     return hdulist_new.copy()
 
 
-def save_dtype_txt(obs, fname, dtype='cphase'):
-    """Save the data product of type 'dtype' in a text file.
+_DTYPE_TXT_SPECS = {
+    'cphase':  (ehc.DTCPHASE,
+                "time (hr)     T1     T2      T3        U1 (lambda)     V1 (lambda)     U2 (lambda)     V2 (lambda)         U3 (lambda)     V3 (lambda)         Cphase (d) Sigmacp",
+                "%011.8f %6s %6s  %6s  %16.4f %16.4f  %16.4f  %16.4f  %16.4f  %16.4f  %10.4f  %10.8f"),
+    'logcamp': (ehc.DTCAMP,
+                "time (hr)     T1     T2      T3     T4     U1 (lambda)     V1 (lambda)      U2 (lambda)      V2 (lambda)         U3 (lambda)     V3 (lambda)       U4 (lambda)      V4 (lambda)           Logcamp     Sigmalogca",
+                "%011.8f %6s %6s  %6s %6s  %16.4f %16.4f  %16.4f  %16.4f  %16.4f %16.4f  %16.4f  %16.4f  %10.4f  %10.8f"),
+    'camp':    (ehc.DTCAMP,
+                "time (hr)     T1     T2      T3     T4     U1 (lambda)     V1 (lambda)      U2 (lambda)      V2 (lambda)         U3 (lambda)     V3 (lambda)       U4 (lambda)      V4 (lambda)           Camp     Sigmaca",
+                "%011.8f %6s %6s  %6s %6s  %16.4f %16.4f  %16.4f  %16.4f  %16.4f %16.4f  %16.4f  %16.4f  %10.4f  %10.8f"),
+    'bs':      (ehc.DTBIS,
+                "time (hr)     T1     T2      T3        U1 (lambda)     V1 (lambda)     U2 (lambda)     V2 (lambda)         U3 (lambda)     V3 (lambda)          Bispec   Sigmab",
+                "%011.8f %6s %6s  %6s  %16.4f %16.4f  %16.4f  %16.4f  %16.4f  %16.4f  %10.4f  %10.8f"),
+    'amp':     (ehc.DTAMP,
+                "time (hr) tint     T1     T2       U (lambda)     V (lambda)       Amp (Jy)     Ampsigma",
+                "%011.8f %4.2f %6s %6s  %16.4f %16.4f  %10.8f  %10.8f"),
+}
+
+
+def save_dtype_txt(obs, fname, data, dtype='cphase'):
+    """Save a derived data product as text. The header is taken from obs;
+       the table is passed in explicitly (typically the output of
+       obs.bispectra(), obs.c_phases(), or obs.c_amplitudes()).
+
        Args:
-            obs (Obsdata): obsdata object
+            obs (Obsdata): obsdata object (header info only)
             fname (str): path to output text file
-            dtype (str): desired data type
+            data (np.recarray): the closure / amplitude table to save;
+                                its dtype must match the expected schema
+                                for `dtype` (see const_def.py: DTCPHASE,
+                                DTCAMP, DTBIS, DTAMP).
+            dtype (str): one of 'cphase', 'logcamp', 'camp', 'bs', 'amp'
        Returns:
     """
 
-    head = ("SRC: %s \n" % obs.source +
+    if dtype not in _DTYPE_TXT_SPECS:
+        raise Exception(dtype + ' is not a possible data type!')
+    expected_dtype, col_header, fmts = _DTYPE_TXT_SPECS[dtype]
+    if list(data.dtype.descr) != list(np.dtype(expected_dtype).descr):
+        raise Exception(
+            "save_dtype_txt: data.dtype does not match the schema expected "
+            f"for dtype='{dtype}' (see const_def.py).")
+
+    head = (f"SRC: {obs.source} \n" +
             "RA: " + obsh.rastring(obs.ra) + "\n" + "DEC: " + obsh.decstring(obs.dec) + "\n" +
-            "MJD: %i \n" % obs.mjd +
-            "RF: %.4f GHz \n" % (obs.rf/1e9) +
-            "BW: %.4f GHz \n" % (obs.bw/1e9) +
-            "PHASECAL: %i \n" % obs.phasecal +
-            "AMPCAL: %i \n" % obs.ampcal +
-            "OPACITYCAL: %i \n" % obs.opacitycal +
-            "DCAL: %i \n" % obs.dcal +
-            "FRCAL: %i \n" % obs.frcal +
+            f"MJD: {obs.mjd:d} \n" +
+            f"RF: {obs.rf/1e9:.4f} GHz \n" +
+            f"BW: {obs.bw/1e9:.4f} GHz \n" +
+            f"PHASECAL: {obs.phasecal:d} \n" +
+            f"AMPCAL: {obs.ampcal:d} \n" +
+            f"OPACITYCAL: {obs.opacitycal:d} \n" +
+            f"DCAL: {obs.dcal:d} \n" +
+            f"FRCAL: {obs.frcal:d} \n" +
             "----------------------------------------------------------------------" +
             "------------------------------------------------------------------\n" +
             "Site       X(m)             Y(m)             Z(m)           " +
@@ -858,57 +887,19 @@ def save_dtype_txt(obs, fname, dtype='cphase'):
             )
 
     for i in range(len(obs.tarr)):
-        head += ("%-8s %15.5f  %15.5f  %15.5f  %8.2f   %8.2f  %5.2f   %5.2f   %5.2f  %8.4f %8.4f %8.4f %8.4f \n" %
-                 (obs.tarr[i]['site'],
+        head += ("{:<8s} {:15.5f}  {:15.5f}  {:15.5f}  {:8.2f}   {:8.2f}  "
+                 "{:5.2f}   {:5.2f}   {:5.2f}  {:8.4f} {:8.4f} {:8.4f} {:8.4f} \n").format(
+                  obs.tarr[i]['site'],
                   obs.tarr[i]['x'], obs.tarr[i]['y'], obs.tarr[i]['z'],
                   obs.tarr[i]['sefdr'], obs.tarr[i]['sefdl'],
                   obs.tarr[i]['fr_par'], obs.tarr[i]['fr_elev'], obs.tarr[i]['fr_off'],
                   (obs.tarr[i]['dr']).real, (obs.tarr[i]['dr']).imag,
                   (obs.tarr[i]['dl']).real, (obs.tarr[i]['dl']).imag
-                  ))
+                  )
 
-    if dtype == 'cphase':
-        outdata = obs.cphase
-        head += (
-            "----------------------------------------------------------------------" +
-            "------------------------------------------------------------------\n" +
-            "time (hr)     T1     T2      T3        U1 (lambda)     V1 (lambda)     U2 (lambda)     V2 (lambda)         U3 (lambda)     V3 (lambda)         Cphase (d) Sigmacp")
-        fmts = ("%011.8f %6s %6s  %6s  %16.4f %16.4f  %16.4f  %16.4f  %16.4f  %16.4f  %10.4f  %10.8f")
+    head += ("----------------------------------------------------------------------"
+             "------------------------------------------------------------------\n" +
+             col_header)
 
-    elif dtype == 'logcamp':
-        outdata = obs.logcamp
-        head += (
-            "----------------------------------------------------------------------" +
-            "------------------------------------------------------------------\n" +
-            "time (hr)     T1     T2      T3     T4     U1 (lambda)     V1 (lambda)      U2 (lambda)      V2 (lambda)         U3 (lambda)     V3 (lambda)       U4 (lambda)      V4 (lambda)           Logcamp     Sigmalogca")
-        fmts = ("%011.8f %6s %6s  %6s %6s  %16.4f %16.4f  %16.4f  %16.4f  %16.4f %16.4f  %16.4f  %16.4f  %10.4f  %10.8f")
-
-    elif dtype == 'camp':
-        outdata = obs.camp
-        head += (
-            "----------------------------------------------------------------------" +
-            "------------------------------------------------------------------\n" +
-            "time (hr)     T1     T2      T3     T4     U1 (lambda)     V1 (lambda)      U2 (lambda)      V2 (lambda)         U3 (lambda)     V3 (lambda)       U4 (lambda)      V4 (lambda)           Camp     Sigmaca")
-        fmts = ("%011.8f %6s %6s  %6s %6s  %16.4f %16.4f  %16.4f  %16.4f  %16.4f %16.4f  %16.4f  %16.4f  %10.4f  %10.8f")
-
-    elif dtype == 'bs':
-        outdata = obs.bispec
-        head += (
-            "----------------------------------------------------------------------" +
-            "------------------------------------------------------------------\n" +
-            "time (hr)     T1     T2      T3        U1 (lambda)     V1 (lambda)     U2 (lambda)     V2 (lambda)         U3 (lambda)     V3 (lambda)          Bispec   Sigmab")
-        fmts = ("%011.8f %6s %6s  %6s  %16.4f %16.4f  %16.4f  %16.4f  %16.4f  %16.4f  %10.4f  %10.8f")
-
-    elif dtype == 'amp':
-        outdata = obs.amp
-        head += (
-            "----------------------------------------------------------------------" +
-            "------------------------------------------------------------------\n" +
-            "time (hr) tint     T1     T2       U (lambda)     V (lambda)       Amp (Jy)     Ampsigma")
-        fmts = ("%011.8f %4.2f %6s %6s  %16.4f %16.4f  %10.8f  %10.8f")
-
-    else:
-        raise Exception(dtype + ' is not a possible data type!')
-
-    np.savetxt(fname, outdata, header=head, fmt=fmts)
+    np.savetxt(fname, data, header=head, fmt=fmts)
     return

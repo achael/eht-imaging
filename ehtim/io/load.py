@@ -16,33 +16,24 @@
 #    You should have received a copy of the GNU General Public License
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-from __future__ import division
-from __future__ import print_function
 
-from builtins import str
-from builtins import range
-from builtins import object
-
-import numpy as np
-import astropy.io.fits as fits
-import datetime
-import os
 import copy
+import os
 import sys
-import time as ttime
-import h5py
-
-import ehtim.obsdata
-import ehtim.image
-import ehtim.array
-import ehtim.movie
-import ehtim.vex
-import ehtim.observing
-
-
-import ehtim.const_def as ehc
-
 import warnings
+
+import astropy.io.fits as fits
+import h5py
+import numpy as np
+
+import ehtim.array
+import ehtim.const_def as ehc
+import ehtim.image
+import ehtim.movie
+import ehtim.obsdata
+import ehtim.observing
+import ehtim.vex
+
 warnings.filterwarnings("ignore", message="Mean of empty slice")
 warnings.filterwarnings("ignore", message="invalid value encountered in true_divide")
 
@@ -58,7 +49,7 @@ def load_vex(fname):
 
        Args:
             fname (str): path to input .vex file
-       Returns: 
+       Returns:
             vex (Vex): Vex file object
     """
     print("Loading vexfile: ", fname)
@@ -124,11 +115,11 @@ def load_im_txt(filename, pulse=ehc.PULSE_DEFAULT, polrep='stokes', pol_prim='I'
         qimage = datatable[:, 3].reshape(ydim_p, xdim_p)
         uimage = datatable[:, 4].reshape(ydim_p, xdim_p)
 
-    if np.any((qimage != 0) + (uimage != 0)) and np.any((vimage != 0)):
+    if np.any((qimage != 0) + (uimage != 0)) and np.any(vimage != 0):
         # print('Loaded Stokes I, Q, U, and V Images')
         outim.add_qu(qimage, uimage)
         outim.add_v(vimage)
-    elif np.any((vimage != 0)):
+    elif np.any(vimage != 0):
         # print('Loaded Stokes I and V Images')
         outim.add_v(vimage)
         if zero_pol:
@@ -170,13 +161,13 @@ def load_im_hdf5(filename):
     lunit = hfp['header']['units']['L_unit'][()]    # in cm
     DX = hfp['header']['camera']['dx'][()]          # in GM/c^2
     nx = hfp['header']['camera']['nx'][()]          # width in pixels
-    
+
     try:
         time = hfp['header']['t'][()] * tunit / 3600.       # time in hours
     except KeyError:
         print("   Warning! Time not found in hdf5 image header.")
         time = 0.
-        
+
     if 'pol' in hfp:
         poldat = np.copy(hfp['pol'])[:, :, :4]            # NX,NY,{I,Q,U,V}
     else: # unpolarized data only
@@ -205,8 +196,8 @@ def load_im_hdf5(filename):
     elif src == "M87":
         ra = ehc.RA_M87
         dec = ehc.DEC_M87
-    print("   assuming source %s: ra %.3f hr: dec %.3f deg"%(src,ra,dec))
-    
+    print(f"   assuming source {src}: ra {ra:.3f} hr: dec {dec:.3f} deg")
+
     # Process image to set proper dimensions
     fovmuas = DX / dsource * lunit * 2.06265e11
     psize_x = ehc.RADPERUAS * fovmuas / nx
@@ -276,14 +267,14 @@ def load_im_fits(filename, aipscc=False, pulse=ehc.PULSE_DEFAULT,
     if ra>24 and ra>=0:
         ranew = ra*12/180.
         if ranew<24:
-            print(' Warning! file RA>24, interpreting as decimal deg. : %.3f deg -> %.3f hr'%(ra,ranew))
+            print(f' Warning! file RA>24, interpreting as decimal deg. : {ra:.3f} deg -> {ranew:.3f} hr')
             ra = ranew
         else:
-            raise Exception('Cannot interpret fits file RA %.23!'%ra)
+            raise Exception(f"Cannot interpret fits file RA {ra:.3f}!")
     elif ra<0:
-        raise Exception('fits file RA %.3f<0!'%ra)
-        
-    # load declination (decimal deg)      
+        raise Exception(f'fits file RA {ra:.3f}<0!')
+
+    # load declination (decimal deg)
     if 'OBSDEC' in list(header.keys()):
         dec = header['OBSDEC']
     elif 'CRVAL2' in list(header.keys()):
@@ -321,14 +312,14 @@ def load_im_fits(filename, aipscc=False, pulse=ehc.PULSE_DEFAULT,
         data = stokesdata[0, 0]
         stokes_in_hdu0 = True
 
-    elif len(data.shape) == 3:  
+    elif len(data.shape) == 3:
         # ANDREW added this for BHAC models 3/22/23
         print("reading all stokes images from top HDU -- assuming IQUV order")
         stokesdata = data[:4,:,:] # ignore fields after the first 4
         stokesdata = stokesdata.reshape(4,-1,stokesdata.shape[-2],stokesdata.shape[-1])
         data = stokesdata[0, 0]
         stokes_in_hdu0 = True
-            
+
     #data = data.reshape((data.shape[-2], data.shape[-1]))
     data = data.reshape((data.shape[-2], data.shape[-1]))
 
@@ -352,7 +343,7 @@ def load_im_fits(filename, aipscc=False, pulse=ehc.PULSE_DEFAULT,
         deltay = aipscctab.data["DELTAY"]
 
         # check to make sure all the source types are point sources and gaussian components
-        try: 
+        try:
             checkmtype = np.abs(np.unique(aipscctab.data["TYPE OBJ"])) < 2.0
             if False in checkmtype.tolist():
                 errmsg = "The primary AIPS CC table in the input FITS file has non point-source"
@@ -364,7 +355,7 @@ def load_im_fits(filename, aipscc=False, pulse=ehc.PULSE_DEFAULT,
             print("Cannot load AIPS CC Table OBJ data -- assuming all CC components are point sources!")
             point_src = np.ones(aipscctab.data.shape).astype(bool)
             gaussian_src = np.zeros(aipscctab.data.shape).astype(bool)
-        print("%d CC components are loaded." % (len(flux)))
+        print(f"{len(flux)} CC components are loaded.")
 
         # compile the point source aipscc info
         flux_ps = flux[point_src]
@@ -405,9 +396,9 @@ def load_im_fits(filename, aipscc=False, pulse=ehc.PULSE_DEFAULT,
                 data[iy[i], ix[i]] += flux_ps[i]
             except BaseException:
                 Noutcomp += 1
-        print("added %d CC delta components." % (len(flux_ps)))
+        print(f"added {len(flux_ps)} CC delta components.")
         if Noutcomp > 0:
-            print("%d CC delta components are outside of the FoV and ignored." % (Noutcomp))
+            print(f"{Noutcomp} CC delta components are outside of the FoV and ignored.")
 
     # flip y-axis!
     image = data[::-1, :]
@@ -463,9 +454,9 @@ def load_im_fits(filename, aipscc=False, pulse=ehc.PULSE_DEFAULT,
                                                      deltay_gs[i] * ehc.DEGREE))
             else:
                 Noutcomp += 1
-        print("added %d CC gaussian components." % (len(flux_gs)))
+        print(f"added {len(flux_gs)} CC gaussian components.")
         if Noutcomp > 0:
-            print("%d CC gaussian components are outside of the FoV and ignored." % (Noutcomp))
+            print(f"{Noutcomp} CC gaussian components are outside of the FoV and ignored.")
 
     # Look for Stokes Q and U and V
     qimage = uimage = vimage = np.array([])
@@ -669,9 +660,9 @@ def load_movie_txt(basename, nframes, framedur=-1, pulse=ehc.PULSE_DEFAULT,
     imlist = []
 
     for i in range(nframes):
-        filename = basename + "%05d" % i
+        filename = basename + f"{i:05d}"
 
-        sys.stdout.write('\rReading Movie Image %i/%i...' % (i, nframes))
+        sys.stdout.write(f'\rReading Movie Image {i}/{nframes}...')
         sys.stdout.flush()
 
         im = load_im_txt(filename, pulse=pulse, polrep=polrep, pol_prim=pol_prim, zero_pol=zero_pol)
@@ -724,9 +715,9 @@ def load_movie_fits(basename, nframes, framedur=-1,
     imlist = []
 
     for i in range(nframes):
-        sys.stdout.write('\rReading Movie Image %i/%i...' % (i, nframes))
+        sys.stdout.write(f'\rReading Movie Image {i}/{nframes}...')
         sys.stdout.flush()
-        for tag in ["%02d" % i, "%03d" % i, "%04d" % i, "%05d" % i]:
+        for tag in [f"{i:02d}", f"{i:03d}", f"{i:04d}", f"{i:05d}"]:
 
             try:
                 filename = basename + tag + '.fits'
@@ -785,9 +776,9 @@ def load_movie_dat(basename, nframes, startframe=0, framedur_sec=1, psize=-1,
 
     for i in range(startframe, startframe + nframes):
 
-        filename = basename + "%04d" % i + '.dat'
+        filename = basename + f"{i:04d}" + '.dat'
 
-        sys.stdout.write('\rReading Movie Image %i/%i...' % (i - startframe, nframes))
+        sys.stdout.write(f'\rReading Movie Image {i - startframe}/{nframes}...')
         sys.stdout.flush()
 
         datatable = np.loadtxt(filename, dtype=np.float64)
@@ -859,7 +850,7 @@ def load_array_txt(filename, ephemdir='ephemeris'):
     for line in tdataout:
         if np.all(np.array([line['x'], line['y'], line['z']]) == (0., 0., 0.)):
             sitename = str(line['site'])
-            
+
             # TODO ephempath shouldn't always start with array file path
 
 
@@ -867,16 +858,16 @@ def load_array_txt(filename, ephemdir='ephemeris'):
                 ephempath = path + '/' + ephemdir + '/' + sitename + '.tle'
                 edata[sitename] = np.loadtxt(ephempath, dtype=bytes,
                                              comments='#', delimiter='/').astype(str)
-                print('loaded spacecraft ephemeris %s' % ephempath)
-            except IOError:
+                print(f'loaded spacecraft ephemeris {ephempath}')
+            except OSError:
                 pass
-            try: 
-                ephempath = path + '/' + ephemdir + '/' + sitename 
+            try:
+                ephempath = path + '/' + ephemdir + '/' + sitename
                 edata[sitename] = np.loadtxt(ephempath, dtype=bytes,
                                              comments='#', delimiter='/').astype(str)
-                print('loaded spacecraft ephemeris %s' % ephempath)
-            except IOError:
-                raise Exception('no ephemeris file %s !' % ephempath)
+                print(f'loaded spacecraft ephemeris {ephempath}')
+            except OSError:
+                raise Exception(f'no ephemeris file {ephempath} !')
 
     return ehtim.array.Array(tdataout, ephem=edata)
 
@@ -894,7 +885,7 @@ def load_obs_txt(filename, polrep='stokes'):
            obs (Obsdata): Obsdata object loaded from file
     """
 
-    if not(polrep in ['stokes', 'circ']):
+    if polrep not in ['stokes', 'circ']:
         raise Exception("polrep should be 'stokes' or 'circ' in load_uvfits")
     print("Loading text observation: ", filename)
 
@@ -1022,13 +1013,27 @@ def load_obs_txt(filename, polrep='stokes'):
     out = out.switch_polrep(polrep_out=polrep)
     return out
 
+def _fill_nan_sigmas(rr, ll, rl, lr):
+    """Fill nan sigmas from the parallel-hand value.
+
+    rr is filled from ll first; ll, rl, and lr then fall back to the (now
+    filled) rr. Returns (rr, ll, rl, lr) with nans replaced where a fallback is
+    available (a row that is nan in both parallel hands stays nan).
+    """
+    rr_filled = np.where(np.isnan(rr), ll, rr)
+    ll_filled = np.where(np.isnan(ll), rr_filled, ll)
+    rl_filled = np.where(np.isnan(rl), rr_filled, rl)
+    lr_filled = np.where(np.isnan(lr), rr_filled, lr)
+    return rr_filled, ll_filled, rl_filled, lr_filled
+
+
 # TODO can we save new telescope array terms and flags to uvfits and load them?
-# TODO uv coordinates, multiply by IF freqs and not header FREQ? 
+# TODO uv coordinates, multiply by IF freqs and not header FREQ?
 def load_obs_uvfits(filename, polrep='stokes', flipbl=False,
                     allow_singlepol=True, force_singlepol=None,
                     channel=all, IF=all, remove_nan=False,
                     ignore_pzero_date=True,
-                    trial_speedups=False,
+                    trial_speedups=True,
                     invvar_channel_avg=True):
     """Load observation data from a uvfits file.
 
@@ -1042,16 +1047,18 @@ def load_obs_uvfits(filename, polrep='stokes', flipbl=False,
            channel (list): list of channels to average in the import. channel=all averages all
            IF (list): list of IFs to  average in  the import. IF=all averages all
            remove_nan (bool): whether or not to remove entries with nan data
-           ignore_pzero_date (bool): if True, ignore the offset parameters in DATE field 
+           ignore_pzero_date (bool): if True, ignore the offset parameters in DATE field
                                      TODO: what is the correct behavior per AIPS memo 117?
-           trial_speedups (bool): if True, use faster array/telescope handling paths
+           trial_speedups (bool): if True (default), use faster vectorized
+                                  array/telescope handling paths; produces data
+                                  and tarr identical to the legacy paths
            invvar_channel_avg (bool): if True, average IFs/channels with inverse-variance
                                       weighting. If False, use the original simple averaging.
        Returns:
            obs (Obsdata): Obsdata object loaded from file
     """
 
-    if not(polrep in ['stokes', 'circ']):
+    if polrep not in ['stokes', 'circ']:
         raise Exception("polrep should be 'stokes' or 'circ' in load_uvfits")
     if not(force_singlepol is None or force_singlepol is False) and polrep != 'stokes':
         raise Exception(
@@ -1110,13 +1117,13 @@ def load_obs_uvfits(filename, polrep='stokes', flipbl=False,
     if ra>24 and ra>=0:
         ranew = ra*12/180.
         if ranew<24:
-            print(' Warning! file RA>24, interpreting as decimal deg. : %.3f deg -> %.3f hr'%(ra,ranew))
+            print(f' Warning! file RA>24, interpreting as decimal deg. : {ra:.3f} deg -> {ranew:.3f} hr')
             ra = ranew
         else:
-            raise Exception('Cannot interpret fits file RA %.23!'%ra)
+            raise Exception(f"Cannot interpret fits file RA {ra:.3f}!")
     elif ra<0:
-        raise Exception('fits file RA %.3f<0!'%ra)
-        
+        raise Exception(f'fits file RA {ra:.3f}<0!')
+
     src = header['OBJECT']
     rf = hdulist['AIPS AN'].header['FREQ']
 
@@ -1147,7 +1154,7 @@ def load_obs_uvfits(filename, polrep='stokes', flipbl=False,
         raise Exception("STOKES field not in expected header position 'CTYPE3'!")
     print('POLREP_UVFITS:', polrep_uvfits)
 
-    if polrep_uvfits == 'stokes' and not(force_singlepol is None):
+    if polrep_uvfits == 'stokes' and force_singlepol is not None:
         raise Exception("force_singlepole not implemented on native Stokes uvfits files!")
 
     # determine the bandwidth
@@ -1274,29 +1281,29 @@ def load_obs_uvfits(filename, polrep='stokes', flipbl=False,
 
     # Obs Times
     paridx = data.parnames.index("DATE")+1
-    if "PSCAL%d"%(paridx) in header.keys():
-        jd1scal = header["PSCAL%d"%(paridx)]
+    if f"PSCAL{paridx}" in header.keys():
+        jd1scal = header[f"PSCAL{paridx}"]
     else:
         jd1scal = 1.0
-    if "PZERO%d"%(paridx) in header.keys():
-        jd1zero = header["PZERO%d"%(paridx)]
+    if f"PZERO{paridx}" in header.keys():
+        jd1zero = header[f"PZERO{paridx}"]
     else:
         jd1zero = 0.0
-    if "PSCAL%d"%(paridx+1) in header.keys():
-        jd2scal = header["PSCAL%d"%(paridx+1)]
+    if f"PSCAL{paridx+1}" in header.keys():
+        jd2scal = header[f"PSCAL{paridx+1}"]
     else:
         jd2scal = 1.0
-    if "PZERO%d"%(paridx+1) in header.keys():
-        jd2zero = header["PZERO%d"%(paridx+1)]
+    if f"PZERO{paridx+1}" in header.keys():
+        jd2zero = header[f"PZERO{paridx+1}"]
     else:
         jd2zero = 0.0
-    
+
     if ignore_pzero_date:
         if jd1zero!=0. or jd2zero!=0.:
             print("Warning! ignoring nonzero header PZERO values for DATE. Check your observation mjd/times!")
         jd1zero = 0.
         jd2zero = 0.
-        
+
     jds = jd1scal * data['DATE'][mask].astype('d') + jd1zero
     jds += jd2scal * data['_DATE'][mask].astype('d') + jd2zero
 
@@ -1339,7 +1346,7 @@ def load_obs_uvfits(filename, polrep='stokes', flipbl=False,
     else: # original, slow code
         t1 = np.array([tarr[np.where(tnums==i)[0][0]]['site'] for i in t1c])
         t2 = np.array([tarr[np.where(tnums==i)[0][0]]['site'] for i in t2c])
-    
+
     # Opacities (not in standard files)
     try:
         tau1 = data['TAU1'][mask]
@@ -1431,7 +1438,7 @@ def load_obs_uvfits(filename, polrep='stokes', flipbl=False,
         lrsig = (1. / np.sqrt(lr_totweight))[mask]
     else:
         print("Warning! invvar_channel_avg==False in load_obs_uvfits")
-        print("can lead to artifically low SNRs when channel weights are not equal") 
+        print("can lead to artifically low SNRs when channel weights are not equal")
         rr = np.nanmean(np.nanmean(rr_2d, axis=2), axis=1)[mask]
         ll = np.nanmean(np.nanmean(ll_2d, axis=2), axis=1)[mask]
         rl = np.nanmean(np.nanmean(rl_2d, axis=2), axis=1)[mask]
@@ -1470,7 +1477,7 @@ def load_obs_uvfits(filename, polrep='stokes', flipbl=False,
     elif polrep_uvfits == 'stokes':
         dtpol_out = ehc.DTPOL_STOKES
         poldict_out = ehc.POLDICT_STOKES
-        
+
     #TODO new, faster,
     if trial_speedups:
         datatable = np.empty((len(times)),dtype=dtpol_out)
@@ -1489,7 +1496,7 @@ def load_obs_uvfits(filename, polrep='stokes', flipbl=False,
         datatable[poldict_out['sigma1']] = rrsig
         datatable[poldict_out['sigma2']] = llsig
         datatable[poldict_out['sigma3']] = rlsig
-        datatable[poldict_out['sigma4']] = lrsig    
+        datatable[poldict_out['sigma4']] = lrsig
     else: # original, slower code
         datatable = []
         for i in range(len(times)):
@@ -1503,23 +1510,17 @@ def load_obs_uvfits(filename, polrep='stokes', flipbl=False,
                              ), dtype=dtpol_out
                              ))
         datatable = np.array(datatable)
-   
+
     obs = ehtim.obsdata.Obsdata(ra, dec, rf, bw, datatable, tarr, polrep=polrep_uvfits,
                                 source=src, mjd=mjd, scantable=scantable,
                                 trial_speedups=trial_speedups)
 
-    # TODO -- this is bad and slow, use masks!
     if remove_nan:
         if polrep_uvfits == 'circ':
-            for j in range(len(obs.data)):
-                if np.isnan(obs.data[j]['rrsigma']):
-                    obs.data[j]['rrsigma'] = obs.data[j]['llsigma']
-                if np.isnan(obs.data[j]['llsigma']):
-                    obs.data[j]['llsigma'] = obs.data[j]['rrsigma']
-                if np.isnan(obs.data[j]['rlsigma']):
-                    obs.data[j]['rlsigma'] = obs.data[j]['rrsigma']
-                if np.isnan(obs.data[j]['lrsigma']):
-                    obs.data[j]['lrsigma'] = obs.data[j]['rrsigma']
+            (obs.data['rrsigma'], obs.data['llsigma'],
+             obs.data['rlsigma'], obs.data['lrsigma']) = _fill_nan_sigmas(
+                obs.data['rrsigma'], obs.data['llsigma'],
+                obs.data['rlsigma'], obs.data['lrsigma'])
         else:
             print("WARNING: remove_nan not implemented with stokes uvfits files!")
 
@@ -1587,7 +1588,7 @@ def load_obs_maps(arrfile, obsspec, ifile, qfile=0, ufile=0, vfile=0,
 
     for line in f:
         line = line.split()
-        if not (line[0] in ['UV', 'Scan', '\n']):
+        if line[0] not in ['UV', 'Scan', '\n']:
             time = line[0].split(':')
             time = float(time[2]) + float(time[3]) / 60.0 + float(time[4]) / 3600.0
             u = float(line[1]) * 1000
@@ -1612,7 +1613,7 @@ def load_obs_maps(arrfile, obsspec, ifile, qfile=0, ufile=0, vfile=0,
         i = 0
         for line in f:
             line = line.split()
-            if not (line[0] in ['UV', 'Scan', '\n']):
+            if line[0] not in ['UV', 'Scan', '\n']:
                 datatable[i]['qvis'] = float(line[7][:-1]) * \
                     np.exp(1j * float(line[8][:-1]) * ehc.DEGREE)
                 datatable[i]['qsigma'] = float(line[10])
@@ -1623,7 +1624,7 @@ def load_obs_maps(arrfile, obsspec, ifile, qfile=0, ufile=0, vfile=0,
         i = 0
         for line in f:
             line = line.split()
-            if not (line[0] in ['UV', 'Scan', '\n']):
+            if line[0] not in ['UV', 'Scan', '\n']:
                 datatable[i]['uvis'] = float(line[7][:-1]) * \
                     np.exp(1j * float(line[8][:-1]) * ehc.DEGREE)
                 datatable[i]['usigma'] = float(line[10])
@@ -1634,7 +1635,7 @@ def load_obs_maps(arrfile, obsspec, ifile, qfile=0, ufile=0, vfile=0,
         i = 0
         for line in f:
             line = line.split()
-            if not (line[0] in ['UV', 'Scan', '\n']):
+            if line[0] not in ['UV', 'Scan', '\n']:
                 datatable[i]['vvis'] = float(line[7][:-1]) * \
                     np.exp(1j * float(line[8][:-1]) * ehc.DEGREE)
                 datatable[i]['vsigma'] = float(line[10])
@@ -1644,31 +1645,24 @@ def load_obs_maps(arrfile, obsspec, ifile, qfile=0, ufile=0, vfile=0,
     return ehtim.obsdata.Obsdata(ra, dec, rf, bw, datatable, tdata,
                                  source=src, mjd=mjd, polrep='stokes')
 
-def load_dtype_txt(obs, filename, dtype='cphase'):
+def load_dtype_txt(filename, dtype='cphase'):
 
-    """Load the dtype data in a text file and put it in the already-created obs object
+    """Load a derived-data text file produced by save_dtype_txt.
+
        Args:
-            obs (Obsdata): obsdata object
-            filename (str): path to output text file
-            dtype (str): desired data type
+            filename (str): path to text file
+            dtype (str): one of 'cphase', 'logcamp', 'camp', 'bs', 'amp'.
+                         The returned recarray's dtype matches the
+                         corresponding ehtim.const_def schema
+                         (DTCPHASE, DTCAMP, DTBIS, DTAMP).
        Returns:
+            (np.ndarray): recarray of the requested closure / amplitude
+                          table. The header parameters in the file are
+                          ignored; callers should already have an Obsdata
+                          object if they need RA/dec/mjd/etc.
     """
 
     print("Loading text observation: ", filename)
-
-    # Read the header parameters
-    file = open(filename)
-    src = ' '.join(file.readline().split()[2:])
-    ra = file.readline().split()
-    ra = float(ra[2]) + float(ra[4]) / 60.0 + float(ra[6]) / 3600.0
-    dec = file.readline().split()
-    dec = np.sign(float(dec[2])) * (abs(float(dec[2])) +
-                                    float(dec[4]) / 60.0 + float(dec[6]) / 3600.0)
-    mjd = float(file.readline().split()[2])
-    rf = float(file.readline().split()[2]) * 1e9
-    bw = float(file.readline().split()[2]) * 1e9
-    phasecal = bool(file.readline().split()[2])
-    ampcal = bool(file.readline().split()[2])
 
     # Load the data, convert to list format, return object
     datatable = np.loadtxt(filename, dtype=bytes).astype(str)
@@ -1690,7 +1684,7 @@ def load_dtype_txt(obs, filename, dtype='cphase'):
             sigmacp = float(row[11])
             datatable2.append(np.array((time, t1, t2, t3, u1, v1, u2, v2,
                                         u3, v3, cphase, sigmacp), dtype=ehc.DTCPHASE))
-        obs.cphase = np.array(datatable2)
+        return np.array(datatable2)
 
     elif dtype == 'logcamp':
         datatable2 = []
@@ -1712,7 +1706,7 @@ def load_dtype_txt(obs, filename, dtype='cphase'):
             sigmalogcamp = float(row[14])
             datatable2.append(np.array((time, t1, t2, t3, t4, u1, v1, u2, v2, u3,
                                         v3, u4, v4, logcamp, sigmalogcamp), dtype=ehc.DTCAMP))
-        obs.logcamp = np.array(datatable2)
+        return np.array(datatable2)
 
     elif dtype == 'camp':
         datatable2 = []
@@ -1734,7 +1728,7 @@ def load_dtype_txt(obs, filename, dtype='cphase'):
             sigmacamp = float(row[14])
             datatable2.append(np.array((time, t1, t2, t3, t4, u1, v1, u2, v2,
                                         u3, v3, u4, v4, camp, sigmacamp), dtype=ehc.DTCAMP))
-        obs.camp = np.array(datatable2)
+        return np.array(datatable2)
 
     elif dtype == 'bs':
         datatable2 = []
@@ -1753,7 +1747,7 @@ def load_dtype_txt(obs, filename, dtype='cphase'):
             sigmab = float(row[11])
             datatable2.append(np.array((time, t1, t2, t3, u1, v1, u2,
                                         v2, u3, v3, bispec, sigmab), dtype=ehc.DTBIS))
-        obs.bispec = np.array(datatable2)
+        return np.array(datatable2)
 
     elif dtype == 'amp':
         datatable2 = []
@@ -1767,9 +1761,7 @@ def load_dtype_txt(obs, filename, dtype='cphase'):
             amp = float(row[6])
             sigmaamp = float(row[7])
             datatable2.append(np.array((time, tint, t1, t2, u, v, amp, sigmaamp), dtype=ehc.DTAMP))
-        obs.amp = np.array(datatable2)
+        return np.array(datatable2)
 
     else:
         raise Exception(dtype + ' is not a possible data type!')
-
-    return

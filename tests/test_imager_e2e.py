@@ -17,12 +17,12 @@ Covers all three transform types (direct / fast / nfft) and both
 Stokes-I and polarimetric (IP) imaging.
 """
 
-import importlib.util
-
 import numpy as np
 import pytest
 
 import ehtim as eh
+
+pytestmark = pytest.mark.slow
 
 # Independent prior FWHM (μas). Larger than gauss_im's 50 μas truth, so the
 # imager has to actually shrink + resharpen rather than just refine.
@@ -35,10 +35,6 @@ PRIOR_FWHM_UAS = 80
 # 0.80 is a sanity-check floor that still catches real wiring regressions.
 STOKES_I_NXCORR_MIN = 0.80
 FLUX_REL_TOL = 0.05
-
-
-def _has_pynfft():
-    return importlib.util.find_spec("pynfft") is not None
 
 
 def _independent_prior(total_flux, fwhm_uas=PRIOR_FWHM_UAS):
@@ -105,7 +101,6 @@ class TestEndToEndReconstruction:
         assert errors[0] > STOKES_I_NXCORR_MIN, (
             f"nxcorr={errors[0]:.3f} below {STOKES_I_NXCORR_MIN} threshold")
 
-    @pytest.mark.skipif(not _has_pynfft(), reason="pyNFFT not installed")
     def test_recovers_gaussian_stokes_i_nfft(self, gauss_im, observe):
         obs = observe(gauss_im, ttype="nfft", seed=42)
         prior = _independent_prior(gauss_im.total_flux())
@@ -142,7 +137,6 @@ class TestEndToEndReconstruction:
         assert errors[0] > STOKES_I_NXCORR_MIN, (
             f"diag nxcorr={errors[0]:.3f} below {STOKES_I_NXCORR_MIN} threshold")
 
-    @pytest.mark.skipif(not _has_pynfft(), reason="pyNFFT not installed")
     def test_recovers_gaussian_stokes_i_diag_nfft(self, gauss_im, observe):
         obs = observe(gauss_im, ttype="nfft", seed=42)
         prior = _independent_prior(gauss_im.total_flux())
@@ -200,3 +194,15 @@ class TestEndToEndReconstruction:
         p_truth = np.sum(np.sqrt(gauss_im_pol.qvec**2 + gauss_im_pol.uvec**2)) * gauss_im_pol.psize**2
         assert p_total == pytest.approx(p_truth, rel=0.5), (
             f"total polarized flux {p_total:.3e} off from truth {p_truth:.3e}")
+
+
+def test_imager_fast_ttype_warns_deprecated(gauss_im, observe):
+    """Constructing an Imager with ttype='fast' emits the imaging-context
+    DeprecationWarning noting that gradients are inaccurate."""
+    obs = observe(gauss_im, ttype="nfft")
+    prior = _independent_prior(gauss_im.total_flux())
+    with pytest.warns(DeprecationWarning, match=r"gradients are inaccurate"):
+        eh.imager.Imager(
+            obs, prior, prior_im=prior, flux=gauss_im.total_flux(),
+            **_imager_kwargs_stokes_i("fast"),
+        )

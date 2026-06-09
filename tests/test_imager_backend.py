@@ -10,7 +10,11 @@ import pytest
 import ehtim as eh
 import ehtim.const_def as ehc
 from ehtim.imaging.imager_backend import (
+    DataWeighting,
+    FourierGridParams,
+    ImagerConfig,
     ImagerInitState,
+    MfConfig,
     RegParams,
     _pol_solve_block,
     compute_chisq_dict,
@@ -26,6 +30,8 @@ from ehtim.imaging.imager_backend import (
     compute_objective_grad,
     compute_reg_dict,
     compute_reggrad_dict,
+    compute_regularizer_term,
+    compute_regularizergrad_term,
     compute_which_solve,
     make_initarr,
     pack_imarr,
@@ -180,34 +186,40 @@ class TestComputeWhichSolve:
 
     # --- single-frequency ---
 
-    def test_sf_stokes_i(self):
+    def test_sf_stokes_i(self, make_test_config):
         np.testing.assert_array_equal(
-            compute_which_solve("I", mf=False), np.array([1]),
+            compute_which_solve(make_test_config(pol="I", mf=False)),
+            np.array([1]),
         )
 
-    def test_sf_polarimetric_p(self):
+    def test_sf_polarimetric_p(self, make_test_config):
         np.testing.assert_array_equal(
-            compute_which_solve("P", mf=False), np.array([0, 1, 1, 0]),
+            compute_which_solve(make_test_config(pol="P", mf=False)),
+            np.array([0, 1, 1, 0]),
         )
 
-    def test_sf_polarimetric_ip(self):
+    def test_sf_polarimetric_ip(self, make_test_config):
         np.testing.assert_array_equal(
-            compute_which_solve("IP", mf=False), np.array([1, 1, 1, 0]),
+            compute_which_solve(make_test_config(pol="IP", mf=False)),
+            np.array([1, 1, 1, 0]),
         )
 
-    def test_sf_polarimetric_iv(self):
+    def test_sf_polarimetric_iv(self, make_test_config):
         np.testing.assert_array_equal(
-            compute_which_solve("IV", mf=False), np.array([1, 0, 0, 1]),
+            compute_which_solve(make_test_config(pol="IV", mf=False)),
+            np.array([1, 0, 0, 1]),
         )
 
-    def test_sf_polarimetric_ipv(self):
+    def test_sf_polarimetric_ipv(self, make_test_config):
         np.testing.assert_array_equal(
-            compute_which_solve("IPV", mf=False), np.array([1, 1, 1, 1]),
+            compute_which_solve(make_test_config(pol="IPV", mf=False)),
+            np.array([1, 1, 1, 1]),
         )
 
-    def test_sf_polarimetric_v(self):
+    def test_sf_polarimetric_v(self, make_test_config):
         np.testing.assert_array_equal(
-            compute_which_solve("V", mf=False), np.array([0, 0, 0, 1]),
+            compute_which_solve(make_test_config(pol="V", mf=False)),
+            np.array([0, 0, 0, 1]),
         )
 
     # --- multi-frequency Stokes I ---
@@ -217,43 +229,46 @@ class TestComputeWhichSolve:
         (1, [1, 1, 0]),
         (2, [1, 1, 1]),
     ])
-    def test_mf_stokes_i_order(self, mf_order, expected):
+    def test_mf_stokes_i_order(self, make_test_config, mf_order, expected):
         np.testing.assert_array_equal(
-            compute_which_solve("I", mf=True, mf_order=mf_order),
+            compute_which_solve(make_test_config(pol="I", mf=True, mf_order=mf_order)),
             np.array(expected),
         )
 
     # --- multi-frequency polarimetric ---
 
-    def test_mf_polarimetric_minimal(self):
+    def test_mf_polarimetric_minimal(self, make_test_config):
         """MF + IP + all spectral orders 0 + no RM/CM."""
         np.testing.assert_array_equal(
-            compute_which_solve("IP", mf=True,
-                                mf_order=0, mf_order_pol=0,
-                                mf_rm=False, mf_cm=False),
+            compute_which_solve(make_test_config(
+                pol="IP", mf=True,
+                mf_order=0, mf_order_pol=0, mf_rm=0, mf_cm=0,
+            )),
             np.array([1, 1, 1, 0,  # I, rho, phi, psi
                       0, 0,         # alpha, beta
                       0, 0,         # alpha_p, beta_p
                       0, 0]),       # RM, CM
         )
 
-    def test_mf_polarimetric_all_on(self):
+    def test_mf_polarimetric_all_on(self, make_test_config):
         """MF + IP with everything enabled."""
         np.testing.assert_array_equal(
-            compute_which_solve("IP", mf=True,
-                                mf_order=2, mf_order_pol=2,
-                                mf_rm=True, mf_cm=True),
+            compute_which_solve(make_test_config(
+                pol="IP", mf=True,
+                mf_order=2, mf_order_pol=2, mf_rm=1, mf_cm=1,
+            )),
             np.array([1, 1, 1, 0,
                       1, 1,
                       1, 1,
                       1, 1]),
         )
 
-    def test_mf_polarimetric_rm_only(self):
+    def test_mf_polarimetric_rm_only(self, make_test_config):
         np.testing.assert_array_equal(
-            compute_which_solve("IP", mf=True,
-                                mf_order=1, mf_order_pol=1,
-                                mf_rm=True, mf_cm=False),
+            compute_which_solve(make_test_config(
+                pol="IP", mf=True,
+                mf_order=1, mf_order_pol=1, mf_rm=1, mf_cm=0,
+            )),
             np.array([1, 1, 1, 0,
                       1, 0,
                       1, 0,
@@ -262,22 +277,25 @@ class TestComputeWhichSolve:
 
     # --- error cases ---
 
-    def test_raises_on_invalid_mf_order(self):
+    def test_raises_on_invalid_mf_order(self, make_test_config):
         with pytest.raises(Exception, match="mf_order must be 0, 1, or 2"):
-            compute_which_solve("I", mf=True, mf_order=3)
+            compute_which_solve(make_test_config(pol="I", mf=True, mf_order=3))
 
-    def test_raises_on_invalid_mf_order_pol(self):
+    def test_raises_on_invalid_mf_order_pol(self, make_test_config):
         with pytest.raises(Exception, match="mf_order_pol must be 0, 1, or 2"):
-            compute_which_solve("IP", mf=True, mf_order=1, mf_order_pol=3)
+            compute_which_solve(make_test_config(
+                pol="IP", mf=True, mf_order=1, mf_order_pol=3))
 
-    def test_raises_on_mf_pol_without_p(self):
+    def test_raises_on_mf_pol_without_p(self, make_test_config):
         with pytest.raises(Exception, match="requires pol_next=P"):
-            compute_which_solve("IV", mf=True, mf_order=1, mf_order_pol=1)
+            compute_which_solve(make_test_config(
+                pol="IV", mf=True, mf_order=1, mf_order_pol=1))
 
-    def test_raises_on_mf_pol_with_v(self):
+    def test_raises_on_mf_pol_with_v(self, make_test_config):
         # 'IPV' contains both 'P' and 'V'; the V check fires.
         with pytest.raises(Exception, match="Stokes V not yet implemented"):
-            compute_which_solve("IPV", mf=True, mf_order=1, mf_order_pol=1)
+            compute_which_solve(make_test_config(
+                pol="IPV", mf=True, mf_order=1, mf_order_pol=1))
 
     # --- parity with init_imager ---
 
@@ -292,10 +310,7 @@ class TestComputeWhichSolve:
         imgr.init_imager()
         np.testing.assert_array_equal(
             imgr._which_solve,
-            compute_which_solve(imgr.pol_next, imgr.mf_next,
-                                mf_order=imgr.mf_order,
-                                mf_order_pol=imgr.mf_order_pol,
-                                mf_rm=imgr.mf_rm, mf_cm=imgr.mf_cm),
+            compute_which_solve(imgr._config),
         )
 
     def test_matches_imager_init_imager_polarimetric(self, gauss_im_pol, observe):
@@ -315,10 +330,7 @@ class TestComputeWhichSolve:
         imgr.init_imager()
         np.testing.assert_array_equal(
             imgr._which_solve,
-            compute_which_solve(imgr.pol_next, imgr.mf_next,
-                                mf_order=imgr.mf_order,
-                                mf_order_pol=imgr.mf_order_pol,
-                                mf_rm=imgr.mf_rm, mf_cm=imgr.mf_cm),
+            compute_which_solve(imgr._config),
         )
 
 
@@ -326,10 +338,9 @@ def _call_compute_data_tuples(imgr):
     """Call compute_data_tuples with the args init_imager would pass."""
     return compute_data_tuples(
         imgr.obslist_next, imgr.prior_next, imgr._embed_mask,
-        sorted(imgr.dat_term_next.keys()), imgr.pol_next,
-        imgr._ttype,
-        imgr._full_data_weighting_params(),
-        imgr._full_fft_params(),
+        sorted(imgr.dat_term_next.keys()), imgr._config,
+        imgr._data_weighting_params(),
+        imgr._fft_params(),
     )
 
 
@@ -380,13 +391,13 @@ class TestComputeDataTuples:
     def test_unrecognized_term_raises(self, gauss_im, observe,
                                       initialize_imager):
         imgr, _ = initialize_imager(observe(gauss_im), gauss_im, {"vis": 1})
-        bogus_weighting = {**imgr._full_data_weighting_params(),
-                           'snrcut': {'bogus': 0.0}}
+        bogus_weighting = imgr._data_weighting_params()._replace(
+            snrcut={'bogus': 0.0})
         with pytest.raises(Exception, match="not recognized"):
             compute_data_tuples(
                 imgr.obslist_next, imgr.prior_next, imgr._embed_mask,
-                ["bogus"], imgr.pol_next,
-                imgr._ttype, bogus_weighting, imgr._full_fft_params(),
+                ["bogus"], imgr._config,
+                bogus_weighting, imgr._fft_params(),
             )
 
     def test_matches_imager_init_imager(self, gauss_im, observe,
@@ -421,12 +432,11 @@ def _call_compute_init_state(imgr):
     return compute_init_state(
         imgr.obslist_next, imgr.init_next, imgr.prior_next,
         imgr.freq_list, imgr.reffreq,
-        imgr.pol_next, imgr.mf_next, imgr.transform_next,
-        imgr.mf_order, imgr.mf_order_pol, imgr.mf_rm, imgr.mf_cm,
+        imgr._config,
         imgr.norm_init, imgr.flux_next, imgr.clipfloor_next,
-        sorted(imgr.dat_term_next.keys()), imgr._ttype,
-        imgr._full_data_weighting_params(),
-        imgr._full_fft_params(),
+        sorted(imgr.dat_term_next.keys()),
+        imgr._data_weighting_params(),
+        imgr._fft_params(),
     )
 
 
@@ -518,12 +528,11 @@ class TestComputeInitState:
         state = compute_init_state(
             imgr.obslist_next, imgr.init_next, imgr.prior_next,
             imgr.freq_list, imgr.reffreq,
-            imgr.pol_next, imgr.mf_next, imgr.transform_next,
-            imgr.mf_order, imgr.mf_order_pol, imgr.mf_rm, imgr.mf_cm,
+            imgr._config,
             imgr.norm_init, imgr.flux_next, imgr.clipfloor_next,
-            sorted(imgr.dat_term_next.keys()), imgr._ttype,
-            imgr._full_data_weighting_params(),
-            imgr._full_fft_params(),
+            sorted(imgr.dat_term_next.keys()),
+            imgr._data_weighting_params(),
+            imgr._fft_params(),
             compute_data=False, prior_data_tuples=sentinel,
         )
         assert state.data_tuples is sentinel
@@ -536,12 +545,11 @@ class TestComputeInitState:
                 imgr.obslist_next, imgr.init_next, imgr.prior_next,
                 imgr.freq_list + [230e9],  # length mismatch
                 imgr.reffreq,
-                imgr.pol_next, imgr.mf_next, imgr.transform_next,
-                imgr.mf_order, imgr.mf_order_pol, imgr.mf_rm, imgr.mf_cm,
+                imgr._config,
                 imgr.norm_init, imgr.flux_next, imgr.clipfloor_next,
-                sorted(imgr.dat_term_next.keys()), imgr._ttype,
-                imgr._full_data_weighting_params(),
-                imgr._full_fft_params(),
+                sorted(imgr.dat_term_next.keys()),
+                imgr._data_weighting_params(),
+                imgr._fft_params(),
             )
 
 
@@ -553,20 +561,18 @@ class TestComputeInitState:
 def _call_backend_chisq_dict(imgr, imcur):
     """Call compute_chisq_dict with args pulled from an initialized Imager."""
     return compute_chisq_dict(
-        imcur, sorted(imgr.dat_term_next.keys()),
-        imgr.mf_next, imgr.pol_next,
+        imcur, sorted(imgr.dat_term_next.keys()), imgr._config,
         imgr._data_tuples, imgr._logfreqratio_list, len(imgr.obslist_next),
-        imgr._ttype, imgr._embed_mask,
+        imgr._embed_mask,
     )
 
 
 def _call_backend_chisqgrad_dict(imgr, imcur):
     """Call compute_chisqgrad_dict with args pulled from an initialized Imager."""
     return compute_chisqgrad_dict(
-        imcur, sorted(imgr.dat_term_next.keys()),
-        imgr.mf_next, imgr.pol_next,
+        imcur, sorted(imgr.dat_term_next.keys()), imgr._config,
         imgr._data_tuples, imgr._logfreqratio_list, len(imgr.obslist_next),
-        imgr._ttype, imgr._embed_mask,
+        imgr._embed_mask,
         imgr._which_solve, imgr._nimage,
     )
 
@@ -597,8 +603,7 @@ def _build_regparams(imgr, mf_flux=None):
 def _call_backend_reg_dict(imgr, imcur, mf_flux=None):
     """Call compute_reg_dict with args pulled from an initialized Imager."""
     return compute_reg_dict(
-        imcur, sorted(imgr.reg_term_next.keys()),
-        imgr.mf_next, imgr.pol_next,
+        imcur, sorted(imgr.reg_term_next.keys()), imgr._config,
         imgr._logfreqratio_list, len(imgr.obslist_next),
         imgr._prior_arr, imgr.norm_reg, _build_regparams(imgr, mf_flux=mf_flux),
         imgr._embed_mask,
@@ -608,8 +613,7 @@ def _call_backend_reg_dict(imgr, imcur, mf_flux=None):
 def _call_backend_reggrad_dict(imgr, imcur, mf_flux=None):
     """Call compute_reggrad_dict with args pulled from an initialized Imager."""
     return compute_reggrad_dict(
-        imcur, sorted(imgr.reg_term_next.keys()),
-        imgr.mf_next, imgr.pol_next,
+        imcur, sorted(imgr.reg_term_next.keys()), imgr._config,
         imgr._logfreqratio_list, len(imgr.obslist_next),
         imgr._prior_arr, imgr.norm_reg, _build_regparams(imgr, mf_flux=mf_flux),
         imgr._embed_mask,
@@ -620,26 +624,24 @@ def _call_backend_reggrad_dict(imgr, imcur, mf_flux=None):
 def _call_backend_objective(imgr, imvec):
     """Call compute_objective with args pulled from an initialized Imager."""
     return compute_objective(
-        imvec, imgr._init_arr,
-        imgr.mf_next, imgr.pol_next,
+        imvec, imgr._init_arr, imgr._config,
         imgr._which_solve, imgr._data_tuples,
         imgr._logfreqratio_list, len(imgr.obslist_next),
         imgr.dat_term_next, imgr.reg_term_next,
         imgr._prior_arr, imgr.norm_reg, _build_regparams(imgr),
-        imgr.transform_next, imgr._embed_mask, imgr._ttype,
+        imgr._embed_mask,
     )
 
 
 def _call_backend_objective_grad(imgr, imvec):
     """Call compute_objective_grad with args pulled from an initialized Imager."""
     return compute_objective_grad(
-        imvec, imgr._init_arr,
-        imgr.mf_next, imgr.pol_next,
+        imvec, imgr._init_arr, imgr._config,
         imgr._which_solve, imgr._data_tuples,
         imgr._logfreqratio_list, len(imgr.obslist_next),
         imgr.dat_term_next, imgr.reg_term_next,
         imgr._prior_arr, imgr.norm_reg, _build_regparams(imgr),
-        imgr.transform_next, imgr._embed_mask, imgr._ttype, imgr._nimage,
+        imgr._embed_mask, imgr._nimage,
     )
 
 
@@ -749,7 +751,7 @@ class TestComputeChisqDict:
         imgr, imcur = initialize_imager(
             [obs_lo, obs_hi], im_lo, {"vis": 100}, mf=True, mf_order=1,
         )
-        assert imgr.mf_next is True
+        assert imgr._config.mf is True
         assert len(imgr._logfreqratio_list) == 2
 
         result = _call_backend_chisq_dict(imgr, imcur)
@@ -789,8 +791,6 @@ class TestComputeChisqDict:
     @pytest.mark.parametrize("ttype", ["direct", "fast", "nfft"])
     def test_all_ttypes(self, gauss_im, observe, initialize_imager, ttype):
         """Backend works for all three transform types."""
-        if ttype == "nfft":
-            pytest.importorskip("pynfft")
         obs = observe(gauss_im, ttype=ttype)
         imgr, imcur = initialize_imager(obs, gauss_im, {"vis": 100}, ttype=ttype)
         result = _call_backend_chisq_dict(imgr, imcur)
@@ -900,7 +900,7 @@ class TestComputeChisqgradDict:
         imgr, imcur = initialize_imager(
             [obs_lo, obs_hi], im_lo, {"vis": 100}, mf=True, mf_order=1,
         )
-        assert imgr.mf_next is True
+        assert imgr._config.mf is True
 
         result = _call_backend_chisqgrad_dict(imgr, imcur)
         assert set(result.keys()) == {"vis_0", "vis_1"}
@@ -937,8 +937,6 @@ class TestComputeChisqgradDict:
     @pytest.mark.parametrize("ttype", ["direct", "fast", "nfft"])
     def test_all_ttypes(self, gauss_im, observe, initialize_imager, ttype):
         """Backend works for all three transform types."""
-        if ttype == "nfft":
-            pytest.importorskip("pynfft")
         obs = observe(gauss_im, ttype=ttype)
         imgr, imcur = initialize_imager(obs, gauss_im, {"vis": 100}, ttype=ttype)
         result = _call_backend_chisqgrad_dict(imgr, imcur)
@@ -1039,8 +1037,7 @@ class TestComputeRegDict:
         # Bypass Imager.check_params by passing reg_term_keys directly.
         with pytest.raises(Exception, match="not recognized"):
             compute_reg_dict(
-                imcur, ["not_a_regularizer"],
-                imgr.mf_next, imgr.pol_next,
+                imcur, ["not_a_regularizer"], imgr._config,
                 imgr._logfreqratio_list, len(imgr.obslist_next),
                 imgr._prior_arr, imgr.norm_reg, _build_regparams(imgr),
                 imgr._embed_mask,
@@ -1167,8 +1164,7 @@ class TestComputeReggradDict:
         imgr, imcur = initialize_imager(obs, gauss_im, {"vis": 100})
         with pytest.raises(Exception, match="not recognized"):
             compute_reggrad_dict(
-                imcur, ["not_a_regularizer"],
-                imgr.mf_next, imgr.pol_next,
+                imcur, ["not_a_regularizer"], imgr._config,
                 imgr._logfreqratio_list, len(imgr.obslist_next),
                 imgr._prior_arr, imgr.norm_reg, _build_regparams(imgr),
                 imgr._embed_mask,
@@ -1223,7 +1219,7 @@ def test_reg_and_reggrad_share_keys(gauss_im, observe, initialize_imager):
 
 
 class TestRegParams:
-    """Tests for the RegParams NamedTuple bundle and Imager._full_regparams()."""
+    """Tests for the RegParams NamedTuple bundle and Imager._regparams()."""
 
     EXPECTED_FIELDS = (
         "flux", "pflux", "vflux",
@@ -1232,12 +1228,12 @@ class TestRegParams:
         "major", "minor", "PA", "alpha_A", "epsilon_tv",
     )
 
-    def test_full_regparams_returns_namedtuple(self, gauss_im, observe,
+    def test_regparams_returns_namedtuple(self, gauss_im, observe,
                                                 initialize_imager):
-        """Imager._full_regparams() returns a RegParams instance."""
+        """Imager._regparams() returns a RegParams instance."""
         obs = observe(gauss_im)
         imgr, _ = initialize_imager(obs, gauss_im, {"vis": 100})
-        regp = imgr._full_regparams()
+        regp = imgr._regparams()
         assert isinstance(regp, RegParams)
 
     def test_field_access_matches_imager_attrs(self, gauss_im, observe,
@@ -1245,7 +1241,7 @@ class TestRegParams:
         """Every RegParams field reads back the corresponding Imager attribute."""
         obs = observe(gauss_im)
         imgr, _ = initialize_imager(obs, gauss_im, {"vis": 100})
-        regp = imgr._full_regparams()
+        regp = imgr._regparams()
 
         assert regp.flux == imgr.flux_next
         assert regp.pflux == imgr.pflux_next
@@ -1267,7 +1263,7 @@ class TestRegParams:
         2.18/2.19 promotions don't silently drop/add a key."""
         obs = observe(gauss_im)
         imgr, _ = initialize_imager(obs, gauss_im, {"vis": 100})
-        keys = imgr._full_regparams()._asdict().keys()
+        keys = imgr._regparams()._asdict().keys()
         assert tuple(keys) == self.EXPECTED_FIELDS
 
     def test_immutability(self, gauss_im, observe, initialize_imager):
@@ -1275,7 +1271,7 @@ class TestRegParams:
         semantics: any update must go through ._replace(...)."""
         obs = observe(gauss_im)
         imgr, _ = initialize_imager(obs, gauss_im, {"vis": 100})
-        regp = imgr._full_regparams()
+        regp = imgr._regparams()
         with pytest.raises(AttributeError):
             regp.flux = 2.0
 
@@ -1294,7 +1290,7 @@ class TestRegParams:
         imgr.check_params()
         imgr.check_limits()
         imgr.init_imager()
-        regp = imgr._full_regparams()
+        regp = imgr._regparams()
         assert regp.major == custom_major
         assert regp.epsilon_tv == custom_eps
         # Unspecified REGPARAMS_DEFAULT fields keep their defaults.
@@ -1315,8 +1311,278 @@ class TestRegParams:
             mf=True, mf_order=1,
             mf_flux=[1.0, 2.0],
         )
-        regp = imgr._full_regparams()
+        regp = imgr._regparams()
         assert regp.mf_flux == [1.0, 2.0]
+
+
+class TestDataWeighting:
+    """Pins the DataWeighting bundle returned by Imager._data_weighting_params():
+    field set, immutability, parity with Imager attrs, and kwarg overrides /
+    defaults landing in the right slots."""
+
+    EXPECTED_FIELDS = (
+        "maxset", "debias", "snrcut", "weighting",
+        "systematic_noise", "systematic_cphase_noise", "cp_uv_min",
+    )
+
+    def test_full_data_weighting_returns_namedtuple(self, gauss_im, observe,
+                                                     initialize_imager):
+        imgr, _ = initialize_imager(observe(gauss_im), gauss_im, {"vis": 100})
+        assert isinstance(imgr._data_weighting_params(), DataWeighting)
+
+    def test_field_access_matches_imager_attrs(self, gauss_im, observe,
+                                                 initialize_imager):
+        imgr, _ = initialize_imager(observe(gauss_im), gauss_im, {"vis": 100})
+        dw = imgr._data_weighting_params()
+        assert dw.maxset == imgr.maxset_next
+        assert dw.debias == imgr.debias_next
+        assert dw.snrcut == imgr.snrcut_next
+        assert dw.weighting == imgr.weighting_next
+        assert dw.systematic_noise == imgr.systematic_noise_next
+        assert dw.systematic_cphase_noise == imgr.systematic_cphase_noise_next
+        assert dw.cp_uv_min == imgr.cp_uv_min
+
+    def test_asdict_has_expected_keys(self, gauss_im, observe, initialize_imager):
+        imgr, _ = initialize_imager(observe(gauss_im), gauss_im, {"vis": 100})
+        assert tuple(imgr._data_weighting_params()._asdict().keys()) == self.EXPECTED_FIELDS
+
+    def test_immutability(self, gauss_im, observe, initialize_imager):
+        imgr, _ = initialize_imager(observe(gauss_im), gauss_im, {"vis": 100})
+        dw = imgr._data_weighting_params()
+        with pytest.raises(AttributeError):
+            dw.maxset = True
+
+    def test_kwarg_override(self, gauss_im, observe):
+        obs = observe(gauss_im)
+        imgr = eh.imager.Imager(
+            obs, gauss_im, prior_im=gauss_im, flux=gauss_im.total_flux(),
+            data_term={"vis": 100}, ttype="direct", pol="I",
+            debias=True, weighting="uniform", systematic_noise=0.05,
+        )
+        imgr.check_params()
+        imgr.check_limits()
+        imgr.init_imager()
+        dw = imgr._data_weighting_params()
+        assert dw.debias is True
+        assert dw.weighting == "uniform"
+        assert dw.systematic_noise == 0.05
+
+    def test_defaults_preserved(self, gauss_im, observe, initialize_imager):
+        imgr, _ = initialize_imager(observe(gauss_im), gauss_im, {"vis": 100})
+        dw = imgr._data_weighting_params()
+        assert dw.maxset is False
+        assert dw.debias is False
+        assert dw.weighting == "natural"
+        assert dw.systematic_noise == 0.0
+        assert dw.systematic_cphase_noise == 0.0
+
+
+class TestFourierGridParams:
+    """Pins the FourierGridParams bundle returned by Imager._fft_params():
+    field set, immutability, parity with the underlying _fft_* attrs, and
+    kwarg overrides / defaults landing in the right slots."""
+
+    EXPECTED_FIELDS = (
+        "fft_pad_factor", "fft_conv_func", "fft_gridder_prad", "fft_interp_order",
+        "nfft_eps",
+    )
+
+    def test_full_fft_returns_namedtuple(self, gauss_im, observe, initialize_imager):
+        imgr, _ = initialize_imager(observe(gauss_im), gauss_im, {"vis": 100})
+        assert isinstance(imgr._fft_params(), FourierGridParams)
+
+    def test_field_access_matches_imager_attrs(self, gauss_im, observe,
+                                                 initialize_imager):
+        imgr, _ = initialize_imager(observe(gauss_im), gauss_im, {"vis": 100})
+        fp = imgr._fft_params()
+        assert fp.fft_pad_factor == imgr._fft_pad_factor
+        assert fp.fft_conv_func == imgr._fft_conv_func
+        assert fp.fft_gridder_prad == imgr._fft_gridder_prad
+        assert fp.fft_interp_order == imgr._fft_interp_order
+        assert fp.nfft_eps == imgr._nfft_eps
+
+    def test_asdict_has_expected_keys(self, gauss_im, observe, initialize_imager):
+        imgr, _ = initialize_imager(observe(gauss_im), gauss_im, {"vis": 100})
+        assert tuple(imgr._fft_params()._asdict().keys()) == self.EXPECTED_FIELDS
+
+    def test_immutability(self, gauss_im, observe, initialize_imager):
+        imgr, _ = initialize_imager(observe(gauss_im), gauss_im, {"vis": 100})
+        fp = imgr._fft_params()
+        with pytest.raises(AttributeError):
+            fp.fft_pad_factor = 4
+
+    def test_kwarg_override(self, gauss_im, observe):
+        obs = observe(gauss_im)
+        imgr = eh.imager.Imager(
+            obs, gauss_im, prior_im=gauss_im, flux=gauss_im.total_flux(),
+            data_term={"vis": 100}, ttype="direct", pol="I",
+            fft_pad_factor=4, fft_conv_func="pillbox", fft_gridder_prad=3,
+            fft_interp_order=5, nfft_eps=1e-12,
+        )
+        imgr.check_params()
+        imgr.check_limits()
+        imgr.init_imager()
+        fp = imgr._fft_params()
+        assert fp.fft_pad_factor == 4
+        assert fp.fft_conv_func == "pillbox"
+        assert fp.fft_gridder_prad == 3
+        assert fp.fft_interp_order == 5
+        assert fp.nfft_eps == 1e-12
+
+    def test_defaults_preserved(self, gauss_im, observe, initialize_imager):
+        from ehtim.const_def import (
+            FFT_INTERP_DEFAULT,
+            FFT_PAD_DEFAULT,
+            GRIDDER_CONV_FUNC_DEFAULT,
+            GRIDDER_P_RAD_DEFAULT,
+            NFFT_EPS_DEFAULT,
+        )
+        imgr, _ = initialize_imager(observe(gauss_im), gauss_im, {"vis": 100})
+        fp = imgr._fft_params()
+        assert fp.fft_pad_factor == FFT_PAD_DEFAULT
+        assert fp.fft_conv_func == GRIDDER_CONV_FUNC_DEFAULT
+        assert fp.fft_gridder_prad == GRIDDER_P_RAD_DEFAULT
+        assert fp.fft_interp_order == FFT_INTERP_DEFAULT
+        assert fp.nfft_eps == NFFT_EPS_DEFAULT
+
+
+class TestMfConfig:
+    """Pins the MfConfig bundle nested inside ImagerConfig: field set,
+    immutability, _replace() semantics, and defaults."""
+
+    EXPECTED_FIELDS = ("mf_order", "mf_order_pol", "mf_rm", "mf_cm")
+
+    def test_returns_namedtuple(self, make_test_config):
+        cfg = make_test_config(mf=True, mf_order=1)
+        assert isinstance(cfg.mf_config, MfConfig)
+
+    def test_field_access(self, make_test_config):
+        cfg = make_test_config(mf=True, mf_order=2, mf_order_pol=1, mf_rm=1, mf_cm=0)
+        assert cfg.mf_config.mf_order == 2
+        assert cfg.mf_config.mf_order_pol == 1
+        assert cfg.mf_config.mf_rm == 1
+        assert cfg.mf_config.mf_cm == 0
+
+    def test_asdict_keys(self, make_test_config):
+        cfg = make_test_config()
+        assert tuple(cfg.mf_config._asdict().keys()) == self.EXPECTED_FIELDS
+
+    def test_immutability(self, make_test_config):
+        cfg = make_test_config()
+        with pytest.raises(AttributeError):
+            cfg.mf_config.mf_order = 2
+
+    def test_replace_returns_new_instance(self, make_test_config):
+        cfg = make_test_config(mf_order=0)
+        new_mf = cfg.mf_config._replace(mf_order=2)
+        assert new_mf.mf_order == 2
+        assert cfg.mf_config.mf_order == 0  # original unchanged
+
+    def test_defaults_preserved(self, make_test_config):
+        cfg = make_test_config()
+        assert cfg.mf_config.mf_order == 0
+        assert cfg.mf_config.mf_order_pol == 0
+        assert cfg.mf_config.mf_rm == 0
+        assert cfg.mf_config.mf_cm == 0
+
+
+class TestImagerConfig:
+    """Pins the ImagerConfig bundle assigned to Imager._config: field set,
+    immutability, kwarg propagation, and nested _replace() semantics that
+    Imager.make_image() relies on for parameter overrides."""
+
+    EXPECTED_FIELDS = ("pol", "transforms", "ttype", "mf", "mf_config")
+
+    def test_returns_namedtuple(self, gauss_im, observe, initialize_imager):
+        imgr, _ = initialize_imager(observe(gauss_im), gauss_im, {"vis": 100})
+        assert isinstance(imgr._config, ImagerConfig)
+
+    def test_field_access_matches_kwargs(self, gauss_im, observe):
+        obs = observe(gauss_im)
+        imgr = eh.imager.Imager(
+            obs, gauss_im, prior_im=gauss_im, flux=gauss_im.total_flux(),
+            data_term={"vis": 100}, ttype="direct", pol="I",
+            transform=["log", "mcv"], mf=False,
+        )
+        assert imgr._config.pol == "I"
+        assert imgr._config.ttype == "direct"
+        assert imgr._config.mf is False
+        assert list(imgr._config.transforms) == ["log", "mcv"]
+
+    def test_asdict_keys(self, gauss_im, observe, initialize_imager):
+        imgr, _ = initialize_imager(observe(gauss_im), gauss_im, {"vis": 100})
+        assert tuple(imgr._config._asdict().keys()) == self.EXPECTED_FIELDS
+
+    def test_immutability(self, gauss_im, observe, initialize_imager):
+        imgr, _ = initialize_imager(observe(gauss_im), gauss_im, {"vis": 100})
+        with pytest.raises(AttributeError):
+            imgr._config.pol = "IP"
+
+    def test_replace_nested_mf_config(self, make_test_config):
+        """_replace() semantics for nested updates — the make_image() override path."""
+        cfg = make_test_config(pol="I", mf=False, mf_order=0)
+        new_cfg = cfg._replace(
+            pol="IV",
+            mf_config=cfg.mf_config._replace(mf_order=2),
+        )
+        assert new_cfg.pol == "IV"
+        assert new_cfg.mf_config.mf_order == 2
+        # Original unchanged.
+        assert cfg.pol == "I"
+        assert cfg.mf_config.mf_order == 0
+
+    def test_mf_kwarg_propagation(self, gauss_im, observe, initialize_imager):
+        """Multifrequency kwargs land in mf_config nested fields."""
+        im_lo = gauss_im.copy()
+        im_lo.rf = REFFREQ_HZ
+        im_hi = gauss_im.copy()
+        im_hi.rf = MF_ALT_FREQ_HZ
+        imgr, _ = initialize_imager(
+            [observe(im_lo), observe(im_hi)], im_lo, {"vis": 100},
+            mf=True, mf_order=1,
+        )
+        assert imgr._config.mf is True
+        assert imgr._config.mf_config.mf_order == 1
+
+
+class TestMakeImageOverride:
+    """Regression tests for Imager.make_image(pol=..., mf_order=...) kwarg
+    overrides — under the NamedTuple refactor these update self._config via
+    NamedTuple._replace() instead of mutating the dropped pol_next /
+    mf_order attrs."""
+
+    def test_pol_override_updates_config(self, gauss_im_pol, observe):
+        """imgr.make_image(pol='IV') updates self._config.pol via _replace().
+
+        Uses transform=['log','vcv'] up front so post-override check_params accepts
+        IV — IV requires vcv (and vcv is mutually exclusive with mcv).
+        """
+        obs = observe(gauss_im_pol)
+        imgr = eh.imager.Imager(
+            obs, gauss_im_pol, prior_im=gauss_im_pol, flux=gauss_im_pol.total_flux(),
+            data_term={"amp": 1}, reg_term={"simple": 1},
+            ttype="direct", pol="I", maxit=1,
+            transform=["log", "vcv"],
+        )
+        imgr.make_image(pol="IV", show_updates=False)
+        assert imgr._config.pol == "IV"
+
+    def test_mf_order_override_updates_config(self, gauss_im, observe):
+        """imgr.make_image(mf=True, mf_order=2) updates self._config.mf_config via nested _replace()."""
+        im_lo = gauss_im.copy()
+        im_lo.rf = REFFREQ_HZ
+        im_hi = gauss_im.copy()
+        im_hi.rf = MF_ALT_FREQ_HZ
+        obs_lo = observe(im_lo)
+        obs_hi = observe(im_hi)
+        imgr = eh.imager.Imager(
+            [obs_lo, obs_hi], im_lo, prior_im=im_lo, flux=im_lo.total_flux(),
+            data_term={"amp": 1}, reg_term={"simple": 1},
+            ttype="direct", pol="I", maxit=1, mf_flux=[1.0, 1.0],
+        )
+        imgr.make_image(mf=True, mf_order=2, show_updates=False)
+        assert imgr._config.mf is True
+        assert imgr._config.mf_config.mf_order == 2
 
 
 class TestComputeObjective:
@@ -2381,7 +2647,20 @@ class TestValidateParams:
 
     @staticmethod
     def _call(**kwargs):
-        return validate_params(**kwargs)
+        # Assemble the per-test config kwargs into an ImagerConfig, pass the rest through.
+        config = ImagerConfig(
+            pol=kwargs.pop('pol'),
+            transforms=kwargs.pop('transforms'),
+            ttype=kwargs.pop('ttype'),
+            mf=kwargs.pop('mf'),
+            mf_config=MfConfig(
+                mf_order=kwargs.pop('mf_order'),
+                mf_order_pol=kwargs.pop('mf_order_pol'),
+                mf_rm=kwargs.pop('mf_rm', 0),
+                mf_cm=kwargs.pop('mf_cm', 0),
+            ),
+        )
+        return validate_params(config=config, **kwargs)
 
     # Sanity: the baseline does not raise.
     def test_baseline_ok(self, gauss_im):
@@ -2792,6 +3071,14 @@ class TestComputeChisqdataTerm:
     POL_DTYPES = ['pvis', 'm', 'vvis']
 
     @staticmethod
+    def _config(ttype='direct', pol='I'):
+        """Build an ImagerConfig with the (ttype, pol) under test."""
+        return ImagerConfig(
+            pol=pol, transforms=[], ttype=ttype, mf=False,
+            mf_config=MfConfig(mf_order=0, mf_order_pol=0, mf_rm=0, mf_cm=0),
+        )
+
+    @staticmethod
     def _kwargs():
         """Kwargs matching compute_data_tuples' current call into chisqdata."""
         return dict(
@@ -2852,7 +3139,7 @@ class TestComputeChisqdataTerm:
         legacy = chisqdata(obs_direct, gauss_im, mask, dtype, pol='I',
                            ttype='direct', **kw)
         new = compute_chisqdata_term(obs_direct, gauss_im, mask, dtype,
-                                     ttype='direct', pol='I', **kw)
+                                     self._config(ttype='direct', pol='I'), **kw)
         self._data_sigma_equal(legacy, new)
 
     @pytest.mark.parametrize("dtype", STD_DTYPES)
@@ -2863,7 +3150,7 @@ class TestComputeChisqdataTerm:
         legacy = chisqdata(obs_fast, gauss_im, mask, dtype, pol='I',
                            ttype='fast', **kw)
         new = compute_chisqdata_term(obs_fast, gauss_im, mask, dtype,
-                                     ttype='fast', pol='I', **kw)
+                                     self._config(ttype='fast', pol='I'), **kw)
         self._data_sigma_equal(legacy, new)
 
     @pytest.mark.parametrize("dtype", STD_DTYPES)
@@ -2874,7 +3161,7 @@ class TestComputeChisqdataTerm:
         legacy = chisqdata(obs_nfft, gauss_im, mask, dtype, pol='I',
                            ttype='nfft', **kw)
         new = compute_chisqdata_term(obs_nfft, gauss_im, mask, dtype,
-                                     ttype='nfft', pol='I', **kw)
+                                     self._config(ttype='nfft', pol='I'), **kw)
         self._data_sigma_equal(legacy, new)
 
     @pytest.mark.parametrize("dtype", POL_DTYPES)
@@ -2885,7 +3172,7 @@ class TestComputeChisqdataTerm:
         legacy = polchisqdata(obs_direct, gauss_im_pol, mask, dtype,
                               ttype='direct', **kw_fft)
         new = compute_chisqdata_term(obs_direct, gauss_im_pol, mask, dtype,
-                                     ttype='direct', pol='IP', **kw_fft)
+                                     self._config(ttype='direct', pol='IP'), **kw_fft)
         self._data_sigma_equal(legacy, new)
 
     @pytest.mark.parametrize("dtype", POL_DTYPES)
@@ -2896,26 +3183,26 @@ class TestComputeChisqdataTerm:
         legacy = polchisqdata(obs_nfft, gauss_im_pol, mask, dtype,
                               ttype='nfft', **kw_fft)
         new = compute_chisqdata_term(obs_nfft, gauss_im_pol, mask, dtype,
-                                     ttype='nfft', pol='IP', **kw_fft)
+                                     self._config(ttype='nfft', pol='IP'), **kw_fft)
         self._data_sigma_equal(legacy, new)
 
     def test_unknown_dtype_raises(self, gauss_im, obs_direct):
         mask = self._full_mask(gauss_im)
         with pytest.raises(Exception, match="data term .* not recognized"):
             compute_chisqdata_term(obs_direct, gauss_im, mask, 'bogus',
-                                   ttype='direct', pol='I')
+                                   self._config(ttype='direct', pol='I'))
 
     def test_pol_with_fast_raises(self, gauss_im_pol, obs_direct):
         mask = self._full_mask(gauss_im_pol)
         with pytest.raises(Exception, match="not supported for dtype"):
             compute_chisqdata_term(obs_direct, gauss_im_pol, mask, 'pvis',
-                                   ttype='fast', pol='IP')
+                                   self._config(ttype='fast', pol='IP'))
 
     def test_invalid_ttype_raises(self, gauss_im, obs_direct):
         mask = self._full_mask(gauss_im)
         with pytest.raises(Exception, match="Possible ttype values"):
             compute_chisqdata_term(obs_direct, gauss_im, mask, 'vis',
-                                   ttype='bogus', pol='I')
+                                   self._config(ttype='bogus', pol='I'))
 
     def test_standard_dtype_in_pol_mode_uses_stokes_I(self, gauss_im_pol, obs_direct):
         """In pol='IP' mode, a standard dtype ('vis') reads Stokes-I data.
@@ -2929,7 +3216,7 @@ class TestComputeChisqdataTerm:
         legacy_I = chisqdata(obs_direct, gauss_im_pol, mask, 'vis',
                              pol='I', ttype='direct', **kw)
         new_IP = compute_chisqdata_term(obs_direct, gauss_im_pol, mask, 'vis',
-                                        ttype='direct', pol='IP', **kw)
+                                        self._config(ttype='direct', pol='IP'), **kw)
         self._data_sigma_equal(legacy_I, new_IP)
 
     def test_standard_dtype_with_no_stokes_I_pol_raises(self, gauss_im_pol, obs_direct):
@@ -2937,7 +3224,8 @@ class TestComputeChisqdataTerm:
         mask = self._full_mask(gauss_im_pol)
         with pytest.raises(Exception, match="cannot use dterm vis with pol=P"):
             compute_chisqdata_term(obs_direct, gauss_im_pol, mask, 'vis',
-                                   ttype='direct', pol='P', **self._kwargs())
+                                   self._config(ttype='direct', pol='P'),
+                                   **self._kwargs())
 
 
 class _ChisqTermFixtures:
@@ -2978,8 +3266,12 @@ class _ChisqTermFixtures:
     @staticmethod
     def _data_tuple(obs, prior, mask, dtype, ttype, pol):
         """Get (A, data, sigma) for this (dtype, ttype) via the unified data-tuple dispatcher."""
+        config = ImagerConfig(
+            pol=pol, transforms=[], ttype=ttype, mf=False,
+            mf_config=MfConfig(mf_order=0, mf_order_pol=0, mf_rm=0, mf_cm=0),
+        )
         data, sigma, A = compute_chisqdata_term(
-            obs, prior, mask, dtype, ttype=ttype, pol=pol,
+            obs, prior, mask, dtype, config,
         )
         return A, data, sigma
 
@@ -3151,7 +3443,9 @@ class TestComputeChisqgradTerm(_ChisqTermFixtures):
         new = compute_chisqgrad_term(imcur, dtype, A, data, sigma,
                                      ttype='nfft', mask=mask,
                                      pol_solve=pol_solve)
-        np.testing.assert_allclose(new, legacy, rtol=1e-12, atol=1e-15)
+        # atol relaxed from 1e-15: multi-threaded finufft reductions are
+        # not bit-deterministic across calls; noise floor is ~1e-13.
+        np.testing.assert_allclose(new, legacy, rtol=1e-12, atol=1e-12)
 
     def test_pol_grad_missing_pol_solve_raises(self, gauss_im_pol, obs_direct):
         """Pol grad requires explicit pol_solve; no hidden default."""
@@ -3207,4 +3501,143 @@ class TestPolSolveBlock:
         ws = np.array([1, 0, 0, 1])
         out = _pol_solve_block(ws, pol='IV')
         np.testing.assert_array_equal(out, ws)
+
+
+class TestComputeRegularizerTerm:
+    """Parity between compute_regularizer_term and the legacy outer dispatchers."""
+
+    @pytest.fixture(scope="class")
+    def stokes_setup(self, make_rect_image):
+        im = make_rect_image(32, 48)
+        mask = im.imvec > 0
+        imvec = im.imvec
+        nprior = np.ones_like(imvec) / len(imvec)
+        flux = im.total_flux()
+        return im, imvec, nprior, mask, flux
+
+    @pytest.fixture(scope="class")
+    def pol_setup(self, make_rect_image):
+        im = make_rect_image(32, 48)
+        mask = im.imvec > 0
+        nimage = int(np.sum(mask))
+        rng = np.random.default_rng(7)
+        I = im.imvec[mask]
+        rho = np.clip(0.3 + 0.05 * rng.standard_normal(nimage), 0.05, 0.95)
+        phi = 0.5 + 0.1 * rng.standard_normal(nimage)
+        psi = 0.2 + 0.05 * rng.standard_normal(nimage)
+        imarr = np.array([I, rho, phi, psi])
+        priorarr = np.zeros_like(imarr)
+        flux = im.total_flux()
+        return im, imarr, priorarr, mask, flux
+
+    @pytest.fixture(scope="class")
+    def mf_setup(self, make_rect_image):
+        im = make_rect_image(32, 48)
+        imvec = im.imvec
+        nprior = imvec * 0.5
+        mask = imvec > 0
+        return im, imvec, nprior, mask
+
+    @pytest.mark.parametrize("rtype", ['flux', 'simple', 'l1', 'l1w', 'lA', 'gs',
+                                       'patch', 'cm', 'tv', 'tvlog', 'tv2',
+                                       'tv2log', 'compact', 'compact2', 'rgauss'])
+    def test_parity_stokes_value(self, stokes_setup, rtype):
+        im, imvec, nprior, mask, flux = stokes_setup
+        kwargs = dict(nprior=nprior, flux=flux,
+                      xdim=im.xdim, ydim=im.ydim, psize=im.psize,
+                      beam_size=20 * eh.RADPERUAS,
+                      alpha_A=5000.0, epsilon_tv=0.0,
+                      major=50 * eh.RADPERUAS, minor=60 * eh.RADPERUAS,
+                      PA=np.pi / 3, norm_reg=True)
+        from ehtim.imaging.imager_utils import regularizer
+        legacy = regularizer(imvec, nprior, mask, flux,
+                             im.xdim, im.ydim, im.psize, rtype,
+                             beam_size=kwargs['beam_size'],
+                             alpha_A=kwargs['alpha_A'],
+                             epsilon_tv=kwargs['epsilon_tv'],
+                             major=kwargs['major'], minor=kwargs['minor'],
+                             PA=kwargs['PA'], norm_reg=True)
+        new = compute_regularizer_term(imvec, rtype, mask, **kwargs)
+        np.testing.assert_allclose(new, legacy, rtol=1e-12, atol=1e-15)
+
+    @pytest.mark.parametrize("rtype", ['flux', 'simple', 'tv', 'rgauss'])
+    def test_parity_stokes_grad(self, stokes_setup, rtype):
+        im, imvec, nprior, mask, flux = stokes_setup
+        kwargs = dict(nprior=nprior, flux=flux,
+                      xdim=im.xdim, ydim=im.ydim, psize=im.psize,
+                      beam_size=20 * eh.RADPERUAS,
+                      alpha_A=5000.0, epsilon_tv=0.0,
+                      major=50 * eh.RADPERUAS, minor=60 * eh.RADPERUAS,
+                      PA=np.pi / 3, norm_reg=True)
+        from ehtim.imaging.imager_utils import regularizergrad
+        legacy = regularizergrad(imvec, nprior, mask, flux,
+                                 im.xdim, im.ydim, im.psize, rtype,
+                                 beam_size=kwargs['beam_size'],
+                                 alpha_A=kwargs['alpha_A'],
+                                 epsilon_tv=kwargs['epsilon_tv'],
+                                 major=kwargs['major'], minor=kwargs['minor'],
+                                 PA=kwargs['PA'], norm_reg=True)
+        new = compute_regularizergrad_term(imvec, rtype, mask, **kwargs)
+        np.testing.assert_allclose(new, legacy, rtol=1e-12, atol=1e-15)
+
+    @pytest.mark.parametrize("rtype", ['msimple', 'hw', 'ptv', 'vflux',
+                                       'l1v', 'l2v', 'vtv', 'vtv2'])
+    def test_parity_pol_value(self, pol_setup, rtype):
+        im, imarr, priorarr, mask, flux = pol_setup
+        kwargs = dict(flux=flux, pflux=flux, vflux=flux,
+                      xdim=im.xdim, ydim=im.ydim, psize=im.psize,
+                      beam_size=20 * eh.RADPERUAS, norm_reg=True)
+        from ehtim.imaging.pol_imager_utils import polregularizer
+        legacy = polregularizer(imarr, priorarr, mask, flux, flux, flux,
+                                im.xdim, im.ydim, im.psize, rtype,
+                                beam_size=kwargs['beam_size'], norm_reg=True)
+        new = compute_regularizer_term(imarr, rtype, mask, **kwargs)
+        np.testing.assert_allclose(new, legacy, rtol=1e-12, atol=1e-15)
+
+    @pytest.mark.parametrize("rtype", ['msimple', 'hw', 'ptv', 'vflux', 'vtv2'])
+    def test_parity_pol_grad(self, pol_setup, rtype):
+        from ehtim.imaging.pol_imager_utils import polregularizergrad
+        im, imarr, priorarr, mask, flux = pol_setup
+        # Pass pol_solve explicitly: in practice compute_reggrad_dict always
+        # forwards the imager's which_solve, so the leaf defaults are not
+        # exercised during normal imaging.
+        pol_solve = (1, 1, 1, 1)
+        kwargs = dict(flux=flux, pflux=flux, vflux=flux,
+                      xdim=im.xdim, ydim=im.ydim, psize=im.psize,
+                      beam_size=20 * eh.RADPERUAS, norm_reg=True,
+                      pol_solve=pol_solve)
+        legacy = polregularizergrad(imarr, priorarr, mask, flux, flux, flux,
+                                    im.xdim, im.ydim, im.psize, rtype,
+                                    beam_size=kwargs['beam_size'],
+                                    norm_reg=True, pol_solve=pol_solve)
+        new = compute_regularizergrad_term(imarr, rtype, mask, **kwargs)
+        np.testing.assert_allclose(new, legacy, rtol=1e-12, atol=1e-15)
+
+    @pytest.mark.parametrize("rtype", ['l2_alpha', 'l2_beta', 'l2_rm', 'l2_cm',
+                                       'tv_alpha', 'tv_beta', 'tv_rm', 'tv_cm'])
+    def test_parity_mf_value(self, mf_setup, rtype):
+        im, imvec, nprior, mask = mf_setup
+        kwargs = dict(nprior=nprior, xdim=im.xdim, ydim=im.ydim, psize=im.psize,
+                      beam_size=20 * eh.RADPERUAS, norm_reg=True)
+        from ehtim.imaging.multifreq_imager_utils import regularizer_mf
+        legacy = regularizer_mf(imvec, nprior, mask, im.xdim, im.ydim, im.psize,
+                                rtype, beam_size=kwargs['beam_size'], norm_reg=True)
+        new = compute_regularizer_term(imvec, rtype, mask, **kwargs)
+        np.testing.assert_allclose(new, legacy, rtol=1e-12, atol=1e-15)
+
+    @pytest.mark.parametrize("rtype", ['l2_alpha', 'tv_alpha', 'l2_rm', 'tv_cm'])
+    def test_parity_mf_grad(self, mf_setup, rtype):
+        from ehtim.imaging.multifreq_imager_utils import regularizergrad_mf
+        im, imvec, nprior, mask = mf_setup
+        kwargs = dict(nprior=nprior, xdim=im.xdim, ydim=im.ydim, psize=im.psize,
+                      beam_size=20 * eh.RADPERUAS, norm_reg=True)
+        legacy = regularizergrad_mf(imvec, nprior, mask, im.xdim, im.ydim, im.psize,
+                                    rtype, beam_size=kwargs['beam_size'], norm_reg=True)
+        new = compute_regularizergrad_term(imvec, rtype, mask, **kwargs)
+        np.testing.assert_allclose(new, legacy, rtol=1e-12, atol=1e-15)
+
+    def test_unknown_regname_raises(self, stokes_setup):
+        im, imvec, nprior, mask, flux = stokes_setup
+        with pytest.raises(Exception, match="not recognized"):
+            compute_regularizer_term(imvec, 'not_a_regularizer', mask)
 
