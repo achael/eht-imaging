@@ -10,6 +10,7 @@ import ehtim.imaging.imager_utils as imutils
 import ehtim.imaging.multifreq_imager_utils as mfutils
 import ehtim.imaging.pol_imager_utils as polutils
 import ehtim.observing.obs_helpers as obsh
+from ehtim.backends import array_namespace
 
 # -----------------------------------------------------------------------------
 # Naming convention for image arguments throughout this module
@@ -369,6 +370,7 @@ def unpack_imarr(vec, init_arr, which_solve):
       - if which_solve[k] == 0, fall back to `init_arr[k]` (the *initial*
         image, NOT a regularizer prior).
     """
+    xp = array_namespace(vec)
 
     imarrdim = len(init_arr.shape)
     if imarrdim==2:
@@ -384,17 +386,20 @@ def unpack_imarr(vec, init_arr, which_solve):
     if nsolve != len(which_solve):
         raise Exception("in unpack_imarr, init_arr has inconsistent shape with which_solve!")
 
+    # Build the rows then stack, rather than np.empty + in-place assignment, so
+    # jax.grad/jit can trace through: solved slots take the next nimage values of
+    # `vec`, not-solved slots fall back to the initial image. On numpy this is
+    # identical to the old buffer-fill; on jax the host init_arr rows promote to
+    # constants alongside the traced vec slices.
     imct = 0
-    # TODO(jax): build this functionally (e.g. xp.stack of the rows) so
-    # jax.grad(compute_objective) can trace it -- np.empty + in-place assignment
-    # is not jax-traceable.
-    imarr = np.empty((nsolve, nimage))
+    rows = []
     for kk in range(nsolve):
         if which_solve[kk]==0:
-            imarr[kk] = init_arr[kk]
+            rows.append(init_arr[kk])
         else:
-            imarr[kk] = vec[imct*nimage:(imct+1)*nimage]
+            rows.append(vec[imct*nimage:(imct+1)*nimage])
             imct += 1
+    imarr = xp.stack(rows)
 
     if imarrdim==1:
         imarr = imarr[0]
