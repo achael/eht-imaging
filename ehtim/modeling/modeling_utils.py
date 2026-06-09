@@ -1650,7 +1650,9 @@ def modeler_func(Obsdata, model_init, model_prior,
             caldict[site] = []
 
         for j in range(len(gains)):
-            caldict[gain_list[j][1]].append((gain_list[j][0], (1.0 + gains[j]), (1.0 + gains[j])))
+            # TODO: time-dependent D-term field added but unpopulated
+            caldict[gain_list[j][1]].append(
+                (gain_list[j][0], (1.0 + gains[j]), (1.0 + gains[j]), 0j, 0j))
 
         for site in caldict.keys():
             caldict[site] = np.array(caldict[site], dtype=DTCAL)
