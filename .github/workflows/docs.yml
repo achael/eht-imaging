@@ -5,6 +5,10 @@ on:
     types: [published]
   workflow_dispatch:   # allow manual rebuilds from the Actions tab
 
+concurrency:
+  group: docs-deploy
+  cancel-in-progress: true
+
 jobs:
   docs:
     runs-on: ubuntu-latest
@@ -17,11 +21,11 @@ jobs:
           python-version: "3.11"
           cache: 'pip'
       - name: Install ehtim and docs dependencies
-        run: pip install -e . sphinx sphinx_rtd_theme
+        run: pip install -e .[docs]
       - name: Build HTML docs
         run: sphinx-build -b html docs/source docs/_build/html
       - name: Deploy to gh-pages
-        uses: peaceiris/actions-gh-pages@v4
+        uses: peaceiris/actions-gh-pages@84c30a85c19949d7eee79c4ff27748b70285e453  # v4.1.0
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: docs/_build/html

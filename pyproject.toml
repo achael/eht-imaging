@@ -43,6 +43,10 @@ dev = [
     "pytest-cov",
     "ruff",
 ]
+docs = [
+    "sphinx>=7,<10",
+    "sphinx_rtd_theme>=2,<4",
+]
 
 [project.urls]
 Homepage = "https://github.com/achael/eht-imaging"
