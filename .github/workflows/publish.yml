@@ -4,6 +4,9 @@ on:
   release:
     types: [published]
 
+permissions:
+  contents: read
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -23,6 +26,7 @@ jobs:
     needs: build
     runs-on: ubuntu-latest
     environment: pypi
+    if: ${{ !github.event.release.prerelease }}
     permissions:
       id-token: write   # required for trusted publishing (OIDC)
     steps:
@@ -30,4 +34,6 @@ jobs:
         with:
           name: dist
           path: dist/
-      - uses: pypa/gh-action-pypi-publish@release/v1
+      - uses: pypa/gh-action-pypi-publish@cef221092ed1bacb1cc03d23a2d87d1d172e277b  # v1.14.0
+        with:
+          skip-existing: true
