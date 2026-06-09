@@ -1466,6 +1466,8 @@ class NFFTInfo:
         # (-pi, pi] form is what FINUFFTPlan expects.
         uv_scaled = uv * psize
         uv_finufft = 2 * np.pi * uv_scaled
+        self.eps = eps
+        self.uv_finufft = uv_finufft  # (-pi, pi] nonuniform points, for jax_finufft.nufft2
         self.plan = FINUFFTPlan(self.xdim, self.ydim, uv_finufft, eps=eps)
 
         phases = np.exp(-1j*np.pi*(uv_scaled[:, 0] + uv_scaled[:, 1]))
