@@ -19,6 +19,8 @@
 import matplotlib.pyplot as plt
 import numpy as np
 
+from ehtim.backends import array_namespace
+
 try:
     from pynfft.nfft import NFFT
     _HAS_NFFT = True
@@ -68,7 +70,8 @@ def make_p_image(imarr):
     """
 
     # NOTE! We replaced EVPA chi with phi=2chi in the imarr
-    pimage = imarr[0] * imarr[1] * np.exp(1j*imarr[2]) * np.cos(imarr[3])
+    xp = array_namespace(imarr)
+    pimage = imarr[0] * imarr[1] * xp.exp(1j*imarr[2]) * xp.cos(imarr[3])
 
     return pimage
 
@@ -76,7 +79,8 @@ def make_m_image(imarr):
     """construct a polarimetric ratrio image abs(P/I) = abs(Q + iU)/I
     """
 
-    mimage = imarr[1] * np.cos(imarr[3])
+    xp = array_namespace(imarr)
+    mimage = imarr[1] * xp.cos(imarr[3])
 
     return mimage
 
@@ -100,7 +104,8 @@ def make_q_image(imarr):
     """
 
     # NOTE! We replaced EVPA chi with phi=2chi in the imarr
-    qimage = imarr[0] * imarr[1] * np.cos(imarr[2]) *  np.cos(imarr[3])
+    xp = array_namespace(imarr)
+    qimage = imarr[0] * imarr[1] * xp.cos(imarr[2]) *  xp.cos(imarr[3])
 
     return qimage
 
@@ -108,7 +113,8 @@ def make_u_image(imarr):
     """construct an image of stokes U
     """
     # NOTE! We replaced EVPA chi with phi=2chi in the imarr
-    uimage = imarr[0] * imarr[1] * np.sin(imarr[2]) *  np.cos(imarr[3])
+    xp = array_namespace(imarr)
+    uimage = imarr[0] * imarr[1] * xp.sin(imarr[2]) *  xp.cos(imarr[3])
 
     return uimage
 
@@ -116,7 +122,8 @@ def make_v_image(imarr):
     """construct an image of stokes V
     """
 
-    vimage = imarr[0] * imarr[1] * np.sin(imarr[3])
+    xp = array_namespace(imarr)
+    vimage = imarr[0] * imarr[1] * xp.sin(imarr[3])
 
     return vimage
 
@@ -124,7 +131,8 @@ def make_vf_image(imarr):
     """construct an image of stokes V/I
     """
 
-    vfimage = imarr[1] * np.sin(imarr[3])
+    xp = array_namespace(imarr)
+    vfimage = imarr[1] * xp.sin(imarr[3])
 
     return vfimage
 
@@ -134,13 +142,14 @@ def polcv(imarr):
        input is solver values, output is physical values
     """
 
+    xp = array_namespace(imarr)
     rho_prime =  imarr[1]
-    rho = 0.5 + np.arctan(rho_prime/TANWIDTH_M)/np.pi
+    rho = 0.5 + xp.arctan(rho_prime/TANWIDTH_M)/np.pi
 
     psi_prime = imarr[3]
-    psi = np.arctan(psi_prime/TANWIDTH_PSI)
+    psi = xp.arctan(psi_prime/TANWIDTH_PSI)
 
-    out = np.array((imarr[0], rho, imarr[2], psi))
+    out = xp.stack((imarr[0], rho, imarr[2], psi))
     return out
 
 def polcv_r(imarr):
@@ -193,18 +202,19 @@ def mcv(imarr):
        input is solver values, output is physical values
     """
 
+    xp = array_namespace(imarr)
     vfrac = imarr[3] # when using this transform, we interpret transformed imarr[3] as mfrac=\rho sin(\psi)
-    mfrac_max = 1-np.abs(vfrac)
-    if np.any(mfrac_max>1):
+    mfrac_max = 1-xp.abs(vfrac)
+    if xp is np and np.any(mfrac_max>1):  # dead guard (mfrac_max<=1 always); kept on numpy
         raise Exception("mfrac_max>1 in mcv!")
 
     mfrac_prime =  imarr[1]
-    mfrac = mfrac_max*(0.5 + np.arctan(mfrac_prime/TANWIDTH_M)/np.pi)
+    mfrac = mfrac_max*(0.5 + xp.arctan(mfrac_prime/TANWIDTH_M)/np.pi)
 
-    rho = np.sqrt(mfrac**2 + vfrac**2)
-    psi = np.arcsin(vfrac/rho)
+    rho = xp.sqrt(mfrac**2 + vfrac**2)
+    psi = xp.arcsin(vfrac/rho)
 
-    out = np.array((imarr[0], rho, imarr[2], psi))
+    out = xp.stack((imarr[0], rho, imarr[2], psi))
     return out
 
 def mcv_r(imarr):
@@ -266,18 +276,19 @@ def vcv(imarr):
     """change of variables for v(v') from range (-inf,inf) to (-1+|m|,1-|m|) while keeping m=P/I fixed
        input is solver values, output is physical values"""
 
+    xp = array_namespace(imarr)
     mfrac = imarr[1] # when using this transform, we interpret transformed imarr[1] as mfrac=\rho cos(\psi)
-    vfrac_max = 1-np.abs(mfrac)
-    if np.any(vfrac_max>1):
+    vfrac_max = 1-xp.abs(mfrac)
+    if xp is np and np.any(vfrac_max>1):  # dead guard (vfrac_max<=1 always); kept on numpy
         raise Exception("vfrac_max>1 in vcv!")
 
     vfrac_prime = imarr[3]
-    vfrac = 2*vfrac_max*np.arctan(vfrac_prime/TANWIDTH_V)/np.pi
+    vfrac = 2*vfrac_max*xp.arctan(vfrac_prime/TANWIDTH_V)/np.pi
 
-    rho = np.sqrt(mfrac**2 + vfrac**2)
-    psi = np.arcsin(vfrac/rho)
+    rho = xp.sqrt(mfrac**2 + vfrac**2)
+    psi = xp.arcsin(vfrac/rho)
 
-    out = np.array((imarr[0], rho, imarr[2], psi))
+    out = xp.stack((imarr[0], rho, imarr[2], psi))
     return out
 
 def vcv_r(imarr):
@@ -428,9 +439,10 @@ def chisq_p(imarr, Amatrix, p, sigmap):
     """Polarimetric visibility chi-squared
     """
 
+    xp = array_namespace(imarr)
     pimage = make_p_image(imarr)
-    psamples = np.dot(Amatrix, pimage)
-    chisq =  np.sum(np.abs(p - psamples)**2/(sigmap**2)) / (2*len(p))
+    psamples = xp.dot(Amatrix, pimage)
+    chisq =  xp.sum(xp.abs(p - psamples)**2/(sigmap**2)) / (2*len(p))
     return chisq
 
 def chisqgrad_p(imarr, Amatrix, p, sigmap,pol_solve=POL_SOLVE_DEFAULT):
@@ -474,10 +486,11 @@ def chisq_m(imarr, Amatrix, m, sigmam):
     """Polarimetric ratio chi-squared
     """
 
+    xp = array_namespace(imarr)
     iimage = make_i_image(imarr)
     pimage = make_p_image(imarr)
-    msamples = np.dot(Amatrix, pimage) / np.dot(Amatrix, iimage)
-    chisq = np.sum(np.abs(m - msamples)**2/(sigmam**2)) / (2*len(m))
+    msamples = xp.dot(Amatrix, pimage) / xp.dot(Amatrix, iimage)
+    chisq = xp.sum(xp.abs(m - msamples)**2/(sigmam**2)) / (2*len(m))
     return chisq
 
 def chisqgrad_m(imarr, Amatrix, m, sigmam,pol_solve=POL_SOLVE_DEFAULT):
@@ -524,9 +537,10 @@ def chisq_vvis(imarr, Amatrix, v, sigmav):
     """V visibility chi-squared
     """
 
+    xp = array_namespace(imarr)
     vimage = make_v_image(imarr)
-    vsamples = np.dot(Amatrix, vimage)
-    chisq =  np.sum(np.abs(v - vsamples)**2/(sigmav**2)) / (2*len(v))
+    vsamples = xp.dot(Amatrix, vimage)
+    chisq =  xp.sum(xp.abs(v - vsamples)**2/(sigmav**2)) / (2*len(v))
     return chisq
 
 def chisqgrad_vvis(imarr, Amatrix, v, sigmav, pol_solve=POL_SOLVE_DEFAULT_V):

@@ -433,23 +433,28 @@ def transform_imarr(imarr, transforms, which_solve):
     if nimage==1:  # single-pol Stokes I: functional so jax.grad/jit can trace it
         return xp.exp(imarr) if ('log' in transforms) else imarr.copy()
 
-    # pol / mf (nimage 3, 4, 10): in-place numpy; made functional in Phase 4.
-    outarr = imarr.copy()
-    if nimage==3 and ('log' in transforms):
-        outarr[0] = np.exp(outarr[0])
+    # pol / mf (nimage 3, 4, 10): functional (stack/concatenate) so jax can trace.
+    if nimage==3:  # multifrequency Stokes I: log on I only
+        if 'log' in transforms:
+            return xp.stack([xp.exp(imarr[0]), imarr[1], imarr[2]])
+        return imarr.copy()
+
+    # Build the 4 Stokes rows (log on I, then polcv/mcv/vcv), keeping any trailing
+    # multifrequency rows (4:nimage) unchanged.
+    row0 = xp.exp(imarr[0]) if (pol_which_solve[0]==1 and ('log' in transforms)) else imarr[0]
+    pol_in = xp.stack([row0, imarr[1], imarr[2], imarr[3]])
+    if (pol_which_solve[1]==1 and pol_which_solve[3]==1 and ('polcv' in transforms)):
+        pol_out = polutils.polcv(pol_in)
+    elif (pol_which_solve[1]==1) and ('mcv' in transforms):
+        pol_out = polutils.mcv(pol_in)
+    elif (pol_which_solve[3]==1) and ('vcv' in transforms):
+        pol_out = polutils.vcv(pol_in)
     else:
+        pol_out = pol_in
 
-        if pol_which_solve[0]==1 and ('log' in transforms):  # full polarization, including stokes I imaging
-            outarr[0] = np.exp(outarr[0])
-
-        if (pol_which_solve[1]==1 and pol_which_solve[3]==1 and ('polcv' in transforms)):
-            outarr[0:4] = polutils.polcv(outarr)
-        elif (pol_which_solve[1]==1) and ('mcv' in transforms):
-            outarr[0:4] = polutils.mcv(outarr)
-        elif (pol_which_solve[3]==1) and ('vcv' in transforms):
-            outarr[0:4] = polutils.vcv(outarr)
-
-    return outarr
+    if nimage==4:
+        return pol_out
+    return xp.concatenate([pol_out, imarr[4:nimage]])
 
 def transform_imarr_inverse(imarr, transforms, which_solve):
     """Apply inverse transformation from physical to solver values for all polarizations"""

@@ -147,3 +147,34 @@ def test_spatial_reg_partial_mask_parity():
                        float(iu.reg_tv(jnp.asarray(imvec), mask, **kw)), rtol=1e-12)
     g_jax = np.asarray(jax.grad(lambda v: iu.reg_tv(v, mask, **kw))(jnp.asarray(imvec)))
     assert np.allclose(g_jax, iu.reggrad_tv(imvec, mask, **kw), rtol=1e-8, atol=1e-10)
+
+
+@pytest.fixture(scope="module")
+def pol_imager(obs_pol_direct, gauss_im_pol, gauss_prior):
+    # IP imaging: Stokes I + linear pol (pvis, m); mcv change-of-variables.
+    # Stokes-I reg only here; pol regs are exercised below.
+    imgr = eh.imager.Imager(
+        obs_pol_direct, gauss_prior, prior_im=gauss_prior, flux=gauss_im_pol.total_flux(),
+        data_term={"amp": 100, "pvis": 100, "m": 50}, reg_term={"simple": 1},
+        ttype="direct", pol="IP", transform=["log", "mcv"], maxit=100,
+    )
+    imgr.init_imager()
+    return imgr
+
+
+@pytest.fixture(scope="module")
+def pol_x0(pol_imager):
+    rng = np.random.default_rng(RNG_SEED)
+    base = np.asarray(pol_imager._init_vec, dtype=np.float64)
+    return base + PERTURB * rng.standard_normal(base.size)
+
+
+def test_pol_value_numpy_jax_consistent(pol_imager, pol_x0):
+    assert np.allclose(float(pol_imager.objfunc(pol_x0)),
+                       float(pol_imager.objfunc(jnp.asarray(pol_x0))), rtol=VALUE_RTOL, atol=GRAD_ATOL)
+
+
+def test_pol_grad_parity_autodiff_vs_analytic(pol_imager, pol_x0):
+    g_an = np.asarray(pol_imager.objgrad(pol_x0))
+    g_jax = np.asarray(jax.grad(pol_imager.objfunc)(jnp.asarray(pol_x0)))
+    assert np.allclose(g_jax, g_an, rtol=GRAD_RTOL, atol=GRAD_ATOL)
