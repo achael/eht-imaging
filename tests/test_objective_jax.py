@@ -14,6 +14,7 @@ import numpy as np
 import pytest
 
 import ehtim as eh
+from ehtim.imaging.imager_backend import make_objective_jax
 
 pytestmark = pytest.mark.jax
 
@@ -76,3 +77,33 @@ def test_grad_finite_difference(imager_I, x0):
     frac = np.abs((g_fd - g_analytic[idx]) / (np.abs(g_analytic[idx]) + 1e-100))
     assert np.median(frac) < FD_MEDIAN_TOL
     assert np.max(frac) < FD_MAX_TOL
+
+
+def _make_fun(imgr, device=None):
+    return make_objective_jax(
+        imgr._init_arr, imgr._config, imgr._which_solve, imgr._data_tuples,
+        imgr._logfreqratio_list, len(imgr.obslist_next), imgr.dat_term_next,
+        imgr.reg_term_next, imgr._prior_arr, imgr.norm_reg, imgr._regparams(),
+        imgr._embed_mask, device=device,
+    )
+
+
+def test_factory_matches_analytic(imager_I, x0):
+    value, grad = _make_fun(imager_I)(x0)
+    assert np.allclose(value, float(imager_I.objfunc(x0)), rtol=VALUE_RTOL, atol=GRAD_ATOL)
+    assert np.allclose(grad, np.asarray(imager_I.objgrad(x0)), rtol=GRAD_RTOL, atol=GRAD_ATOL)
+
+
+def test_objective_traces_once_across_x(imager_I, x0):
+    # the factory closes over everything but x, so one jit trace serves every
+    # solver step; here we count traces of objfunc (what the factory jits).
+    traces = {"n": 0}
+
+    def counted(x):
+        traces["n"] += 1
+        return imager_I.objfunc(x)
+
+    f = jax.jit(counted)
+    f(jnp.asarray(x0)).block_until_ready()
+    f(jnp.asarray(x0 + 0.5)).block_until_ready()
+    assert traces["n"] == 1

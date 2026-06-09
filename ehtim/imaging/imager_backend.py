@@ -1931,3 +1931,44 @@ def compute_objective_grad(imvec, initvec, config,
     grad = datterm + regterm
     grad = transform_gradients(grad, imcur_prime, transforms, which_solve)
     return pack_imarr(grad, which_solve)
+
+
+def make_objective_jax(initvec, config, which_solve, data_tuples, logfreqratio_list,
+                       n_obs, dat_term, reg_term, priorvec, norm_reg, reg_params,
+                       embed_mask, device=None):
+    """Return a scipy fun(x) -> (value, grad) for the imaging objective.
+
+    Same arguments as compute_objective minus the solver vector x. The value is
+    compute_objective and the gradient is its jax autodiff, which equals
+    compute_objective_grad. Mode-agnostic: it just wraps compute_objective, so it
+    works for any pol mode / ttype the backend supports. jax is imported lazily so
+    `import ehtim` stays jax-free.
+
+    The only traced argument is x; everything else is captured in the closure, so
+    the unhashable data_tuples / dat_term dicts never reach jit and one trace is
+    reused across solver steps. Numeric data is moved onto `device` once.
+    """
+    import jax
+    import jax.numpy as jnp
+
+    def put(a):
+        a = jnp.asarray(a)
+        return jax.device_put(a, device) if device is not None else a
+
+    # A non-array A (the nfft NFFTInfo) is left as a host object for the kernel.
+    data_d = {key: tuple(put(v) if hasattr(v, "shape") else v for v in val)
+              for key, val in data_tuples.items()}
+    prior_d, init_d = put(priorvec), put(initvec)
+
+    def loss(x):
+        return compute_objective(x, init_d, config, which_solve, data_d,
+                                 logfreqratio_list, n_obs, dat_term, reg_term,
+                                 prior_d, norm_reg, reg_params, embed_mask)
+
+    value_and_grad = jax.jit(jax.value_and_grad(loss))
+
+    def fun(x):
+        value, grad = value_and_grad(jnp.asarray(x))
+        return float(value), np.asarray(grad, dtype=np.float64)
+
+    return fun
