@@ -6,11 +6,16 @@
 lazily when selected; install it with the ``[dev]`` (CPU) or ``[gpu]`` (CUDA) extra.
 """
 import contextlib
+import importlib.util
 
 import numpy as _np
 
 _BACKENDS = ("numpy", "jax")
 _active = "numpy"
+# Whether jax is installed, resolved once -- find_spec does not import jax, so
+# `import ehtim` stays jax-free, and array_namespace avoids a per-call try/except
+# on the numpy hot path.
+_HAS_JAX = importlib.util.find_spec("jax") is not None
 
 
 def set_backend(name):
@@ -42,10 +47,9 @@ def backend(name):
 
 def array_namespace(*arrays):
     """Return jax.numpy if any argument is a JAX array or tracer, else numpy."""
-    try:
-        import jax
-    except ImportError:
+    if not _HAS_JAX:
         return _np
+    import jax
     if any(isinstance(a, jax.Array) for a in arrays):
         import jax.numpy as jnp
         return jnp
