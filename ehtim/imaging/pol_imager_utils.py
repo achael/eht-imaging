@@ -807,11 +807,12 @@ def chisqgrad_vvis_nfft(imarr, A, v, sigmav,pol_solve=POL_SOLVE_DEFAULT):
 
 
 def reg_msimple(imarr, mask, **kwargs):
+    xp = array_namespace(imarr)
     flux = kwargs['flux']
     norm = flux if kwargs.get('norm_reg', True) else 1
     iimage = make_i_image(imarr)
     mimage = make_m_image(imarr)
-    return np.sum(iimage * np.log(mimage)) / norm
+    return xp.sum(iimage * xp.log(mimage)) / norm
 
 
 def reggrad_msimple(imarr, mask, **kwargs):
@@ -834,12 +835,13 @@ def reggrad_msimple(imarr, mask, **kwargs):
 
 
 def reg_hw(imarr, mask, **kwargs):
+    xp = array_namespace(imarr)
     flux = kwargs['flux']
     norm = flux if kwargs.get('norm_reg', True) else 1
     iimage = make_i_image(imarr)
     mimage = make_m_image(imarr)
-    return np.sum(iimage * (((1+mimage)/2) * np.log((1+mimage)/2)
-                            + ((1-mimage)/2) * np.log((1-mimage)/2))) / norm
+    return xp.sum(iimage * (((1+mimage)/2) * xp.log((1+mimage)/2)
+                            + ((1-mimage)/2) * xp.log((1-mimage)/2))) / norm
 
 
 def reggrad_hw(imarr, mask, **kwargs):
@@ -864,6 +866,7 @@ def reggrad_hw(imarr, mask, **kwargs):
 
 def reg_ptv(imarr, mask, **kwargs):
     from ehtim.imaging.imager_utils import embed_imarr
+    xp = array_namespace(imarr)
     if np.any(np.invert(mask)):
         imarr = embed_imarr(imarr, mask, randomfloor=True)
     flux = kwargs['flux']
@@ -872,10 +875,12 @@ def reg_ptv(imarr, mask, **kwargs):
     norm = flux * psize / beam_size if kwargs.get('norm_reg', True) else 1
     pimage = make_p_image(imarr)
     im = pimage.reshape(ny, nx)
-    impad = np.pad(im, 1, mode='constant', constant_values=0)
-    im_l1 = np.roll(impad, -1, axis=0)[1:ny+1, 1:nx+1]
-    im_l2 = np.roll(impad, -1, axis=1)[1:ny+1, 1:nx+1]
-    return np.sum(np.sqrt(np.abs(im_l1 - im)**2 + np.abs(im_l2 - im)**2)) / norm
+    impad = xp.pad(im, 1, mode='constant', constant_values=0)
+    im_l1 = xp.roll(impad, -1, axis=0)[1:ny+1, 1:nx+1]
+    im_l2 = xp.roll(impad, -1, axis=1)[1:ny+1, 1:nx+1]
+    # TODO(bug): no epsilon in the sqrt (cf. reg_tv's epsilon_tv), so the gradient
+    # is singular at near-zero-|P|-difference pixels. reg_vtv / reg_vtv2 share this.
+    return xp.sum(xp.sqrt(xp.abs(im_l1 - im)**2 + xp.abs(im_l2 - im)**2)) / norm
 
 
 def reggrad_ptv(imarr, mask, **kwargs):
@@ -945,10 +950,11 @@ def reggrad_ptv(imarr, mask, **kwargs):
 # `gradv * (vfimage / np.tan(psiimage))` chain-rule form (dS/dpsi) is unusual
 # and the test coverage only exercises generic random pol structure.
 def reg_vflux(imarr, mask, **kwargs):
+    xp = array_namespace(imarr)
     vflux = kwargs['vflux']
     norm = np.abs(vflux)**2 if kwargs.get('norm_reg', True) else 1
     vimage = make_v_image(imarr)
-    return (np.sum(vimage) - vflux)**2 / norm
+    return (xp.sum(vimage) - vflux)**2 / norm
 
 
 def reggrad_vflux(imarr, mask, **kwargs):
@@ -975,10 +981,11 @@ def reggrad_vflux(imarr, mask, **kwargs):
 
 
 def reg_l1v(imarr, mask, **kwargs):
+    xp = array_namespace(imarr)
     vflux = kwargs['vflux']
     norm = np.abs(vflux) if kwargs.get('norm_reg', True) else 1
     vimage = make_v_image(imarr)
-    return np.sum(np.abs(vimage)) / norm
+    return xp.sum(xp.abs(vimage)) / norm
 
 
 def reggrad_l1v(imarr, mask, **kwargs):
@@ -1004,10 +1011,11 @@ def reggrad_l1v(imarr, mask, **kwargs):
 
 
 def reg_l2v(imarr, mask, **kwargs):
+    xp = array_namespace(imarr)
     vflux = kwargs['vflux']
     norm = np.abs(vflux**2) if kwargs.get('norm_reg', True) else 1
     vimage = make_v_image(imarr)
-    return np.sum(vimage**2) / norm
+    return xp.sum(vimage**2) / norm
 
 
 def reggrad_l2v(imarr, mask, **kwargs):
@@ -1034,6 +1042,7 @@ def reggrad_l2v(imarr, mask, **kwargs):
 
 def reg_vtv(imarr, mask, **kwargs):
     from ehtim.imaging.imager_utils import embed_imarr
+    xp = array_namespace(imarr)
     if np.any(np.invert(mask)):
         imarr = embed_imarr(imarr, mask, randomfloor=True)
     vflux = kwargs['vflux']
@@ -1042,10 +1051,10 @@ def reg_vtv(imarr, mask, **kwargs):
     norm = np.abs(vflux) * psize / beam_size if kwargs.get('norm_reg', True) else 1
     vimage = make_v_image(imarr)
     im = vimage.reshape(ny, nx)
-    impad = np.pad(im, 1, mode='constant', constant_values=0)
-    im_l1 = np.roll(impad, -1, axis=0)[1:ny+1, 1:nx+1]
-    im_l2 = np.roll(impad, -1, axis=1)[1:ny+1, 1:nx+1]
-    return np.sum(np.sqrt(np.abs(im_l1 - im)**2 + np.abs(im_l2 - im)**2)) / norm
+    impad = xp.pad(im, 1, mode='constant', constant_values=0)
+    im_l1 = xp.roll(impad, -1, axis=0)[1:ny+1, 1:nx+1]
+    im_l2 = xp.roll(impad, -1, axis=1)[1:ny+1, 1:nx+1]
+    return xp.sum(xp.sqrt(xp.abs(im_l1 - im)**2 + xp.abs(im_l2 - im)**2)) / norm
 
 
 def reggrad_vtv(imarr, mask, **kwargs):
@@ -1097,6 +1106,7 @@ def reggrad_vtv(imarr, mask, **kwargs):
 
 def reg_vtv2(imarr, mask, **kwargs):
     from ehtim.imaging.imager_utils import embed_imarr
+    xp = array_namespace(imarr)
     if np.any(np.invert(mask)):
         imarr = embed_imarr(imarr, mask, randomfloor=True)
     vflux = kwargs['vflux']
@@ -1105,10 +1115,10 @@ def reg_vtv2(imarr, mask, **kwargs):
     norm = psize**4 * np.abs(vflux**2) / beam_size**4 if kwargs.get('norm_reg', True) else 1
     vimage = make_v_image(imarr)
     im = vimage.reshape(ny, nx)
-    impad = np.pad(im, 1, mode='constant', constant_values=0)
-    im_l1 = np.roll(impad, -1, axis=0)[1:ny+1, 1:nx+1]
-    im_l2 = np.roll(impad, -1, axis=1)[1:ny+1, 1:nx+1]
-    return np.sum((im_l1 - im)**2 + (im_l2 - im)**2) / norm
+    impad = xp.pad(im, 1, mode='constant', constant_values=0)
+    im_l1 = xp.roll(impad, -1, axis=0)[1:ny+1, 1:nx+1]
+    im_l2 = xp.roll(impad, -1, axis=1)[1:ny+1, 1:nx+1]
+    return xp.sum((im_l1 - im)**2 + (im_l2 - im)**2) / norm
 
 
 def reggrad_vtv2(imarr, mask, **kwargs):

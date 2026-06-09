@@ -3445,17 +3445,24 @@ def embed_imarr(imarr, mask, clipfloor=0., randomfloor=False):
         raise Exception("in embed_imarr, number of masked pixels is not consistent with imarr shape!")
 
     nimage_out = len(mask)
-    outarr = np.empty((nsolve, nimage_out))
-    # Vectorized over the nsolve axis: scatter imarr into the masked columns
-    # of outarr, then fill non-mask columns with clipfloor (or random).
-    not_mask = ~mask.astype(bool)
-    outarr[:, mask.astype(bool)] = imarr
+    # Vectorized over the nsolve axis: scatter imarr into the masked columns,
+    # then fill non-mask columns with clipfloor (or random). Functional on jax.
+    xp = array_namespace(imarr)
+    on_cols = mask.astype(bool).nonzero()[0]
+    off_cols = (~mask.astype(bool)).nonzero()[0]
     if randomfloor:
-        outarr[:, not_mask] = clipfloor * np.abs(
-            np.random.normal(size=(nsolve, int(not_mask.sum())))
-        )
+        floor = clipfloor * np.abs(np.random.normal(size=(nsolve, len(off_cols))))
     else:
-        outarr[:, not_mask] = clipfloor
+        floor = np.full((nsolve, len(off_cols)), clipfloor)
+
+    if xp is np:
+        outarr = np.empty((nsolve, nimage_out))
+        outarr[:, on_cols] = imarr
+        outarr[:, off_cols] = floor
+    else:
+        outarr = xp.zeros((nsolve, nimage_out))
+        outarr = outarr.at[:, on_cols].set(imarr)
+        outarr = outarr.at[:, off_cols].set(floor)
 
     if imarrdim == 1:
         outarr = outarr[0]
