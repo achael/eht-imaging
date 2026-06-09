@@ -429,12 +429,13 @@ def transform_imarr(imarr, transforms, which_solve):
     else:
         raise Exception("transform_imarr requires imarr.shape[0] be either 1, 3, 4, or 10!")
 
-    # TODO(jax): the in-place assignments below (outarr[0] = ...) block tracing;
-    # rewrite functionally for the jax objective (Stokes-I just needs xp.exp).
+    xp = array_namespace(imarr)
+    if nimage==1:  # single-pol Stokes I: functional so jax.grad/jit can trace it
+        return xp.exp(imarr) if ('log' in transforms) else imarr.copy()
+
+    # pol / mf (nimage 3, 4, 10): in-place numpy; made functional in Phase 4.
     outarr = imarr.copy()
-    if nimage==1 and ('log' in transforms):
-        outarr = np.exp(outarr)
-    elif nimage==3 and ('log' in transforms):
+    if nimage==3 and ('log' in transforms):
         outarr[0] = np.exp(outarr[0])
     else:
 
