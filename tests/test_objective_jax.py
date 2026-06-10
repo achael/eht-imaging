@@ -271,3 +271,16 @@ def test_objective_gpu_cpu_parity(imager, x0):
     v_g, g_g = _make_fun(imager, device=gpu)(x0)
     assert np.allclose(v_c, v_g, rtol=_grad_rtol(imager), atol=1e-9)
     assert np.allclose(g_c, g_g, rtol=_grad_rtol(imager), atol=1e-9)
+
+
+def test_image_at_freq_jax():
+    # Multifrequency forward (I0, alpha, beta) -> I(nu): numpy==jax + differentiable.
+    # Full mf-imaging recon is a follow-up (needs a multi-frequency obs).
+    import ehtim.imaging.multifreq_imager_utils as mfu
+    mfarr = np.array([np.full(8, 2.0), np.full(8, -0.7), np.full(8, 0.1)])  # I0, alpha, beta
+    lf = 0.3
+    out_np = mfu.image_at_freq(mfarr, lf)
+    out_jx = np.asarray(mfu.image_at_freq(jnp.asarray(mfarr), lf))
+    assert np.allclose(out_np, out_jx, rtol=VALUE_RTOL, atol=GRAD_ATOL)
+    g = jax.grad(lambda a: jnp.sum(mfu.image_at_freq(a, lf)))(jnp.asarray(mfarr))
+    assert np.all(np.isfinite(np.asarray(g)))
