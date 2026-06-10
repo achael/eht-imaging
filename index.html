@@ -1,21 +1,21 @@
+
+
 <!DOCTYPE html>
-<html class="writer-html5" lang="en" >
+<html class="writer-html5" lang="en" data-content_root="./">
 <head>
-  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>ehtim (eht-imaging) &mdash; ehtim 1.3 documentation</title>
-      <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
-      <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
-  <!--[if lt IE 9]>
-    <script src="_static/js/html5shiv.min.js"></script>
-  <![endif]-->
+  <title>ehtim (eht-imaging) &mdash; ehtim 1.3.1 documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=03e43079" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=9edc463e" />
+
   
-        <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
-        <script src="_static/jquery.js"></script>
-        <script src="_static/underscore.js"></script>
-        <script src="_static/_sphinx_javascript_frameworks_compat.js"></script>
-        <script src="_static/doctools.js"></script>
+      <script src="_static/jquery.js?v=5d32c60e"></script>
+      <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="_static/documentation_options.js?v=bb516dca"></script>
+      <script src="_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="_static/js/theme.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
@@ -27,14 +27,15 @@
     <nav data-toggle="wy-nav-shift" class="wy-nav-side">
       <div class="wy-side-scroll">
         <div class="wy-side-nav-search" >
-            <a href="#" class="icon icon-home"> ehtim
+
+          
+          
+          <a href="#" class="icon icon-home">
+            ehtim
           </a>
-              <div class="version">
-                1.3
-              </div>
 <div role="search">
   <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
-    <input type="text" name="q" placeholder="Search docs" />
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
     <input type="hidden" name="check_keywords" value="yes" />
     <input type="hidden" name="area" value="default" />
   </form>
@@ -69,8 +70,8 @@
         <div class="rst-content">
           <div role="navigation" aria-label="Page navigation">
   <ul class="wy-breadcrumbs">
-      <li><a href="#" class="icon icon-home"></a> &raquo;</li>
-      <li>ehtim (eht-imaging)</li>
+      <li><a href="#" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">ehtim (eht-imaging)</li>
       <li class="wy-breadcrumbs-aside">
             <a href="_sources/index.rst.txt" rel="nofollow"> View page source</a>
       </li>
@@ -81,8 +82,9 @@
            <div itemprop="articleBody">
              
   <section id="ehtim-eht-imaging">
-<h1>ehtim (eht-imaging)<a class="headerlink" href="#ehtim-eht-imaging" title="Permalink to this heading"></a></h1>
-<a class="reference external image-reference" href="https://zenodo.org/badge/latestdoi/42943499"><img alt="https://zenodo.org/badge/42943499.svg" src="https://zenodo.org/badge/42943499.svg" /></a>
+<h1>ehtim (eht-imaging)<a class="headerlink" href="#ehtim-eht-imaging" title="Link to this heading"></a></h1>
+<a class="reference external image-reference" href="https://zenodo.org/badge/latestdoi/42943499"><img alt="https://zenodo.org/badge/42943499.svg" src="https://zenodo.org/badge/42943499.svg" />
+</a>
 <p>Python modules for simulating and manipulating VLBI data and producing images with regularized maximum likelihood methods. This version is an early release so please raise an issue, submit a pull request, or email <a class="reference external" href="mailto:achael&#37;&#52;&#48;princeton&#46;edu">achael<span>&#64;</span>princeton<span>&#46;</span>edu</a> if you have trouble or need help for your application.</p>
 <p>The package contains several primary classes for loading, simulating, and manipulating VLBI data. The main classes are the <code class="xref py py-class docutils literal notranslate"><span class="pre">Image</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Array</span></code>, and <code class="xref py py-class docutils literal notranslate"><span class="pre">Obsdata</span></code>, which provide tools for manipulating images, simulating interferometric data from images, and plotting and analyzing these data. <code class="xref py py-class docutils literal notranslate"><span class="pre">Movie</span></code> and <code class="xref py py-class docutils literal notranslate"><span class="pre">Vex</span></code> provide tools for producing time-variable simulated data and observing with real VLBI tracks from .vex files. <a class="reference internal" href="imager.html#module-imager" title="imager"><code class="xref py py-class docutils literal notranslate"><span class="pre">imager</span></code></a> is a generic imager class that can produce images from data sets in various polarizations using various data terms and regularizers.</p>
 <div class="admonition note">
@@ -90,8 +92,8 @@
 <p>This is a pre-release of ehtim. If you have a problem please submit a pull request on the git repository and/or email <a class="reference external" href="mailto:achael&#37;&#52;&#48;outlook&#46;com">achael<span>&#64;</span>outlook<span>&#46;</span>com</a></p>
 </div>
 <section id="installation">
-<h2>Installation<a class="headerlink" href="#installation" title="Permalink to this heading"></a></h2>
-<p>The latest stable version (<a class="reference external" href="https://github.com/achael/eht-imaging/releases/tag/v1.3">1.3</a>) is available on <a class="reference external" href="https://pypi.org/project/ehtim/">PyPi</a>. Simply install pip and run</p>
+<h2>Installation<a class="headerlink" href="#installation" title="Link to this heading"></a></h2>
+<p>The latest stable version (<a class="reference external" href="https://github.com/achael/eht-imaging/releases/tag/v1.3.1">1.3.1</a>) is available on <a class="reference external" href="https://pypi.org/project/ehtim/">PyPi</a>. Simply install pip and run</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>pip<span class="w"> </span>install<span class="w"> </span>ehtim
 </pre></div>
 </div>
@@ -102,7 +104,7 @@
 <p>Installing with pip will update most of the required libraries automatically (<a class="reference external" href="http://www.numpy.org/">numpy</a>, <a class="reference external" href="http://www.scipy.org/">scipy</a>, <a class="reference external" href="http://www.matplotlib.org/">matplotlib</a>, <a class="reference external" href="http://www.astropy.org/">astropy</a>, <a class="reference external" href="http://pypi.python.org/pypi/pyephem/">ephem</a>, <a class="reference external" href="http://pypi.python.org/pypi/future">future</a>, <a class="reference external" href="http://www.h5py.org/">h5py</a>, and <a class="reference external" href="http://www.pandas.pydata.org/">pandas</a>).</p>
 </section>
 <section id="nfft-installation">
-<h2>NFFT Installation<a class="headerlink" href="#nfft-installation" title="Permalink to this heading"></a></h2>
+<h2>NFFT Installation<a class="headerlink" href="#nfft-installation" title="Link to this heading"></a></h2>
 <p><strong>If you want to use fast fourier transforms, you will also need to separately install</strong> <a class="reference external" href="https://github.com/NFFT/nfft">NFFT</a> <strong>and its</strong> <a class="reference external" href="https://github.com/ghisvail/pyNFFT/">pyNFFT wrapper</a>.</p>
 <p>The simplest way is to use <a class="reference external" href="https://anaconda.org/conda-forge/pynfft/">conda</a> to install both NFFT and pyNFFT:</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>conda<span class="w"> </span>install<span class="w"> </span>-c<span class="w"> </span>conda-forge<span class="w"> </span>pynfft
@@ -110,47 +112,147 @@
 </div>
 <p>Alternatively, first install NFFT manually following the instructions on the <a class="reference external" href="https://github.com/NFFT/nfft">readme</a>, making sure to use the <code class="docutils literal notranslate"><span class="pre">--enable-openmp</span></code> flag in compilation. Then install <a class="reference external" href="https://github.com/ghisvail/pyNFFT/">pynfft</a>, with pip, following the readme instructions to link the installation to where you installed NFFT. Finally, reinstall ehtim.</p>
 <p><strong>Note that, unfortunately, pyNFFT is only supported for python versions 3.11 or lower.</strong> eht-imaging version 2.0 using the <a class="reference external" href="https://github.com/flatironinstitute/finufft">finufft</a> library is in active development.</p>
-<p><strong>For M1 Macs and later (MacOS &gt;= v12.0)</strong>, install the updated Mac version of <a class="reference external" href="https://github.com/rohandahale/pyNFFT.git">pynfft</a> and follow the instructions on the <a class="reference external" href="https://github.com/rohandahale/pyNFFT.git">readme</a> to manually install <a class="reference external" href="http://www.fftw.org">fftw</a>, <a class="reference external" href="https://github.com/NFFT/nfft">nfft</a> and then <a class="reference external" href="https://github.com/rohandahale/pyNFFT.git">pynfft</a>.</p>
+<p><strong>For M1/M2/M3/M4/M5 Macs (MacOS &gt;= v12.0)</strong>, install the updated Mac version of <a class="reference external" href="https://github.com/rohandahale/pyNFFT.git">pynfft</a> and follow the instructions on the <a class="reference external" href="https://github.com/rohandahale/pyNFFT.git">readme</a> to manually install <a class="reference external" href="http://www.fftw.org">fftw</a>, <a class="reference external" href="https://github.com/NFFT/nfft">nfft</a> and then <a class="reference external" href="https://github.com/rohandahale/pyNFFT.git">pynfft</a>.</p>
 <p><strong>Certain eht-imaging functions require other external packages that are not automatically installed.</strong> In addition to pynfft, these include  <a class="reference external" href="https://networkx.github.io/">networkx</a> (for image comparison functions), <a class="reference external" href="http://docs.python-requests.org/en/master/">requests</a> (for dynamical imaging), and <a class="reference external" href="https://scikit-image.org/">scikit-image</a> (for a few image analysis functions). However, the vast majority of the code will work without these dependencies.</p>
 </section>
 <section id="documentation-and-tutorials">
-<h2>Documentation and Tutorials<a class="headerlink" href="#documentation-and-tutorials" title="Permalink to this heading"></a></h2>
+<h2>Documentation and Tutorials<a class="headerlink" href="#documentation-and-tutorials" title="Link to this heading"></a></h2>
 <p>Documentation is  <a class="reference external" href="https://achael.github.io/eht-imaging">here</a>.</p>
 <p>A tutorial jupyter notebook for imaging can be found in the repo at <a class="reference external" href="https://github.com/achael/eht-imaging/blob/main/tutorials/ehtim_tutorial.ipynb">tutorials/ehtim_tutorial.ipynb</a></p>
 <p><a class="reference external" href="https://docs.google.com/presentation/d/1A0y9omYI2ueSUa6_t5reylBhw6eiLwjqDzw-HUOk8Ac/edit?usp=sharing">Slides</a> for the included tutorial walk through the basic steps of reconstructing EHT images with the code</p>
 <p>Scripts in the examples directory contain several older simple example workflows but have not been recently validated.</p>
 </section>
 <section id="citation">
-<h2>Citation<a class="headerlink" href="#citation" title="Permalink to this heading"></a></h2>
+<h2>Citation<a class="headerlink" href="#citation" title="Link to this heading"></a></h2>
 <p>If you use ehtim in your publication, please cite <a class="reference external" href="http://adsabs.harvard.edu/abs/2018ApJ...857...23C">Chael+ 2018</a>.</p>
 <p>The latest version is also available as a static doi on <a class="reference external" href="https://zenodo.org/badge/latestdoi/42943499">Zenodo</a>.</p>
 </section>
 <section id="documentation">
-<h2>Documentation<a class="headerlink" href="#documentation" title="Permalink to this heading"></a></h2>
+<h2>Documentation<a class="headerlink" href="#documentation" title="Link to this heading"></a></h2>
 <div class="toctree-wrapper compound">
 <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
 <ul>
-<li class="toctree-l1"><a class="reference internal" href="image.html">Image</a></li>
-<li class="toctree-l1"><a class="reference internal" href="array.html">Array</a></li>
-<li class="toctree-l1"><a class="reference internal" href="obsdata.html">Obsdata</a></li>
-<li class="toctree-l1"><a class="reference internal" href="movie.html">Movie</a></li>
-<li class="toctree-l1"><a class="reference internal" href="model.html">Model</a></li>
-<li class="toctree-l1"><a class="reference internal" href="imager.html">Imager</a></li>
-<li class="toctree-l1"><a class="reference internal" href="calibration.html">Calibration</a></li>
-<li class="toctree-l1"><a class="reference internal" href="plotting.html">Plotting</a></li>
-<li class="toctree-l1"><a class="reference internal" href="scattering.html">Scattering</a></li>
-<li class="toctree-l1"><a class="reference internal" href="statistics.html">Statistics</a></li>
-<li class="toctree-l1"><a class="reference internal" href="survey.html">Survey</a></li>
-<li class="toctree-l1"><a class="reference internal" href="vex.html">Vex</a></li>
+<li class="toctree-l1"><a class="reference internal" href="image.html">Image</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="image.html#ehtim.image.Image"><code class="docutils literal notranslate"><span class="pre">Image</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="image.html#ehtim.image.avg_imlist"><code class="docutils literal notranslate"><span class="pre">avg_imlist()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="image.html#ehtim.image.get_specim"><code class="docutils literal notranslate"><span class="pre">get_specim()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="image.html#ehtim.image.load_fits"><code class="docutils literal notranslate"><span class="pre">load_fits()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="image.html#ehtim.image.load_image"><code class="docutils literal notranslate"><span class="pre">load_image()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="image.html#ehtim.image.load_txt"><code class="docutils literal notranslate"><span class="pre">load_txt()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="image.html#ehtim.image.make_empty"><code class="docutils literal notranslate"><span class="pre">make_empty()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="image.html#ehtim.image.make_square"><code class="docutils literal notranslate"><span class="pre">make_square()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="array.html">Array</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="array.html#ehtim.array.Array"><code class="docutils literal notranslate"><span class="pre">Array</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="array.html#ehtim.array.load_txt"><code class="docutils literal notranslate"><span class="pre">load_txt()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="obsdata.html">Obsdata</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="obsdata.html#ehtim.obsdata.Obsdata"><code class="docutils literal notranslate"><span class="pre">Obsdata</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="obsdata.html#ehtim.obsdata.load_maps"><code class="docutils literal notranslate"><span class="pre">load_maps()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="obsdata.html#ehtim.obsdata.load_obs"><code class="docutils literal notranslate"><span class="pre">load_obs()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="obsdata.html#ehtim.obsdata.load_txt"><code class="docutils literal notranslate"><span class="pre">load_txt()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="obsdata.html#ehtim.obsdata.load_uvfits"><code class="docutils literal notranslate"><span class="pre">load_uvfits()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="obsdata.html#ehtim.obsdata.merge_obs"><code class="docutils literal notranslate"><span class="pre">merge_obs()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="movie.html">Movie</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="movie.html#ehtim.movie.Movie"><code class="docutils literal notranslate"><span class="pre">Movie</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="movie.html#ehtim.movie.export_multipanel_mp4"><code class="docutils literal notranslate"><span class="pre">export_multipanel_mp4()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="movie.html#ehtim.movie.load_fits"><code class="docutils literal notranslate"><span class="pre">load_fits()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="movie.html#ehtim.movie.load_hdf5"><code class="docutils literal notranslate"><span class="pre">load_hdf5()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="movie.html#ehtim.movie.load_txt"><code class="docutils literal notranslate"><span class="pre">load_txt()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="movie.html#ehtim.movie.merge_im_list"><code class="docutils literal notranslate"><span class="pre">merge_im_list()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="model.html">Model</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="model.html#ehtim.model.Model"><code class="docutils literal notranslate"><span class="pre">Model</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="model.html#ehtim.model.blur_circ_1model"><code class="docutils literal notranslate"><span class="pre">blur_circ_1model()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="model.html#ehtim.model.default_prior"><code class="docutils literal notranslate"><span class="pre">default_prior()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="model.html#ehtim.model.model_params"><code class="docutils literal notranslate"><span class="pre">model_params()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="imager.html">Imager</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="imager.html#ehtim.imager.Imager"><code class="docutils literal notranslate"><span class="pre">Imager</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="imager.html#ehtim.imager.embed_imarr"><code class="docutils literal notranslate"><span class="pre">embed_imarr()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="imager.html#ehtim.imager.make_initarr"><code class="docutils literal notranslate"><span class="pre">make_initarr()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="imager.html#ehtim.imager.pack_imarr"><code class="docutils literal notranslate"><span class="pre">pack_imarr()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="imager.html#ehtim.imager.transform_gradients"><code class="docutils literal notranslate"><span class="pre">transform_gradients()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="imager.html#ehtim.imager.transform_imarr"><code class="docutils literal notranslate"><span class="pre">transform_imarr()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="imager.html#ehtim.imager.transform_imarr_inverse"><code class="docutils literal notranslate"><span class="pre">transform_imarr_inverse()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="imager.html#ehtim.imager.unpack_imarr"><code class="docutils literal notranslate"><span class="pre">unpack_imarr()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="calibration.html">Calibration</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="calibration.html#ehtim.caltable.Caltable"><code class="docutils literal notranslate"><span class="pre">Caltable</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="calibration.html#ehtim.caltable.load_caltable"><code class="docutils literal notranslate"><span class="pre">load_caltable()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="calibration.html#ehtim.caltable.make_caltable"><code class="docutils literal notranslate"><span class="pre">make_caltable()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="calibration.html#ehtim.caltable.save_caltable"><code class="docutils literal notranslate"><span class="pre">save_caltable()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="calibration.html#ehtim.calibrating.self_cal.self_cal"><code class="docutils literal notranslate"><span class="pre">self_cal()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="calibration.html#ehtim.calibrating.self_cal.self_cal_scan"><code class="docutils literal notranslate"><span class="pre">self_cal_scan()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="calibration.html#ehtim.calibrating.network_cal.network_cal"><code class="docutils literal notranslate"><span class="pre">network_cal()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="calibration.html#ehtim.calibrating.network_cal.network_cal_scan"><code class="docutils literal notranslate"><span class="pre">network_cal_scan()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="plotting.html">Plotting</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="plotting.html#ehtim.plotting.summary_plots.imgsum"><code class="docutils literal notranslate"><span class="pre">imgsum()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="plotting.html#ehtim.plotting.summary_plots.imgsum_pol"><code class="docutils literal notranslate"><span class="pre">imgsum_pol()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="plotting.html#ehtim.plotting.comp_plots.plot_bl_compare"><code class="docutils literal notranslate"><span class="pre">plot_bl_compare()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="plotting.html#ehtim.plotting.comp_plots.plot_bl_obs_compare"><code class="docutils literal notranslate"><span class="pre">plot_bl_obs_compare()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="plotting.html#ehtim.plotting.comp_plots.plot_bl_obs_im_compare"><code class="docutils literal notranslate"><span class="pre">plot_bl_obs_im_compare()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="plotting.html#ehtim.plotting.comp_plots.plot_camp_compare"><code class="docutils literal notranslate"><span class="pre">plot_camp_compare()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="plotting.html#ehtim.plotting.comp_plots.plot_camp_obs_compare"><code class="docutils literal notranslate"><span class="pre">plot_camp_obs_compare()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="plotting.html#ehtim.plotting.comp_plots.plot_camp_obs_im_compare"><code class="docutils literal notranslate"><span class="pre">plot_camp_obs_im_compare()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="plotting.html#ehtim.plotting.comp_plots.plot_cphase_compare"><code class="docutils literal notranslate"><span class="pre">plot_cphase_compare()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="plotting.html#ehtim.plotting.comp_plots.plot_cphase_obs_compare"><code class="docutils literal notranslate"><span class="pre">plot_cphase_obs_compare()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="plotting.html#ehtim.plotting.comp_plots.plot_cphase_obs_im_compare"><code class="docutils literal notranslate"><span class="pre">plot_cphase_obs_im_compare()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="plotting.html#ehtim.plotting.comp_plots.plotall_compare"><code class="docutils literal notranslate"><span class="pre">plotall_compare()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="plotting.html#ehtim.plotting.comp_plots.plotall_obs_compare"><code class="docutils literal notranslate"><span class="pre">plotall_obs_compare()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="plotting.html#ehtim.plotting.comp_plots.plotall_obs_im_compare"><code class="docutils literal notranslate"><span class="pre">plotall_obs_im_compare()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="plotting.html#ehtim.plotting.comp_plots.plotall_obs_im_cphases"><code class="docutils literal notranslate"><span class="pre">plotall_obs_im_cphases()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="plotting.html#ehtim.plotting.comp_plots.prep_plot_lists"><code class="docutils literal notranslate"><span class="pre">prep_plot_lists()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="plotting.html#ehtim.plotting.comparisons.get_psize_fov"><code class="docutils literal notranslate"><span class="pre">get_psize_fov()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="scattering.html">Scattering</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="scattering.html#ehtim.scattering.stochastic_optics.MakeEpsilonScreen"><code class="docutils literal notranslate"><span class="pre">MakeEpsilonScreen()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="scattering.html#ehtim.scattering.stochastic_optics.ScatteringModel"><code class="docutils literal notranslate"><span class="pre">ScatteringModel</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="statistics.html">Statistics</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="statistics.html#ehtim.statistics.stats.bootstrap"><code class="docutils literal notranslate"><span class="pre">bootstrap()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="statistics.html#ehtim.statistics.stats.circular_mean"><code class="docutils literal notranslate"><span class="pre">circular_mean()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="statistics.html#ehtim.statistics.stats.circular_std"><code class="docutils literal notranslate"><span class="pre">circular_std()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="statistics.html#ehtim.statistics.stats.circular_std_of_mean"><code class="docutils literal notranslate"><span class="pre">circular_std_of_mean()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="statistics.html#ehtim.statistics.stats.compare_TV"><code class="docutils literal notranslate"><span class="pre">compare_TV()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="statistics.html#ehtim.statistics.stats.dicts_TV_report"><code class="docutils literal notranslate"><span class="pre">dicts_TV_report()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="statistics.html#ehtim.statistics.stats.mean_incoh_amp"><code class="docutils literal notranslate"><span class="pre">mean_incoh_amp()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="statistics.html#ehtim.statistics.stats.mean_incoh_amp_from_vis"><code class="docutils literal notranslate"><span class="pre">mean_incoh_amp_from_vis()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="survey.html">Survey</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="survey.html#ehtim.survey.ParameterSet"><code class="docutils literal notranslate"><span class="pre">ParameterSet</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="survey.html#ehtim.survey.create_params_fixed"><code class="docutils literal notranslate"><span class="pre">create_params_fixed()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="survey.html#ehtim.survey.create_survey_psets"><code class="docutils literal notranslate"><span class="pre">create_survey_psets()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="survey.html#ehtim.survey.run_pset"><code class="docutils literal notranslate"><span class="pre">run_pset()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="survey.html#ehtim.survey.run_survey"><code class="docutils literal notranslate"><span class="pre">run_survey()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="vex.html">Vex</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="vex.html#ehtim.vex.Vex"><code class="docutils literal notranslate"><span class="pre">Vex</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="vex.html#ehtim.vex.vexdate_to_MJD_hr"><code class="docutils literal notranslate"><span class="pre">vexdate_to_MJD_hr()</span></code></a></li>
+</ul>
+</li>
 </ul>
 </div>
 </section>
 <section id="license">
-<h2>License<a class="headerlink" href="#license" title="Permalink to this heading"></a></h2>
+<h2>License<a class="headerlink" href="#license" title="Link to this heading"></a></h2>
 <p>ehtim is licensed under GPLv3. See LICENSE.txt for more details.</p>
 </section>
 <section id="indices-and-tables">
-<h2>Indices and tables<a class="headerlink" href="#indices-and-tables" title="Permalink to this heading"></a></h2>
+<h2>Indices and tables<a class="headerlink" href="#indices-and-tables" title="Link to this heading"></a></h2>
 <ul class="simple">
 <li><p><a class="reference internal" href="genindex.html"><span class="std std-ref">Index</span></a></p></li>
 <li><p><a class="reference internal" href="py-modindex.html"><span class="std std-ref">Module Index</span></a></p></li>

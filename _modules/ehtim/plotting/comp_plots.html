@@ -1,20 +1,20 @@
+
+
 <!DOCTYPE html>
-<html class="writer-html5" lang="en" >
+<html class="writer-html5" lang="en" data-content_root="../../../">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>ehtim.plotting.comp_plots &mdash; ehtim 1.3 documentation</title>
-      <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
-      <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
-  <!--[if lt IE 9]>
-    <script src="../../../_static/js/html5shiv.min.js"></script>
-  <![endif]-->
+  <title>ehtim.plotting.comp_plots &mdash; ehtim 1.3.1 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=03e43079" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/css/theme.css?v=9edc463e" />
+
   
-        <script data-url_root="../../../" id="documentation_options" src="../../../_static/documentation_options.js"></script>
-        <script src="../../../_static/jquery.js"></script>
-        <script src="../../../_static/underscore.js"></script>
-        <script src="../../../_static/_sphinx_javascript_frameworks_compat.js"></script>
-        <script src="../../../_static/doctools.js"></script>
+      <script src="../../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../../_static/documentation_options.js?v=bb516dca"></script>
+      <script src="../../../_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../../_static/js/theme.js"></script>
     <link rel="index" title="Index" href="../../../genindex.html" />
     <link rel="search" title="Search" href="../../../search.html" /> 
@@ -25,14 +25,15 @@
     <nav data-toggle="wy-nav-shift" class="wy-nav-side">
       <div class="wy-side-scroll">
         <div class="wy-side-nav-search" >
-            <a href="../../../index.html" class="icon icon-home"> ehtim
+
+          
+          
+          <a href="../../../index.html" class="icon icon-home">
+            ehtim
           </a>
-              <div class="version">
-                1.3
-              </div>
 <div role="search">
   <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
-    <input type="text" name="q" placeholder="Search docs" />
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
     <input type="hidden" name="check_keywords" value="yes" />
     <input type="hidden" name="area" value="default" />
   </form>
@@ -67,9 +68,9 @@
         <div class="rst-content">
           <div role="navigation" aria-label="Page navigation">
   <ul class="wy-breadcrumbs">
-      <li><a href="../../../index.html" class="icon icon-home"></a> &raquo;</li>
-          <li><a href="../../index.html">Module code</a> &raquo;</li>
-      <li>ehtim.plotting.comp_plots</li>
+      <li><a href="../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">ehtim.plotting.comp_plots</li>
       <li class="wy-breadcrumbs-aside">
       </li>
   </ul>
@@ -97,21 +98,21 @@
 <span class="c1">#    You should have received a copy of the GNU General Public License</span>
 <span class="c1">#    along with this program.  If not, see &lt;http://www.gnu.org/licenses/&gt;.</span>
 
-<span class="kn">from</span> <span class="nn">__future__</span> <span class="kn">import</span> <span class="n">division</span>
-<span class="kn">from</span> <span class="nn">__future__</span> <span class="kn">import</span> <span class="n">print_function</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">__future__</span><span class="w"> </span><span class="kn">import</span> <span class="n">division</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">__future__</span><span class="w"> </span><span class="kn">import</span> <span class="n">print_function</span>
 
-<span class="kn">from</span> <span class="nn">builtins</span> <span class="kn">import</span> <span class="nb">str</span>
-<span class="kn">from</span> <span class="nn">builtins</span> <span class="kn">import</span> <span class="nb">range</span>
-<span class="kn">from</span> <span class="nn">builtins</span> <span class="kn">import</span> <span class="nb">object</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">builtins</span><span class="w"> </span><span class="kn">import</span> <span class="nb">str</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">builtins</span><span class="w"> </span><span class="kn">import</span> <span class="nb">range</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">builtins</span><span class="w"> </span><span class="kn">import</span> <span class="nb">object</span>
 
-<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
-<span class="kn">import</span> <span class="nn">numpy.matlib</span> <span class="k">as</span> <span class="nn">matlib</span>
-<span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
-<span class="kn">import</span> <span class="nn">itertools</span> <span class="k">as</span> <span class="nn">it</span>
-<span class="kn">import</span> <span class="nn">copy</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy.matlib</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">matlib</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">matplotlib.pyplot</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">plt</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">itertools</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">it</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">copy</span>
 
-<span class="kn">from</span> <span class="nn">ehtim.obsdata</span> <span class="kn">import</span> <span class="n">merge_obs</span>
-<span class="kn">import</span> <span class="nn">ehtim.const_def</span> <span class="k">as</span> <span class="nn">ehc</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">ehtim.obsdata</span><span class="w"> </span><span class="kn">import</span> <span class="n">merge_obs</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">ehtim.const_def</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">ehc</span>
 
 <span class="n">COLORLIST</span> <span class="o">=</span> <span class="n">ehc</span><span class="o">.</span><span class="n">SCOLORS</span>
 
@@ -120,7 +121,9 @@
 <span class="c1">##################################################################################################</span>
 
 
-<div class="viewcode-block" id="plotall_compare"><a class="viewcode-back" href="../../../plotting.html#ehtim.plotting.comp_plots.plotall_compare">[docs]</a><span class="k">def</span> <span class="nf">plotall_compare</span><span class="p">(</span><span class="n">obslist</span><span class="p">,</span> <span class="n">imlist</span><span class="p">,</span> <span class="n">field1</span><span class="p">,</span> <span class="n">field2</span><span class="p">,</span>
+<div class="viewcode-block" id="plotall_compare">
+<a class="viewcode-back" href="../../../plotting.html#ehtim.plotting.comp_plots.plotall_compare">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">plotall_compare</span><span class="p">(</span><span class="n">obslist</span><span class="p">,</span> <span class="n">imlist</span><span class="p">,</span> <span class="n">field1</span><span class="p">,</span> <span class="n">field2</span><span class="p">,</span>
                     <span class="n">conj</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">debias</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">sgrscat</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
                     <span class="n">ang_unit</span><span class="o">=</span><span class="s1">&#39;deg&#39;</span><span class="p">,</span> <span class="n">timetype</span><span class="o">=</span><span class="s1">&#39;UTC&#39;</span><span class="p">,</span> <span class="n">ttype</span><span class="o">=</span><span class="s1">&#39;nfft&#39;</span><span class="p">,</span>
                     <span class="n">axis</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">rangex</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">rangey</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">snrcut</span><span class="o">=</span><span class="mf">0.</span><span class="p">,</span>
@@ -187,7 +190,10 @@
     <span class="k">return</span> <span class="n">axis</span></div>
 
 
-<div class="viewcode-block" id="plot_bl_compare"><a class="viewcode-back" href="../../../plotting.html#ehtim.plotting.comp_plots.plot_bl_compare">[docs]</a><span class="k">def</span> <span class="nf">plot_bl_compare</span><span class="p">(</span><span class="n">obslist</span><span class="p">,</span> <span class="n">imlist</span><span class="p">,</span> <span class="n">site1</span><span class="p">,</span> <span class="n">site2</span><span class="p">,</span> <span class="n">field</span><span class="p">,</span>
+
+<div class="viewcode-block" id="plot_bl_compare">
+<a class="viewcode-back" href="../../../plotting.html#ehtim.plotting.comp_plots.plot_bl_compare">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">plot_bl_compare</span><span class="p">(</span><span class="n">obslist</span><span class="p">,</span> <span class="n">imlist</span><span class="p">,</span> <span class="n">site1</span><span class="p">,</span> <span class="n">site2</span><span class="p">,</span> <span class="n">field</span><span class="p">,</span>
                     <span class="n">debias</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">sgrscat</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
                     <span class="n">ang_unit</span><span class="o">=</span><span class="s1">&#39;deg&#39;</span><span class="p">,</span> <span class="n">timetype</span><span class="o">=</span><span class="s1">&#39;UTC&#39;</span><span class="p">,</span> <span class="n">ttype</span><span class="o">=</span><span class="s1">&#39;nfft&#39;</span><span class="p">,</span>
                     <span class="n">axis</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">rangex</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">rangey</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">snrcut</span><span class="o">=</span><span class="mf">0.</span><span class="p">,</span>
@@ -254,7 +260,10 @@
     <span class="k">return</span> <span class="n">axis</span></div>
 
 
-<div class="viewcode-block" id="plot_cphase_compare"><a class="viewcode-back" href="../../../plotting.html#ehtim.plotting.comp_plots.plot_cphase_compare">[docs]</a><span class="k">def</span> <span class="nf">plot_cphase_compare</span><span class="p">(</span><span class="n">obslist</span><span class="p">,</span> <span class="n">imlist</span><span class="p">,</span> <span class="n">site1</span><span class="p">,</span> <span class="n">site2</span><span class="p">,</span> <span class="n">site3</span><span class="p">,</span>
+
+<div class="viewcode-block" id="plot_cphase_compare">
+<a class="viewcode-back" href="../../../plotting.html#ehtim.plotting.comp_plots.plot_cphase_compare">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">plot_cphase_compare</span><span class="p">(</span><span class="n">obslist</span><span class="p">,</span> <span class="n">imlist</span><span class="p">,</span> <span class="n">site1</span><span class="p">,</span> <span class="n">site2</span><span class="p">,</span> <span class="n">site3</span><span class="p">,</span>
                         <span class="n">vtype</span><span class="o">=</span><span class="s1">&#39;vis&#39;</span><span class="p">,</span> <span class="n">cphases</span><span class="o">=</span><span class="p">[],</span> <span class="n">force_recompute</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
                         <span class="n">ang_unit</span><span class="o">=</span><span class="s1">&#39;deg&#39;</span><span class="p">,</span> <span class="n">timetype</span><span class="o">=</span><span class="s1">&#39;UTC&#39;</span><span class="p">,</span> <span class="n">ttype</span><span class="o">=</span><span class="s1">&#39;nfft&#39;</span><span class="p">,</span>
                         <span class="n">axis</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">rangex</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">rangey</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">snrcut</span><span class="o">=</span><span class="mf">0.</span><span class="p">,</span>
@@ -343,7 +352,10 @@
     <span class="k">return</span> <span class="n">axis</span></div>
 
 
-<div class="viewcode-block" id="plot_camp_compare"><a class="viewcode-back" href="../../../plotting.html#ehtim.plotting.comp_plots.plot_camp_compare">[docs]</a><span class="k">def</span> <span class="nf">plot_camp_compare</span><span class="p">(</span><span class="n">obslist</span><span class="p">,</span> <span class="n">imlist</span><span class="p">,</span> <span class="n">site1</span><span class="p">,</span> <span class="n">site2</span><span class="p">,</span> <span class="n">site3</span><span class="p">,</span> <span class="n">site4</span><span class="p">,</span>
+
+<div class="viewcode-block" id="plot_camp_compare">
+<a class="viewcode-back" href="../../../plotting.html#ehtim.plotting.comp_plots.plot_camp_compare">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">plot_camp_compare</span><span class="p">(</span><span class="n">obslist</span><span class="p">,</span> <span class="n">imlist</span><span class="p">,</span> <span class="n">site1</span><span class="p">,</span> <span class="n">site2</span><span class="p">,</span> <span class="n">site3</span><span class="p">,</span> <span class="n">site4</span><span class="p">,</span>
                       <span class="n">vtype</span><span class="o">=</span><span class="s1">&#39;vis&#39;</span><span class="p">,</span> <span class="n">ctype</span><span class="o">=</span><span class="s1">&#39;camp&#39;</span><span class="p">,</span> <span class="n">camps</span><span class="o">=</span><span class="p">[],</span> <span class="n">force_recompute</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
                       <span class="n">debias</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">sgrscat</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">timetype</span><span class="o">=</span><span class="s1">&#39;UTC&#39;</span><span class="p">,</span> <span class="n">ttype</span><span class="o">=</span><span class="s1">&#39;nfft&#39;</span><span class="p">,</span>
                       <span class="n">axis</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">rangex</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">rangey</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">snrcut</span><span class="o">=</span><span class="mf">0.</span><span class="p">,</span>
@@ -444,10 +456,13 @@
     <span class="k">return</span> <span class="n">axis</span></div>
 
 
+
 <span class="c1">##################################################################################################</span>
 <span class="c1"># Aliases</span>
 <span class="c1">##################################################################################################</span>
-<div class="viewcode-block" id="plotall_obs_compare"><a class="viewcode-back" href="../../../plotting.html#ehtim.plotting.comp_plots.plotall_obs_compare">[docs]</a><span class="k">def</span> <span class="nf">plotall_obs_compare</span><span class="p">(</span><span class="n">obslist</span><span class="p">,</span> <span class="n">field1</span><span class="p">,</span> <span class="n">field2</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+<div class="viewcode-block" id="plotall_obs_compare">
+<a class="viewcode-back" href="../../../plotting.html#ehtim.plotting.comp_plots.plotall_obs_compare">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">plotall_obs_compare</span><span class="p">(</span><span class="n">obslist</span><span class="p">,</span> <span class="n">field1</span><span class="p">,</span> <span class="n">field2</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Plot data from observations compared to ground truth from an image on the same axes.</span>
 
 <span class="sd">       Args:</span>
@@ -484,7 +499,10 @@
     <span class="k">return</span> <span class="n">axis</span></div>
 
 
-<div class="viewcode-block" id="plotall_obs_im_compare"><a class="viewcode-back" href="../../../plotting.html#ehtim.plotting.comp_plots.plotall_obs_im_compare">[docs]</a><span class="k">def</span> <span class="nf">plotall_obs_im_compare</span><span class="p">(</span><span class="n">obslist</span><span class="p">,</span> <span class="n">imlist</span><span class="p">,</span> <span class="n">field1</span><span class="p">,</span> <span class="n">field2</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+
+<div class="viewcode-block" id="plotall_obs_im_compare">
+<a class="viewcode-back" href="../../../plotting.html#ehtim.plotting.comp_plots.plotall_obs_im_compare">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">plotall_obs_im_compare</span><span class="p">(</span><span class="n">obslist</span><span class="p">,</span> <span class="n">imlist</span><span class="p">,</span> <span class="n">field1</span><span class="p">,</span> <span class="n">field2</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Plot data from observations compared to ground truth from an image on the same axes.</span>
 
 <span class="sd">       Args:</span>
@@ -522,7 +540,10 @@
     <span class="k">return</span> <span class="n">axis</span></div>
 
 
-<div class="viewcode-block" id="plot_bl_obs_compare"><a class="viewcode-back" href="../../../plotting.html#ehtim.plotting.comp_plots.plot_bl_obs_compare">[docs]</a><span class="k">def</span> <span class="nf">plot_bl_obs_compare</span><span class="p">(</span><span class="n">obslist</span><span class="p">,</span>  <span class="n">site1</span><span class="p">,</span> <span class="n">site2</span><span class="p">,</span> <span class="n">field</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+
+<div class="viewcode-block" id="plot_bl_obs_compare">
+<a class="viewcode-back" href="../../../plotting.html#ehtim.plotting.comp_plots.plot_bl_obs_compare">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">plot_bl_obs_compare</span><span class="p">(</span><span class="n">obslist</span><span class="p">,</span>  <span class="n">site1</span><span class="p">,</span> <span class="n">site2</span><span class="p">,</span> <span class="n">field</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Plot data from multiple observations vs time on a single baseline on the same axes.</span>
 
 <span class="sd">       Args:</span>
@@ -558,7 +579,10 @@
     <span class="k">return</span> <span class="n">axis</span></div>
 
 
-<div class="viewcode-block" id="plot_bl_obs_im_compare"><a class="viewcode-back" href="../../../plotting.html#ehtim.plotting.comp_plots.plot_bl_obs_im_compare">[docs]</a><span class="k">def</span> <span class="nf">plot_bl_obs_im_compare</span><span class="p">(</span><span class="n">obslist</span><span class="p">,</span> <span class="n">imlist</span><span class="p">,</span> <span class="n">site1</span><span class="p">,</span> <span class="n">site2</span><span class="p">,</span> <span class="n">field</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+
+<div class="viewcode-block" id="plot_bl_obs_im_compare">
+<a class="viewcode-back" href="../../../plotting.html#ehtim.plotting.comp_plots.plot_bl_obs_im_compare">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">plot_bl_obs_im_compare</span><span class="p">(</span><span class="n">obslist</span><span class="p">,</span> <span class="n">imlist</span><span class="p">,</span> <span class="n">site1</span><span class="p">,</span> <span class="n">site2</span><span class="p">,</span> <span class="n">field</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Plot data from multiple observations vs time on a single baseline on the same axes.</span>
 
 <span class="sd">       Args:</span>
@@ -595,7 +619,10 @@
     <span class="k">return</span> <span class="n">axis</span></div>
 
 
-<div class="viewcode-block" id="plot_cphase_obs_compare"><a class="viewcode-back" href="../../../plotting.html#ehtim.plotting.comp_plots.plot_cphase_obs_compare">[docs]</a><span class="k">def</span> <span class="nf">plot_cphase_obs_compare</span><span class="p">(</span><span class="n">obslist</span><span class="p">,</span>  <span class="n">site1</span><span class="p">,</span> <span class="n">site2</span><span class="p">,</span> <span class="n">site3</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+
+<div class="viewcode-block" id="plot_cphase_obs_compare">
+<a class="viewcode-back" href="../../../plotting.html#ehtim.plotting.comp_plots.plot_cphase_obs_compare">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">plot_cphase_obs_compare</span><span class="p">(</span><span class="n">obslist</span><span class="p">,</span>  <span class="n">site1</span><span class="p">,</span> <span class="n">site2</span><span class="p">,</span> <span class="n">site3</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Plot closure phase on a triangle vs time from multiple observations on the same axes.</span>
 
 <span class="sd">       Args:</span>
@@ -634,7 +661,10 @@
     <span class="k">return</span> <span class="n">axis</span></div>
 
 
-<div class="viewcode-block" id="plot_cphase_obs_im_compare"><a class="viewcode-back" href="../../../plotting.html#ehtim.plotting.comp_plots.plot_cphase_obs_im_compare">[docs]</a><span class="k">def</span> <span class="nf">plot_cphase_obs_im_compare</span><span class="p">(</span><span class="n">obslist</span><span class="p">,</span> <span class="n">imlist</span><span class="p">,</span> <span class="n">site1</span><span class="p">,</span> <span class="n">site2</span><span class="p">,</span> <span class="n">site3</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+
+<div class="viewcode-block" id="plot_cphase_obs_im_compare">
+<a class="viewcode-back" href="../../../plotting.html#ehtim.plotting.comp_plots.plot_cphase_obs_im_compare">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">plot_cphase_obs_im_compare</span><span class="p">(</span><span class="n">obslist</span><span class="p">,</span> <span class="n">imlist</span><span class="p">,</span> <span class="n">site1</span><span class="p">,</span> <span class="n">site2</span><span class="p">,</span> <span class="n">site3</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Plot closure phase on a triangle vs time from multiple observations on the same axes.</span>
 
 <span class="sd">       Args:</span>
@@ -674,7 +704,10 @@
     <span class="k">return</span> <span class="n">axis</span></div>
 
 
-<div class="viewcode-block" id="plot_camp_obs_compare"><a class="viewcode-back" href="../../../plotting.html#ehtim.plotting.comp_plots.plot_camp_obs_compare">[docs]</a><span class="k">def</span> <span class="nf">plot_camp_obs_compare</span><span class="p">(</span><span class="n">obslist</span><span class="p">,</span>  <span class="n">site1</span><span class="p">,</span> <span class="n">site2</span><span class="p">,</span> <span class="n">site3</span><span class="p">,</span> <span class="n">site4</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+
+<div class="viewcode-block" id="plot_camp_obs_compare">
+<a class="viewcode-back" href="../../../plotting.html#ehtim.plotting.comp_plots.plot_camp_obs_compare">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">plot_camp_obs_compare</span><span class="p">(</span><span class="n">obslist</span><span class="p">,</span>  <span class="n">site1</span><span class="p">,</span> <span class="n">site2</span><span class="p">,</span> <span class="n">site3</span><span class="p">,</span> <span class="n">site4</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Plot closure amplitude on a triangle vs time from multiple observations on the same axes.</span>
 
 <span class="sd">       Args:</span>
@@ -717,7 +750,10 @@
     <span class="k">return</span> <span class="n">axis</span></div>
 
 
-<div class="viewcode-block" id="plot_camp_obs_im_compare"><a class="viewcode-back" href="../../../plotting.html#ehtim.plotting.comp_plots.plot_camp_obs_im_compare">[docs]</a><span class="k">def</span> <span class="nf">plot_camp_obs_im_compare</span><span class="p">(</span><span class="n">obslist</span><span class="p">,</span>  <span class="n">imlist</span><span class="p">,</span> <span class="n">site1</span><span class="p">,</span> <span class="n">site2</span><span class="p">,</span> <span class="n">site3</span><span class="p">,</span> <span class="n">site4</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+
+<div class="viewcode-block" id="plot_camp_obs_im_compare">
+<a class="viewcode-back" href="../../../plotting.html#ehtim.plotting.comp_plots.plot_camp_obs_im_compare">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">plot_camp_obs_im_compare</span><span class="p">(</span><span class="n">obslist</span><span class="p">,</span>  <span class="n">imlist</span><span class="p">,</span> <span class="n">site1</span><span class="p">,</span> <span class="n">site2</span><span class="p">,</span> <span class="n">site3</span><span class="p">,</span> <span class="n">site4</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Plot closure amplitude on a triangle vs time from multiple observations on the same axes.</span>
 
 <span class="sd">       Args:</span>
@@ -760,12 +796,15 @@
     <span class="n">axis</span> <span class="o">=</span> <span class="n">plot_camp_compare</span><span class="p">(</span><span class="n">obslist</span><span class="p">,</span> <span class="n">imlist</span><span class="p">,</span> <span class="n">site1</span><span class="p">,</span> <span class="n">site2</span><span class="p">,</span> <span class="n">site3</span><span class="p">,</span> <span class="n">site4</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
     <span class="k">return</span> <span class="n">axis</span></div>
 
+
 <span class="c1">##################################################################################################</span>
 <span class="c1"># Plotters: Compare Observations to Image</span>
 <span class="c1">##################################################################################################</span>
 
 
-<div class="viewcode-block" id="plotall_obs_im_cphases"><a class="viewcode-back" href="../../../plotting.html#ehtim.plotting.comp_plots.plotall_obs_im_cphases">[docs]</a><span class="k">def</span> <span class="nf">plotall_obs_im_cphases</span><span class="p">(</span><span class="n">obs</span><span class="p">,</span> <span class="n">imlist</span><span class="p">,</span>
+<div class="viewcode-block" id="plotall_obs_im_cphases">
+<a class="viewcode-back" href="../../../plotting.html#ehtim.plotting.comp_plots.plotall_obs_im_cphases">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">plotall_obs_im_cphases</span><span class="p">(</span><span class="n">obs</span><span class="p">,</span> <span class="n">imlist</span><span class="p">,</span>
                            <span class="n">vtype</span><span class="o">=</span><span class="s1">&#39;vis&#39;</span><span class="p">,</span> <span class="n">ang_unit</span><span class="o">=</span><span class="s1">&#39;deg&#39;</span><span class="p">,</span> <span class="n">timetype</span><span class="o">=</span><span class="s1">&#39;UTC&#39;</span><span class="p">,</span>
                            <span class="n">ttype</span><span class="o">=</span><span class="s1">&#39;nfft&#39;</span><span class="p">,</span> <span class="n">sgrscat</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
                            <span class="n">rangex</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">rangey</span><span class="o">=</span><span class="p">[</span><span class="o">-</span><span class="mi">180</span><span class="p">,</span> <span class="mi">180</span><span class="p">],</span> <span class="n">legend</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">legendlabels</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
@@ -881,12 +920,15 @@
 
     <span class="k">return</span> <span class="n">f</span></div>
 
+
 <span class="c1">##################################################################################################</span>
 <span class="c1"># Misc</span>
 <span class="c1">##################################################################################################</span>
 
 
-<div class="viewcode-block" id="prep_plot_lists"><a class="viewcode-back" href="../../../plotting.html#ehtim.plotting.comp_plots.prep_plot_lists">[docs]</a><span class="k">def</span> <span class="nf">prep_plot_lists</span><span class="p">(</span><span class="n">obslist</span><span class="p">,</span> <span class="n">imlist</span><span class="p">,</span> <span class="n">clist</span><span class="o">=</span><span class="n">ehc</span><span class="o">.</span><span class="n">SCOLORS</span><span class="p">,</span> <span class="n">legendlabels</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+<div class="viewcode-block" id="prep_plot_lists">
+<a class="viewcode-back" href="../../../plotting.html#ehtim.plotting.comp_plots.prep_plot_lists">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">prep_plot_lists</span><span class="p">(</span><span class="n">obslist</span><span class="p">,</span> <span class="n">imlist</span><span class="p">,</span> <span class="n">clist</span><span class="o">=</span><span class="n">ehc</span><span class="o">.</span><span class="n">SCOLORS</span><span class="p">,</span> <span class="n">legendlabels</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
                     <span class="n">sgrscat</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">ttype</span><span class="o">=</span><span class="s1">&#39;nfft&#39;</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Return observation, color, marker, legend lists for comp plots&quot;&quot;&quot;</span>
 
@@ -993,6 +1035,7 @@
         <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;More observations than colors -- Add more colors to clist!&quot;</span><span class="p">)</span>
 
     <span class="k">return</span> <span class="p">(</span><span class="n">obslist_plot</span><span class="p">,</span> <span class="n">clist_plot</span><span class="p">,</span> <span class="n">legendlabels_plot</span><span class="p">,</span> <span class="n">markers</span><span class="p">)</span></div>
+
 </pre></div>
 
            </div>

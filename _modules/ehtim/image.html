@@ -1,20 +1,20 @@
+
+
 <!DOCTYPE html>
-<html class="writer-html5" lang="en" >
+<html class="writer-html5" lang="en" data-content_root="../../">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>ehtim.image &mdash; ehtim 1.3 documentation</title>
-      <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
-      <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
-  <!--[if lt IE 9]>
-    <script src="../../_static/js/html5shiv.min.js"></script>
-  <![endif]-->
+  <title>ehtim.image &mdash; ehtim 1.3.1 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=03e43079" />
+      <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=9edc463e" />
+
   
-        <script data-url_root="../../" id="documentation_options" src="../../_static/documentation_options.js"></script>
-        <script src="../../_static/jquery.js"></script>
-        <script src="../../_static/underscore.js"></script>
-        <script src="../../_static/_sphinx_javascript_frameworks_compat.js"></script>
-        <script src="../../_static/doctools.js"></script>
+      <script src="../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../_static/documentation_options.js?v=bb516dca"></script>
+      <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../_static/js/theme.js"></script>
     <link rel="index" title="Index" href="../../genindex.html" />
     <link rel="search" title="Search" href="../../search.html" /> 
@@ -25,14 +25,15 @@
     <nav data-toggle="wy-nav-shift" class="wy-nav-side">
       <div class="wy-side-scroll">
         <div class="wy-side-nav-search" >
-            <a href="../../index.html" class="icon icon-home"> ehtim
+
+          
+          
+          <a href="../../index.html" class="icon icon-home">
+            ehtim
           </a>
-              <div class="version">
-                1.3
-              </div>
 <div role="search">
   <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
-    <input type="text" name="q" placeholder="Search docs" />
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
     <input type="hidden" name="check_keywords" value="yes" />
     <input type="hidden" name="area" value="default" />
   </form>
@@ -67,9 +68,9 @@
         <div class="rst-content">
           <div role="navigation" aria-label="Page navigation">
   <ul class="wy-breadcrumbs">
-      <li><a href="../../index.html" class="icon icon-home"></a> &raquo;</li>
-          <li><a href="../index.html">Module code</a> &raquo;</li>
-      <li>ehtim.image</li>
+      <li><a href="../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">ehtim.image</li>
       <li class="wy-breadcrumbs-aside">
       </li>
   </ul>
@@ -97,44 +98,46 @@
 <span class="c1">#    You should have received a copy of the GNU General Public License</span>
 <span class="c1">#    along with this program.  If not, see &lt;http://www.gnu.org/licenses/&gt;.</span>
 
-<span class="kn">from</span> <span class="nn">__future__</span> <span class="kn">import</span> <span class="n">division</span>
-<span class="kn">from</span> <span class="nn">__future__</span> <span class="kn">import</span> <span class="n">print_function</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">__future__</span><span class="w"> </span><span class="kn">import</span> <span class="n">division</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">__future__</span><span class="w"> </span><span class="kn">import</span> <span class="n">print_function</span>
 
-<span class="kn">from</span> <span class="nn">builtins</span> <span class="kn">import</span> <span class="nb">str</span>
-<span class="kn">from</span> <span class="nn">builtins</span> <span class="kn">import</span> <span class="nb">range</span>
-<span class="kn">from</span> <span class="nn">builtins</span> <span class="kn">import</span> <span class="nb">object</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">builtins</span><span class="w"> </span><span class="kn">import</span> <span class="nb">str</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">builtins</span><span class="w"> </span><span class="kn">import</span> <span class="nb">range</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">builtins</span><span class="w"> </span><span class="kn">import</span> <span class="nb">object</span>
 
-<span class="kn">import</span> <span class="nn">sys</span>
-<span class="kn">import</span> <span class="nn">copy</span>
-<span class="kn">import</span> <span class="nn">math</span>
-<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
-<span class="kn">import</span> <span class="nn">numpy.matlib</span> <span class="k">as</span> <span class="nn">matlib</span>
-<span class="kn">import</span> <span class="nn">matplotlib</span> <span class="k">as</span> <span class="nn">mpl</span>
-<span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
-<span class="kn">import</span> <span class="nn">scipy.optimize</span> <span class="k">as</span> <span class="nn">opt</span>
-<span class="kn">import</span> <span class="nn">scipy.signal</span>
-<span class="kn">import</span> <span class="nn">scipy.ndimage.filters</span> <span class="k">as</span> <span class="nn">filt</span>
-<span class="kn">import</span> <span class="nn">scipy.interpolate</span>
-<span class="kn">from</span> <span class="nn">scipy</span> <span class="kn">import</span> <span class="n">ndimage</span> <span class="k">as</span> <span class="n">ndi</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">sys</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">copy</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">math</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy.matlib</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">matlib</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">matplotlib</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">mpl</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">matplotlib.pyplot</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">plt</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">scipy.optimize</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">opt</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">scipy.signal</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">scipy.ndimage.filters</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">filt</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">scipy.interpolate</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">scipy</span><span class="w"> </span><span class="kn">import</span> <span class="n">ndimage</span> <span class="k">as</span> <span class="n">ndi</span>
 
-<span class="kn">import</span> <span class="nn">ehtim.observing.obs_simulate</span> <span class="k">as</span> <span class="nn">simobs</span>
-<span class="kn">import</span> <span class="nn">ehtim.observing.pulses</span> <span class="k">as</span> <span class="nn">pulses</span>
-<span class="kn">import</span> <span class="nn">ehtim.io.save</span>
-<span class="kn">import</span> <span class="nn">ehtim.io.load</span>
-<span class="kn">import</span> <span class="nn">ehtim.const_def</span> <span class="k">as</span> <span class="nn">ehc</span>
-<span class="kn">import</span> <span class="nn">ehtim.observing.obs_helpers</span> <span class="k">as</span> <span class="nn">obsh</span>
-<span class="kn">import</span> <span class="nn">ehtim.imaging.pol_imager_utils</span> <span class="k">as</span> <span class="nn">polutils</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">ehtim.observing.obs_simulate</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">simobs</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">ehtim.observing.pulses</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pulses</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">ehtim.io.save</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">ehtim.io.load</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">ehtim.const_def</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">ehc</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">ehtim.observing.obs_helpers</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">obsh</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">ehtim.imaging.pol_imager_utils</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">polutils</span>
 
 <span class="c1"># TODO : add time to all images</span>
 <span class="c1"># TODO : add arbitrary center location</span>
 
-<span class="kn">from</span> <span class="nn">ehtim.imaging.multifreq_imager_utils</span> <span class="kn">import</span> <span class="n">DD_RHOPOL</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">ehtim.imaging.multifreq_imager_utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">DD_RHOPOL</span>
 <span class="c1">###################################################################################################</span>
 <span class="c1"># Image object</span>
 <span class="c1">###################################################################################################</span>
 
 
-<div class="viewcode-block" id="Image"><a class="viewcode-back" href="../../image.html#ehtim.image.Image">[docs]</a><span class="k">class</span> <span class="nc">Image</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+<div class="viewcode-block" id="Image">
+<a class="viewcode-back" href="../../image.html#ehtim.image.Image">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">Image</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
 
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;A polarimetric image (in units of Jy/pixel).</span>
 
@@ -156,7 +159,7 @@
 <span class="sd">           _mflist (list): List of spectral index images (and higher order/polarization terms)</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
-    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">image</span><span class="p">,</span> <span class="n">psize</span><span class="p">,</span> <span class="n">ra</span><span class="p">,</span> <span class="n">dec</span><span class="p">,</span> <span class="n">pa</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">image</span><span class="p">,</span> <span class="n">psize</span><span class="p">,</span> <span class="n">ra</span><span class="p">,</span> <span class="n">dec</span><span class="p">,</span> <span class="n">pa</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span>
                  <span class="n">polrep</span><span class="o">=</span><span class="s1">&#39;stokes&#39;</span><span class="p">,</span> <span class="n">pol_prim</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
                  <span class="n">rf</span><span class="o">=</span><span class="n">ehc</span><span class="o">.</span><span class="n">RF_DEFAULT</span><span class="p">,</span> <span class="n">pulse</span><span class="o">=</span><span class="n">ehc</span><span class="o">.</span><span class="n">PULSE_DEFAULT</span><span class="p">,</span> <span class="n">source</span><span class="o">=</span><span class="n">ehc</span><span class="o">.</span><span class="n">SOURCE_DEFAULT</span><span class="p">,</span>
                  <span class="n">mjd</span><span class="o">=</span><span class="n">ehc</span><span class="o">.</span><span class="n">MJD_DEFAULT</span><span class="p">,</span> <span class="n">time</span><span class="o">=</span><span class="mf">0.</span><span class="p">):</span>
@@ -253,85 +256,85 @@
             <span class="bp">self</span><span class="o">.</span><span class="n">time</span> <span class="o">=</span> <span class="n">time</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">imvec</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">imvec</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="n">imvec</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_imdict</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">pol_prim</span><span class="p">]</span>
         <span class="k">return</span> <span class="n">imvec</span>
 
     <span class="nd">@imvec</span><span class="o">.</span><span class="n">setter</span>
-    <span class="k">def</span> <span class="nf">imvec</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">vec</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">imvec</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">vec</span><span class="p">):</span>
         <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">vec</span><span class="p">)</span> <span class="o">!=</span> <span class="bp">self</span><span class="o">.</span><span class="n">xdim</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">ydim</span><span class="p">:</span>
             <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;imvec size is not consistent with xdim*ydim!&quot;</span><span class="p">)</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">_imdict</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">pol_prim</span><span class="p">]</span> <span class="o">=</span> <span class="n">vec</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">specvec</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">specvec</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="n">specvec</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_mflist</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
         <span class="k">return</span> <span class="n">specvec</span>
 
     <span class="nd">@specvec</span><span class="o">.</span><span class="n">setter</span>
-    <span class="k">def</span> <span class="nf">specvec</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">vec</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">specvec</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">vec</span><span class="p">):</span>
         <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">vec</span><span class="p">)</span> <span class="o">!=</span> <span class="bp">self</span><span class="o">.</span><span class="n">xdim</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">ydim</span><span class="p">:</span>
             <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;vec size is not consistent with xdim*ydim!&quot;</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_mflist</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">vec</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">curvvec</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">curvvec</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="n">curvvec</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_mflist</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
         <span class="k">return</span> <span class="n">curvvec</span>
 
     <span class="nd">@curvvec</span><span class="o">.</span><span class="n">setter</span>
-    <span class="k">def</span> <span class="nf">curvvec</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">vec</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">curvvec</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">vec</span><span class="p">):</span>
         <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">vec</span><span class="p">)</span> <span class="o">!=</span> <span class="bp">self</span><span class="o">.</span><span class="n">xdim</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">ydim</span><span class="p">:</span>
             <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;vec size is not consistent with xdim*ydim!&quot;</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_mflist</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="n">vec</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">specvec_pol</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">specvec_pol</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="n">specvec_pol</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_mflist</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span>
         <span class="k">return</span> <span class="n">specvec_pol</span>
 
     <span class="nd">@specvec_pol</span><span class="o">.</span><span class="n">setter</span>
-    <span class="k">def</span> <span class="nf">specvec_pol</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">vec</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">specvec_pol</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">vec</span><span class="p">):</span>
         <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">vec</span><span class="p">)</span> <span class="o">!=</span> <span class="bp">self</span><span class="o">.</span><span class="n">xdim</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">ydim</span><span class="p">:</span>
             <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;vec size is not consistent with xdim*ydim!&quot;</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_mflist</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span> <span class="o">=</span> <span class="n">vec</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">curvvec_pol</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">curvvec_pol</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="n">curvvec_pol</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_mflist</span><span class="p">[</span><span class="mi">3</span><span class="p">]</span>
         <span class="k">return</span> <span class="n">curvvec_pol</span>
 
     <span class="nd">@curvvec_pol</span><span class="o">.</span><span class="n">setter</span>
-    <span class="k">def</span> <span class="nf">curvvec_pol</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">vec</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">curvvec_pol</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">vec</span><span class="p">):</span>
         <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">vec</span><span class="p">)</span> <span class="o">!=</span> <span class="bp">self</span><span class="o">.</span><span class="n">xdim</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">ydim</span><span class="p">:</span>
             <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;vec size is not consistent with xdim*ydim!&quot;</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_mflist</span><span class="p">[</span><span class="mi">3</span><span class="p">]</span> <span class="o">=</span> <span class="n">vec</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">rmvec</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">rmvec</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="n">rmvec</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_mflist</span><span class="p">[</span><span class="mi">4</span><span class="p">]</span>
         <span class="k">return</span> <span class="n">rmvec</span>
 
     <span class="nd">@rmvec</span><span class="o">.</span><span class="n">setter</span>
-    <span class="k">def</span> <span class="nf">rmvec</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">vec</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">rmvec</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">vec</span><span class="p">):</span>
         <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">vec</span><span class="p">)</span> <span class="o">!=</span> <span class="bp">self</span><span class="o">.</span><span class="n">xdim</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">ydim</span><span class="p">:</span>
             <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;vec size is not consistent with xdim*ydim!&quot;</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_mflist</span><span class="p">[</span><span class="mi">4</span><span class="p">]</span> <span class="o">=</span> <span class="n">vec</span>
         
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">cmvec</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">cmvec</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="n">cmvec</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_mflist</span><span class="p">[</span><span class="mi">5</span><span class="p">]</span>
         <span class="k">return</span> <span class="n">cmvec</span>
 
     <span class="nd">@cmvec</span><span class="o">.</span><span class="n">setter</span>
-    <span class="k">def</span> <span class="nf">cmvec</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">vec</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">cmvec</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">vec</span><span class="p">):</span>
         <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">vec</span><span class="p">)</span> <span class="o">!=</span> <span class="bp">self</span><span class="o">.</span><span class="n">xdim</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">ydim</span><span class="p">:</span>
             <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;vec size is not consistent with xdim*ydim!&quot;</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_mflist</span><span class="p">[</span><span class="mi">5</span><span class="p">]</span> <span class="o">=</span> <span class="n">vec</span>
         
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">ivec</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">ivec</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="n">ivec</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([])</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">polrep</span> <span class="o">==</span> <span class="s1">&#39;stokes&#39;</span><span class="p">:</span>
             <span class="n">ivec</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_imdict</span><span class="p">[</span><span class="s1">&#39;I&#39;</span><span class="p">]</span>
@@ -342,7 +345,7 @@
         <span class="k">return</span> <span class="n">ivec</span>
 
     <span class="nd">@ivec</span><span class="o">.</span><span class="n">setter</span>
-    <span class="k">def</span> <span class="nf">ivec</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">vec</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">ivec</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">vec</span><span class="p">):</span>
         <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">vec</span><span class="p">)</span> <span class="o">!=</span> <span class="bp">self</span><span class="o">.</span><span class="n">xdim</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">ydim</span><span class="p">:</span>
             <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;vec size is not consistent with xdim*ydim!&quot;</span><span class="p">)</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">polrep</span> <span class="o">!=</span> <span class="s1">&#39;stokes&#39;</span><span class="p">:</span>
@@ -351,7 +354,7 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">_imdict</span><span class="p">[</span><span class="s1">&#39;I&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">vec</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">qvec</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">qvec</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="n">qvec</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([])</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">polrep</span> <span class="o">==</span> <span class="s1">&#39;stokes&#39;</span><span class="p">:</span>
             <span class="n">qvec</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_imdict</span><span class="p">[</span><span class="s1">&#39;Q&#39;</span><span class="p">]</span>
@@ -362,7 +365,7 @@
         <span class="k">return</span> <span class="n">qvec</span>
 
     <span class="nd">@qvec</span><span class="o">.</span><span class="n">setter</span>
-    <span class="k">def</span> <span class="nf">qvec</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">vec</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">qvec</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">vec</span><span class="p">):</span>
         <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">vec</span><span class="p">)</span> <span class="o">!=</span> <span class="bp">self</span><span class="o">.</span><span class="n">xdim</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">ydim</span><span class="p">:</span>
             <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;vec size is not consistent with xdim*ydim!&quot;</span><span class="p">)</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">polrep</span> <span class="o">!=</span> <span class="s1">&#39;stokes&#39;</span><span class="p">:</span>
@@ -371,7 +374,7 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">_imdict</span><span class="p">[</span><span class="s1">&#39;Q&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">vec</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">uvec</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">uvec</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="n">uvec</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([])</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">polrep</span> <span class="o">==</span> <span class="s1">&#39;stokes&#39;</span><span class="p">:</span>
             <span class="n">uvec</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_imdict</span><span class="p">[</span><span class="s1">&#39;U&#39;</span><span class="p">]</span>
@@ -382,7 +385,7 @@
         <span class="k">return</span> <span class="n">uvec</span>
 
     <span class="nd">@uvec</span><span class="o">.</span><span class="n">setter</span>
-    <span class="k">def</span> <span class="nf">uvec</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">vec</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">uvec</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">vec</span><span class="p">):</span>
         <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">vec</span><span class="p">)</span> <span class="o">!=</span> <span class="bp">self</span><span class="o">.</span><span class="n">xdim</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">ydim</span><span class="p">:</span>
             <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;vec size is not consistent with xdim*ydim!&quot;</span><span class="p">)</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">polrep</span> <span class="o">!=</span> <span class="s1">&#39;stokes&#39;</span><span class="p">:</span>
@@ -391,7 +394,7 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">_imdict</span><span class="p">[</span><span class="s1">&#39;U&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">vec</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">vvec</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">vvec</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="n">vvec</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([])</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">polrep</span> <span class="o">==</span> <span class="s1">&#39;stokes&#39;</span><span class="p">:</span>
             <span class="n">vvec</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_imdict</span><span class="p">[</span><span class="s1">&#39;V&#39;</span><span class="p">]</span>
@@ -402,7 +405,7 @@
         <span class="k">return</span> <span class="n">vvec</span>
 
     <span class="nd">@vvec</span><span class="o">.</span><span class="n">setter</span>
-    <span class="k">def</span> <span class="nf">vvec</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">vec</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">vvec</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">vec</span><span class="p">):</span>
         <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">vec</span><span class="p">)</span> <span class="o">!=</span> <span class="bp">self</span><span class="o">.</span><span class="n">xdim</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">ydim</span><span class="p">:</span>
             <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;vec size is not consistent with xdim*ydim!&quot;</span><span class="p">)</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">polrep</span> <span class="o">!=</span> <span class="s1">&#39;stokes&#39;</span><span class="p">:</span>
@@ -411,7 +414,7 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">_imdict</span><span class="p">[</span><span class="s1">&#39;V&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">vec</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">rrvec</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">rrvec</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="n">rrvec</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([])</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">polrep</span> <span class="o">==</span> <span class="s1">&#39;circ&#39;</span><span class="p">:</span>
             <span class="n">rrvec</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_imdict</span><span class="p">[</span><span class="s1">&#39;RR&#39;</span><span class="p">]</span>
@@ -422,7 +425,7 @@
         <span class="k">return</span> <span class="n">rrvec</span>
 
     <span class="nd">@rrvec</span><span class="o">.</span><span class="n">setter</span>
-    <span class="k">def</span> <span class="nf">rrvec</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">vec</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">rrvec</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">vec</span><span class="p">):</span>
         <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">vec</span><span class="p">)</span> <span class="o">!=</span> <span class="bp">self</span><span class="o">.</span><span class="n">xdim</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">ydim</span><span class="p">:</span>
             <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;vec size is not consistent with xdim*ydim!&quot;</span><span class="p">)</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">polrep</span> <span class="o">!=</span> <span class="s1">&#39;circ&#39;</span><span class="p">:</span>
@@ -431,7 +434,7 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">_imdict</span><span class="p">[</span><span class="s1">&#39;RR&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">vec</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">llvec</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">llvec</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="n">llvec</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([])</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">polrep</span> <span class="o">==</span> <span class="s1">&#39;circ&#39;</span><span class="p">:</span>
             <span class="n">llvec</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_imdict</span><span class="p">[</span><span class="s1">&#39;LL&#39;</span><span class="p">]</span>
@@ -442,7 +445,7 @@
         <span class="k">return</span> <span class="n">llvec</span>
 
     <span class="nd">@llvec</span><span class="o">.</span><span class="n">setter</span>
-    <span class="k">def</span> <span class="nf">llvec</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">vec</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">llvec</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">vec</span><span class="p">):</span>
         <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">vec</span><span class="p">)</span> <span class="o">!=</span> <span class="bp">self</span><span class="o">.</span><span class="n">xdim</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">ydim</span><span class="p">:</span>
             <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;vec size is not consistent with xdim*ydim!&quot;</span><span class="p">)</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">polrep</span> <span class="o">!=</span> <span class="s1">&#39;circ&#39;</span><span class="p">:</span>
@@ -451,7 +454,7 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">_imdict</span><span class="p">[</span><span class="s1">&#39;LL&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">vec</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">rlvec</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">rlvec</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="n">rlvec</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([])</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">polrep</span> <span class="o">==</span> <span class="s1">&#39;circ&#39;</span><span class="p">:</span>
             <span class="n">rlvec</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_imdict</span><span class="p">[</span><span class="s1">&#39;RL&#39;</span><span class="p">]</span>
@@ -462,7 +465,7 @@
         <span class="k">return</span> <span class="n">rlvec</span>
 
     <span class="nd">@rlvec</span><span class="o">.</span><span class="n">setter</span>
-    <span class="k">def</span> <span class="nf">rlvec</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">vec</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">rlvec</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">vec</span><span class="p">):</span>
         <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">vec</span><span class="p">)</span> <span class="o">!=</span> <span class="bp">self</span><span class="o">.</span><span class="n">xdim</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">ydim</span><span class="p">:</span>
             <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;vec size is not consistent with xdim*ydim!&quot;</span><span class="p">)</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">polrep</span> <span class="o">!=</span> <span class="s1">&#39;circ&#39;</span><span class="p">:</span>
@@ -471,7 +474,7 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">_imdict</span><span class="p">[</span><span class="s1">&#39;RL&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">vec</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">lrvec</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">lrvec</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Return the imvec of LR&quot;&quot;&quot;</span>
         <span class="n">lrvec</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([])</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">polrep</span> <span class="o">==</span> <span class="s1">&#39;circ&#39;</span><span class="p">:</span>
@@ -484,7 +487,7 @@
         <span class="k">return</span> <span class="n">lrvec</span>
 
     <span class="nd">@lrvec</span><span class="o">.</span><span class="n">setter</span>
-    <span class="k">def</span> <span class="nf">lrvec</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">vec</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">lrvec</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">vec</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Set the imvec&quot;&quot;&quot;</span>
 
         <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">vec</span><span class="p">)</span> <span class="o">!=</span> <span class="bp">self</span><span class="o">.</span><span class="n">xdim</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">ydim</span><span class="p">:</span>
@@ -495,7 +498,7 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">_imdict</span><span class="p">[</span><span class="s1">&#39;LR&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">vec</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">pvec</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">pvec</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Return the linear polarization magnitude for each pixel&quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">polrep</span> <span class="o">==</span> <span class="s1">&#39;circ&#39;</span><span class="p">:</span>
             <span class="n">pvec</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">rlvec</span><span class="p">)</span>
@@ -505,7 +508,7 @@
         <span class="k">return</span> <span class="n">pvec</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">mvec</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">mvec</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Return the fractional linear polarization for each pixel&quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">polrep</span> <span class="o">==</span> <span class="s1">&#39;circ&#39;</span><span class="p">:</span>
             <span class="n">mvec</span> <span class="o">=</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">rlvec</span><span class="p">)</span> <span class="o">/</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">rrvec</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">llvec</span><span class="p">)</span>
@@ -515,7 +518,7 @@
         <span class="k">return</span> <span class="n">mvec</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">chivec</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">chivec</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Return the linear polarization angle for each pixel&quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">polrep</span> <span class="o">==</span> <span class="s1">&#39;circ&#39;</span><span class="p">:</span>
             <span class="n">chivec</span> <span class="o">=</span> <span class="mf">0.5</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">angle</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">rlvec</span> <span class="o">/</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">rrvec</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">llvec</span><span class="p">))</span>
@@ -525,32 +528,32 @@
         <span class="k">return</span> <span class="n">chivec</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">evpavec</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">evpavec</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Return the fractional polarization angle for each pixel&quot;&quot;&quot;</span>
 
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">chivec</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">rhovec</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">rhovec</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Return the total polarization fraction for each pixel&quot;&quot;&quot;</span>
         <span class="n">rhovec</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">qvec</span><span class="o">**</span><span class="mi">2</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">uvec</span><span class="o">**</span><span class="mi">2</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">vvec</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">ivec</span>
         <span class="k">return</span> <span class="n">rhovec</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">phivec</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">phivec</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Return the linear Poincare angle, twice the EVPA&quot;&quot;&quot;</span>
         <span class="n">phivec</span> <span class="o">=</span> <span class="mi">2</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">chivec</span>
         <span class="k">return</span> <span class="n">phivec</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">psivec</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">psivec</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Return the circular Poincare angle&quot;&quot;&quot;</span>
         <span class="n">psivec</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arctan2</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">vvec</span> <span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">pvec</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">psivec</span>
                
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">evec</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">evec</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Return the E mode image vector&quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">polrep</span> <span class="o">==</span> <span class="s1">&#39;circ&#39;</span><span class="p">:</span>
             <span class="n">qvec</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">real</span><span class="p">(</span><span class="mf">0.5</span> <span class="o">*</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">lrvec</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">rlvec</span><span class="p">))</span>
@@ -581,7 +584,7 @@
         <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">real</span><span class="p">(</span><span class="n">earr</span><span class="o">.</span><span class="n">flatten</span><span class="p">())</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">bvec</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">bvec</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Return the B mode image vector&quot;&quot;&quot;</span>
 
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">polrep</span> <span class="o">==</span> <span class="s1">&#39;circ&#39;</span><span class="p">:</span>
@@ -612,7 +615,9 @@
         <span class="n">barr</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">fft</span><span class="o">.</span><span class="n">ifft2</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">fft</span><span class="o">.</span><span class="n">ifftshift</span><span class="p">(</span><span class="n">barr_fft</span><span class="p">))</span>
         <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">real</span><span class="p">(</span><span class="n">barr</span><span class="o">.</span><span class="n">flatten</span><span class="p">())</span>
 
-<div class="viewcode-block" id="Image.get_polvec"><a class="viewcode-back" href="../../image.html#ehtim.image.Image.get_polvec">[docs]</a>    <span class="k">def</span> <span class="nf">get_polvec</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pol</span><span class="p">):</span>
+<div class="viewcode-block" id="Image.get_polvec">
+<a class="viewcode-back" href="../../image.html#ehtim.image.Image.get_polvec">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_polvec</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pol</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Get the imvec corresponding to the chosen polarization</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">polrep</span> <span class="o">==</span> <span class="s1">&#39;stokes&#39;</span> <span class="ow">and</span> <span class="n">pol</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
@@ -650,7 +655,10 @@
             <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;Requested polvec type not recognized!&quot;</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">outvec</span></div>
 
-<div class="viewcode-block" id="Image.image_args"><a class="viewcode-back" href="../../image.html#ehtim.image.Image.image_args">[docs]</a>    <span class="k">def</span> <span class="nf">image_args</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+
+<div class="viewcode-block" id="Image.image_args">
+<a class="viewcode-back" href="../../image.html#ehtim.image.Image.image_args">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">image_args</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Copy arguments for making a  new Image into a list and dictonary</span>
 <span class="sd">        &quot;&quot;&quot;</span>
 
@@ -662,7 +670,10 @@
 
         <span class="k">return</span> <span class="p">(</span><span class="n">arglist</span><span class="p">,</span> <span class="n">argdict</span><span class="p">)</span></div>
 
-<div class="viewcode-block" id="Image.copy"><a class="viewcode-back" href="../../image.html#ehtim.image.Image.copy">[docs]</a>    <span class="k">def</span> <span class="nf">copy</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+
+<div class="viewcode-block" id="Image.copy">
+<a class="viewcode-back" href="../../image.html#ehtim.image.Image.copy">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">copy</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Return a copy of the Image object.</span>
 
 <span class="sd">           Args:</span>
@@ -683,7 +694,10 @@
                 
         <span class="k">return</span> <span class="n">newim</span></div>
 
-<div class="viewcode-block" id="Image.copy_pol_images"><a class="viewcode-back" href="../../image.html#ehtim.image.Image.copy_pol_images">[docs]</a>    <span class="k">def</span> <span class="nf">copy_pol_images</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">old_image</span><span class="p">):</span>
+
+<div class="viewcode-block" id="Image.copy_pol_images">
+<a class="viewcode-back" href="../../image.html#ehtim.image.Image.copy_pol_images">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">copy_pol_images</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">old_image</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Copy polarization images from old_image over to self.</span>
 
 <span class="sd">           Args:</span>
@@ -700,7 +714,10 @@
             <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">polvec</span><span class="p">):</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">add_pol_image</span><span class="p">(</span><span class="n">polvec</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ydim</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">xdim</span><span class="p">),</span> <span class="n">pol</span><span class="p">)</span></div>
 
-<div class="viewcode-block" id="Image.add_pol_image"><a class="viewcode-back" href="../../image.html#ehtim.image.Image.add_pol_image">[docs]</a>    <span class="k">def</span> <span class="nf">add_pol_image</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">image</span><span class="p">,</span> <span class="n">pol</span><span class="p">):</span>
+
+<div class="viewcode-block" id="Image.add_pol_image">
+<a class="viewcode-back" href="../../image.html#ehtim.image.Image.add_pol_image">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">add_pol_image</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">image</span><span class="p">,</span> <span class="n">pol</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Add another image polarization.</span>
 
 <span class="sd">           Args:</span>
@@ -738,8 +755,11 @@
 
         <span class="k">return</span></div>
 
+
     <span class="c1"># TODO deprecated -- replace with generic add_pol_image</span>
-<div class="viewcode-block" id="Image.add_qu"><a class="viewcode-back" href="../../image.html#ehtim.image.Image.add_qu">[docs]</a>    <span class="k">def</span> <span class="nf">add_qu</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">qimage</span><span class="p">,</span> <span class="n">uimage</span><span class="p">):</span>
+<div class="viewcode-block" id="Image.add_qu">
+<a class="viewcode-back" href="../../image.html#ehtim.image.Image.add_qu">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">add_qu</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">qimage</span><span class="p">,</span> <span class="n">uimage</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Add Stokes Q and U images. self.polrep must be &#39;stokes&#39;</span>
 
 <span class="sd">           Args:</span>
@@ -756,8 +776,11 @@
 
         <span class="k">return</span></div>
 
+
     <span class="c1"># TODO deprecated -- replace with generic add_pol_image</span>
-<div class="viewcode-block" id="Image.add_v"><a class="viewcode-back" href="../../image.html#ehtim.image.Image.add_v">[docs]</a>    <span class="k">def</span> <span class="nf">add_v</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">vimage</span><span class="p">):</span>
+<div class="viewcode-block" id="Image.add_v">
+<a class="viewcode-back" href="../../image.html#ehtim.image.Image.add_v">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">add_v</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">vimage</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Add Stokes V image. self.polrep must be &#39;stokes&#39;</span>
 
 <span class="sd">           Args:</span>
@@ -770,7 +793,10 @@
 
         <span class="k">return</span></div>
 
-<div class="viewcode-block" id="Image.switch_polrep"><a class="viewcode-back" href="../../image.html#ehtim.image.Image.switch_polrep">[docs]</a>    <span class="k">def</span> <span class="nf">switch_polrep</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">polrep_out</span><span class="o">=</span><span class="s1">&#39;stokes&#39;</span><span class="p">,</span> <span class="n">pol_prim_out</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+
+<div class="viewcode-block" id="Image.switch_polrep">
+<a class="viewcode-back" href="../../image.html#ehtim.image.Image.switch_polrep">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">switch_polrep</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">polrep_out</span><span class="o">=</span><span class="s1">&#39;stokes&#39;</span><span class="p">,</span> <span class="n">pol_prim_out</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Return a new image with the polarization representation changed</span>
 <span class="sd">           Args:</span>
 <span class="sd">               polrep_out (str):  the polrep of the output data</span>
@@ -859,7 +885,10 @@
 
         <span class="k">return</span> <span class="n">newim</span></div>
 
-<div class="viewcode-block" id="Image.orth_chi"><a class="viewcode-back" href="../../image.html#ehtim.image.Image.orth_chi">[docs]</a>    <span class="k">def</span> <span class="nf">orth_chi</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+
+<div class="viewcode-block" id="Image.orth_chi">
+<a class="viewcode-back" href="../../image.html#ehtim.image.Image.orth_chi">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">orth_chi</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Rotate the EVPA 90 degrees</span>
 
 <span class="sd">           Args:</span>
@@ -877,7 +906,10 @@
 
         <span class="k">return</span> <span class="n">im</span></div>
 
-<div class="viewcode-block" id="Image.get_image_mf"><a class="viewcode-back" href="../../image.html#ehtim.image.Image.get_image_mf">[docs]</a>    <span class="k">def</span> <span class="nf">get_image_mf</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">nu</span><span class="p">):</span>
+
+<div class="viewcode-block" id="Image.get_image_mf">
+<a class="viewcode-back" href="../../image.html#ehtim.image.Image.get_image_mf">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_image_mf</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">nu</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Get image at a given frequency given the spectral information in self._mflist</span>
 <span class="sd">           NOTE: Only to 2nd order at the moment!!</span>
 <span class="sd">           </span>
@@ -970,7 +1002,10 @@
 
         <span class="k">return</span> <span class="n">outim</span></div>
 
-<div class="viewcode-block" id="Image.imarr"><a class="viewcode-back" href="../../image.html#ehtim.image.Image.imarr">[docs]</a>    <span class="k">def</span> <span class="nf">imarr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pol</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+
+<div class="viewcode-block" id="Image.imarr">
+<a class="viewcode-back" href="../../image.html#ehtim.image.Image.imarr">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">imarr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pol</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Return the 2D image array of a given pol parameter.</span>
 
 <span class="sd">           Args:</span>
@@ -990,7 +1025,10 @@
             <span class="n">imarr</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([])</span>
         <span class="k">return</span>  <span class="n">imarr</span></div>
 
-<div class="viewcode-block" id="Image.sourcevec"><a class="viewcode-back" href="../../image.html#ehtim.image.Image.sourcevec">[docs]</a>    <span class="k">def</span> <span class="nf">sourcevec</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+
+<div class="viewcode-block" id="Image.sourcevec">
+<a class="viewcode-back" href="../../image.html#ehtim.image.Image.sourcevec">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">sourcevec</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Return the source position vector in geocentric coordinates at 0h GMST.</span>
 
 <span class="sd">           Args:</span>
@@ -1002,7 +1040,10 @@
         <span class="n">sourcevec</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">np</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">dec</span> <span class="o">*</span> <span class="n">ehc</span><span class="o">.</span><span class="n">DEGREE</span><span class="p">),</span> <span class="mi">0</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">dec</span> <span class="o">*</span> <span class="n">ehc</span><span class="o">.</span><span class="n">DEGREE</span><span class="p">)])</span>
         <span class="k">return</span> <span class="n">sourcevec</span></div>
 
-<div class="viewcode-block" id="Image.fovx"><a class="viewcode-back" href="../../image.html#ehtim.image.Image.fovx">[docs]</a>    <span class="k">def</span> <span class="nf">fovx</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+
+<div class="viewcode-block" id="Image.fovx">
+<a class="viewcode-back" href="../../image.html#ehtim.image.Image.fovx">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">fovx</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Return the image fov in x direction in radians.</span>
 
 <span class="sd">           Args:</span>
@@ -1013,7 +1054,10 @@
 
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">psize</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">xdim</span></div>
 
-<div class="viewcode-block" id="Image.fovy"><a class="viewcode-back" href="../../image.html#ehtim.image.Image.fovy">[docs]</a>    <span class="k">def</span> <span class="nf">fovy</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+
+<div class="viewcode-block" id="Image.fovy">
+<a class="viewcode-back" href="../../image.html#ehtim.image.Image.fovy">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">fovy</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns the image fov in y direction in radians.</span>
 
 <span class="sd">           Args:</span>
@@ -1024,7 +1068,10 @@
 
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">psize</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">ydim</span></div>
 
-<div class="viewcode-block" id="Image.total_flux"><a class="viewcode-back" href="../../image.html#ehtim.image.Image.total_flux">[docs]</a>    <span class="k">def</span> <span class="nf">total_flux</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+
+<div class="viewcode-block" id="Image.total_flux">
+<a class="viewcode-back" href="../../image.html#ehtim.image.Image.total_flux">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">total_flux</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Return the total flux of the image in Jy.</span>
 
 <span class="sd">           Args:</span>
@@ -1039,7 +1086,10 @@
 
         <span class="k">return</span> <span class="n">flux</span></div>
 
-<div class="viewcode-block" id="Image.lin_polfrac"><a class="viewcode-back" href="../../image.html#ehtim.image.Image.lin_polfrac">[docs]</a>    <span class="k">def</span> <span class="nf">lin_polfrac</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+
+<div class="viewcode-block" id="Image.lin_polfrac">
+<a class="viewcode-back" href="../../image.html#ehtim.image.Image.lin_polfrac">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">lin_polfrac</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Return the total fractional linear polarized flux</span>
 
 <span class="sd">           Args:</span>
@@ -1054,7 +1104,10 @@
 
         <span class="k">return</span> <span class="n">frac</span></div>
 
-<div class="viewcode-block" id="Image.evpa"><a class="viewcode-back" href="../../image.html#ehtim.image.Image.evpa">[docs]</a>    <span class="k">def</span> <span class="nf">evpa</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+
+<div class="viewcode-block" id="Image.evpa">
+<a class="viewcode-back" href="../../image.html#ehtim.image.Image.evpa">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">evpa</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Return the total evpa</span>
 
 <span class="sd">           Args:</span>
@@ -1068,8 +1121,11 @@
             <span class="n">frac</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">angle</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">rlvec</span><span class="p">))</span>
 
         <span class="k">return</span> <span class="n">frac</span></div>
+
         
-<div class="viewcode-block" id="Image.circ_polfrac"><a class="viewcode-back" href="../../image.html#ehtim.image.Image.circ_polfrac">[docs]</a>    <span class="k">def</span> <span class="nf">circ_polfrac</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<div class="viewcode-block" id="Image.circ_polfrac">
+<a class="viewcode-back" href="../../image.html#ehtim.image.Image.circ_polfrac">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">circ_polfrac</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Return the total fractional circular polarized flux</span>
 
 <span class="sd">           Args:</span>
@@ -1084,7 +1140,10 @@
 
         <span class="k">return</span> <span class="n">frac</span></div>
 
-<div class="viewcode-block" id="Image.mavg"><a class="viewcode-back" href="../../image.html#ehtim.image.Image.mavg">[docs]</a>    <span class="k">def</span> <span class="nf">mavg</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+
+<div class="viewcode-block" id="Image.mavg">
+<a class="viewcode-back" href="../../image.html#ehtim.image.Image.mavg">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">mavg</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Return the blur-dependent image-averaged linear polarization fraction</span>
 
 <span class="sd">           Args:</span>
@@ -1099,7 +1158,10 @@
 
         <span class="k">return</span> <span class="n">frac</span></div>
 
-<div class="viewcode-block" id="Image.vavg"><a class="viewcode-back" href="../../image.html#ehtim.image.Image.vavg">[docs]</a>    <span class="k">def</span> <span class="nf">vavg</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+
+<div class="viewcode-block" id="Image.vavg">
+<a class="viewcode-back" href="../../image.html#ehtim.image.Image.vavg">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">vavg</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Return the blur-dependent image-averaged circular polarization fraction</span>
 
 <span class="sd">           Args:</span>
@@ -1114,7 +1176,10 @@
 
         <span class="k">return</span> <span class="n">frac</span></div>
 
-<div class="viewcode-block" id="Image.betamodes"><a class="viewcode-back" href="../../image.html#ehtim.image.Image.betamodes">[docs]</a>    <span class="k">def</span> <span class="nf">betamodes</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ms</span><span class="o">=</span><span class="p">[</span><span class="mi">2</span><span class="p">],</span> <span class="n">r_min</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">r_max</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">output_fluxes</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+
+<div class="viewcode-block" id="Image.betamodes">
+<a class="viewcode-back" href="../../image.html#ehtim.image.Image.betamodes">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">betamodes</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ms</span><span class="o">=</span><span class="p">[</span><span class="mi">2</span><span class="p">],</span> <span class="n">r_min</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">r_max</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">output_fluxes</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Return Palumbo+2020 linear beta_m modes integrated between image radius r_min, r_max</span>
 <span class="sd">           Does not center the image</span>
 <span class="sd">           </span>
@@ -1178,7 +1243,10 @@
         <span class="k">return</span> <span class="n">out</span></div>
 
 
-<div class="viewcode-block" id="Image.center"><a class="viewcode-back" href="../../image.html#ehtim.image.Image.center">[docs]</a>    <span class="k">def</span> <span class="nf">center</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pol</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+
+<div class="viewcode-block" id="Image.center">
+<a class="viewcode-back" href="../../image.html#ehtim.image.Image.center">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">center</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pol</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Center the image based on the coordinates of the centroid().</span>
 <span class="sd">           A non-integer shift is used, which wraps the image when rotating.</span>
 
@@ -1191,7 +1259,10 @@
 
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">shift_fft</span><span class="p">(</span><span class="o">-</span><span class="bp">self</span><span class="o">.</span><span class="n">centroid</span><span class="p">(</span><span class="n">pol</span><span class="o">=</span><span class="n">pol</span><span class="p">))</span></div>
 
-<div class="viewcode-block" id="Image.centroid"><a class="viewcode-back" href="../../image.html#ehtim.image.Image.centroid">[docs]</a>    <span class="k">def</span> <span class="nf">centroid</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pol</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+
+<div class="viewcode-block" id="Image.centroid">
+<a class="viewcode-back" href="../../image.html#ehtim.image.Image.centroid">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">centroid</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pol</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Compute the location of the image centroid (corresponding to the polarization pol)</span>
 
 <span class="sd">           Args:</span>
@@ -1217,7 +1288,10 @@
 
         <span class="k">return</span> <span class="n">centroid</span></div>
 
-<div class="viewcode-block" id="Image.pad"><a class="viewcode-back" href="../../image.html#ehtim.image.Image.pad">[docs]</a>    <span class="k">def</span> <span class="nf">pad</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">fovx</span><span class="p">,</span> <span class="n">fovy</span><span class="p">):</span>
+
+<div class="viewcode-block" id="Image.pad">
+<a class="viewcode-back" href="../../image.html#ehtim.image.Image.pad">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">pad</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">fovx</span><span class="p">,</span> <span class="n">fovy</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Pad an image to new fov_x by fov_y in radian.</span>
 <span class="sd">           Args:</span>
 <span class="sd">                fovx  (float): new fov in x dimension (rad)</span>
@@ -1266,7 +1340,10 @@
 
         <span class="k">return</span> <span class="n">outim</span></div>
 
-<div class="viewcode-block" id="Image.resample_square"><a class="viewcode-back" href="../../image.html#ehtim.image.Image.resample_square">[docs]</a>    <span class="k">def</span> <span class="nf">resample_square</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">xdim_new</span><span class="p">,</span> <span class="n">ker_size</span><span class="o">=</span><span class="mi">5</span><span class="p">):</span>
+
+<div class="viewcode-block" id="Image.resample_square">
+<a class="viewcode-back" href="../../image.html#ehtim.image.Image.resample_square">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">resample_square</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">xdim_new</span><span class="p">,</span> <span class="n">ker_size</span><span class="o">=</span><span class="mi">5</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Exactly resample a square image to new dimensions using the pulse function.</span>
 
 <span class="sd">           Args:</span>
@@ -1292,7 +1369,7 @@
                         <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="o">-</span><span class="bp">self</span><span class="o">.</span><span class="n">xdim</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">)]</span>
                         <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="o">-</span><span class="bp">self</span><span class="o">.</span><span class="n">ydim</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">)])</span><span class="o">.</span><span class="n">reshape</span><span class="p">((</span><span class="bp">self</span><span class="o">.</span><span class="n">xdim</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">ydim</span><span class="p">,</span> <span class="mi">2</span><span class="p">))</span>
 
-        <span class="k">def</span> <span class="nf">im_new_val</span><span class="p">(</span><span class="n">imvec</span><span class="p">,</span> <span class="n">x_idx</span><span class="p">,</span> <span class="n">y_idx</span><span class="p">):</span>
+        <span class="k">def</span><span class="w"> </span><span class="nf">im_new_val</span><span class="p">(</span><span class="n">imvec</span><span class="p">,</span> <span class="n">x_idx</span><span class="p">,</span> <span class="n">y_idx</span><span class="p">):</span>
             <span class="n">x</span> <span class="o">=</span> <span class="n">x_idx</span> <span class="o">*</span> <span class="n">psize_new</span> <span class="o">+</span> <span class="p">(</span><span class="n">psize_new</span> <span class="o">*</span> <span class="n">xdim_new</span><span class="p">)</span> <span class="o">/</span> <span class="mf">2.0</span> <span class="o">-</span> <span class="n">psize_new</span> <span class="o">/</span> <span class="mf">2.0</span>
             <span class="n">y</span> <span class="o">=</span> <span class="n">y_idx</span> <span class="o">*</span> <span class="n">psize_new</span> <span class="o">+</span> <span class="p">(</span><span class="n">psize_new</span> <span class="o">*</span> <span class="n">ydim_new</span><span class="p">)</span> <span class="o">/</span> <span class="mf">2.0</span> <span class="o">-</span> <span class="n">psize_new</span> <span class="o">/</span> <span class="mf">2.0</span>
             <span class="n">mask</span> <span class="o">=</span> <span class="p">(((</span><span class="n">x</span> <span class="o">-</span> <span class="n">ker_size</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">psize</span> <span class="o">/</span> <span class="mf">2.0</span><span class="p">)</span> <span class="o">&lt;</span> <span class="n">ij</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">])</span> <span class="o">*</span>
@@ -1304,7 +1381,7 @@
                              <span class="k">for</span> <span class="n">n</span> <span class="ow">in</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">imvec</span><span class="p">))[</span><span class="n">mask</span><span class="p">]])</span>
             <span class="k">return</span> <span class="n">interp</span>
 
-        <span class="k">def</span> <span class="nf">im_new</span><span class="p">(</span><span class="n">imvec</span><span class="p">):</span>
+        <span class="k">def</span><span class="w"> </span><span class="nf">im_new</span><span class="p">(</span><span class="n">imvec</span><span class="p">):</span>
             <span class="n">imarr_new</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([[</span><span class="n">im_new_val</span><span class="p">(</span><span class="n">imvec</span><span class="p">,</span> <span class="n">x_idx</span><span class="p">,</span> <span class="n">y_idx</span><span class="p">)</span>
                                   <span class="k">for</span> <span class="n">x_idx</span> <span class="ow">in</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="o">-</span><span class="n">xdim_new</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">)]</span>
                                   <span class="k">for</span> <span class="n">y_idx</span> <span class="ow">in</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="o">-</span><span class="n">ydim_new</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">)])</span>
@@ -1347,7 +1424,10 @@
 
         <span class="k">return</span> <span class="n">outim</span></div>
 
-<div class="viewcode-block" id="Image.regrid_image"><a class="viewcode-back" href="../../image.html#ehtim.image.Image.regrid_image">[docs]</a>    <span class="k">def</span> <span class="nf">regrid_image</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">targetfov</span><span class="p">,</span> <span class="n">npix</span><span class="p">,</span> <span class="n">interp</span><span class="o">=</span><span class="s1">&#39;linear&#39;</span><span class="p">):</span>
+
+<div class="viewcode-block" id="Image.regrid_image">
+<a class="viewcode-back" href="../../image.html#ehtim.image.Image.regrid_image">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">regrid_image</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">targetfov</span><span class="p">,</span> <span class="n">npix</span><span class="p">,</span> <span class="n">interp</span><span class="o">=</span><span class="s1">&#39;linear&#39;</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Resample the image to new (square) dimensions.</span>
 
 <span class="sd">           Args:</span>
@@ -1370,7 +1450,7 @@
         <span class="n">xtarget</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="o">-</span><span class="n">targetfov</span> <span class="o">/</span> <span class="mi">2</span><span class="p">,</span> <span class="n">targetfov</span> <span class="o">/</span> <span class="mi">2</span><span class="p">,</span> <span class="n">npix</span><span class="p">)</span>
         <span class="n">ytarget</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="o">-</span><span class="n">targetfov</span> <span class="o">/</span> <span class="mi">2</span><span class="p">,</span> <span class="n">targetfov</span> <span class="o">/</span> <span class="mi">2</span><span class="p">,</span> <span class="n">npix</span><span class="p">)</span>
 
-        <span class="k">def</span> <span class="nf">interp_imvec</span><span class="p">(</span><span class="n">imvec</span><span class="p">,</span> <span class="n">specind</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+        <span class="k">def</span><span class="w"> </span><span class="nf">interp_imvec</span><span class="p">(</span><span class="n">imvec</span><span class="p">,</span> <span class="n">specind</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
             <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">any</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">imag</span><span class="p">(</span><span class="n">imvec</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">):</span>
                 <span class="k">return</span> <span class="n">interp_imvec</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">real</span><span class="p">(</span><span class="n">imvec</span><span class="p">))</span> <span class="o">+</span> <span class="mi">1</span><span class="n">j</span> <span class="o">*</span> <span class="n">interp_imvec</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">imag</span><span class="p">(</span><span class="n">imvec</span><span class="p">))</span>
 
@@ -1422,7 +1502,10 @@
 
         <span class="k">return</span> <span class="n">outim</span></div>
 
-<div class="viewcode-block" id="Image.rotate"><a class="viewcode-back" href="../../image.html#ehtim.image.Image.rotate">[docs]</a>    <span class="k">def</span> <span class="nf">rotate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">angle</span><span class="p">,</span> <span class="n">interp</span><span class="o">=</span><span class="s1">&#39;cubic&#39;</span><span class="p">):</span>
+
+<div class="viewcode-block" id="Image.rotate">
+<a class="viewcode-back" href="../../image.html#ehtim.image.Image.rotate">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">rotate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">angle</span><span class="p">,</span> <span class="n">interp</span><span class="o">=</span><span class="s1">&#39;cubic&#39;</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Rotate the image counterclockwise by the specified angle.</span>
 
 <span class="sd">           Args:</span>
@@ -1441,7 +1524,7 @@
             <span class="n">order</span> <span class="o">=</span> <span class="mi">5</span>
 
         <span class="c1"># Define an interpolation function</span>
-        <span class="k">def</span> <span class="nf">rot_imvec</span><span class="p">(</span><span class="n">imvec</span><span class="p">):</span>
+        <span class="k">def</span><span class="w"> </span><span class="nf">rot_imvec</span><span class="p">(</span><span class="n">imvec</span><span class="p">):</span>
             <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">any</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">imag</span><span class="p">(</span><span class="n">imvec</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">):</span>
                 <span class="k">return</span> <span class="n">rot_imvec</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">real</span><span class="p">(</span><span class="n">imvec</span><span class="p">))</span> <span class="o">+</span> <span class="mi">1</span><span class="n">j</span> <span class="o">*</span> <span class="n">rot_imvec</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">imag</span><span class="p">(</span><span class="n">imvec</span><span class="p">))</span>
             <span class="n">imarr_rot</span> <span class="o">=</span> <span class="n">scipy</span><span class="o">.</span><span class="n">ndimage</span><span class="o">.</span><span class="n">interpolation</span><span class="o">.</span><span class="n">rotate</span><span class="p">(</span><span class="n">imvec</span><span class="o">.</span><span class="n">reshape</span><span class="p">((</span><span class="bp">self</span><span class="o">.</span><span class="n">ydim</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">xdim</span><span class="p">)),</span>
@@ -1495,7 +1578,10 @@
 
         <span class="k">return</span> <span class="n">outim</span></div>
 
-<div class="viewcode-block" id="Image.shift"><a class="viewcode-back" href="../../image.html#ehtim.image.Image.shift">[docs]</a>    <span class="k">def</span> <span class="nf">shift</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">shiftidx</span><span class="p">):</span>
+
+<div class="viewcode-block" id="Image.shift">
+<a class="viewcode-back" href="../../image.html#ehtim.image.Image.shift">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">shift</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">shiftidx</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Shift the image by a given number of pixels.</span>
 
 <span class="sd">         Args:</span>
@@ -1506,7 +1592,7 @@
 <span class="sd">        &quot;&quot;&quot;</span>
 
         <span class="c1"># Define shifting function</span>
-        <span class="k">def</span> <span class="nf">shift_imvec</span><span class="p">(</span><span class="n">imvec</span><span class="p">):</span>
+        <span class="k">def</span><span class="w"> </span><span class="nf">shift_imvec</span><span class="p">(</span><span class="n">imvec</span><span class="p">):</span>
             <span class="n">im_shift</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">roll</span><span class="p">(</span><span class="n">imvec</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ydim</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">xdim</span><span class="p">),</span> <span class="n">shiftidx</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
             <span class="n">im_shift</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">roll</span><span class="p">(</span><span class="n">im_shift</span><span class="p">,</span> <span class="n">shiftidx</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
             <span class="k">return</span> <span class="n">im_shift</span>
@@ -1540,7 +1626,10 @@
 
         <span class="k">return</span> <span class="n">outim</span></div>
 
-<div class="viewcode-block" id="Image.shift_fft"><a class="viewcode-back" href="../../image.html#ehtim.image.Image.shift_fft">[docs]</a>    <span class="k">def</span> <span class="nf">shift_fft</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">shift</span><span class="p">):</span>
+
+<div class="viewcode-block" id="Image.shift_fft">
+<a class="viewcode-back" href="../../image.html#ehtim.image.Image.shift_fft">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">shift_fft</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">shift</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Shift the image by a given vector in radians.</span>
 <span class="sd">           This allows non-integer pixel shifts, via FFT.</span>
 
@@ -1591,7 +1680,10 @@
 
         <span class="k">return</span> <span class="n">outim</span></div>
 
-<div class="viewcode-block" id="Image.blur_gauss"><a class="viewcode-back" href="../../image.html#ehtim.image.Image.blur_gauss">[docs]</a>    <span class="k">def</span> <span class="nf">blur_gauss</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">beamparams</span><span class="p">,</span> <span class="n">frac</span><span class="o">=</span><span class="mf">1.</span><span class="p">,</span> <span class="n">frac_pol</span><span class="o">=</span><span class="mi">0</span><span class="p">):</span>
+
+<div class="viewcode-block" id="Image.blur_gauss">
+<a class="viewcode-back" href="../../image.html#ehtim.image.Image.blur_gauss">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">blur_gauss</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">beamparams</span><span class="p">,</span> <span class="n">frac</span><span class="o">=</span><span class="mf">1.</span><span class="p">,</span> <span class="n">frac_pol</span><span class="o">=</span><span class="mi">0</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Blur image with a Gaussian beam w/ beamparams [fwhm_max, fwhm_min, theta] in radians.</span>
 
 <span class="sd">           Args:</span>
@@ -1616,7 +1708,7 @@
         <span class="n">cth</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">beamparams</span><span class="p">[</span><span class="mi">2</span><span class="p">])</span>
         <span class="n">sth</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">beamparams</span><span class="p">[</span><span class="mi">2</span><span class="p">])</span>
 
-        <span class="k">def</span> <span class="nf">gaussim</span><span class="p">(</span><span class="n">blurfrac</span><span class="p">):</span>
+        <span class="k">def</span><span class="w"> </span><span class="nf">gaussim</span><span class="p">(</span><span class="n">blurfrac</span><span class="p">):</span>
             <span class="n">gauss</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([[</span><span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="o">-</span><span class="p">(</span><span class="n">j</span> <span class="o">*</span> <span class="n">cth</span> <span class="o">+</span> <span class="n">i</span> <span class="o">*</span> <span class="n">sth</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span> <span class="o">/</span> <span class="p">(</span><span class="mi">2</span> <span class="o">*</span> <span class="p">(</span><span class="n">blurfrac</span> <span class="o">*</span> <span class="n">sigma_maj</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span> <span class="o">-</span>
                                        <span class="p">(</span><span class="n">i</span> <span class="o">*</span> <span class="n">cth</span> <span class="o">-</span> <span class="n">j</span> <span class="o">*</span> <span class="n">sth</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span> <span class="o">/</span> <span class="p">(</span><span class="mi">2</span> <span class="o">*</span> <span class="p">(</span><span class="n">blurfrac</span> <span class="o">*</span> <span class="n">sigma_min</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span><span class="p">))</span>
                                <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">xlist</span><span class="p">]</span>
@@ -1630,7 +1722,7 @@
             <span class="n">gausspol</span> <span class="o">=</span> <span class="n">gaussim</span><span class="p">(</span><span class="n">frac_pol</span><span class="p">)</span>
 
         <span class="c1"># Define a convolution function</span>
-        <span class="k">def</span> <span class="nf">blur</span><span class="p">(</span><span class="n">imarr</span><span class="p">,</span> <span class="n">gauss</span><span class="p">):</span>
+        <span class="k">def</span><span class="w"> </span><span class="nf">blur</span><span class="p">(</span><span class="n">imarr</span><span class="p">,</span> <span class="n">gauss</span><span class="p">):</span>
             <span class="n">imarr_blur</span> <span class="o">=</span> <span class="n">scipy</span><span class="o">.</span><span class="n">signal</span><span class="o">.</span><span class="n">fftconvolve</span><span class="p">(</span><span class="n">gauss</span><span class="p">,</span> <span class="n">imarr</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s1">&#39;same&#39;</span><span class="p">)</span>
             <span class="k">return</span> <span class="n">imarr_blur</span>
 
@@ -1669,7 +1761,10 @@
 
         <span class="k">return</span> <span class="n">outim</span></div>
 
-<div class="viewcode-block" id="Image.blur_circ"><a class="viewcode-back" href="../../image.html#ehtim.image.Image.blur_circ">[docs]</a>    <span class="k">def</span> <span class="nf">blur_circ</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">fwhm_i</span><span class="p">,</span> <span class="n">fwhm_pol</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">filttype</span><span class="o">=</span><span class="s1">&#39;gauss&#39;</span><span class="p">):</span>
+
+<div class="viewcode-block" id="Image.blur_circ">
+<a class="viewcode-back" href="../../image.html#ehtim.image.Image.blur_circ">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">blur_circ</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">fwhm_i</span><span class="p">,</span> <span class="n">fwhm_pol</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">filttype</span><span class="o">=</span><span class="s1">&#39;gauss&#39;</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Apply a circular gaussian filter to the image, with FWHM in radians.</span>
 
 <span class="sd">           Args:</span>
@@ -1687,14 +1782,14 @@
         <span class="n">fwhmp_pol</span> <span class="o">=</span> <span class="n">fwhm_pol</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">psize</span>
         
         <span class="c1"># Define a convolution function</span>
-        <span class="k">def</span> <span class="nf">blur_gauss</span><span class="p">(</span><span class="n">imarr</span><span class="p">,</span> <span class="n">fwhm</span><span class="p">):</span>
+        <span class="k">def</span><span class="w"> </span><span class="nf">blur_gauss</span><span class="p">(</span><span class="n">imarr</span><span class="p">,</span> <span class="n">fwhm</span><span class="p">):</span>
             <span class="n">sigma</span> <span class="o">=</span> <span class="n">fwhmp</span> <span class="o">/</span> <span class="p">(</span><span class="mf">2.</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="mf">2.</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="mf">2.</span><span class="p">)))</span>
             <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">any</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">imag</span><span class="p">(</span><span class="n">imarr</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">):</span>
                 <span class="k">return</span> <span class="n">blur</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">real</span><span class="p">(</span><span class="n">imarr</span><span class="p">),</span> <span class="n">sigma</span><span class="p">)</span> <span class="o">+</span> <span class="mi">1</span><span class="n">j</span> <span class="o">*</span> <span class="n">blur</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">imag</span><span class="p">(</span><span class="n">imarr</span><span class="p">),</span> <span class="n">sigma</span><span class="p">)</span>
             <span class="n">imarr_blur</span> <span class="o">=</span> <span class="n">filt</span><span class="o">.</span><span class="n">gaussian_filter</span><span class="p">(</span><span class="n">imarr</span><span class="p">,</span> <span class="p">(</span><span class="n">sigma</span><span class="p">,</span> <span class="n">sigma</span><span class="p">))</span>
             <span class="k">return</span> <span class="n">imarr_blur</span>
             
-        <span class="k">def</span> <span class="nf">blur_butter</span><span class="p">(</span><span class="n">imarr</span><span class="p">,</span> <span class="n">size</span><span class="p">):</span>
+        <span class="k">def</span><span class="w"> </span><span class="nf">blur_butter</span><span class="p">(</span><span class="n">imarr</span><span class="p">,</span> <span class="n">size</span><span class="p">):</span>
 
             <span class="k">if</span> <span class="n">size</span><span class="o">==</span><span class="mi">0</span><span class="p">:</span>
                 <span class="k">return</span> <span class="n">imarr</span>
@@ -1755,7 +1850,10 @@
 
         <span class="k">return</span> <span class="n">outim</span></div>
 
-<div class="viewcode-block" id="Image.blur_mf"><a class="viewcode-back" href="../../image.html#ehtim.image.Image.blur_mf">[docs]</a>    <span class="k">def</span> <span class="nf">blur_mf</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">freqs</span><span class="p">,</span> <span class="n">fwhm</span><span class="p">,</span> <span class="n">fit_order</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">fit_order_pol</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">filttype</span><span class="o">=</span><span class="s1">&#39;gauss&#39;</span><span class="p">):</span>
+
+<div class="viewcode-block" id="Image.blur_mf">
+<a class="viewcode-back" href="../../image.html#ehtim.image.Image.blur_mf">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">blur_mf</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">freqs</span><span class="p">,</span> <span class="n">fwhm</span><span class="p">,</span> <span class="n">fit_order</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">fit_order_pol</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">filttype</span><span class="o">=</span><span class="s1">&#39;gauss&#39;</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Blur image correctly across multiple frequencies</span>
 <span class="sd">           NOTE: unlike blur_circ, it blurs polarization automatically</span>
 
@@ -1849,8 +1947,11 @@
             <span class="n">outim</span><span class="o">.</span><span class="n">cmvec</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">outim</span><span class="o">.</span><span class="n">imvec</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
 
         <span class="k">return</span> <span class="n">outim</span></div>
+
         
-<div class="viewcode-block" id="Image.grad"><a class="viewcode-back" href="../../image.html#ehtim.image.Image.grad">[docs]</a>    <span class="k">def</span> <span class="nf">grad</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">gradtype</span><span class="o">=</span><span class="s1">&#39;abs&#39;</span><span class="p">):</span>
+<div class="viewcode-block" id="Image.grad">
+<a class="viewcode-back" href="../../image.html#ehtim.image.Image.grad">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">grad</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">gradtype</span><span class="o">=</span><span class="s1">&#39;abs&#39;</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Return the gradient image</span>
 
 <span class="sd">           Args:</span>
@@ -1861,7 +1962,7 @@
 <span class="sd">        &quot;&quot;&quot;</span>
 
         <span class="c1"># Define the desired gradient function</span>
-        <span class="k">def</span> <span class="nf">gradim</span><span class="p">(</span><span class="n">imvec</span><span class="p">):</span>
+        <span class="k">def</span><span class="w"> </span><span class="nf">gradim</span><span class="p">(</span><span class="n">imvec</span><span class="p">):</span>
             <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">any</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">imag</span><span class="p">(</span><span class="n">imvec</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">):</span>
                 <span class="k">return</span> <span class="n">gradim</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">real</span><span class="p">(</span><span class="n">imvec</span><span class="p">))</span> <span class="o">+</span> <span class="mi">1</span><span class="n">j</span> <span class="o">*</span> <span class="n">gradim</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">imag</span><span class="p">(</span><span class="n">imvec</span><span class="p">))</span>
 
@@ -1908,7 +2009,10 @@
 
         <span class="k">return</span> <span class="n">outim</span></div>
 
-<div class="viewcode-block" id="Image.mask"><a class="viewcode-back" href="../../image.html#ehtim.image.Image.mask">[docs]</a>    <span class="k">def</span> <span class="nf">mask</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">cutoff</span><span class="o">=</span><span class="mf">0.05</span><span class="p">,</span> <span class="n">beamparams</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">frac</span><span class="o">=</span><span class="mf">0.0</span><span class="p">):</span>
+
+<div class="viewcode-block" id="Image.mask">
+<a class="viewcode-back" href="../../image.html#ehtim.image.Image.mask">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">mask</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">cutoff</span><span class="o">=</span><span class="mf">0.05</span><span class="p">,</span> <span class="n">beamparams</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">frac</span><span class="o">=</span><span class="mf">0.0</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Produce an image mask that shows all pixels above the specified cutoff frac of the max</span>
 <span class="sd">           Works off the primary image</span>
 
@@ -1959,7 +2063,10 @@
 
         <span class="k">return</span> <span class="n">mask</span></div>
 
-<div class="viewcode-block" id="Image.apply_mask"><a class="viewcode-back" href="../../image.html#ehtim.image.Image.apply_mask">[docs]</a>    <span class="k">def</span> <span class="nf">apply_mask</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">mask_im</span><span class="p">,</span> <span class="n">fill_val</span><span class="o">=</span><span class="mf">0.</span><span class="p">):</span>
+
+<div class="viewcode-block" id="Image.apply_mask">
+<a class="viewcode-back" href="../../image.html#ehtim.image.Image.apply_mask">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">apply_mask</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">mask_im</span><span class="p">,</span> <span class="n">fill_val</span><span class="o">=</span><span class="mf">0.</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Apply a mask to the image</span>
 
 <span class="sd">           Args:</span>
@@ -2011,7 +2118,10 @@
 
         <span class="k">return</span> <span class="n">outim</span></div>
 
-<div class="viewcode-block" id="Image.threshold"><a class="viewcode-back" href="../../image.html#ehtim.image.Image.threshold">[docs]</a>    <span class="k">def</span> <span class="nf">threshold</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">cutoff</span><span class="o">=</span><span class="mf">0.05</span><span class="p">,</span> <span class="n">beamparams</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">frac</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">fill_val</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+
+<div class="viewcode-block" id="Image.threshold">
+<a class="viewcode-back" href="../../image.html#ehtim.image.Image.threshold">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">threshold</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">cutoff</span><span class="o">=</span><span class="mf">0.05</span><span class="p">,</span> <span class="n">beamparams</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">frac</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">fill_val</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Apply a hard threshold to the primary polarization image.</span>
 <span class="sd">           Leave other polarizations untouched.</span>
 
@@ -2036,7 +2146,10 @@
         <span class="n">out</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">apply_mask</span><span class="p">(</span><span class="n">mask</span><span class="p">,</span> <span class="n">fill_val</span><span class="o">=</span><span class="n">fill_val</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">out</span></div>
 
-<div class="viewcode-block" id="Image.add_flat"><a class="viewcode-back" href="../../image.html#ehtim.image.Image.add_flat">[docs]</a>    <span class="k">def</span> <span class="nf">add_flat</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">flux</span><span class="p">,</span> <span class="n">pol</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+
+<div class="viewcode-block" id="Image.add_flat">
+<a class="viewcode-back" href="../../image.html#ehtim.image.Image.add_flat">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">add_flat</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">flux</span><span class="p">,</span> <span class="n">pol</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Add a flat background flux to the main polarization image.</span>
 
 <span class="sd">           Args:</span>
@@ -2083,7 +2196,10 @@
 
         <span class="k">return</span> <span class="n">outim</span></div>
 
-<div class="viewcode-block" id="Image.add_tophat"><a class="viewcode-back" href="../../image.html#ehtim.image.Image.add_tophat">[docs]</a>    <span class="k">def</span> <span class="nf">add_tophat</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">flux</span><span class="p">,</span> <span class="n">radius</span><span class="p">,</span> <span class="n">pol</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+
+<div class="viewcode-block" id="Image.add_tophat">
+<a class="viewcode-back" href="../../image.html#ehtim.image.Image.add_tophat">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">add_tophat</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">flux</span><span class="p">,</span> <span class="n">radius</span><span class="p">,</span> <span class="n">pol</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Add centered tophat flux to the Stokes I image inside a given radius.</span>
 
 <span class="sd">           Args:</span>
@@ -2141,7 +2257,10 @@
 
         <span class="k">return</span> <span class="n">outim</span></div>
 
-<div class="viewcode-block" id="Image.add_gauss"><a class="viewcode-back" href="../../image.html#ehtim.image.Image.add_gauss">[docs]</a>    <span class="k">def</span> <span class="nf">add_gauss</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">flux</span><span class="p">,</span> <span class="n">beamparams</span><span class="p">,</span> <span class="n">pol</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+
+<div class="viewcode-block" id="Image.add_gauss">
+<a class="viewcode-back" href="../../image.html#ehtim.image.Image.add_gauss">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">add_gauss</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">flux</span><span class="p">,</span> <span class="n">beamparams</span><span class="p">,</span> <span class="n">pol</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Add a gaussian to an image.</span>
 
 <span class="sd">           Args:</span>
@@ -2177,7 +2296,7 @@
         <span class="n">ylist</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="o">-</span><span class="bp">self</span><span class="o">.</span><span class="n">ydim</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">psize</span> <span class="o">+</span> \
             <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">psize</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">ydim</span><span class="p">)</span> <span class="o">/</span> <span class="mf">2.0</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">psize</span> <span class="o">/</span> <span class="mf">2.0</span>
 
-        <span class="k">def</span> <span class="nf">gaussian</span><span class="p">(</span><span class="n">x2</span><span class="p">,</span> <span class="n">y2</span><span class="p">):</span>
+        <span class="k">def</span><span class="w"> </span><span class="nf">gaussian</span><span class="p">(</span><span class="n">x2</span><span class="p">,</span> <span class="n">y2</span><span class="p">):</span>
             <span class="n">gauss</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="o">-</span><span class="p">((</span><span class="n">y2</span><span class="p">)</span> <span class="o">*</span> <span class="n">cth</span> <span class="o">+</span> <span class="p">(</span><span class="n">x2</span><span class="p">)</span> <span class="o">*</span> <span class="n">sth</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span> <span class="o">/</span> <span class="p">(</span><span class="mi">2</span> <span class="o">*</span> <span class="n">sigma_maj</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span> <span class="o">+</span>
                            <span class="o">-</span><span class="p">((</span><span class="n">x2</span><span class="p">)</span> <span class="o">*</span> <span class="n">cth</span> <span class="o">-</span> <span class="p">(</span><span class="n">y2</span><span class="p">)</span> <span class="o">*</span> <span class="n">sth</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span> <span class="o">/</span> <span class="p">(</span><span class="mi">2</span> <span class="o">*</span> <span class="n">sigma_min</span><span class="o">**</span><span class="mi">2</span><span class="p">))</span>
             <span class="k">return</span> <span class="n">gauss</span>
@@ -2212,7 +2331,10 @@
 
         <span class="k">return</span> <span class="n">outim</span></div>
 
-<div class="viewcode-block" id="Image.add_crescent"><a class="viewcode-back" href="../../image.html#ehtim.image.Image.add_crescent">[docs]</a>    <span class="k">def</span> <span class="nf">add_crescent</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">flux</span><span class="p">,</span> <span class="n">Rp</span><span class="p">,</span> <span class="n">Rn</span><span class="p">,</span> <span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">,</span> <span class="n">x</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">pol</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+
+<div class="viewcode-block" id="Image.add_crescent">
+<a class="viewcode-back" href="../../image.html#ehtim.image.Image.add_crescent">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">add_crescent</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">flux</span><span class="p">,</span> <span class="n">Rp</span><span class="p">,</span> <span class="n">Rn</span><span class="p">,</span> <span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">,</span> <span class="n">x</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">pol</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Add a crescent to an image; see Kamruddin &amp; Dexter (2013).</span>
 
 <span class="sd">           Args:</span>
@@ -2243,7 +2365,7 @@
         <span class="n">ylist</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="o">-</span><span class="bp">self</span><span class="o">.</span><span class="n">ydim</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">psize</span> <span class="o">+</span> \
             <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">psize</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">ydim</span><span class="p">)</span> <span class="o">/</span> <span class="mf">2.0</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">psize</span> <span class="o">/</span> <span class="mf">2.0</span>
 
-        <span class="k">def</span> <span class="nf">crescent</span><span class="p">(</span><span class="n">x2</span><span class="p">,</span> <span class="n">y2</span><span class="p">):</span>
+        <span class="k">def</span><span class="w"> </span><span class="nf">crescent</span><span class="p">(</span><span class="n">x2</span><span class="p">,</span> <span class="n">y2</span><span class="p">):</span>
             <span class="k">if</span> <span class="p">(</span><span class="n">x2</span> <span class="o">-</span> <span class="n">a</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span> <span class="o">+</span> <span class="p">(</span><span class="n">y2</span> <span class="o">-</span> <span class="n">b</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span> <span class="o">&gt;</span> <span class="n">Rn</span><span class="o">**</span><span class="mi">2</span> <span class="ow">and</span> <span class="n">x2</span><span class="o">**</span><span class="mi">2</span> <span class="o">+</span> <span class="n">y2</span><span class="o">**</span><span class="mi">2</span> <span class="o">&lt;</span> <span class="n">Rp</span><span class="o">**</span><span class="mi">2</span><span class="p">:</span>
                 <span class="k">return</span> <span class="mf">1.0</span>
             <span class="k">else</span><span class="p">:</span>
@@ -2278,7 +2400,10 @@
 
         <span class="k">return</span> <span class="n">outim</span></div>
 
-<div class="viewcode-block" id="Image.add_ring_m1"><a class="viewcode-back" href="../../image.html#ehtim.image.Image.add_ring_m1">[docs]</a>    <span class="k">def</span> <span class="nf">add_ring_m1</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">I0</span><span class="p">,</span> <span class="n">I1</span><span class="p">,</span> <span class="n">r0</span><span class="p">,</span> <span class="n">phi</span><span class="p">,</span> <span class="n">sigma</span><span class="p">,</span> <span class="n">x</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">pol</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+
+<div class="viewcode-block" id="Image.add_ring_m1">
+<a class="viewcode-back" href="../../image.html#ehtim.image.Image.add_ring_m1">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">add_ring_m1</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">I0</span><span class="p">,</span> <span class="n">I1</span><span class="p">,</span> <span class="n">r0</span><span class="p">,</span> <span class="n">phi</span><span class="p">,</span> <span class="n">sigma</span><span class="p">,</span> <span class="n">x</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">pol</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Add a ring to an image with an m=1 mode</span>
 
 <span class="sd">           Args:</span>
@@ -2311,7 +2436,7 @@
         <span class="n">ylist</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="o">-</span><span class="bp">self</span><span class="o">.</span><span class="n">ydim</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">psize</span> <span class="o">+</span> \
             <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">psize</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">ydim</span><span class="p">)</span> <span class="o">/</span> <span class="mf">2.0</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">psize</span> <span class="o">/</span> <span class="mf">2.0</span>
 
-        <span class="k">def</span> <span class="nf">ringm1</span><span class="p">(</span><span class="n">x2</span><span class="p">,</span> <span class="n">y2</span><span class="p">):</span>
+        <span class="k">def</span><span class="w"> </span><span class="nf">ringm1</span><span class="p">(</span><span class="n">x2</span><span class="p">,</span> <span class="n">y2</span><span class="p">):</span>
             <span class="k">if</span> <span class="p">(</span><span class="n">x2</span><span class="o">**</span><span class="mi">2</span> <span class="o">+</span> <span class="n">y2</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span> <span class="o">&gt;</span> <span class="p">(</span><span class="n">r0</span> <span class="o">-</span> <span class="n">psize</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span> <span class="ow">and</span> <span class="p">(</span><span class="n">x2</span><span class="o">**</span><span class="mi">2</span> <span class="o">+</span> <span class="n">y2</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span> <span class="o">&lt;</span> <span class="p">(</span><span class="n">r0</span> <span class="o">+</span> <span class="n">psize</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span><span class="p">:</span>
                 <span class="n">theta</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arctan2</span><span class="p">(</span><span class="n">y2</span><span class="p">,</span> <span class="n">x2</span><span class="p">)</span>
                 <span class="n">flux</span> <span class="o">=</span> <span class="p">(</span><span class="n">I0</span> <span class="o">-</span> <span class="mf">0.5</span> <span class="o">*</span> <span class="n">I1</span> <span class="o">*</span> <span class="p">(</span><span class="mi">1</span> <span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">theta</span> <span class="o">-</span> <span class="n">phi</span><span class="p">)))</span> <span class="o">/</span> <span class="p">(</span><span class="mi">2</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span> <span class="o">*</span> <span class="n">r0</span><span class="p">)</span>
@@ -2356,7 +2481,10 @@
 
         <span class="k">return</span> <span class="n">outim</span></div>
 
-<div class="viewcode-block" id="Image.add_const_pol"><a class="viewcode-back" href="../../image.html#ehtim.image.Image.add_const_pol">[docs]</a>    <span class="k">def</span> <span class="nf">add_const_pol</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">mag</span><span class="p">,</span> <span class="n">angle</span><span class="p">,</span> <span class="n">cmag</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">csign</span><span class="o">=</span><span class="mi">1</span><span class="p">):</span>
+
+<div class="viewcode-block" id="Image.add_const_pol">
+<a class="viewcode-back" href="../../image.html#ehtim.image.Image.add_const_pol">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">add_const_pol</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">mag</span><span class="p">,</span> <span class="n">angle</span><span class="p">,</span> <span class="n">cmag</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">csign</span><span class="o">=</span><span class="mi">1</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Return an with constant fractional linear and circular polarization</span>
 
 <span class="sd">           Args:</span>
@@ -2408,7 +2536,10 @@
 
         <span class="k">return</span> <span class="n">outim</span></div>
 
-<div class="viewcode-block" id="Image.add_random_pol"><a class="viewcode-back" href="../../image.html#ehtim.image.Image.add_random_pol">[docs]</a>    <span class="k">def</span> <span class="nf">add_random_pol</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">mag</span><span class="p">,</span> <span class="n">corr</span><span class="p">,</span> <span class="n">cmag</span><span class="o">=</span><span class="mf">0.</span><span class="p">,</span> <span class="n">ccorr</span><span class="o">=</span><span class="mf">0.</span><span class="p">,</span> <span class="n">seed</span><span class="o">=</span><span class="mi">0</span><span class="p">):</span>
+
+<div class="viewcode-block" id="Image.add_random_pol">
+<a class="viewcode-back" href="../../image.html#ehtim.image.Image.add_random_pol">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">add_random_pol</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">mag</span><span class="p">,</span> <span class="n">corr</span><span class="p">,</span> <span class="n">cmag</span><span class="o">=</span><span class="mf">0.</span><span class="p">,</span> <span class="n">ccorr</span><span class="o">=</span><span class="mf">0.</span><span class="p">,</span> <span class="n">seed</span><span class="o">=</span><span class="mi">0</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Return an image random linear and circular polarizations with certain correlation lengths</span>
 
 <span class="sd">           Args:</span>
@@ -2422,7 +2553,7 @@
 <span class="sd">                (Image): output image</span>
 <span class="sd">        &quot;&quot;&quot;</span>
 
-        <span class="kn">import</span> <span class="nn">ehtim.scattering.stochastic_optics</span> <span class="k">as</span> <span class="nn">so</span>
+        <span class="kn">import</span><span class="w"> </span><span class="nn">ehtim.scattering.stochastic_optics</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">so</span>
 
         <span class="k">if</span> <span class="ow">not</span> <span class="p">(</span><span class="mi">0</span> <span class="o">&lt;=</span> <span class="n">mag</span> <span class="o">&lt;</span> <span class="mi">1</span><span class="p">):</span>
             <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;fractional polarization magnitude must be between 0 and 1!&quot;</span><span class="p">)</span>
@@ -2492,7 +2623,10 @@
 
         <span class="k">return</span> <span class="n">outim</span></div>
 
-<div class="viewcode-block" id="Image.add_const_mf"><a class="viewcode-back" href="../../image.html#ehtim.image.Image.add_const_mf">[docs]</a>    <span class="k">def</span> <span class="nf">add_const_mf</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">alpha</span><span class="p">,</span> <span class="n">beta</span><span class="o">=</span><span class="mf">0.</span><span class="p">,</span> <span class="n">alpha_pol</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">beta_pol</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">rm</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">cm</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+
+<div class="viewcode-block" id="Image.add_const_mf">
+<a class="viewcode-back" href="../../image.html#ehtim.image.Image.add_const_mf">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">add_const_mf</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">alpha</span><span class="p">,</span> <span class="n">beta</span><span class="o">=</span><span class="mf">0.</span><span class="p">,</span> <span class="n">alpha_pol</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">beta_pol</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">rm</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">cm</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Add a constant spectral index and curvature term</span>
 
 <span class="sd">           Args:</span>
@@ -2536,7 +2670,10 @@
 
         <span class="k">return</span> <span class="n">outim</span></div>
 
-<div class="viewcode-block" id="Image.add_zblterm"><a class="viewcode-back" href="../../image.html#ehtim.image.Image.add_zblterm">[docs]</a>    <span class="k">def</span> <span class="nf">add_zblterm</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">obs</span><span class="p">,</span> <span class="n">uv_min</span><span class="p">,</span> <span class="n">zblval</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">new_fov</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+
+<div class="viewcode-block" id="Image.add_zblterm">
+<a class="viewcode-back" href="../../image.html#ehtim.image.Image.add_zblterm">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">add_zblterm</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">obs</span><span class="p">,</span> <span class="n">uv_min</span><span class="p">,</span> <span class="n">zblval</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">new_fov</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
                     <span class="n">gauss_sz</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">gauss_sz_factor</span><span class="o">=</span><span class="mf">0.75</span><span class="p">,</span> <span class="n">debias</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Add a large Gaussian term to account for missing flux in the zero baseline.</span>
 
@@ -2588,7 +2725,10 @@
         <span class="n">im_new</span> <span class="o">=</span> <span class="n">im_new</span><span class="o">.</span><span class="n">add_gauss</span><span class="p">(</span><span class="n">addedflux</span><span class="p">,</span> <span class="p">(</span><span class="n">gauss_sz</span><span class="p">,</span> <span class="n">gauss_sz</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">))</span>
         <span class="k">return</span> <span class="n">im_new</span></div>
 
-<div class="viewcode-block" id="Image.sample_uv"><a class="viewcode-back" href="../../image.html#ehtim.image.Image.sample_uv">[docs]</a>    <span class="k">def</span> <span class="nf">sample_uv</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">uv</span><span class="p">,</span> <span class="n">polrep_obs</span><span class="o">=</span><span class="s1">&#39;stokes&#39;</span><span class="p">,</span>
+
+<div class="viewcode-block" id="Image.sample_uv">
+<a class="viewcode-back" href="../../image.html#ehtim.image.Image.sample_uv">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">sample_uv</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">uv</span><span class="p">,</span> <span class="n">polrep_obs</span><span class="o">=</span><span class="s1">&#39;stokes&#39;</span><span class="p">,</span>
                   <span class="n">sgrscat</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>  <span class="n">ttype</span><span class="o">=</span><span class="s1">&#39;nfft&#39;</span><span class="p">,</span>
                   <span class="n">cache</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">fft_pad_factor</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span>
                   <span class="n">zero_empty_pol</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
@@ -2618,7 +2758,10 @@
                                  <span class="n">zero_empty_pol</span><span class="o">=</span><span class="n">zero_empty_pol</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="n">verbose</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">data</span></div>
 
-<div class="viewcode-block" id="Image.observe_same_nonoise"><a class="viewcode-back" href="../../image.html#ehtim.image.Image.observe_same_nonoise">[docs]</a>    <span class="k">def</span> <span class="nf">observe_same_nonoise</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">obs</span><span class="p">,</span> <span class="n">sgrscat</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">ttype</span><span class="o">=</span><span class="s2">&quot;nfft&quot;</span><span class="p">,</span>
+
+<div class="viewcode-block" id="Image.observe_same_nonoise">
+<a class="viewcode-back" href="../../image.html#ehtim.image.Image.observe_same_nonoise">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">observe_same_nonoise</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">obs</span><span class="p">,</span> <span class="n">sgrscat</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">ttype</span><span class="o">=</span><span class="s2">&quot;nfft&quot;</span><span class="p">,</span>
                              <span class="n">cache</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">fft_pad_factor</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span>
                              <span class="n">zero_empty_pol</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Observe the image on the same baselines as an existing observation  without noise.</span>
@@ -2682,7 +2825,10 @@
 
         <span class="k">return</span> <span class="n">obs_no_noise</span></div>
 
-<div class="viewcode-block" id="Image.observe_same"><a class="viewcode-back" href="../../image.html#ehtim.image.Image.observe_same">[docs]</a>    <span class="k">def</span> <span class="nf">observe_same</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">obs_in</span><span class="p">,</span>
+
+<div class="viewcode-block" id="Image.observe_same">
+<a class="viewcode-back" href="../../image.html#ehtim.image.Image.observe_same">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">observe_same</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">obs_in</span><span class="p">,</span>
                      <span class="n">ttype</span><span class="o">=</span><span class="s1">&#39;nfft&#39;</span><span class="p">,</span> <span class="n">fft_pad_factor</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span>
                      <span class="n">sgrscat</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">add_th_noise</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
                      <span class="n">jones</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">inv_jones</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
@@ -2825,7 +2971,10 @@
 
         <span class="k">return</span> <span class="n">obs</span></div>
 
-<div class="viewcode-block" id="Image.observe"><a class="viewcode-back" href="../../image.html#ehtim.image.Image.observe">[docs]</a>    <span class="k">def</span> <span class="nf">observe</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">array</span><span class="p">,</span> <span class="n">tint</span><span class="p">,</span> <span class="n">tadv</span><span class="p">,</span> <span class="n">tstart</span><span class="p">,</span> <span class="n">tstop</span><span class="p">,</span> <span class="n">bw</span><span class="p">,</span>
+
+<div class="viewcode-block" id="Image.observe">
+<a class="viewcode-back" href="../../image.html#ehtim.image.Image.observe">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">observe</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">array</span><span class="p">,</span> <span class="n">tint</span><span class="p">,</span> <span class="n">tadv</span><span class="p">,</span> <span class="n">tstart</span><span class="p">,</span> <span class="n">tstop</span><span class="p">,</span> <span class="n">bw</span><span class="p">,</span>
                 <span class="n">mjd</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">timetype</span><span class="o">=</span><span class="s1">&#39;UTC&#39;</span><span class="p">,</span> <span class="n">polrep_obs</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
                 <span class="n">elevmin</span><span class="o">=</span><span class="n">ehc</span><span class="o">.</span><span class="n">ELEV_LOW</span><span class="p">,</span> <span class="n">elevmax</span><span class="o">=</span><span class="n">ehc</span><span class="o">.</span><span class="n">ELEV_HIGH</span><span class="p">,</span>
                 <span class="n">no_elevcut_space</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>                
@@ -2956,7 +3105,10 @@
 
         <span class="k">return</span> <span class="n">obs</span></div>
 
-<div class="viewcode-block" id="Image.observe_vex"><a class="viewcode-back" href="../../image.html#ehtim.image.Image.observe_vex">[docs]</a>    <span class="k">def</span> <span class="nf">observe_vex</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">vex</span><span class="p">,</span> <span class="n">source</span><span class="p">,</span> <span class="n">t_int</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">tight_tadv</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+
+<div class="viewcode-block" id="Image.observe_vex">
+<a class="viewcode-back" href="../../image.html#ehtim.image.Image.observe_vex">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">observe_vex</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">vex</span><span class="p">,</span> <span class="n">source</span><span class="p">,</span> <span class="n">t_int</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">tight_tadv</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
                     <span class="n">polrep_obs</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">ttype</span><span class="o">=</span><span class="s1">&#39;nfft&#39;</span><span class="p">,</span> <span class="n">fft_pad_factor</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span>
                     <span class="n">fix_theta_GMST</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
                     <span class="n">sgrscat</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">add_th_noise</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
@@ -3102,7 +3254,10 @@
 
         <span class="k">return</span> <span class="n">obs</span></div>
 
-<div class="viewcode-block" id="Image.compare_images"><a class="viewcode-back" href="../../image.html#ehtim.image.Image.compare_images">[docs]</a>    <span class="k">def</span> <span class="nf">compare_images</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">im_compare</span><span class="p">,</span> <span class="n">pol</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">psize</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span><span class="n">target_fov</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">blur_frac</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span>
+
+<div class="viewcode-block" id="Image.compare_images">
+<a class="viewcode-back" href="../../image.html#ehtim.image.Image.compare_images">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">compare_images</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">im_compare</span><span class="p">,</span> <span class="n">pol</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">psize</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span><span class="n">target_fov</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">blur_frac</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span>
                        <span class="n">beamparams</span><span class="o">=</span><span class="p">[</span><span class="mf">1.</span><span class="p">,</span> <span class="mf">1.</span><span class="p">,</span> <span class="mf">1.</span><span class="p">],</span> <span class="n">metric</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;nxcorr&#39;</span><span class="p">,</span> <span class="s1">&#39;nrmse&#39;</span><span class="p">,</span> <span class="s1">&#39;rssd&#39;</span><span class="p">],</span>
                        <span class="n">blursmall</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">shift</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Compare to another image by computing normalized cross correlation,</span>
@@ -3160,7 +3315,10 @@
 
         <span class="k">return</span> <span class="p">(</span><span class="n">error</span><span class="p">,</span> <span class="n">im1_pad</span><span class="p">,</span> <span class="n">im2_shift</span><span class="p">)</span></div>
 
-<div class="viewcode-block" id="Image.align_images"><a class="viewcode-back" href="../../image.html#ehtim.image.Image.align_images">[docs]</a>    <span class="k">def</span> <span class="nf">align_images</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">im_list</span><span class="p">,</span> <span class="n">pol</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">shift</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">final_fov</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">scale</span><span class="o">=</span><span class="s1">&#39;lin&#39;</span><span class="p">,</span>
+
+<div class="viewcode-block" id="Image.align_images">
+<a class="viewcode-back" href="../../image.html#ehtim.image.Image.align_images">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">align_images</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">im_list</span><span class="p">,</span> <span class="n">pol</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">shift</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">final_fov</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">scale</span><span class="o">=</span><span class="s1">&#39;lin&#39;</span><span class="p">,</span>
                      <span class="n">gamma</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span> <span class="n">dynamic_range</span><span class="o">=</span><span class="p">[</span><span class="mf">1.e3</span><span class="p">]):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Align all the images in im_list to the current image (self)</span>
 <span class="sd">           Aligns all images by comparison of the primary pol image.</span>
@@ -3227,7 +3385,10 @@
 
         <span class="k">return</span> <span class="p">(</span><span class="n">im_list_shift</span><span class="p">,</span> <span class="n">shifts</span><span class="p">,</span> <span class="n">im0_pad</span><span class="p">)</span></div>
 
-<div class="viewcode-block" id="Image.find_shift"><a class="viewcode-back" href="../../image.html#ehtim.image.Image.find_shift">[docs]</a>    <span class="k">def</span> <span class="nf">find_shift</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">im_compare</span><span class="p">,</span> <span class="n">pol</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">psize</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">target_fov</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+
+<div class="viewcode-block" id="Image.find_shift">
+<a class="viewcode-back" href="../../image.html#ehtim.image.Image.find_shift">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">find_shift</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">im_compare</span><span class="p">,</span> <span class="n">pol</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">psize</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">target_fov</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
                    <span class="n">beamparams</span><span class="o">=</span><span class="p">[</span><span class="mf">1.</span><span class="p">,</span> <span class="mf">1.</span><span class="p">,</span> <span class="mf">1.</span><span class="p">],</span> <span class="n">blur_frac</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">blursmall</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
                    <span class="n">scale</span><span class="o">=</span><span class="s1">&#39;lin&#39;</span><span class="p">,</span> <span class="n">gamma</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span> <span class="n">dynamic_range</span><span class="o">=</span><span class="mf">1.e3</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Find image shift that maximizes normalized cross correlation with a second image im2.</span>
@@ -3315,7 +3476,10 @@
 
         <span class="k">return</span> <span class="p">[</span><span class="n">idx</span><span class="p">,</span> <span class="n">xcorr</span><span class="p">,</span> <span class="n">im1_pad</span><span class="p">,</span> <span class="n">im2_pad</span><span class="p">]</span></div>
 
-<div class="viewcode-block" id="Image.fit_gauss"><a class="viewcode-back" href="../../image.html#ehtim.image.Image.fit_gauss">[docs]</a>    <span class="k">def</span> <span class="nf">fit_gauss</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">units</span><span class="o">=</span><span class="s1">&#39;rad&#39;</span><span class="p">):</span>
+
+<div class="viewcode-block" id="Image.fit_gauss">
+<a class="viewcode-back" href="../../image.html#ehtim.image.Image.fit_gauss">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">fit_gauss</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">units</span><span class="o">=</span><span class="s1">&#39;rad&#39;</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Determine the Gaussian parameters that short baselines would measure for the source</span>
 <span class="sd">           by diagonalizing the image covariance matrix.</span>
 <span class="sd">           Returns parameters only for the primary polarization!</span>
@@ -3350,7 +3514,10 @@
 
         <span class="k">return</span> <span class="n">gauss_params</span></div>
 
-<div class="viewcode-block" id="Image.fit_gauss_empirical"><a class="viewcode-back" href="../../image.html#ehtim.image.Image.fit_gauss_empirical">[docs]</a>    <span class="k">def</span> <span class="nf">fit_gauss_empirical</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">paramguess</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+
+<div class="viewcode-block" id="Image.fit_gauss_empirical">
+<a class="viewcode-back" href="../../image.html#ehtim.image.Image.fit_gauss_empirical">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">fit_gauss_empirical</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">paramguess</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Determine the Gaussian parameters that short baselines would measure</span>
 <span class="sd">           Returns parameters only for the primary polarization!</span>
 
@@ -3375,7 +3542,7 @@
         <span class="k">if</span> <span class="n">paramguess</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
             <span class="n">paramguess</span> <span class="o">=</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">psize</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">xdim</span> <span class="o">/</span> <span class="mf">4.0</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">psize</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">xdim</span> <span class="o">/</span> <span class="mf">4.0</span><span class="p">,</span> <span class="mf">0.</span><span class="p">)</span>
 
-        <span class="k">def</span> <span class="nf">errfunc</span><span class="p">(</span><span class="n">p</span><span class="p">):</span>
+        <span class="k">def</span><span class="w"> </span><span class="nf">errfunc</span><span class="p">(</span><span class="n">p</span><span class="p">):</span>
             <span class="n">vismodel</span> <span class="o">=</span> <span class="n">obsh</span><span class="o">.</span><span class="n">gauss_uv</span><span class="p">(</span><span class="n">u</span><span class="p">,</span> <span class="n">v</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">total_flux</span><span class="p">(),</span> <span class="n">p</span><span class="p">,</span> <span class="n">x</span><span class="o">=</span><span class="mf">0.</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="mf">0.</span><span class="p">)</span>
             <span class="n">err</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">((</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">vis</span><span class="p">)</span> <span class="o">-</span> <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">vismodel</span><span class="p">))</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span>
             <span class="k">return</span> <span class="n">err</span>
@@ -3397,7 +3564,10 @@
 
         <span class="k">return</span> <span class="n">x</span></div>
 
-<div class="viewcode-block" id="Image.contour"><a class="viewcode-back" href="../../image.html#ehtim.image.Image.contour">[docs]</a>    <span class="k">def</span> <span class="nf">contour</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">contour_levels</span><span class="o">=</span><span class="p">[</span><span class="mf">0.1</span><span class="p">,</span> <span class="mf">0.25</span><span class="p">,</span> <span class="mf">0.5</span><span class="p">,</span> <span class="mf">0.75</span><span class="p">],</span>
+
+<div class="viewcode-block" id="Image.contour">
+<a class="viewcode-back" href="../../image.html#ehtim.image.Image.contour">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">contour</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">contour_levels</span><span class="o">=</span><span class="p">[</span><span class="mf">0.1</span><span class="p">,</span> <span class="mf">0.25</span><span class="p">,</span> <span class="mf">0.5</span><span class="p">,</span> <span class="mf">0.75</span><span class="p">],</span>
                 <span class="n">contour_cfun</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s1">&#39;w&#39;</span><span class="p">,</span> <span class="n">legend</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">show_im</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
                 <span class="n">cfun</span><span class="o">=</span><span class="s1">&#39;afmhot&#39;</span><span class="p">,</span> <span class="n">scale</span><span class="o">=</span><span class="s1">&#39;lin&#39;</span><span class="p">,</span> <span class="n">interp</span><span class="o">=</span><span class="s1">&#39;gaussian&#39;</span><span class="p">,</span> <span class="n">gamma</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span> <span class="n">dynamic_range</span><span class="o">=</span><span class="mf">1.e3</span><span class="p">,</span>
                 <span class="n">plotp</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">nvec</span><span class="o">=</span><span class="mi">20</span><span class="p">,</span> <span class="n">pcut</span><span class="o">=</span><span class="mf">0.01</span><span class="p">,</span> <span class="n">mcut</span><span class="o">=</span><span class="mf">0.1</span><span class="p">,</span> <span class="n">label_type</span><span class="o">=</span><span class="s1">&#39;ticks&#39;</span><span class="p">,</span> <span class="n">has_title</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
@@ -3541,7 +3711,10 @@
             <span class="k">return</span> <span class="n">axis</span>
         <span class="k">return</span> <span class="n">ax</span></div>
 
-<div class="viewcode-block" id="Image.display"><a class="viewcode-back" href="../../image.html#ehtim.image.Image.display">[docs]</a>    <span class="k">def</span> <span class="nf">display</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pol</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">cfun</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">interp</span><span class="o">=</span><span class="s1">&#39;gaussian&#39;</span><span class="p">,</span>
+
+<div class="viewcode-block" id="Image.display">
+<a class="viewcode-back" href="../../image.html#ehtim.image.Image.display">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">display</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pol</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">cfun</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">interp</span><span class="o">=</span><span class="s1">&#39;gaussian&#39;</span><span class="p">,</span>
                 <span class="n">scale</span><span class="o">=</span><span class="s1">&#39;lin&#39;</span><span class="p">,</span> <span class="n">gamma</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span> <span class="n">dynamic_range</span><span class="o">=</span><span class="mf">1.e3</span><span class="p">,</span>
                 <span class="n">plotp</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">plot_stokes</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">nvec</span><span class="o">=</span><span class="mi">20</span><span class="p">,</span>
                 <span class="n">vec_cfun</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span><span class="n">vec_cbar_lims</span><span class="o">=</span><span class="p">(),</span>
@@ -4172,7 +4345,10 @@
 
         <span class="k">return</span> <span class="n">f</span></div>
 
-<div class="viewcode-block" id="Image.overlay_display"><a class="viewcode-back" href="../../image.html#ehtim.image.Image.overlay_display">[docs]</a>    <span class="k">def</span> <span class="nf">overlay_display</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">im_list</span><span class="p">,</span> <span class="n">color_coding</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">],</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">]]),</span>
+
+<div class="viewcode-block" id="Image.overlay_display">
+<a class="viewcode-back" href="../../image.html#ehtim.image.Image.overlay_display">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">overlay_display</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">im_list</span><span class="p">,</span> <span class="n">color_coding</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">],</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">]]),</span>
                         <span class="n">export_pdf</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="n">show</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">f</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
                         <span class="n">shift</span><span class="o">=</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span> <span class="n">final_fov</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">interp</span><span class="o">=</span><span class="s1">&#39;gaussian&#39;</span><span class="p">,</span>
                         <span class="n">scale</span><span class="o">=</span><span class="s1">&#39;lin&#39;</span><span class="p">,</span> <span class="n">gamma</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span> <span class="n">dynamic_range</span><span class="o">=</span><span class="p">[</span><span class="mf">1.e3</span><span class="p">],</span> <span class="n">rescale</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
@@ -4279,7 +4455,10 @@
 
         <span class="k">return</span> <span class="p">(</span><span class="n">f</span><span class="p">,</span> <span class="n">shift</span><span class="p">)</span></div>
 
-<div class="viewcode-block" id="Image.save_txt"><a class="viewcode-back" href="../../image.html#ehtim.image.Image.save_txt">[docs]</a>    <span class="k">def</span> <span class="nf">save_txt</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">fname</span><span class="p">):</span>
+
+<div class="viewcode-block" id="Image.save_txt">
+<a class="viewcode-back" href="../../image.html#ehtim.image.Image.save_txt">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">save_txt</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">fname</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Save image data to text file.</span>
 
 <span class="sd">           Args:</span>
@@ -4291,7 +4470,10 @@
         <span class="n">ehtim</span><span class="o">.</span><span class="n">io</span><span class="o">.</span><span class="n">save</span><span class="o">.</span><span class="n">save_im_txt</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">fname</span><span class="p">)</span>
         <span class="k">return</span></div>
 
-<div class="viewcode-block" id="Image.save_fits"><a class="viewcode-back" href="../../image.html#ehtim.image.Image.save_fits">[docs]</a>    <span class="k">def</span> <span class="nf">save_fits</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">fname</span><span class="p">):</span>
+
+<div class="viewcode-block" id="Image.save_fits">
+<a class="viewcode-back" href="../../image.html#ehtim.image.Image.save_fits">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">save_fits</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">fname</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Save image data to a fits file.</span>
 
 <span class="sd">           Args:</span>
@@ -4300,14 +4482,18 @@
 <span class="sd">           Returns:</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">ehtim</span><span class="o">.</span><span class="n">io</span><span class="o">.</span><span class="n">save</span><span class="o">.</span><span class="n">save_im_fits</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">fname</span><span class="p">)</span>
-        <span class="k">return</span></div></div>
+        <span class="k">return</span></div>
+</div>
+
 
 
 <span class="c1">###################################################################################################</span>
 <span class="c1"># Image creation functions</span>
 <span class="c1">###################################################################################################</span>
 
-<div class="viewcode-block" id="make_square"><a class="viewcode-back" href="../../image.html#ehtim.image.make_square">[docs]</a><span class="k">def</span> <span class="nf">make_square</span><span class="p">(</span><span class="n">obs</span><span class="p">,</span> <span class="n">npix</span><span class="p">,</span> <span class="n">fov</span><span class="p">,</span> <span class="n">pulse</span><span class="o">=</span><span class="n">ehc</span><span class="o">.</span><span class="n">PULSE_DEFAULT</span><span class="p">,</span> <span class="n">polrep</span><span class="o">=</span><span class="s1">&#39;stokes&#39;</span><span class="p">,</span> <span class="n">pol_prim</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<div class="viewcode-block" id="make_square">
+<a class="viewcode-back" href="../../image.html#ehtim.image.make_square">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">make_square</span><span class="p">(</span><span class="n">obs</span><span class="p">,</span> <span class="n">npix</span><span class="p">,</span> <span class="n">fov</span><span class="p">,</span> <span class="n">pulse</span><span class="o">=</span><span class="n">ehc</span><span class="o">.</span><span class="n">PULSE_DEFAULT</span><span class="p">,</span> <span class="n">polrep</span><span class="o">=</span><span class="s1">&#39;stokes&#39;</span><span class="p">,</span> <span class="n">pol_prim</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Make an empty square image.</span>
 
 <span class="sd">       Args:</span>
@@ -4329,7 +4515,10 @@
     <span class="k">return</span> <span class="n">outim</span></div>
 
 
-<div class="viewcode-block" id="make_empty"><a class="viewcode-back" href="../../image.html#ehtim.image.make_empty">[docs]</a><span class="k">def</span> <span class="nf">make_empty</span><span class="p">(</span><span class="n">npix</span><span class="p">,</span> <span class="n">fov</span><span class="p">,</span> <span class="n">ra</span><span class="p">,</span> <span class="n">dec</span><span class="p">,</span> <span class="n">rf</span><span class="o">=</span><span class="n">ehc</span><span class="o">.</span><span class="n">RF_DEFAULT</span><span class="p">,</span> <span class="n">source</span><span class="o">=</span><span class="n">ehc</span><span class="o">.</span><span class="n">SOURCE_DEFAULT</span><span class="p">,</span>
+
+<div class="viewcode-block" id="make_empty">
+<a class="viewcode-back" href="../../image.html#ehtim.image.make_empty">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">make_empty</span><span class="p">(</span><span class="n">npix</span><span class="p">,</span> <span class="n">fov</span><span class="p">,</span> <span class="n">ra</span><span class="p">,</span> <span class="n">dec</span><span class="p">,</span> <span class="n">rf</span><span class="o">=</span><span class="n">ehc</span><span class="o">.</span><span class="n">RF_DEFAULT</span><span class="p">,</span> <span class="n">source</span><span class="o">=</span><span class="n">ehc</span><span class="o">.</span><span class="n">SOURCE_DEFAULT</span><span class="p">,</span>
                <span class="n">polrep</span><span class="o">=</span><span class="s1">&#39;stokes&#39;</span><span class="p">,</span> <span class="n">pol_prim</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">pulse</span><span class="o">=</span><span class="n">ehc</span><span class="o">.</span><span class="n">PULSE_DEFAULT</span><span class="p">,</span>
                <span class="n">mjd</span><span class="o">=</span><span class="n">ehc</span><span class="o">.</span><span class="n">MJD_DEFAULT</span><span class="p">,</span> <span class="n">time</span><span class="o">=</span><span class="mf">0.</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Make an empty square image.</span>
@@ -4362,7 +4551,10 @@
     <span class="k">return</span> <span class="n">outim</span></div>
 
 
-<div class="viewcode-block" id="load_image"><a class="viewcode-back" href="../../image.html#ehtim.image.load_image">[docs]</a><span class="k">def</span> <span class="nf">load_image</span><span class="p">(</span><span class="n">image</span><span class="p">,</span> <span class="n">display</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">aipscc</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+
+<div class="viewcode-block" id="load_image">
+<a class="viewcode-back" href="../../image.html#ehtim.image.load_image">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">load_image</span><span class="p">(</span><span class="n">image</span><span class="p">,</span> <span class="n">display</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">aipscc</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Read in an image from a text, .fits, .h5, or ehtim.image.Image object</span>
 
 <span class="sd">       Args:</span>
@@ -4407,7 +4599,10 @@
     <span class="k">return</span> <span class="n">im</span></div>
 
 
-<div class="viewcode-block" id="load_txt"><a class="viewcode-back" href="../../image.html#ehtim.image.load_txt">[docs]</a><span class="k">def</span> <span class="nf">load_txt</span><span class="p">(</span><span class="n">fname</span><span class="p">,</span> <span class="n">polrep</span><span class="o">=</span><span class="s1">&#39;stokes&#39;</span><span class="p">,</span> <span class="n">pol_prim</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">pulse</span><span class="o">=</span><span class="n">ehc</span><span class="o">.</span><span class="n">PULSE_DEFAULT</span><span class="p">,</span> <span class="n">zero_pol</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+
+<div class="viewcode-block" id="load_txt">
+<a class="viewcode-back" href="../../image.html#ehtim.image.load_txt">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">load_txt</span><span class="p">(</span><span class="n">fname</span><span class="p">,</span> <span class="n">polrep</span><span class="o">=</span><span class="s1">&#39;stokes&#39;</span><span class="p">,</span> <span class="n">pol_prim</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">pulse</span><span class="o">=</span><span class="n">ehc</span><span class="o">.</span><span class="n">PULSE_DEFAULT</span><span class="p">,</span> <span class="n">zero_pol</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Read in an image from a text file.</span>
 
 <span class="sd">       Args:</span>
@@ -4425,7 +4620,10 @@
                                      <span class="n">pol_prim</span><span class="o">=</span><span class="n">pol_prim</span><span class="p">,</span> <span class="n">zero_pol</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span></div>
 
 
-<div class="viewcode-block" id="load_fits"><a class="viewcode-back" href="../../image.html#ehtim.image.load_fits">[docs]</a><span class="k">def</span> <span class="nf">load_fits</span><span class="p">(</span><span class="n">fname</span><span class="p">,</span> <span class="n">aipscc</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">pulse</span><span class="o">=</span><span class="n">ehc</span><span class="o">.</span><span class="n">PULSE_DEFAULT</span><span class="p">,</span>
+
+<div class="viewcode-block" id="load_fits">
+<a class="viewcode-back" href="../../image.html#ehtim.image.load_fits">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">load_fits</span><span class="p">(</span><span class="n">fname</span><span class="p">,</span> <span class="n">aipscc</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">pulse</span><span class="o">=</span><span class="n">ehc</span><span class="o">.</span><span class="n">PULSE_DEFAULT</span><span class="p">,</span>
               <span class="n">polrep</span><span class="o">=</span><span class="s1">&#39;stokes&#39;</span><span class="p">,</span> <span class="n">pol_prim</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">zero_pol</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Read in an image from a FITS file.</span>
 
@@ -4443,8 +4641,11 @@
 
     <span class="k">return</span> <span class="n">ehtim</span><span class="o">.</span><span class="n">io</span><span class="o">.</span><span class="n">load</span><span class="o">.</span><span class="n">load_im_fits</span><span class="p">(</span><span class="n">fname</span><span class="p">,</span> <span class="n">aipscc</span><span class="o">=</span><span class="n">aipscc</span><span class="p">,</span> <span class="n">pulse</span><span class="o">=</span><span class="n">pulse</span><span class="p">,</span>
                                       <span class="n">polrep</span><span class="o">=</span><span class="n">polrep</span><span class="p">,</span> <span class="n">pol_prim</span><span class="o">=</span><span class="n">pol_prim</span><span class="p">,</span> <span class="n">zero_pol</span><span class="o">=</span><span class="n">zero_pol</span><span class="p">)</span></div>
+
                                       
-<div class="viewcode-block" id="avg_imlist"><a class="viewcode-back" href="../../image.html#ehtim.image.avg_imlist">[docs]</a><span class="k">def</span> <span class="nf">avg_imlist</span><span class="p">(</span><span class="n">imlist</span><span class="p">):</span>
+<div class="viewcode-block" id="avg_imlist">
+<a class="viewcode-back" href="../../image.html#ehtim.image.avg_imlist">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">avg_imlist</span><span class="p">(</span><span class="n">imlist</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Average a list of images.</span>
 
 <span class="sd">       Args:</span>
@@ -4475,7 +4676,10 @@
     
     <span class="k">return</span> <span class="n">imavg</span></div>
 
-<div class="viewcode-block" id="get_specim"><a class="viewcode-back" href="../../image.html#ehtim.image.get_specim">[docs]</a><span class="k">def</span> <span class="nf">get_specim</span><span class="p">(</span><span class="n">imlist</span><span class="p">,</span> <span class="n">reffreq</span><span class="p">,</span> <span class="n">fit_order</span><span class="o">=</span><span class="mi">2</span><span class="p">):</span>
+
+<div class="viewcode-block" id="get_specim">
+<a class="viewcode-back" href="../../image.html#ehtim.image.get_specim">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">get_specim</span><span class="p">(</span><span class="n">imlist</span><span class="p">,</span> <span class="n">reffreq</span><span class="p">,</span> <span class="n">fit_order</span><span class="o">=</span><span class="mi">2</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;get the spectral index/curvature from a list of images&quot;&quot;&quot;</span>
     <span class="n">freqs</span> <span class="o">=</span> <span class="p">[</span><span class="n">im</span><span class="o">.</span><span class="n">rf</span> <span class="k">for</span> <span class="n">im</span> <span class="ow">in</span> <span class="n">imlist</span><span class="p">]</span>
 
@@ -4507,6 +4711,7 @@
     <span class="n">outim</span><span class="o">.</span><span class="n">curvvec</span> <span class="o">=</span> <span class="n">beta</span>
     
     <span class="k">return</span> <span class="n">outim</span></div>
+
 
 </pre></div>
 

@@ -1,20 +1,20 @@
+
+
 <!DOCTYPE html>
-<html class="writer-html5" lang="en" >
+<html class="writer-html5" lang="en" data-content_root="../../">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>ehtim.array &mdash; ehtim 1.3 documentation</title>
-      <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
-      <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
-  <!--[if lt IE 9]>
-    <script src="../../_static/js/html5shiv.min.js"></script>
-  <![endif]-->
+  <title>ehtim.array &mdash; ehtim 1.3.1 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=03e43079" />
+      <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=9edc463e" />
+
   
-        <script data-url_root="../../" id="documentation_options" src="../../_static/documentation_options.js"></script>
-        <script src="../../_static/jquery.js"></script>
-        <script src="../../_static/underscore.js"></script>
-        <script src="../../_static/_sphinx_javascript_frameworks_compat.js"></script>
-        <script src="../../_static/doctools.js"></script>
+      <script src="../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../_static/documentation_options.js?v=bb516dca"></script>
+      <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../_static/js/theme.js"></script>
     <link rel="index" title="Index" href="../../genindex.html" />
     <link rel="search" title="Search" href="../../search.html" /> 
@@ -25,14 +25,15 @@
     <nav data-toggle="wy-nav-shift" class="wy-nav-side">
       <div class="wy-side-scroll">
         <div class="wy-side-nav-search" >
-            <a href="../../index.html" class="icon icon-home"> ehtim
+
+          
+          
+          <a href="../../index.html" class="icon icon-home">
+            ehtim
           </a>
-              <div class="version">
-                1.3
-              </div>
 <div role="search">
   <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
-    <input type="text" name="q" placeholder="Search docs" />
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
     <input type="hidden" name="check_keywords" value="yes" />
     <input type="hidden" name="area" value="default" />
   </form>
@@ -67,9 +68,9 @@
         <div class="rst-content">
           <div role="navigation" aria-label="Page navigation">
   <ul class="wy-breadcrumbs">
-      <li><a href="../../index.html" class="icon icon-home"></a> &raquo;</li>
-          <li><a href="../index.html">Module code</a> &raquo;</li>
-      <li>ehtim.array</li>
+      <li><a href="../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">ehtim.array</li>
       <li class="wy-breadcrumbs-aside">
       </li>
   </ul>
@@ -97,24 +98,24 @@
 <span class="c1">#    You should have received a copy of the GNU General Public License</span>
 <span class="c1">#    along with this program.  If not, see &lt;http://www.gnu.org/licenses/&gt;.</span>
 
-<span class="kn">from</span> <span class="nn">__future__</span> <span class="kn">import</span> <span class="n">division</span>
-<span class="kn">from</span> <span class="nn">__future__</span> <span class="kn">import</span> <span class="n">print_function</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">__future__</span><span class="w"> </span><span class="kn">import</span> <span class="n">division</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">__future__</span><span class="w"> </span><span class="kn">import</span> <span class="n">print_function</span>
 
-<span class="kn">from</span> <span class="nn">builtins</span> <span class="kn">import</span> <span class="nb">str</span>
-<span class="kn">from</span> <span class="nn">builtins</span> <span class="kn">import</span> <span class="nb">range</span>
-<span class="kn">from</span> <span class="nn">builtins</span> <span class="kn">import</span> <span class="nb">object</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">builtins</span><span class="w"> </span><span class="kn">import</span> <span class="nb">str</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">builtins</span><span class="w"> </span><span class="kn">import</span> <span class="nb">range</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">builtins</span><span class="w"> </span><span class="kn">import</span> <span class="nb">object</span>
 
-<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
-<span class="kn">import</span> <span class="nn">copy</span>
-<span class="kn">from</span> <span class="nn">astropy.time</span> <span class="kn">import</span> <span class="n">Time</span>
-<span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
-<span class="kn">import</span> <span class="nn">matplotlib</span>
-<span class="kn">import</span> <span class="nn">ehtim.observing.obs_simulate</span> <span class="k">as</span> <span class="nn">simobs</span>
-<span class="kn">import</span> <span class="nn">ehtim.observing.obs_helpers</span> <span class="k">as</span> <span class="nn">obsh</span>
-<span class="kn">import</span> <span class="nn">ehtim.io.save</span>
-<span class="kn">import</span> <span class="nn">ehtim.io.load</span>
-<span class="kn">import</span> <span class="nn">ehtim.const_def</span> <span class="k">as</span> <span class="nn">ehc</span>
-<span class="kn">from</span> <span class="nn">ehtim.caltable</span> <span class="kn">import</span> <span class="n">plot_tarr_dterms</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">copy</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">astropy.time</span><span class="w"> </span><span class="kn">import</span> <span class="n">Time</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">matplotlib.pyplot</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">plt</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">matplotlib</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">ehtim.observing.obs_simulate</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">simobs</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">ehtim.observing.obs_helpers</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">obsh</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">ehtim.io.save</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">ehtim.io.load</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">ehtim.const_def</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">ehc</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">ehtim.caltable</span><span class="w"> </span><span class="kn">import</span> <span class="n">plot_tarr_dterms</span>
 
 
 <span class="c1">###################################################################################################</span>
@@ -122,7 +123,9 @@
 <span class="c1">###################################################################################################</span>
 
 
-<div class="viewcode-block" id="Array"><a class="viewcode-back" href="../../array.html#ehtim.array.Array">[docs]</a><span class="k">class</span> <span class="nc">Array</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+<div class="viewcode-block" id="Array">
+<a class="viewcode-back" href="../../array.html#ehtim.array.Array">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">Array</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
 
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;A VLBI array of telescopes with site locations, SEFDs, and other data.</span>
 
@@ -133,7 +136,7 @@
 <span class="sd">                         Space antennas have x=y=z=0 in the tarr</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
-    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">tarr</span><span class="p">,</span> <span class="n">ephem</span><span class="o">=</span><span class="p">{}):</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">tarr</span><span class="p">,</span> <span class="n">ephem</span><span class="o">=</span><span class="p">{}):</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">tarr</span> <span class="o">=</span> <span class="n">tarr</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">ephem</span> <span class="o">=</span> <span class="n">ephem</span>
 
@@ -152,15 +155,17 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">tkey</span> <span class="o">=</span> <span class="p">{</span><span class="bp">self</span><span class="o">.</span><span class="n">tarr</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="s1">&#39;site&#39;</span><span class="p">]:</span> <span class="n">i</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">tarr</span><span class="p">))}</span>
 
     <span class="nd">@property</span> 
-    <span class="k">def</span> <span class="nf">tarr</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">tarr</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_tarr</span>
         
     <span class="nd">@tarr</span><span class="o">.</span><span class="n">setter</span> 
-    <span class="k">def</span> <span class="nf">tarr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">tarr</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">tarr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">tarr</span><span class="p">):</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_tarr</span> <span class="o">=</span> <span class="n">tarr</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">tkey</span> <span class="o">=</span> <span class="p">{</span><span class="n">tarr</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="s1">&#39;site&#39;</span><span class="p">]:</span> <span class="n">i</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">tarr</span><span class="p">))}</span>
 
-<div class="viewcode-block" id="Array.copy"><a class="viewcode-back" href="../../array.html#ehtim.array.Array.copy">[docs]</a>    <span class="k">def</span> <span class="nf">copy</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<div class="viewcode-block" id="Array.copy">
+<a class="viewcode-back" href="../../array.html#ehtim.array.Array.copy">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">copy</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Copy the array object.</span>
 
 <span class="sd">           Args:</span>
@@ -172,8 +177,11 @@
         <span class="n">newarr</span> <span class="o">=</span> <span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">newarr</span></div>
 
+
        
-<div class="viewcode-block" id="Array.listbls"><a class="viewcode-back" href="../../array.html#ehtim.array.Array.listbls">[docs]</a>    <span class="k">def</span> <span class="nf">listbls</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<div class="viewcode-block" id="Array.listbls">
+<a class="viewcode-back" href="../../array.html#ehtim.array.Array.listbls">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">listbls</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;List all baselines.</span>
 
 <span class="sd">           Args:</span>
@@ -190,7 +198,10 @@
 
         <span class="k">return</span> <span class="n">bls</span></div>
 
-<div class="viewcode-block" id="Array.obsdata"><a class="viewcode-back" href="../../array.html#ehtim.array.Array.obsdata">[docs]</a>    <span class="k">def</span> <span class="nf">obsdata</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ra</span><span class="p">,</span> <span class="n">dec</span><span class="p">,</span> <span class="n">rf</span><span class="p">,</span> <span class="n">bw</span><span class="p">,</span> <span class="n">tint</span><span class="p">,</span> <span class="n">tadv</span><span class="p">,</span> <span class="n">tstart</span><span class="p">,</span> <span class="n">tstop</span><span class="p">,</span>
+
+<div class="viewcode-block" id="Array.obsdata">
+<a class="viewcode-back" href="../../array.html#ehtim.array.Array.obsdata">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">obsdata</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ra</span><span class="p">,</span> <span class="n">dec</span><span class="p">,</span> <span class="n">rf</span><span class="p">,</span> <span class="n">bw</span><span class="p">,</span> <span class="n">tint</span><span class="p">,</span> <span class="n">tadv</span><span class="p">,</span> <span class="n">tstart</span><span class="p">,</span> <span class="n">tstop</span><span class="p">,</span>
                 <span class="n">mjd</span><span class="o">=</span><span class="n">ehc</span><span class="o">.</span><span class="n">MJD_DEFAULT</span><span class="p">,</span> <span class="n">timetype</span><span class="o">=</span><span class="s1">&#39;UTC&#39;</span><span class="p">,</span> <span class="n">polrep</span><span class="o">=</span><span class="s1">&#39;stokes&#39;</span><span class="p">,</span>
                 <span class="n">elevmin</span><span class="o">=</span><span class="n">ehc</span><span class="o">.</span><span class="n">ELEV_LOW</span><span class="p">,</span> <span class="n">elevmax</span><span class="o">=</span><span class="n">ehc</span><span class="o">.</span><span class="n">ELEV_HIGH</span><span class="p">,</span>
                 <span class="n">no_elevcut_space</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
@@ -236,7 +247,10 @@
                                     <span class="n">scantable</span><span class="o">=</span><span class="n">scans</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">obs</span></div>
 
-<div class="viewcode-block" id="Array.make_subarray"><a class="viewcode-back" href="../../array.html#ehtim.array.Array.make_subarray">[docs]</a>    <span class="k">def</span> <span class="nf">make_subarray</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">sites</span><span class="p">):</span>
+
+<div class="viewcode-block" id="Array.make_subarray">
+<a class="viewcode-back" href="../../array.html#ehtim.array.Array.make_subarray">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">make_subarray</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">sites</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Make a subarray from the Array object array that only includes the sites listed.</span>
 
 <span class="sd">           Args:</span>
@@ -249,7 +263,10 @@
         <span class="n">subarr</span> <span class="o">=</span> <span class="n">Array</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">tarr</span><span class="p">[</span><span class="n">mask</span><span class="p">],</span> <span class="n">ephem</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">ephem</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">subarr</span></div>
 
-<div class="viewcode-block" id="Array.save_txt"><a class="viewcode-back" href="../../array.html#ehtim.array.Array.save_txt">[docs]</a>    <span class="k">def</span> <span class="nf">save_txt</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">fname</span><span class="p">):</span>
+
+<div class="viewcode-block" id="Array.save_txt">
+<a class="viewcode-back" href="../../array.html#ehtim.array.Array.save_txt">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">save_txt</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">fname</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Save the array data in a text file.</span>
 
 <span class="sd">           Args:</span>
@@ -258,7 +275,10 @@
         <span class="n">ehtim</span><span class="o">.</span><span class="n">io</span><span class="o">.</span><span class="n">save</span><span class="o">.</span><span class="n">save_array_txt</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">fname</span><span class="p">)</span>
         <span class="k">return</span></div>
 
-<div class="viewcode-block" id="Array.plot_dterms"><a class="viewcode-back" href="../../array.html#ehtim.array.Array.plot_dterms">[docs]</a>    <span class="k">def</span> <span class="nf">plot_dterms</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">sites</span><span class="o">=</span><span class="s1">&#39;all&#39;</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">legend</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">clist</span><span class="o">=</span><span class="n">ehc</span><span class="o">.</span><span class="n">SCOLORS</span><span class="p">,</span>
+
+<div class="viewcode-block" id="Array.plot_dterms">
+<a class="viewcode-back" href="../../array.html#ehtim.array.Array.plot_dterms">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">plot_dterms</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">sites</span><span class="o">=</span><span class="s1">&#39;all&#39;</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">legend</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">clist</span><span class="o">=</span><span class="n">ehc</span><span class="o">.</span><span class="n">SCOLORS</span><span class="p">,</span>
                     <span class="n">rangex</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">rangey</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">markersize</span><span class="o">=</span><span class="mi">2</span> <span class="o">*</span> <span class="n">ehc</span><span class="o">.</span><span class="n">MARKERSIZE</span><span class="p">,</span>
                     <span class="n">show</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">grid</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">export_pdf</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Make a plot of the D-terms.</span>
@@ -296,7 +316,10 @@
 
         <span class="k">return</span> <span class="n">axes</span></div>
 
-<div class="viewcode-block" id="Array.add_site"><a class="viewcode-back" href="../../array.html#ehtim.array.Array.add_site">[docs]</a>    <span class="k">def</span> <span class="nf">add_site</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">site</span><span class="p">,</span> <span class="n">coords</span><span class="p">,</span> <span class="n">sefd</span><span class="o">=</span><span class="mi">10000</span><span class="p">,</span> 
+
+<div class="viewcode-block" id="Array.add_site">
+<a class="viewcode-back" href="../../array.html#ehtim.array.Array.add_site">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">add_site</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">site</span><span class="p">,</span> <span class="n">coords</span><span class="p">,</span> <span class="n">sefd</span><span class="o">=</span><span class="mi">10000</span><span class="p">,</span> 
                  <span class="n">fr_par</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">fr_elev</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">fr_off</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> 
                  <span class="n">dr</span><span class="o">=</span><span class="mf">0.</span><span class="o">+</span><span class="mf">0.</span><span class="n">j</span><span class="p">,</span> <span class="n">dl</span><span class="o">=</span><span class="mf">0.</span><span class="o">+</span><span class="mf">0.</span><span class="n">j</span><span class="p">):</span>
 <span class="w">    </span>
@@ -315,8 +338,11 @@
         
         <span class="n">arr_out</span> <span class="o">=</span> <span class="n">Array</span><span class="p">(</span><span class="n">tarr_new</span><span class="p">,</span> <span class="n">ephem_old</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">arr_out</span></div>
+
             
-<div class="viewcode-block" id="Array.remove_site"><a class="viewcode-back" href="../../array.html#ehtim.array.Array.remove_site">[docs]</a>    <span class="k">def</span> <span class="nf">remove_site</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">site</span><span class="p">):</span>
+<div class="viewcode-block" id="Array.remove_site">
+<a class="viewcode-back" href="../../array.html#ehtim.array.Array.remove_site">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">remove_site</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">site</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Remove a site from the array</span>
 <span class="sd">           </span>
 <span class="sd">        &quot;&quot;&quot;</span>
@@ -334,7 +360,10 @@
         <span class="n">arr_out</span> <span class="o">=</span> <span class="n">Array</span><span class="p">(</span><span class="n">tarr_new</span><span class="p">,</span> <span class="n">ephem_new</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">arr_out</span></div>
 
-<div class="viewcode-block" id="Array.add_satellite_tle"><a class="viewcode-back" href="../../array.html#ehtim.array.Array.add_satellite_tle">[docs]</a>    <span class="k">def</span> <span class="nf">add_satellite_tle</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">tlelist</span><span class="p">,</span> <span class="n">sefd</span><span class="o">=</span><span class="mi">10000</span><span class="p">):</span>
+
+<div class="viewcode-block" id="Array.add_satellite_tle">
+<a class="viewcode-back" href="../../array.html#ehtim.array.Array.add_satellite_tle">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">add_satellite_tle</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">tlelist</span><span class="p">,</span> <span class="n">sefd</span><span class="o">=</span><span class="mi">10000</span><span class="p">):</span>
 <span class="w">    </span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Add an earth-orbiting satellite to the array from a TLE</span>
 <span class="sd">        </span>
@@ -355,7 +384,10 @@
         
         <span class="k">return</span> <span class="n">arr_out</span></div>
 
-<div class="viewcode-block" id="Array.add_satellite_elements"><a class="viewcode-back" href="../../array.html#ehtim.array.Array.add_satellite_elements">[docs]</a>    <span class="k">def</span> <span class="nf">add_satellite_elements</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">satname</span><span class="p">,</span> 
+
+<div class="viewcode-block" id="Array.add_satellite_elements">
+<a class="viewcode-back" href="../../array.html#ehtim.array.Array.add_satellite_elements">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">add_satellite_elements</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">satname</span><span class="p">,</span> 
                                <span class="n">perigee_mjd</span><span class="o">=</span><span class="n">Time</span><span class="o">.</span><span class="n">now</span><span class="p">()</span><span class="o">.</span><span class="n">mjd</span><span class="p">,</span> 
                                <span class="n">period_days</span><span class="o">=</span><span class="mf">1.</span><span class="p">,</span> <span class="n">eccentricity</span><span class="o">=</span><span class="mf">0.</span><span class="p">,</span>
                                <span class="n">inclination</span><span class="o">=</span><span class="mf">0.</span><span class="p">,</span> <span class="n">arg_perigee</span><span class="o">=</span><span class="mf">0.</span><span class="p">,</span> <span class="n">long_ascending</span><span class="o">=</span><span class="mf">0.</span><span class="p">,</span> 
@@ -381,8 +413,9 @@
         <span class="n">arr_out</span> <span class="o">=</span> <span class="n">Array</span><span class="p">(</span><span class="n">tarr_new</span><span class="p">,</span> <span class="n">ephem_new</span><span class="p">)</span>
                 
         <span class="k">return</span> <span class="n">arr_out</span></div>
+
         
-    <span class="k">def</span> <span class="nf">plot_satellite_orbits</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">tstart_mjd</span><span class="o">=</span><span class="n">Time</span><span class="o">.</span><span class="n">now</span><span class="p">()</span><span class="o">.</span><span class="n">mjd</span><span class="p">,</span> <span class="n">tstop_mjd</span><span class="o">=</span><span class="n">Time</span><span class="o">.</span><span class="n">now</span><span class="p">()</span><span class="o">.</span><span class="n">mjd</span><span class="o">+</span><span class="mi">1</span><span class="p">,</span> <span class="n">npoints</span><span class="o">=</span><span class="mi">1000</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">plot_satellite_orbits</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">tstart_mjd</span><span class="o">=</span><span class="n">Time</span><span class="o">.</span><span class="n">now</span><span class="p">()</span><span class="o">.</span><span class="n">mjd</span><span class="p">,</span> <span class="n">tstop_mjd</span><span class="o">=</span><span class="n">Time</span><span class="o">.</span><span class="n">now</span><span class="p">()</span><span class="o">.</span><span class="n">mjd</span><span class="o">+</span><span class="mi">1</span><span class="p">,</span> <span class="n">npoints</span><span class="o">=</span><span class="mi">1000</span><span class="p">):</span>
         <span class="n">earth_radius_polar</span> <span class="o">=</span> <span class="mf">6357.</span> <span class="c1">#km</span>
         <span class="n">earth_radius_eq</span> <span class="o">=</span> <span class="mf">6378.</span>
     
@@ -451,13 +484,16 @@
         <span class="n">plt</span><span class="o">.</span><span class="n">subplots_adjust</span><span class="p">(</span><span class="n">wspace</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
         <span class="n">ehc</span><span class="o">.</span><span class="n">show_noblock</span><span class="p">()</span>            
         <span class="k">return</span></div>
+
                                  
 <span class="c1">##########################################################################</span>
 <span class="c1"># Array creation functions</span>
 <span class="c1">##########################################################################</span>
 
 
-<div class="viewcode-block" id="load_txt"><a class="viewcode-back" href="../../array.html#ehtim.array.load_txt">[docs]</a><span class="k">def</span> <span class="nf">load_txt</span><span class="p">(</span><span class="n">fname</span><span class="p">,</span> <span class="n">ephemdir</span><span class="o">=</span><span class="s1">&#39;ephemeris&#39;</span><span class="p">):</span>
+<div class="viewcode-block" id="load_txt">
+<a class="viewcode-back" href="../../array.html#ehtim.array.load_txt">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">load_txt</span><span class="p">(</span><span class="n">fname</span><span class="p">,</span> <span class="n">ephemdir</span><span class="o">=</span><span class="s1">&#39;ephemeris&#39;</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Read an array from a text file.</span>
 <span class="sd">       Sites with x=y=z=0 are spacecraft, TLE ephemerides read from ephemdir.</span>
 
@@ -469,6 +505,7 @@
 <span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="k">return</span> <span class="n">ehtim</span><span class="o">.</span><span class="n">io</span><span class="o">.</span><span class="n">load</span><span class="o">.</span><span class="n">load_array_txt</span><span class="p">(</span><span class="n">fname</span><span class="p">,</span> <span class="n">ephemdir</span><span class="o">=</span><span class="n">ephemdir</span><span class="p">)</span></div>
+
 </pre></div>
 
            </div>

@@ -1,21 +1,21 @@
+
+
 <!DOCTYPE html>
-<html class="writer-html5" lang="en" >
+<html class="writer-html5" lang="en" data-content_root="./">
 <head>
-  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Survey &mdash; ehtim 1.3 documentation</title>
-      <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
-      <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
-  <!--[if lt IE 9]>
-    <script src="_static/js/html5shiv.min.js"></script>
-  <![endif]-->
+  <title>Survey &mdash; ehtim 1.3.1 documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=03e43079" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=9edc463e" />
+
   
-        <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
-        <script src="_static/jquery.js"></script>
-        <script src="_static/underscore.js"></script>
-        <script src="_static/_sphinx_javascript_frameworks_compat.js"></script>
-        <script src="_static/doctools.js"></script>
+      <script src="_static/jquery.js?v=5d32c60e"></script>
+      <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="_static/documentation_options.js?v=bb516dca"></script>
+      <script src="_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="_static/js/theme.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
@@ -28,14 +28,15 @@
     <nav data-toggle="wy-nav-shift" class="wy-nav-side">
       <div class="wy-side-scroll">
         <div class="wy-side-nav-search" >
-            <a href="index.html" class="icon icon-home"> ehtim
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            ehtim
           </a>
-              <div class="version">
-                1.3
-              </div>
 <div role="search">
   <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
-    <input type="text" name="q" placeholder="Search docs" />
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
     <input type="hidden" name="check_keywords" value="yes" />
     <input type="hidden" name="area" value="default" />
   </form>
@@ -53,7 +54,36 @@
 <li class="toctree-l1"><a class="reference internal" href="plotting.html">Plotting</a></li>
 <li class="toctree-l1"><a class="reference internal" href="scattering.html">Scattering</a></li>
 <li class="toctree-l1"><a class="reference internal" href="statistics.html">Statistics</a></li>
-<li class="toctree-l1 current"><a class="current reference internal" href="#">Survey</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Survey</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#ehtim.survey.ParameterSet"><code class="docutils literal notranslate"><span class="pre">ParameterSet</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#ehtim.survey.ParameterSet.paramset"><code class="docutils literal notranslate"><span class="pre">ParameterSet.paramset</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#ehtim.survey.ParameterSet.params_fixed"><code class="docutils literal notranslate"><span class="pre">ParameterSet.params_fixed</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#ehtim.survey.ParameterSet.outfile"><code class="docutils literal notranslate"><span class="pre">ParameterSet.outfile</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#ehtim.survey.ParameterSet.obs"><code class="docutils literal notranslate"><span class="pre">ParameterSet.obs</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#ehtim.survey.ParameterSet.zbl_tot"><code class="docutils literal notranslate"><span class="pre">ParameterSet.zbl_tot</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#ehtim.survey.ParameterSet.obs_sc_init"><code class="docutils literal notranslate"><span class="pre">ParameterSet.obs_sc_init</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#ehtim.survey.ParameterSet.obs_sc"><code class="docutils literal notranslate"><span class="pre">ParameterSet.obs_sc</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#ehtim.survey.ParameterSet.initimg"><code class="docutils literal notranslate"><span class="pre">ParameterSet.initimg</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#ehtim.survey.ParameterSet.im_out"><code class="docutils literal notranslate"><span class="pre">ParameterSet.im_out</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#ehtim.survey.ParameterSet.im_addcmp"><code class="docutils literal notranslate"><span class="pre">ParameterSet.im_addcmp</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#ehtim.survey.ParameterSet.obs_sc_addcmp"><code class="docutils literal notranslate"><span class="pre">ParameterSet.obs_sc_addcmp</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#ehtim.survey.ParameterSet.caltab"><code class="docutils literal notranslate"><span class="pre">ParameterSet.caltab</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#ehtim.survey.ParameterSet.init_img"><code class="docutils literal notranslate"><span class="pre">ParameterSet.init_img()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#ehtim.survey.ParameterSet.load_data"><code class="docutils literal notranslate"><span class="pre">ParameterSet.load_data()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#ehtim.survey.ParameterSet.make_img"><code class="docutils literal notranslate"><span class="pre">ParameterSet.make_img()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#ehtim.survey.ParameterSet.output_results"><code class="docutils literal notranslate"><span class="pre">ParameterSet.output_results()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#ehtim.survey.ParameterSet.preimcal"><code class="docutils literal notranslate"><span class="pre">ParameterSet.preimcal()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#ehtim.survey.ParameterSet.run"><code class="docutils literal notranslate"><span class="pre">ParameterSet.run()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#ehtim.survey.ParameterSet.save_params"><code class="docutils literal notranslate"><span class="pre">ParameterSet.save_params()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#ehtim.survey.ParameterSet.save_statistics"><code class="docutils literal notranslate"><span class="pre">ParameterSet.save_statistics()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#ehtim.survey.create_params_fixed"><code class="docutils literal notranslate"><span class="pre">create_params_fixed()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#ehtim.survey.create_survey_psets"><code class="docutils literal notranslate"><span class="pre">create_survey_psets()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#ehtim.survey.run_pset"><code class="docutils literal notranslate"><span class="pre">run_pset()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#ehtim.survey.run_survey"><code class="docutils literal notranslate"><span class="pre">run_survey()</span></code></a></li>
+</ul>
+</li>
 <li class="toctree-l1"><a class="reference internal" href="vex.html">Vex</a></li>
 </ul>
 
@@ -70,8 +100,8 @@
         <div class="rst-content">
           <div role="navigation" aria-label="Page navigation">
   <ul class="wy-breadcrumbs">
-      <li><a href="index.html" class="icon icon-home"></a> &raquo;</li>
-      <li>Survey</li>
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Survey</li>
       <li class="wy-breadcrumbs-aside">
             <a href="_sources/survey.rst.txt" rel="nofollow"> View page source</a>
       </li>
@@ -81,14 +111,14 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
              
-  <span class="target" id="module-survey"></span><section id="survey">
-<span id="id1"></span><h1>Survey<a class="headerlink" href="#survey" title="Permalink to this heading"></a></h1>
-<span class="target" id="module-ehtim.survey"></span><dl class="py class">
+  <section id="survey">
+<span id="module-survey"></span><span id="id1"></span><h1>Survey<a class="headerlink" href="#survey" title="Link to this heading"></a></h1>
+<dl class="py class" id="module-ehtim.survey">
 <dt class="sig sig-object py" id="ehtim.survey.ParameterSet">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">ehtim.survey.</span></span><span class="sig-name descname"><span class="pre">ParameterSet</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">paramset</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">params_fixed</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">{}</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/survey.html#ParameterSet"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ehtim.survey.ParameterSet" title="Permalink to this definition"></a></dt>
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">ehtim.survey.</span></span><span class="sig-name descname"><span class="pre">ParameterSet</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">paramset</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">params_fixed</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">{}</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/survey.html#ParameterSet"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ehtim.survey.ParameterSet" title="Link to this definition"></a></dt>
 <dd><dl class="py attribute">
 <dt class="sig sig-object py" id="ehtim.survey.ParameterSet.paramset">
-<span class="sig-name descname"><span class="pre">paramset</span></span><a class="headerlink" href="#ehtim.survey.ParameterSet.paramset" title="Permalink to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">paramset</span></span><a class="headerlink" href="#ehtim.survey.ParameterSet.paramset" title="Link to this definition"></a></dt>
 <dd><p>dict containing single parameter set. Each key in dict becomes its own attribute</p>
 <dl class="field-list simple">
 <dt class="field-odd">Type<span class="colon">:</span></dt>
@@ -99,7 +129,7 @@
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="ehtim.survey.ParameterSet.params_fixed">
-<span class="sig-name descname"><span class="pre">params_fixed</span></span><a class="headerlink" href="#ehtim.survey.ParameterSet.params_fixed" title="Permalink to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">params_fixed</span></span><a class="headerlink" href="#ehtim.survey.ParameterSet.params_fixed" title="Link to this definition"></a></dt>
 <dd><p>dict containing non-varying parameters. Each key in dict becomes its own attribute</p>
 <dl class="field-list simple">
 <dt class="field-odd">Type<span class="colon">:</span></dt>
@@ -110,7 +140,7 @@
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="ehtim.survey.ParameterSet.outfile">
-<span class="sig-name descname"><span class="pre">outfile</span></span><a class="headerlink" href="#ehtim.survey.ParameterSet.outfile" title="Permalink to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">outfile</span></span><a class="headerlink" href="#ehtim.survey.ParameterSet.outfile" title="Link to this definition"></a></dt>
 <dd><p>base of outfile with 7 digit index of pset added to it</p>
 <dl class="field-list simple">
 <dt class="field-odd">Type<span class="colon">:</span></dt>
@@ -121,7 +151,7 @@
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="ehtim.survey.ParameterSet.obs">
-<span class="sig-name descname"><span class="pre">obs</span></span><a class="headerlink" href="#ehtim.survey.ParameterSet.obs" title="Permalink to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">obs</span></span><a class="headerlink" href="#ehtim.survey.ParameterSet.obs" title="Link to this definition"></a></dt>
 <dd><p>observation object from input uvfits file, generated by load_data()</p>
 <dl class="field-list simple">
 <dt class="field-odd">Type<span class="colon">:</span></dt>
@@ -132,7 +162,7 @@
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="ehtim.survey.ParameterSet.zbl_tot">
-<span class="sig-name descname"><span class="pre">zbl_tot</span></span><a class="headerlink" href="#ehtim.survey.ParameterSet.zbl_tot" title="Permalink to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">zbl_tot</span></span><a class="headerlink" href="#ehtim.survey.ParameterSet.zbl_tot" title="Link to this definition"></a></dt>
 <dd><p>flux on ALMA-APEX baseline, generated in preimcal()</p>
 <dl class="field-list simple">
 <dt class="field-odd">Type<span class="colon">:</span></dt>
@@ -143,7 +173,7 @@
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="ehtim.survey.ParameterSet.obs_sc_init">
-<span class="sig-name descname"><span class="pre">obs_sc_init</span></span><a class="headerlink" href="#ehtim.survey.ParameterSet.obs_sc_init" title="Permalink to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">obs_sc_init</span></span><a class="headerlink" href="#ehtim.survey.ParameterSet.obs_sc_init" title="Link to this definition"></a></dt>
 <dd><p>original observation with systematic noise added, reverse taper applied, and extended flux removed</p>
 <dl class="field-list simple">
 <dt class="field-odd">Type<span class="colon">:</span></dt>
@@ -154,7 +184,7 @@
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="ehtim.survey.ParameterSet.obs_sc">
-<span class="sig-name descname"><span class="pre">obs_sc</span></span><a class="headerlink" href="#ehtim.survey.ParameterSet.obs_sc" title="Permalink to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">obs_sc</span></span><a class="headerlink" href="#ehtim.survey.ParameterSet.obs_sc" title="Link to this definition"></a></dt>
 <dd><p>obs_sc_init after all rounds of self-calibration</p>
 <dl class="field-list simple">
 <dt class="field-odd">Type<span class="colon">:</span></dt>
@@ -165,7 +195,7 @@
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="ehtim.survey.ParameterSet.initimg">
-<span class="sig-name descname"><span class="pre">initimg</span></span><a class="headerlink" href="#ehtim.survey.ParameterSet.initimg" title="Permalink to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">initimg</span></span><a class="headerlink" href="#ehtim.survey.ParameterSet.initimg" title="Link to this definition"></a></dt>
 <dd><p>prior/initial image</p>
 <dl class="field-list simple">
 <dt class="field-odd">Type<span class="colon">:</span></dt>
@@ -176,7 +206,7 @@
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="ehtim.survey.ParameterSet.im_out">
-<span class="sig-name descname"><span class="pre">im_out</span></span><a class="headerlink" href="#ehtim.survey.ParameterSet.im_out" title="Permalink to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">im_out</span></span><a class="headerlink" href="#ehtim.survey.ParameterSet.im_out" title="Link to this definition"></a></dt>
 <dd><p>final reconstructed image</p>
 <dl class="field-list simple">
 <dt class="field-odd">Type<span class="colon">:</span></dt>
@@ -187,7 +217,7 @@
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="ehtim.survey.ParameterSet.im_addcmp">
-<span class="sig-name descname"><span class="pre">im_addcmp</span></span><a class="headerlink" href="#ehtim.survey.ParameterSet.im_addcmp" title="Permalink to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">im_addcmp</span></span><a class="headerlink" href="#ehtim.survey.ParameterSet.im_addcmp" title="Link to this definition"></a></dt>
 <dd><p>final reconstructed image with extended flux added back in</p>
 <dl class="field-list simple">
 <dt class="field-odd">Type<span class="colon">:</span></dt>
@@ -198,7 +228,7 @@
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="ehtim.survey.ParameterSet.obs_sc_addcmp">
-<span class="sig-name descname"><span class="pre">obs_sc_addcmp</span></span><a class="headerlink" href="#ehtim.survey.ParameterSet.obs_sc_addcmp" title="Permalink to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">obs_sc_addcmp</span></span><a class="headerlink" href="#ehtim.survey.ParameterSet.obs_sc_addcmp" title="Link to this definition"></a></dt>
 <dd><p>original observation self-calibrated with im_addcmp</p>
 <dl class="field-list simple">
 <dt class="field-odd">Type<span class="colon">:</span></dt>
@@ -209,7 +239,7 @@
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="ehtim.survey.ParameterSet.caltab">
-<span class="sig-name descname"><span class="pre">caltab</span></span><a class="headerlink" href="#ehtim.survey.ParameterSet.caltab" title="Permalink to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">caltab</span></span><a class="headerlink" href="#ehtim.survey.ParameterSet.caltab" title="Link to this definition"></a></dt>
 <dd><p>final calibration table associated with im_out</p>
 <dl class="field-list simple">
 <dt class="field-odd">Type<span class="colon">:</span></dt>
@@ -220,7 +250,7 @@
 
 <dl class="py method">
 <dt class="sig sig-object py" id="ehtim.survey.ParameterSet.init_img">
-<span class="sig-name descname"><span class="pre">init_img</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/survey.html#ParameterSet.init_img"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ehtim.survey.ParameterSet.init_img" title="Permalink to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">init_img</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/survey.html#ParameterSet.init_img"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ehtim.survey.ParameterSet.init_img" title="Link to this definition"></a></dt>
 <dd><p>Creates initial/prior image. Only gaussian prior option at present, but creates prior attritubute self.initimg
 using self.zbl and self.prior_fwhm</p>
 <blockquote>
@@ -231,7 +261,7 @@ using self.zbl and self.prior_fwhm</p>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="ehtim.survey.ParameterSet.load_data">
-<span class="sig-name descname"><span class="pre">load_data</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/survey.html#ParameterSet.load_data"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ehtim.survey.ParameterSet.load_data" title="Permalink to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">load_data</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/survey.html#ParameterSet.load_data"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ehtim.survey.ParameterSet.load_data" title="Link to this definition"></a></dt>
 <dd><p>Loads in uvfits file from self.infile into eht-imaging obs object and averages using self.avg_time
 Creates self.obs</p>
 <blockquote>
@@ -242,7 +272,7 @@ Creates self.obs</p>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="ehtim.survey.ParameterSet.make_img">
-<span class="sig-name descname"><span class="pre">make_img</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/survey.html#ParameterSet.make_img"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ehtim.survey.ParameterSet.make_img" title="Permalink to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">make_img</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/survey.html#ParameterSet.make_img"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ehtim.survey.ParameterSet.make_img" title="Link to this definition"></a></dt>
 <dd><p>Reconstructs image with specified parameters (data weights, amount of self-cal, etc) described in paramset dict
 Creates attributes self.im_out containing the final image and self.caltab containing a corresponding calibration
 table object for the final image</p>
@@ -254,7 +284,7 @@ table object for the final image</p>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="ehtim.survey.ParameterSet.output_results">
-<span class="sig-name descname"><span class="pre">output_results</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/survey.html#ParameterSet.output_results"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ehtim.survey.ParameterSet.output_results" title="Permalink to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">output_results</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/survey.html#ParameterSet.output_results"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ehtim.survey.ParameterSet.output_results" title="Link to this definition"></a></dt>
 <dd><p>Outputs all requested files pertaining to final image</p>
 <blockquote>
 <div><p>Args:</p>
@@ -264,7 +294,7 @@ table object for the final image</p>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="ehtim.survey.ParameterSet.preimcal">
-<span class="sig-name descname"><span class="pre">preimcal</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/survey.html#ParameterSet.preimcal"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ehtim.survey.ParameterSet.preimcal" title="Permalink to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">preimcal</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/survey.html#ParameterSet.preimcal"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ehtim.survey.ParameterSet.preimcal" title="Link to this definition"></a></dt>
 <dd><p>Applies pre-imaging calibration to self.obs. This includes flagging sites with no measurements, rescaling
 short baselines so only compact flux is being imaged, applying a u-v taper, and adding extra sys noise. Creates
 self.obs_sc which will have self-cal applied in future steps and self.obs_sc_init which is a copy of the initial
@@ -277,7 +307,7 @@ preimcal observation</p>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="ehtim.survey.ParameterSet.run">
-<span class="sig-name descname"><span class="pre">run</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/survey.html#ParameterSet.run"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ehtim.survey.ParameterSet.run" title="Permalink to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">run</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/survey.html#ParameterSet.run"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ehtim.survey.ParameterSet.run" title="Link to this definition"></a></dt>
 <dd><p>Run imaging pipeline for one parameter set.</p>
 <blockquote>
 <div><p>Args:</p>
@@ -287,7 +317,7 @@ preimcal observation</p>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="ehtim.survey.ParameterSet.save_params">
-<span class="sig-name descname"><span class="pre">save_params</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/survey.html#ParameterSet.save_params"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ehtim.survey.ParameterSet.save_params" title="Permalink to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">save_params</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/survey.html#ParameterSet.save_params"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ehtim.survey.ParameterSet.save_params" title="Link to this definition"></a></dt>
 <dd><p>Saves a csv file with parameter set details</p>
 <blockquote>
 <div><p>Args:</p>
@@ -297,7 +327,7 @@ preimcal observation</p>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="ehtim.survey.ParameterSet.save_statistics">
-<span class="sig-name descname"><span class="pre">save_statistics</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/survey.html#ParameterSet.save_statistics"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ehtim.survey.ParameterSet.save_statistics" title="Permalink to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">save_statistics</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/survey.html#ParameterSet.save_statistics"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ehtim.survey.ParameterSet.save_statistics" title="Link to this definition"></a></dt>
 <dd><p>Saves a csv file with the following statistics:
 chi^2 closure phase, logcamp, vis wrt the original observation
 chi^2 vis wrt to original observation with self-cal to final image applied
@@ -312,7 +342,7 @@ chi^2 closure phase, logcamp, vis wrt the original observation with sys noise an
 
 <dl class="py function">
 <dt class="sig sig-object py" id="ehtim.survey.create_params_fixed">
-<span class="sig-prename descclassname"><span class="pre">ehtim.survey.</span></span><span class="sig-name descname"><span class="pre">create_params_fixed</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">infile</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">outfile_base</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">outpath</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ground_truth_img</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'None'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">save_imgsums</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">save_uvfits</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">save_pdf</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">save_stats</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">save_caltab</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">nproc</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">backend</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'multiprocessing'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ttype</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'nfft'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">overwrite</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">selfcal</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">gaintol</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[0.02,</span> <span class="pre">0.2]</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">niter_static</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">3</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">blurfrac</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">maxit</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">100</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">stop</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0001</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fov</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">128</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">npixels</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">64</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">reverse_taper_uas</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">5</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">uv_zblcut</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">100000000.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">SEFD_error_budget</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">{'AA':</span> <span class="pre">0.1,</span> <span class="pre">'AX':</span> <span class="pre">0.1,</span> <span class="pre">'GL':</span> <span class="pre">0.1,</span> <span class="pre">'LM':</span> <span class="pre">0.1,</span> <span class="pre">'MG':</span> <span class="pre">0.1,</span> <span class="pre">'MM':</span> <span class="pre">0.1,</span> <span class="pre">'PV':</span> <span class="pre">0.1,</span> <span class="pre">'SW':</span> <span class="pre">0.1}</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/survey.html#create_params_fixed"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ehtim.survey.create_params_fixed" title="Permalink to this definition"></a></dt>
+<span class="sig-prename descclassname"><span class="pre">ehtim.survey.</span></span><span class="sig-name descname"><span class="pre">create_params_fixed</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">infile</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">outfile_base</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">outpath</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ground_truth_img</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'None'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">save_imgsums</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">save_uvfits</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">save_pdf</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">save_stats</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">save_caltab</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">nproc</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">backend</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'multiprocessing'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ttype</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'nfft'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">overwrite</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">selfcal</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">gaintol</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[0.02,</span> <span class="pre">0.2]</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">niter_static</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">3</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">blurfrac</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">maxit</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">100</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">stop</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0001</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fov</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">128</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">npixels</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">64</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">reverse_taper_uas</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">5</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">uv_zblcut</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">100000000.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">SEFD_error_budget</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">{'AA':</span> <span class="pre">0.1,</span> <span class="pre">'AX':</span> <span class="pre">0.1,</span> <span class="pre">'GL':</span> <span class="pre">0.1,</span> <span class="pre">'LM':</span> <span class="pre">0.1,</span> <span class="pre">'MG':</span> <span class="pre">0.1,</span> <span class="pre">'MM':</span> <span class="pre">0.1,</span> <span class="pre">'PV':</span> <span class="pre">0.1,</span> <span class="pre">'SW':</span> <span class="pre">0.1}</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/survey.html#create_params_fixed"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ehtim.survey.create_params_fixed" title="Link to this definition"></a></dt>
 <dd><p>Create a dict for all non-varying survery parameters</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
@@ -331,7 +361,7 @@ chi^2 closure phase, logcamp, vis wrt the original observation with sys noise an
 <li><p><strong>ttype</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a>) – “fast” or “nfft” or “direct”</p></li>
 <li><p><strong>overwrite</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.14)"><em>bool</em></a>) – if True, write over existing files with same names - else, skip parameter set</p></li>
 <li><p><strong>selfcal</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.14)"><em>bool</em></a>) – perform self-calibration steps during imaging</p></li>
-<li><p><strong>gaintol</strong> (<em>array</em>) – tolerance for gains to be under/over unity respectively during self-cal</p></li>
+<li><p><strong>gaintol</strong> (<a class="reference internal" href="vex.html#ehtim.vex.Vex.array" title="ehtim.vex.Vex.array"><em>array</em></a>) – tolerance for gains to be under/over unity respectively during self-cal</p></li>
 <li><p><strong>niter_static</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><em>int</em></a>) – number of iterations for each imaging step</p></li>
 <li><p><strong>blurfrac</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><em>int</em></a>) – factor to blur initial image between iterations</p></li>
 <li><p><strong>maxit</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><em>int</em></a>) – maximum number of iterations if image does not converge</p></li>
@@ -354,28 +384,28 @@ chi^2 closure phase, logcamp, vis wrt the original observation with sys noise an
 
 <dl class="py function">
 <dt class="sig sig-object py" id="ehtim.survey.create_survey_psets">
-<span class="sig-prename descclassname"><span class="pre">ehtim.survey.</span></span><span class="sig-name descname"><span class="pre">create_survey_psets</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">zbl</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[0.6]</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sys_noise</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[0.02]</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">avg_time</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">['scan']</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">prior_fwhm</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[40]</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sc_phase</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[0]</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">xdw_phase</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[10]</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sc_ap</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[0]</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">xdw_ap</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[1]</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">amp</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[0.2]</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cphase</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[1]</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">logcamp</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[1]</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">simple</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[1]</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">l1</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[1]</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tv</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[1]</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tv2</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[1]</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">flux</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[1]</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">epsilon_tv</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[1e-10]</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/survey.html#create_survey_psets"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ehtim.survey.create_survey_psets" title="Permalink to this definition"></a></dt>
+<span class="sig-prename descclassname"><span class="pre">ehtim.survey.</span></span><span class="sig-name descname"><span class="pre">create_survey_psets</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">zbl</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[0.6]</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sys_noise</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[0.02]</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">avg_time</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">['scan']</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">prior_fwhm</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[40]</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sc_phase</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[0]</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">xdw_phase</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[10]</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sc_ap</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[0]</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">xdw_ap</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[1]</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">amp</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[0.2]</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cphase</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[1]</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">logcamp</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[1]</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">simple</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[1]</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">l1</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[1]</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tv</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[1]</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tv2</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[1]</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">flux</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[1]</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">epsilon_tv</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[1e-10]</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/survey.html#create_survey_psets"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ehtim.survey.create_survey_psets" title="Link to this definition"></a></dt>
 <dd><p>Create a dataframe given all survey parameters. Default values will create an example dataframe but these values should be adjusted for each specific observation</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>zbl</strong> (<em>array</em>) – compact flux value (Jy)</p></li>
-<li><p><strong>sys_noise</strong> (<em>array</em>) – percent addition of systematic noise</p></li>
-<li><p><strong>avg_time</strong> (<em>array</em>) – in seconds or ‘scan’ for scan averaging</p></li>
-<li><p><strong>prior_fwhm</strong> (<em>array</em>) – fwhm of gaussian prior in uas</p></li>
-<li><p><strong>sc_phase</strong> (<em>array</em>) – number of iterations to perform phase-only self-cal</p></li>
-<li><p><strong>xdw_phase</strong> (<em>array</em>) – multiplicative factor for data weights after one round of phase-only self-cal</p></li>
-<li><p><strong>sc_ap</strong> (<em>array</em>) – number of iterations to perform amp+phase self-cal</p></li>
-<li><p><strong>xdw_ap</strong> (<em>array</em>) – multiplicative factor for data weights after one round of amp+phase self-cal</p></li>
-<li><p><strong>amp</strong> (<em>array</em>) – data weight to be placed on amplitudes</p></li>
-<li><p><strong>cphase</strong> (<em>array</em>) – data weight to be placed on closure phases</p></li>
-<li><p><strong>logcamp</strong> (<em>array</em>) – data weight to be placed on log closure amplitudes</p></li>
-<li><p><strong>simple</strong> (<em>array</em>) – regularizer weight for relative entropy, favoring similarity to prior image</p></li>
-<li><p><strong>l1</strong> (<em>array</em>) – regularizer weight for l1 norm, favoring image sparsity</p></li>
-<li><p><strong>tv</strong> (<em>array</em>) – regularizer weight for total variation, favoring sharp edges</p></li>
-<li><p><strong>tv2</strong> (<em>array</em>) – regularizer weight for total squared variation, favoring smooth edges</p></li>
-<li><p><strong>flux</strong> (<em>array</em>) – regularizer weight for total flux density, favoring final images with flux close to zbl</p></li>
-<li><p><strong>epsilon_tv</strong> (<em>array</em>) – epsilon value used in definition of total variation - rarely need to change this</p></li>
+<li><p><strong>zbl</strong> (<a class="reference internal" href="vex.html#ehtim.vex.Vex.array" title="ehtim.vex.Vex.array"><em>array</em></a>) – compact flux value (Jy)</p></li>
+<li><p><strong>sys_noise</strong> (<a class="reference internal" href="vex.html#ehtim.vex.Vex.array" title="ehtim.vex.Vex.array"><em>array</em></a>) – percent addition of systematic noise</p></li>
+<li><p><strong>avg_time</strong> (<a class="reference internal" href="vex.html#ehtim.vex.Vex.array" title="ehtim.vex.Vex.array"><em>array</em></a>) – in seconds or ‘scan’ for scan averaging</p></li>
+<li><p><strong>prior_fwhm</strong> (<a class="reference internal" href="vex.html#ehtim.vex.Vex.array" title="ehtim.vex.Vex.array"><em>array</em></a>) – fwhm of gaussian prior in uas</p></li>
+<li><p><strong>sc_phase</strong> (<a class="reference internal" href="vex.html#ehtim.vex.Vex.array" title="ehtim.vex.Vex.array"><em>array</em></a>) – number of iterations to perform phase-only self-cal</p></li>
+<li><p><strong>xdw_phase</strong> (<a class="reference internal" href="vex.html#ehtim.vex.Vex.array" title="ehtim.vex.Vex.array"><em>array</em></a>) – multiplicative factor for data weights after one round of phase-only self-cal</p></li>
+<li><p><strong>sc_ap</strong> (<a class="reference internal" href="vex.html#ehtim.vex.Vex.array" title="ehtim.vex.Vex.array"><em>array</em></a>) – number of iterations to perform amp+phase self-cal</p></li>
+<li><p><strong>xdw_ap</strong> (<a class="reference internal" href="vex.html#ehtim.vex.Vex.array" title="ehtim.vex.Vex.array"><em>array</em></a>) – multiplicative factor for data weights after one round of amp+phase self-cal</p></li>
+<li><p><strong>amp</strong> (<a class="reference internal" href="vex.html#ehtim.vex.Vex.array" title="ehtim.vex.Vex.array"><em>array</em></a>) – data weight to be placed on amplitudes</p></li>
+<li><p><strong>cphase</strong> (<a class="reference internal" href="vex.html#ehtim.vex.Vex.array" title="ehtim.vex.Vex.array"><em>array</em></a>) – data weight to be placed on closure phases</p></li>
+<li><p><strong>logcamp</strong> (<a class="reference internal" href="vex.html#ehtim.vex.Vex.array" title="ehtim.vex.Vex.array"><em>array</em></a>) – data weight to be placed on log closure amplitudes</p></li>
+<li><p><strong>simple</strong> (<a class="reference internal" href="vex.html#ehtim.vex.Vex.array" title="ehtim.vex.Vex.array"><em>array</em></a>) – regularizer weight for relative entropy, favoring similarity to prior image</p></li>
+<li><p><strong>l1</strong> (<a class="reference internal" href="vex.html#ehtim.vex.Vex.array" title="ehtim.vex.Vex.array"><em>array</em></a>) – regularizer weight for l1 norm, favoring image sparsity</p></li>
+<li><p><strong>tv</strong> (<a class="reference internal" href="vex.html#ehtim.vex.Vex.array" title="ehtim.vex.Vex.array"><em>array</em></a>) – regularizer weight for total variation, favoring sharp edges</p></li>
+<li><p><strong>tv2</strong> (<a class="reference internal" href="vex.html#ehtim.vex.Vex.array" title="ehtim.vex.Vex.array"><em>array</em></a>) – regularizer weight for total squared variation, favoring smooth edges</p></li>
+<li><p><strong>flux</strong> (<a class="reference internal" href="vex.html#ehtim.vex.Vex.array" title="ehtim.vex.Vex.array"><em>array</em></a>) – regularizer weight for total flux density, favoring final images with flux close to zbl</p></li>
+<li><p><strong>epsilon_tv</strong> (<a class="reference internal" href="vex.html#ehtim.vex.Vex.array" title="ehtim.vex.Vex.array"><em>array</em></a>) – epsilon value used in definition of total variation - rarely need to change this</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
@@ -389,7 +419,7 @@ chi^2 closure phase, logcamp, vis wrt the original observation with sys noise an
 
 <dl class="py function">
 <dt class="sig sig-object py" id="ehtim.survey.run_pset">
-<span class="sig-prename descclassname"><span class="pre">ehtim.survey.</span></span><span class="sig-name descname"><span class="pre">run_pset</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">pset</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">system_kwargs</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">params_fixed</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/survey.html#run_pset"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ehtim.survey.run_pset" title="Permalink to this definition"></a></dt>
+<span class="sig-prename descclassname"><span class="pre">ehtim.survey.</span></span><span class="sig-name descname"><span class="pre">run_pset</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">pset</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">system_kwargs</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">params_fixed</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/survey.html#run_pset"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ehtim.survey.run_pset" title="Link to this definition"></a></dt>
 <dd><p>Run imaging for one parameter set. Not to be used individually, but called in map function for run_survey</p>
 <blockquote>
 <div><dl class="simple">
@@ -403,7 +433,7 @@ params_fixed (dict): A dict containing non-varying parameters</p>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="ehtim.survey.run_survey">
-<span class="sig-prename descclassname"><span class="pre">ehtim.survey.</span></span><span class="sig-name descname"><span class="pre">run_survey</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">psets</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">params_fixed</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/survey.html#run_survey"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ehtim.survey.run_survey" title="Permalink to this definition"></a></dt>
+<span class="sig-prename descclassname"><span class="pre">ehtim.survey.</span></span><span class="sig-name descname"><span class="pre">run_survey</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">psets</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">params_fixed</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/survey.html#run_survey"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ehtim.survey.run_survey" title="Link to this definition"></a></dt>
 <dd><p>Run survey for all parameter sets using paramsurvey</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>

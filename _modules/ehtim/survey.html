@@ -1,20 +1,20 @@
+
+
 <!DOCTYPE html>
-<html class="writer-html5" lang="en" >
+<html class="writer-html5" lang="en" data-content_root="../../">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>ehtim.survey &mdash; ehtim 1.3 documentation</title>
-      <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
-      <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
-  <!--[if lt IE 9]>
-    <script src="../../_static/js/html5shiv.min.js"></script>
-  <![endif]-->
+  <title>ehtim.survey &mdash; ehtim 1.3.1 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=03e43079" />
+      <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=9edc463e" />
+
   
-        <script data-url_root="../../" id="documentation_options" src="../../_static/documentation_options.js"></script>
-        <script src="../../_static/jquery.js"></script>
-        <script src="../../_static/underscore.js"></script>
-        <script src="../../_static/_sphinx_javascript_frameworks_compat.js"></script>
-        <script src="../../_static/doctools.js"></script>
+      <script src="../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../_static/documentation_options.js?v=bb516dca"></script>
+      <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../_static/js/theme.js"></script>
     <link rel="index" title="Index" href="../../genindex.html" />
     <link rel="search" title="Search" href="../../search.html" /> 
@@ -25,14 +25,15 @@
     <nav data-toggle="wy-nav-shift" class="wy-nav-side">
       <div class="wy-side-scroll">
         <div class="wy-side-nav-search" >
-            <a href="../../index.html" class="icon icon-home"> ehtim
+
+          
+          
+          <a href="../../index.html" class="icon icon-home">
+            ehtim
           </a>
-              <div class="version">
-                1.3
-              </div>
 <div role="search">
   <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
-    <input type="text" name="q" placeholder="Search docs" />
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
     <input type="hidden" name="check_keywords" value="yes" />
     <input type="hidden" name="area" value="default" />
   </form>
@@ -67,9 +68,9 @@
         <div class="rst-content">
           <div role="navigation" aria-label="Page navigation">
   <ul class="wy-breadcrumbs">
-      <li><a href="../../index.html" class="icon icon-home"></a> &raquo;</li>
-          <li><a href="../index.html">Module code</a> &raquo;</li>
-      <li>ehtim.survey</li>
+      <li><a href="../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">ehtim.survey</li>
       <li class="wy-breadcrumbs-aside">
       </li>
   </ul>
@@ -97,16 +98,16 @@
 <span class="c1">#    You should have received a copy of the GNU General Public License</span>
 <span class="c1">#    along with this program.  If not, see &lt;http://www.gnu.org/licenses/&gt;.</span>
 
-<span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
-<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
-<span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
-<span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">matplotlib.pyplot</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">plt</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">pandas</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pd</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
 
-<span class="kn">import</span> <span class="nn">ehtim</span> <span class="k">as</span> <span class="nn">eh</span>
-<span class="kn">import</span> <span class="nn">paramsurvey</span>
-<span class="kn">import</span> <span class="nn">paramsurvey.params</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">ehtim</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">eh</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">paramsurvey</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">paramsurvey.params</span>
 
-<span class="kn">import</span> <span class="nn">warnings</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">warnings</span>
 <span class="c1">#warnings.filterwarnings(&quot;ignore&quot;, category=np.VisibleDeprecationWarning)</span>
 
 
@@ -114,7 +115,9 @@
 <span class="c1"># ParameterSet object</span>
 <span class="c1">##################################################################################################</span>
 
-<div class="viewcode-block" id="ParameterSet"><a class="viewcode-back" href="../../survey.html#ehtim.survey.ParameterSet">[docs]</a><span class="k">class</span> <span class="nc">ParameterSet</span><span class="p">:</span>
+<div class="viewcode-block" id="ParameterSet">
+<a class="viewcode-back" href="../../survey.html#ehtim.survey.ParameterSet">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">ParameterSet</span><span class="p">:</span>
 
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">       Attributes:</span>
@@ -133,7 +136,7 @@
 
 <span class="sd">    &quot;&quot;&quot;</span>
 
-    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">paramset</span><span class="p">,</span> <span class="n">params_fixed</span><span class="o">=</span><span class="p">{}):</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">paramset</span><span class="p">,</span> <span class="n">params_fixed</span><span class="o">=</span><span class="p">{}):</span>
 
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        An object for one parameter set</span>
@@ -163,7 +166,9 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">reverse_taper_uas</span> <span class="o">*=</span> <span class="n">eh</span><span class="o">.</span><span class="n">RADPERUAS</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">prior_fwhm</span> <span class="o">*=</span> <span class="n">eh</span><span class="o">.</span><span class="n">RADPERUAS</span>
 
-<div class="viewcode-block" id="ParameterSet.load_data"><a class="viewcode-back" href="../../survey.html#ehtim.survey.ParameterSet.load_data">[docs]</a>    <span class="k">def</span> <span class="nf">load_data</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<div class="viewcode-block" id="ParameterSet.load_data">
+<a class="viewcode-back" href="../../survey.html#ehtim.survey.ParameterSet.load_data">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">load_data</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Loads in uvfits file from self.infile into eht-imaging obs object and averages using self.avg_time</span>
 <span class="sd">        Creates self.obs</span>
@@ -186,7 +191,10 @@
         <span class="k">else</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">obs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">obs</span><span class="o">.</span><span class="n">avg_coherent</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">avg_time</span><span class="p">)</span></div>
 
-<div class="viewcode-block" id="ParameterSet.preimcal"><a class="viewcode-back" href="../../survey.html#ehtim.survey.ParameterSet.preimcal">[docs]</a>    <span class="k">def</span> <span class="nf">preimcal</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+
+<div class="viewcode-block" id="ParameterSet.preimcal">
+<a class="viewcode-back" href="../../survey.html#ehtim.survey.ParameterSet.preimcal">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">preimcal</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
 
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Applies pre-imaging calibration to self.obs. This includes flagging sites with no measurements, rescaling</span>
@@ -247,7 +255,10 @@
         <span class="c1"># Make a copy of the initial data (before any self-calibration but after the taper)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">obs_sc_init</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">obs_sc</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span></div>
 
-<div class="viewcode-block" id="ParameterSet.init_img"><a class="viewcode-back" href="../../survey.html#ehtim.survey.ParameterSet.init_img">[docs]</a>    <span class="k">def</span> <span class="nf">init_img</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+
+<div class="viewcode-block" id="ParameterSet.init_img">
+<a class="viewcode-back" href="../../survey.html#ehtim.survey.ParameterSet.init_img">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">init_img</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
 
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Creates initial/prior image. Only gaussian prior option at present, but creates prior attritubute self.initimg</span>
@@ -267,7 +278,10 @@
                                                             <span class="bp">self</span><span class="o">.</span><span class="n">prior_fwhm</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">prior_fwhm</span><span class="p">))</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">initimg</span> <span class="o">=</span> <span class="n">gaussprior</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span></div>
 
-<div class="viewcode-block" id="ParameterSet.make_img"><a class="viewcode-back" href="../../survey.html#ehtim.survey.ParameterSet.make_img">[docs]</a>    <span class="k">def</span> <span class="nf">make_img</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+
+<div class="viewcode-block" id="ParameterSet.make_img">
+<a class="viewcode-back" href="../../survey.html#ehtim.survey.ParameterSet.make_img">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">make_img</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
 
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Reconstructs image with specified parameters (data weights, amount of self-cal, etc) described in paramset dict</span>
@@ -398,7 +412,10 @@
         <span class="k">else</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">caltab</span> <span class="o">=</span> <span class="n">caltab</span></div>
 
-<div class="viewcode-block" id="ParameterSet.output_results"><a class="viewcode-back" href="../../survey.html#ehtim.survey.ParameterSet.output_results">[docs]</a>    <span class="k">def</span> <span class="nf">output_results</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+
+<div class="viewcode-block" id="ParameterSet.output_results">
+<a class="viewcode-back" href="../../survey.html#ehtim.survey.ParameterSet.output_results">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">output_results</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
 
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Outputs all requested files pertaining to final image</span>
@@ -446,7 +463,10 @@
             <span class="n">eh</span><span class="o">.</span><span class="n">imgsum</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">im_addcmp</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">obs_sc_addcmp</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">obs_orig</span><span class="p">,</span> <span class="n">outimgsum</span><span class="p">,</span> <span class="n">cp_uv_min</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">uv_zblcut</span><span class="p">,</span>
                       <span class="n">processes</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span></div>
 
-<div class="viewcode-block" id="ParameterSet.save_statistics"><a class="viewcode-back" href="../../survey.html#ehtim.survey.ParameterSet.save_statistics">[docs]</a>    <span class="k">def</span> <span class="nf">save_statistics</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+
+<div class="viewcode-block" id="ParameterSet.save_statistics">
+<a class="viewcode-back" href="../../survey.html#ehtim.survey.ParameterSet.save_statistics">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">save_statistics</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
 
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Saves a csv file with the following statistics:</span>
@@ -527,7 +547,10 @@
         <span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="o">.</span><span class="n">from_dict</span><span class="p">(</span><span class="n">stats_dict</span><span class="p">)</span>
         <span class="n">df</span><span class="o">.</span><span class="n">to_csv</span><span class="p">(</span><span class="n">outstats</span><span class="p">)</span></div>
 
-<div class="viewcode-block" id="ParameterSet.save_params"><a class="viewcode-back" href="../../survey.html#ehtim.survey.ParameterSet.save_params">[docs]</a>    <span class="k">def</span> <span class="nf">save_params</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+
+<div class="viewcode-block" id="ParameterSet.save_params">
+<a class="viewcode-back" href="../../survey.html#ehtim.survey.ParameterSet.save_params">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">save_params</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Saves a csv file with parameter set details</span>
 
@@ -544,7 +567,10 @@
         <span class="n">outparams</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">outpath</span><span class="p">,</span> <span class="s1">&#39;</span><span class="si">%s</span><span class="s1">_params.csv&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">outfile</span><span class="p">))</span>
         <span class="n">df</span><span class="o">.</span><span class="n">to_csv</span><span class="p">(</span><span class="n">outparams</span><span class="p">)</span></div>
 
-<div class="viewcode-block" id="ParameterSet.run"><a class="viewcode-back" href="../../survey.html#ehtim.survey.ParameterSet.run">[docs]</a>    <span class="k">def</span> <span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+
+<div class="viewcode-block" id="ParameterSet.run">
+<a class="viewcode-back" href="../../survey.html#ehtim.survey.ParameterSet.run">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
 
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Run imaging pipeline for one parameter set.</span>
@@ -584,10 +610,14 @@
             <span class="bp">self</span><span class="o">.</span><span class="n">save_params</span><span class="p">()</span>
 
             <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">save_stats</span><span class="p">:</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">save_statistics</span><span class="p">()</span></div></div>
+                <span class="bp">self</span><span class="o">.</span><span class="n">save_statistics</span><span class="p">()</span></div>
+</div>
 
 
-<div class="viewcode-block" id="run_pset"><a class="viewcode-back" href="../../survey.html#ehtim.survey.run_pset">[docs]</a><span class="k">def</span> <span class="nf">run_pset</span><span class="p">(</span><span class="n">pset</span><span class="p">,</span> <span class="n">system_kwargs</span><span class="p">,</span> <span class="n">params_fixed</span><span class="p">):</span>
+
+<div class="viewcode-block" id="run_pset">
+<a class="viewcode-back" href="../../survey.html#ehtim.survey.run_pset">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">run_pset</span><span class="p">(</span><span class="n">pset</span><span class="p">,</span> <span class="n">system_kwargs</span><span class="p">,</span> <span class="n">params_fixed</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Run imaging for one parameter set. Not to be used individually, but called in map function for run_survey</span>
 
@@ -602,7 +632,10 @@
     <span class="n">PSet</span> <span class="o">=</span> <span class="n">ParameterSet</span><span class="p">(</span><span class="n">pset</span><span class="p">,</span> <span class="n">params_fixed</span><span class="p">)</span>
     <span class="n">PSet</span><span class="o">.</span><span class="n">run</span><span class="p">()</span></div>
 
-<div class="viewcode-block" id="run_survey"><a class="viewcode-back" href="../../survey.html#ehtim.survey.run_survey">[docs]</a><span class="k">def</span> <span class="nf">run_survey</span><span class="p">(</span><span class="n">psets</span><span class="p">,</span> <span class="n">params_fixed</span><span class="p">):</span>
+
+<div class="viewcode-block" id="run_survey">
+<a class="viewcode-back" href="../../survey.html#ehtim.survey.run_survey">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">run_survey</span><span class="p">(</span><span class="n">psets</span><span class="p">,</span> <span class="n">params_fixed</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Run survey for all parameter sets using paramsurvey</span>
 
 <span class="sd">        Args:</span>
@@ -617,7 +650,10 @@
                      <span class="n">verbose</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span><span class="n">vstats</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
     <span class="n">paramsurvey</span><span class="o">.</span><span class="n">map</span><span class="p">(</span><span class="n">run_pset</span><span class="p">,</span> <span class="n">psets</span><span class="p">,</span> <span class="n">user_kwargs</span><span class="o">=</span><span class="n">params_fixed</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span></div>
 
-<div class="viewcode-block" id="create_params_fixed"><a class="viewcode-back" href="../../survey.html#ehtim.survey.create_params_fixed">[docs]</a><span class="k">def</span> <span class="nf">create_params_fixed</span><span class="p">(</span><span class="n">infile</span><span class="p">,</span> <span class="n">outfile_base</span><span class="p">,</span> <span class="n">outpath</span><span class="p">,</span> <span class="n">ground_truth_img</span><span class="o">=</span><span class="s1">&#39;None&#39;</span><span class="p">,</span>
+
+<div class="viewcode-block" id="create_params_fixed">
+<a class="viewcode-back" href="../../survey.html#ehtim.survey.create_params_fixed">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">create_params_fixed</span><span class="p">(</span><span class="n">infile</span><span class="p">,</span> <span class="n">outfile_base</span><span class="p">,</span> <span class="n">outpath</span><span class="p">,</span> <span class="n">ground_truth_img</span><span class="o">=</span><span class="s1">&#39;None&#39;</span><span class="p">,</span>
                         <span class="n">save_imgsums</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">save_uvfits</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">save_pdf</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">save_stats</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">save_caltab</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
                         <span class="n">nproc</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">backend</span><span class="o">=</span><span class="s1">&#39;multiprocessing&#39;</span><span class="p">,</span> <span class="n">ttype</span><span class="o">=</span><span class="s1">&#39;nfft&#39;</span><span class="p">,</span> <span class="n">overwrite</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
                         <span class="n">selfcal</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">gaintol</span><span class="o">=</span><span class="p">[</span><span class="mf">0.02</span><span class="p">,</span><span class="mf">0.2</span><span class="p">],</span> <span class="n">niter_static</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span> <span class="n">blurfrac</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
@@ -664,7 +700,10 @@
 
     <span class="k">return</span> <span class="n">params_fixed</span></div>
 
-<div class="viewcode-block" id="create_survey_psets"><a class="viewcode-back" href="../../survey.html#ehtim.survey.create_survey_psets">[docs]</a><span class="k">def</span> <span class="nf">create_survey_psets</span><span class="p">(</span><span class="n">zbl</span><span class="o">=</span><span class="p">[</span><span class="mf">0.6</span><span class="p">],</span> <span class="n">sys_noise</span><span class="o">=</span><span class="p">[</span><span class="mf">0.02</span><span class="p">],</span> <span class="n">avg_time</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;scan&#39;</span><span class="p">],</span> <span class="n">prior_fwhm</span><span class="o">=</span><span class="p">[</span><span class="mi">40</span><span class="p">],</span>
+
+<div class="viewcode-block" id="create_survey_psets">
+<a class="viewcode-back" href="../../survey.html#ehtim.survey.create_survey_psets">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">create_survey_psets</span><span class="p">(</span><span class="n">zbl</span><span class="o">=</span><span class="p">[</span><span class="mf">0.6</span><span class="p">],</span> <span class="n">sys_noise</span><span class="o">=</span><span class="p">[</span><span class="mf">0.02</span><span class="p">],</span> <span class="n">avg_time</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;scan&#39;</span><span class="p">],</span> <span class="n">prior_fwhm</span><span class="o">=</span><span class="p">[</span><span class="mi">40</span><span class="p">],</span>
                      <span class="n">sc_phase</span><span class="o">=</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">xdw_phase</span><span class="o">=</span><span class="p">[</span><span class="mi">10</span><span class="p">],</span> <span class="n">sc_ap</span><span class="o">=</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">xdw_ap</span><span class="o">=</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">amp</span><span class="o">=</span><span class="p">[</span><span class="mf">0.2</span><span class="p">],</span> <span class="n">cphase</span><span class="o">=</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">logcamp</span><span class="o">=</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span>
                      <span class="n">simple</span><span class="o">=</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">l1</span><span class="o">=</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">tv</span><span class="o">=</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">tv2</span><span class="o">=</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">flux</span><span class="o">=</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">epsilon_tv</span><span class="o">=</span><span class="p">[</span><span class="mf">1e-10</span><span class="p">]):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Create a dataframe given all survey parameters. Default values will create an example dataframe but these values should be adjusted for each specific observation</span>
@@ -705,6 +744,7 @@
     <span class="n">psets</span><span class="p">[</span><span class="s1">&#39;i&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">psets</span><span class="p">)))</span>
 
     <span class="k">return</span> <span class="n">psets</span></div>
+
 </pre></div>
 
            </div>
