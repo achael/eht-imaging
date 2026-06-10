@@ -243,3 +243,31 @@ def test_make_image_use_jax_recovers_and_matches_numpy(obs_direct, gauss_im, gau
     im_np, im_jx = recon(False), recon(True)
     assert _nxcorr(im_jx, truth) > 0.9    # jax recon recovers the source
     assert _nxcorr(im_jx, im_np) > 0.95   # jax matches numpy (same objective)
+
+
+def _has_gpu():
+    try:
+        return len(jax.devices("gpu")) > 0
+    except RuntimeError:
+        return False
+
+
+requires_gpu = pytest.mark.skipif(not _has_gpu(), reason="no CUDA GPU available")
+
+
+@pytest.mark.gpu
+@requires_gpu
+def test_objective_runs_on_gpu(imager, x0):
+    gpu = jax.devices("gpu")[0]
+    value, grad = _make_fun(imager, device=gpu)(x0)
+    assert np.isfinite(value) and np.all(np.isfinite(grad))
+
+
+@pytest.mark.gpu
+@requires_gpu
+def test_objective_gpu_cpu_parity(imager, x0):
+    cpu, gpu = jax.devices("cpu")[0], jax.devices("gpu")[0]
+    v_c, g_c = _make_fun(imager, device=cpu)(x0)
+    v_g, g_g = _make_fun(imager, device=gpu)(x0)
+    assert np.allclose(v_c, v_g, rtol=_grad_rtol(imager), atol=1e-9)
+    assert np.allclose(g_c, g_g, rtol=_grad_rtol(imager), atol=1e-9)
