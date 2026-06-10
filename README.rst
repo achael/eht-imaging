@@ -24,7 +24,7 @@ The latest stable version (`1.3.1 <https://github.com/achael/eht-imaging/release
 
     pip install ehtim
 
-Incremental updates are developed on the `dev branch <https://github.com/achael/eht-imaging/tree/dev>`_. To use the very latest (unstable) code, checkout the dev branch, change to the main eht-imaging directory, and run:
+A major eht-imaging revision is being developed on the `dev branch <https://github.com/achael/eht-imaging/tree/dev>`_. To use the very latest (unstable) code, checkout the dev branch, change to the main eht-imaging directory, and run:
 
 .. code-block:: bash
 
@@ -35,14 +35,11 @@ Installing with pip will update most of the required libraries automatically (`n
 
 NFFT Installation
 -----------------
-**If you want to use fast fourier transforms, you will also need to separately install** `NFFT <https://github.com/NFFT/nfft>`_ **and its** `pyNFFT wrapper <https://github.com/ghisvail/pyNFFT/>`__. 
+**If you want to use fast fourier transforms in this version of eht-imaging, you will also need to separately install** `NFFT <https://github.com/NFFT/nfft>`_ **and its** `pyNFFT wrapper <https://github.com/ghisvail/pyNFFT/>`__. The unstable `dev branch <https://github.com/achael/eht-imaging/tree/dev>`_ version has replaced pyNFFT with the actively maintained `finufft <https://github.com/flatironinstitute/finufft>`__ library.
 
 **Note that, unfortunately, pyNFFT is only supported for python versions <=3.11  and numpy versions <=1.26.4** 
 
-A new eht-imaging version 2.0 replacing pynfft with the actively maintained `finufft <https://github.com/flatironinstitute/finufft>`__ library is in active development.
-
-The simplest way is to use `conda <https://anaconda.org/conda-forge/pynfft/>`__ to install both NFFT and pyNFFT:
-
+The simplest way to install pyNFFT is to use `conda <https://anaconda.org/conda-forge/pynfft/>`__ to install both NFFT and pyNFFT:
 
 .. code-block:: bash
 
@@ -52,6 +49,8 @@ Alternatively, first install NFFT manually following the instructions on the `re
 
 **For M1 Macs and later (MacOS >= v12.0)**, install the updated Mac version of `pynfft <https://github.com/rohandahale/pyNFFT.git>`__ and follow the instructions on the `readme  <https://github.com/rohandahale/pyNFFT.git>`__ to manually install `fftw <http://www.fftw.org>`_, `nfft <https://github.com/NFFT/nfft>`__ and then `pynfft <https://github.com/rohandahale/pyNFFT.git>`__.
 
+Other Optional Dependencies
+-----------------
 **Certain eht-imaging functions require other external packages that are not automatically installed.** In addition to pynfft, these include  `networkx <https://networkx.github.io/>`_ (for image comparison functions), `requests <http://docs.python-requests.org/en/master/>`_ (for dynamical imaging), and `scikit-image <https://scikit-image.org/>`_ (for a few image analysis functions). However, the vast majority of the code will work without these dependencies.
 
 Documentation and Tutorials
