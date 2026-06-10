@@ -1,7 +1,15 @@
 ehtim (eht-imaging)
 ===================
-.. image:: https://zenodo.org/badge/42943499.svg
-   :target: https://zenodo.org/badge/latestdoi/42943499
+.. image:: https://img.shields.io/pypi/v/ehtim.svg
+   :target: https://pypi.org/project/ehtim/
+.. image:: https://static.pepy.tech/badge/ehtim
+   :target: https://pepy.tech/project/ehtim
+.. image:: https://img.shields.io/badge/license-GPLv3-blue.svg
+   :target: https://github.com/achael/eht-imaging/blob/main/LICENSE.txt
+.. image:: https://img.shields.io/badge/docs-stable-blue.svg
+   :target: https://achael.github.io/eht-imaging/
+.. image:: https://img.shields.io/badge/DOI-10.5281%2Fzenodo.2614008-blue.svg
+   :target: https://doi.org/10.5281/zenodo.2614008
 
 Python modules for simulating and manipulating VLBI data and producing images with regularized maximum likelihood methods. This version is an early release so please raise an issue, submit a pull request, or email achael@outlook.com if you have trouble or need help for your application.
 
