@@ -1,0 +1,32 @@
+name: Build and Publish Docs
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:   # allow manual rebuilds from the Actions tab
+
+concurrency:
+  group: docs-deploy
+  cancel-in-progress: true
+
+jobs:
+  docs:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write   # required to push to the gh-pages branch
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: 'pip'
+      - name: Install ehtim and docs dependencies
+        run: pip install -e .[docs]
+      - name: Build HTML docs
+        run: sphinx-build -b html docs/source docs/_build/html
+      - name: Deploy to gh-pages
+        uses: peaceiris/actions-gh-pages@84c30a85c19949d7eee79c4ff27748b70285e453  # v4.1.0
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: docs/_build/html
+          commit_message: "rebuilt docs"
