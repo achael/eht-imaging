@@ -219,3 +219,27 @@ def pol_v_x0(pol_imager_v):
 
 def test_pol_v_grad_finite_difference(pol_imager_v, pol_v_x0):
     _assert_pol_grad_matches_fd(pol_imager_v, pol_v_x0)
+
+
+def _nxcorr(a, b):
+    a = a - a.mean()
+    b = b - b.mean()
+    return float(np.sum(a * b) / np.sqrt(np.sum(a * a) * np.sum(b * b)))
+
+
+@pytest.mark.slow
+def test_make_image_use_jax_recovers_and_matches_numpy(obs_direct, gauss_im, gauss_prior):
+    # OO integration: make_image(use_jax=True) runs the jax objective end to end
+    # through scipy L-BFGS-B and recovers the source; matches the numpy path.
+    def recon(use_jax):
+        imgr = eh.imager.Imager(
+            obs_direct, gauss_prior, prior_im=gauss_prior, flux=gauss_im.total_flux(),
+            data_term={"amp": 100, "cphase": 100, "logcamp": 50},
+            reg_term={"simple": 1, "tv": 10}, ttype="direct", pol="I", maxit=200,
+        )
+        return imgr.make_image_I(niter=1, show_updates=False, use_jax=use_jax).imvec
+
+    truth = gauss_im.imvec
+    im_np, im_jx = recon(False), recon(True)
+    assert _nxcorr(im_jx, truth) > 0.9    # jax recon recovers the source
+    assert _nxcorr(im_jx, im_np) > 0.95   # jax matches numpy (same objective)
