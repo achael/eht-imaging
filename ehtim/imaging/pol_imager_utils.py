@@ -878,9 +878,10 @@ def reg_ptv(imarr, mask, **kwargs):
     impad = xp.pad(im, 1, mode='constant', constant_values=0)
     im_l1 = xp.roll(impad, -1, axis=0)[1:ny+1, 1:nx+1]
     im_l2 = xp.roll(impad, -1, axis=1)[1:ny+1, 1:nx+1]
-    # TODO(bug): no epsilon in the sqrt (cf. reg_tv's epsilon_tv), so the gradient
-    # is singular at near-zero-|P|-difference pixels. reg_vtv / reg_vtv2 share this.
-    return xp.sum(xp.sqrt(xp.abs(im_l1 - im)**2 + xp.abs(im_l2 - im)**2)) / norm
+    # epsilon_tv (default 0, matching reg_tv) regularizes the sqrt so the gradient
+    # is finite at near-zero-|P|-difference pixels; epsilon=0 is byte-identical.
+    epsilon = kwargs.get('epsilon_tv', 0.)
+    return xp.sum(xp.sqrt(xp.abs(im_l1 - im)**2 + xp.abs(im_l2 - im)**2 + epsilon)) / norm
 
 
 def reggrad_ptv(imarr, mask, **kwargs):
@@ -906,9 +907,11 @@ def reggrad_ptv(imarr, mask, **kwargs):
     im_r1l2 = np.roll(np.roll(impad,  1, axis=0), -1, axis=1)[1:ny+1, 1:nx+1]
     im_l1r2 = np.roll(np.roll(impad, -1, axis=0),  1, axis=1)[1:ny+1, 1:nx+1]
     # Denominators: |forward-l1|+|forward-l2|, |back-r1|+|cross|, |back-r2|+|cross|.
-    d1 = np.sqrt(np.abs(im_l1 - im)**2 + np.abs(im_l2 - im)**2)
-    d2 = np.sqrt(np.abs(im_r1 - im)**2 + np.abs(im_r1l2 - im_r1)**2)
-    d3 = np.sqrt(np.abs(im_r2 - im)**2 + np.abs(im_l1r2 - im_r2)**2)
+    # epsilon_tv (default 0, matching reg_ptv) keeps these finite at zero-|P| diffs.
+    epsilon = kwargs.get('epsilon_tv', 0.)
+    d1 = np.sqrt(np.abs(im_l1 - im)**2 + np.abs(im_l2 - im)**2 + epsilon)
+    d2 = np.sqrt(np.abs(im_r1 - im)**2 + np.abs(im_r1l2 - im_r1)**2 + epsilon)
+    d3 = np.sqrt(np.abs(im_r2 - im)**2 + np.abs(im_l1r2 - im_r2)**2 + epsilon)
     # Numerators below use cos/sin of the single-angle difference between
     # neighbors, from d|P_l1 - P|^2/d|P| = 2|P| - 2|P_l1|*cos(angle(P_l1) - angle(P)).
     gradout = np.zeros(imarr.shape)
@@ -1054,7 +1057,8 @@ def reg_vtv(imarr, mask, **kwargs):
     impad = xp.pad(im, 1, mode='constant', constant_values=0)
     im_l1 = xp.roll(impad, -1, axis=0)[1:ny+1, 1:nx+1]
     im_l2 = xp.roll(impad, -1, axis=1)[1:ny+1, 1:nx+1]
-    return xp.sum(xp.sqrt(xp.abs(im_l1 - im)**2 + xp.abs(im_l2 - im)**2)) / norm
+    epsilon = kwargs.get('epsilon_tv', 0.)
+    return xp.sum(xp.sqrt(xp.abs(im_l1 - im)**2 + xp.abs(im_l2 - im)**2 + epsilon)) / norm
 
 
 def reggrad_vtv(imarr, mask, **kwargs):
@@ -1067,7 +1071,7 @@ def reggrad_vtv(imarr, mask, **kwargs):
     pol_solve = kwargs.get('pol_solve', POL_SOLVE_DEFAULT_V)
     beam_size = kwargs.get('beam_size', 1) or psize
     norm = np.abs(vflux) * psize / beam_size if kwargs.get('norm_reg', True) else 1
-    epsilon = 0.
+    epsilon = kwargs.get('epsilon_tv', 0.)  # default 0 -> byte-identical; matches reg_vtv
     iimage = make_i_image(imarr)
     vimage = make_v_image(imarr)
     vfimage = make_vf_image(imarr)

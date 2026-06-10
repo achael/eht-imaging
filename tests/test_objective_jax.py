@@ -284,3 +284,20 @@ def test_image_at_freq_jax():
     assert np.allclose(out_np, out_jx, rtol=VALUE_RTOL, atol=GRAD_ATOL)
     g = jax.grad(lambda a: jnp.sum(mfu.image_at_freq(a, lf)))(jnp.asarray(mfarr))
     assert np.all(np.isfinite(np.asarray(g)))
+
+
+def test_ptv_epsilon_tv_removes_singularity():
+    # A constant-P image makes every |P_l1 - P| = 0, so the unregularized |P|-TV
+    # gradient is singular (0/0) there; epsilon_tv > 0 keeps it finite. epsilon_tv
+    # defaults to 0 (byte-identical to before) -- this just enables the knob, as for reg_tv.
+    import ehtim.imaging.pol_imager_utils as pu
+    n = 36
+    ny = nx = 6
+    imarr = np.ones((4, n))
+    imarr[0], imarr[1], imarr[2], imarr[3] = 2.0, 0.3, 0.5, 0.2  # spatially constant P
+    mask = np.ones(n, dtype=bool)
+    kw = dict(flux=float(imarr[0].sum()), xdim=nx, ydim=ny, psize=1.0, beam_size=2.0, norm_reg=True)
+    g0 = np.asarray(jax.grad(lambda a: pu.reg_ptv(a, mask, epsilon_tv=0.0, **kw))(jnp.asarray(imarr)))
+    ge = np.asarray(jax.grad(lambda a: pu.reg_ptv(a, mask, epsilon_tv=0.01, **kw))(jnp.asarray(imarr)))
+    assert not np.all(np.isfinite(g0))  # singular without epsilon_tv
+    assert np.all(np.isfinite(ge))      # finite with epsilon_tv
