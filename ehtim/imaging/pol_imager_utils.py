@@ -892,12 +892,22 @@ def reggrad_ptv(imarr, mask, **kwargs):
     d3 = np.sqrt(np.abs(im_r2 - im)**2 + np.abs(im_l1r2 - im_r2)**2)
     # Numerators below use cos/sin of the single-angle difference between
     # neighbors, from d|P_l1 - P|^2/d|P| = 2|P| - 2|P_l1|*cos(angle(P_l1) - angle(P)).
+    # The back-neighbor magnitude numerators m2/m3 keep a |P| term that does not
+    # vanish at the zero-pad, so the first row/col would pick up a neighbor that
+    # does not exist; zero those terms there as reggrad_tv/reggrad_vtv do. (The
+    # phase numerators c2/c3 carry a |P_neighbor| factor and self-zero there.)
+    mask1 = np.zeros(im.shape, dtype=bool)
+    mask2 = np.zeros(im.shape, dtype=bool)
+    mask1[0, :] = True
+    mask2[:, 0] = True
     gradout = np.zeros(imarr.shape)
     if pol_solve[0] != 0:
         # dS/dI numerators (chain through |P| = I*m)
         m1 = 2*np.abs(im*im) - np.abs(im*im_l1)*np.cos(np.angle(im_l1) - np.angle(im)) - np.abs(im*im_l2)*np.cos(np.angle(im_l2) - np.angle(im))
         m2 = np.abs(im*im) - np.abs(im*im_r1)*np.cos(np.angle(im) - np.angle(im_r1))
         m3 = np.abs(im*im) - np.abs(im*im_r2)*np.cos(np.angle(im) - np.angle(im_r2))
+        m2[mask1] = 0
+        m3[mask2] = 0
         gradout[0] = (1./iimage) * (m1/d1 + m2/d2 + m3/d3).flatten()
     if pol_solve[1] != 0:
         # dS/dm numerators; m enters via |P| = I*m, so dS/dm = I * dS/d|P|.
@@ -905,6 +915,8 @@ def reggrad_ptv(imarr, mask, **kwargs):
         m1 = 2*np.abs(im) - np.abs(im_l1)*np.cos(np.angle(im_l1) - np.angle(im)) - np.abs(im_l2)*np.cos(np.angle(im_l2) - np.angle(im))
         m2 = np.abs(im) - np.abs(im_r1)*np.cos(np.angle(im) - np.angle(im_r1))
         m3 = np.abs(im) - np.abs(im_r2)*np.cos(np.angle(im) - np.angle(im_r2))
+        m2[mask1] = 0
+        m3[mask2] = 0
         gradm = iimage * (m1/d1 + m2/d2 + m3/d3).flatten()
         gradout[1] = gradm * np.cos(psiimage)
     if pol_solve[2] != 0:
@@ -920,6 +932,8 @@ def reggrad_ptv(imarr, mask, **kwargs):
         m1 = 2*np.abs(im) - np.abs(im_l1)*np.cos(np.angle(im_l1) - np.angle(im)) - np.abs(im_l2)*np.cos(np.angle(im_l2) - np.angle(im))
         m2 = np.abs(im) - np.abs(im_r1)*np.cos(np.angle(im) - np.angle(im_r1))
         m3 = np.abs(im) - np.abs(im_r2)*np.cos(np.angle(im) - np.angle(im_r2))
+        m2[mask1] = 0
+        m3[mask2] = 0
         gradm = iimage * (m1/d1 + m2/d2 + m3/d3).flatten()
         gradout[3] = gradm * (-mimage * np.tan(psiimage))
     g = gradout / norm

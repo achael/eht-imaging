@@ -298,6 +298,46 @@ class TestPolRegularizerGradients:
             f"{rtype} max fractional gradient diff = {max_frac:.6f} (tol={max_tol})"
         )
 
+    def test_reggrad_ptv_matches_fd_on_boundary(self):
+        """ptv gradient is correct on the first row/column, not just the interior.
+
+        The back-neighbor magnitude numerators do not vanish at the zero-pad,
+        so the first row/col would otherwise pick up a neighbor that does not
+        exist. The random-pixel FD check above rarely lands on the boundary;
+        this checks every pixel of a small full-mask grid so the edges are
+        exercised directly.
+        """
+        rng = np.random.default_rng(0)
+        ny = nx = 6
+        n = ny * nx
+        imarr = np.array([rng.uniform(0.5, 2.0, n), rng.uniform(0.1, 0.5, n),
+                          rng.uniform(-1.0, 1.0, n), rng.uniform(-0.5, 0.5, n)])
+        mask = np.ones(n, dtype=bool)
+        kw = dict(flux=float(imarr[0].sum()), xdim=nx, ydim=ny, psize=1.0,
+                  beam_size=2.0, norm_reg=True)
+        g_an = np.asarray(pu.reggrad_ptv(imarr, mask,
+                                         pol_solve=np.array([1, 1, 1, 1]), **kw))
+        dx = 1e-6
+        g_fd = np.zeros_like(imarr)
+        for slot in range(4):
+            for j in range(n):
+                a = imarr.copy()
+                a[slot, j] += dx
+                fp = pu.reg_ptv(a, mask, **kw)
+                a = imarr.copy()
+                a[slot, j] -= dx
+                fm = pu.reg_ptv(a, mask, **kw)
+                g_fd[slot, j] = (fp - fm) / (2 * dx)
+        edge = np.zeros((ny, nx), dtype=bool)
+        edge[0, :] = True
+        edge[:, 0] = True
+        edge = edge.flatten()
+        for slot in range(4):
+            assert np.max(np.abs(g_an[slot] - g_fd[slot])) < 1e-5, (
+                f"slot {slot} ptv gradient disagrees with FD "
+                f"(max boundary diff {np.max(np.abs((g_an[slot] - g_fd[slot])[edge])):.2e})"
+            )
+
 
 def _pol_gradient_check(polreg_setup, rtype):
     """FD-vs-analytic check across N pixels in each pol_solve-active slot."""
