@@ -36,6 +36,7 @@ import scipy.ndimage as nd
 import scipy.spatial.distance
 
 import ehtim.const_def as ehc
+from ehtim.backends import array_namespace
 
 warnings.filterwarnings("ignore", message="divide by zero encountered in double_scalars")
 
@@ -1468,12 +1469,36 @@ class NFFTInfo:
         uv_finufft = 2 * np.pi * uv_scaled
         self.eps = eps
         self.uv_finufft = uv_finufft  # (-pi, pi] nonuniform points, for jax_finufft.nufft2
+        # plan is the stateful finufft plan (numpy path only); jax uses uv_finufft.
         self.plan = FINUFFTPlan(self.xdim, self.ydim, uv_finufft, eps=eps)
 
         phases = np.exp(-1j*np.pi*(uv_scaled[:, 0] + uv_scaled[:, 1]))
         pulses = np.fromiter((pulse(2*np.pi*uv_scaled[i, 0], 2*np.pi*uv_scaled[i, 1], 1., dom="F")
                               for i in range(self.uvdim)), 'c16')
         self.pulsefac = pulses * phases
+
+
+def nufft2_backend(imvec, nfft_info):
+    """Type-2 NUFFT: uniform image -> nonuniform visibility samples.
+
+    Dispatches on imvec's array type -- the stateful finufft plan on numpy
+    (byte-identical to the legacy path), jax_finufft.nufft2 on jax (differentiable,
+    GPU-capable). Conventions match: isign=-1, (-pi, pi] points, (xdim, ydim) modes.
+    Callers multiply the result by nfft_info.pulsefac.
+    """
+    xp = array_namespace(imvec)
+    f_hat = imvec.reshape((nfft_info.ydim, nfft_info.xdim)).T
+    if xp is np:
+        nfft_info.plan.f_hat = f_hat
+        nfft_info.plan.trafo()
+        return nfft_info.plan.f.copy()
+    else:
+        # jax_finufft autodiffs the transform; the finufft plan is not used here.
+        from jax_finufft import nufft2
+        uvf = nfft_info.uv_finufft
+        return nufft2(f_hat.astype(xp.complex128), uvf[:, 0], uvf[:, 1],
+                      iflag=-1, eps=nfft_info.eps)
+
 
 class SamplerInfo:
     def __init__(self, order, uv, pulsefac):

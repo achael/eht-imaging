@@ -26,6 +26,7 @@ import scipy.sparse as sps
 import ehtim.const_def as ehc
 import ehtim.observing.obs_helpers as obsh
 from ehtim.backends import array_namespace
+from ehtim.observing.obs_helpers import nufft2_backend
 
 ##################################################################################################
 # Constants & Definitions
@@ -887,26 +888,6 @@ def chisqgrad_logamp_fft(vis_arr, A, amp, sigma):
 ##################################################################################################
 # NFFT Chi-squared and Gradient Functions
 ##################################################################################################
-
-
-def nufft2_backend(imvec, nfft_info):
-    """Type-2 NUFFT: uniform image -> nonuniform visibility samples.
-
-    Dispatches on imvec's array type -- the stateful finufft plan on numpy
-    (byte-identical to the legacy path), jax_finufft.nufft2 on jax (differentiable,
-    GPU-capable). Conventions match: isign=-1, (-pi, pi] points, (xdim, ydim) modes.
-    Callers multiply the result by nfft_info.pulsefac.
-    """
-    xp = array_namespace(imvec)
-    f_hat = imvec.reshape((nfft_info.ydim, nfft_info.xdim)).T
-    if xp is np:
-        nfft_info.plan.f_hat = f_hat
-        nfft_info.plan.trafo()
-        return nfft_info.plan.f.copy()
-    from jax_finufft import nufft2
-    uvf = nfft_info.uv_finufft
-    return nufft2(f_hat.astype(xp.complex128), uvf[:, 0], uvf[:, 1],
-                  iflag=-1, eps=nfft_info.eps)
 
 
 def chisq_vis_nfft(imvec, A, vis, sigma):
@@ -3372,8 +3353,9 @@ def embed(imvec, mask, clipfloor=0., randomfloor=False):
     """Embeds a 1d image vector into the size of boolean embed mask
     """
     xp = array_namespace(imvec)
-    on = mask.nonzero()[0]
-    off = (mask - 1).nonzero()[0]
+    mbool = mask.astype(bool)
+    on = mbool.nonzero()[0]
+    off = (~mbool).nonzero()[0]
     if randomfloor:  # prevent total variation gradient singularities
         floor = clipfloor * np.abs(np.random.normal(size=len(off)))
     else:
@@ -3384,10 +3366,11 @@ def embed(imvec, mask, clipfloor=0., randomfloor=False):
         out[on] = imvec
         out[off] = floor
         return out
-    # jax: functional scatter so embed is traceable under jax.grad/jit
-    out = xp.zeros(len(mask))
-    out = out.at[on].set(imvec)
-    return out.at[off].set(floor)
+    else:
+        # jax: functional scatter so embed is traceable under jax.grad/jit
+        out = xp.zeros(len(mask))
+        out = out.at[on].set(imvec)
+        return out.at[off].set(floor)
 
 
 def embed_imarr(imarr, mask, clipfloor=0., randomfloor=False):
@@ -3448,8 +3431,9 @@ def embed_imarr(imarr, mask, clipfloor=0., randomfloor=False):
     # Vectorized over the nsolve axis: scatter imarr into the masked columns,
     # then fill non-mask columns with clipfloor (or random). Functional on jax.
     xp = array_namespace(imarr)
-    on_cols = mask.astype(bool).nonzero()[0]
-    off_cols = (~mask.astype(bool)).nonzero()[0]
+    mbool = mask.astype(bool)
+    on_cols = mbool.nonzero()[0]
+    off_cols = (~mbool).nonzero()[0]
     if randomfloor:
         floor = clipfloor * np.abs(np.random.normal(size=(nsolve, len(off_cols))))
     else:

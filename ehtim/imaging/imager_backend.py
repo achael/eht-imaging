@@ -1,6 +1,7 @@
 # imager_backend.py
 # Pure functional backend for imager.py
 
+import warnings
 from collections.abc import Sequence
 from typing import NamedTuple
 
@@ -1941,35 +1942,43 @@ def compute_objective_grad(imvec, initvec, config,
 def make_objective_jax(initvec, config, which_solve, data_tuples, logfreqratio_list,
                        n_obs, dat_term, reg_term, priorvec, norm_reg, reg_params,
                        embed_mask, device=None):
-    """Return a scipy fun(x) -> (value, grad) for the imaging objective.
+    """Return a scipy fun(x) -> (value, grad) for the imaging objective, via jax.
 
     Same arguments as compute_objective minus the solver vector x. The value is
-    compute_objective and the gradient is its jax autodiff, which equals
-    compute_objective_grad. Mode-agnostic: it just wraps compute_objective, so it
-    works for any pol mode / ttype the backend supports. jax is imported lazily so
-    `import ehtim` stays jax-free.
-
-    The only traced argument is x; everything else is captured in the closure, so
-    the unhashable data_tuples / dat_term dicts never reach jit and one trace is
-    reused across solver steps. Numeric data is moved onto `device` once.
+    compute_objective; the gradient is its jax autodiff, which matches the
+    hand-written compute_objective_grad. Works for any pol mode / ttype the
+    backend supports. jax is imported lazily so `import ehtim` stays jax-free.
     """
     import jax
     import jax.numpy as jnp
 
+    # Double precision is essential: in float32 the gradient is only ~1e-3
+    # accurate (and the nfft tolerance clamps), so warn rather than silently
+    # return a bad gradient.
+    if not jax.config.read("jax_enable_x64"):
+        warnings.warn("jax x64 is disabled -- the objective runs in float32 and "
+                      "gradients will be inaccurate. Set "
+                      "jax.config.update('jax_enable_x64', True) before imaging.",
+                      stacklevel=2)
+
+    # Move arrays onto the chosen device (a GPU if `device` is set) once, up front.
     def put(a):
         a = jnp.asarray(a)
         return jax.device_put(a, device) if device is not None else a
 
-    # A non-array A (the nfft NFFTInfo) is left as a host object for the kernel.
+    # Each data tuple may hold a non-array entry (the nfft NFFTInfo); leave it be.
     data_d = {key: tuple(put(v) if hasattr(v, "shape") else v for v in val)
               for key, val in data_tuples.items()}
     prior_d, init_d = put(priorvec), put(initvec)
 
+    # x is the only traced input; capturing everything else lets jit compile once
+    # and reuse that compilation across every L-BFGS-B step.
     def loss(x):
         return compute_objective(x, init_d, config, which_solve, data_d,
                                  logfreqratio_list, n_obs, dat_term, reg_term,
                                  prior_d, norm_reg, reg_params, embed_mask)
 
+    # jit the value-and-grad so scipy gets both from one compiled call.
     value_and_grad = jax.jit(jax.value_and_grad(loss))
 
     def fun(x):

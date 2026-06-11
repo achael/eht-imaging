@@ -157,6 +157,15 @@ def obs_pol_direct(gauss_im_pol, eht_array):
 
 
 @pytest.fixture(scope="session")
+def obs_pol_nfft(gauss_im_pol, eht_array):
+    """Noise-free observation of the polarized Gaussian image using NFFT."""
+    return gauss_im_pol.observe(
+        eht_array, TINT_SEC, TADV_SEC, TSTART_HR, TSTOP_HR, BW_HZ,
+        ampcal=True, phasecal=True, ttype="nfft", add_th_noise=False,
+    )
+
+
+@pytest.fixture(scope="session")
 def obs_gmst(obs_direct):
     """`obs_direct` switched to GMST timetype. Used by tests that exercise GMST branches."""
     return obs_direct.switch_timetype("GMST")

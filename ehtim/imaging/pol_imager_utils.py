@@ -29,7 +29,7 @@ except ImportError:
     _HAS_NFFT = False
 
 from ehtim.const_def import FFT_PAD_DEFAULT, GRIDDER_P_RAD_DEFAULT, NFFT_EPS_DEFAULT, RADPERAS
-from ehtim.observing.obs_helpers import NFFTInfo, ftmatrix, ticks
+from ehtim.observing.obs_helpers import NFFTInfo, ftmatrix, nufft2_backend, ticks
 
 TANWIDTH_M = 0.5
 TANWIDTH_V = 1
@@ -66,10 +66,9 @@ def make_i_image(imarr):
     return imarr[0]
 
 def make_p_image(imarr):
-    """construct a polarimetric image P = RL = Q + iU
+    """construct a polarimetric image P = RL = Q + iU (see CONVENTIONS at top)
     """
 
-    # NOTE! We replaced EVPA chi with phi=2chi in the imarr
     xp = array_namespace(imarr)
     pimage = imarr[0] * imarr[1] * xp.exp(1j*imarr[2]) * xp.cos(imarr[3])
 
@@ -205,8 +204,6 @@ def mcv(imarr):
     xp = array_namespace(imarr)
     vfrac = imarr[3] # when using this transform, we interpret transformed imarr[3] as mfrac=\rho sin(\psi)
     mfrac_max = 1-xp.abs(vfrac)
-    if xp is np and np.any(mfrac_max>1):  # dead guard (mfrac_max<=1 always); kept on numpy
-        raise Exception("mfrac_max>1 in mcv!")
 
     mfrac_prime =  imarr[1]
     mfrac = mfrac_max*(0.5 + xp.arctan(mfrac_prime/TANWIDTH_M)/np.pi)
@@ -279,8 +276,6 @@ def vcv(imarr):
     xp = array_namespace(imarr)
     mfrac = imarr[1] # when using this transform, we interpret transformed imarr[1] as mfrac=\rho cos(\psi)
     vfrac_max = 1-xp.abs(mfrac)
-    if xp is np and np.any(vfrac_max>1):  # dead guard (vfrac_max<=1 always); kept on numpy
-        raise Exception("vfrac_max>1 in vcv!")
 
     vfrac_prime = imarr[3]
     vfrac = 2*vfrac_max*xp.arctan(vfrac_prime/TANWIDTH_V)/np.pi
@@ -577,24 +572,12 @@ def chisqgrad_vvis(imarr, Amatrix, v, sigmav, pol_solve=POL_SOLVE_DEFAULT_V):
 # NFFT Chi-squared and Gradient Functions
 ##################################################################################################
 def chisq_p_nfft(imarr, A, p, sigmap):
-    """P visibility chi-squared
+    """P visibility chi-squared from nfft
     """
+    xp = array_namespace(imarr)
     pimage = make_p_image(imarr)
-
-    #get nfft object
-    nfft_info = A[0]
-    plan = nfft_info.plan
-    pulsefac = nfft_info.pulsefac
-
-    #compute uniform --> nonuniform transform
-    plan.f_hat = pimage.copy().reshape((nfft_info.ydim,nfft_info.xdim)).T
-    plan.trafo()
-    psamples = plan.f.copy()*pulsefac
-
-    #compute chi^2
-    chisq =  np.sum(np.abs(p - psamples)**2/(sigmap**2)) / (2*len(p))
-
-    return chisq
+    psamples = nufft2_backend(pimage, A[0]) * A[0].pulsefac
+    return xp.sum(xp.abs(p - psamples)**2/(sigmap**2)) / (2*len(p))
 
 def chisqgrad_p_nfft(imarr, A, p, sigmap,pol_solve=POL_SOLVE_DEFAULT):
     """P visibility chi-squared gradient
@@ -647,29 +630,15 @@ def chisqgrad_p_nfft(imarr, A, p, sigmap,pol_solve=POL_SOLVE_DEFAULT):
 
 
 def chisq_m_nfft(imarr, A, m, sigmam):
-    """Polarimetric ratio chi-squared
+    """Polarimetric ratio chi-squared from nfft
     """
+    xp = array_namespace(imarr)
     iimage = make_i_image(imarr)
     pimage = make_p_image(imarr)
-
-    #get nfft object
-    nfft_info = A[0]
-    plan = nfft_info.plan
-    pulsefac = nfft_info.pulsefac
-
-    #compute uniform --> nonuniform transform
-    plan.f_hat = iimage.copy().reshape((nfft_info.ydim,nfft_info.xdim)).T
-    plan.trafo()
-    isamples = plan.f.copy()*pulsefac
-
-    plan.f_hat = pimage.copy().reshape((nfft_info.ydim,nfft_info.xdim)).T
-    plan.trafo()
-    psamples = plan.f.copy()*pulsefac
-
-    #compute chi^2
-    msamples = psamples/isamples
-    chisq = np.sum(np.abs(m - msamples)**2/(sigmam**2)) / (2*len(m))
-    return chisq
+    isamples = nufft2_backend(iimage, A[0]) * A[0].pulsefac
+    psamples = nufft2_backend(pimage, A[0]) * A[0].pulsefac
+    msamples = psamples / isamples
+    return xp.sum(xp.abs(m - msamples)**2/(sigmam**2)) / (2*len(m))
 
 def chisqgrad_m_nfft(imarr, A, m, sigmam,pol_solve=POL_SOLVE_DEFAULT):
     """Polarimetric ratio chi-squared gradient
@@ -729,24 +698,12 @@ def chisqgrad_m_nfft(imarr, A, m, sigmam,pol_solve=POL_SOLVE_DEFAULT):
 
 # stokes v
 def chisq_vvis_nfft(imarr, A, v, sigmav):
-    """V visibility chi-squared
+    """V visibility chi-squared from nfft
     """
+    xp = array_namespace(imarr)
     vimage = make_v_image(imarr)
-
-    #get nfft object
-    nfft_info = A[0]
-    plan = nfft_info.plan
-    pulsefac = nfft_info.pulsefac
-
-    #compute uniform --> nonuniform transform
-    plan.f_hat = vimage.copy().reshape((nfft_info.ydim,nfft_info.xdim)).T
-    plan.trafo()
-    vsamples = plan.f.copy()*pulsefac
-
-    #compute chi^2
-    chisq =  np.sum(np.abs(v - vsamples)**2/(sigmav**2)) / (2*len(v))
-
-    return chisq
+    vsamples = nufft2_backend(vimage, A[0]) * A[0].pulsefac
+    return xp.sum(xp.abs(v - vsamples)**2/(sigmav**2)) / (2*len(v))
 
 def chisqgrad_vvis_nfft(imarr, A, v, sigmav,pol_solve=POL_SOLVE_DEFAULT):
     """V visibility chi-squared gradient
@@ -914,10 +871,7 @@ def reggrad_ptv(imarr, mask, **kwargs):
     d3 = np.sqrt(np.abs(im_r2 - im)**2 + np.abs(im_l1r2 - im_r2)**2 + epsilon)
     # Numerators below use cos/sin of the single-angle difference between
     # neighbors, from d|P_l1 - P|^2/d|P| = 2|P| - 2|P_l1|*cos(angle(P_l1) - angle(P)).
-    # The back-neighbor magnitude numerators m2/m3 keep a |P| term that does not
-    # vanish at the zero-pad, so the first row/col would pick up a neighbor that
-    # does not exist; zero those terms there as reggrad_tv/reggrad_vtv do. (The
-    # phase numerators c2/c3 carry a |P_neighbor| factor and self-zero there.)
+    # mask first-row/col back-neighbor terms that don't exist (as reggrad_tv does)
     mask1 = np.zeros(im.shape, dtype=bool)
     mask2 = np.zeros(im.shape, dtype=bool)
     mask1[0, :] = True

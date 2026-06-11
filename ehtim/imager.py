@@ -442,7 +442,8 @@ class Imager:
                grads (bool): whether or not to use image gradients
                use_jax (bool): use the jax autodiff objective (GPU-capable) in place
                    of the numpy analytic gradient; the objective is identical
-               jax_device: jax device for the objective when use_jax=True (None = jax default)
+               jax_device: jax device for the objective when use_jax=True; None uses the
+                   jax default. e.g. jax.devices('gpu')[0] or jax.devices('cpu')[0]
 
                show_updates (bool): whether or not to show imager progress
                update_interval (int): step interval for plotting if show_updates=True

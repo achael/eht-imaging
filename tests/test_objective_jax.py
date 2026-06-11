@@ -221,6 +221,43 @@ def test_pol_v_grad_finite_difference(pol_imager_v, pol_v_x0):
     _assert_pol_grad_matches_fd(pol_imager_v, pol_v_x0)
 
 
+# nfft pol: routes chisq_{p,m,vvis}_nfft through nufft2_backend (jax_finufft).
+# IP exercises chisq_p_nfft (pvis) + chisq_m_nfft (m); IV exercises chisq_vvis_nfft.
+_POL_NFFT_CASES = [
+    ("IP", {"amp": 100, "pvis": 100, "m": 50}, {"simple": 1, "hw": 1, "ptv": 1}, ["log", "mcv"]),
+    ("IV", {"amp": 100, "vvis": 100}, {"simple": 1, "l1v": 1, "vtv": 1}, ["log", "vcv"]),
+]
+
+
+@pytest.fixture(scope="module", params=_POL_NFFT_CASES, ids=["IP", "IV"])
+def pol_imager_nfft(request, obs_pol_nfft, gauss_im_pol, gauss_prior):
+    pol, data_term, reg_term, transform = request.param
+    imgr = eh.imager.Imager(
+        obs_pol_nfft, gauss_prior, prior_im=gauss_prior, flux=gauss_im_pol.total_flux(),
+        data_term=data_term, reg_term=reg_term, ttype="nfft", pol=pol,
+        transform=transform, maxit=100, nfft_eps=NFFT_EPS,
+    )
+    imgr.init_imager()
+    return imgr
+
+
+@pytest.fixture(scope="module")
+def pol_nfft_x0(pol_imager_nfft):
+    rng = np.random.default_rng(RNG_SEED)
+    base = np.asarray(pol_imager_nfft._init_vec, dtype=np.float64)
+    return base + PERTURB * rng.standard_normal(base.size)
+
+
+def test_pol_nfft_value_numpy_jax_consistent(pol_imager_nfft, pol_nfft_x0):
+    assert np.allclose(float(pol_imager_nfft.objfunc(pol_nfft_x0)),
+                       float(pol_imager_nfft.objfunc(jnp.asarray(pol_nfft_x0))),
+                       rtol=VALUE_RTOL, atol=GRAD_ATOL)
+
+
+def test_pol_nfft_grad_finite_difference(pol_imager_nfft, pol_nfft_x0):
+    _assert_pol_grad_matches_fd(pol_imager_nfft, pol_nfft_x0)
+
+
 def _nxcorr(a, b):
     a = a - a.mean()
     b = b - b.mean()
