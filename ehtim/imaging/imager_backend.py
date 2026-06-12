@@ -705,9 +705,9 @@ def validate_params(prior, init, config, dat_term_keys, reg_term_keys, freq_list
         raise Exception("Initial image polrep is 'circ': pol_next must be 'RR' or 'LL'")
 
     if (prior.polrep == 'stokes'
-        and pol not in ['I', 'Q', 'U', 'V', 'P','IP','IQU','IV','IQUV']):
+        and pol not in ['I', 'Q', 'U', 'V', 'P','IP','IQU','IV','IQUV','IPV']):
         raise Exception(
-            "Initial image polrep is 'stokes': pol_next must be in 'I', 'Q', 'U', 'V', 'P','IP','IQU','IV','IQUV'!")
+            "Initial image polrep is 'stokes': pol_next must be in 'I', 'Q', 'U', 'V', 'P','IP','IQU','IV','IQUV','IPV'!")
 
     if ('log' in transforms and pol in ['Q', 'U', 'V']):
         raise Exception("Cannot image Stokes Q, U, V with log image transformation!")
