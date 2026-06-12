@@ -6,13 +6,13 @@
 .. moduleauthor:: Andrew Chael (achael@outlook.com)
 
 """
-from __future__ import division
-from __future__ import print_function
 
-from builtins import str
-from builtins import range
-from builtins import object
+# Use a non-colliding local name: the bare `warnings` name shadows the
+# `ehtim.warnings` submodule attribute and breaks `import ehtim.warnings as ehw`.
+import warnings as _stdlib_warnings
 
+# TODO: this import order is necessary to avoid circular imports
+# refactor in the future and remove * imports 
 import ehtim.observing
 from ehtim.const_def import *
 from ehtim.modeling.modeling_utils import modeler_func
@@ -44,17 +44,11 @@ import ehtim.image
 import ehtim.model
 import ehtim.survey
 
-
-import warnings
-warnings.filterwarnings(
+_stdlib_warnings.filterwarnings(
     "ignore", message="numpy.dtype size changed, may indicate binary incompatibility.")
 
-# necessary to prevent hangs from astropy iers bug in astropy v 2.0.8
-#from astropy.utils import iers
-#iers.conf.auto_download = False
-
 try:
-    from importlib.metadata import metadata, PackageNotFoundError
+    from importlib.metadata import PackageNotFoundError, metadata
     _meta = metadata("ehtim")
     __version__ = _meta["Version"]
     __author__  = _meta["Author-email"]

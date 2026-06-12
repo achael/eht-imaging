@@ -18,6 +18,8 @@
 
 
 
+import functools
+
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 from packaging import version
@@ -77,10 +79,22 @@ FFT_INTERP_DEFAULT = 3
 # dynamic range; relax to 1e-6 for fast low-SNR work.
 NFFT_EPS_DEFAULT = 1e-9
 
+# Valid two-character feed_type strings for a single station (lowercase).
+VALID_FEED_TYPES = frozenset({
+    'rl', 'lr', 'xy', 'yx',
+    'rx', 'ry', 'lx', 'ly',
+    'xr', 'xl', 'yr', 'yl',
+})
+
 # Observation recarray datatypes
+# DTARR uses generic names primary because it is a single shared dtype across
+# all stations; legacy names are title aliases. Per-Obsdata/Caltable dtypes
+# (DTPOL_*, DTCAL_*) invert this — physical names primary, generic alias.
 DTARR = [('site', 'U32'), ('x', 'f8'), ('y', 'f8'), ('z', 'f8'),
-         ('sefdr', 'f8'), ('sefdl', 'f8'), ('dr', 'c16'), ('dl', 'c16'),
-         ('fr_par', 'f8'), ('fr_elev', 'f8'), ('fr_off', 'f8')]
+         (('sefdr', 'sefd_p1'), 'f8'), (('sefdl', 'sefd_p2'), 'f8'),
+         (('dr', 'd_p1'), 'c16'), (('dl', 'd_p2'), 'c16'),
+         ('fr_par', 'f8'), ('fr_elev', 'f8'), ('fr_off', 'f8'),
+         ('feed_type', 'U2')]
 
 DTPOL_STOKES = [('time', 'f8'), ('tint', 'f8'),
                 ('t1', 'U32'), ('t2', 'U32'),
@@ -93,8 +107,29 @@ DTPOL_CIRC = [('time', 'f8'), ('tint', 'f8'),
               ('t1', 'U32'), ('t2', 'U32'),
               ('tau1', 'f8'), ('tau2', 'f8'),
               ('u', 'f8'), ('v', 'f8'),
-              ('rrvis', 'c16'), ('llvis', 'c16'), ('rlvis', 'c16'), ('lrvis', 'c16'),
-              ('rrsigma', 'f8'), ('llsigma', 'f8'), ('rlsigma', 'f8'), ('lrsigma', 'f8')]
+              (('p1p1vis', 'rrvis'), 'c16'), (('p2p2vis', 'llvis'), 'c16'),
+              (('p1p2vis', 'rlvis'), 'c16'), (('p2p1vis', 'lrvis'), 'c16'),
+              (('p1p1sigma', 'rrsigma'), 'f8'), (('p2p2sigma', 'llsigma'), 'f8'),
+              (('p1p2sigma', 'rlsigma'), 'f8'), (('p2p1sigma', 'lrsigma'), 'f8')]
+
+DTPOL_LIN = [('time', 'f8'), ('tint', 'f8'),
+             ('t1', 'U32'), ('t2', 'U32'),
+             ('tau1', 'f8'), ('tau2', 'f8'),
+             ('u', 'f8'), ('v', 'f8'),
+             (('p1p1vis', 'xxvis'), 'c16'), (('p2p2vis', 'yyvis'), 'c16'),
+             (('p1p2vis', 'xyvis'), 'c16'), (('p2p1vis', 'yxvis'), 'c16'),
+             (('p1p1sigma', 'xxsigma'), 'f8'), (('p2p2sigma', 'yysigma'), 'f8'),
+             (('p1p2sigma', 'xysigma'), 'f8'), (('p2p1sigma', 'yxsigma'), 'f8')]
+
+DTPOL_MIXED = [('time', 'f8'), ('tint', 'f8'),
+               ('t1', 'U32'), ('t2', 'U32'),
+               ('tau1', 'f8'), ('tau2', 'f8'),
+               ('u', 'f8'), ('v', 'f8'),
+               ('p1p1vis', 'c16'), ('p2p2vis', 'c16'),
+               ('p1p2vis', 'c16'), ('p2p1vis', 'c16'),
+               ('p1p1sigma', 'f8'), ('p2p2sigma', 'f8'),
+               ('p1p2sigma', 'f8'), ('p2p1sigma', 'f8'),
+               ('polbasis', 'U4')]
 
 DTAMP = [('time', 'f8'), ('tint', 'f8'),
          ('t1', 'U32'), ('t2', 'U32'),
@@ -120,21 +155,141 @@ DTCPHASEDIAG = [('time', 'f8'), ('cphase', 'f8'), ('sigmacp', 'f8'),
 DTLOGCAMPDIAG = [('time', 'f8'), ('camp', 'f8'), ('sigmaca', 'f8'),
                  ('quadrangles', 'O'), ('u', 'O'), ('v', 'O'), ('tform_matrix', 'O')]
 
-DTCAL = [('time', 'f8'), ('rscale', 'c16'), ('lscale', 'c16')]
+DTCAL_CIRC = [('time', 'f8'),
+              (('p1scale', 'rscale'), 'c16'), (('p2scale', 'lscale'), 'c16'),
+              (('d_p1', 'dr'), 'c16'), (('d_p2', 'dl'), 'c16')]
+
+DTCAL_LIN = [('time', 'f8'),
+             (('p1scale', 'xscale'), 'c16'), (('p2scale', 'yscale'), 'c16'),
+             ('d_p1', 'c16'), ('d_p2', 'c16')]
+
+DTCAL = DTCAL_CIRC  # legacy alias
 
 DTSCANS = [('time', 'f8'), ('interval', 'f8'), ('startvis', 'f8'), ('endvis', 'f8')]
+
+
+# TODO: the feed_dtype_for_polrep / feed_poldict / upgrade_* helpers below
+# should migrate to ehtim/observing/pol_conventions.py (created in
+# MixPol Phase 3) when Obsdata.switch_polrep is wired up to it.
+
+def feed_dtype_for_polrep(polrep):
+    """Return the DTPOL_* field-spec list for a given polrep."""
+    try:
+        return {'stokes': DTPOL_STOKES, 'circ': DTPOL_CIRC,
+                'lin': DTPOL_LIN, 'mixed': DTPOL_MIXED}[polrep]
+    except KeyError:
+        raise ValueError("polrep must be one of "
+                         f"{{'stokes', 'circ', 'lin', 'mixed'}}, got {polrep!r}")
+
+
+def upgrade_tarr(tarr):
+    """Upgrade a legacy DTARR recarray (no feed_type) to the current DTARR.
+
+    Idempotent. Fills feed_type='rl' for legacy data. Used by Array,
+    Obsdata, and Caltable constructors / __setstate__ to keep backwards
+    compatibility with pickled or user-supplied recarrays.
+    """
+    import numpy as _np
+    if tarr is None:
+        return tarr
+    if tarr.dtype.names is not None and 'feed_type' in tarr.dtype.names:
+        # Field present (current DTARR). Fill blank feed_types -- e.g. from a
+        # zero-initialised np.zeros(dtype=DTARR) -- with the legacy 'rl'
+        # default; leave the '??' must-declare sentinel for validation.
+        blank = tarr['feed_type'] == ''
+        if blank.any():
+            tarr = tarr.copy()
+            tarr['feed_type'][blank] = 'rl'
+        return tarr
+    new = _np.zeros(len(tarr), dtype=DTARR)
+    for name in ('site', 'x', 'y', 'z',
+                 'sefdr', 'sefdl', 'dr', 'dl',
+                 'fr_par', 'fr_elev', 'fr_off'):
+        new[name] = tarr[name]
+    new['feed_type'] = 'rl'
+    return new
+
+
+def upgrade_dtpol_circ(data):
+    """Zero-copy view-cast of a legacy DTPOL_CIRC recarray to add title aliases.
+
+    Idempotent. Bytes are identical between legacy and new layouts; only
+    the dtype object adds the generic p1p1vis/... aliases. Returns the
+    input unchanged for non-CIRC dtypes.
+    """
+    import numpy as _np
+    target = _np.dtype(DTPOL_CIRC)
+    if data.dtype == target:
+        return data
+    if data.dtype.itemsize == target.itemsize and data.dtype.names == target.names:
+        return data.view(target)
+    return data
+
+
+def upgrade_dtcal_circ(data):
+    """Upgrade a legacy DTCAL recarray (time, rscale, lscale) to DTCAL_CIRC.
+
+    Legacy DTCAL has no D-term fields; the upgrade allocates a new recarray
+    and zero-fills dr/dl. Idempotent.
+    """
+    import numpy as _np
+    target = _np.dtype(DTCAL_CIRC)
+    if data.dtype == target:
+        return data
+    names = data.dtype.names or ()
+    if 'rscale' in names and 'dr' not in names:
+        new = _np.zeros(len(data), dtype=target)
+        for name in ('time', 'rscale', 'lscale'):
+            new[name] = data[name]
+        return new
+    return data
+
+
+@functools.lru_cache(maxsize=16)
+def feed_poldict(t1_feed, t2_feed):
+    """Return the four field names for a baseline with given feed types.
+
+    Slot convention: vis1 = (p1 of t1) x (p1 of t2), vis2 = p2 x p2,
+    vis3 = p1 x p2, vis4 = p2 x p1. Returns the *physical* slot labels
+    (e.g. 'rrvis' for ('rl','rl'); 'rxvis' for ('rl','xy')). Used at
+    construction time; '??' raises rather than silently defaulting.
+    """
+    if t1_feed == '??' or t2_feed == '??':
+        raise ValueError("feed_poldict: unknown feed_type '??' "
+                         f"(t1={t1_feed!r}, t2={t2_feed!r})")
+    p1a, p2a = t1_feed[0], t1_feed[1]
+    p1b, p2b = t2_feed[0], t2_feed[1]
+    return {'vis1': f'{p1a}{p1b}vis',
+            'vis2': f'{p2a}{p2b}vis',
+            'vis3': f'{p1a}{p2b}vis',
+            'vis4': f'{p2a}{p1b}vis',
+            'sigma1': f'{p1a}{p1b}sigma',
+            'sigma2': f'{p2a}{p2b}sigma',
+            'sigma3': f'{p1a}{p2b}sigma',
+            'sigma4': f'{p2a}{p1b}sigma'}
+
 
 # Dictionaries for keeping track of polarization fields
 POLDICT_STOKES = {'vis1': 'vis', 'vis2': 'qvis', 'vis3': 'uvis', 'vis4': 'vvis',
                   'sigma1': 'sigma', 'sigma2': 'qsigma', 'sigma3': 'usigma', 'sigma4': 'vsigma'}
 POLDICT_CIRC = {'vis1': 'rrvis', 'vis2': 'llvis', 'vis3': 'rlvis', 'vis4': 'lrvis',
                 'sigma1': 'rrsigma', 'sigma2': 'llsigma', 'sigma3': 'rlsigma', 'sigma4': 'lrsigma'}
+POLDICT_LIN = {'vis1': 'xxvis', 'vis2': 'yyvis', 'vis3': 'xyvis', 'vis4': 'yxvis',
+               'sigma1': 'xxsigma', 'sigma2': 'yysigma', 'sigma3': 'xysigma', 'sigma4': 'yxsigma'}
+POLDICT_MIXED = {'vis1': 'p1p1vis', 'vis2': 'p2p2vis', 'vis3': 'p1p2vis', 'vis4': 'p2p1vis',
+                 'sigma1': 'p1p1sigma', 'sigma2': 'p2p2sigma',
+                 'sigma3': 'p1p2sigma', 'sigma4': 'p2p1sigma'}
+polrep_to_poldict = {'stokes': POLDICT_STOKES, 'circ': POLDICT_CIRC,
+                     'lin': POLDICT_LIN, 'mixed': POLDICT_MIXED}
 vis_poldict = {'I': 'vis', 'Q': 'qvis', 'U': 'uvis', 'V': 'vvis',
-               'RR': 'rrvis', 'LL': 'llvis', 'RL': 'rlvis', 'LR': 'lrvis'}
+               'RR': 'rrvis', 'LL': 'llvis', 'RL': 'rlvis', 'LR': 'lrvis',
+               'XX': 'xxvis', 'YY': 'yyvis', 'XY': 'xyvis', 'YX': 'yxvis'}
 amp_poldict = {'I': 'amp', 'Q': 'qamp', 'U': 'uamp', 'V': 'vamp',
-               'RR': 'rramp', 'LL': 'llamp', 'RL': 'rlamp', 'LR': 'lramp'}
+               'RR': 'rramp', 'LL': 'llamp', 'RL': 'rlamp', 'LR': 'lramp',
+               'XX': 'xxamp', 'YY': 'yyamp', 'XY': 'xyamp', 'YX': 'yxamp'}
 sig_poldict = {'I': 'sigma', 'Q': 'qsigma', 'U': 'usigma', 'V': 'vsigma',
-               'RR': 'rrsigma', 'LL': 'llsigma', 'RL': 'rlsigma', 'LR': 'lrsigma'}
+               'RR': 'rrsigma', 'LL': 'llsigma', 'RL': 'rlsigma', 'LR': 'lrsigma',
+               'XX': 'xxsigma', 'YY': 'yysigma', 'XY': 'xysigma', 'YX': 'yxsigma'}
 
 # Observation fields for plotting and retrieving data
 FIELDS = ['time', 'time_utc', 'time_gmst',
@@ -156,19 +311,37 @@ FIELDS = ['time', 'time_utc', 'time_gmst',
           'llvis', 'llamp', 'llphase', 'llsnr', 'llsigma', 'llsigma_phase',
           'rlvis', 'rlamp', 'rlphase', 'rlsnr', 'rlsigma', 'rlsigma_phase',
           'lrvis', 'lramp', 'lrphase', 'lrsnr', 'lrsigma', 'lrsigma_phase',
-          'rrllvis', 'rrllamp', 'rrllphase', 'rrllsnr', 'rrllsigma', 'rrllsigma_phase']
+          'rrllvis', 'rrllamp', 'rrllphase', 'rrllsnr', 'rrllsigma', 'rrllsigma_phase',
+          'xxvis', 'xxamp', 'xxphase', 'xxsnr', 'xxsigma', 'xxsigma_phase',
+          'yyvis', 'yyamp', 'yyphase', 'yysnr', 'yysigma', 'yysigma_phase',
+          'xyvis', 'xyamp', 'xyphase', 'xysnr', 'xysigma', 'xysigma_phase',
+          'yxvis', 'yxamp', 'yxphase', 'yxsnr', 'yxsigma', 'yxsigma_phase',
+          'p1p1vis', 'p1p1amp', 'p1p1phase', 'p1p1snr', 'p1p1sigma', 'p1p1sigma_phase',
+          'p2p2vis', 'p2p2amp', 'p2p2phase', 'p2p2snr', 'p2p2sigma', 'p2p2sigma_phase',
+          'p1p2vis', 'p1p2amp', 'p1p2phase', 'p1p2snr', 'p1p2sigma', 'p1p2sigma_phase',
+          'p2p1vis', 'p2p1amp', 'p2p1phase', 'p2p1snr', 'p2p1sigma', 'p2p1sigma_phase']
 
 FIELDS_AMPS = ["amp", "qamp", "uamp", "vamp",
-               "pamp", "mamp", "rramp", "llamp", "rlamp", "lramp", "rrllamp"]
+               "pamp", "mamp", "rramp", "llamp", "rlamp", "lramp", "rrllamp",
+               "xxamp", "yyamp", "xyamp", "yxamp",
+               "p1p1amp", "p2p2amp", "p1p2amp", "p2p1amp"]
 FIELDS_SIGS = ["sigma", "qsigma", "usigma", "vsigma",
-               "psigma", "msigma", "rrsigma", "llsigma", "rlsigma", "lrsigma", "rrllsigma"]
+               "psigma", "msigma", "rrsigma", "llsigma", "rlsigma", "lrsigma", "rrllsigma",
+               "xxsigma", "yysigma", "xysigma", "yxsigma",
+               "p1p1sigma", "p2p2sigma", "p1p2sigma", "p2p1sigma"]
 FIELDS_PHASE = ["phase", "qphase", "uphase", "vphase", "pphase", "mphase",
-                "rrphase", "llphase", "rlphase", "lrphase", "rrllphase"]
+                "rrphase", "llphase", "rlphase", "lrphase", "rrllphase",
+                "xxphase", "yyphase", "xyphase", "yxphase",
+                "p1p1phase", "p2p2phase", "p1p2phase", "p2p1phase"]
 FIELDS_SIGPHASE = ["sigma_phase", "qsigma_phase", "usigma_phase", "vsigma_phase",
                    "psigma_phase", "msigma_phase", "rrsigma_phase", "llsigma_phase",
-                   "rlsigma_phase", "lrsigma_phase", "rrllsigma_phase"]
+                   "rlsigma_phase", "lrsigma_phase", "rrllsigma_phase",
+                   "xxsigma_phase", "yysigma_phase", "xysigma_phase", "yxsigma_phase",
+                   "p1p1sigma_phase", "p2p2sigma_phase", "p1p2sigma_phase", "p2p1sigma_phase"]
 FIELDS_SNRS = ["snr", "qsnr", "usnr", "vsnr", "psnr", "msnr",
-               "rrsnr", "llsnr", "rlsnr", "lrsnr", "rrllsnr"]
+               "rrsnr", "llsnr", "rlsnr", "lrsnr", "rrllsnr",
+               "xxsnr", "yysnr", "xysnr", "yxsnr",
+               "p1p1snr", "p2p2snr", "p1p2snr", "p2p1snr"]
 
 # Plotting
 MARKERSIZE = 3

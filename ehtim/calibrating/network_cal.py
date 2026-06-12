@@ -410,7 +410,8 @@ def network_cal_scan(scan, zbl, sites, clustered_sites, polrep='stokes', pol='I'
 
             # Note: we may want to give two entries for the start/stop times
             # when a non-zero solution interval is used
-            caldict[site] = np.array((scan['time'][0], rscale, lscale), dtype=ehc.DTCAL)
+            # TODO: time-dependent D-term field added but unpopulated
+            caldict[site] = np.array((scan['time'][0], rscale, lscale, 0j, 0j), dtype=ehc.DTCAL)
 
         out = caldict
 

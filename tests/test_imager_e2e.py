@@ -17,6 +17,8 @@ Covers all three transform types (direct / fast / nfft) and both
 Stokes-I and polarimetric (IP) imaging.
 """
 
+import warnings
+
 import numpy as np
 import pytest
 
@@ -153,6 +155,48 @@ class TestEndToEndReconstruction:
             gauss_im, metric=["nxcorr"], blur_frac=0.0,
         )
         assert errors[0] > STOKES_I_NXCORR_MIN
+
+    @pytest.mark.parametrize("polrep", ["circ", "lin"])
+    def test_stokes_i_closure_imaging_polrep_transparent(self, gauss_im, observe, polrep):
+        """Stokes-I closure imaging is independent of the obs polrep.
+
+        Imaging from a circ- or lin-polrep observation forms its amp/cphase/
+        logcamp data terms by synthesizing Stokes I from rr/ll (or xx/yy) via
+        the mixed-pol unpack path, and must reproduce the stokes-obs
+        reconstruction. The source is unpolarized, so the synthesis is exact.
+        """
+        obs_stokes = observe(gauss_im, ttype="direct", seed=42)
+        prior = _independent_prior(gauss_im.total_flux())
+
+        def image(obs):
+            imgr = eh.imager.Imager(
+                obs, prior, prior_im=prior, flux=gauss_im.total_flux(),
+                **_imager_kwargs_stokes_i("direct"),
+            )
+            return imgr.make_image_I(niter=3, show_updates=False)
+
+        out_stokes = image(obs_stokes)
+        # singlepol_hand selects the surviving parallel hand: R for circ, X for lin
+        hand = 'X' if polrep == 'lin' else 'R'
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore")  # polrep vs feed_type mismatch + convention
+            obs_other = obs_stokes.switch_polrep(polrep, singlepol_hand=hand)
+
+        # unpolarized source -> exact I synthesis -> data products identical to machine precision
+        for f in ['vis', 'amp']:
+            np.testing.assert_allclose(obs_other.unpack(f)[f], obs_stokes.unpack(f)[f],
+                                       rtol=0, atol=1e-12)
+
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore")
+            out_other = image(obs_other)
+
+        (errors, _, _) = out_other.compare_images(
+            gauss_im, metric=["nxcorr"], blur_frac=0.0)
+        assert errors[0] > STOKES_I_NXCORR_MIN
+        (xcorr, _, _) = out_other.compare_images(
+            out_stokes, metric=["nxcorr"], blur_frac=0.0)
+        assert xcorr[0] > 0.99
 
     def test_recovers_gaussian_polarimetric_ip(self, gauss_im_pol, observe):
         """Simultaneous Stokes I + P imaging on a polarized Gaussian source.

@@ -17,18 +17,13 @@
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-from __future__ import division
-from __future__ import print_function
 
-from builtins import str
-from builtins import range
-from builtins import object
-
-import numpy as np
+import os
 import re
 
+import numpy as np
 from astropy.time import Time
-import os
+
 import ehtim.array
 import ehtim.const_def as ehc
 
@@ -37,7 +32,7 @@ import ehtim.const_def as ehc
 ###################################################################################################
 
 
-class Vex(object):
+class Vex:
     """Read in observing schedule data from .vex files.
        Assumes there is only 1 MODE in vex file
 
@@ -172,7 +167,7 @@ class Vex(object):
         # mimic the function "load_array(filename)"
         # TODO this does not store d-term and pol cal. information!
         tdataout = [np.array((x[0], float(x[1]), float(x[2]), float(x[3]), float(x[4]), float(x[4]),
-                              0.0, 0.0, 0.0, 0.0, 0.0),
+                              0.0, 0.0, 0.0, 0.0, 0.0, 'rl'),
                              dtype=ehc.DTARR) for x in sites]
 
         tdataout = np.array(tdataout)
@@ -234,7 +229,7 @@ class Vex(object):
         for i in range(len(self.metalist)):
             if sname in self.metalist[i][0]:
                 return self.metalist[i]
-        print('No sector named %s' % sname)
+        print(f'No sector named {sname}')
         return False
 
     # Function to get a value of 'vname' in a line which has format of
@@ -287,7 +282,7 @@ class Vex(object):
         for i in range(len(sites)):
             if sites[i].split()[0] == station:
                 return float(re.findall(r"[-+]?\d+[\.]?\d*", sites[i])[3])
-        print('No station named %s' % station)
+        print(f'No station named {station}')
         return 10000.  # some arbitrary value
 
     # Find the time that any station starts observing the source in MJD.
@@ -324,7 +319,7 @@ def vexdate_to_MJD_hr(vexdate):
     time = re.findall(r"[-+]?\d+[\.]?\d*", vexdate)
     year = int(time[0])
     date = int(time[1])
-    yeardatetime = ("%04i" % year) + ':' + ("%03i" % date) + ":00:00:00.000"
+    yeardatetime = f"{year:04d}" + ':' + f"{date:03d}" + ":00:00:00.000"
     t = Time(yeardatetime, format='yday')
     mjd = t.mjd
     hour = int(time[2]) + float(time[3]) / 60. + float(time[4]) / 60. / 60.
