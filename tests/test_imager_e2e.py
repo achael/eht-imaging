@@ -195,6 +195,34 @@ class TestEndToEndReconstruction:
         assert p_total == pytest.approx(p_truth, rel=0.5), (
             f"total polarized flux {p_total:.3e} off from truth {p_truth:.3e}")
 
+    def test_iv_gradient_matches_finite_difference(self, obs_pol_direct, gauss_im_pol, gauss_prior):
+        """IV (circular-pol) analytic gradient must match finite differences.
+
+        Regression for the vcv / chisqgrad_vvis bug: vcv_grad's vprime chain rule
+        uses the physical rho gradient, which chisqgrad_vvis previously skipped for
+        pol='IV' (pol_solve=[1,0,0,1]), making the V-angle gradient badly wrong
+        (~99% off; FD median was ~6e-2 before, ~3e-10 after).
+        """
+        imgr = eh.imager.Imager(
+            obs_pol_direct, gauss_prior, prior_im=gauss_prior, flux=gauss_im_pol.total_flux(),
+            data_term={"amp": 100, "vvis": 100}, reg_term={"simple": 1},
+            ttype="direct", pol="IV", transform=["log", "vcv"], maxit=100,
+        )
+        imgr.init_imager()
+        rng = np.random.default_rng(4)
+        x = np.asarray(imgr._init_vec, float) + 0.10 * rng.standard_normal(imgr._init_vec.size)
+        g = np.asarray(imgr.objgrad(x))
+        idx = np.argsort(np.abs(g))[-40:]  # best-conditioned components
+        fd = np.empty(40)
+        for k, j in enumerate(idx):
+            a, b = x.copy(), x.copy()
+            a[j] += 1e-6
+            b[j] -= 1e-6
+            fd[k] = (imgr.objfunc(a) - imgr.objfunc(b)) / 2e-6
+        frac = np.abs((fd - g[idx]) / (np.abs(g[idx]) + 1e-100))
+        assert np.median(frac) < 1e-3
+        assert np.max(frac) < 1e-2
+
 
 def test_imager_fast_ttype_warns_deprecated(gauss_im, observe):
     """Constructing an Imager with ttype='fast' emits the imaging-context
