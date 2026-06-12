@@ -196,6 +196,19 @@ def polcv_grad(imarr, gradarr):
     return out
 
 
+def _rho_psi_safe(xp, mfrac, vfrac):
+    """rho=sqrt(mfrac^2+vfrac^2), psi=arcsin(vfrac/rho), guarded so jax.grad stays finite
+    at zero-polarization pixels (sqrt(0) and arcsin(+/-1) singularities). Values are
+    unchanged where rho>0 and |vfrac/rho|<1.
+    """
+    r2 = mfrac**2 + vfrac**2
+    rho = xp.where(r2 > 0, xp.sqrt(xp.where(r2 > 0, r2, 1.0)), 0.0)
+    s = vfrac / xp.where(rho > 0, rho, 1.0)
+    inbound = xp.abs(s) < 1
+    psi = xp.where(inbound, xp.arcsin(xp.where(inbound, s, 0.0)), xp.sign(s) * (np.pi / 2))
+    return rho, psi
+
+
 def mcv(imarr):
     """change of variables m(n') from range (-inf, inf) to (0,1)
        input is solver values, output is physical values
@@ -208,8 +221,7 @@ def mcv(imarr):
     mfrac_prime =  imarr[1]
     mfrac = mfrac_max*(0.5 + xp.arctan(mfrac_prime/TANWIDTH_M)/np.pi)
 
-    rho = xp.sqrt(mfrac**2 + vfrac**2)
-    psi = xp.arcsin(vfrac/rho)
+    rho, psi = _rho_psi_safe(xp, mfrac, vfrac)
 
     out = xp.stack((imarr[0], rho, imarr[2], psi))
     return out
@@ -280,8 +292,7 @@ def vcv(imarr):
     vfrac_prime = imarr[3]
     vfrac = 2*vfrac_max*xp.arctan(vfrac_prime/TANWIDTH_V)/np.pi
 
-    rho = xp.sqrt(mfrac**2 + vfrac**2)
-    psi = xp.arcsin(vfrac/rho)
+    rho, psi = _rho_psi_safe(xp, mfrac, vfrac)
 
     out = xp.stack((imarr[0], rho, imarr[2], psi))
     return out
@@ -469,8 +480,9 @@ def chisqgrad_p(imarr, Amatrix, p, sigmap,pol_solve=POL_SOLVE_DEFAULT):
         gradphi = 0.5*gradchi
         gradout[2] = gradphi
 
-    # TODO check
-    if pol_solve[3]!=0:
+    # mcv couples mprime to psi, so mcv_grad's mprime gradient needs grad_psi; gating
+    # it on pol_solve[3] alone dropped it for IP. Mirror of the vcv/grad_rho fix (#296).
+    if pol_solve[1]!=0 or pol_solve[3]!=0:
         gradm = -np.real(iimage * np.exp(-2j*chiimage) * np.dot(Amatrix.conj().T, pdiff)) / len(p)
         gradpsi = gradm * (-mimage*np.tan(psiimage))
         gradout[3] = gradpsi
@@ -519,7 +531,8 @@ def chisqgrad_m(imarr, Amatrix, m, sigmam,pol_solve=POL_SOLVE_DEFAULT):
         gradphi = 0.5*gradchi
         gradout[2] = gradphi
 
-    if pol_solve[3]!=0:
+    # see chisqgrad_p: psi gradient needed when m is solved (mcv couples mprime -> psi)
+    if pol_solve[1]!=0 or pol_solve[3]!=0:
         gradm = -np.real(iimage*np.exp(-2j*chiimage) * np.dot(Amatrix.conj().T, mdiff)) / len(m)
         gradpsi = gradm * (-mimage*np.tan(psiimage))
         gradout[3] = gradpsi
@@ -624,7 +637,8 @@ def chisqgrad_p_nfft(imarr, A, p, sigmap,pol_solve=POL_SOLVE_DEFAULT):
         gradphi = 0.5*gradchi
         gradout[2] = gradphi
 
-    if pol_solve[3]!=0:
+    # see chisqgrad_p: psi gradient needed when m is solved (mcv couples mprime -> psi)
+    if pol_solve[1]!=0 or pol_solve[3]!=0:
         gradm = np.real(iimage*np.exp(-2j*chiimage) *ppart)
         gradpsi = gradm * (-mimage*np.tan(psiimage))
         gradout[3] = gradpsi
@@ -693,7 +707,8 @@ def chisqgrad_m_nfft(imarr, A, m, sigmam,pol_solve=POL_SOLVE_DEFAULT):
         gradphi = 0.5*gradchi
         gradout[2] = gradphi
 
-    if pol_solve[3]!=0:
+    # see chisqgrad_p: psi gradient needed when m is solved (mcv couples mprime -> psi)
+    if pol_solve[1]!=0 or pol_solve[3]!=0:
         gradm = np.real(iimage*np.exp(-2j*chiimage) * mpart)
         gradpsi = gradm * (-mimage*np.tan(psiimage))
         gradout[3] = gradpsi
@@ -791,7 +806,8 @@ def reggrad_msimple(imarr, mask, **kwargs):
     if pol_solve[1] != 0:
         gradm = iimage / mimage
         gradout[1] = gradm * np.cos(psiimage)
-    if pol_solve[3] != 0:
+    # psi gradient needed when m is solved (mcv couples mprime -> psi); see #296
+    if pol_solve[1] != 0 or pol_solve[3] != 0:
         gradm = iimage / mimage
         gradout[3] = gradm * (-mimage * np.tan(psiimage))
     return gradout / norm
@@ -821,7 +837,8 @@ def reggrad_hw(imarr, mask, **kwargs):
     if pol_solve[1] != 0:
         gradm = iimage * np.arctanh(mimage)
         gradout[1] = gradm * np.cos(psiimage)
-    if pol_solve[3] != 0:
+    # psi gradient needed when m is solved (mcv couples mprime -> psi); see #296
+    if pol_solve[1] != 0 or pol_solve[3] != 0:
         gradm = iimage * np.arctanh(mimage)
         gradout[3] = gradm * (-mimage * np.tan(psiimage))
     return gradout / norm
@@ -909,7 +926,8 @@ def reggrad_ptv(imarr, mask, **kwargs):
         c3 = 2*np.abs(im*im_r2)*np.sin(np.angle(im) - np.angle(im_r2))
         gradchi = (c1/d1 + c2/d2 + c3/d3).flatten()
         gradout[2] = 0.5 * gradchi
-    if pol_solve[3] != 0:
+    # psi gradient needed when m is solved (mcv couples mprime -> psi); see #296
+    if pol_solve[1] != 0 or pol_solve[3] != 0:
         # dS/dpsi numerators; reuse dS/dm and chain through dm/dpsi = -m*tan(psi).
         m1 = 2*np.abs(im) - np.abs(im_l1)*np.cos(np.angle(im_l1) - np.angle(im)) - np.abs(im_l2)*np.cos(np.angle(im_l2) - np.angle(im))
         m2 = np.abs(im) - np.abs(im_r1)*np.cos(np.angle(im) - np.angle(im_r1))
@@ -948,9 +966,10 @@ def reggrad_vflux(imarr, mask, **kwargs):
     gradout = np.zeros(imarr.shape)
     if pol_solve[0] != 0:
         gradout[0] = (vimage / iimage) * base  # dS/dI
-    if pol_solve[1] != 0:
+    # rho gradient needed whenever V is solved (vcv couples vprime -> rho); see #296
+    if pol_solve[1] != 0 or pol_solve[3] != 0:
         gradv = iimage * base
-        gradout[1] = gradv * np.sin(psiimage)  # dS/dm
+        gradout[1] = gradv * np.sin(psiimage)  # dS/drho
     if pol_solve[3] != 0:
         gradv = iimage * base
         gradout[3] = gradv * (vfimage / np.tan(psiimage))  # dS/dpsi; vf/tan(psi) = m*cos(psi)
@@ -978,9 +997,10 @@ def reggrad_l1v(imarr, mask, **kwargs):
     gradout = np.zeros(imarr.shape)
     if pol_solve[0] != 0:
         gradout[0] = vfimage * base  # dS/dI (vfimage = V/I)
-    if pol_solve[1] != 0:
+    # rho gradient needed whenever V is solved (vcv couples vprime -> rho); see #296
+    if pol_solve[1] != 0 or pol_solve[3] != 0:
         gradv = iimage * base
-        gradout[1] = gradv * np.sin(psiimage)  # dS/dm
+        gradout[1] = gradv * np.sin(psiimage)  # dS/drho
     if pol_solve[3] != 0:
         gradv = iimage * base
         gradout[3] = gradv * (vfimage / np.tan(psiimage))  # dS/dpsi
@@ -1008,9 +1028,10 @@ def reggrad_l2v(imarr, mask, **kwargs):
     gradout = np.zeros(imarr.shape)
     if pol_solve[0] != 0:
         gradout[0] = vfimage * base  # dS/dI
-    if pol_solve[1] != 0:
+    # rho gradient needed whenever V is solved (vcv couples vprime -> rho); see #296
+    if pol_solve[1] != 0 or pol_solve[3] != 0:
         gradv = iimage * base
-        gradout[1] = gradv * np.sin(psiimage)  # dS/dm
+        gradout[1] = gradv * np.sin(psiimage)  # dS/drho
     if pol_solve[3] != 0:
         gradv = iimage * base
         gradout[3] = gradv * (vfimage / np.tan(psiimage))  # dS/dpsi
@@ -1072,9 +1093,10 @@ def reggrad_vtv(imarr, mask, **kwargs):
     gradout = np.zeros(imarr.shape)
     if pol_solve[0] != 0:
         gradout[0] = vfimage * base  # dS/dI
-    if pol_solve[1] != 0:
+    # rho gradient needed whenever V is solved (vcv couples vprime -> rho); see #296
+    if pol_solve[1] != 0 or pol_solve[3] != 0:
         gradv = iimage * base
-        gradout[1] = gradv * np.sin(psiimage)  # dS/dm
+        gradout[1] = gradv * np.sin(psiimage)  # dS/drho
     if pol_solve[3] != 0:
         gradv = iimage * base
         gradout[3] = gradv * (vfimage / np.tan(psiimage))  # dS/dpsi
@@ -1133,9 +1155,10 @@ def reggrad_vtv2(imarr, mask, **kwargs):
     gradout = np.zeros(imarr.shape)
     if pol_solve[0] != 0:
         gradout[0] = vfimage * base  # dS/dI
-    if pol_solve[1] != 0:
+    # rho gradient needed whenever V is solved (vcv couples vprime -> rho); see #296
+    if pol_solve[1] != 0 or pol_solve[3] != 0:
         gradv = iimage * base
-        gradout[1] = gradv * np.sin(psiimage)  # dS/dm
+        gradout[1] = gradv * np.sin(psiimage)  # dS/drho
     if pol_solve[3] != 0:
         gradv = iimage * base
         gradout[3] = gradv * (vfimage / np.tan(psiimage))  # dS/dpsi
