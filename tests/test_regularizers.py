@@ -298,45 +298,68 @@ class TestPolRegularizerGradients:
             f"{rtype} max fractional gradient diff = {max_frac:.6f} (tol={max_tol})"
         )
 
-    def test_reggrad_ptv_matches_fd_on_boundary(self):
-        """ptv gradient is correct on the first row/column, not just the interior.
+    # TV-family regularizers: tv/tv2 are Stokes-I (1D imvec), ptv/vtv/vtv2 are pol (4-row imarr)
+    @pytest.mark.parametrize("rtype, is_pol", [("tv", False), ("tv2", False),
+                                               ("ptv", True), ("vtv", True), ("vtv2", True)])
+    def test_tv_gradient_on_boundary(self, rtype, is_pol):
+        """TV gradient is correct on the first row/col, not just the interior.
 
-        The back-neighbor magnitude numerators do not vanish at the zero-pad,
-        so the first row/col would otherwise pick up a neighbor that does not
-        exist. The random-pixel FD check above rarely lands on the boundary;
-        this checks every pixel of a small full-mask grid so the edges are
-        exercised directly.
+        Back-neighbor terms hit the zero-pad there and must be masked out (the bug
+        fixed for ptv in #295). A full-mask grid exercises every edge pixel.
         """
         rng = np.random.default_rng(0)
         ny = nx = 6
         n = ny * nx
-        imarr = np.array([rng.uniform(0.5, 2.0, n), rng.uniform(0.1, 0.5, n),
-                          rng.uniform(-1.0, 1.0, n), rng.uniform(-0.5, 0.5, n)])
         mask = np.ones(n, dtype=bool)
-        kw = dict(flux=float(imarr[0].sum()), xdim=nx, ydim=ny, psize=1.0,
-                  beam_size=2.0, norm_reg=True)
-        g_an = np.asarray(pu.reggrad_ptv(imarr, mask,
-                                         pol_solve=np.array([1, 1, 1, 1]), **kw))
+        kw = dict(xdim=nx, ydim=ny, psize=1.0, beam_size=2.0, norm_reg=True)
+        if is_pol:
+            x = np.array([rng.uniform(0.5, 2.0, n), rng.uniform(0.1, 0.5, n),
+                          rng.uniform(-1.0, 1.0, n), rng.uniform(-0.5, 0.5, n)])
+            kw.update(flux=float(x[0].sum()), vflux=float(x[0].sum()))
+            reg, reggrad = getattr(pu, f"reg_{rtype}"), getattr(pu, f"reggrad_{rtype}")
+            g_an = np.asarray(reggrad(x, mask, pol_solve=np.array([1, 1, 1, 1]), **kw))
+        else:
+            x = rng.uniform(0.1, 2.0, (1, n))
+            kw.update(flux=float(x.sum()))
+            reg, reggrad = getattr(iu, f"reg_{rtype}"), getattr(iu, f"reggrad_{rtype}")
+            g_an = np.atleast_2d(np.asarray(reggrad(x[0], mask, **kw)))
         dx = 1e-6
-        g_fd = np.zeros_like(imarr)
-        for slot in range(4):
+        g_fd = np.zeros_like(g_an)
+        for s in range(g_an.shape[0]):
             for j in range(n):
-                a = imarr.copy()
-                a[slot, j] += dx
-                fp = pu.reg_ptv(a, mask, **kw)
-                a = imarr.copy()
-                a[slot, j] -= dx
-                fm = pu.reg_ptv(a, mask, **kw)
-                g_fd[slot, j] = (fp - fm) / (2 * dx)
-        edge = np.zeros((ny, nx), dtype=bool)
-        edge[0, :] = True
-        edge[:, 0] = True
-        edge = edge.flatten()
-        for slot in range(4):
-            assert np.max(np.abs(g_an[slot] - g_fd[slot])) < 1e-5, (
-                f"slot {slot} ptv gradient disagrees with FD "
-                f"(max boundary diff {np.max(np.abs((g_an[slot] - g_fd[slot])[edge])):.2e})"
-            )
+                a = x.copy()
+                a[s, j] += dx
+                fp = reg(a if is_pol else a[0], mask, **kw)
+                a = x.copy()
+                a[s, j] -= dx
+                fm = reg(a if is_pol else a[0], mask, **kw)
+                g_fd[s, j] = (fp - fm) / (2 * dx)
+        for s in range(g_an.shape[0]):
+            assert np.max(np.abs(g_an[s] - g_fd[s])) < 1e-5, (
+                f"{rtype} slot {s}: gradient disagrees with FD on the grid")
+
+    @pytest.mark.parametrize("rtype, is_pol", [("tv", False), ("ptv", True), ("vtv", True)])
+    def test_tv_epsilon_removes_singularity(self, rtype, is_pol):
+        """A spatially-constant image zeros the neighbor diffs (0/0 in the TV sqrt);
+        epsilon_tv keeps the gradient finite (default 0 stays byte-identical)."""
+        ny = nx = 6
+        n = ny * nx
+        mask = np.ones(n, dtype=bool)
+        kw = dict(xdim=nx, ydim=ny, psize=1.0, beam_size=2.0, norm_reg=True)
+        if is_pol:
+            x = np.ones((4, n))
+            x[0], x[1], x[2], x[3] = 2.0, 0.3, 0.5, 0.2
+            kw.update(flux=float(x[0].sum()), vflux=float(x[0].sum()),
+                      pol_solve=np.array([1, 1, 1, 1]))
+            reggrad = getattr(pu, f"reggrad_{rtype}")
+        else:
+            x = np.full(n, 0.5)
+            kw.update(flux=float(x.sum()))
+            reggrad = getattr(iu, f"reggrad_{rtype}")
+        g0 = np.asarray(reggrad(x, mask, epsilon_tv=0.0, **kw))
+        ge = np.asarray(reggrad(x, mask, epsilon_tv=0.01, **kw))
+        assert not np.all(np.isfinite(g0)), f"{rtype}: expected singular grad at epsilon_tv=0"
+        assert np.all(np.isfinite(ge)), f"{rtype}: expected finite grad at epsilon_tv>0"
 
 
 def _pol_gradient_check(polreg_setup, rtype):
