@@ -359,6 +359,11 @@ def polchisqgrad(imarr, A, data, sigma, dtype, ttype='direct', mask=[],
     Thin shim around imager_backend.compute_chisqgrad_term retained for
     backward compatibility. New code should call compute_chisqgrad_term
     directly.
+
+    pol_solve here is the gating mask passed straight to the kernels: it flags
+    the required physical gradients (I, rho, phi, psi), not the solver DOFs.
+    For mcv/vcv imaging pass physical_grad_slots(dof_mask, transforms), not the
+    raw DOF mask.
     """
     from ehtim.imaging.imager_backend import compute_chisqgrad_term
     if dtype not in DATATERMS_POL:
