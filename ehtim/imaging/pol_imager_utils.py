@@ -435,6 +435,9 @@ def chisq_p(imarr, Amatrix, p, sigmap):
 
 def chisqgrad_p(imarr, Amatrix, p, sigmap,pol_solve=POL_SOLVE_DEFAULT):
     """Polarimetric visibility chi-squared gradient
+
+    pol_solve here flags the required physical gradients (I, rho, phi, psi),
+    not the solver variables.
     """
     gradout = np.zeros(imarr.shape)
 
@@ -482,6 +485,9 @@ def chisq_m(imarr, Amatrix, m, sigmam):
 
 def chisqgrad_m(imarr, Amatrix, m, sigmam,pol_solve=POL_SOLVE_DEFAULT):
     """The gradient of the polarimetric ratio chisq
+
+    pol_solve here flags the required physical gradients (I, rho, phi, psi),
+    not the solver variables.
     """
     gradout = np.zeros(imarr.shape)
 
@@ -531,6 +537,9 @@ def chisq_vvis(imarr, Amatrix, v, sigmav):
 
 def chisqgrad_vvis(imarr, Amatrix, v, sigmav, pol_solve=POL_SOLVE_DEFAULT_V):
     """V visibility chi-squared gradient
+
+    pol_solve here flags the required physical gradients (I, rho, phi, psi),
+    not the solver variables.
     """
 
     gradout = np.zeros(imarr.shape)
@@ -547,11 +556,7 @@ def chisqgrad_vvis(imarr, Amatrix, v, sigmav, pol_solve=POL_SOLVE_DEFAULT_V):
         gradi = -np.real(vfimage * np.dot(Amatrix.conj().T, vdiff)) / len(v)
         gradout[0] = gradi
 
-    # The physical rho gradient is needed whenever V is solved: the vcv transform
-    # expresses V via vprime, and vcv_grad's vprime chain rule uses it
-    # (out[2] = drho_dvprime*grad_rho + dpsi_dvprime*grad_psi). Computing it only
-    # when pol_solve[1] is set dropped the dominant drho_dvprime term for pol='IV'.
-    if pol_solve[1]!=0 or pol_solve[3]!=0:
+    if pol_solve[1]!=0:
         gradv = -np.real(iimage * np.dot(Amatrix.conj().T, vdiff)) / len(v)
         gradrho = gradv*np.sin(psiimage)
         gradout[1] = gradrho
@@ -588,6 +593,9 @@ def chisq_p_nfft(imarr, A, p, sigmap):
 
 def chisqgrad_p_nfft(imarr, A, p, sigmap,pol_solve=POL_SOLVE_DEFAULT):
     """P visibility chi-squared gradient
+
+    pol_solve here flags the required physical gradients (I, rho, phi, psi),
+    not the solver variables.
     """
     gradout = np.zeros(imarr.shape)
 
@@ -663,6 +671,9 @@ def chisq_m_nfft(imarr, A, m, sigmam):
 
 def chisqgrad_m_nfft(imarr, A, m, sigmam,pol_solve=POL_SOLVE_DEFAULT):
     """Polarimetric ratio chi-squared gradient
+
+    pol_solve here flags the required physical gradients (I, rho, phi, psi),
+    not the solver variables.
     """
     gradout = np.zeros(imarr.shape)
 
@@ -740,6 +751,9 @@ def chisq_vvis_nfft(imarr, A, v, sigmav):
 
 def chisqgrad_vvis_nfft(imarr, A, v, sigmav,pol_solve=POL_SOLVE_DEFAULT):
     """V visibility chi-squared gradient
+
+    pol_solve here flags the required physical gradients (I, rho, phi, psi),
+    not the solver variables.
     """
     gradout = np.zeros(imarr.shape)
 
@@ -770,9 +784,7 @@ def chisqgrad_vvis_nfft(imarr, A, v, sigmav,pol_solve=POL_SOLVE_DEFAULT):
         gradi = np.real(vfimage*vpart)
         gradout[0] = gradi
 
-    # See chisqgrad_vvis: the physical rho gradient is needed whenever V is solved,
-    # because vcv_grad's vprime chain rule uses it (dropped the dominant term for IV).
-    if pol_solve[1]!=0 or pol_solve[3]!=0:
+    if pol_solve[1]!=0:
         gradv = np.real(iimage*vpart)
         gradrho = gradv*np.sin(psiimage)
         gradout[1] = gradrho
