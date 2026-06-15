@@ -35,6 +35,7 @@ from ehtim.imaging.imager_backend import (
     compute_which_solve,
     make_initarr,
     pack_imarr,
+    physical_grad_slots,
     transform_gradients,
     transform_imarr,
     transform_imarr_inverse,
@@ -332,6 +333,41 @@ class TestComputeWhichSolve:
             imgr._which_solve,
             compute_which_solve(imgr._config),
         )
+
+
+class TestPhysicalGradSlots:
+    """physical_grad_slots maps the DOF mask -> physical gradout slots the
+    kernels must fill. Must mirror transform_gradients' Jacobian sparsity."""
+
+    def test_ip_mcv_fills_psi(self):
+        # m' (slot 1) drives both rho and psi via mcv cross-term
+        out = physical_grad_slots([1, 1, 1, 0], ["log", "mcv"])
+        np.testing.assert_array_equal(out, [1, 1, 1, 1])
+
+    def test_iv_vcv_fills_rho(self):
+        # v' (slot 3) drives both rho and psi via vcv cross-term
+        out = physical_grad_slots([1, 0, 0, 1], ["log", "vcv"])
+        np.testing.assert_array_equal(out, [1, 1, 0, 1])
+
+    def test_ipv_polcv_is_diagonal(self):
+        # polcv is diagonal: physical-need == DOF
+        out = physical_grad_slots([1, 1, 1, 1], ["log", "polcv"])
+        np.testing.assert_array_equal(out, [1, 1, 1, 1])
+
+    def test_vcv_inactive_pol_is_diagonal(self):
+        # vcv present but V not solved -> no cross-coupling
+        out = physical_grad_slots([1, 0, 0, 0], ["log", "vcv"])
+        np.testing.assert_array_equal(out, [1, 0, 0, 0])
+
+    def test_no_pol_transform_passthrough(self):
+        out = physical_grad_slots([1, 0, 0, 0], ["log"])
+        np.testing.assert_array_equal(out, [1, 0, 0, 0])
+
+    def test_returns_copy_not_alias(self):
+        pol_solve = np.array([1, 1, 1, 0])
+        out = physical_grad_slots(pol_solve, ["log", "mcv"])
+        assert out is not pol_solve
+        np.testing.assert_array_equal(pol_solve, [1, 1, 1, 0])  # input untouched
 
 
 def _call_compute_data_tuples(imgr):

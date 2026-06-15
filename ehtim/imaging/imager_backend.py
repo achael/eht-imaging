@@ -534,6 +534,30 @@ def transform_gradients(gradarr, imarr, transforms, which_solve):
     return outarr
 
 
+def physical_grad_slots(pol_solve, transforms):
+    """Physical gradout slots the gradient kernels must fill, given the DOF mask.
+
+    pol_solve is the 4-wide Stokes DOF mask (I, rho/m', chi, psi/v'); the chisq
+    and pol regularizer kernels return gradients in PHYSICAL slots (I, rho, chi,
+    psi). For diagonal transforms (polcv, or none) physical-need == DOF. mcv/vcv
+    are non-diagonal: the single solved pol DOF drives BOTH rho and psi (the
+    cross-term in {mcv,vcv}_grad), so both physical slots must be populated.
+    Mirror of the Jacobian sparsity in transform_gradients -- keep the two in sync.
+
+    The transform <-> pol-mode pairing this branches on (mcv for P/QU/IP/IQU,
+    vcv for V/IV, polcv for IPV/IQUV) is enforced in validate_params, so the
+    mcv/vcv checks here are unambiguous and mutually exclusive.
+    """
+    mask = np.array(pol_solve, dtype=int).copy()
+    if 'mcv' in transforms and pol_solve[1]:     # m' (slot 1) -> rho AND psi
+        mask[1] = 1
+        mask[3] = 1
+    elif 'vcv' in transforms and pol_solve[3]:   # v' (slot 3) -> rho AND psi
+        mask[1] = 1
+        mask[3] = 1
+    return mask
+
+
 def make_initarr(image, mask, norm_init=False, flux=1,
                  mf=False, pol=False,
                  randompol_lin=False, randompol_circ=False,
