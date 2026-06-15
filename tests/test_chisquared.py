@@ -8,6 +8,7 @@ exercises the rectangular-image code paths (rect subsumes square).
 import numpy as np
 import pytest
 
+import ehtim as eh
 from ehtim.imaging.imager_utils import chisq, chisqdata, chisqgrad
 from ehtim.imaging.imager_backend import (
     ImagerConfig,
@@ -211,7 +212,12 @@ def _gradient_comparison(chisq_setup, dtype, pair):
 POL_DATATERMS = ["pvis", "m", "vvis"]
 POL_FD_REL = 1e-6
 POL_FD_FLOOR = 1e-9
-POL_GRAD_FD_TOL = 1e-4      # fractional, FD vs analytic (same ttype, self-consistent)
+# fractional FD vs analytic (same ttype, self-consistent). median is tight (any
+# systematic gradient error blows it up); max is looser to tolerate 2nd-order FD
+# truncation outliers at small-gradient pixels of the structured-pol imcur. Real
+# pol-gradient bugs are %-level (e.g. the mcv slot-3 coupling), far above these.
+POL_GRAD_FD_MEDIAN_TOL = 1e-5
+POL_GRAD_FD_MAX_TOL = 1e-3
 POL_CHISQ_FRAC_TOL = 0.01   # direct-vs-nfft value agreement
 
 
@@ -228,12 +234,18 @@ def _pol_data_tuple(obs, prior, mask, dtype, ttype):
 
 
 @pytest.fixture(scope="module")
-def chisq_setup_pol(eht_array, make_rect_image):
-    """32x48 polarized Gaussian + a jittered physical-space imcur [I,rho,phi,psi]."""
-    im = make_rect_image(32, 48)
+def chisq_setup_pol(eht_array, make_asym_image):
+    """Asymmetric 32x48 polarized image + a jittered physical imcur [I,rho,phi,psi].
+
+    add_random_pol gives a spatially-varying EVPA (random screen) and, with
+    ccorr>0, a spatially-varying circular fraction -- so chi, vfrac, rho, and psi
+    all vary across the image. A constant pol fraction would leave the
+    polarization structure spatially uniform and never exercise those gradients.
+    """
+    im = make_asym_image(32, 48)
     im.imvec = im.imvec * 2.0 / im.total_flux()
-    im.add_qu(0.10 * im.imarr(), 0.05 * im.imarr())
-    im.add_v(0.02 * im.imarr())
+    im = im.add_random_pol(0.25, 40 * eh.RADPERUAS,
+                           cmag=0.06, ccorr=40 * eh.RADPERUAS, seed=7)
     prior = im.copy()
 
     obs = im.observe(
@@ -253,7 +265,7 @@ def chisq_setup_pol(eht_array, make_rect_image):
         I * (1.0 + 0.05 * (rng.random(n) - 0.5)),
         np.clip((P / I) * (1.0 + 0.1 * (rng.random(n) - 0.5)), 0.02, 0.95),
         np.arctan2(U, Q) + 0.1 * (rng.random(n) - 0.5),
-        np.clip(np.arcsin(V / (P + 1e-30)) * (1.0 + 0.1 * (rng.random(n) - 0.5)), 0.02, 1.5),
+        np.clip(np.abs(np.arcsin(V / (P + 1e-30))) * (1.0 + 0.1 * (rng.random(n) - 0.5)), 0.02, 1.5),
     ])
     return {"obs": obs, "prior": prior, "mask": mask, "imcur": imcur}
 
@@ -326,4 +338,8 @@ class TestPolChisqGradFD:
                 ex = grad[slot, j]
                 denom = max(abs(ex), abs(fd), POL_FD_FLOOR)
                 frac.append(abs(ex - fd) / denom)
-        assert max(frac) < POL_GRAD_FD_TOL, f"{dtype} {ttype}: max frac diff = {max(frac):.4g}"
+        frac = np.array(frac)
+        assert np.median(frac) < POL_GRAD_FD_MEDIAN_TOL, (
+            f"{dtype} {ttype}: median frac diff = {np.median(frac):.4g}")
+        assert np.max(frac) < POL_GRAD_FD_MAX_TOL, (
+            f"{dtype} {ttype}: max frac diff = {np.max(frac):.4g}")

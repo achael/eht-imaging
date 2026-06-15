@@ -1884,6 +1884,25 @@ POL_OBJFD_CASES = [
 ]
 
 
+@pytest.fixture(scope="module")
+def asym_pol_setup(make_asym_image, observe):
+    """Asymmetric image with spatially-varying linear+circular pol + Stokes-I prior.
+
+    add_random_pol with ccorr>0 gives a spatially-varying EVPA and circular
+    fraction, so chi, vfrac, rho, psi all vary across the (asymmetric) image --
+    the realistic structured-pol case the constant-fraction gauss_im_pol lacks.
+    A Stokes-I prior (the imager random-inits pol) matches the prior the
+    superseded tests used. Returns (truth_image, obs, prior).
+    """
+    im = make_asym_image(32, 48)
+    im.imvec = im.imvec * 2.0 / im.total_flux()
+    prior = im.blur_circ(30 * eh.RADPERUAS)            # Stokes-I prior
+    im_pol = im.add_random_pol(0.25, 40 * eh.RADPERUAS,
+                               cmag=0.06, ccorr=40 * eh.RADPERUAS, seed=7)
+    obs = observe(im_pol, ttype="direct")
+    return im_pol, obs, prior
+
+
 class TestObjectiveGradPolarimetricFD:
     """objgrad matches FD on the polarization DOF block for IP/IV/IQUV, direct+nfft.
 
@@ -1898,12 +1917,12 @@ class TestObjectiveGradPolarimetricFD:
     @pytest.mark.parametrize("ttype", ["direct", "nfft"])
     @pytest.mark.parametrize("pol,transform,data_term,reg_term", POL_OBJFD_CASES,
                              ids=[c[0] for c in POL_OBJFD_CASES])
-    def test_pol_dof_grad_matches_fd(self, gauss_im_pol, obs_pol_direct,
-                                     gauss_prior, pol, transform, data_term,
-                                     reg_term, ttype):
+    def test_pol_dof_grad_matches_fd(self, asym_pol_setup, pol, transform,
+                                     data_term, reg_term, ttype):
+        im_pol, obs, prior = asym_pol_setup
         imgr = eh.imager.Imager(
-            obs_pol_direct, gauss_prior, prior_im=gauss_prior,
-            flux=gauss_im_pol.total_flux(),
+            obs, prior, prior_im=prior,
+            flux=im_pol.total_flux(),
             data_term=data_term, reg_term=reg_term,
             ttype=ttype, pol=pol, transform=transform, maxit=10,
         )

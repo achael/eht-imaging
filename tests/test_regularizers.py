@@ -226,15 +226,17 @@ def _pol_tols(rtype):
 
 
 @pytest.fixture(scope="module")
-def polreg_setup(make_rect_image):
-    """32x48 Gaussian Stokes I with jittered pol structure.
+def polreg_setup(make_asym_image):
+    """32x48 asymmetric Stokes I with jittered pol structure.
 
-    Per-pixel jitter on rho / phi / psi is required so TV-style regularizers
-    (ptv, vtv, vtv2) get a non-degenerate denominator in their gradient
-    (which is sqrt of squared spatial differences and goes to 0 on uniform
-    fields).
+    Stokes I is the asymmetric (offset double-Gaussian) image so the pol
+    regularizers see a non-symmetric magnitude field. Per-pixel jitter on
+    rho / phi / psi is kept (rather than a smooth pol field) so TV-style
+    regularizers (ptv, vtv, vtv2) get a non-degenerate denominator in their
+    gradient (sqrt of squared spatial differences, which goes to 0 on uniform
+    fields and is FD-ill-conditioned there).
     """
-    im = make_rect_image(32, 48)
+    im = make_asym_image(32, 48)
     im.pulse = eh.observing.pulses.deltaPulse2D
 
     mask = im.imvec > 0
