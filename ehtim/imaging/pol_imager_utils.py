@@ -819,6 +819,11 @@ def reg_msimple(imarr, mask, **kwargs):
 
 
 def reggrad_msimple(imarr, mask, **kwargs):
+    """Gradient of the 'msimple' polarimetric entropy regularizer.
+
+    pol_solve here flags the required physical gradients (I, rho, phi, psi),
+    not the solver variables.
+    """
     flux = kwargs['flux']
     pol_solve = kwargs.get('pol_solve', POL_SOLVE_DEFAULT)
     norm = flux if kwargs.get('norm_reg', True) else 1
@@ -847,6 +852,11 @@ def reg_hw(imarr, mask, **kwargs):
 
 
 def reggrad_hw(imarr, mask, **kwargs):
+    """Gradient of the Holdaway-Wardle polarimetric entropy regularizer.
+
+    pol_solve here flags the required physical gradients (I, rho, phi, psi),
+    not the solver variables.
+    """
     flux = kwargs['flux']
     pol_solve = kwargs.get('pol_solve', POL_SOLVE_DEFAULT)
     norm = flux if kwargs.get('norm_reg', True) else 1
@@ -874,15 +884,21 @@ def reg_ptv(imarr, mask, **kwargs):
     nx, ny, psize = kwargs['xdim'], kwargs['ydim'], kwargs['psize']
     beam_size = kwargs.get('beam_size', 1) or psize
     norm = flux * psize / beam_size if kwargs.get('norm_reg', True) else 1
+    epsilon = kwargs.get('epsilon_tv', 0.)
     pimage = make_p_image(imarr)
     im = pimage.reshape(ny, nx)
     impad = np.pad(im, 1, mode='constant', constant_values=0)
     im_l1 = np.roll(impad, -1, axis=0)[1:ny+1, 1:nx+1]
     im_l2 = np.roll(impad, -1, axis=1)[1:ny+1, 1:nx+1]
-    return np.sum(np.sqrt(np.abs(im_l1 - im)**2 + np.abs(im_l2 - im)**2)) / norm
+    return np.sum(np.sqrt(np.abs(im_l1 - im)**2 + np.abs(im_l2 - im)**2 + epsilon)) / norm
 
 
 def reggrad_ptv(imarr, mask, **kwargs):
+    """Gradient of the polarimetric total-variation regularizer.
+
+    pol_solve here flags the required physical gradients (I, rho, phi, psi),
+    not the solver variables.
+    """
     from ehtim.imaging.imager_utils import embed_imarr
     do_slice = np.any(np.invert(mask))
     if do_slice:
@@ -892,6 +908,7 @@ def reggrad_ptv(imarr, mask, **kwargs):
     pol_solve = kwargs.get('pol_solve', POL_SOLVE_DEFAULT)
     beam_size = kwargs.get('beam_size', 1) or psize
     norm = flux * psize / beam_size if kwargs.get('norm_reg', True) else 1
+    epsilon = kwargs.get('epsilon_tv', 0.)
     iimage = make_i_image(imarr)
     pimage = make_p_image(imarr)
     mimage = make_m_image(imarr)
@@ -905,17 +922,25 @@ def reggrad_ptv(imarr, mask, **kwargs):
     im_r1l2 = np.roll(np.roll(impad,  1, axis=0), -1, axis=1)[1:ny+1, 1:nx+1]
     im_l1r2 = np.roll(np.roll(impad, -1, axis=0),  1, axis=1)[1:ny+1, 1:nx+1]
     # Denominators: |forward-l1|+|forward-l2|, |back-r1|+|cross|, |back-r2|+|cross|.
-    d1 = np.sqrt(np.abs(im_l1 - im)**2 + np.abs(im_l2 - im)**2)
-    d2 = np.sqrt(np.abs(im_r1 - im)**2 + np.abs(im_r1l2 - im_r1)**2)
-    d3 = np.sqrt(np.abs(im_r2 - im)**2 + np.abs(im_l1r2 - im_r2)**2)
+    d1 = np.sqrt(np.abs(im_l1 - im)**2 + np.abs(im_l2 - im)**2 + epsilon)
+    d2 = np.sqrt(np.abs(im_r1 - im)**2 + np.abs(im_r1l2 - im_r1)**2 + epsilon)
+    d3 = np.sqrt(np.abs(im_r2 - im)**2 + np.abs(im_l1r2 - im_r2)**2 + epsilon)
     # Numerators below use cos/sin of the single-angle difference between
     # neighbors, from d|P_l1 - P|^2/d|P| = 2|P| - 2|P_l1|*cos(angle(P_l1) - angle(P)).
+    # The back-neighbor (m2/d2, m3/d3) terms reference a pixel that does not
+    # exist on the first row/column (it is the zero pad), so they must be zeroed
+    # there -- same masking reggrad_vtv applies. chi (slot 2) self-zeros at the
+    # pad, so it needs no masking.
+    mask1 = np.zeros(im.shape, dtype=bool); mask1[0, :] = True   # no back-neighbor in axis 0
+    mask2 = np.zeros(im.shape, dtype=bool); mask2[:, 0] = True   # no back-neighbor in axis 1
     gradout = np.zeros(imarr.shape)
     if pol_solve[0] != 0:
         # dS/dI numerators (chain through |P| = I*m)
         m1 = 2*np.abs(im*im) - np.abs(im*im_l1)*np.cos(np.angle(im_l1) - np.angle(im)) - np.abs(im*im_l2)*np.cos(np.angle(im_l2) - np.angle(im))
         m2 = np.abs(im*im) - np.abs(im*im_r1)*np.cos(np.angle(im) - np.angle(im_r1))
         m3 = np.abs(im*im) - np.abs(im*im_r2)*np.cos(np.angle(im) - np.angle(im_r2))
+        m2[mask1] = 0
+        m3[mask2] = 0
         gradout[0] = (1./iimage) * (m1/d1 + m2/d2 + m3/d3).flatten()
     if pol_solve[1] != 0:
         # dS/dm numerators; m enters via |P| = I*m, so dS/dm = I * dS/d|P|.
@@ -923,6 +948,8 @@ def reggrad_ptv(imarr, mask, **kwargs):
         m1 = 2*np.abs(im) - np.abs(im_l1)*np.cos(np.angle(im_l1) - np.angle(im)) - np.abs(im_l2)*np.cos(np.angle(im_l2) - np.angle(im))
         m2 = np.abs(im) - np.abs(im_r1)*np.cos(np.angle(im) - np.angle(im_r1))
         m3 = np.abs(im) - np.abs(im_r2)*np.cos(np.angle(im) - np.angle(im_r2))
+        m2[mask1] = 0
+        m3[mask2] = 0
         gradm = iimage * (m1/d1 + m2/d2 + m3/d3).flatten()
         gradout[1] = gradm * np.cos(psiimage)
     if pol_solve[2] != 0:
@@ -938,6 +965,8 @@ def reggrad_ptv(imarr, mask, **kwargs):
         m1 = 2*np.abs(im) - np.abs(im_l1)*np.cos(np.angle(im_l1) - np.angle(im)) - np.abs(im_l2)*np.cos(np.angle(im_l2) - np.angle(im))
         m2 = np.abs(im) - np.abs(im_r1)*np.cos(np.angle(im) - np.angle(im_r1))
         m3 = np.abs(im) - np.abs(im_r2)*np.cos(np.angle(im) - np.angle(im_r2))
+        m2[mask1] = 0
+        m3[mask2] = 0
         gradm = iimage * (m1/d1 + m2/d2 + m3/d3).flatten()
         gradout[3] = gradm * (-mimage * np.tan(psiimage))
     g = gradout / norm
@@ -956,6 +985,11 @@ def reg_vflux(imarr, mask, **kwargs):
 
 
 def reggrad_vflux(imarr, mask, **kwargs):
+    """Gradient of the Stokes V total-flux regularizer.
+
+    pol_solve here flags the required physical gradients (I, rho, phi, psi),
+    not the solver variables.
+    """
     vflux = kwargs['vflux']
     pol_solve = kwargs.get('pol_solve', POL_SOLVE_DEFAULT_V)
     norm = np.abs(vflux)**2 if kwargs.get('norm_reg', True) else 1
@@ -986,6 +1020,11 @@ def reg_l1v(imarr, mask, **kwargs):
 
 
 def reggrad_l1v(imarr, mask, **kwargs):
+    """Gradient of the Stokes V l1-norm regularizer.
+
+    pol_solve here flags the required physical gradients (I, rho, phi, psi),
+    not the solver variables.
+    """
     vflux = kwargs['vflux']
     pol_solve = kwargs.get('pol_solve', POL_SOLVE_DEFAULT_V)
     norm = np.abs(vflux) if kwargs.get('norm_reg', True) else 1
@@ -1015,6 +1054,11 @@ def reg_l2v(imarr, mask, **kwargs):
 
 
 def reggrad_l2v(imarr, mask, **kwargs):
+    """Gradient of the Stokes V l2-norm regularizer.
+
+    pol_solve here flags the required physical gradients (I, rho, phi, psi),
+    not the solver variables.
+    """
     vflux = kwargs['vflux']
     pol_solve = kwargs.get('pol_solve', POL_SOLVE_DEFAULT_V)
     norm = np.abs(vflux**2) if kwargs.get('norm_reg', True) else 1
@@ -1053,6 +1097,11 @@ def reg_vtv(imarr, mask, **kwargs):
 
 
 def reggrad_vtv(imarr, mask, **kwargs):
+    """Gradient of the Stokes V total-variation regularizer.
+
+    pol_solve here flags the required physical gradients (I, rho, phi, psi),
+    not the solver variables.
+    """
     from ehtim.imaging.imager_utils import embed_imarr
     do_slice = np.any(np.invert(mask))
     if do_slice:
@@ -1116,6 +1165,11 @@ def reg_vtv2(imarr, mask, **kwargs):
 
 
 def reggrad_vtv2(imarr, mask, **kwargs):
+    """Gradient of the Stokes V squared-total-variation regularizer.
+
+    pol_solve here flags the required physical gradients (I, rho, phi, psi),
+    not the solver variables.
+    """
     from ehtim.imaging.imager_utils import embed_imarr
     do_slice = np.any(np.invert(mask))
     if do_slice:

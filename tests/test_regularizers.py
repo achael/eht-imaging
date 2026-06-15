@@ -340,6 +340,75 @@ def _pol_gradient_check(polreg_setup, rtype):
     return float(np.median(frac_diffs)), float(np.max(frac_diffs))
 
 
+# reggrad_{ptv,vtv,tv} zero their back-neighbor (m2/m3, g2/g3) terms on the
+# first row/column, where the back-neighbor is the zero pad and does not exist.
+# Without it the entire first row+column of the affected slots is wrong (corner
+# ~4x off vs FD). Full-grid central FD catches it; interior pixels are already
+# correct, so the boundary is the signal.
+_BOUNDARY_POL_TV = {
+    "ptv": (pu.reg_ptv, pu.reggrad_ptv, "flux"),
+    "vtv": (pu.reg_vtv, pu.reggrad_vtv, "vflux"),
+}
+
+
+def _boundary_pol_imarr(nx, ny):
+    rng = np.random.default_rng(11)
+    npix = nx * ny
+    I = 1.0 + 0.3 * rng.random(npix)
+    rho = np.clip(0.3 + 0.10 * rng.standard_normal(npix), 0.05, 0.95)
+    phi = 0.5 + 0.30 * rng.standard_normal(npix)
+    psi = 0.2 + 0.10 * rng.standard_normal(npix)
+    return np.array([I, rho, phi, psi])
+
+
+@pytest.mark.parametrize("rtype", list(_BOUNDARY_POL_TV))
+def test_pol_tv_grad_matches_fd_on_boundary(rtype):
+    """Pol TV reggrad matches full-grid FD, including first-row/col pixels."""
+    regfn, gradfn, fluxkey = _BOUNDARY_POL_TV[rtype]
+    nx, ny = 4, 5
+    npix = nx * ny
+    imarr = _boundary_pol_imarr(nx, ny)
+    mask = np.ones(npix, dtype=bool)
+    kwargs = dict(xdim=nx, ydim=ny, psize=1.0, beam_size=1.0, norm_reg=False)
+    kwargs[fluxkey] = float(np.sum(imarr[0]))
+    grad = gradfn(imarr, mask, pol_solve=np.array([1, 1, 1, 1]), **kwargs)
+
+    eps = 1e-6
+    frac = []
+    for slot in (0, 1, 3):   # chi (slot 2) does not enter |P|/V back-neighbor terms
+        for j in range(npix):
+            ip = imarr.copy(); ip[slot, j] += eps
+            im = imarr.copy(); im[slot, j] -= eps
+            fd = (regfn(ip, mask, **kwargs)
+                  - regfn(im, mask, **kwargs)) / (2 * eps)
+            denom = max(abs(fd), abs(grad[slot, j]), 1e-6)
+            frac.append(abs(grad[slot, j] - fd) / denom)
+    assert max(frac) < 1e-3, f"{rtype}: max fractional grad diff = {max(frac):.4g}"
+
+
+def test_reggrad_tv_matches_fd_on_boundary():
+    """Stokes-I reggrad_tv matches full-grid FD, including first-row/col pixels."""
+    nx, ny = 4, 5
+    npix = nx * ny
+    rng = np.random.default_rng(11)
+    imvec = 1.0 + 0.5 * rng.random(npix)
+    mask = np.ones(npix, dtype=bool)
+    kwargs = dict(xdim=nx, ydim=ny, psize=1.0, flux=float(np.sum(imvec)),
+                  beam_size=1.0, norm_reg=False)
+    grad = iu.reggrad_tv(imvec, mask, **kwargs)
+
+    eps = 1e-6
+    frac = []
+    for j in range(npix):
+        ip = imvec.copy(); ip[j] += eps
+        im = imvec.copy(); im[j] -= eps
+        fd = (iu.reg_tv(ip, mask, **kwargs)
+              - iu.reg_tv(im, mask, **kwargs)) / (2 * eps)
+        denom = max(abs(fd), abs(grad[j]), 1e-6)
+        frac.append(abs(grad[j] - fd) / denom)
+    assert max(frac) < 1e-3, f"tv: max fractional grad diff = {max(frac):.4g}"
+
+
 # regularizer_mf dispatches by string prefix: names starting with 'l2_'
 # compute an L2 distance from the prior; names starting with 'tv_' compute
 # spatial total variation. The 12 names in REGULARIZERS_SPECTRAL only differ
