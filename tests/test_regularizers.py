@@ -210,9 +210,11 @@ POL_MAX_FRAC_TOL_TV = 2.0
 
 
 def _pol_solve_for(rtype):
-    if rtype in POL_LIN_REGS:
-        return pu.POL_SOLVE_DEFAULT
-    return pu.POL_SOLVE_DEFAULT_V
+    # Drive every physical slot (I, rho, phi, psi), not just the mode's DOF
+    # slots, so the cross-coupling slots are FD-checked: reggrad_ptv psi (3),
+    # reggrad_vflux/l1v/l2v/vtv rho (1), and slot 0 for every pol reg. Kernels
+    # that do not fill a slot leave it 0, which FD of the value confirms.
+    return np.array([1, 1, 1, 1])
 
 
 def _pol_tols(rtype):
