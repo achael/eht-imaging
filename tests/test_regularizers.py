@@ -40,12 +40,14 @@ GRAD_DX_FLOOR = 1e-12  # absolute minimum step size
 
 
 @pytest.fixture(scope="module")
-def reg_setup(make_rect_image):
-    """Set up regularizer test data from 32x48 synthetic Gaussian.
+def reg_setup(make_asym_image):
+    """Set up regularizer test data from a 32x48 asymmetric image.
 
-    Uses xdim != ydim so the rectangular-image code paths are exercised.
+    Offset double-Gaussian: xdim != ydim exercises the rectangular-image code
+    paths, and the broken symmetry + edge flux surface boundary/axis bugs a
+    centered Gaussian hides.
     """
-    im = make_rect_image(32, 48)
+    im = make_asym_image(32, 48)
     im.pulse = eh.observing.pulses.deltaPulse2D
     mask = im.imvec > 0
     imvec = im.imvec
@@ -419,9 +421,9 @@ def test_reggrad_tv_matches_fd_on_boundary():
 
 
 @pytest.fixture(scope="module")
-def mfreg_setup(make_rect_image):
+def mfreg_setup(make_asym_image):
     """32x48 spectral coefficient vector with a half-amplitude prior."""
-    im = make_rect_image(32, 48)
+    im = make_asym_image(32, 48)
     imvec = im.imvec
     nprior = imvec * 0.5
     mask = imvec > 0

@@ -73,15 +73,17 @@ RNG_SEED = 4
 
 
 @pytest.fixture(scope="module")
-def chisq_setup(eht_array, make_rect_image):
+def chisq_setup(eht_array, make_asym_image):
     """Set up observation and test image for chi-squared comparison tests.
 
-    Uses a 32x48 synthetic Gaussian image so xdim != ydim exercises the
-    rectangular-image code paths. A single DFT observation serves as ground
-    truth; chi-squared is then evaluated with different transform matrices
-    (direct, fast, nfft), testing that the transform approximations agree.
+    Uses a 32x48 asymmetric (offset double-Gaussian) image: xdim != ydim
+    exercises the rectangular-image code paths, and the broken symmetry +
+    edge flux surface axis-ordering bugs a centered Gaussian hides. A single
+    DFT observation serves as ground truth; chi-squared is then evaluated with
+    different transform matrices (direct, fast, nfft) to test that the
+    transform approximations agree.
     """
-    im = make_rect_image(32, 48)
+    im = make_asym_image(32, 48)
     im.imvec = im.imvec * 2.0 / im.total_flux()  # normalize to 2 Jy
 
     obs = im.observe(
