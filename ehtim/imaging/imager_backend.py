@@ -549,6 +549,12 @@ def physical_grad_slots(pol_solve, transforms):
     mcv/vcv checks here are unambiguous and mutually exclusive.
     """
     mask = np.array(pol_solve, dtype=int).copy()
+    # Cross-coupling only exists for the full 4-wide Stokes block. Single-pol
+    # (Stokes-I, possibly mf with [I, alpha, beta]) has no rho/psi DOFs to
+    # couple -- and may carry 'mcv' in transforms inertly, so the transform
+    # check alone is not enough. Mirror transform_gradients' shape gating.
+    if len(mask) < 4:
+        return mask
     if 'mcv' in transforms and pol_solve[1]:     # m' (slot 1) -> rho AND psi
         mask[1] = 1
         mask[3] = 1
@@ -1533,6 +1539,7 @@ def compute_chisqgrad_dict(imcur, dat_term_keys, config,
 
     chi2grad_dict = {}
     pol_solve = _pol_solve_block(which_solve, pol)
+    pol_grad_slots = physical_grad_slots(pol_solve, config.transforms)
     # np.array((...)) below copies, so sharing zero_row across iterations is safe.
     zero_row = np.zeros(nimage)
     is_pol_mode = pol in POLARIZATION_MODES
@@ -1547,7 +1554,7 @@ def compute_chisqgrad_dict(imcur, dat_term_keys, config,
 
             chi2grad = compute_chisqgrad_term(
                 imcur_nu, dname, A, data, sigma,
-                ttype=ttype, mask=embed_mask, pol_solve=pol_solve,
+                ttype=ttype, mask=embed_mask, pol_solve=pol_grad_slots,
             )
 
             # Pad standard (nimage,) grad to (4, nimage) Stokes block so the
@@ -1699,9 +1706,11 @@ def compute_reggrad_dict(imcur, reg_term_keys, config,
 
         if mf:
             if regname in REGULARIZERS_POL:
+                pol_grad_slots = physical_grad_slots(
+                    _pol_solve_block(which_solve, pol), config.transforms)
                 regp = compute_regularizergrad_term(
                     imcur[0:4], regname, embed_mask,
-                    pol_solve=which_solve[0:4],
+                    pol_solve=pol_grad_slots,
                     norm_reg=norm_reg, **reg_kwargs)
                 reggrad = np.zeros((len(imcur), nimage))
                 reggrad[0:4] = regp
@@ -1742,9 +1751,11 @@ def compute_reggrad_dict(imcur, reg_term_keys, config,
                 raise Exception(f"regularizer term {regname} not recognized!")
 
         elif regname in REGULARIZERS_POL:
+            pol_grad_slots = physical_grad_slots(
+                _pol_solve_block(which_solve, pol), config.transforms)
             reggrad = compute_regularizergrad_term(
                 imcur, regname, embed_mask,
-                pol_solve=which_solve, norm_reg=norm_reg, **reg_kwargs)
+                pol_solve=pol_grad_slots, norm_reg=norm_reg, **reg_kwargs)
 
         elif regname in REGULARIZERS:
             if pol in POLARIZATION_MODES:

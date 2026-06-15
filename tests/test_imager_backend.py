@@ -363,6 +363,14 @@ class TestPhysicalGradSlots:
         out = physical_grad_slots([1, 0, 0, 0], ["log"])
         np.testing.assert_array_equal(out, [1, 0, 0, 0])
 
+    def test_single_pol_mask_passthrough_despite_mcv(self):
+        # Stokes-I carries 'mcv' in transforms inertly; a sub-4-wide mask has
+        # no rho/psi DOFs to couple and must pass through (no IndexError).
+        np.testing.assert_array_equal(
+            physical_grad_slots([1], ["log", "mcv"]), [1])
+        np.testing.assert_array_equal(
+            physical_grad_slots([1, 1, 1], ["log", "mcv"]), [1, 1, 1])  # mf I
+
     def test_returns_copy_not_alias(self):
         pol_solve = np.array([1, 1, 1, 0])
         out = physical_grad_slots(pol_solve, ["log", "mcv"])
