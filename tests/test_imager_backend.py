@@ -1813,33 +1813,37 @@ class TestComputeObjectiveGrad:
             rtol=1e-4, atol=1e-8,
         )
 
-    def test_fd_matches_analytic_polarimetric(self, gauss_im_pol, observe,
-                                                initialize_imager):
-        """FD verification under pol='IP' with log+mcv transforms.
-
-        Exercises the chain rule applied through both the log (Stokes I) and
-        mcv (polarization) transform components, on top of the polarimetric
-        forward model. atol=1e-7 covers the FD noise floor: with chisq values
-        ~O(1e6) and eps=1e-6, FD precision floors near 1e-7 in absolute terms.
-        """
-        obs = observe(gauss_im_pol)
-        imgr, _ = initialize_imager(
-            obs, gauss_im_pol, {"vis": 100, "pvis": 100},
-            reg_term={"simple": 1, "hw": 1},
-            pol="IP", transform=["log", "mcv"],
-        )
-        imvec = imgr._init_vec
-
-        rng = np.random.default_rng(7)
-        indices = rng.choice(len(imvec), size=20, replace=False)
-
-        grad_analytic = _call_backend_objective_grad(imgr, imvec)
-        grad_fd = _fd_grad_of_objective(imgr, imvec, indices)
-
-        np.testing.assert_allclose(
-            grad_analytic[indices], grad_fd[indices],
-            rtol=1e-4, atol=1e-7,
-        )
+    # Superseded by TestObjectiveGradPolarimetricFD, which samples the
+    # polarization DOF block. This global-sampling version was insensitive to
+    # the mcv cross-coupling (it missed the slot-3 term entirely). Commented out
+    # rather than deleted pending the PR2 test reorganization.
+    # def test_fd_matches_analytic_polarimetric(self, gauss_im_pol, observe,
+    #                                             initialize_imager):
+    #     """FD verification under pol='IP' with log+mcv transforms.
+    #
+    #     Exercises the chain rule applied through both the log (Stokes I) and
+    #     mcv (polarization) transform components, on top of the polarimetric
+    #     forward model. atol=1e-7 covers the FD noise floor: with chisq values
+    #     ~O(1e6) and eps=1e-6, FD precision floors near 1e-7 in absolute terms.
+    #     """
+    #     obs = observe(gauss_im_pol)
+    #     imgr, _ = initialize_imager(
+    #         obs, gauss_im_pol, {"vis": 100, "pvis": 100},
+    #         reg_term={"simple": 1, "hw": 1},
+    #         pol="IP", transform=["log", "mcv"],
+    #     )
+    #     imvec = imgr._init_vec
+    #
+    #     rng = np.random.default_rng(7)
+    #     indices = rng.choice(len(imvec), size=20, replace=False)
+    #
+    #     grad_analytic = _call_backend_objective_grad(imgr, imvec)
+    #     grad_fd = _fd_grad_of_objective(imgr, imvec, indices)
+    #
+    #     np.testing.assert_allclose(
+    #         grad_analytic[indices], grad_fd[indices],
+    #         rtol=1e-4, atol=1e-7,
+    #     )
 
     @pytest.mark.parametrize("xdim,ydim", IMAGE_SHAPES)
     def test_rect_images(self, make_rect_image, observe, initialize_imager,
@@ -1855,6 +1859,76 @@ class TestComputeObjectiveGrad:
         backend_grad = _call_backend_objective_grad(imgr, imvec)
         method_grad = imgr.objgrad(imvec)
         np.testing.assert_array_equal(backend_grad, method_grad)
+
+
+# Composition objective-FD for the three pol transforms x {direct, nfft}. Each
+# case bundles its applicable pol data terms AND a pol regularizer, so both
+# gradient paths through physical_grad_slots are exercised end-to-end:
+#   chisq: pvis (chisqgrad_p) + m (chisqgrad_m) under mcv/polcv; vvis
+#          (chisqgrad_vvis) under vcv/polcv;
+#   reg:   hw (linear) / l2v (circular) pol reggrad kernels.
+# The test samples the polarization DOF block (everything past the leading
+# Stokes-I block), where the mcv/vcv cross-coupling lives -- the global/top-|g|
+# sampling in the other objective-FD tests is dominated by the large Stokes-I
+# log gradients and misses a dropped pol-coupling term: pre-fix (pol_solve = raw
+# DOF, slot 3 zeroed for IP) the m' gradient is ~4% off FD at V=0.02*I and ~430%
+# off at V=0.2*I. Smooth regs (hw/l2v) avoid the small-denominator FD noise of
+# TV-style pol regs, which are FD-checked at kernel level in test_regularizers.
+POL_OBJFD_CASES = [
+    ("IP",  ["log", "mcv"],   {"vis": 100, "pvis": 100, "m": 100},
+     {"simple": 1, "hw": 1}),
+    ("IV",  ["log", "vcv"],   {"amp": 100, "vvis": 100},
+     {"simple": 1, "l2v": 1}),
+    ("IQUV", ["log", "polcv"], {"vis": 100, "pvis": 100, "m": 100, "vvis": 100},
+     {"simple": 1, "hw": 1, "l2v": 1}),
+]
+
+
+class TestObjectiveGradPolarimetricFD:
+    """objgrad matches FD on the polarization DOF block for IP/IV/IQUV, direct+nfft.
+
+    Composition test: real chisq+reg kernels o transform_gradients o pack/unpack
+    o objgrad, through physical_grad_slots. Sensitive to the mcv/vcv cross-
+    coupling that the Stokes-I-dominated samples in the other FD tests miss,
+    on both the chisq and the regularizer gradient paths. Subsumes the former
+    test_fd_matches_analytic_polarimetric (IP) and the e2e
+    test_iv_gradient_matches_finite_difference (IV).
+    """
+
+    @pytest.mark.parametrize("ttype", ["direct", "nfft"])
+    @pytest.mark.parametrize("pol,transform,data_term,reg_term", POL_OBJFD_CASES,
+                             ids=[c[0] for c in POL_OBJFD_CASES])
+    def test_pol_dof_grad_matches_fd(self, gauss_im_pol, obs_pol_direct,
+                                     gauss_prior, pol, transform, data_term,
+                                     reg_term, ttype):
+        imgr = eh.imager.Imager(
+            obs_pol_direct, gauss_prior, prior_im=gauss_prior,
+            flux=gauss_im_pol.total_flux(),
+            data_term=data_term, reg_term=reg_term,
+            ttype=ttype, pol=pol, transform=transform, maxit=10,
+        )
+        imgr.init_imager()
+        nslots = int(np.sum(imgr._which_solve))
+        x = np.asarray(imgr._init_vec, float)
+        rng = np.random.default_rng(4)
+        x = x + 0.10 * rng.standard_normal(x.size)
+        nimage = x.size // nslots
+
+        g = np.asarray(imgr.objgrad(x))
+        # pol DOF components = everything past the leading Stokes-I block;
+        # take the best-conditioned 30 so the fractional FD check is stable.
+        pol_idx = np.arange(nimage, x.size)
+        idx = pol_idx[np.argsort(np.abs(g[pol_idx]))[-30:]]
+
+        fd = np.empty(len(idx))
+        for k, j in enumerate(idx):
+            a, b = x.copy(), x.copy()
+            a[j] += 1e-6
+            b[j] -= 1e-6
+            fd[k] = (imgr.objfunc(a) - imgr.objfunc(b)) / 2e-6
+        frac = np.abs((fd - g[idx]) / (np.abs(g[idx]) + 1e-100))
+        assert np.median(frac) < 1e-4, f"{pol}/{ttype}: median frac {np.median(frac):.3e}"
+        assert np.max(frac) < 1e-2, f"{pol}/{ttype}: max frac {np.max(frac):.3e}"
 
 
 def test_objective_and_objective_grad_share_consistency(gauss_im, observe,
