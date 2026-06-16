@@ -6,14 +6,14 @@
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Imager &mdash; ehtim 1.3.1 documentation</title>
+  <title>Imager &mdash; ehtim 1.3.2 documentation</title>
       <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=03e43079" />
       <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=9edc463e" />
 
   
       <script src="_static/jquery.js?v=5d32c60e"></script>
       <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="_static/documentation_options.js?v=bb516dca"></script>
+      <script src="_static/documentation_options.js?v=8ca9e7a0"></script>
       <script src="_static/doctools.js?v=fd6eb6e6"></script>
       <script src="_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="_static/js/theme.js"></script>
@@ -103,6 +103,7 @@
 <li class="toctree-l2"><a class="reference internal" href="#ehtim.imager.embed_imarr"><code class="docutils literal notranslate"><span class="pre">embed_imarr()</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="#ehtim.imager.make_initarr"><code class="docutils literal notranslate"><span class="pre">make_initarr()</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="#ehtim.imager.pack_imarr"><code class="docutils literal notranslate"><span class="pre">pack_imarr()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#ehtim.imager.physical_grad_slots"><code class="docutils literal notranslate"><span class="pre">physical_grad_slots()</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="#ehtim.imager.transform_gradients"><code class="docutils literal notranslate"><span class="pre">transform_gradients()</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="#ehtim.imager.transform_imarr"><code class="docutils literal notranslate"><span class="pre">transform_imarr()</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="#ehtim.imager.transform_imarr_inverse"><code class="docutils literal notranslate"><span class="pre">transform_imarr_inverse()</span></code></a></li>
@@ -473,6 +474,12 @@ input is image array transformed to bounded values</p>
 <span class="sig-prename descclassname"><span class="pre">ehtim.imager.</span></span><span class="sig-name descname"><span class="pre">pack_imarr</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">imarr</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">which_solve</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/imager.html#pack_imarr"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ehtim.imager.pack_imarr" title="Link to this definition"></a></dt>
 <dd><p>pack image array imarr into 1D array vec for minimizaiton
 ignore quantities not solved for</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="ehtim.imager.physical_grad_slots">
+<span class="sig-prename descclassname"><span class="pre">ehtim.imager.</span></span><span class="sig-name descname"><span class="pre">physical_grad_slots</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">pol_solve</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">transforms</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/imager.html#physical_grad_slots"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ehtim.imager.physical_grad_slots" title="Link to this definition"></a></dt>
+<dd><p>Physical gradout slots the gradient kernels must fill, given the DOF mask.</p>
 </dd></dl>
 
 <dl class="py function">

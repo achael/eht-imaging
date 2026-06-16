@@ -5,14 +5,14 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>ehtim.imager &mdash; ehtim 1.3.1 documentation</title>
+  <title>ehtim.imager &mdash; ehtim 1.3.2 documentation</title>
       <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=03e43079" />
       <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=9edc463e" />
 
   
       <script src="../../_static/jquery.js?v=5d32c60e"></script>
       <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="../../_static/documentation_options.js?v=bb516dca"></script>
+      <script src="../../_static/documentation_options.js?v=8ca9e7a0"></script>
       <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
       <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../_static/js/theme.js"></script>
@@ -1417,11 +1417,11 @@
 
                 <span class="c1"># Single Polarization chi^2 terms</span>
                 <span class="k">elif</span> <span class="n">dname</span> <span class="ow">in</span> <span class="n">DATATERMS</span><span class="p">:</span>
-                    <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">pol_next</span> <span class="ow">in</span> <span class="n">POLARIZATION_MODES</span><span class="p">:</span> 
-                        <span class="n">imcur_nu_I</span> <span class="o">=</span> <span class="n">imcur_nu</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> 
+                    <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">pol_next</span> <span class="ow">in</span> <span class="n">POLARIZATION_MODES</span><span class="p">:</span>
+                        <span class="n">imcur_nu_I</span> <span class="o">=</span> <span class="n">imcur_nu</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
                     <span class="k">else</span><span class="p">:</span>
                         <span class="n">imcur_nu_I</span> <span class="o">=</span> <span class="n">imcur_nu</span>
-                    <span class="n">chi2</span> <span class="o">=</span> <span class="n">imutils</span><span class="o">.</span><span class="n">chisq</span><span class="p">(</span><span class="n">imcur_nu</span><span class="p">,</span> <span class="n">A</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">sigma</span><span class="p">,</span> <span class="n">dname</span><span class="p">,</span>
+                    <span class="n">chi2</span> <span class="o">=</span> <span class="n">imutils</span><span class="o">.</span><span class="n">chisq</span><span class="p">(</span><span class="n">imcur_nu_I</span><span class="p">,</span> <span class="n">A</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">sigma</span><span class="p">,</span> <span class="n">dname</span><span class="p">,</span>
                                          <span class="n">ttype</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_ttype</span><span class="p">,</span> <span class="n">mask</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_embed_mask</span><span class="p">)</span>
 
                 <span class="k">else</span><span class="p">:</span>
@@ -1463,9 +1463,12 @@
                         <span class="n">pol_solve</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_which_solve</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="mi">4</span><span class="p">]</span>
                     <span class="k">else</span><span class="p">:</span>
                         <span class="n">pol_solve</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_which_solve</span>
+                    <span class="c1"># which gradient terms we need depends of the current pol transform</span>
+                    <span class="n">pol_grad_slots</span> <span class="o">=</span> <span class="n">physical_grad_slots</span><span class="p">(</span><span class="n">pol_solve</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">transform_next</span><span class="p">)</span>
+                    <span class="c1"># compute the gradient</span>
                     <span class="n">chi2grad</span> <span class="o">=</span> <span class="n">polutils</span><span class="o">.</span><span class="n">polchisqgrad</span><span class="p">(</span><span class="n">imcur_nu</span><span class="p">,</span> <span class="n">A</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">sigma</span><span class="p">,</span> <span class="n">dname</span><span class="p">,</span>
                                                      <span class="n">ttype</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_ttype</span><span class="p">,</span> <span class="n">mask</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_embed_mask</span><span class="p">,</span>
-                                                     <span class="n">pol_solve</span><span class="o">=</span><span class="n">pol_solve</span><span class="p">)</span>
+                                                     <span class="n">pol_solve</span><span class="o">=</span><span class="n">pol_grad_slots</span><span class="p">)</span>
                                                      
                 <span class="c1"># Single polarization chi^2 gradients</span>
                 <span class="k">elif</span> <span class="n">dname</span> <span class="ow">in</span> <span class="n">DATATERMS</span><span class="p">:</span>
@@ -1643,12 +1646,15 @@
                     <span class="n">imcur_pol</span> <span class="o">=</span> <span class="n">imcur</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="mi">4</span><span class="p">]</span>
                     <span class="n">prior_pol</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_xprior</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="mi">4</span><span class="p">]</span> 
                     <span class="n">pol_solve</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_which_solve</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="mi">4</span><span class="p">]</span>
+                    <span class="c1"># which gradient terms we need depends of the current pol transform</span>
+                    <span class="n">pol_grad_slots</span> <span class="o">=</span> <span class="n">physical_grad_slots</span><span class="p">(</span><span class="n">pol_solve</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">transform_next</span><span class="p">)</span>
+                    <span class="c1"># compute the gradient</span>
                     <span class="n">regp</span> <span class="o">=</span> <span class="n">polutils</span><span class="o">.</span><span class="n">polregularizergrad</span><span class="p">(</span><span class="n">imcur_pol</span><span class="p">,</span> <span class="n">prior_pol</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_embed_mask</span><span class="p">,</span> 
                                                       <span class="bp">self</span><span class="o">.</span><span class="n">flux_next</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">pflux_next</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">vflux_next</span><span class="p">,</span>
                                                       <span class="bp">self</span><span class="o">.</span><span class="n">prior_next</span><span class="o">.</span><span class="n">xdim</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">prior_next</span><span class="o">.</span><span class="n">ydim</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">prior_next</span><span class="o">.</span><span class="n">psize</span><span class="p">,</span> 
                                                       <span class="n">regname</span><span class="p">,</span>
                                                       <span class="n">norm_reg</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">norm_reg</span><span class="p">,</span> <span class="n">beam_size</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">beam_size</span><span class="p">,</span>
-                                                      <span class="n">pol_solve</span><span class="o">=</span><span class="n">pol_solve</span><span class="p">,</span>
+                                                      <span class="n">pol_solve</span><span class="o">=</span><span class="n">pol_grad_slots</span><span class="p">,</span>
                                                       <span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">regparams</span><span class="p">)</span> 
                     <span class="n">reggrad</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="nb">len</span><span class="p">(</span><span class="n">imcur</span><span class="p">),</span> <span class="bp">self</span><span class="o">.</span><span class="n">_nimage</span><span class="p">))</span>
                     <span class="n">reggrad</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="mi">4</span><span class="p">]</span> <span class="o">=</span> <span class="n">regp</span>
@@ -1729,12 +1735,16 @@
             <span class="k">else</span><span class="p">:</span>        
                 <span class="c1"># Single-frequency polarimetric regularizer</span>
                 <span class="k">if</span> <span class="n">regname</span> <span class="ow">in</span> <span class="n">REGULARIZERS_POL</span><span class="p">:</span>
+                    <span class="n">pol_solve</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_which_solve</span>
+                    <span class="c1"># which gradient terms we need depends of the current pol transform</span>
+                    <span class="n">pol_grad_slots</span> <span class="o">=</span> <span class="n">physical_grad_slots</span><span class="p">(</span><span class="n">pol_solve</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">transform_next</span><span class="p">)</span>
+                    <span class="c1"># compute the gradient</span>
                     <span class="n">reggrad</span> <span class="o">=</span> <span class="n">polutils</span><span class="o">.</span><span class="n">polregularizergrad</span><span class="p">(</span><span class="n">imcur</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_xprior</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_embed_mask</span><span class="p">,</span> 
                                                       <span class="bp">self</span><span class="o">.</span><span class="n">flux_next</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">pflux_next</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">vflux_next</span><span class="p">,</span>
                                                       <span class="bp">self</span><span class="o">.</span><span class="n">prior_next</span><span class="o">.</span><span class="n">xdim</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">prior_next</span><span class="o">.</span><span class="n">ydim</span><span class="p">,</span>
                                                       <span class="bp">self</span><span class="o">.</span><span class="n">prior_next</span><span class="o">.</span><span class="n">psize</span><span class="p">,</span> <span class="n">regname</span><span class="p">,</span>
                                                       <span class="n">norm_reg</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">norm_reg</span><span class="p">,</span> <span class="n">beam_size</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">beam_size</span><span class="p">,</span>
-                                                      <span class="n">pol_solve</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_which_solve</span><span class="p">,</span>
+                                                      <span class="n">pol_solve</span><span class="o">=</span><span class="n">pol_grad_slots</span><span class="p">,</span>
                                                       <span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">regparams</span><span class="p">)</span>
 
 
@@ -2290,15 +2300,37 @@
             <span class="n">outarr</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="n">imarr</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span> <span class="o">*</span> <span class="n">gradarr</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
             
         <span class="k">if</span> <span class="p">(</span><span class="n">pol_which_solve</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">==</span><span class="mi">1</span> <span class="ow">and</span> <span class="n">pol_which_solve</span><span class="p">[</span><span class="mi">3</span><span class="p">]</span><span class="o">==</span><span class="mi">1</span> <span class="ow">and</span> <span class="p">(</span><span class="s1">&#39;polcv&#39;</span> <span class="ow">in</span> <span class="n">transforms</span><span class="p">)):</span>
-            <span class="n">outarr</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="mi">4</span><span class="p">]</span> <span class="o">=</span> <span class="n">polutils</span><span class="o">.</span><span class="n">polcv_chain</span><span class="p">(</span><span class="n">imarr</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="mi">4</span><span class="p">])</span> <span class="o">*</span> <span class="n">gradarr</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="mi">4</span><span class="p">]</span>
+            <span class="n">outarr</span><span class="p">[</span><span class="mi">1</span><span class="p">:</span><span class="mi">4</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="n">polutils</span><span class="o">.</span><span class="n">polcv_chain</span><span class="p">(</span><span class="n">imarr</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="mi">4</span><span class="p">])</span> <span class="o">*</span> <span class="n">gradarr</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="mi">4</span><span class="p">])[</span><span class="mi">1</span><span class="p">:</span><span class="mi">4</span><span class="p">]</span>
         <span class="k">elif</span> <span class="p">(</span><span class="n">pol_which_solve</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">==</span><span class="mi">1</span><span class="p">)</span> <span class="ow">and</span> <span class="p">(</span><span class="s1">&#39;mcv&#39;</span> <span class="ow">in</span> <span class="n">transforms</span><span class="p">):</span>
-            <span class="n">outarr</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="mi">4</span><span class="p">]</span> <span class="o">=</span> <span class="n">polutils</span><span class="o">.</span><span class="n">mcv_chain</span><span class="p">(</span><span class="n">imarr</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="mi">4</span><span class="p">])</span> <span class="o">*</span> <span class="n">gradarr</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="mi">4</span><span class="p">]</span>
+<span class="c1">#            outarr[0:4] = polutils.mcv_chain(imarr[0:4]) * gradarr[0:4]</span>
+            <span class="n">outarr</span><span class="p">[</span><span class="mi">1</span><span class="p">:</span><span class="mi">4</span><span class="p">]</span> <span class="o">=</span> <span class="n">polutils</span><span class="o">.</span><span class="n">mcv_grad</span><span class="p">(</span><span class="n">imarr</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="mi">4</span><span class="p">],</span> <span class="n">gradarr</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="mi">4</span><span class="p">])</span>
         <span class="k">elif</span> <span class="p">(</span><span class="n">pol_which_solve</span><span class="p">[</span><span class="mi">3</span><span class="p">]</span><span class="o">==</span><span class="mi">1</span><span class="p">)</span> <span class="ow">and</span> <span class="p">(</span><span class="s1">&#39;vcv&#39;</span> <span class="ow">in</span> <span class="n">transforms</span><span class="p">):</span>
-            <span class="n">outarr</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="mi">4</span><span class="p">]</span> <span class="o">=</span> <span class="n">polutils</span><span class="o">.</span><span class="n">vcv_chain</span><span class="p">(</span><span class="n">imarr</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="mi">4</span><span class="p">])</span> <span class="o">*</span> <span class="n">gradarr</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="mi">4</span><span class="p">]</span>
+<span class="c1">#            outarr[0:4] = polutils.vcv_chain(imarr[0:4]) * gradarr[0:4]</span>
+            <span class="n">outarr</span><span class="p">[</span><span class="mi">1</span><span class="p">:</span><span class="mi">4</span><span class="p">]</span> <span class="o">=</span> <span class="n">polutils</span><span class="o">.</span><span class="n">vcv_grad</span><span class="p">(</span><span class="n">imarr</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="mi">4</span><span class="p">],</span> <span class="n">gradarr</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="mi">4</span><span class="p">])</span>
              
              
     <span class="k">return</span> <span class="n">outarr</span></div>
 
+
+<div class="viewcode-block" id="physical_grad_slots">
+<a class="viewcode-back" href="../../imager.html#ehtim.imager.physical_grad_slots">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">physical_grad_slots</span><span class="p">(</span><span class="n">pol_solve</span><span class="p">,</span> <span class="n">transforms</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Physical gradout slots the gradient kernels must fill, given the DOF mask.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">mask</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">pol_solve</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">int</span><span class="p">)</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+    <span class="c1"># Cross-coupling only exists for the full 4-wide Stokes block. Single-pol</span>
+    <span class="c1"># (Stokes-I, possibly mf with [I, alpha, beta]) has no rho/psi DOFs to</span>
+    <span class="c1"># couple -- and may carry &#39;mcv&#39; in transforms inertly, so the transform</span>
+    <span class="c1"># check alone is not enough. Mirror transform_gradients&#39; shape gating.</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">mask</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mi">4</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">mask</span>
+    <span class="k">if</span> <span class="s1">&#39;mcv&#39;</span> <span class="ow">in</span> <span class="n">transforms</span> <span class="ow">and</span> <span class="n">pol_solve</span><span class="p">[</span><span class="mi">1</span><span class="p">]:</span>     <span class="c1"># m&#39; (slot 1) -&gt; rho AND psi</span>
+        <span class="n">mask</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span>
+        <span class="n">mask</span><span class="p">[</span><span class="mi">3</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span>
+    <span class="k">elif</span> <span class="s1">&#39;vcv&#39;</span> <span class="ow">in</span> <span class="n">transforms</span> <span class="ow">and</span> <span class="n">pol_solve</span><span class="p">[</span><span class="mi">3</span><span class="p">]:</span>   <span class="c1"># v&#39; (slot 3) -&gt; rho AND psi</span>
+        <span class="n">mask</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span>
+        <span class="n">mask</span><span class="p">[</span><span class="mi">3</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span>
+    <span class="k">return</span> <span class="n">mask</span></div>
 
 
 <div class="viewcode-block" id="make_initarr">
