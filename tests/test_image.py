@@ -48,7 +48,13 @@ def test_init_requires_2d_array():
 
 def test_init_rejects_bad_polrep():
     with pytest.raises(Exception, match="polrep"):
-        eh.image.Image(np.zeros((4, 4)), 1e-10, 17.761, -29.0, polrep="lin")
+        eh.image.Image(np.zeros((4, 4)), 1e-10, 17.761, -29.0, polrep="bogus")
+
+
+def test_init_accepts_lin_polrep():
+    im = eh.image.Image(np.zeros((4, 4)), 1e-10, 17.761, -29.0, polrep="lin")
+    assert im.polrep == "lin"
+    assert im.pol_prim == "XX"
 
 
 def test_init_rejects_bad_pol_prim_stokes():
@@ -334,7 +340,7 @@ def test_copy_pol_images_brings_q_u_v(gauss_im, gauss_im_pol):
 
 def test_switch_polrep_invalid_raises(gauss_im):
     with pytest.raises(Exception, match="polrep_out"):
-        gauss_im.switch_polrep("lin")
+        gauss_im.switch_polrep("bogus")
 
 
 def test_switch_polrep_noop_returns_copy(gauss_im):
@@ -370,6 +376,109 @@ def test_switch_polrep_raises_if_output_pol_missing(gauss_im):
     # because V is not defined.
     with pytest.raises(Exception, match="not defined"):
         gauss_im.switch_polrep("circ", "RR")
+
+
+# ---------------------------------------------------------------------------
+# Section 5b: lin polrep
+# ---------------------------------------------------------------------------
+
+
+def test_init_lin_default_pol_prim_is_xx():
+    im = eh.image.Image(np.zeros((4, 4)), 1e-10, 17.761, -29.0, polrep="lin")
+    assert im.polrep == "lin"
+    assert im.pol_prim == "XX"
+
+
+def test_init_lin_pol_prim_yy():
+    im = eh.image.Image(np.zeros((4, 4)), 1e-10, 17.761, -29.0,
+                        polrep="lin", pol_prim="YY")
+    assert im.pol_prim == "YY"
+
+
+def test_init_lin_rejects_bad_pol_prim():
+    with pytest.raises(Exception, match="pol_prim"):
+        eh.image.Image(np.zeros((4, 4)), 1e-10, 17.761, -29.0,
+                       polrep="lin", pol_prim="XY")
+
+
+def test_switch_polrep_stokes_to_lin_roundtrip(gauss_im_pol):
+    rt = gauss_im_pol.switch_polrep("lin").switch_polrep("stokes")
+    for vec in ("ivec", "qvec", "uvec", "vvec"):
+        np.testing.assert_allclose(
+            getattr(rt, vec), getattr(gauss_im_pol, vec), atol=1e-12,
+        )
+
+
+def test_switch_polrep_stokes_to_lin_formulae(gauss_im_pol):
+    out = gauss_im_pol.switch_polrep("lin")
+    np.testing.assert_allclose(out.xxvec,
+                               gauss_im_pol.ivec + gauss_im_pol.qvec, atol=1e-12)
+    np.testing.assert_allclose(out.yyvec,
+                               gauss_im_pol.ivec - gauss_im_pol.qvec, atol=1e-12)
+    np.testing.assert_allclose(out.xyvec,
+                               gauss_im_pol.uvec + 1j * gauss_im_pol.vvec, atol=1e-12)
+    np.testing.assert_allclose(out.yxvec,
+                               gauss_im_pol.uvec - 1j * gauss_im_pol.vvec, atol=1e-12)
+
+
+def test_switch_polrep_circ_to_lin_matches_two_step(gauss_im_pol):
+    """circ -> lin composes through stokes (Decision 7)."""
+    im_circ = gauss_im_pol.switch_polrep("circ")
+    direct = im_circ.switch_polrep("lin")
+    two_step = im_circ.switch_polrep("stokes").switch_polrep("lin")
+    for vec in ("xxvec", "yyvec", "xyvec", "yxvec"):
+        np.testing.assert_allclose(
+            getattr(direct, vec), getattr(two_step, vec), atol=1e-12,
+        )
+
+
+def test_cross_convention_stokes_recovered_via_both_paths(gauss_im_pol):
+    """Stokes from circ and Stokes from lin agree (basis-transform unitarity)."""
+    im_c = gauss_im_pol.switch_polrep("circ")
+    im_l = gauss_im_pol.switch_polrep("lin")
+    for vec in ("ivec", "qvec", "uvec", "vvec"):
+        np.testing.assert_allclose(getattr(im_c, vec), getattr(im_l, vec),
+                                   atol=1e-12)
+
+
+def test_lin_image_xxvec_setter_writes_storage():
+    im = eh.image.Image(np.ones((4, 4)), 1e-10, 17.761, -29.0,
+                        polrep="lin", pol_prim="XX")
+    new_xx = np.arange(16.0)
+    im.xxvec = new_xx
+    np.testing.assert_array_equal(im.xxvec, new_xx)
+
+
+def test_lin_image_xxvec_setter_rejects_wrong_polrep(gauss_im):
+    with pytest.raises(Exception, match="lin"):
+        gauss_im.xxvec = np.zeros(gauss_im.xdim * gauss_im.ydim)
+
+
+def test_stokes_image_xxvec_computes_from_iq(gauss_im_pol):
+    """xxvec on a stokes image computes I+Q via pol_conventions."""
+    np.testing.assert_allclose(gauss_im_pol.xxvec,
+                               gauss_im_pol.ivec + gauss_im_pol.qvec, atol=1e-12)
+
+
+def test_stokes_image_xyvec_computes_complex(gauss_im_pol):
+    """xyvec on a stokes image is U + iV (complex, engineering convention)."""
+    np.testing.assert_allclose(gauss_im_pol.xyvec,
+                               gauss_im_pol.uvec + 1j * gauss_im_pol.vvec,
+                               atol=1e-12)
+
+
+def test_lin_image_round_trip_preserves_qvec(gauss_im_pol):
+    """Set Q via stokes, round-trip through lin, recover Q from xxvec/yyvec."""
+    im_l = gauss_im_pol.switch_polrep("lin")
+    q_recovered = 0.5 * (im_l.xxvec - im_l.yyvec)
+    np.testing.assert_allclose(q_recovered, gauss_im_pol.qvec, atol=1e-12)
+
+
+def test_add_pol_image_lin_supports_yy():
+    im = eh.image.Image(np.ones((4, 4)), 1e-10, 17.761, -29.0, polrep="lin")
+    yy = np.arange(16.0).reshape(4, 4)
+    im.add_pol_image(yy, "YY")
+    np.testing.assert_array_equal(im.yyvec, yy.flatten())
 
 
 def test_orth_chi_flips_qu_signs(gauss_im_pol):

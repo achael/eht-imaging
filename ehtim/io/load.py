@@ -821,27 +821,40 @@ def load_array_txt(filename, ephemdir='ephemeris'):
 
 
     tdata = np.loadtxt(filename, dtype=bytes, comments='#').astype(str)
+    if tdata.ndim == 1:
+        tdata = tdata.reshape(1, -1)
     if tdata[0][0].lower() == 'site':
         tdata = tdata[1:]
 
     path = os.path.dirname(filename)
 
+    # Column count is the schema discriminator:
+    #   5  = legacy minimal (site, x, y, z, sefd)
+    #   13 = legacy circular-only (no feed_type)
+    #   14 = current format (legacy circular + explicit feed_type),
+    #        emitted by save_array_txt with a leading
+    #        '# ehtim array format v2' marker
     tdataout = []
-    if (tdata.shape[1] != 5 and tdata.shape[1] != 13):
+    if (tdata.shape[1] not in (5, 13, 14)):
         raise Exception("Array file should have format: " +
-                        "(name, x, y, z, SEFDR, SEFDL " +
-                        "FR_PAR_ANGLE FR_ELEV_ANGLE FR_OFFSET" +
-                        "DR_RE   DR_IM   DL_RE    DL_IM )")
+                        "(name, x, y, z, SEFD_P1, SEFD_P2 " +
+                        "FR_PAR_ANGLE FR_ELEV_ANGLE FR_OFFSET " +
+                        "D_P1_RE D_P1_IM D_P2_RE D_P2_IM [FEED_TYPE])")
 
     elif tdata.shape[1] == 5:
         tdataout = [np.array((x[0], float(x[1]), float(x[2]), float(x[3]), float(x[4]), float(x[4]),
                               0.0, 0.0,
-                              0.0, 0.0, 0.0),
+                              0.0, 0.0, 0.0, 'rl'),
                              dtype=ehc.DTARR) for x in tdata]
     elif tdata.shape[1] == 13:
         tdataout = [np.array((x[0], float(x[1]), float(x[2]), float(x[3]), float(x[4]), float(x[5]),
                               float(x[9]) + 1j * float(x[10]), float(x[11]) + 1j * float(x[12]),
-                              float(x[6]), float(x[7]), float(x[8])),
+                              float(x[6]), float(x[7]), float(x[8]), 'rl'),
+                             dtype=ehc.DTARR) for x in tdata]
+    elif tdata.shape[1] == 14:
+        tdataout = [np.array((x[0], float(x[1]), float(x[2]), float(x[3]), float(x[4]), float(x[5]),
+                              float(x[9]) + 1j * float(x[10]), float(x[11]) + 1j * float(x[12]),
+                              float(x[6]), float(x[7]), float(x[8]), str(x[13])),
                              dtype=ehc.DTARR) for x in tdata]
 
     # load spacecraft
@@ -922,12 +935,17 @@ def load_obs_txt(filename, polrep='stokes'):
     while line[1][0] != "-":
         if len(line) == 6:
             tarr.append(np.array((line[1], line[2], line[3], line[4], line[5], line[5],
-                                  0, 0, 0, 0, 0), dtype=ehc.DTARR))
+                                  0, 0, 0, 0, 0, 'rl'), dtype=ehc.DTARR))
         elif len(line) == 14:
             tarr.append(np.array((line[1], line[2], line[3], line[4], line[5], line[6],
                                   float(line[10]) + 1j * float(line[11]),
                                   float(line[12]) + 1j * float(line[13]),
-                                  line[7], line[8], line[9]), dtype=ehc.DTARR))
+                                  line[7], line[8], line[9], 'rl'), dtype=ehc.DTARR))
+        elif len(line) == 15:
+            tarr.append(np.array((line[1], line[2], line[3], line[4], line[5], line[6],
+                                  float(line[10]) + 1j * float(line[11]),
+                                  float(line[12]) + 1j * float(line[13]),
+                                  line[7], line[8], line[9], str(line[14])), dtype=ehc.DTARR))
         else:
             raise Exception("Telescope header doesn't have the right number of fields!")
         line = file.readline().split()
@@ -1091,10 +1109,32 @@ def load_obs_uvfits(filename, polrep='stokes', flipbl=False,
     dr = np.zeros(len(tnames)) + 1j * np.zeros(len(tnames))
     dl = np.zeros(len(tnames)) + 1j * np.zeros(len(tnames))
 
+    # Detect antenna feed types and raise if the observation is mixed-polarization
+    # (full POLTYA/POLTYB -> feed_type parsing is not yet implemented). Both feed
+    # columns are checked, so a hybrid station (e.g. POLTYA='R', POLTYB='X') is
+    # caught rather than silently loaded as circular.
+    feeds = set()
+    for col in ('POLTYA', 'POLTYB'):
+        try:
+            poltys = hdulist['AIPS AN'].data[col]
+        except KeyError:
+            continue
+        for p in poltys:
+            s = (p.decode() if isinstance(p, bytes) else str(p)).strip().upper()
+            if s:
+                feeds.add(s)
+    if not feeds <= {'R', 'L'}:
+        raise NotImplementedError(
+            "mixed-pol / linear-feed uvfits load is not yet supported; "
+            f"detected feed types {sorted(feeds)} in POLTYA/POLTYB. "
+            "See obsdata_mixedpol_plan.md.")
+
+    # TODO (Phase 7 mixed-pol): read POLTYA/POLTYB from the AIPS AN table
+    # to populate per-station feed_type. Until then, assume circular feeds.
     tarr = [np.array((
             str(tnames[i]), xyz[i][0], xyz[i][1], xyz[i][2],
             sefdr[i], sefdl[i], dr[i], dl[i],
-            fr_par[i], fr_el[i], fr_off[i]),
+            fr_par[i], fr_el[i], fr_off[i], 'rl'),
         dtype=ehc.DTARR) for i in range(len(tnames))]
 
     tarr = np.array(tarr)
@@ -1552,7 +1592,7 @@ def load_obs_maps(arrfile, obsspec, ifile, qfile=0, ufile=0, vfile=0,
     # Read telescope parameters from the array file
     tdata = np.loadtxt(arrfile, dtype=bytes).astype(str)
     tdata = [np.array((x[0], float(x[1]), float(x[2]), float(x[3]),
-                       float(x[-1]), float(x[-1]), 0., 0., 0., 0., 0.),
+                       float(x[-1]), float(x[-1]), 0., 0., 0., 0., 0., 'rl'),
                       dtype=ehc.DTARR) for x in tdata]
     tdata = np.array(tdata)
 

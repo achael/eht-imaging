@@ -742,7 +742,8 @@ def make_jones(obs, opacitycal=True, ampcal=True, phasecal=True, dcal=True,
             obs_tmp.tarr[i]['dl'] = dL
             datatable = []
             for j in range(len(times)):
-                datatable.append(np.array((times[j], gainR[j], gainL[j]), dtype=ehc.DTCAL))
+                datatable.append(np.array((times[j], gainR[j], gainL[j], dR, dL),
+                                          dtype=ehc.DTCAL))
             datatables[site] = np.array(datatable)
 
     # Save a calibration table with the synthetic gains and dterms added
