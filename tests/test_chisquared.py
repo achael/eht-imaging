@@ -8,6 +8,14 @@ exercises the rectangular-image code paths (rect subsumes square).
 import numpy as np
 import pytest
 
+import ehtim as eh
+from ehtim.imaging.imager_backend import (
+    ImagerConfig,
+    MfConfig,
+    compute_chisq_term,
+    compute_chisqdata_term,
+    compute_chisqgrad_term,
+)
 from ehtim.imaging.imager_utils import chisq, chisqdata, chisqgrad
 
 # Observation parameters (must match conftest.py)
@@ -66,15 +74,17 @@ RNG_SEED = 4
 
 
 @pytest.fixture(scope="module")
-def chisq_setup(eht_array, make_rect_image):
+def chisq_setup(eht_array, make_asym_image):
     """Set up observation and test image for chi-squared comparison tests.
 
-    Uses a 32x48 synthetic Gaussian image so xdim != ydim exercises the
-    rectangular-image code paths. A single DFT observation serves as ground
-    truth; chi-squared is then evaluated with different transform matrices
-    (direct, fast, nfft), testing that the transform approximations agree.
+    Uses a 32x48 asymmetric (offset double-Gaussian) image: xdim != ydim
+    exercises the rectangular-image code paths, and the broken symmetry +
+    edge flux surface axis-ordering bugs a centered Gaussian hides. A single
+    DFT observation serves as ground truth; chi-squared is then evaluated with
+    different transform matrices (direct, fast, nfft) to test that the
+    transform approximations agree.
     """
-    im = make_rect_image(32, 48)
+    im = make_asym_image(32, 48)
     im.imvec = im.imvec * 2.0 / im.total_flux()  # normalize to 2 Jy
 
     obs = im.observe(
@@ -194,3 +204,144 @@ def _gradient_comparison(chisq_setup, dtype, pair):
     frac_diff = np.abs((grad_a - grad_b) / (np.abs(grad_a) + compare_floor))
     print(f"  {dtype} {ttype_a}-{ttype_b}: grad median={np.median(frac_diff):.6f} max={np.max(frac_diff):.6f}")
     return np.median(frac_diff), np.max(frac_diff)
+
+
+# ---------------------------------------------------------------------------
+# Polarimetric chi-squared (pvis / m / vvis). Pol has no 'fast' ttype.
+# ---------------------------------------------------------------------------
+POL_DATATERMS = ["pvis", "m", "vvis"]
+POL_FD_REL = 1e-6
+POL_FD_FLOOR = 1e-9
+# fractional FD vs analytic (same ttype, self-consistent). median is tight (any
+# systematic gradient error blows it up); max is looser to tolerate 2nd-order FD
+# truncation outliers at small-gradient pixels of the structured-pol imcur. Real
+# pol-gradient bugs are %-level (e.g. the mcv slot-3 coupling), far above these.
+POL_GRAD_FD_MEDIAN_TOL = 1e-5
+POL_GRAD_FD_MAX_TOL = 1e-3
+POL_CHISQ_FRAC_TOL = 0.01   # direct-vs-nfft value agreement
+
+
+def _pol_config(ttype):
+    return ImagerConfig(
+        pol="IP", transforms=[], ttype=ttype, mf=False,
+        mf_config=MfConfig(mf_order=0, mf_order_pol=0, mf_rm=0, mf_cm=0),
+    )
+
+
+def _pol_data_tuple(obs, prior, mask, dtype, ttype):
+    data, sigma, A = compute_chisqdata_term(obs, prior, mask, dtype, _pol_config(ttype))
+    return A, data, sigma
+
+
+@pytest.fixture(scope="module")
+def chisq_setup_pol(eht_array, make_asym_image):
+    """Asymmetric 32x48 polarized image + a jittered physical imcur [I,rho,phi,psi].
+
+    add_random_pol gives a spatially-varying EVPA (random screen) and, with
+    ccorr>0, a spatially-varying circular fraction -- so chi, vfrac, rho, and psi
+    all vary across the image. A constant pol fraction would leave the
+    polarization structure spatially uniform and never exercise those gradients.
+    """
+    im = make_asym_image(32, 48)
+    im.imvec = im.imvec * 2.0 / im.total_flux()
+    im = im.add_random_pol(0.25, 40 * eh.RADPERUAS,
+                           cmag=0.06, ccorr=40 * eh.RADPERUAS, seed=7)
+    prior = im.copy()
+
+    obs = im.observe(
+        eht_array, TINT_SEC, TADV_SEC, TSTART_HR, TSTOP_HR, BW_HZ,
+        ampcal=True, phasecal=True, ttype="direct", add_th_noise=False,
+    )
+    mask = np.ones(im.imvec.size, dtype=bool)
+
+    # Physical-space imcur jittered off the truth so residuals (and grads) are
+    # nonzero; keep rho in (0,1) and psi away from 0 (tan(psi) in vvis grad).
+    rng = np.random.default_rng(RNG_SEED)
+    I = im.imvec
+    Q, U, V = im.qvec, im.uvec, im.vvec
+    P = np.sqrt(Q**2 + U**2 + V**2)
+    n = I.size
+    imcur = np.array([
+        I * (1.0 + 0.05 * (rng.random(n) - 0.5)),
+        np.clip((P / I) * (1.0 + 0.1 * (rng.random(n) - 0.5)), 0.02, 0.95),
+        np.arctan2(U, Q) + 0.1 * (rng.random(n) - 0.5),
+        np.clip(np.abs(np.arcsin(V / (P + 1e-30))) * (1.0 + 0.1 * (rng.random(n) - 0.5)), 0.02, 1.5),
+    ])
+    return {"obs": obs, "prior": prior, "mask": mask, "imcur": imcur}
+
+
+class TestPolChisqConsistency:
+    """Pol chi-squared values agree between direct and nfft (same obs, different A)."""
+
+    @pytest.mark.parametrize("dtype", POL_DATATERMS)
+    def test_chisq_values(self, chisq_setup_pol, dtype):
+        obs, prior = chisq_setup_pol["obs"], chisq_setup_pol["prior"]
+        mask, imcur = chisq_setup_pol["mask"], chisq_setup_pol["imcur"]
+        vals = {}
+        for tt in ("direct", "nfft"):
+            A, data, sigma = _pol_data_tuple(obs, prior, mask, dtype, tt)
+            vals[tt] = compute_chisq_term(imcur, dtype, A, data, sigma, ttype=tt, mask=mask)
+        frac = abs((vals["direct"] - vals["nfft"]) / abs(vals["direct"]))
+        assert frac < POL_CHISQ_FRAC_TOL, f"{dtype}: chisq frac diff = {frac:.6f}"
+
+
+class TestPolChisqGradConsistency:
+    """Pol chi-squared gradients agree between direct and nfft."""
+
+    @pytest.mark.parametrize("dtype", POL_DATATERMS)
+    def test_grad_values(self, chisq_setup_pol, dtype):
+        obs, prior = chisq_setup_pol["obs"], chisq_setup_pol["prior"]
+        mask, imcur = chisq_setup_pol["mask"], chisq_setup_pol["imcur"]
+        grads = {}
+        for tt in ("direct", "nfft"):
+            A, data, sigma = _pol_data_tuple(obs, prior, mask, dtype, tt)
+            grads[tt] = compute_chisqgrad_term(
+                imcur, dtype, A, data, sigma, ttype=tt, mask=mask,
+                pol_solve=np.array([1, 1, 1, 1]))
+        a, b = grads["direct"], grads["nfft"]
+        floor = np.min(np.abs(a)) * 1e-20 + 1e-100
+        frac = np.abs((a - b) / (np.abs(a) + floor))
+        assert np.median(frac) < GRAD_MEDIAN_TOL
+        assert np.max(frac) < GRAD_MAX_TOL_NFFT
+
+
+class TestPolChisqGradFD:
+    """Pol chisqgrad matches finite differences of the chisq value, in all four
+    physical slots (driven with pol_solve=[1,1,1,1]). vvis slot 2 (EVPA) is
+    asserted identically zero -- Stokes V is independent of EVPA -- and its FD
+    is also zero, so the all-slot loop covers it consistently."""
+
+    @pytest.mark.parametrize("dtype", POL_DATATERMS)
+    @pytest.mark.parametrize("ttype", ["direct", "nfft"])
+    def test_grad_matches_fd(self, chisq_setup_pol, dtype, ttype):
+        obs, prior = chisq_setup_pol["obs"], chisq_setup_pol["prior"]
+        mask, imcur = chisq_setup_pol["mask"], chisq_setup_pol["imcur"]
+        A, data, sigma = _pol_data_tuple(obs, prior, mask, dtype, ttype)
+        grad = compute_chisqgrad_term(
+            imcur, dtype, A, data, sigma, ttype=ttype, mask=mask,
+            pol_solve=np.array([1, 1, 1, 1]))
+
+        if dtype == "vvis":   # V is independent of EVPA
+            np.testing.assert_array_equal(grad[2], 0.0)
+
+        rng = np.random.default_rng(RNG_SEED)
+        n = imcur.shape[1]
+        sample = rng.choice(n, size=min(30, n), replace=False)
+        frac = []
+        for slot in range(4):
+            for j in sample:
+                dx = max(POL_FD_REL * abs(imcur[slot, j]), POL_FD_FLOOR)
+                ip = imcur.copy()
+                ip[slot, j] += dx
+                im_ = imcur.copy()
+                im_[slot, j] -= dx
+                fd = (compute_chisq_term(ip, dtype, A, data, sigma, ttype=ttype, mask=mask)
+                      - compute_chisq_term(im_, dtype, A, data, sigma, ttype=ttype, mask=mask)) / (2 * dx)
+                ex = grad[slot, j]
+                denom = max(abs(ex), abs(fd), POL_FD_FLOOR)
+                frac.append(abs(ex - fd) / denom)
+        frac = np.array(frac)
+        assert np.median(frac) < POL_GRAD_FD_MEDIAN_TOL, (
+            f"{dtype} {ttype}: median frac diff = {np.median(frac):.4g}")
+        assert np.max(frac) < POL_GRAD_FD_MAX_TOL, (
+            f"{dtype} {ttype}: max frac diff = {np.max(frac):.4g}")

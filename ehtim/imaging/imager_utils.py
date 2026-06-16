@@ -33,12 +33,13 @@ import ehtim.observing.obs_helpers as obsh
 NORM_REGULARIZER = True
 DATATERMS = ['vis', 'bs', 'amp', 'cphase', 'cphase_diag',
              'camp', 'logcamp', 'logcamp_diag', 'logamp']
-REGULARIZERS = ['gs', 'tv', 'tvlog','tv2', 'tv2log','l1w', 'lA', 'patch', 'simple', 'compact', 'compact2', 'rgauss']
+REGULARIZERS = ['gs', 'tv', 'tvlog','tv2', 'tv2log','l1w', 'lA',
+                'patch', 'simple', 'compact', 'compact2', 'rgauss']
 
 nit = 0  # global variable to track the iteration number in the plotting callback
 
 ##################################################################################################
-# Wrapper Functions
+# Wrapper Functions (Backward Compatibility Shims)
 ##################################################################################################
 
 
@@ -194,6 +195,7 @@ def chisqgrad_bs(imvec, Amatrices, bis, sigma):
 
 def chisq_cphase(imvec, Amatrices, clphase, sigma):
     """Closure Phases (normalized) chi-squared"""
+
     clphase = clphase * ehc.DEGREE
     sigma = sigma * ehc.DEGREE
 
@@ -208,6 +210,7 @@ def chisq_cphase(imvec, Amatrices, clphase, sigma):
 
 def chisqgrad_cphase(imvec, Amatrices, clphase, sigma):
     """The gradient of the closure phase chi-squared"""
+
     clphase = clphase * ehc.DEGREE
     sigma = sigma * ehc.DEGREE
 
@@ -227,11 +230,12 @@ def chisqgrad_cphase(imvec, Amatrices, clphase, sigma):
 
 def chisq_cphase_diag(imvec, Amatrices, clphase_diag, sigma):
     """Diagonalized closure phases (normalized) chi-squared"""
+
     clphase_diag = np.concatenate(clphase_diag) * ehc.DEGREE
     sigma = np.concatenate(sigma) * ehc.DEGREE
 
-    A3_diag = Amatrices[0]
-    tform_mats = Amatrices[1]
+    A3_diag = Amatrices[0] # fourier matrices
+    tform_mats = Amatrices[1] # transform matrices
 
     clphase_diag_samples = []
     for iA, A3 in enumerate(A3_diag):
@@ -248,11 +252,12 @@ def chisq_cphase_diag(imvec, Amatrices, clphase_diag, sigma):
 
 def chisqgrad_cphase_diag(imvec, Amatrices, clphase_diag, sigma):
     """The gradient of the diagonalized closure phase chi-squared"""
+
     clphase_diag = clphase_diag * ehc.DEGREE
     sigma = sigma * ehc.DEGREE
 
-    A3_diag = Amatrices[0]
-    tform_mats = Amatrices[1]
+    A3_diag = Amatrices[0] # fourier matrices
+    tform_mats = Amatrices[1] # transform matrices
 
     deriv = np.zeros_like(imvec)
     for iA, A3 in enumerate(A3_diag):
@@ -359,8 +364,8 @@ def chisq_logcamp_diag(imvec, Amatrices, log_clamp_diag, sigma):
     log_clamp_diag = np.concatenate(log_clamp_diag)
     sigma = np.concatenate(sigma)
 
-    A4_diag = Amatrices[0]
-    tform_mats = Amatrices[1]
+    A4_diag = Amatrices[0] # fourier matrices
+    tform_mats = Amatrices[1] # transform matrices
 
     log_clamp_diag_samples = []
     for iA, A4 in enumerate(A4_diag):
@@ -384,8 +389,8 @@ def chisq_logcamp_diag(imvec, Amatrices, log_clamp_diag, sigma):
 def chisqgrad_logcamp_diag(imvec, Amatrices, log_clamp_diag, sigma):
     """The gradient of the diagonalized log closure amplitude chi-squared"""
 
-    A4_diag = Amatrices[0]
-    tform_mats = Amatrices[1]
+    A4_diag = Amatrices[0] # fourier matrices
+    tform_mats = Amatrices[1] # transform matrices
 
     deriv = np.zeros_like(imvec)
     for iA, A4 in enumerate(A4_diag):
@@ -1683,7 +1688,7 @@ def chisqgrad_logamp_nfft(imvec, A, amp, sigma):
 
 
 ##################################################################################################
-# Regularizer and Gradient Functions
+# Regularizer and Gradient Helper Functions
 ##################################################################################################
 
 
@@ -1709,26 +1714,34 @@ def fAgrad(imvec, I_ref=1.0, alpha_A=1.0):
 #
 # Each `reg_X` / `reggrad_X` implements a Stokes-I regularizer with the uniform
 # `(imvec, mask, **kwargs)` signature used by the `_REGULARIZER_DISPATCH` table
-# in `imager_backend.py`. Each returns the penalty value (positive; the imager
-# solver minimises it). Spatial regularizers (cm, tv, tvlog, tv2, tv2log,
-# compact, compact2, rgauss) use the embed-pre / mask-post-slice pattern; flat
-# regularizers (flux, simple, l1, l1w, lA, gs, patch) operate directly.
+# in `imager_backend.py`.
+#
+# Each returns the penalty value (defined positive; cf the old entropy style negative regularizers).
+# Spatial regularizers (cm, tv, tvlog, tv2, tv2log, compact, compact2, rgauss)
+# use the embed-pre / mask-post-slice pattern;
+# flat regularizers (flux, simple, l1, l1w, lA, gs, patch) operate directly.
 ##################################################################################################
 
 
 def reg_flux(imvec, mask, **kwargs):
+    """Total flux regularizer"""
+
     flux = kwargs['flux']
     norm = flux**2 if kwargs.get('norm_reg', True) else 1
     return (np.sum(imvec) - flux)**2 / norm
 
 
 def reggrad_flux(imvec, mask, **kwargs):
+    """Gradient of total flux regularizer"""
+
     flux = kwargs['flux']
     norm = flux**2 if kwargs.get('norm_reg', True) else 1
     return 2 * (np.sum(imvec) - flux) * np.ones(len(imvec)) / norm
 
 
 def reg_simple(imvec, mask, **kwargs):
+    """Simple entropy regularizer"""
+
     priorvec = kwargs['nprior']
     flux = kwargs['flux']
     norm = flux if kwargs.get('norm_reg', True) else 1
@@ -1736,6 +1749,8 @@ def reg_simple(imvec, mask, **kwargs):
 
 
 def reggrad_simple(imvec, mask, **kwargs):
+    """Gradient of simple entropy regularizer"""
+
     priorvec = kwargs['nprior']
     flux = kwargs['flux']
     norm = flux if kwargs.get('norm_reg', True) else 1
@@ -1743,36 +1758,42 @@ def reggrad_simple(imvec, mask, **kwargs):
 
 
 def reg_l1(imvec, mask, **kwargs):
+    """l1-norm regularizer"""
+
     flux = kwargs['flux']
     norm = flux if kwargs.get('norm_reg', True) else 1
     return np.sum(np.abs(imvec)) / norm
 
 
 def reggrad_l1(imvec, mask, **kwargs):
+    """gradient of l1-norm regularizer"""
     flux = kwargs['flux']
     norm = flux if kwargs.get('norm_reg', True) else 1
     return np.sign(imvec) / norm
 
 
 def reg_l1w(imvec, mask, **kwargs):
+    """smooth l1-w norm regularizer"""
     priorvec = kwargs['nprior']
-    epsilon = ehc.EP
-    norm = 1  # placeholder: legacy sl1w normalized by unity in both norm_reg branches
+    epsilon = ehc.EP # TODO: replace with argument like epsilon_tv?
+    norm = 1  # TODO: placeholder: legacy sl1w normalized by unity in both norm_reg branches
     num = np.sqrt(imvec**2 + epsilon)
     denom = np.sqrt(priorvec**2 + epsilon) + epsilon
     return np.sum(num / denom) / norm
 
 
 def reggrad_l1w(imvec, mask, **kwargs):
+    """gradient of the smooth l1-w norm regularizer"""
     priorvec = kwargs['nprior']
-    epsilon = ehc.EP
-    norm = 1  # placeholder: matches reg_l1w
+    epsilon = ehc.EP # TODO: replace with argument like epsilon_tv?
+    norm = 1  # TODO: placeholder: legacy sl1w normalized by unity in both norm_reg branches
     num = imvec / np.sqrt(imvec**2 + epsilon)
     denom = np.sqrt(priorvec**2 + epsilon) + epsilon
     return num / denom / norm
 
 
 def reg_lA(imvec, mask, **kwargs):
+    """lA regularizer"""
     psize = kwargs['psize']
     flux = kwargs['flux']
     beam_size = kwargs.get('beam_size') or psize
@@ -1789,6 +1810,7 @@ def reg_lA(imvec, mask, **kwargs):
 
 
 def reggrad_lA(imvec, mask, **kwargs):
+    """gradient of the lA regularizer"""
     psize = kwargs['psize']
     flux = kwargs['flux']
     beam_size = kwargs.get('beam_size') or psize
@@ -1805,6 +1827,7 @@ def reggrad_lA(imvec, mask, **kwargs):
 
 
 def reg_gs(imvec, mask, **kwargs):
+    """Gull-Skilling entropy regularizer"""
     priorvec = kwargs['nprior']
     flux = kwargs['flux']
     norm = flux if kwargs.get('norm_reg', True) else 1
@@ -1812,6 +1835,7 @@ def reg_gs(imvec, mask, **kwargs):
 
 
 def reggrad_gs(imvec, mask, **kwargs):
+    """Gradient of the Gull-Skilling entropy regularizer"""
     priorvec = kwargs['nprior']
     flux = kwargs['flux']
     norm = flux if kwargs.get('norm_reg', True) else 1
@@ -1819,6 +1843,7 @@ def reggrad_gs(imvec, mask, **kwargs):
 
 
 def reg_patch(imvec, mask, **kwargs):
+    """Patch prior regularizer (CHIRP)"""
     priorvec = kwargs['nprior']
     flux = kwargs['flux']
     norm = flux**2 if kwargs.get('norm_reg', True) else 1
@@ -1826,6 +1851,7 @@ def reg_patch(imvec, mask, **kwargs):
 
 
 def reggrad_patch(imvec, mask, **kwargs):
+    """Gradient of the patch prior regularizer"""
     priorvec = kwargs['nprior']
     flux = kwargs['flux']
     norm = flux**2 if kwargs.get('norm_reg', True) else 1
@@ -1833,12 +1859,16 @@ def reggrad_patch(imvec, mask, **kwargs):
 
 
 def reg_cm(imvec, mask, **kwargs):
+    """Center-of-mass regularizer"""
+    # embed image
     if np.any(np.invert(mask)):
         imvec = embed(imvec, mask, randomfloor=True)
+    # parameters and normalization
     nx, ny, psize = kwargs['xdim'], kwargs['ydim'], kwargs['psize']
     flux = kwargs['flux']
     beam_size = kwargs.get('beam_size') or psize
     norm = beam_size**2 * flux**2 if kwargs.get('norm_reg', True) else 1
+    # compute cm regularizer
     xx, yy = np.meshgrid(range(nx//2, -nx//2, -1), range(ny//2, -ny//2, -1))
     xx = psize * xx.flatten()
     yy = psize * yy.flatten()
@@ -1846,12 +1876,16 @@ def reg_cm(imvec, mask, **kwargs):
 
 
 def reggrad_cm(imvec, mask, **kwargs):
+    """Gradient of the center-of-mass regularizer"""
+    # embed image
     if np.any(np.invert(mask)):
         imvec = embed(imvec, mask, randomfloor=True)
+    # parameters and normalization
     nx, ny, psize = kwargs['xdim'], kwargs['ydim'], kwargs['psize']
     flux = kwargs['flux']
     beam_size = kwargs.get('beam_size') or psize
     norm = beam_size**2 * flux**2 if kwargs.get('norm_reg', True) else 1
+    # compute cm grad
     xx, yy = np.meshgrid(range(nx//2, -nx//2, -1), range(ny//2, -ny//2, -1))
     xx = psize * xx.flatten()
     yy = psize * yy.flatten()
@@ -1860,13 +1894,17 @@ def reggrad_cm(imvec, mask, **kwargs):
 
 
 def reg_tv(imvec, mask, **kwargs):
+    """Total Variation regularizer"""
+    # embed image
     if np.any(np.invert(mask)):
         imvec = embed(imvec, mask, randomfloor=True)
+    # parameters and normalization
     nx, ny, psize = kwargs['xdim'], kwargs['ydim'], kwargs['psize']
     flux = kwargs['flux']
     beam_size = kwargs.get('beam_size') or psize
     epsilon = kwargs.get('epsilon_tv', 0.)
     norm = flux * psize / beam_size if kwargs.get('norm_reg', True) else 1
+    # compute TV
     im = imvec.reshape(ny, nx)
     impad = np.pad(im, 1, mode='constant', constant_values=0)
     im_l1 = np.roll(impad, -1, axis=0)[1:ny+1, 1:nx+1]
@@ -1875,13 +1913,17 @@ def reg_tv(imvec, mask, **kwargs):
 
 
 def reggrad_tv(imvec, mask, **kwargs):
+    """Total Variation Regularizer Gradient"""
+    # embed image
     if np.any(np.invert(mask)):
         imvec = embed(imvec, mask, randomfloor=True)
+    # parameters and normalization
     nx, ny, psize = kwargs['xdim'], kwargs['ydim'], kwargs['psize']
     flux = kwargs['flux']
     beam_size = kwargs.get('beam_size') or psize
     epsilon = kwargs.get('epsilon_tv', 0.)
     norm = flux * psize / beam_size if kwargs.get('norm_reg', True) else 1
+    # shifted 2D images
     im = imvec.reshape(ny, nx)
     impad = np.pad(im, 1, mode='constant', constant_values=0)
     im_l1 = np.roll(impad, -1, axis=0)[1:ny+1, 1:nx+1]
@@ -1890,15 +1932,19 @@ def reggrad_tv(imvec, mask, **kwargs):
     im_r2 = np.roll(impad, 1, axis=1)[1:ny+1, 1:nx+1]
     im_r1l2 = np.roll(np.roll(impad,  1, axis=0), -1, axis=1)[1:ny+1, 1:nx+1]
     im_l1r2 = np.roll(np.roll(impad, -1, axis=0),  1, axis=1)[1:ny+1, 1:nx+1]
+    # gradient terms
     g1 = (2*im - im_l1 - im_l2) / np.sqrt((im - im_l1)**2 + (im - im_l2)**2 + epsilon)
     g2 = (im - im_r1) / np.sqrt((im - im_r1)**2 + (im_r1l2 - im_r1)**2 + epsilon)
     g3 = (im - im_r2) / np.sqrt((im - im_r2)**2 + (im_l1r2 - im_r2)**2 + epsilon)
+    # The back-neighbor (g2, g3) terms reference a pixel that does not
+    # exist on the first row/column (it is the zero pad), so they must be zeroed
     mask1 = np.zeros(im.shape)
     mask2 = np.zeros(im.shape)
     mask1[0, :] = 1
     mask2[:, 0] = 1
     g2[mask1.astype(bool)] = 0
     g3[mask2.astype(bool)] = 0
+    # final gradient
     g = (g1 + g2 + g3).flatten() / norm
     return g[mask]
 
@@ -1906,39 +1952,51 @@ def reggrad_tv(imvec, mask, **kwargs):
 # tvlog / tv2log use clipfloor=epsilon_tv (not the default 0) so the log
 # transform stays defined where mask filled in values.
 def reg_tvlog(imvec, mask, **kwargs):
+    """Total Variation Regularizer on the log image"""
+    # embed image
     epsilon = kwargs.get('epsilon_tv', 0.)
     if np.any(np.invert(mask)):
         imvec = embed(imvec, mask, clipfloor=epsilon, randomfloor=True)
+    # parameters and normalization -- update kwargs
     nx, ny = kwargs['xdim'], kwargs['ydim']
     flux = kwargs['flux']
     npix = nx * ny
     logflux = npix * np.abs(np.log(flux / npix))
     log_kwargs = dict(kwargs)
     log_kwargs['flux'] = logflux
+    # compute TV on log image
     return reg_tv(np.log(imvec), np.ones_like(imvec, dtype=bool), **log_kwargs)
 
 
 def reggrad_tvlog(imvec, mask, **kwargs):
+    """Gradient of the total variation regularizer on the log image"""
+    # embed image
     epsilon = kwargs.get('epsilon_tv', 0.)
     if np.any(np.invert(mask)):
         imvec = embed(imvec, mask, clipfloor=epsilon, randomfloor=True)
+    # parameters and normalization -- update kwargs
     nx, ny = kwargs['xdim'], kwargs['ydim']
     flux = kwargs['flux']
     npix = nx * ny
     logflux = npix * np.abs(np.log(flux / npix))
     log_kwargs = dict(kwargs)
     log_kwargs['flux'] = logflux
+    # compute gradient of TV on log image
     g = reggrad_tv(np.log(imvec), np.ones_like(imvec, dtype=bool), **log_kwargs) / imvec
     return g[mask]
 
 
 def reg_tv2(imvec, mask, **kwargs):
+    """Total Squard Variation regularizer"""
+    # embed image
     if np.any(np.invert(mask)):
         imvec = embed(imvec, mask, randomfloor=True)
+    # parameters and normalization
     nx, ny, psize = kwargs['xdim'], kwargs['ydim'], kwargs['psize']
     flux = kwargs['flux']
     beam_size = kwargs.get('beam_size') or psize
     norm = psize**4 * flux**2 / beam_size**4 if kwargs.get('norm_reg', True) else 1
+    # compute TV2
     im = imvec.reshape(ny, nx)
     impad = np.pad(im, 1, mode='constant', constant_values=0)
     im_l1 = np.roll(impad, -1, axis=0)[1:ny+1, 1:nx+1]
@@ -1947,54 +2005,70 @@ def reg_tv2(imvec, mask, **kwargs):
 
 
 def reggrad_tv2(imvec, mask, **kwargs):
+    """Gradient of the Total Squared Variation regularizer"""
+    # embed image
     if np.any(np.invert(mask)):
         imvec = embed(imvec, mask, randomfloor=True)
+    # parameters and normalization
     nx, ny, psize = kwargs['xdim'], kwargs['ydim'], kwargs['psize']
     flux = kwargs['flux']
     beam_size = kwargs.get('beam_size') or psize
     norm = psize**4 * flux**2 / beam_size**4 if kwargs.get('norm_reg', True) else 1
+    # shifted 2D images
     im = imvec.reshape(ny, nx)
     impad = np.pad(im, 1, mode='constant', constant_values=0)
     im_l1 = np.roll(impad, -1, axis=0)[1:ny+1, 1:nx+1]
     im_l2 = np.roll(impad, -1, axis=1)[1:ny+1, 1:nx+1]
     im_r1 = np.roll(impad, 1, axis=0)[1:ny+1, 1:nx+1]
     im_r2 = np.roll(impad, 1, axis=1)[1:ny+1, 1:nx+1]
+    # gradient terms
     g1 = 2*im - im_l1 - im_l2
     g2 = im - im_r1
     g3 = im - im_r2
+    # The back-neighbor (g2, g3) terms reference a pixel that does not
+    # exist on the first row/column (it is the zero pad), so they must be zeroed
     mask1 = np.zeros(im.shape)
     mask2 = np.zeros(im.shape)
     mask1[0, :] = 1
     mask2[:, 0] = 1
     g2[mask1.astype(bool)] = 0
     g3[mask2.astype(bool)] = 0
+    # final gradient
     g = 2 * (g1 + g2 + g3).flatten() / norm
     return g[mask]
 
 
 def reg_tv2log(imvec, mask, **kwargs):
+    """TV2 regularizer on the log image"""
+    # embed image
     epsilon = kwargs.get('epsilon_tv', 0.)
     if np.any(np.invert(mask)):
         imvec = embed(imvec, mask, clipfloor=epsilon, randomfloor=True)
+    # parameters and normalization -- update the kwargs
     nx, ny = kwargs['xdim'], kwargs['ydim']
     flux = kwargs['flux']
     npix = nx * ny
     logflux = npix * np.abs(np.log(flux / npix))
     log_kwargs = dict(kwargs)
     log_kwargs['flux'] = logflux
+    # compute TV2 on the log image
     return reg_tv2(np.log(imvec), np.ones_like(imvec, dtype=bool), **log_kwargs)
 
 
 def reggrad_tv2log(imvec, mask, **kwargs):
+    """Gradient of the TV2 regularizer on the log image"""
+    # embed image
     epsilon = kwargs.get('epsilon_tv', 0.)
     if np.any(np.invert(mask)):
         imvec = embed(imvec, mask, clipfloor=epsilon, randomfloor=True)
+    # parameters and normalization -- update the kwargs
     nx, ny = kwargs['xdim'], kwargs['ydim']
     flux = kwargs['flux']
     npix = nx * ny
     logflux = npix * np.abs(np.log(flux / npix))
     log_kwargs = dict(kwargs)
     log_kwargs['flux'] = logflux
+    # compute gradient of TV2 on the log image
     g = reggrad_tv2(np.log(imvec), np.ones_like(imvec, dtype=bool), **log_kwargs) / imvec
     return g[mask]
 
@@ -2002,12 +2076,16 @@ def reggrad_tv2log(imvec, mask, **kwargs):
 # TODO: figure out normalizations for compact and compact2 regularizers
 # (carried over from legacy code; not formally verified).
 def reg_compact(imvec, mask, **kwargs):
+    """compactness regularizer"""
+    # embed image
     if np.any(np.invert(mask)):
         imvec = embed(imvec, mask, randomfloor=True)
+    # parameters and normalization
     nx, ny, psize = kwargs['xdim'], kwargs['ydim'], kwargs['psize']
     flux = kwargs['flux']
     beam_size = kwargs.get('beam_size') or psize
     norm = flux * beam_size**2 if kwargs.get('norm_reg', True) else 1
+    # compute compactness regularizer
     im = imvec.reshape(ny, nx)
     xx, yy = np.meshgrid(range(nx), range(ny))
     xxpsize = (xx - (nx-1)/2.0) * psize
@@ -2018,12 +2096,16 @@ def reg_compact(imvec, mask, **kwargs):
 
 
 def reggrad_compact(imvec, mask, **kwargs):
+    """gradient of compactness regularizer"""
+    # embed image
     if np.any(np.invert(mask)):
         imvec = embed(imvec, mask, randomfloor=True)
+    # parameters and normalization
     nx, ny, psize = kwargs['xdim'], kwargs['ydim'], kwargs['psize']
     flux = kwargs['flux']
     beam_size = kwargs.get('beam_size') or psize
     norm = flux * beam_size**2 if kwargs.get('norm_reg', True) else 1
+    # compute compactness regularizer gradient
     im = imvec.reshape(ny, nx)
     xx, yy = np.meshgrid(range(nx), range(ny))
     xxpsize = (xx - (nx-1)/2.0) * psize
@@ -2038,12 +2120,16 @@ def reggrad_compact(imvec, mask, **kwargs):
 
 
 def reg_compact2(imvec, mask, **kwargs):
+    """Compactness regularizer, version 2"""
+    # embed image
     if np.any(np.invert(mask)):
         imvec = embed(imvec, mask, randomfloor=True)
+    # parameters and normalization
     nx, ny, psize = kwargs['xdim'], kwargs['ydim'], kwargs['psize']
     flux = kwargs['flux']
     beam_size = kwargs.get('beam_size') or psize
     norm = flux**2 * beam_size**2 if kwargs.get('norm_reg', True) else 1
+    # compute compactness regularizer
     im = imvec.reshape(ny, nx)
     xx, yy = np.meshgrid(range(nx), range(ny))
     xxpsize = (xx - (nx-1)/2.0) * psize
@@ -2052,12 +2138,16 @@ def reg_compact2(imvec, mask, **kwargs):
 
 
 def reggrad_compact2(imvec, mask, **kwargs):
+    """Gradient of the version 2 compactness regularizer"""
+    # embed image
     if np.any(np.invert(mask)):
         imvec = embed(imvec, mask, randomfloor=True)
+    # parameters and normalization
     nx, ny, psize = kwargs['xdim'], kwargs['ydim'], kwargs['psize']
     flux = kwargs['flux']
     beam_size = kwargs.get('beam_size') or psize
     norm = flux**2 * beam_size**2 if kwargs.get('norm_reg', True) else 1
+    # compute gradient
     im = imvec.reshape(ny, nx)
     xx, yy = np.meshgrid(range(nx), range(ny))
     xxpsize = (xx - (nx-1)/2.0) * psize
@@ -2068,8 +2158,11 @@ def reggrad_compact2(imvec, mask, **kwargs):
 
 
 def reg_rgauss(imvec, mask, **kwargs):
+    """Rgauss regularizer (Issaoun+ 2019)"""
+    # embed image
     if np.any(np.invert(mask)):
         imvec = embed(imvec, mask, randomfloor=True)
+    # Gaussian parameters
     xdim, ydim, psize = kwargs['xdim'], kwargs['ydim'], kwargs['psize']
     major = kwargs.get('major', 1.0)
     minor = kwargs.get('minor', 1.0)
@@ -2079,6 +2172,7 @@ def reg_rgauss(imvec, mask, **kwargs):
     sigxx_prime = lambda1 * np.cos(phi)**2 + lambda2 * np.sin(phi)**2
     sigyy_prime = lambda1 * np.sin(phi)**2 + lambda2 * np.cos(phi)**2
     sigxy_prime = (lambda2 - lambda1) * np.cos(phi) * np.sin(phi)
+    # compute image moments
     im = imvec.reshape(ydim, xdim)
     xlist, ylist = np.meshgrid(range(xdim), range(ydim))
     xx = (xlist - (xdim-1)/2.0) * psize
@@ -2089,14 +2183,18 @@ def reg_rgauss(imvec, mask, **kwargs):
     sigxx = np.sum((xx - x0)**2 * im) / S
     sigyy = np.sum((yy - y0)**2 * im) / S
     sigxy = np.sum((xx - x0) * (yy - y0) * im) / S
+    # rgauss regularizer
     rgauss = (sigxx - sigxx_prime)**2 + (sigyy - sigyy_prime)**2 + 2*(sigxy - sigxy_prime)**2
     # reg_rgauss has no norm_reg option; always normalized by major^2 * minor^2.
     return rgauss / (major**2 * minor**2)
 
 
 def reggrad_rgauss(imvec, mask, **kwargs):
+    """Gradient of rgauss regularizer"""
+    # embed image
     if np.any(np.invert(mask)):
         imvec = embed(imvec, mask, randomfloor=True)
+    # Gaussian parameters
     xdim, ydim, psize = kwargs['xdim'], kwargs['ydim'], kwargs['psize']
     major = kwargs.get('major', 1.0)
     minor = kwargs.get('minor', 1.0)
@@ -2106,6 +2204,7 @@ def reggrad_rgauss(imvec, mask, **kwargs):
     sigxx_prime = lambda1 * np.cos(phi)**2 + lambda2 * np.sin(phi)**2
     sigyy_prime = lambda1 * np.sin(phi)**2 + lambda2 * np.cos(phi)**2
     sigxy_prime = (lambda2 - lambda1) * np.cos(phi) * np.sin(phi)
+    # compute image moments
     im = imvec.reshape(ydim, xdim)
     xlist, ylist = np.meshgrid(range(xdim), range(ydim))
     xx = (xlist - (xdim-1)/2.0) * psize
@@ -2116,6 +2215,7 @@ def reggrad_rgauss(imvec, mask, **kwargs):
     sigxx = np.sum((xx - x0)**2 * im) / S
     sigyy = np.sum((yy - y0)**2 * im) / S
     sigxy = np.sum((xx - x0) * (yy - y0) * im) / S
+    # gradient of rgauss regularizer
     dxx = ((xx - x0)**2 - sigxx) / S
     dyy = ((yy - y0)**2 - sigyy) / S
     dxy = ((xx - x0) * (yy - y0) - sigxy) / S
@@ -2131,8 +2231,10 @@ def reggrad_rgauss(imvec, mask, **kwargs):
 # Chi^2 Data functions
 ##################################################################################################
 def apply_systematic_noise_snrcut(data_arr, systematic_noise, snrcut, pol):
-    """apply systematic noise to VISIBILITIES or AMPLITUDES
+    """apply systematic noise to VISIBILITIES or AMPLITUDES (NOT bispectra or closure quantities)
        data_arr should have fields 't1','t2','u','v','vis','amp','sigma'
+       snrcut is a single float
+       systematic_noise is a float or a per-site dict
 
        returns: (uv, vis, amp, sigma)
     """
@@ -2226,7 +2328,6 @@ def chisqdata_amp(Obsdata, Prior, mask, pol='I', **kwargs):
     data_arr = Obsdata.unpack(['t1', 't2', 'u', 'v', vtype, atype, etype], debias=debias)
 
     # apply systematic noise and SNR cut
-    # TODO -- after pre-computed??
     (uv, vis, amp, sigma) = apply_systematic_noise_snrcut(data_arr, systematic_noise, snrcut, pol)
 
     # data weighting
@@ -2244,7 +2345,6 @@ def chisqdata_bs(Obsdata, Prior, mask, pol='I', **kwargs):
     """
 
     # unpack keyword args
-    # systematic_noise = kwargs.get('systematic_noise',0.)
     maxset = kwargs.get('maxset', False)
     if maxset:
         count = 'max'
@@ -2263,9 +2363,6 @@ def chisqdata_bs(Obsdata, Prior, mask, pol='I', **kwargs):
     uv3 = np.hstack((biarr['u3'].reshape(-1, 1), biarr['v3'].reshape(-1, 1)))
     bi = biarr['bispec']
     sigma = biarr['sigmab']
-
-    # add systematic noise
-    # sigma = np.linalg.norm([biarr['sigmab'], systematic_noise*np.abs(biarr['bispec'])], axis=0)
 
     # data weighting
     if weighting == 'uniform':
@@ -2613,7 +2710,6 @@ def chisqdata_bs_fft(Obsdata, Prior, pol='I', **kwargs):
     """
 
     # unpack keyword args
-    # systematic_noise = kwargs.get('systematic_noise',0.)
     maxset = kwargs.get('maxset', False)
     if maxset:
         count = 'max'
@@ -2636,9 +2732,6 @@ def chisqdata_bs_fft(Obsdata, Prior, pol='I', **kwargs):
     uv3 = np.hstack((biarr['u3'].reshape(-1, 1), biarr['v3'].reshape(-1, 1)))
     bi = biarr['bispec']
     sigma = biarr['sigmab']
-
-    # add systematic noise
-    # sigma = np.linalg.norm([biarr['sigmab'], systematic_noise*np.abs(biarr['bispec'])], axis=0)
 
     # data weighting
     if weighting == 'uniform':
@@ -3077,7 +3170,6 @@ def chisqdata_bs_nfft(Obsdata, Prior, pol='I', **kwargs):
         raise Exception("NFFT doesn't work with odd image dimensions!")
 
     # unpack keyword args
-    # systematic_noise = kwargs.get('systematic_noise',0.)
     maxset = kwargs.get('maxset', False)
     if maxset:
         count = 'max'
@@ -3099,9 +3191,6 @@ def chisqdata_bs_nfft(Obsdata, Prior, pol='I', **kwargs):
     uv3 = np.hstack((biarr['u3'].reshape(-1, 1), biarr['v3'].reshape(-1, 1)))
     bi = biarr['bispec']
     sigma = biarr['sigmab']
-
-    # add systematic noise
-    # sigma = np.linalg.norm([biarr['sigmab'], systematic_noise*np.abs(biarr['bispec'])], axis=0)
 
     # data weighting
     if weighting == 'uniform':
@@ -3470,10 +3559,7 @@ def plot_i(im, Prior, nit, chi2_dict, **kwargs):
 # Embedding functions
 ##################################################################################################
 
-
-
-
-# TODO(achael): consolidate `embed` (1D, this function) and `embed_imarr`
+# TODO: consolidate `embed` (1D, this function) and `embed_imarr`
 # (1D or 2D, below) into a single implementation -- their bodies overlap.
 def embed(imvec, mask, clipfloor=0., randomfloor=False):
     """Embeds a 1d image vector into the size of boolean embed mask
