@@ -15,9 +15,10 @@ Scope (only gradients; everything else is inherited from dev later):
      checked against finite differences both in isolation (chain rule) and
      end-to-end through the Imager objective.
 
-RUN WITH THE SYSTEM PYTHON (it has the legacy `nfft` backend):
+RUN WITH THE SYSTEM PYTHON (it has pynfft, the NFFT C-library backend):
     python3 -m pytest tests/test_gradients_main_tmp.py
-The `jax-ehtim` micromamba env lacks legacy `nfft`; the nfft cases skip there.
+Where pynfft is absent (CI, the jax-ehtim env), the nfft cases skip and only
+the direct-FT cases run.
 
 Delete this file once dev lands on main.
 """
@@ -33,17 +34,19 @@ import ehtim.imaging.pol_imager_utils as pu
 from ehtim.imager import transform_gradients, transform_imarr
 
 # ---------------------------------------------------------------------------
-# nfft availability (legacy backend; present only in the system env)
+# nfft availability. main's nfft ttype uses pynfft (needs the NFFT C library),
+# so gate on that -- not the unrelated `nfft` PyPI package. Absent (e.g. CI,
+# or the jax-ehtim env) -> the nfft cases skip and only direct runs.
 # ---------------------------------------------------------------------------
 try:
-    import nfft as _nfft_mod  # noqa: F401
+    from pynfft.nfft import NFFT as _NFFT  # noqa: F401
     HAS_NFFT = True
 except Exception:
     HAS_NFFT = False
 
 TTYPES = ["direct"] + (["nfft"] if HAS_NFFT else [])
 requires_nfft = pytest.mark.skipif(
-    not HAS_NFFT, reason="legacy 'nfft' backend not installed (use system python)"
+    not HAS_NFFT, reason="pynfft (NFFT C library) not installed"
 )
 
 # ---------------------------------------------------------------------------
@@ -114,6 +117,34 @@ def make_asym_image(xdim, ydim, psize=None):
                           polrep="stokes", pol_prim="I", rf=230e9)
 
 
+def make_pol_image(im, seed=7):
+    """Add smooth + per-pixel-jittered spatially-varying Q/U/V to a Stokes-I
+    image, so EVPA, linear fraction, and circular fraction all vary across the
+    field. Replaces add_random_pol, whose scattering phase screen calls
+    scipy.integrate.quad in a way that breaks on newer scipy and fails on
+    rectangular grids -- neither is relevant to gradient correctness.
+    """
+    ny, nx = im.ydim, im.xdim
+    yy, xx = np.mgrid[0:ny, 0:nx]
+    xn = (xx - nx / 2.0) / nx
+    yn = (yy - ny / 2.0) / ny
+    rng = np.random.default_rng(seed)
+    n = im.imvec.size
+
+    mfrac = (0.18 + 0.10 * np.sin(3.0 * xn) * np.cos(2.0 * yn)).flatten()
+    mfrac = np.clip(mfrac + 0.02 * rng.standard_normal(n), 0.03, 0.7)
+    evpa = (0.5 * np.pi * xn + 0.9 * yn**2).flatten() + 0.05 * rng.standard_normal(n)
+    vfrac = (0.04 + 0.02 * np.cos(2.0 * xn + yn)).flatten() + 0.01 * rng.standard_normal(n)
+
+    Q = (im.imvec * mfrac * np.cos(2.0 * evpa)).reshape(ny, nx)
+    U = (im.imvec * mfrac * np.sin(2.0 * evpa)).reshape(ny, nx)
+    V = (im.imvec * vfrac).reshape(ny, nx)
+    out = im.copy()
+    out.add_qu(Q, U)
+    out.add_v(V)
+    return out
+
+
 @pytest.fixture(scope="module")
 def array():
     return eh.array.load_txt(ARRAY_PATH)
@@ -137,13 +168,10 @@ def pol_setup(array):
     """Asymmetric polarized image (spatially-varying EVPA + circular fraction)
     + noise-free obs + a jittered physical imcur [I, rho, phi=2chi, psi].
 
-    Square grid: add_random_pol -> MakePhaseScreen has a rectangular-image bug
-    on main (deferred scattering rect fix), so pol fixtures use a square image.
-    The offset/rotated double-Gaussian still breaks the symmetries.
     """
-    im = make_asym_image(32, 32)
+    im = make_asym_image(32, 48)
     im.imvec = im.imvec * 2.0 / im.total_flux()
-    im = im.add_random_pol(0.25, 40 * UA, cmag=0.06, ccorr=40 * UA, seed=7)
+    im = make_pol_image(im, seed=7)
     obs = im.observe(array, TINT, TADV, TSTART, TSTOP, BW,
                      ampcal=True, phasecal=True, ttype="direct", add_th_noise=False)
     mask = np.ones(im.imvec.size, dtype=bool)
@@ -536,12 +564,11 @@ POL_OBJFD_CASES = [
 
 @pytest.fixture(scope="module")
 def asym_pol_setup(array):
-    """Asymmetric image, spatially-varying lin+circ pol, Stokes-I prior.
-    Square grid (add_random_pol scattering rect bug on main)."""
-    im = make_asym_image(32, 32)
+    """Asymmetric image, spatially-varying lin+circ pol, Stokes-I prior."""
+    im = make_asym_image(32, 48)
     im.imvec = im.imvec * 2.0 / im.total_flux()
     prior = im.blur_circ(30 * UA)
-    im_pol = im.add_random_pol(0.25, 40 * UA, cmag=0.06, ccorr=40 * UA, seed=7)
+    im_pol = make_pol_image(im, seed=7)
     obs = im_pol.observe(array, TINT, TADV, TSTART, TSTOP, BW,
                          ampcal=True, phasecal=True, ttype="direct", add_th_noise=False)
     return im_pol, obs, prior
