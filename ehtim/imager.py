@@ -2060,7 +2060,7 @@ def transform_gradients(gradarr, imarr, transforms, which_solve):
             outarr[0] = np.exp(imarr[0]) * gradarr[0]
             
         if (pol_which_solve[1]==1 and pol_which_solve[3]==1 and ('polcv' in transforms)):
-            outarr[0:4] = polutils.polcv_chain(imarr[0:4]) * gradarr[0:4]
+            outarr[1:4] = (polutils.polcv_chain(imarr[0:4]) * gradarr[0:4])[1:4]
         elif (pol_which_solve[1]==1) and ('mcv' in transforms):
 #            outarr[0:4] = polutils.mcv_chain(imarr[0:4]) * gradarr[0:4]
             outarr[1:4] = polutils.mcv_grad(imarr[0:4], gradarr[0:4])
