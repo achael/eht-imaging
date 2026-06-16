@@ -221,11 +221,25 @@ def mcv_r(imarr):
     return out
     
 # TODO WE ARE GOING TO HAVE TO CHECK ALL OF THESE NUMERICALLY
-def mcv_chain(imarr):
-    """chain rule terms drho/dm' and dpsi/dv' for mcv
-       input is solver values
+def mcv_grad(imarr, gradarr):
+    """Apply gradient transformation for mcv
+
+    phys[1]=rho and phys[3]=psi both depend on mprime
+    so the Jacobian has off-diagonal terms.
+    Slot 3 of the result is zero because vfrac is held constant.
+
+    Parameters
+    ----------
+    imarr : np.ndarray, shape (4, ...)
+        Solver-space image array.
+    gradarr : np.ndarray, shape (4, ...)
+        Gradient w.r.t. physical components phys[0:4].
+
+    Returns
+    -------
+    outarr : np.ndarray, shape (4, ...)
+        Transformed gradient
     """
-    out = np.ones(imarr.shape)
     
     vfrac = imarr[3] # when using this transform, we interpret transformed imarr[3] as mfrac=\rho sin(\psi)
     mfrac_max = 1-np.abs(vfrac)
@@ -239,17 +253,25 @@ def mcv_chain(imarr):
     psi = np.arcsin(vfrac/rho)
 
     dm_dmprime = mfrac_max / (TANWIDTH_M*np.pi*(1 + (mfrac_prime/TANWIDTH_M)**2))
-        
-    drho_dm = mfrac / rho                # drho/dm holding v constant
-    drho_dmprime = drho_dm * dm_dmprime
-    out[1] = drho_dmprime
 
-    # we only use mcv when holding v constant, so dF/imarr[3]=0  
-    #dpsi_dm = -vfrac/ (rho*rho)         # dpsi/dm holding v constant # TODO CHECK
-    #dpsi_dmprime = dpsi_dm * dm_dmprime
-    #out[3] = dpsi_dmprime   
-    out[3] = np.zeros(out[3].shape)  
-        
+    # Avoid 0/0 when total polarization is zero; in that limit both terms vanish.
+    safe_rho = np.where(rho > 0, rho, 1.0)
+
+    drho_dm = mfrac / safe_rho                # drho/dm holding v constant
+    drho_dmprime = drho_dm * dm_dmprime
+
+    dpsi_dm = -(vfrac*np.sign(mfrac)) / (safe_rho*safe_rho)
+    dpsi_dmprime = dpsi_dm * dm_dmprime
+
+    out[1] = drho_dmprime # TODO need to refactor this to 
+
+    # package result
+    out = np.empty((4,) + gradarr.shape[1:])
+    out[0] = gradarr[0]
+    out[1] = drho_dmprime * gradarr[1] + dpsi_dmprime * gradarr[3]
+    out[2] = gradarr[2]
+    out[3] = 0.0
+
     return out
            
 def vcv(imarr):
