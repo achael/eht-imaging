@@ -648,7 +648,7 @@ def chisqgrad_m(imarr, Amatrix, m, sigmam,pol_solve=POL_SOLVE_DEFAULT):
     mdiff = (m - msamples) / (isamples.conj() * sigmam**2)
 
     if pol_solve[0]!=0:
-        gradi = (-np.real(   * np.dot(Amatrix.conj().T, mdiff)) / len(m) + 
+        gradi = (-np.real(mimage * np.exp(-2j*chiimage) * np.dot(Amatrix.conj().T, mdiff)) / len(m) +
                   np.real(np.dot(Amatrix.conj().T, msamples.conj() * mdiff)) / len(m))
         gradout[0] = gradi
 
@@ -959,7 +959,7 @@ def smgrad(imarr, flux, pol_solve=POL_SOLVE_DEFAULT,
 
     if pol_solve[0]!=0:
         gradi = -np.log(mimage)
-        outgrad[0] = gradi
+        gradout[0] = gradi
         
     if pol_solve[1]!=0:
         gradm = -iimage / mimage
@@ -1160,7 +1160,7 @@ def svfluxgrad(imarr, vflux,  pol_solve=POL_SOLVE_DEFAULT_V, norm_reg=NORM_REGUL
         gradpsi = gradv * (vfimage/np.tan(psiimage))
         gradout[3] = gradpsi
 
-    return gradoutout/norm
+    return gradout/norm
     
 def sl1v(imarr, vflux, norm_reg=NORM_REGULARIZER):
     """L1 norm regularizer on V

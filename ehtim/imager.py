@@ -1217,11 +1217,11 @@ class Imager(object):
 
                 # Single Polarization chi^2 terms
                 elif dname in DATATERMS:
-                    if self.pol_next in POLARIZATION_MODES: 
-                        imcur_nu_I = imcur_nu[0] 
+                    if self.pol_next in POLARIZATION_MODES:
+                        imcur_nu_I = imcur_nu[0]
                     else:
                         imcur_nu_I = imcur_nu
-                    chi2 = imutils.chisq(imcur_nu, A, data, sigma, dname,
+                    chi2 = imutils.chisq(imcur_nu_I, A, data, sigma, dname,
                                          ttype=self._ttype, mask=self._embed_mask)
 
                 else:
