@@ -237,8 +237,8 @@ def mcv_grad(imarr, gradarr):
 
     Returns
     -------
-    outarr : np.ndarray, shape (4, ...)
-        Transformed gradient
+    outarr : np.ndarray, shape (3, ...)
+        Transformed gradient (pol parts only, stokes I unaffected)
     """
     
     vfrac = imarr[3] # when using this transform, we interpret transformed imarr[3] as mfrac=\rho sin(\psi)
@@ -264,11 +264,10 @@ def mcv_grad(imarr, gradarr):
     dpsi_dmprime = dpsi_dm * dm_dmprime
 
     # package result
-    out = np.empty((4,) + gradarr.shape[1:])
-    out[0] = gradarr[0]
-    out[1] = drho_dmprime * gradarr[1] + dpsi_dmprime * gradarr[3]
-    out[2] = gradarr[2]
-    out[3] = 0.0
+    out = np.empty((3,) + gradarr.shape[1:])
+    out[0] = drho_dmprime * gradarr[1] + dpsi_dmprime * gradarr[3]
+    out[1] = gradarr[2]
+    out[2] = 0.0
 
     return out
            
@@ -322,8 +321,8 @@ def vcv_grad(imarr, gradarr):
 
     Returns
     -------
-    out : np.ndarray, shape (4, ...)
-        Transformed gradient
+    out : np.ndarray, shape (3, ...)
+        Transformed gradient (pol parts only, Stokes I unaffected)
     """
     
     mfrac = imarr[1] # when using this transform, we interpret transformed imarr[1] as mfrac=\rho cos(\psi)
@@ -348,11 +347,10 @@ def vcv_grad(imarr, gradarr):
     dpsi_dvprime = dpsi_dv * dv_dvprime
 
     # package result
-    out = np.empty((4,) + gradarr.shape[1:])
-    out[0] = gradarr[0]
-    out[1] = 0.0
-    out[2] = gradarr[2]
-    out[3] = drho_dvprime * gradarr[1] + dpsi_dvprime * gradarr[3]
+    out = np.empty((3,) + gradarr.shape[1:])
+    out[0] = 0.0
+    out[1] = gradarr[2]
+    out[2] = drho_dvprime * gradarr[1] + dpsi_dvprime * gradarr[3]
     return out
 
 
