@@ -76,7 +76,9 @@ import ehtim.model as model
 import ehtim.survey as survey
 
 
-import warnings
+# Use a non-colliding local name: the bare `warnings` name shadows the
+# `ehtim.warnings` submodule attribute and breaks `import ehtim.warnings as ehw`.
+import warnings as _stdlib_warnings
 # isort: on
 
 # const_def constants are appended from const_def.__all__ so they stay in one place.
@@ -99,7 +101,7 @@ __all__ = [
     "obsdata", "observing", "parloop", "plotting", "survey", "vex",
 ] + list(_const_def.__all__)
 
-warnings.filterwarnings(
+_stdlib_warnings.filterwarnings(
     "ignore", message="numpy.dtype size changed, may indicate binary incompatibility.")
 
 try:
