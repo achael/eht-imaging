@@ -9,7 +9,6 @@ import numpy as np
 import pytest
 
 import ehtim as eh
-from ehtim.imaging.imager_utils import chisq, chisqdata, chisqgrad
 from ehtim.imaging.imager_backend import (
     ImagerConfig,
     MfConfig,
@@ -17,6 +16,7 @@ from ehtim.imaging.imager_backend import (
     compute_chisqdata_term,
     compute_chisqgrad_term,
 )
+from ehtim.imaging.imager_utils import chisq, chisqdata, chisqgrad
 
 # Observation parameters (must match conftest.py)
 TINT_SEC = 5
@@ -331,8 +331,10 @@ class TestPolChisqGradFD:
         for slot in range(4):
             for j in sample:
                 dx = max(POL_FD_REL * abs(imcur[slot, j]), POL_FD_FLOOR)
-                ip = imcur.copy(); ip[slot, j] += dx
-                im_ = imcur.copy(); im_[slot, j] -= dx
+                ip = imcur.copy()
+                ip[slot, j] += dx
+                im_ = imcur.copy()
+                im_[slot, j] -= dx
                 fd = (compute_chisq_term(ip, dtype, A, data, sigma, ttype=ttype, mask=mask)
                       - compute_chisq_term(im_, dtype, A, data, sigma, ttype=ttype, mask=mask)) / (2 * dx)
                 ex = grad[slot, j]

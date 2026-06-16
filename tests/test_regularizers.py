@@ -383,8 +383,10 @@ def test_pol_tv_grad_matches_fd_on_boundary(rtype):
     frac = []
     for slot in (0, 1, 3):   # chi (slot 2) does not enter |P|/V back-neighbor terms
         for j in range(npix):
-            ip = imarr.copy(); ip[slot, j] += eps
-            im = imarr.copy(); im[slot, j] -= eps
+            ip = imarr.copy()
+            ip[slot, j] += eps
+            im = imarr.copy()
+            im[slot, j] -= eps
             fd = (regfn(ip, mask, **kwargs)
                   - regfn(im, mask, **kwargs)) / (2 * eps)
             denom = max(abs(fd), abs(grad[slot, j]), 1e-6)
@@ -406,8 +408,10 @@ def test_reggrad_tv_matches_fd_on_boundary():
     eps = 1e-6
     frac = []
     for j in range(npix):
-        ip = imvec.copy(); ip[j] += eps
-        im = imvec.copy(); im[j] -= eps
+        ip = imvec.copy()
+        ip[j] += eps
+        im = imvec.copy()
+        im[j] -= eps
         fd = (iu.reg_tv(ip, mask, **kwargs)
               - iu.reg_tv(im, mask, **kwargs)) / (2 * eps)
         denom = max(abs(fd), abs(grad[j]), 1e-6)
