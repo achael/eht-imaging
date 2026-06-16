@@ -7,7 +7,7 @@ vex_files/*
 docs/_build/*
 docs/build/
 local/*
-*test*
+.pytest_cache/
 imagingChallenge*
 tmp/*
 *.uvfits

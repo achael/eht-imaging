@@ -1217,11 +1217,11 @@ class Imager(object):
 
                 # Single Polarization chi^2 terms
                 elif dname in DATATERMS:
-                    if self.pol_next in POLARIZATION_MODES: 
-                        imcur_nu_I = imcur_nu[0] 
+                    if self.pol_next in POLARIZATION_MODES:
+                        imcur_nu_I = imcur_nu[0]
                     else:
                         imcur_nu_I = imcur_nu
-                    chi2 = imutils.chisq(imcur_nu, A, data, sigma, dname,
+                    chi2 = imutils.chisq(imcur_nu_I, A, data, sigma, dname,
                                          ttype=self._ttype, mask=self._embed_mask)
 
                 else:
@@ -1260,9 +1260,12 @@ class Imager(object):
                         pol_solve = self._which_solve[0:4]
                     else:
                         pol_solve = self._which_solve
+                    # which gradient terms we need depends of the current pol transform
+                    pol_grad_slots = physical_grad_slots(pol_solve, self.transform_next)
+                    # compute the gradient
                     chi2grad = polutils.polchisqgrad(imcur_nu, A, data, sigma, dname,
                                                      ttype=self._ttype, mask=self._embed_mask,
-                                                     pol_solve=pol_solve)
+                                                     pol_solve=pol_grad_slots)
                                                      
                 # Single polarization chi^2 gradients
                 elif dname in DATATERMS:
@@ -1434,12 +1437,15 @@ class Imager(object):
                     imcur_pol = imcur[0:4]
                     prior_pol = self._xprior[0:4] 
                     pol_solve = self._which_solve[0:4]
+                    # which gradient terms we need depends of the current pol transform
+                    pol_grad_slots = physical_grad_slots(pol_solve, self.transform_next)
+                    # compute the gradient
                     regp = polutils.polregularizergrad(imcur_pol, prior_pol, self._embed_mask, 
                                                       self.flux_next, self.pflux_next, self.vflux_next,
                                                       self.prior_next.xdim, self.prior_next.ydim, self.prior_next.psize, 
                                                       regname,
                                                       norm_reg=self.norm_reg, beam_size=self.beam_size,
-                                                      pol_solve=pol_solve,
+                                                      pol_solve=pol_grad_slots,
                                                       **self.regparams) 
                     reggrad = np.zeros((len(imcur), self._nimage))
                     reggrad[0:4] = regp
@@ -1520,12 +1526,16 @@ class Imager(object):
             else:        
                 # Single-frequency polarimetric regularizer
                 if regname in REGULARIZERS_POL:
+                    pol_solve = self._which_solve
+                    # which gradient terms we need depends of the current pol transform
+                    pol_grad_slots = physical_grad_slots(pol_solve, self.transform_next)
+                    # compute the gradient
                     reggrad = polutils.polregularizergrad(imcur, self._xprior, self._embed_mask, 
                                                       self.flux_next, self.pflux_next, self.vflux_next,
                                                       self.prior_next.xdim, self.prior_next.ydim,
                                                       self.prior_next.psize, regname,
                                                       norm_reg=self.norm_reg, beam_size=self.beam_size,
-                                                      pol_solve=self._which_solve,
+                                                      pol_solve=pol_grad_slots,
                                                       **self.regparams)
 
 
@@ -2050,15 +2060,34 @@ def transform_gradients(gradarr, imarr, transforms, which_solve):
             outarr[0] = np.exp(imarr[0]) * gradarr[0]
             
         if (pol_which_solve[1]==1 and pol_which_solve[3]==1 and ('polcv' in transforms)):
-            outarr[0:4] = polutils.polcv_chain(imarr[0:4]) * gradarr[0:4]
+            outarr[1:4] = (polutils.polcv_chain(imarr[0:4]) * gradarr[0:4])[1:4]
         elif (pol_which_solve[1]==1) and ('mcv' in transforms):
-            outarr[0:4] = polutils.mcv_chain(imarr[0:4]) * gradarr[0:4]
+#            outarr[0:4] = polutils.mcv_chain(imarr[0:4]) * gradarr[0:4]
+            outarr[1:4] = polutils.mcv_grad(imarr[0:4], gradarr[0:4])
         elif (pol_which_solve[3]==1) and ('vcv' in transforms):
-            outarr[0:4] = polutils.vcv_chain(imarr[0:4]) * gradarr[0:4]
+#            outarr[0:4] = polutils.vcv_chain(imarr[0:4]) * gradarr[0:4]
+            outarr[1:4] = polutils.vcv_grad(imarr[0:4], gradarr[0:4])
              
              
     return outarr
 
+def physical_grad_slots(pol_solve, transforms):
+    """Physical gradout slots the gradient kernels must fill, given the DOF mask.
+    """
+    mask = np.array(pol_solve, dtype=int).copy()
+    # Cross-coupling only exists for the full 4-wide Stokes block. Single-pol
+    # (Stokes-I, possibly mf with [I, alpha, beta]) has no rho/psi DOFs to
+    # couple -- and may carry 'mcv' in transforms inertly, so the transform
+    # check alone is not enough. Mirror transform_gradients' shape gating.
+    if len(mask) < 4:
+        return mask
+    if 'mcv' in transforms and pol_solve[1]:     # m' (slot 1) -> rho AND psi
+        mask[1] = 1
+        mask[3] = 1
+    elif 'vcv' in transforms and pol_solve[3]:   # v' (slot 3) -> rho AND psi
+        mask[1] = 1
+        mask[3] = 1
+    return mask
 
 def make_initarr(image, mask, norm_init=False, flux=1, 
                  mf=False, pol=False, 

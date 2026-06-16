@@ -221,11 +221,25 @@ def mcv_r(imarr):
     return out
     
 # TODO WE ARE GOING TO HAVE TO CHECK ALL OF THESE NUMERICALLY
-def mcv_chain(imarr):
-    """chain rule terms drho/dm' and dpsi/dv' for mcv
-       input is solver values
+def mcv_grad(imarr, gradarr):
+    """Apply gradient transformation for mcv
+
+    phys[1]=rho and phys[3]=psi both depend on mprime
+    so the Jacobian has off-diagonal terms.
+    Slot 3 of the result is zero because vfrac is held constant.
+
+    Parameters
+    ----------
+    imarr : np.ndarray, shape (4, ...)
+        Solver-space image array.
+    gradarr : np.ndarray, shape (4, ...)
+        Gradient w.r.t. physical components phys[0:4].
+
+    Returns
+    -------
+    outarr : np.ndarray, shape (3, ...)
+        Transformed gradient (pol parts only, stokes I unaffected)
     """
-    out = np.ones(imarr.shape)
     
     vfrac = imarr[3] # when using this transform, we interpret transformed imarr[3] as mfrac=\rho sin(\psi)
     mfrac_max = 1-np.abs(vfrac)
@@ -239,17 +253,22 @@ def mcv_chain(imarr):
     psi = np.arcsin(vfrac/rho)
 
     dm_dmprime = mfrac_max / (TANWIDTH_M*np.pi*(1 + (mfrac_prime/TANWIDTH_M)**2))
-        
-    drho_dm = mfrac / rho                # drho/dm holding v constant
-    drho_dmprime = drho_dm * dm_dmprime
-    out[1] = drho_dmprime
 
-    # we only use mcv when holding v constant, so dF/imarr[3]=0  
-    #dpsi_dm = -vfrac/ (rho*rho)         # dpsi/dm holding v constant # TODO CHECK
-    #dpsi_dmprime = dpsi_dm * dm_dmprime
-    #out[3] = dpsi_dmprime   
-    out[3] = np.zeros(out[3].shape)  
-        
+    # Avoid 0/0 when total polarization is zero; in that limit both terms vanish.
+    safe_rho = np.where(rho > 0, rho, 1.0)
+
+    drho_dm = mfrac / safe_rho                # drho/dm holding v constant
+    drho_dmprime = drho_dm * dm_dmprime
+
+    dpsi_dm = -(vfrac*np.sign(mfrac)) / (safe_rho*safe_rho)
+    dpsi_dmprime = dpsi_dm * dm_dmprime
+
+    # package result
+    out = np.empty((3,) + gradarr.shape[1:])
+    out[0] = drho_dmprime * gradarr[1] + dpsi_dmprime * gradarr[3]
+    out[1] = gradarr[2]
+    out[2] = 0.0
+
     return out
            
 def vcv(imarr):
@@ -286,11 +305,25 @@ def vcv_r(imarr):
     return out
 
 # TODO WE ARE GOING TO HAVE TO CHECK ALL OF THESE NUMERICALLY
-def vcv_chain(imarr):
-    """chain rule terms drho/dv' and dpsi/dv' for vcv
-       input is solver values
+def vcv_grad(imarr, gradarr):
+    """Apply gradient transformation for vcv
+
+    phys[1]=rho and phys[3]=psi both depend on vprime via vfrac,
+    so the Jacobian has off-diagonal terms.
+    Slot 1 of the result is zero because mfrac is held constant.
+
+    Parameters
+    ----------
+    imarr : np.ndarray, shape (4, ...)
+        Solver-space image array.
+    gradarr : np.ndarray, shape (4, ...)
+        Gradient w.r.t. physical components phys[0:4]. gradarr[0] is unused.
+
+    Returns
+    -------
+    out : np.ndarray, shape (3, ...)
+        Transformed gradient (pol parts only, Stokes I unaffected)
     """
-    out = np.ones(imarr.shape)
     
     mfrac = imarr[1] # when using this transform, we interpret transformed imarr[1] as mfrac=\rho cos(\psi)
     vfrac_max = 1-np.abs(mfrac)
@@ -304,15 +337,20 @@ def vcv_chain(imarr):
     
     dv_dvprime = 2. * vfrac_max / (TANWIDTH_V*np.pi*(1 + (vfrac_prime/TANWIDTH_V)**2))
 
-    # we only use mcv when holding v constant, so dF/imarr[1]=0      
-    #drho_dv = rhofrac / v                # drho/dv holding m constant
-    #drho_dvprime = drho_dv * dv_dvprime
-    #out[1] = drho_dvprime
-    out[1] = np.zeros(out[3].shape)  
-        
-    dpsi_dv = mfrac / (rho*rho)          # dpsi/dv holding m constant # TODO CHECK
+    # Avoid 0/0 when total polarization is zero; in that limit both terms vanish.
+    safe_rho = np.where(rho > 0, rho, 1.0)
+
+    drho_dv = vfrac/safe_rho
+    drho_dvprime = drho_dv * dv_dvprime
+
+    dpsi_dv = np.abs(mfrac) / (safe_rho*safe_rho)
     dpsi_dvprime = dpsi_dv * dv_dvprime
-    out[3] = dpsi_dvprime       
+
+    # package result
+    out = np.empty((3,) + gradarr.shape[1:])
+    out[0] = 0.0
+    out[1] = gradarr[2]
+    out[2] = drho_dvprime * gradarr[1] + dpsi_dvprime * gradarr[3]
     return out
 
 
@@ -610,7 +648,7 @@ def chisqgrad_m(imarr, Amatrix, m, sigmam,pol_solve=POL_SOLVE_DEFAULT):
     mdiff = (m - msamples) / (isamples.conj() * sigmam**2)
 
     if pol_solve[0]!=0:
-        gradi = (-np.real(   * np.dot(Amatrix.conj().T, mdiff)) / len(m) + 
+        gradi = (-np.real(mimage * np.exp(-2j*chiimage) * np.dot(Amatrix.conj().T, mdiff)) / len(m) +
                   np.real(np.dot(Amatrix.conj().T, msamples.conj() * mdiff)) / len(m))
         gradout[0] = gradi
 
@@ -921,7 +959,7 @@ def smgrad(imarr, flux, pol_solve=POL_SOLVE_DEFAULT,
 
     if pol_solve[0]!=0:
         gradi = -np.log(mimage)
-        outgrad[0] = gradi
+        gradout[0] = gradi
         
     if pol_solve[1]!=0:
         gradm = -iimage / mimage
@@ -1021,6 +1059,13 @@ def stv_pol_grad(imarr, flux, nx, ny, psize, pol_solve=POL_SOLVE_DEFAULT,
     d2 = np.sqrt(np.abs(im_r1 - im)**2 + np.abs(im_r1l2 - im_r1)**2)
     d3 = np.sqrt(np.abs(im_r2 - im)**2 + np.abs(im_l1r2 - im_r2)**2)
 
+    # The back-neighbor (m2/d2, m3/d3) terms reference a pixel that does not
+    # exist on the first row/column (it is the zero pad), so they must be zeroed
+    mask1 = np.zeros(im.shape, dtype=bool)
+    mask1[0, :] = True   # no back-neighbor in axis 0
+    mask2 = np.zeros(im.shape, dtype=bool)
+    mask2[:, 0] = True   # no back-neighbor in axis 1
+
     # Numerators use cos/sin of the single-angle difference between neighbors,
     # from d|P_l1 - P|^2 / d|P| = 2|P| - 2|P_l1|*cos(angle(P_l1) - angle(P)).
 
@@ -1029,6 +1074,8 @@ def stv_pol_grad(imarr, flux, nx, ny, psize, pol_solve=POL_SOLVE_DEFAULT,
         m1 = 2*np.abs(im*im) - np.abs(im*im_l1)*np.cos(np.angle(im_l1) - np.angle(im)) - np.abs(im*im_l2)*np.cos(np.angle(im_l2) - np.angle(im))
         m2 = np.abs(im*im) - np.abs(im*im_r1)*np.cos(np.angle(im) - np.angle(im_r1))
         m3 = np.abs(im*im) - np.abs(im*im_r2)*np.cos(np.angle(im) - np.angle(im_r2))
+        m2[mask1] = 0
+        m3[mask2] = 0
         gradi = -(1./iimage)*(m1/d1 + m2/d2 + m3/d3).flatten()
         gradout[0] = gradi
 
@@ -1037,6 +1084,8 @@ def stv_pol_grad(imarr, flux, nx, ny, psize, pol_solve=POL_SOLVE_DEFAULT,
         m1 = 2*np.abs(im) - np.abs(im_l1)*np.cos(np.angle(im_l1) - np.angle(im)) - np.abs(im_l2)*np.cos(np.angle(im_l2) - np.angle(im))
         m2 = np.abs(im) - np.abs(im_r1)*np.cos(np.angle(im) - np.angle(im_r1))
         m3 = np.abs(im) - np.abs(im_r2)*np.cos(np.angle(im) - np.angle(im_r2))
+        m2[mask1] = 0
+        m3[mask2] = 0
         gradm = -iimage*(m1/d1 + m2/d2 + m3/d3).flatten()
         gradrho = gradm * np.cos(psiimage)        
         gradout[1] = gradrho
@@ -1046,6 +1095,8 @@ def stv_pol_grad(imarr, flux, nx, ny, psize, pol_solve=POL_SOLVE_DEFAULT,
         c1 = -2*np.abs(im*im_l1)*np.sin(np.angle(im_l1) - np.angle(im)) - 2*np.abs(im*im_l2)*np.sin(np.angle(im_l2) - np.angle(im))
         c2 = 2*np.abs(im*im_r1)*np.sin(np.angle(im) - np.angle(im_r1))
         c3 = 2*np.abs(im*im_r2)*np.sin(np.angle(im) - np.angle(im_r2))
+        c2[mask1] = 0
+        c3[mask2] = 0
         gradchi = -(c1/d1 + c2/d2 + c3/d3).flatten()
         gradphi = 0.5*gradchi
         gradout[2] = gradphi
@@ -1055,6 +1106,8 @@ def stv_pol_grad(imarr, flux, nx, ny, psize, pol_solve=POL_SOLVE_DEFAULT,
         m1 = 2*np.abs(im) - np.abs(im_l1)*np.cos(np.angle(im_l1) - np.angle(im)) - np.abs(im_l2)*np.cos(np.angle(im_l2) - np.angle(im))
         m2 = np.abs(im) - np.abs(im_r1)*np.cos(np.angle(im) - np.angle(im_r1))
         m3 = np.abs(im) - np.abs(im_r2)*np.cos(np.angle(im) - np.angle(im_r2))
+        m2[mask1] = 0
+        m3[mask2] = 0
         gradm = -iimage*(m1/d1 + m2/d2 + m3/d3).flatten()
         gradpsi = gradm * (-mimage*np.tan(psiimage))
         gradout[3] = gradpsi     
@@ -1107,7 +1160,7 @@ def svfluxgrad(imarr, vflux,  pol_solve=POL_SOLVE_DEFAULT_V, norm_reg=NORM_REGUL
         gradpsi = gradv * (vfimage/np.tan(psiimage))
         gradout[3] = gradpsi
 
-    return gradoutout/norm
+    return gradout/norm
     
 def sl1v(imarr, vflux, norm_reg=NORM_REGULARIZER):
     """L1 norm regularizer on V
