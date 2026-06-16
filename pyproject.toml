@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "ehtim"
-version = "1.3.2"
+version = "1.3.1"
 description = "Imaging, analysis, and simulation software for radio interferometry"
 readme = "README.rst"
 license = { text = "GPLv3" }
@@ -50,7 +50,7 @@ docs = [
 
 [project.urls]
 Homepage = "https://github.com/achael/eht-imaging"
-Download = "https://github.com/achael/eht-imaging/archive/v1.3.2.tar.gz"
+Download = "https://github.com/achael/eht-imaging/archive/v1.3.1.tar.gz"
 
 # --- setuptools-specific config ---
 

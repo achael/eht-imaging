@@ -660,11 +660,7 @@ def chisqgrad_vvis(imarr, Amatrix, v, sigmav, pol_solve=POL_SOLVE_DEFAULT_V):
         gradi = -np.real(vfimage * np.dot(Amatrix.conj().T, vdiff)) / len(v)
         gradout[0] = gradi
 
-    # The physical rho gradient is needed whenever V is solved: the vcv transform
-    # expresses V via vprime, and vcv_grad's vprime chain rule uses it
-    # (out[2] = drho_dvprime*grad_rho + dpsi_dvprime*grad_psi). Computing it only
-    # when pol_solve[1] is set dropped the dominant drho_dvprime term for pol='IV'.
-    if pol_solve[1]!=0 or pol_solve[3]!=0:
+    if pol_solve[1]!=0:
         gradv = -np.real(iimage * np.dot(Amatrix.conj().T, vdiff)) / len(v)
         gradrho = gradv*np.sin(psiimage)
         gradout[1] = gradrho
@@ -883,10 +879,8 @@ def chisqgrad_vvis_nfft(imarr, A, v, sigmav,pol_solve=POL_SOLVE_DEFAULT):
         gradi = np.real(vfimage*vpart)
         gradout[0] = gradi
         
-    # See chisqgrad_vvis: the physical rho gradient is needed whenever V is solved,
-    # because vcv_grad's vprime chain rule uses it (dropped the dominant term for IV).
-    if pol_solve[1]!=0 or pol_solve[3]!=0:
-        gradv = np.real(iimage*vpart)
+    if pol_solve[1]!=0:
+        gradv = np.real(iimage*vpart) 
         gradrho = gradv*np.sin(psiimage)
         gradout[1] = gradrho
         
