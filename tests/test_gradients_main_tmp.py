@@ -71,8 +71,12 @@ POL_REGS = list(pu.REGULARIZERS_POL)  # msimple, hw, ptv, l1v, l2v, vtv, vtv2, v
 CHISQ_FD_MEDIAN, CHISQ_FD_MAX = 1e-3, 1e-2
 REG_FD_MEDIAN, REG_FD_MAX = 0.05, 0.6
 POL_CHISQ_FD_MEDIAN, POL_CHISQ_FD_MAX = 1e-5, 1e-3
-POL_REG_FD_MEDIAN, POL_REG_FD_MAX, POL_REG_FD_MAX_TV = 0.05, 0.6, 2.0
-NFFT_VALUE_FRAC, NFFT_GRAD_MEDIAN, NFFT_GRAD_MAX = 1e-2, 0.05, 10.0
+POL_REG_FD_MEDIAN, POL_REG_FD_MAX = 1e-4, 1e-2
+# nfft-vs-direct: median of per-pixel frac diff + relative L2 norm of the
+# whole gradient. (A per-pixel MAX is meaningless here -- it blows up on
+# near-zero-gradient pixels where a tiny absolute Fourier diff is a huge
+# relative one; the L2 norm is the robust "do these vectors agree" metric.)
+NFFT_VALUE_FRAC, NFFT_GRAD_MEDIAN, NFFT_GRAD_REL_L2 = 1e-2, 0.05, 0.05
 
 POL_FD_REL, POL_FD_FLOOR = 1e-6, 1e-9
 FD_REL, FD_FLOOR = 1e-8, 1e-12
@@ -132,8 +136,12 @@ def intensity_setup(array):
 def pol_setup(array):
     """Asymmetric polarized image (spatially-varying EVPA + circular fraction)
     + noise-free obs + a jittered physical imcur [I, rho, phi=2chi, psi].
+
+    Square grid: add_random_pol -> MakePhaseScreen has a rectangular-image bug
+    on main (deferred scattering rect fix), so pol fixtures use a square image.
+    The offset/rotated double-Gaussian still breaks the symmetries.
     """
-    im = make_asym_image(32, 48)
+    im = make_asym_image(32, 32)
     im.imvec = im.imvec * 2.0 / im.total_flux()
     im = im.add_random_pol(0.25, 40 * UA, cmag=0.06, ccorr=40 * UA, seed=7)
     obs = im.observe(array, TINT, TADV, TSTART, TSTOP, BW,
@@ -193,3 +201,171 @@ class TestIntensityChisqGradFD:
         med, mx = _intensity_chisq_fd(intensity_setup, dtype, ttype)
         assert med < CHISQ_FD_MEDIAN, f"{dtype}/{ttype}: median frac {med:.2e}"
         assert mx < CHISQ_FD_MAX, f"{dtype}/{ttype}: max frac {mx:.2e}"
+
+
+# ===========================================================================
+# (1) Intensity chi^2: nfft vs direct (value + gradient)
+# ===========================================================================
+@requires_nfft
+class TestIntensityChisqNFFTvsDirect:
+    """nfft and direct chi^2 (value + gradient) agree to Fourier accuracy.
+
+    Independent of the FD checks: FD validates each transform against itself,
+    so it cannot catch a self-consistent-but-wrong Fourier operator.
+    """
+
+    @pytest.mark.parametrize("dtype", INTENSITY_DATATERMS)
+    def test_value_and_grad(self, intensity_setup, dtype):
+        obs, prior, mask, imvec = (intensity_setup["obs"], intensity_setup["prior"],
+                                   intensity_setup["mask"], intensity_setup["imvec"])
+        vals, grads = {}, {}
+        for tt in ("direct", "nfft"):
+            data, sigma, A = iu.chisqdata(obs, prior, mask, dtype, ttype=tt, debias=False)
+            vals[tt] = iu.chisq(imvec, A, data, sigma, dtype, ttype=tt, mask=mask)
+            grads[tt] = iu.chisqgrad(imvec, A, data, sigma, dtype, ttype=tt, mask=mask)
+        vfrac = abs((vals["direct"] - vals["nfft"]) / abs(vals["direct"]))
+        assert vfrac < NFFT_VALUE_FRAC, f"{dtype}: value frac {vfrac:.2e}"
+        gmed, _ = _frac_stats(grads["nfft"], grads["direct"])
+        rel_l2 = np.linalg.norm(grads["nfft"] - grads["direct"]) / np.linalg.norm(grads["direct"])
+        assert gmed < NFFT_GRAD_MEDIAN, f"{dtype}: grad median frac {gmed:.2e}"
+        assert rel_l2 < NFFT_GRAD_REL_L2, f"{dtype}: grad rel L2 {rel_l2:.2e}"
+
+
+# ===========================================================================
+# (2) Intensity regularizer gradients vs finite differences
+# ===========================================================================
+def _intensity_reg_fd(setup, rtype):
+    im, imvec, mask = setup["im"], setup["imvec"], setup["mask"]
+    nprior = np.ones_like(imvec)
+    nprior = nprior * np.sum(imvec) / np.sum(nprior)
+    flux = float(np.sum(imvec))
+    kwargs = dict(beam_size=20 * UA, alpha_A=5000.0, epsilon_tv=0.0, norm_reg=True)
+
+    y0 = iu.regularizer(imvec, nprior, mask, flux, im.xdim, im.ydim, im.psize, rtype, **kwargs)
+    grad = iu.regularizergrad(imvec, nprior, mask, flux, im.xdim, im.ydim, im.psize, rtype, **kwargs)
+
+    rng = np.random.default_rng(RNG_SEED)
+    samp = rng.choice(imvec.size, size=min(N_SAMPLES, imvec.size), replace=False)
+    numeric = np.empty(samp.size)
+    for i, j in enumerate(samp):
+        dx = max(FD_REL * abs(imvec[j]), FD_FLOOR)
+        v2 = imvec.copy()
+        v2[j] += dx
+        y1 = iu.regularizer(v2, nprior, mask, flux, im.xdim, im.ydim, im.psize, rtype, **kwargs)
+        numeric[i] = (y1 - y0) / dx
+    return _frac_stats(numeric, grad[samp])
+
+
+class TestIntensityRegGradFD:
+    """Analytic regularizergrad matches forward FD of regularizer."""
+
+    @pytest.mark.parametrize("rtype", INTENSITY_REGS)
+    def test_fd(self, intensity_setup, rtype):
+        med, mx = _intensity_reg_fd(intensity_setup, rtype)
+        assert med < REG_FD_MEDIAN, f"{rtype}: median frac {med:.2e}"
+        assert mx < REG_FD_MAX, f"{rtype}: max frac {mx:.2e}"
+
+
+# ===========================================================================
+# (2) Pol chi^2 gradients vs finite differences  [direct + nfft, all 4 slots]
+# ===========================================================================
+def _pol_data(setup, dtype, ttype):
+    data, sigma, A = pu.polchisqdata(setup["obs"], setup["prior"], setup["mask"], dtype, ttype=ttype)
+    return A, data, sigma
+
+
+class TestPolChisqGradFD:
+    """polchisqgrad matches central FD of polchisq in all four physical slots
+    (driven with pol_solve=[1,1,1,1] so the cross-coupling slots are exercised);
+    the vvis EVPA slot (2) must be identically zero -- V is independent of EVPA.
+    """
+
+    @pytest.mark.parametrize("dtype", POL_DATATERMS)
+    @pytest.mark.parametrize("ttype", TTYPES)
+    def test_fd(self, pol_setup, dtype, ttype):
+        mask, imcur = pol_setup["mask"], pol_setup["imcur"]
+        A, data, sigma = _pol_data(pol_setup, dtype, ttype)
+        grad = pu.polchisqgrad(imcur, A, data, sigma, dtype, ttype=ttype, mask=mask,
+                               pol_solve=np.array([1, 1, 1, 1]))
+        if dtype == "vvis":
+            np.testing.assert_array_equal(grad[2], 0.0)
+
+        rng = np.random.default_rng(RNG_SEED)
+        n = imcur.shape[1]
+        samp = rng.choice(n, size=min(30, n), replace=False)
+        frac = []
+        for slot in range(4):
+            for j in samp:
+                dx = max(POL_FD_REL * abs(imcur[slot, j]), POL_FD_FLOOR)
+                ip, im_ = imcur.copy(), imcur.copy()
+                ip[slot, j] += dx
+                im_[slot, j] -= dx
+                fd = (pu.polchisq(ip, A, data, sigma, dtype, ttype=ttype, mask=mask)
+                      - pu.polchisq(im_, A, data, sigma, dtype, ttype=ttype, mask=mask)) / (2 * dx)
+                ex = grad[slot, j]
+                frac.append(abs(ex - fd) / max(abs(ex), abs(fd), POL_FD_FLOOR))
+        frac = np.array(frac)
+        assert np.median(frac) < POL_CHISQ_FD_MEDIAN, f"{dtype}/{ttype}: median {np.median(frac):.2e}"
+        assert np.max(frac) < POL_CHISQ_FD_MAX, f"{dtype}/{ttype}: max {np.max(frac):.2e}"
+
+
+# ===========================================================================
+# (1) Pol chi^2: nfft vs direct (value + gradient)
+# ===========================================================================
+@requires_nfft
+class TestPolChisqNFFTvsDirect:
+    """nfft and direct pol chi^2 (value + gradient) agree to Fourier accuracy."""
+
+    @pytest.mark.parametrize("dtype", POL_DATATERMS)
+    def test_value_and_grad(self, pol_setup, dtype):
+        mask, imcur = pol_setup["mask"], pol_setup["imcur"]
+        vals, grads = {}, {}
+        for tt in ("direct", "nfft"):
+            A, data, sigma = _pol_data(pol_setup, dtype, tt)
+            vals[tt] = pu.polchisq(imcur, A, data, sigma, dtype, ttype=tt, mask=mask)
+            grads[tt] = pu.polchisqgrad(imcur, A, data, sigma, dtype, ttype=tt, mask=mask,
+                                        pol_solve=np.array([1, 1, 1, 1]))
+        vfrac = abs((vals["direct"] - vals["nfft"]) / abs(vals["direct"]))
+        assert vfrac < NFFT_VALUE_FRAC, f"{dtype}: value frac {vfrac:.2e}"
+        gmed, _ = _frac_stats(grads["nfft"], grads["direct"])
+        rel_l2 = np.linalg.norm(grads["nfft"] - grads["direct"]) / np.linalg.norm(grads["direct"])
+        assert gmed < NFFT_GRAD_MEDIAN, f"{dtype}: grad median frac {gmed:.2e}"
+        assert rel_l2 < NFFT_GRAD_REL_L2, f"{dtype}: grad rel L2 {rel_l2:.2e}"
+
+
+# ===========================================================================
+# (2) Pol regularizer gradients vs finite differences  [all four slots]
+# ===========================================================================
+class TestPolRegGradFD:
+    """polregularizergrad matches central FD of polregularizer in all four
+    physical slots (pol_solve=[1,1,1,1] so the cross-coupling slots are checked);
+    reuses the chisq pol image, whose per-pixel jitter keeps the TV denominators
+    non-degenerate. Central differences keep the tan(psi)-steep entropy slots
+    well-conditioned even at the realistic (large-psi) circular-pol pixels."""
+
+    @pytest.mark.parametrize("rtype", POL_REGS)
+    def test_fd(self, pol_setup, rtype):
+        im, imarr, mask = pol_setup["im"], pol_setup["imcur"], pol_setup["mask"]
+        priorarr = np.zeros_like(imarr)
+        flux = im.total_flux()
+        kwargs = dict(beam_size=20 * UA, norm_reg=True)
+        args = (priorarr, mask, flux, flux, flux, im.xdim, im.ydim, im.psize, rtype)
+        grad = pu.polregularizergrad(imarr, *args, pol_solve=np.array([1, 1, 1, 1]), **kwargs)
+
+        rng = np.random.default_rng(RNG_SEED)
+        nimage = imarr.shape[1]
+        samp = rng.choice(nimage, size=min(N_SAMPLES, nimage), replace=False)
+        frac = []
+        for slot in range(4):
+            for j in samp:
+                dx = max(POL_FD_REL * abs(imarr[slot, j]), POL_FD_FLOOR)
+                a, b = imarr.copy(), imarr.copy()
+                a[slot, j] += dx
+                b[slot, j] -= dx
+                num = (pu.polregularizer(a, *args, **kwargs)
+                       - pu.polregularizer(b, *args, **kwargs)) / (2 * dx)
+                ex = grad[slot, j]
+                frac.append(abs(num - ex) / max(abs(ex), abs(num), POL_FD_FLOOR))
+        frac = np.array(frac)
+        assert np.median(frac) < POL_REG_FD_MEDIAN, f"{rtype}: median frac {np.median(frac):.2e}"
+        assert np.max(frac) < POL_REG_FD_MAX, f"{rtype}: max frac {np.max(frac):.2e}"
