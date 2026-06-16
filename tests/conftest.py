@@ -4,6 +4,13 @@ import os
 
 import pytest
 
+# Enable JAX float64 before any array is created in the test session.
+try:
+    import jax as _jax
+    _jax.config.update("jax_enable_x64", True)
+except ImportError:
+    pass
+
 import ehtim as eh
 from ehtim.imaging.imager_backend import (
     POLARIZATION_MODES,

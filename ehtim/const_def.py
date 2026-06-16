@@ -26,6 +26,23 @@ from packaging import version
 
 from ehtim.observing.pulses import trianglePulse2D
 
+# Public constants re-exported into the top-level ehtim namespace. Anything added
+# here shows up as ehtim.<name> automatically via the star import in __init__.py.
+__all__ = [
+    "BHIMAGE", "BOUNDS_ERROR", "C", "COLORLIST", "DEC_DEFAULT", "DEC_M87",
+    "DEC_SGRA", "DEGREE", "DTAMP", "DTARR", "DTBIS", "DTCAL", "DTCAMP",
+    "DTCPHASE", "DTCPHASEDIAG", "DTERMPDEF", "DTLOGCAMPDIAG", "DTPOL_CIRC",
+    "DTPOL_STOKES", "DTSCANS", "EHTIMAGE", "ELEV_HIGH", "ELEV_LOW", "EP",
+    "FFT_INTERP_DEFAULT", "FFT_PAD_DEFAULT", "FIELD_LABELS", "FIELDS",
+    "FIELDS_AMPS", "FIELDS_PHASE", "FIELDS_SIGPHASE", "FIELDS_SIGS",
+    "FIELDS_SNRS", "FWHM_MAJ", "FWHM_MIN", "GAINPDEF",
+    "GRIDDER_CONV_FUNC_DEFAULT", "GRIDDER_P_RAD_DEFAULT", "HOUR",
+    "INTERP_DEFAULT", "MJD_DEFAULT", "NFFT_EPS_DEFAULT", "NFFT_KERSIZE_DEFAULT",
+    "POLDICT_CIRC", "POLDICT_STOKES", "POS_ANG", "PULSE_DEFAULT", "RA_DEFAULT",
+    "RA_M87", "RA_SGRA", "RADPERAS", "RADPERUAS", "RF_DEFAULT", "SCOLORS",
+    "SOURCE_DEFAULT", "TAUDEF", "amp_poldict", "sig_poldict", "vis_poldict",
+]
+
 mpl.rc('font', **{'family': 'serif', 'size': 12})
 
 EP = 1.0e-10
@@ -463,6 +480,9 @@ SCOLORS = [(0.11764705882352941, 0.5647058823529412, 1.0),
            (0.0, 0.39215686274509803, 0.0),
            (0.8235294117647058, 0.7058823529411765, 0.5490196078431373),
            (0.0, 0.0, 0.0)]
+
+# Placeholder for the unified library color palette.
+COLORLIST = SCOLORS
 
 
 BHIMAGE = [

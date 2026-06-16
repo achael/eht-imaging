@@ -385,6 +385,9 @@ def unpack_imarr(vec, init_arr, which_solve):
         raise Exception("in unpack_imarr, init_arr has inconsistent shape with which_solve!")
 
     imct = 0
+    # TODO(jax): build this functionally (e.g. xp.stack of the rows) so
+    # jax.grad(compute_objective) can trace it -- np.empty + in-place assignment
+    # is not jax-traceable.
     imarr = np.empty((nsolve, nimage))
     for kk in range(nsolve):
         if which_solve[kk]==0:
@@ -421,6 +424,8 @@ def transform_imarr(imarr, transforms, which_solve):
     else:
         raise Exception("transform_imarr requires imarr.shape[0] be either 1, 3, 4, or 10!")
 
+    # TODO(jax): the in-place assignments below (outarr[0] = ...) block tracing;
+    # rewrite functionally for the jax objective (Stokes-I just needs xp.exp).
     outarr = imarr.copy()
     if nimage==1 and ('log' in transforms):
         outarr = np.exp(outarr)
@@ -483,9 +488,16 @@ def transform_imarr_inverse(imarr, transforms, which_solve):
     return outarr
 
 def transform_gradients(gradarr, imarr, transforms, which_solve):
-    """Apply chain rule gradients for solver values for all polarizations
-       gradarr is objective func gradients w/r/t physical variables
-       imarr is the current image in solver variables """
+    """Apply chain rule gradients for solver values for all polarizations.
+
+    gradarr is objective func gradients w/r/t physical variables.
+    imarr is the current image in solver variables.
+    transforms lists the active solver transforms: 'log' applies the
+    imvec = exp(x) chain rule, 'mcv'/'vcv'/'polcv' the polarization ones.
+    which_solve is the per-Stokes solve mask, used only for multi-polarization
+    imarr (nimage 4 or 10); for single-Stokes / single-pol (nimage 1 or 3) it is
+    ignored (treated as (1,0,0,0)).
+    """
 
     if ('polcv' in transforms):
         if ('vcv' in transforms) or ('mcv' in transforms):
@@ -1831,6 +1843,13 @@ def compute_objective(imvec, initvec, config,
     cost : float
         Scalar objective value, sum of weighted chi^2 deviations and
         regularizer contributions.
+
+    Notes
+    -----
+    The chi^2 and regularizer value kernels are backend-agnostic, so on the jax
+    backend ``jax.grad(compute_objective)`` will replace ``compute_objective_grad``
+    once ``unpack_imarr`` and ``transform_imarr`` are rewritten without their
+    in-place array assignment (jax cannot trace through it; see the TODOs there).
     """
     transforms = config.transforms
 
