@@ -308,11 +308,25 @@ def vcv_r(imarr):
     return out
 
 # TODO WE ARE GOING TO HAVE TO CHECK ALL OF THESE NUMERICALLY
-def vcv_chain(imarr):
-    """chain rule terms drho/dv' and dpsi/dv' for vcv
-       input is solver values
+def vcv_grad(imarr, gradarr):
+    """Apply gradient transformation for vcv
+
+    phys[1]=rho and phys[3]=psi both depend on vprime via vfrac,
+    so the Jacobian has off-diagonal terms.
+    Slot 1 of the result is zero because mfrac is held constant.
+
+    Parameters
+    ----------
+    imarr : np.ndarray, shape (4, ...)
+        Solver-space image array.
+    gradarr : np.ndarray, shape (4, ...)
+        Gradient w.r.t. physical components phys[0:4]. gradarr[0] is unused.
+
+    Returns
+    -------
+    out : np.ndarray, shape (4, ...)
+        Transformed gradient
     """
-    out = np.ones(imarr.shape)
     
     mfrac = imarr[1] # when using this transform, we interpret transformed imarr[1] as mfrac=\rho cos(\psi)
     vfrac_max = 1-np.abs(mfrac)
@@ -326,15 +340,21 @@ def vcv_chain(imarr):
     
     dv_dvprime = 2. * vfrac_max / (TANWIDTH_V*np.pi*(1 + (vfrac_prime/TANWIDTH_V)**2))
 
-    # we only use mcv when holding v constant, so dF/imarr[1]=0      
-    #drho_dv = rhofrac / v                # drho/dv holding m constant
-    #drho_dvprime = drho_dv * dv_dvprime
-    #out[1] = drho_dvprime
-    out[1] = np.zeros(out[3].shape)  
-        
-    dpsi_dv = mfrac / (rho*rho)          # dpsi/dv holding m constant # TODO CHECK
+    # Avoid 0/0 when total polarization is zero; in that limit both terms vanish.
+    safe_rho = np.where(rho > 0, rho, 1.0)
+
+    drho_dv = vfrac/safe_rho
+    drho_dvprime = drho_dv * dv_dvprime
+
+    dpsi_dv = np.abs(mfrac) / (safe_rho*safe_rho)
     dpsi_dvprime = dpsi_dv * dv_dvprime
-    out[3] = dpsi_dvprime       
+
+    # package result
+    out = np.empty((4,) + gradarr.shape[1:])
+    out[0] = gradarr[0]
+    out[1] = 0.0
+    out[2] = gradarr[2]
+    out[3] = drho_dvprime * gradarr[1] + dpsi_dvprime * gradarr[3]
     return out
 
 
