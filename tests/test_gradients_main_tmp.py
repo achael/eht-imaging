@@ -369,3 +369,217 @@ class TestPolRegGradFD:
         frac = np.array(frac)
         assert np.median(frac) < POL_REG_FD_MEDIAN, f"{rtype}: median frac {np.median(frac):.2e}"
         assert np.max(frac) < POL_REG_FD_MAX, f"{rtype}: max frac {np.max(frac):.2e}"
+
+
+# ===========================================================================
+# (2) Boundary FD: first-row/col back-neighbor masking in the TV gradients
+#     Pins the #306 stv_pol_grad boundary-mask fix (tv/vtv already had it).
+#     Full 4x5 grid, central FD on EVERY pixel, so the first row/col -- where
+#     the back-neighbor is the zero pad and the masking lives -- are checked.
+# ===========================================================================
+def _boundary_pol_imarr(nx, ny):
+    rng = np.random.default_rng(11)
+    npix = nx * ny
+    I = 1.0 + 0.3 * rng.random(npix)
+    rho = np.clip(0.3 + 0.10 * rng.standard_normal(npix), 0.05, 0.95)
+    phi = 0.5 + 0.30 * rng.standard_normal(npix)
+    psi = 0.2 + 0.10 * rng.standard_normal(npix)
+    return np.array([I, rho, phi, psi])
+
+
+@pytest.mark.parametrize("rtype", ["ptv", "vtv"])
+def test_pol_tv_grad_matches_fd_on_boundary(rtype):
+    nx, ny = 4, 5
+    npix = nx * ny
+    imarr = _boundary_pol_imarr(nx, ny)
+    mask = np.ones(npix, dtype=bool)
+    flux = float(np.sum(imarr[0]))
+    kwargs = dict(norm_reg=False, beam_size=1.0)
+    args = (np.zeros_like(imarr), mask, flux, flux, flux, nx, ny, 1.0, rtype)
+    grad = pu.polregularizergrad(imarr, *args, pol_solve=np.array([1, 1, 1, 1]), **kwargs)
+
+    eps = 1e-6
+    frac = []
+    for slot in (0, 1, 3):  # chi (slot 2) is absent from the |P|/V back-neighbor terms
+        for j in range(npix):
+            a, b = imarr.copy(), imarr.copy()
+            a[slot, j] += eps
+            b[slot, j] -= eps
+            fd = (pu.polregularizer(a, *args, **kwargs)
+                  - pu.polregularizer(b, *args, **kwargs)) / (2 * eps)
+            frac.append(abs(grad[slot, j] - fd) / max(abs(fd), abs(grad[slot, j]), 1e-6))
+    assert max(frac) < 1e-3, f"{rtype}: max boundary frac diff = {max(frac):.4g}"
+
+
+def test_intensity_tv_grad_matches_fd_on_boundary():
+    nx, ny = 4, 5
+    npix = nx * ny
+    rng = np.random.default_rng(11)
+    imvec = 1.0 + 0.5 * rng.random(npix)
+    mask = np.ones(npix, dtype=bool)
+    flux = float(np.sum(imvec))
+    kwargs = dict(norm_reg=False, beam_size=1.0, epsilon_tv=0.0)
+    args = (np.zeros_like(imvec), mask, flux, nx, ny, 1.0, "tv")
+    grad = iu.regularizergrad(imvec, *args, **kwargs)
+
+    eps = 1e-6
+    frac = []
+    for j in range(npix):
+        a, b = imvec.copy(), imvec.copy()
+        a[j] += eps
+        b[j] -= eps
+        fd = (iu.regularizer(a, *args, **kwargs) - iu.regularizer(b, *args, **kwargs)) / (2 * eps)
+        frac.append(abs(grad[j] - fd) / max(abs(fd), abs(grad[j]), 1e-6))
+    assert max(frac) < 1e-3, f"tv: max boundary frac diff = {max(frac):.4g}"
+
+
+# ===========================================================================
+# (3) Transforms modify the gradient correctly -- chain rule vs FD, isolated
+#     transform_gradients(grad_phys, ...) must equal d/dimarr [f(transform(imarr))]
+#     for the mcv / vcv / polcv image transforms. Covers the off-diagonal
+#     cross-terms the #306 fix added and the log-I-slot preservation.
+# ===========================================================================
+def _scalar_obj(phys):
+    """Arbitrary smooth scalar f(phys) = sum(weights * phys**2)."""
+    weights = np.array([0.7, 1.3, -0.5, 0.9])[:, None]
+    return float(np.sum(weights * phys**2))
+
+
+def _fd_grad_of_transform(imarr, transforms, which_solve):
+    """Centered FD gradient of (scalar_obj o transform_imarr) in solver space."""
+    eps = 1e-6
+    grad = np.zeros_like(imarr)
+    for k in range(imarr.shape[0]):
+        for i in range(imarr.shape[1]):
+            ip, im_ = imarr.copy(), imarr.copy()
+            ip[k, i] += eps
+            im_[k, i] -= eps
+            grad[k, i] = (_scalar_obj(transform_imarr(ip, transforms, which_solve))
+                          - _scalar_obj(transform_imarr(im_, transforms, which_solve))) / (2 * eps)
+    return grad
+
+
+def _solver_imarr(seed=0, n=8, v_pre=None, m_pre=None):
+    """Build a (4, n) solver-space image array; pin a row to set up the
+    diagonal-Jacobian operating points (mcv vfrac=0, vcv mfrac=0)."""
+    rng = np.random.default_rng(seed)
+    log_I = rng.uniform(-1.0, 1.0, size=n)
+    m_arr = rng.uniform(-2.0, 2.0, size=n) if m_pre is None else np.full(n, m_pre)
+    chi_arr = rng.uniform(-0.5, 0.5, size=n)
+    v_arr = rng.uniform(-0.3, 0.3, size=n) if v_pre is None else np.full(n, v_pre)
+    return np.array([log_I, m_arr, chi_arr, v_arr])
+
+
+class TestTransformGradientsChainRule:
+    """transform_gradients(grad_phys, ...) == FD of (f o transform_imarr)."""
+
+    @pytest.mark.parametrize(
+        "transforms,which_solve,imarr_kwargs,check_rows",
+        [
+            # real-usage diagonal operating points
+            (["log", "mcv"], np.array([1, 1, 1, 0]), {"v_pre": 0.0}, [0, 1, 2]),
+            (["log", "vcv"], np.array([1, 0, 0, 1]), {"m_pre": 0.0}, [0, 3]),
+            (["log", "polcv"], np.array([1, 1, 0, 1]), {}, [0, 1, 3]),
+            # general regimes -> nonzero off-diagonal cross-terms (the #306 fix)
+            (["log", "mcv"], np.array([1, 1, 0, 0]), {}, [0, 1]),
+            (["log", "vcv"], np.array([1, 0, 0, 1]), {}, [0, 3]),
+            # sanity: log only, and pure pol-cv with no log
+            (["log"], np.array([1, 0, 0, 0]), {}, [0]),
+            (["mcv"], np.array([0, 1, 0, 0]), {"v_pre": 0.0}, [1]),
+            (["vcv"], np.array([0, 0, 0, 1]), {"m_pre": 0.0}, [3]),
+            (["polcv"], np.array([0, 1, 0, 1]), {}, [1, 3]),
+        ],
+        ids=["IP_vfrac0", "IV_mfrac0", "IPV", "IP_general", "IV_general",
+             "log_only", "mcv_only", "vcv_only", "polcv_only"],
+    )
+    def test_chain_rule_matches_fd(self, transforms, which_solve, imarr_kwargs, check_rows):
+        imarr = _solver_imarr(seed=0, **imarr_kwargs)
+        phys = transform_imarr(imarr, transforms, which_solve)
+        weights = np.array([0.7, 1.3, -0.5, 0.9])[:, None]
+        grad_phys = 2.0 * weights * phys  # = d(_scalar_obj)/dphys
+
+        grad_solver = transform_gradients(grad_phys, imarr, transforms, which_solve)
+        grad_fd = _fd_grad_of_transform(imarr, transforms, which_solve)
+        for k in check_rows:
+            np.testing.assert_allclose(
+                grad_solver[k], grad_fd[k], rtol=1e-5, atol=1e-8,
+                err_msg=f"chain rule mismatch row {k} for transforms={transforms}")
+
+    def test_log_chain_preserved_under_mcv(self):
+        """log+mcv: outarr[0] = exp(imarr[0]); mcv must not clobber the I slot."""
+        imarr = _solver_imarr(seed=1, v_pre=0.0)
+        out = transform_gradients(np.ones_like(imarr), imarr, ["log", "mcv"], np.array([1, 1, 0, 0]))
+        np.testing.assert_allclose(out[0], np.exp(imarr[0]), rtol=1e-12)
+
+    def test_log_chain_preserved_under_polcv(self):
+        """log+polcv: outarr[0] = exp(imarr[0]); polcv must not clobber the I slot."""
+        imarr = _solver_imarr(seed=2)
+        out = transform_gradients(np.ones_like(imarr), imarr, ["log", "polcv"], np.array([1, 1, 0, 1]))
+        np.testing.assert_allclose(out[0], np.exp(imarr[0]), rtol=1e-12)
+
+
+# ===========================================================================
+# (3) Transforms modify the gradient correctly -- end-to-end through Imager
+#     Builds a real Imager and compares objgrad to FD of objfunc, sampling the
+#     POLARIZATION DOF block (past the leading Stokes-I block) where the mcv/vcv
+#     cross-coupling lives -- the Stokes-I-dominated global sampling misses it.
+#     This is the test that exposes the mcv/vcv cross-coupling bug end-to-end.
+# ===========================================================================
+# (pol, transform, data_term, reg_term)
+POL_OBJFD_CASES = [
+    ("IP", ["log", "mcv"], {"vis": 100, "pvis": 100, "m": 100}, {"simple": 1, "hw": 1}),
+    ("IV", ["log", "vcv"], {"amp": 100, "vvis": 100}, {"simple": 1, "l2v": 1}),
+    ("IQUV", ["log", "polcv"], {"vis": 100, "pvis": 100, "m": 100, "vvis": 100},
+     {"simple": 1, "hw": 1, "l2v": 1}),
+]
+
+
+@pytest.fixture(scope="module")
+def asym_pol_setup(array):
+    """Asymmetric image, spatially-varying lin+circ pol, Stokes-I prior.
+    Square grid (add_random_pol scattering rect bug on main)."""
+    im = make_asym_image(32, 32)
+    im.imvec = im.imvec * 2.0 / im.total_flux()
+    prior = im.blur_circ(30 * UA)
+    im_pol = im.add_random_pol(0.25, 40 * UA, cmag=0.06, ccorr=40 * UA, seed=7)
+    obs = im_pol.observe(array, TINT, TADV, TSTART, TSTOP, BW,
+                         ampcal=True, phasecal=True, ttype="direct", add_th_noise=False)
+    return im_pol, obs, prior
+
+
+class TestObjectiveGradPolarimetricFD:
+    """imgr.objgrad matches central FD of imgr.objfunc on the polarization DOF
+    block, for IP/mcv, IV/vcv, IQUV/polcv x {direct, nfft}."""
+
+    @pytest.mark.parametrize("ttype", TTYPES)
+    @pytest.mark.parametrize("pol,transform,data_term,reg_term", POL_OBJFD_CASES,
+                             ids=[c[0] for c in POL_OBJFD_CASES])
+    def test_pol_dof_grad_matches_fd(self, asym_pol_setup, pol, transform,
+                                     data_term, reg_term, ttype):
+        im_pol, obs, prior = asym_pol_setup
+        imgr = eh.imager.Imager(
+            obs, prior, prior_im=prior, flux=im_pol.total_flux(),
+            data_term=data_term, reg_term=reg_term,
+            ttype=ttype, pol=pol, transform=transform, maxit=10,
+        )
+        imgr.init_imager()
+        nslots = int(np.sum(imgr._which_solve))
+        x = np.asarray(imgr._xinit, float)
+        rng = np.random.default_rng(4)
+        x = x + 0.10 * rng.standard_normal(x.size)
+        nimage = x.size // nslots
+
+        g = np.asarray(imgr.objgrad(x))
+        # pol DOF block = everything past the leading Stokes-I block (slot-major
+        # packing); take the best-conditioned 30 for a stable fractional check.
+        pol_idx = np.arange(nimage, x.size)
+        idx = pol_idx[np.argsort(np.abs(g[pol_idx]))[-30:]]
+        fd = np.empty(idx.size)
+        for k, j in enumerate(idx):
+            a, b = x.copy(), x.copy()
+            a[j] += 1e-6
+            b[j] -= 1e-6
+            fd[k] = (imgr.objfunc(a) - imgr.objfunc(b)) / 2e-6
+        frac = np.abs((fd - g[idx]) / (np.abs(g[idx]) + 1e-100))
+        assert np.median(frac) < 1e-4, f"{pol}/{ttype}: median frac {np.median(frac):.3e}"
+        assert np.max(frac) < 1e-2, f"{pol}/{ttype}: max frac {np.max(frac):.3e}"
