@@ -263,8 +263,6 @@ def mcv_grad(imarr, gradarr):
     dpsi_dm = -(vfrac*np.sign(mfrac)) / (safe_rho*safe_rho)
     dpsi_dmprime = dpsi_dm * dm_dmprime
 
-    out[1] = drho_dmprime # TODO need to refactor this to 
-
     # package result
     out = np.empty((4,) + gradarr.shape[1:])
     out[0] = gradarr[0]
