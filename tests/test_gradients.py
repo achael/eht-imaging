@@ -54,12 +54,14 @@ BW_HZ = 4e9
 
 
 @pytest.fixture(scope="module")
-def grad_setup(eht_array, make_rect_image):
-    """Set up observation and test image from 32x48 synthetic Gaussian.
+def grad_setup(eht_array, make_asym_image):
+    """Set up observation and test image from a 32x48 asymmetric image.
 
-    Uses xdim != ydim so the rectangular-image code paths are exercised.
+    Offset double-Gaussian: xdim != ydim exercises the rectangular-image code
+    paths, and the broken symmetry + edge flux surface boundary/axis bugs a
+    centered Gaussian hides.
     """
-    im = make_rect_image(32, 48)
+    im = make_asym_image(32, 48)
     im.imvec = im.imvec * 2.0 / im.total_flux()  # normalize to 2 Jy
 
     obs = im.observe(

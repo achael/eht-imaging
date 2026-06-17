@@ -37,6 +37,7 @@ TANWIDTH_PSI = 1
 POL_SOLVE_DEFAULT = (0,1,1,0)
 POL_SOLVE_DEFAULT_V = (0,0,0,1)
 RANDOMFLOOR=True
+
 ##################################################################################################
 # Constants & Definitions
 ##################################################################################################
@@ -63,6 +64,7 @@ nit = 0 # global variable to track the iteration number in the plotting callback
 def make_i_image(imarr):
     """return total intensity image
     """
+
     return imarr[0]
 
 def make_p_image(imarr):
@@ -168,7 +170,7 @@ def polcv_r(imarr):
     return out
 
 def polcv_grad(imarr, gradarr):
-    """Apply J^T @ gradarr for polcv (rho ← arctan(rho_pre/T_M); psi ← arctan(psi_pre/T_PSI)).
+    """Apply J^T @ gradarr for polcv.
 
     Diagonal Jacobian on slots 1 and 3; slot 2 (phi) passes through.
 
@@ -210,7 +212,7 @@ def _rho_psi_safe(xp, mfrac, vfrac):
 
 
 def mcv(imarr):
-    """change of variables m(n') from range (-inf, inf) to (0,1)
+    """change of variables m(n') from range (-inf, inf) to (0,1) keeping v=V/I fixed
        input is solver values, output is physical values
     """
 
@@ -218,6 +220,7 @@ def mcv(imarr):
     vfrac = imarr[3] # when using this transform, we interpret transformed imarr[3] as mfrac=\rho sin(\psi)
     mfrac_max = 1-xp.abs(vfrac)
 
+    # transformed imarr[1] is m' --> the transformed mfrac = \rho cos(\psi)
     mfrac_prime =  imarr[1]
     mfrac = mfrac_max*(0.5 + xp.arctan(mfrac_prime/TANWIDTH_M)/np.pi)
 
@@ -227,7 +230,7 @@ def mcv(imarr):
     return out
 
 def mcv_r(imarr):
-    """Reverse change of variables m'(m) from range (0,1-|v|) to (-inf, inf)
+    """Reverse change of variables m'(m) from range (0,1-|v|) to (-inf, inf) keeping v=V/I fixed
        input is physical values, output is solver values
     """
     rho = imarr[1]
@@ -236,18 +239,19 @@ def mcv_r(imarr):
     vfrac = rho*np.sin(psi)
     mfrac_max = 1-np.abs(vfrac)
     if np.any(mfrac_max>1):
-        raise Exception("mfrac_max>1 in mcv!")
+        raise Exception("mfrac_max>1 in mcv_r!")
 
     mfrac_prime = TANWIDTH_M*np.tan(np.pi*(mfrac/mfrac_max - 0.5))
+    # when using this transform, transformed imarr[3] is the fixed vfrac=\rho sin(\psi)
     out = np.array((imarr[0], mfrac_prime, imarr[2], vfrac))
     return out
 
 def mcv_grad(imarr, gradarr):
     """Apply J^T @ gradarr for mcv (mprime → rho, psi; vfrac held constant).
 
-    phys[1]=rho and phys[3]=psi both depend on mprime via mfrac, so the
-    Jacobian has off-diagonal terms; both are included here. Slot 3 of
-    the result is zero because vfrac is held constant.
+    phys[1]=rho and phys[3]=psi both depend on mprime via mfrac,
+    so the Jacobian has off-diagonal terms.
+    Slot 3 of the result is zero because vfrac is held constant.
 
     Parameters
     ----------
@@ -261,20 +265,27 @@ def mcv_grad(imarr, gradarr):
     out : np.ndarray, shape (3, ...)
         Gradient w.r.t. solver slots (1, 2, 3).
     """
+
+    # when using this transform, transformed imarr[3] is the fixed vfrac=\rho sin(\psi)
     vfrac = imarr[3]
     mfrac_max = 1 - np.abs(vfrac)
 
+    # transformed imarr[1] is m' --> the transformed mfrac = \rho cos(\psi)
     mprime = imarr[1]
     mfrac = mfrac_max * (0.5 + np.arctan(mprime / TANWIDTH_M) / np.pi)
     rho = np.sqrt(mfrac ** 2 + vfrac ** 2)
 
+    # gradient of m(m') transformation (from original polarimetric imaging paper)
     dm_dmprime = mfrac_max / (TANWIDTH_M * np.pi * (1 + (mprime / TANWIDTH_M) ** 2))
 
     # Avoid 0/0 when total polarization is zero; in that limit both terms vanish.
     safe_rho = np.where(rho > 0, rho, 1.0)
+
+    # Jacobian terms
     drho_dmprime = (mfrac / safe_rho) * dm_dmprime
     dpsi_dmprime = -(vfrac * np.sign(mfrac)) / (safe_rho ** 2) * dm_dmprime
 
+    # package result
     out = np.empty((3,) + gradarr.shape[1:])
     out[0] = drho_dmprime * gradarr[1] + dpsi_dmprime * gradarr[3]
     out[1] = gradarr[2]
@@ -282,13 +293,14 @@ def mcv_grad(imarr, gradarr):
     return out
 
 def vcv(imarr):
-    """change of variables for v(v') from range (-inf,inf) to (-1+|m|,1-|m|) while keeping m=P/I fixed
+    """change of variables for v(v') from range (-inf,inf) to (-1+|m|,1-|m|) keeping m=P/I fixed
        input is solver values, output is physical values"""
 
     xp = array_namespace(imarr)
     mfrac = imarr[1] # when using this transform, we interpret transformed imarr[1] as mfrac=\rho cos(\psi)
     vfrac_max = 1-xp.abs(mfrac)
 
+    # transformed imarr[3] is v' --> the transformed vfrac = \rho sin(\psi)
     vfrac_prime = imarr[3]
     vfrac = 2*vfrac_max*xp.arctan(vfrac_prime/TANWIDTH_V)/np.pi
 
@@ -309,15 +321,15 @@ def vcv_r(imarr):
         raise Exception("vfrac_max>1 in vcv_r!")
 
     vfrac_prime = TANWIDTH_V*np.tan(np.pi*vfrac/(2*vfrac_max))
+    # when using this transform, transformed imarr[1] is the fixed mfrac=\rho cos(\psi)
     out = np.array((imarr[0], mfrac, imarr[2], vfrac_prime))
     return out
 
 def vcv_grad(imarr, gradarr):
     """Apply J^T @ gradarr for vcv (vprime → rho, psi; mfrac held constant).
 
-    phys[1]=rho and phys[3]=psi both depend on vprime via vfrac, so the
-    Jacobian has off-diagonal terms. At mfrac=0 (pol='IV' regime) psi is
-    locally constant and the entire gradient flows through drho/dvprime.
+    phys[1]=rho and phys[3]=psi both depend on vprime via vfrac,
+    so the Jacobian has off-diagonal terms.
     Slot 1 of the result is zero because mfrac is held constant.
 
     Parameters
@@ -332,19 +344,26 @@ def vcv_grad(imarr, gradarr):
     out : np.ndarray, shape (3, ...)
         Gradient w.r.t. solver slots (1, 2, 3).
     """
+    # when using this transform, transformed imarr[1] is the fixed mfrac=\rho cos(\psi)
     mfrac = imarr[1]
     vfrac_max = 1 - np.abs(mfrac)
 
+    # transformed imarr[3] is v' --> the transformed vfrac = \rho sin(\psi)
     vprime = imarr[3]
     vfrac = 2 * vfrac_max * np.arctan(vprime / TANWIDTH_V) / np.pi
     rho = np.sqrt(mfrac ** 2 + vfrac ** 2)
 
+    # gradient of v(v') transformation (from M87 Paper IX)
     dv_dvprime = 2 * vfrac_max / (TANWIDTH_V * np.pi * (1 + (vprime / TANWIDTH_V) ** 2))
 
+    # Avoid 0/0 when total polarization is zero; in that limit both terms vanish.
     safe_rho = np.where(rho > 0, rho, 1.0)
+
+    # Jacobian terms
     drho_dvprime = (vfrac / safe_rho) * dv_dvprime
     dpsi_dvprime = (np.abs(mfrac) / (safe_rho ** 2)) * dv_dvprime
 
+    # package result
     out = np.empty((3,) + gradarr.shape[1:])
     out[0] = 0.0
     out[1] = gradarr[2]
@@ -353,7 +372,7 @@ def vcv_grad(imarr, gradarr):
 
 
 ##################################################################################################
-# Wrapper Functions
+# Wrapper Functions (Backward Compatibility Shims)
 ##################################################################################################
 
 def polchisq(imarr, A, data, sigma, dtype, ttype='direct', mask=[]):
@@ -376,6 +395,11 @@ def polchisqgrad(imarr, A, data, sigma, dtype, ttype='direct', mask=[],
     Thin shim around imager_backend.compute_chisqgrad_term retained for
     backward compatibility. New code should call compute_chisqgrad_term
     directly.
+
+    pol_solve here is the gating mask passed straight to the kernels: it flags
+    the required physical gradients (I, rho, phi, psi), not the solver DOFs.
+    For mcv/vcv imaging pass physical_grad_slots(dof_mask, transforms), not the
+    raw DOF mask.
     """
     from ehtim.imaging.imager_backend import compute_chisqgrad_term
     if dtype not in DATATERMS_POL:
@@ -453,6 +477,9 @@ def chisq_p(imarr, Amatrix, p, sigmap):
 
 def chisqgrad_p(imarr, Amatrix, p, sigmap,pol_solve=POL_SOLVE_DEFAULT):
     """Polarimetric visibility chi-squared gradient
+
+    pol_solve here flags the required physical gradients (I, rho, phi, psi),
+    not the solver variables.
     """
     gradout = np.zeros(imarr.shape)
 
@@ -465,24 +492,22 @@ def chisqgrad_p(imarr, Amatrix, p, sigmap,pol_solve=POL_SOLVE_DEFAULT):
     psamples = np.dot(Amatrix, pimage)
     pdiff = (p - psamples) / (sigmap**2)
 
-    # TODO: for now, use previous gradients and modify with chain rule
+    # dchi2/dI
     if pol_solve[0]!=0:
         gradi = -np.real(mimage * np.exp(-2j*chiimage) * np.dot(Amatrix.conj().T, pdiff)) / len(p)
         gradout[0] = gradi
-
+    # dchi2/drho
     if pol_solve[1]!=0:
         gradm = -np.real(iimage * np.exp(-2j*chiimage) * np.dot(Amatrix.conj().T, pdiff)) / len(p)
         gradrho = gradm * np.cos(psiimage)
         gradout[1] = gradrho
-
+    # dchi2/dphi
     if pol_solve[2]!=0:
         gradchi = -2 * np.imag(pimage.conj() * np.dot(Amatrix.conj().T, pdiff)) / len(p)
         gradphi = 0.5*gradchi
         gradout[2] = gradphi
-
-    # mcv couples mprime to psi, so mcv_grad's mprime gradient needs grad_psi; gating
-    # it on pol_solve[3] alone dropped it for IP. Mirror of the vcv/grad_rho fix (#296).
-    if pol_solve[1]!=0 or pol_solve[3]!=0:
+    # dchi2/dpsi
+    if pol_solve[3]!=0:
         gradm = -np.real(iimage * np.exp(-2j*chiimage) * np.dot(Amatrix.conj().T, pdiff)) / len(p)
         gradpsi = gradm * (-mimage*np.tan(psiimage))
         gradout[3] = gradpsi
@@ -502,6 +527,9 @@ def chisq_m(imarr, Amatrix, m, sigmam):
 
 def chisqgrad_m(imarr, Amatrix, m, sigmam,pol_solve=POL_SOLVE_DEFAULT):
     """The gradient of the polarimetric ratio chisq
+
+    pol_solve here flags the required physical gradients (I, rho, phi, psi),
+    not the solver variables.
     """
     gradout = np.zeros(imarr.shape)
 
@@ -516,23 +544,23 @@ def chisqgrad_m(imarr, Amatrix, m, sigmam,pol_solve=POL_SOLVE_DEFAULT):
     msamples = psamples/isamples
     mdiff = (m - msamples) / (isamples.conj() * sigmam**2)
 
+    # dchi2/dI
     if pol_solve[0]!=0:
         gradi = (-np.real(mimage * np.exp(-2j*chiimage) * np.dot(Amatrix.conj().T, mdiff)) / len(m) +
                   np.real(np.dot(Amatrix.conj().T, msamples.conj() * mdiff)) / len(m))
         gradout[0] = gradi
-
+    # dchi2/drho
     if pol_solve[1]!=0:
         gradm = -np.real(iimage*np.exp(-2j*chiimage) * np.dot(Amatrix.conj().T, mdiff)) / len(m)
         gradrho = gradm * np.cos(psiimage)
         gradout[1] = gradrho
-
+    # dchi2/dphi
     if pol_solve[2]!=0:
         gradchi = -2 * np.imag(pimage.conj() * np.dot(Amatrix.conj().T, mdiff)) / len(m)
         gradphi = 0.5*gradchi
         gradout[2] = gradphi
-
-    # see chisqgrad_p: psi gradient needed when m is solved (mcv couples mprime -> psi)
-    if pol_solve[1]!=0 or pol_solve[3]!=0:
+    # dchi2/dpsi
+    if pol_solve[3]!=0:
         gradm = -np.real(iimage*np.exp(-2j*chiimage) * np.dot(Amatrix.conj().T, mdiff)) / len(m)
         gradpsi = gradm * (-mimage*np.tan(psiimage))
         gradout[3] = gradpsi
@@ -540,7 +568,6 @@ def chisqgrad_m(imarr, Amatrix, m, sigmam,pol_solve=POL_SOLVE_DEFAULT):
 
     return gradout
 
-# stokes v
 def chisq_vvis(imarr, Amatrix, v, sigmav):
     """V visibility chi-squared
     """
@@ -553,6 +580,9 @@ def chisq_vvis(imarr, Amatrix, v, sigmav):
 
 def chisqgrad_vvis(imarr, Amatrix, v, sigmav, pol_solve=POL_SOLVE_DEFAULT_V):
     """V visibility chi-squared gradient
+
+    pol_solve here flags the required physical gradients (I, rho, phi, psi),
+    not the solver variables.
     """
 
     gradout = np.zeros(imarr.shape)
@@ -565,19 +595,16 @@ def chisqgrad_vvis(imarr, Amatrix, v, sigmav, pol_solve=POL_SOLVE_DEFAULT_V):
     vsamples = np.dot(Amatrix, vimage)
     vdiff = (v - vsamples) / (sigmav**2)
 
+    # dchi2/dI
     if pol_solve[0]!=0:
         gradi = -np.real(vfimage * np.dot(Amatrix.conj().T, vdiff)) / len(v)
         gradout[0] = gradi
-
-    # The physical rho gradient is needed whenever V is solved: the vcv transform
-    # expresses V via vprime, and vcv_grad's vprime chain rule uses it
-    # (out[2] = drho_dvprime*grad_rho + dpsi_dvprime*grad_psi). Computing it only
-    # when pol_solve[1] is set dropped the dominant drho_dvprime term for pol='IV'.
-    if pol_solve[1]!=0 or pol_solve[3]!=0:
+    # dchi2/drho
+    if pol_solve[1]!=0:
         gradv = -np.real(iimage * np.dot(Amatrix.conj().T, vdiff)) / len(v)
         gradrho = gradv*np.sin(psiimage)
         gradout[1] = gradrho
-
+    # dchi2/dpsi
     if pol_solve[3]!=0:
         gradv = -np.real(iimage * np.dot(Amatrix.conj().T, vdiff)) / len(v)
         gradpsi = gradv * (vfimage/np.tan(psiimage))
@@ -598,6 +625,9 @@ def chisq_p_nfft(imarr, A, p, sigmap):
 
 def chisqgrad_p_nfft(imarr, A, p, sigmap,pol_solve=POL_SOLVE_DEFAULT):
     """P visibility chi-squared gradient
+
+    pol_solve here flags the required physical gradients (I, rho, phi, psi),
+    not the solver variables.
     """
     gradout = np.zeros(imarr.shape)
 
@@ -617,32 +647,31 @@ def chisqgrad_p_nfft(imarr, A, p, sigmap,pol_solve=POL_SOLVE_DEFAULT):
     plan.trafo()
     psamples = plan.f.copy()*pulsefac
 
-
+    # compute gradient
     pdiff_vec = (-1.0/len(p)) * (p - psamples) / (sigmap**2) * pulsefac.conj()
     plan.f = pdiff_vec
     plan.adjoint()
     ppart = (plan.f_hat.copy().T).reshape(nfft_info.xdim*nfft_info.ydim)
 
+    # dchi2/dI
     if pol_solve[0]!=0:
         gradi = np.real(mimage * np.exp(-2j*chiimage) * ppart)
         gradout[0] = gradi
-
+    # dchi2/drho
     if pol_solve[1]!=0:
         gradm = np.real(iimage*np.exp(-2j*chiimage) *ppart)
         gradrho = gradm * np.cos(psiimage)
         gradout[1] = gradrho
-
+    # dchi2/dphi
     if pol_solve[2]!=0:
         gradchi = 2 * np.imag(pimage.conj() * ppart)
         gradphi = 0.5*gradchi
         gradout[2] = gradphi
-
-    # see chisqgrad_p: psi gradient needed when m is solved (mcv couples mprime -> psi)
-    if pol_solve[1]!=0 or pol_solve[3]!=0:
+    # dchi2/dpsi
+    if pol_solve[3]!=0:
         gradm = np.real(iimage*np.exp(-2j*chiimage) *ppart)
         gradpsi = gradm * (-mimage*np.tan(psiimage))
         gradout[3] = gradpsi
-
 
     return gradout
 
@@ -660,6 +689,9 @@ def chisq_m_nfft(imarr, A, m, sigmam):
 
 def chisqgrad_m_nfft(imarr, A, m, sigmam,pol_solve=POL_SOLVE_DEFAULT):
     """Polarimetric ratio chi-squared gradient
+
+    pol_solve here flags the required physical gradients (I, rho, phi, psi),
+    not the solver variables.
     """
     gradout = np.zeros(imarr.shape)
 
@@ -683,39 +715,39 @@ def chisqgrad_m_nfft(imarr, A, m, sigmam,pol_solve=POL_SOLVE_DEFAULT):
     plan.trafo()
     psamples = plan.f.copy()*pulsefac
 
+    # compute gradient
     msamples = psamples/isamples
     mdiff_vec = (-1./len(m))*(m - msamples) / (isamples.conj() * sigmam**2) * pulsefac.conj()
     plan.f = mdiff_vec
     plan.adjoint()
     mpart = (plan.f_hat.copy().T).reshape(nfft_info.xdim*nfft_info.ydim)
 
-    if pol_solve[0]!=0: #TODO -- check!!
+    # dchi2/dI
+    if pol_solve[0]!=0:
         plan.f = mdiff_vec * msamples.conj()
         plan.adjoint()
         mpart2 = (plan.f_hat.copy().T).reshape(nfft_info.xdim*nfft_info.ydim)
 
         gradi = (np.real(mimage * np.exp(-2j*chiimage) * mpart) - np.real(mpart2))
         gradout[0] = gradi
-
+    # dchi2/drho
     if pol_solve[1]!=0:
         gradm = np.real(iimage*np.exp(-2j*chiimage) * mpart)
         gradrho = gradm * np.cos(psiimage)
         gradout[1] = gradrho
-
+    # dchi2/dphi
     if pol_solve[2]!=0:
         gradchi = 2 * np.imag(pimage.conj() * mpart)
         gradphi = 0.5*gradchi
         gradout[2] = gradphi
-
-    # see chisqgrad_p: psi gradient needed when m is solved (mcv couples mprime -> psi)
-    if pol_solve[1]!=0 or pol_solve[3]!=0:
+    # dchi2/dpsi
+    if pol_solve[3]!=0:
         gradm = np.real(iimage*np.exp(-2j*chiimage) * mpart)
         gradpsi = gradm * (-mimage*np.tan(psiimage))
         gradout[3] = gradpsi
 
     return gradout
 
-# stokes v
 def chisq_vvis_nfft(imarr, A, v, sigmav):
     """V visibility chi-squared from nfft
     """
@@ -726,6 +758,9 @@ def chisq_vvis_nfft(imarr, A, v, sigmav):
 
 def chisqgrad_vvis_nfft(imarr, A, v, sigmav,pol_solve=POL_SOLVE_DEFAULT):
     """V visibility chi-squared gradient
+
+    pol_solve here flags the required physical gradients (I, rho, phi, psi),
+    not the solver variables.
     """
     gradout = np.zeros(imarr.shape)
 
@@ -746,23 +781,22 @@ def chisqgrad_vvis_nfft(imarr, A, v, sigmav,pol_solve=POL_SOLVE_DEFAULT):
     plan.trafo()
     vsamples = plan.f.copy()*pulsefac
 
+    # compute gradient
     vdiff_vec = (-1.0/len(v)) * (v - vsamples) / (sigmav**2) * pulsefac.conj()
     plan.f = vdiff_vec
     plan.adjoint()
     vpart = (plan.f_hat.copy().T).reshape(nfft_info.xdim*nfft_info.ydim)
 
-
+    # dchi2/dI
     if pol_solve[0]!=0:
         gradi = np.real(vfimage*vpart)
         gradout[0] = gradi
-
-    # See chisqgrad_vvis: the physical rho gradient is needed whenever V is solved,
-    # because vcv_grad's vprime chain rule uses it (dropped the dominant term for IV).
-    if pol_solve[1]!=0 or pol_solve[3]!=0:
+    # dchi2/drho
+    if pol_solve[1]!=0:
         gradv = np.real(iimage*vpart)
         gradrho = gradv*np.sin(psiimage)
         gradout[1] = gradrho
-
+    # dchi2/dpsi
     if pol_solve[3]!=0:
         gradv = np.real(iimage*vpart)
         gradpsi = gradv * (vfimage/np.tan(psiimage))
@@ -776,47 +810,61 @@ def chisqgrad_vvis_nfft(imarr, A, v, sigmav,pol_solve=POL_SOLVE_DEFAULT):
 #
 # Each `reg_X` / `reggrad_X` implements a polarimetric regularizer with the
 # uniform `(imarr, mask, **kwargs)` signature used by the `_REGULARIZER_DISPATCH`
-# table in `imager_backend.py`. Each returns the penalty value (positive; the
-# imager solver minimises it). Spatial regularizers (ptv, vtv, vtv2) use
-# `embed_imarr` (not `embed`) for the pre-step and slice the gradient as
-# `g[:, mask]` since the pol gradient is shaped (4, nimage) — one row per
-# Stokes component, gated on `pol_solve[0..3]`.
+# table in `imager_backend.py`.
+#
+# Each returns the penalty value (defined positive; cf the old entropy style negative regularizers).
+# Spatial regularizers (ptv, vtv, vtv2) use `embed_imarr` (not `embed`) for the pre-step
+# and slice the gradient as `g[:, mask]` since the pol gradient is shaped (4, nimage)
+# — one row per Stokes component, gated on `pol_solve[0..3]`.
 ##################################################################################################
 
-
 def reg_msimple(imarr, mask, **kwargs):
+    """Simple polarimetric entropy regularizer."""
     xp = array_namespace(imarr)
     flux = kwargs['flux']
     norm = flux if kwargs.get('norm_reg', True) else 1
+
     iimage = make_i_image(imarr)
     mimage = make_m_image(imarr)
     return xp.sum(iimage * xp.log(mimage)) / norm
 
 
 def reggrad_msimple(imarr, mask, **kwargs):
-    flux = kwargs['flux']
+    """Gradient of the simple polarimetric entropy regularizer.
+
+    pol_solve here flags the required physical gradients (I, rho, phi, psi),
+    not the solver variables.
+    """
     pol_solve = kwargs.get('pol_solve', POL_SOLVE_DEFAULT)
+
+    flux = kwargs['flux']
     norm = flux if kwargs.get('norm_reg', True) else 1
+
     iimage = make_i_image(imarr)
     mimage = make_m_image(imarr)
     psiimage = make_psi_image(imarr)
+
     gradout = np.zeros(imarr.shape)
+    # dR/dI
     if pol_solve[0] != 0:
         gradout[0] = np.log(mimage)
+    # dR/drho
     if pol_solve[1] != 0:
         gradm = iimage / mimage
         gradout[1] = gradm * np.cos(psiimage)
-    # psi gradient needed when m is solved (mcv couples mprime -> psi); see #296
-    if pol_solve[1] != 0 or pol_solve[3] != 0:
+    # dR/dpsi
+    if pol_solve[3] != 0:
         gradm = iimage / mimage
         gradout[3] = gradm * (-mimage * np.tan(psiimage))
     return gradout / norm
 
 
 def reg_hw(imarr, mask, **kwargs):
+    """Holdaway-Wardle polarimetric entropy regularizer."""
     xp = array_namespace(imarr)
     flux = kwargs['flux']
     norm = flux if kwargs.get('norm_reg', True) else 1
+
     iimage = make_i_image(imarr)
     mimage = make_m_image(imarr)
     return xp.sum(iimage * (((1+mimage)/2) * xp.log((1+mimage)/2)
@@ -824,35 +872,52 @@ def reg_hw(imarr, mask, **kwargs):
 
 
 def reggrad_hw(imarr, mask, **kwargs):
-    flux = kwargs['flux']
+    """Gradient of the Holdaway-Wardle polarimetric entropy regularizer.
+
+    pol_solve here flags the required physical gradients (I, rho, phi, psi),
+    not the solver variables.
+    """
     pol_solve = kwargs.get('pol_solve', POL_SOLVE_DEFAULT)
+
+    flux = kwargs['flux']
     norm = flux if kwargs.get('norm_reg', True) else 1
+
     iimage = make_i_image(imarr)
     mimage = make_m_image(imarr)
     psiimage = make_psi_image(imarr)
+
     gradout = np.zeros(imarr.shape)
+    # dR/dI
     if pol_solve[0] != 0:
         gradout[0] = (((1+mimage)/2) * np.log((1+mimage)/2)
                       + ((1-mimage)/2) * np.log((1-mimage)/2))
+    # dR/drho
     if pol_solve[1] != 0:
         gradm = iimage * np.arctanh(mimage)
         gradout[1] = gradm * np.cos(psiimage)
-    # psi gradient needed when m is solved (mcv couples mprime -> psi); see #296
-    if pol_solve[1] != 0 or pol_solve[3] != 0:
+    # dR/dpsi
+    if pol_solve[3] != 0:
         gradm = iimage * np.arctanh(mimage)
         gradout[3] = gradm * (-mimage * np.tan(psiimage))
     return gradout / norm
 
 
 def reg_ptv(imarr, mask, **kwargs):
+    """Linear polarimetric total-variation regularizer."""
+    # embed image if masked
     from ehtim.imaging.imager_utils import embed_imarr
     xp = array_namespace(imarr)
     if np.any(np.invert(mask)):
         imarr = embed_imarr(imarr, mask, randomfloor=True)
+
+    # parameters and normalization
+    epsilon = kwargs.get('epsilon_tv', 0.)
     flux = kwargs['flux']
     nx, ny, psize = kwargs['xdim'], kwargs['ydim'], kwargs['psize']
     beam_size = kwargs.get('beam_size', 1) or psize
     norm = flux * psize / beam_size if kwargs.get('norm_reg', True) else 1
+
+    # compute TV
     pimage = make_p_image(imarr)
     im = pimage.reshape(ny, nx)
     impad = xp.pad(im, 1, mode='constant', constant_values=0)
@@ -865,19 +930,34 @@ def reg_ptv(imarr, mask, **kwargs):
 
 
 def reggrad_ptv(imarr, mask, **kwargs):
+    """Gradient of the polarimetric total-variation regularizer.
+
+    pol_solve here flags the required physical gradients (I, rho, phi, psi),
+    not the solver variables.
+    """
+    # embed image if masked
     from ehtim.imaging.imager_utils import embed_imarr
     do_slice = np.any(np.invert(mask))
     if do_slice:
         imarr = embed_imarr(imarr, mask, randomfloor=True)
+
+    # pol_solve output mask
+    pol_solve = kwargs.get('pol_solve', POL_SOLVE_DEFAULT)
+
+    # parameters and normalization
+    epsilon = kwargs.get('epsilon_tv', 0.)
     flux = kwargs['flux']
     nx, ny, psize = kwargs['xdim'], kwargs['ydim'], kwargs['psize']
-    pol_solve = kwargs.get('pol_solve', POL_SOLVE_DEFAULT)
     beam_size = kwargs.get('beam_size', 1) or psize
     norm = flux * psize / beam_size if kwargs.get('norm_reg', True) else 1
+
+    # compute necessary images
     iimage = make_i_image(imarr)
     pimage = make_p_image(imarr)
     mimage = make_m_image(imarr)
     psiimage = make_psi_image(imarr)
+
+    # shifted 2D images
     im = pimage.reshape(ny, nx)
     impad = np.pad(im, 1, mode='constant', constant_values=0)
     im_l1 = np.roll(impad, -1, axis=0)[1:ny+1, 1:nx+1]
@@ -886,6 +966,7 @@ def reggrad_ptv(imarr, mask, **kwargs):
     im_r2 = np.roll(impad, 1, axis=1)[1:ny+1, 1:nx+1]
     im_r1l2 = np.roll(np.roll(impad,  1, axis=0), -1, axis=1)[1:ny+1, 1:nx+1]
     im_l1r2 = np.roll(np.roll(impad, -1, axis=0),  1, axis=1)[1:ny+1, 1:nx+1]
+
     # Denominators: |forward-l1|+|forward-l2|, |back-r1|+|cross|, |back-r2|+|cross|.
     # epsilon_tv (default 0, matching reg_ptv) keeps these finite at zero-|P| diffs.
     epsilon = kwargs.get('epsilon_tv', 0.)
@@ -900,17 +981,17 @@ def reggrad_ptv(imarr, mask, **kwargs):
     mask1[0, :] = True
     mask2[:, 0] = True
     gradout = np.zeros(imarr.shape)
+    # dR/dI numerators (chain through |P| = I*m)
     if pol_solve[0] != 0:
-        # dS/dI numerators (chain through |P| = I*m)
         m1 = 2*np.abs(im*im) - np.abs(im*im_l1)*np.cos(np.angle(im_l1) - np.angle(im)) - np.abs(im*im_l2)*np.cos(np.angle(im_l2) - np.angle(im))
         m2 = np.abs(im*im) - np.abs(im*im_r1)*np.cos(np.angle(im) - np.angle(im_r1))
         m3 = np.abs(im*im) - np.abs(im*im_r2)*np.cos(np.angle(im) - np.angle(im_r2))
         m2[mask1] = 0
         m3[mask2] = 0
         gradout[0] = (1./iimage) * (m1/d1 + m2/d2 + m3/d3).flatten()
+    # dR/drho numerators; m enters via |P| = I*m, so dR/dm = I * dR/d|P|.
+    # Then dm/drho = cos(psi)
     if pol_solve[1] != 0:
-        # dS/dm numerators; m enters via |P| = I*m, so dS/dm = I * dS/d|P|.
-        # Then dm/dprimitive[1] = cos(psi) on the (m, psi) -> (m, v) chart.
         m1 = 2*np.abs(im) - np.abs(im_l1)*np.cos(np.angle(im_l1) - np.angle(im)) - np.abs(im_l2)*np.cos(np.angle(im_l2) - np.angle(im))
         m2 = np.abs(im) - np.abs(im_r1)*np.cos(np.angle(im) - np.angle(im_r1))
         m3 = np.abs(im) - np.abs(im_r2)*np.cos(np.angle(im) - np.angle(im_r2))
@@ -918,17 +999,18 @@ def reggrad_ptv(imarr, mask, **kwargs):
         m3[mask2] = 0
         gradm = iimage * (m1/d1 + m2/d2 + m3/d3).flatten()
         gradout[1] = gradm * np.cos(psiimage)
+    # dR/dphi numerators
+    # `gradchi` is dR/dchi; chain through chi = phi/2 gives the *0.5.
     if pol_solve[2] != 0:
-        # dS/dphi numerators (primitive is phi = 2*chi, see PR #240).
-        # `gradchi` is dS/dchi; chain through chi(phi) = phi/2 gives the *0.5.
         c1 = -2*np.abs(im*im_l1)*np.sin(np.angle(im_l1) - np.angle(im)) - 2*np.abs(im*im_l2)*np.sin(np.angle(im_l2) - np.angle(im))
         c2 = 2*np.abs(im*im_r1)*np.sin(np.angle(im) - np.angle(im_r1))
         c3 = 2*np.abs(im*im_r2)*np.sin(np.angle(im) - np.angle(im_r2))
+        c2[mask1] = 0
+        c3[mask2] = 0
         gradchi = (c1/d1 + c2/d2 + c3/d3).flatten()
         gradout[2] = 0.5 * gradchi
-    # psi gradient needed when m is solved (mcv couples mprime -> psi); see #296
-    if pol_solve[1] != 0 or pol_solve[3] != 0:
-        # dS/dpsi numerators; reuse dS/dm and chain through dm/dpsi = -m*tan(psi).
+    # dR/dpsi numerators; reuse dR/dm and chain through dm/dpsi = -m*tan(psi).
+    if pol_solve[3] != 0:
         m1 = 2*np.abs(im) - np.abs(im_l1)*np.cos(np.angle(im_l1) - np.angle(im)) - np.abs(im_l2)*np.cos(np.angle(im_l2) - np.angle(im))
         m2 = np.abs(im) - np.abs(im_r1)*np.cos(np.angle(im) - np.angle(im_r1))
         m3 = np.abs(im) - np.abs(im_r2)*np.cos(np.angle(im) - np.angle(im_r2))
@@ -939,12 +1021,8 @@ def reggrad_ptv(imarr, mask, **kwargs):
     g = gradout / norm
     return g[:, mask] if do_slice else g
 
-
-# --- circular-polarization (V) regularizers ---------------------------------
-# TODO check!! The V-pol regularizers below were never thoroughly audited; the
-# `gradv * (vfimage / np.tan(psiimage))` chain-rule form (dS/dpsi) is unusual
-# and the test coverage only exercises generic random pol structure.
 def reg_vflux(imarr, mask, **kwargs):
+    """Total circular flux regularizer"""
     xp = array_namespace(imarr)
     vflux = kwargs['vflux']
     norm = np.abs(vflux)**2 if kwargs.get('norm_reg', True) else 1
@@ -953,30 +1031,42 @@ def reg_vflux(imarr, mask, **kwargs):
 
 
 def reggrad_vflux(imarr, mask, **kwargs):
-    vflux = kwargs['vflux']
+    """Gradient of the total circular flux regularizer.
+
+    pol_solve here flags the required physical gradients (I, rho, phi, psi),
+    not the solver variables.
+    """
     pol_solve = kwargs.get('pol_solve', POL_SOLVE_DEFAULT_V)
+
+    # normalization
+    vflux = kwargs['vflux']
     norm = np.abs(vflux)**2 if kwargs.get('norm_reg', True) else 1
+
+    # necessary images
     iimage = make_i_image(imarr)
     vimage = make_v_image(imarr)
     vfimage = make_vf_image(imarr)
     psiimage = make_psi_image(imarr)
-    # base = dS/dV via V = I * vf, vf = m*sin(psi); pol_solve branches below
-    # chain through dV/dI = V/I, dV/dm = I*sin(psi), dV/dpsi = I*m*cos(psi).
-    base = 2 * (np.sum(vimage) - vflux) * np.ones(len(vimage))
+
+    # gradients
     gradout = np.zeros(imarr.shape)
+    base = 2 * (np.sum(vimage) - vflux) * np.ones(len(vimage)) #dR/dV
+    # dR/dI
     if pol_solve[0] != 0:
-        gradout[0] = (vimage / iimage) * base  # dS/dI
-    # rho gradient needed whenever V is solved (vcv couples vprime -> rho); see #296
-    if pol_solve[1] != 0 or pol_solve[3] != 0:
+        gradout[0] = (vimage / iimage) * base
+    # dR/drho
+    if pol_solve[1] != 0:
         gradv = iimage * base
-        gradout[1] = gradv * np.sin(psiimage)  # dS/drho
+        gradout[1] = gradv * np.sin(psiimage)
+    # dR/dpsi
     if pol_solve[3] != 0:
         gradv = iimage * base
-        gradout[3] = gradv * (vfimage / np.tan(psiimage))  # dS/dpsi; vf/tan(psi) = m*cos(psi)
+        gradout[3] = gradv * (vfimage / np.tan(psiimage))
     return gradout / norm
 
 
 def reg_l1v(imarr, mask, **kwargs):
+    """Stokes V L1-norm regularizer"""
     xp = array_namespace(imarr)
     vflux = kwargs['vflux']
     norm = np.abs(vflux) if kwargs.get('norm_reg', True) else 1
@@ -985,29 +1075,42 @@ def reg_l1v(imarr, mask, **kwargs):
 
 
 def reggrad_l1v(imarr, mask, **kwargs):
-    vflux = kwargs['vflux']
+    """Gradient of the Stokes V l1-norm regularizer.
+
+    pol_solve here flags the required physical gradients (I, rho, phi, psi),
+    not the solver variables.
+    """
     pol_solve = kwargs.get('pol_solve', POL_SOLVE_DEFAULT_V)
+
+    # normalization
+    vflux = kwargs['vflux']
     norm = np.abs(vflux) if kwargs.get('norm_reg', True) else 1
+
+    # necessary images
     iimage = make_i_image(imarr)
     vimage = make_v_image(imarr)
     vfimage = make_vf_image(imarr)
     psiimage = make_psi_image(imarr)
-    # base = dS/dV via V = I*vf; chain rules per reggrad_vflux.
-    base = np.sign(vimage)
+
+    # gradient
     gradout = np.zeros(imarr.shape)
+    base = np.sign(vimage) # dR/dV
+    # dR/dI
     if pol_solve[0] != 0:
-        gradout[0] = vfimage * base  # dS/dI (vfimage = V/I)
-    # rho gradient needed whenever V is solved (vcv couples vprime -> rho); see #296
-    if pol_solve[1] != 0 or pol_solve[3] != 0:
+        gradout[0] = vfimage * base
+    # dR/drho
+    if pol_solve[1] != 0:
         gradv = iimage * base
-        gradout[1] = gradv * np.sin(psiimage)  # dS/drho
+        gradout[1] = gradv * np.sin(psiimage)
+    # dR/dpsi
     if pol_solve[3] != 0:
         gradv = iimage * base
-        gradout[3] = gradv * (vfimage / np.tan(psiimage))  # dS/dpsi
+        gradout[3] = gradv * (vfimage / np.tan(psiimage))
     return gradout / norm
 
 
 def reg_l2v(imarr, mask, **kwargs):
+    """Stokes V L2-norm regularizer"""
     xp = array_namespace(imarr)
     vflux = kwargs['vflux']
     norm = np.abs(vflux**2) if kwargs.get('norm_reg', True) else 1
@@ -1016,37 +1119,56 @@ def reg_l2v(imarr, mask, **kwargs):
 
 
 def reggrad_l2v(imarr, mask, **kwargs):
-    vflux = kwargs['vflux']
+    """Gradient of the Stokes V l2-norm regularizer.
+
+    pol_solve here flags the required physical gradients (I, rho, phi, psi),
+    not the solver variables.
+    """
     pol_solve = kwargs.get('pol_solve', POL_SOLVE_DEFAULT_V)
+
+    # normalization
+    vflux = kwargs['vflux']
     norm = np.abs(vflux**2) if kwargs.get('norm_reg', True) else 1
+
+    # necessary images
     iimage = make_i_image(imarr)
     vimage = make_v_image(imarr)
     vfimage = make_vf_image(imarr)
     psiimage = make_psi_image(imarr)
-    # base = dS/dV via V = I*vf; chain rules per reggrad_vflux.
-    base = 2 * vimage
+
+    # gradient
     gradout = np.zeros(imarr.shape)
+    base = 2 * vimage #dR/dV
+    # dR/dI
     if pol_solve[0] != 0:
-        gradout[0] = vfimage * base  # dS/dI
-    # rho gradient needed whenever V is solved (vcv couples vprime -> rho); see #296
-    if pol_solve[1] != 0 or pol_solve[3] != 0:
+        gradout[0] = vfimage * base
+    # dR/drho
+    if pol_solve[1] != 0:
         gradv = iimage * base
-        gradout[1] = gradv * np.sin(psiimage)  # dS/drho
+        gradout[1] = gradv * np.sin(psiimage)
+    # dR/dpsi
     if pol_solve[3] != 0:
         gradv = iimage * base
-        gradout[3] = gradv * (vfimage / np.tan(psiimage))  # dS/dpsi
+        gradout[3] = gradv * (vfimage / np.tan(psiimage))
     return gradout / norm
 
 
 def reg_vtv(imarr, mask, **kwargs):
+    """Stokes V total-variation regularizer"""
+    # embed image if masked
     from ehtim.imaging.imager_utils import embed_imarr
     xp = array_namespace(imarr)
     if np.any(np.invert(mask)):
         imarr = embed_imarr(imarr, mask, randomfloor=True)
+
+    # parameters and normalization
+    epsilon = kwargs.get('epsilon_tv', 0.)
     vflux = kwargs['vflux']
     nx, ny, psize = kwargs['xdim'], kwargs['ydim'], kwargs['psize']
     beam_size = kwargs.get('beam_size', 1) or psize
     norm = np.abs(vflux) * psize / beam_size if kwargs.get('norm_reg', True) else 1
+
+    # compute TV
     vimage = make_v_image(imarr)
     im = vimage.reshape(ny, nx)
     impad = xp.pad(im, 1, mode='constant', constant_values=0)
@@ -1057,20 +1179,35 @@ def reg_vtv(imarr, mask, **kwargs):
 
 
 def reggrad_vtv(imarr, mask, **kwargs):
+    """Gradient of the Stokes V total-variation regularizer.
+
+    pol_solve here flags the required physical gradients (I, rho, phi, psi),
+    not the solver variables.
+    """
+    # embed image if masked
     from ehtim.imaging.imager_utils import embed_imarr
     do_slice = np.any(np.invert(mask))
     if do_slice:
         imarr = embed_imarr(imarr, mask, randomfloor=True)
+
+    # pol_solve output mask
+    pol_solve = kwargs.get('pol_solve', POL_SOLVE_DEFAULT_V)
+
+    # parameters and normalization
+    epsilon = kwargs.get('epsilon_tv', 0.)
     vflux = kwargs['vflux']
     nx, ny, psize = kwargs['xdim'], kwargs['ydim'], kwargs['psize']
-    pol_solve = kwargs.get('pol_solve', POL_SOLVE_DEFAULT_V)
     beam_size = kwargs.get('beam_size', 1) or psize
     norm = np.abs(vflux) * psize / beam_size if kwargs.get('norm_reg', True) else 1
+
+    # compute necessary images
     epsilon = kwargs.get('epsilon_tv', 0.)  # default 0 -> byte-identical; matches reg_vtv
     iimage = make_i_image(imarr)
     vimage = make_v_image(imarr)
     vfimage = make_vf_image(imarr)
     psiimage = make_psi_image(imarr)
+
+    # shifted 2D images
     im = vimage.reshape(ny, nx)
     impad = np.pad(im, 1, mode='constant', constant_values=0)
     im_l1 = np.roll(impad, -1, axis=0)[1:ny+1, 1:nx+1]
@@ -1079,40 +1216,55 @@ def reggrad_vtv(imarr, mask, **kwargs):
     im_r2 = np.roll(impad, 1, axis=1)[1:ny+1, 1:nx+1]
     im_r1l2 = np.roll(np.roll(impad,  1, axis=0), -1, axis=1)[1:ny+1, 1:nx+1]
     im_l1r2 = np.roll(np.roll(impad, -1, axis=0),  1, axis=1)[1:ny+1, 1:nx+1]
+
+    # base gradient terms
     g1 = (2*im - im_l1 - im_l2) / np.sqrt((im - im_l1)**2 + (im - im_l2)**2 + epsilon)
     g2 = (im - im_r1) / np.sqrt((im - im_r1)**2 + (im_r1l2 - im_r1)**2 + epsilon)
     g3 = (im - im_r2) / np.sqrt((im - im_r2)**2 + (im_l1r2 - im_r2)**2 + epsilon)
+
+    # The back-neighbor (g2, g3) terms reference a pixel that does not
+    # exist on the first row/column (it is the zero pad), so they must be zeroed
     mask1 = np.zeros(im.shape)
     mask2 = np.zeros(im.shape)
     mask1[0, :] = 1
     mask2[:, 0] = 1
     g2[mask1.astype(bool)] = 0
     g3[mask2.astype(bool)] = 0
-    # base = dS/dV via V = I*vf; chain rules per reggrad_vflux.
-    base = (g1 + g2 + g3).flatten()
+
+    # final gradient
     gradout = np.zeros(imarr.shape)
+    base = (g1 + g2 + g3).flatten() #dR/dV via V = I*vf
+    # dR/dI
     if pol_solve[0] != 0:
-        gradout[0] = vfimage * base  # dS/dI
-    # rho gradient needed whenever V is solved (vcv couples vprime -> rho); see #296
-    if pol_solve[1] != 0 or pol_solve[3] != 0:
+        gradout[0] = vfimage * base
+    # dR/drho
+    if pol_solve[1] != 0:
         gradv = iimage * base
-        gradout[1] = gradv * np.sin(psiimage)  # dS/drho
+        gradout[1] = gradv * np.sin(psiimage)
+    # dR/dpsi
     if pol_solve[3] != 0:
         gradv = iimage * base
-        gradout[3] = gradv * (vfimage / np.tan(psiimage))  # dS/dpsi
+        gradout[3] = gradv * (vfimage / np.tan(psiimage))
+
     g = gradout / norm
     return g[:, mask] if do_slice else g
 
 
 def reg_vtv2(imarr, mask, **kwargs):
+    """Stokes V total-squared-variation regularizer"""
+    # embed image if masked
     from ehtim.imaging.imager_utils import embed_imarr
     xp = array_namespace(imarr)
     if np.any(np.invert(mask)):
         imarr = embed_imarr(imarr, mask, randomfloor=True)
+
+    # parameters and normalization
     vflux = kwargs['vflux']
     nx, ny, psize = kwargs['xdim'], kwargs['ydim'], kwargs['psize']
     beam_size = kwargs.get('beam_size', 1) or psize
     norm = psize**4 * np.abs(vflux**2) / beam_size**4 if kwargs.get('norm_reg', True) else 1
+
+    # compute TV2
     vimage = make_v_image(imarr)
     im = vimage.reshape(ny, nx)
     impad = xp.pad(im, 1, mode='constant', constant_values=0)
@@ -1122,46 +1274,69 @@ def reg_vtv2(imarr, mask, **kwargs):
 
 
 def reggrad_vtv2(imarr, mask, **kwargs):
+    """Gradient of the Stokes V squared-total-variation regularizer.
+
+    pol_solve here flags the required physical gradients (I, rho, phi, psi),
+    not the solver variables.
+    """
+    # embed image if masked
     from ehtim.imaging.imager_utils import embed_imarr
     do_slice = np.any(np.invert(mask))
     if do_slice:
         imarr = embed_imarr(imarr, mask, randomfloor=True)
+
+    # pol_solve output mask
+    pol_solve = kwargs.get('pol_solve', POL_SOLVE_DEFAULT_V)
+
+    # parameters and normalization
     vflux = kwargs['vflux']
     nx, ny, psize = kwargs['xdim'], kwargs['ydim'], kwargs['psize']
-    pol_solve = kwargs.get('pol_solve', POL_SOLVE_DEFAULT_V)
     beam_size = kwargs.get('beam_size', 1) or psize
     norm = psize**4 * np.abs(vflux**2) / beam_size**4 if kwargs.get('norm_reg', True) else 1
+
+    # necessary images
     iimage = make_i_image(imarr)
     vimage = make_v_image(imarr)
     vfimage = make_vf_image(imarr)
     psiimage = make_psi_image(imarr)
     im = vimage.reshape(ny, nx)
+
+    # shifted 2D images
     impad = np.pad(im, 1, mode='constant', constant_values=0)
     im_l1 = np.roll(impad, -1, axis=0)[1:ny+1, 1:nx+1]
     im_l2 = np.roll(impad, -1, axis=1)[1:ny+1, 1:nx+1]
     im_r1 = np.roll(impad, 1, axis=0)[1:ny+1, 1:nx+1]
     im_r2 = np.roll(impad, 1, axis=1)[1:ny+1, 1:nx+1]
+
+    # base gradient terms
     g1 = 2*im - im_l1 - im_l2
     g2 = im - im_r1
     g3 = im - im_r2
+
+    # The back-neighbor (g2, g3) terms reference a pixel that does not
+    # exist on the first row/column (it is the zero pad), so they must be zeroed
     mask1 = np.zeros(im.shape)
     mask2 = np.zeros(im.shape)
     mask1[0, :] = 1
     mask2[:, 0] = 1
     g2[mask1.astype(bool)] = 0
     g3[mask2.astype(bool)] = 0
-    # base = dS/dV via V = I*vf; chain rules per reggrad_vflux.
-    base = 2 * (g1 + g2 + g3).flatten()
+
+    # final gradient
     gradout = np.zeros(imarr.shape)
+    base = 2 * (g1 + g2 + g3).flatten() # base = dR/dV via V = I*vf
+    # dR/dI
     if pol_solve[0] != 0:
-        gradout[0] = vfimage * base  # dS/dI
-    # rho gradient needed whenever V is solved (vcv couples vprime -> rho); see #296
-    if pol_solve[1] != 0 or pol_solve[3] != 0:
+        gradout[0] = vfimage * base
+    # dR/drho
+    if pol_solve[1] != 0:
         gradv = iimage * base
-        gradout[1] = gradv * np.sin(psiimage)  # dS/drho
+        gradout[1] = gradv * np.sin(psiimage)
+    # dR/dpsi
     if pol_solve[3] != 0:
         gradv = iimage * base
-        gradout[3] = gradv * (vfimage / np.tan(psiimage))  # dS/dpsi
+        gradout[3] = gradv * (vfimage / np.tan(psiimage))
+
     g = gradout / norm
     return g[:, mask] if do_slice else g
 
@@ -1185,7 +1360,7 @@ def chisqdata_pvis(Obsdata, Prior, mask, **kwargs):
     return (vis, sigma, A)
 
 def chisqdata_pvis_nfft(Obsdata, Prior, **kwargs):
-    """Return the visibilities, sigmas, and fourier matrix for an observation."""
+    """Return the visibilities, sigmas, and nfft plan for an observation."""
 
     # unpack keyword args
     fft_pad_factor = kwargs.get('fft_pad_factor',FFT_PAD_DEFAULT)
@@ -1222,7 +1397,7 @@ def chisqdata_m(Obsdata, Prior, mask, **kwargs):
     return (m, sigmam, A)
 
 def chisqdata_m_nfft(Obsdata, Prior, **kwargs):
-    """Return the pol ratios, sigmas, and fourier matrix for an observation."""
+    """Return the pol ratios, sigmas, and nfft plan for an observation."""
 
     # unpack keyword args
     fft_pad_factor = kwargs.get('fft_pad_factor',FFT_PAD_DEFAULT)
@@ -1259,7 +1434,7 @@ def chisqdata_vvis(Obsdata, Prior, mask, **kwargs):
     return (vis, sigma, A)
 
 def chisqdata_vvis_nfft(Obsdata, Prior, **kwargs):
-    """Return the visibilities, sigmas, and fourier matrix for an observation."""
+    """Return the visibilities, sigmas, and nfft plan for an observation."""
 
     # unpack keyword args
     fft_pad_factor = kwargs.get('fft_pad_factor',FFT_PAD_DEFAULT)
@@ -1308,14 +1483,12 @@ def plot_m(polarr, Prior, nit, chi2_dict, **kwargs):
             print('clipping values less than 0')
             imarr[imarr<0.0] = 0.0
         imarr = np.log(imarr + np.max(imarr)/dynamic_range)
-        #unit = 'log(' + cbar_unit[0] + ' per ' + cbar_unit[1] + ')'
 
     if scale=='gamma':
         if (imarr < 0.0).any():
             print('clipping values less than 0')
             imarr[imarr<0.0] = 0.0
         imarr = (imarr + np.max(imarr)/dynamic_range)**(gamma)
-        #unit = '(' + cbar_unit[0] + ' per ' + cbar_unit[1] + ')^gamma'
 
     # Mask for low flux points
     thin = int(round(Prior.xdim/nvec))
@@ -1371,5 +1544,3 @@ def plot_m(polarr, Prior, nit, chi2_dict, **kwargs):
     for key in chi2_dict.keys():
         plotstr += rf"$\chi^2_{{{key}}}$: {chi2_dict[key]:0.2f}  "
     plt.suptitle(plotstr, fontsize=18)
-
-

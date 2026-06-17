@@ -40,12 +40,14 @@ GRAD_DX_FLOOR = 1e-12  # absolute minimum step size
 
 
 @pytest.fixture(scope="module")
-def reg_setup(make_rect_image):
-    """Set up regularizer test data from 32x48 synthetic Gaussian.
+def reg_setup(make_asym_image):
+    """Set up regularizer test data from a 32x48 asymmetric image.
 
-    Uses xdim != ydim so the rectangular-image code paths are exercised.
+    Offset double-Gaussian: xdim != ydim exercises the rectangular-image code
+    paths, and the broken symmetry + edge flux surface boundary/axis bugs a
+    centered Gaussian hides.
     """
-    im = make_rect_image(32, 48)
+    im = make_asym_image(32, 48)
     im.pulse = eh.observing.pulses.deltaPulse2D
     mask = im.imvec > 0
     imvec = im.imvec
@@ -210,9 +212,11 @@ POL_MAX_FRAC_TOL_TV = 2.0
 
 
 def _pol_solve_for(rtype):
-    if rtype in POL_LIN_REGS:
-        return pu.POL_SOLVE_DEFAULT
-    return pu.POL_SOLVE_DEFAULT_V
+    # Drive every physical slot (I, rho, phi, psi), not just the mode's DOF
+    # slots, so the cross-coupling slots are FD-checked: reggrad_ptv psi (3),
+    # reggrad_vflux/l1v/l2v/vtv rho (1), and slot 0 for every pol reg. Kernels
+    # that do not fill a slot leave it 0, which FD of the value confirms.
+    return np.array([1, 1, 1, 1])
 
 
 def _pol_tols(rtype):
@@ -222,15 +226,17 @@ def _pol_tols(rtype):
 
 
 @pytest.fixture(scope="module")
-def polreg_setup(make_rect_image):
-    """32x48 Gaussian Stokes I with jittered pol structure.
+def polreg_setup(make_asym_image):
+    """32x48 asymmetric Stokes I with jittered pol structure.
 
-    Per-pixel jitter on rho / phi / psi is required so TV-style regularizers
-    (ptv, vtv, vtv2) get a non-degenerate denominator in their gradient
-    (which is sqrt of squared spatial differences and goes to 0 on uniform
-    fields).
+    Stokes I is the asymmetric (offset double-Gaussian) image so the pol
+    regularizers see a non-symmetric magnitude field. Per-pixel jitter on
+    rho / phi / psi is kept (rather than a smooth pol field) so TV-style
+    regularizers (ptv, vtv, vtv2) get a non-degenerate denominator in their
+    gradient (sqrt of squared spatial differences, which goes to 0 on uniform
+    fields and is FD-ill-conditioned there).
     """
-    im = make_rect_image(32, 48)
+    im = make_asym_image(32, 48)
     im.pulse = eh.observing.pulses.deltaPulse2D
 
     mask = im.imvec > 0
@@ -403,6 +409,79 @@ def _pol_gradient_check(polreg_setup, rtype):
     return float(np.median(frac_diffs)), float(np.max(frac_diffs))
 
 
+# reggrad_{ptv,vtv,tv} zero their back-neighbor (m2/m3, g2/g3) terms on the
+# first row/column, where the back-neighbor is the zero pad and does not exist.
+# Without it the entire first row+column of the affected slots is wrong (corner
+# ~4x off vs FD). Full-grid central FD catches it; interior pixels are already
+# correct, so the boundary is the signal.
+_BOUNDARY_POL_TV = {
+    "ptv": (pu.reg_ptv, pu.reggrad_ptv, "flux"),
+    "vtv": (pu.reg_vtv, pu.reggrad_vtv, "vflux"),
+}
+
+
+def _boundary_pol_imarr(nx, ny):
+    rng = np.random.default_rng(11)
+    npix = nx * ny
+    I = 1.0 + 0.3 * rng.random(npix)
+    rho = np.clip(0.3 + 0.10 * rng.standard_normal(npix), 0.05, 0.95)
+    phi = 0.5 + 0.30 * rng.standard_normal(npix)
+    psi = 0.2 + 0.10 * rng.standard_normal(npix)
+    return np.array([I, rho, phi, psi])
+
+
+@pytest.mark.parametrize("rtype", list(_BOUNDARY_POL_TV))
+def test_pol_tv_grad_matches_fd_on_boundary(rtype):
+    """Pol TV reggrad matches full-grid FD, including first-row/col pixels."""
+    regfn, gradfn, fluxkey = _BOUNDARY_POL_TV[rtype]
+    nx, ny = 4, 5
+    npix = nx * ny
+    imarr = _boundary_pol_imarr(nx, ny)
+    mask = np.ones(npix, dtype=bool)
+    kwargs = dict(xdim=nx, ydim=ny, psize=1.0, beam_size=1.0, norm_reg=False)
+    kwargs[fluxkey] = float(np.sum(imarr[0]))
+    grad = gradfn(imarr, mask, pol_solve=np.array([1, 1, 1, 1]), **kwargs)
+
+    eps = 1e-6
+    frac = []
+    for slot in (0, 1, 3):   # chi (slot 2) does not enter |P|/V back-neighbor terms
+        for j in range(npix):
+            ip = imarr.copy()
+            ip[slot, j] += eps
+            im = imarr.copy()
+            im[slot, j] -= eps
+            fd = (regfn(ip, mask, **kwargs)
+                  - regfn(im, mask, **kwargs)) / (2 * eps)
+            denom = max(abs(fd), abs(grad[slot, j]), 1e-6)
+            frac.append(abs(grad[slot, j] - fd) / denom)
+    assert max(frac) < 1e-3, f"{rtype}: max fractional grad diff = {max(frac):.4g}"
+
+
+def test_reggrad_tv_matches_fd_on_boundary():
+    """Stokes-I reggrad_tv matches full-grid FD, including first-row/col pixels."""
+    nx, ny = 4, 5
+    npix = nx * ny
+    rng = np.random.default_rng(11)
+    imvec = 1.0 + 0.5 * rng.random(npix)
+    mask = np.ones(npix, dtype=bool)
+    kwargs = dict(xdim=nx, ydim=ny, psize=1.0, flux=float(np.sum(imvec)),
+                  beam_size=1.0, norm_reg=False)
+    grad = iu.reggrad_tv(imvec, mask, **kwargs)
+
+    eps = 1e-6
+    frac = []
+    for j in range(npix):
+        ip = imvec.copy()
+        ip[j] += eps
+        im = imvec.copy()
+        im[j] -= eps
+        fd = (iu.reg_tv(ip, mask, **kwargs)
+              - iu.reg_tv(im, mask, **kwargs)) / (2 * eps)
+        denom = max(abs(fd), abs(grad[j]), 1e-6)
+        frac.append(abs(grad[j] - fd) / denom)
+    assert max(frac) < 1e-3, f"tv: max fractional grad diff = {max(frac):.4g}"
+
+
 # regularizer_mf dispatches by string prefix: names starting with 'l2_'
 # compute an L2 distance from the prior; names starting with 'tv_' compute
 # spatial total variation. The 12 names in REGULARIZERS_SPECTRAL only differ
@@ -411,9 +490,9 @@ def _pol_gradient_check(polreg_setup, rtype):
 
 
 @pytest.fixture(scope="module")
-def mfreg_setup(make_rect_image):
+def mfreg_setup(make_asym_image):
     """32x48 spectral coefficient vector with a half-amplitude prior."""
-    im = make_rect_image(32, 48)
+    im = make_asym_image(32, 48)
     imvec = im.imvec
     nprior = imvec * 0.5
     mask = imvec > 0

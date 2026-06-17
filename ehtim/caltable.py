@@ -87,11 +87,24 @@ class Caltable:
         self.timetype = timetype
 
         # Dictionary of array indices for site names
-        self.tarr = tarr
+        self.tarr = ehc.upgrade_tarr(tarr)
         self.tkey = {self.tarr[i]['site']: i for i in range(len(self.tarr))}
 
-        # Save the data
-        self.data = datadict
+        # Save the data (upgrade per-site DTCAL recarrays as needed)
+        if isinstance(datadict, dict):
+            self.data = {site: ehc.upgrade_dtcal_circ(d)
+                         for site, d in datadict.items()}
+        else:
+            self.data = datadict
+
+    def __setstate__(self, state):
+        # Silently upgrade legacy pickles to the current mixedpol schema.
+        if 'tarr' in state:
+            state['tarr'] = ehc.upgrade_tarr(state['tarr'])
+        if 'data' in state and isinstance(state['data'], dict):
+            state['data'] = {site: ehc.upgrade_dtcal_circ(d)
+                             for site, d in state['data'].items()}
+        self.__dict__.update(state)
 
     def copy(self):
         """Copy the observation object.
@@ -397,8 +410,9 @@ class Caltable:
                     preL = 1.
                     postL = 1.
 
-                valspre = np.array([(timepre, preR, preL)], dtype=ehc.DTCAL)
-                valspost = np.array([(timepost, postR, postL)], dtype=ehc.DTCAL)
+                # TODO: time-dependent D-term field added but unpopulated
+                valspre = np.array([(timepre, preR, preL, 0j, 0j)], dtype=ehc.DTCAL)
+                valspost = np.array([(timepost, postR, postL, 0j, 0j)], dtype=ehc.DTCAL)
 
                 gg = np.insert(gg, 0, valspre)
                 gg = np.append(gg, valspost)
@@ -581,8 +595,9 @@ class Caltable:
                     # TODO can we do this faster?
                     datatable = []
                     for i in range(len(times_merge)):
+                        # TODO: time-dependent D-term field added but unpopulated
                         datatable.append(
-                            np.array((times_merge[i], rscale_merge[i], lscale_merge[i]),
+                            np.array((times_merge[i], rscale_merge[i], lscale_merge[i], 0j, 0j),
                                      dtype=ehc.DTCAL))
                     data1[site] = np.array(datatable)
 
@@ -657,7 +672,8 @@ class Caltable:
                 gains_r_avg = np.mean(gains_r[np.array(times_stable == scan[0])])
 
                 # add them to a new datatable
-                datatable.append(np.array((scan[0], gains_r_avg, gains_l_avg), dtype=ehc.DTCAL))
+                # TODO: time-dependent D-term field added but unpopulated
+                datatable.append(np.array((scan[0], gains_r_avg, gains_l_avg, 0j, 0j), dtype=ehc.DTCAL))
 
             datatables[site] = np.array(datatable)
 
@@ -729,7 +745,8 @@ def load_caltable(obs, datadir, sqrt_gains=False):
             if sqrt_gains:
                 rscale = rscale**.5
                 lscale = lscale**.5
-            datatable.append(np.array((time, rscale, lscale), dtype=ehc.DTCAL))
+            # TODO: time-dependent D-term field added but unpopulated
+            datatable.append(np.array((time, rscale, lscale, 0j, 0j), dtype=ehc.DTCAL))
 
         datatables[site] = np.array(datatable)
     if len(datatables) > 0:
@@ -809,7 +826,8 @@ def make_caltable(obs, gains, sites, times):
         datatable = []
         for t in range(0, ntimes):
             gain = gains[s * ntimes + t]
-            datatable.append(np.array((times[t], gain, gain), dtype=ehc.DTCAL))
+            # TODO: time-dependent D-term field added but unpopulated
+            datatable.append(np.array((times[t], gain, gain, 0j, 0j), dtype=ehc.DTCAL))
         datatables[sites[s]] = np.array(datatable)
     if len(datatables) > 0:
         caltable = Caltable(obs.ra, obs.dec, obs.rf,

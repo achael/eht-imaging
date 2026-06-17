@@ -201,6 +201,46 @@ def make_rect_image():
 
 
 @pytest.fixture(scope="session")
+def make_asym_image():
+    """Factory: asymmetric offset double-Gaussian of arbitrary (xdim, ydim).
+
+    Two broad, rotated, elongated, offset blobs. Unlike a centered circular
+    Gaussian, this breaks the reflection / rotation / x<->y symmetries and
+    shifts flux toward the edges, so boundary-masking and axis-ordering bugs
+    (which a symmetric image hides) surface in the chisq / regularizer /
+    gradient FD tests. The blobs are kept broad with modest offsets so the field
+    fills the grid (no dead pixels) -- a compact/offset source leaves zero-flux
+    corners where the |.|-kink TV gradients are FD-ill-conditioned at
+    epsilon_tv=0, producing spurious FD outliers unrelated to correctness.
+    Drop-in for make_rect_image (same (xdim, ydim[, psize]) signature, Stokes-I).
+    """
+    import numpy as np
+
+    def _factory(xdim, ydim, psize=None):
+        if psize is None:
+            psize = 200 * eh.RADPERUAS / max(xdim, ydim)
+        yy, xx = np.mgrid[0:ydim, 0:xdim]
+        x = (xx - xdim / 2.0) * psize
+        y = (yy - ydim / 2.0) * psize
+        ua = eh.RADPERUAS
+
+        def blob(flux, fmaj, fmin, pa, x0, y0):
+            smaj, smin = fmaj / 2.355, fmin / 2.355
+            xr = (x - x0) * np.cos(pa) + (y - y0) * np.sin(pa)
+            yr = -(x - x0) * np.sin(pa) + (y - y0) * np.cos(pa)
+            return flux * np.exp(-(xr**2 / (2 * smaj**2) + yr**2 / (2 * smin**2)))
+
+        image_arr = (blob(0.6, 120 * ua, 78 * ua, 0.5, 16 * ua, -11 * ua)
+                     + blob(0.4, 84 * ua, 116 * ua, -0.7, -19 * ua, 17 * ua))
+        image_arr /= image_arr.sum()
+        return eh.image.Image(
+            image_arr, psize, 17.761, -29.0,
+            polrep="stokes", pol_prim="I", rf=230e9,
+        )
+    return _factory
+
+
+@pytest.fixture(scope="session")
 def observe(eht_array):
     """Factory fixture: observation with project-standard defaults.
 

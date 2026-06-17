@@ -33,8 +33,8 @@ def test_init_rejects_empty_table(obs_direct):
 
 def test_init_rejects_bad_polrep(obs_direct):
     arglist, argdict = obs_direct.obsdata_args()
-    argdict["polrep"] = "lin"
-    with pytest.raises(Exception, match="only 'stokes' and 'circ'"):
+    argdict["polrep"] = "bogus"
+    with pytest.raises(Exception, match="polrep must be one of"):
         eh.obsdata.Obsdata(*arglist, **argdict)
 
 
@@ -42,7 +42,7 @@ def test_init_rejects_bad_dtype(obs_direct):
     arglist, argdict = obs_direct.obsdata_args()
     wrong = np.zeros(len(obs_direct.data), dtype=[("time", "f8"), ("u", "f8"), ("v", "f8")])
     arglist[4] = wrong
-    with pytest.raises(Exception, match="DTPOL_STOKES or DTPOL_CIRC"):
+    with pytest.raises(Exception, match="does not match polrep"):
         eh.obsdata.Obsdata(*arglist, **argdict)
 
 
@@ -195,7 +195,7 @@ def test_switch_polrep_noop_returns_copy(obs_direct):
 
 def test_switch_polrep_invalid_raises(obs_direct):
     with pytest.raises(Exception, match="polrep_out"):
-        obs_direct.switch_polrep("lin")
+        obs_direct.switch_polrep("bogus")
 
 
 def test_switch_polrep_singlepol_hand_invalid(obs_direct):
@@ -548,6 +548,16 @@ def test_unpack_polrep_consistency_q_u_v(obs_pol_direct, field):
 def test_unpack_pvis_stokes_vs_circ(obs_pol_direct):
     stokes = obs_pol_direct.unpack(["pvis"])["pvis"]
     circ = obs_pol_direct.switch_polrep("circ").unpack(["pvis"])["pvis"]
+    np.testing.assert_allclose(stokes, circ, atol=1e-12)
+
+
+@pytest.mark.parametrize("field", ["evis", "bvis", "m", "rrllvis",
+                                   "rrvis", "llvis", "rlvis", "lrvis"])
+def test_unpack_moved_fields_stokes_vs_circ(obs_pol_direct, field):
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore")
+        stokes = obs_pol_direct.unpack([field])[field]
+        circ = obs_pol_direct.switch_polrep("circ").unpack([field])[field]
     np.testing.assert_allclose(stokes, circ, atol=1e-12)
 
 

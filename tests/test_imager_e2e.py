@@ -17,6 +17,8 @@ Covers all three transform types (direct / fast / nfft) and both
 Stokes-I and polarimetric (IP) imaging.
 """
 
+import warnings
+
 import numpy as np
 import pytest
 
@@ -154,6 +156,48 @@ class TestEndToEndReconstruction:
         )
         assert errors[0] > STOKES_I_NXCORR_MIN
 
+    @pytest.mark.parametrize("polrep", ["circ", "lin"])
+    def test_stokes_i_closure_imaging_polrep_transparent(self, gauss_im, observe, polrep):
+        """Stokes-I closure imaging is independent of the obs polrep.
+
+        Imaging from a circ- or lin-polrep observation forms its amp/cphase/
+        logcamp data terms by synthesizing Stokes I from rr/ll (or xx/yy) via
+        the mixed-pol unpack path, and must reproduce the stokes-obs
+        reconstruction. The source is unpolarized, so the synthesis is exact.
+        """
+        obs_stokes = observe(gauss_im, ttype="direct", seed=42)
+        prior = _independent_prior(gauss_im.total_flux())
+
+        def image(obs):
+            imgr = eh.imager.Imager(
+                obs, prior, prior_im=prior, flux=gauss_im.total_flux(),
+                **_imager_kwargs_stokes_i("direct"),
+            )
+            return imgr.make_image_I(niter=3, show_updates=False)
+
+        out_stokes = image(obs_stokes)
+        # singlepol_hand selects the surviving parallel hand: R for circ, X for lin
+        hand = 'X' if polrep == 'lin' else 'R'
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore")  # polrep vs feed_type mismatch + convention
+            obs_other = obs_stokes.switch_polrep(polrep, singlepol_hand=hand)
+
+        # unpolarized source -> exact I synthesis -> data products identical to machine precision
+        for f in ['vis', 'amp']:
+            np.testing.assert_allclose(obs_other.unpack(f)[f], obs_stokes.unpack(f)[f],
+                                       rtol=0, atol=1e-12)
+
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore")
+            out_other = image(obs_other)
+
+        (errors, _, _) = out_other.compare_images(
+            gauss_im, metric=["nxcorr"], blur_frac=0.0)
+        assert errors[0] > STOKES_I_NXCORR_MIN
+        (xcorr, _, _) = out_other.compare_images(
+            out_stokes, metric=["nxcorr"], blur_frac=0.0)
+        assert xcorr[0] > 0.99
+
     def test_recovers_gaussian_polarimetric_ip(self, gauss_im_pol, observe):
         """Simultaneous Stokes I + P imaging on a polarized Gaussian source.
 
@@ -195,33 +239,37 @@ class TestEndToEndReconstruction:
         assert p_total == pytest.approx(p_truth, rel=0.5), (
             f"total polarized flux {p_total:.3e} off from truth {p_truth:.3e}")
 
-    def test_iv_gradient_matches_finite_difference(self, obs_pol_direct, gauss_im_pol, gauss_prior):
-        """IV (circular-pol) analytic gradient must match finite differences.
-
-        Regression for the vcv / chisqgrad_vvis bug: vcv_grad's vprime chain rule
-        uses the physical rho gradient, which chisqgrad_vvis previously skipped for
-        pol='IV' (pol_solve=[1,0,0,1]), making the V-angle gradient badly wrong
-        (~99% off; FD median was ~6e-2 before, ~3e-10 after).
-        """
-        imgr = eh.imager.Imager(
-            obs_pol_direct, gauss_prior, prior_im=gauss_prior, flux=gauss_im_pol.total_flux(),
-            data_term={"amp": 100, "vvis": 100}, reg_term={"simple": 1},
-            ttype="direct", pol="IV", transform=["log", "vcv"], maxit=100,
-        )
-        imgr.init_imager()
-        rng = np.random.default_rng(4)
-        x = np.asarray(imgr._init_vec, float) + 0.10 * rng.standard_normal(imgr._init_vec.size)
-        g = np.asarray(imgr.objgrad(x))
-        idx = np.argsort(np.abs(g))[-40:]  # best-conditioned components
-        fd = np.empty(40)
-        for k, j in enumerate(idx):
-            a, b = x.copy(), x.copy()
-            a[j] += 1e-6
-            b[j] -= 1e-6
-            fd[k] = (imgr.objfunc(a) - imgr.objfunc(b)) / 2e-6
-        frac = np.abs((fd - g[idx]) / (np.abs(g[idx]) + 1e-100))
-        assert np.median(frac) < 1e-3
-        assert np.max(frac) < 1e-2
+    # Superseded by TestObjectiveGradPolarimetricFD (IV case) in
+    # test_imager_backend.py, which samples the polarization DOF block across
+    # IP/IV/IQUV x {direct,nfft}. Commented out rather than deleted pending the
+    # PR2 test reorganization.
+    # def test_iv_gradient_matches_finite_difference(self, obs_pol_direct, gauss_im_pol, gauss_prior):
+    #     """IV (circular-pol) analytic gradient must match finite differences.
+    #
+    #     Regression for the vcv / chisqgrad_vvis bug: vcv_grad's vprime chain rule
+    #     uses the physical rho gradient, which chisqgrad_vvis previously skipped for
+    #     pol='IV' (pol_solve=[1,0,0,1]), making the V-angle gradient badly wrong
+    #     (~99% off; FD median was ~6e-2 before, ~3e-10 after).
+    #     """
+    #     imgr = eh.imager.Imager(
+    #         obs_pol_direct, gauss_prior, prior_im=gauss_prior, flux=gauss_im_pol.total_flux(),
+    #         data_term={"amp": 100, "vvis": 100}, reg_term={"simple": 1},
+    #         ttype="direct", pol="IV", transform=["log", "vcv"], maxit=100,
+    #     )
+    #     imgr.init_imager()
+    #     rng = np.random.default_rng(4)
+    #     x = np.asarray(imgr._init_vec, float) + 0.10 * rng.standard_normal(imgr._init_vec.size)
+    #     g = np.asarray(imgr.objgrad(x))
+    #     idx = np.argsort(np.abs(g))[-40:]  # best-conditioned components
+    #     fd = np.empty(40)
+    #     for k, j in enumerate(idx):
+    #         a, b = x.copy(), x.copy()
+    #         a[j] += 1e-6
+    #         b[j] -= 1e-6
+    #         fd[k] = (imgr.objfunc(a) - imgr.objfunc(b)) / 2e-6
+    #     frac = np.abs((fd - g[idx]) / (np.abs(g[idx]) + 1e-100))
+    #     assert np.median(frac) < 1e-3
+    #     assert np.max(frac) < 1e-2
 
 
 def test_imager_fast_ttype_warns_deprecated(gauss_im, observe):

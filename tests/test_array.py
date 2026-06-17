@@ -72,11 +72,13 @@ def test_init_builds_tkey_from_sites(eht_array):
 
 
 def test_init_tarr_dtype_has_legacy_columns(eht_array):
-    # PR #260 will add a feed_type column, but the legacy columns must remain.
-    names = _DTARR_DTYPE.names
+    # PR #260 added a feed_type column and promoted sefdr/sefdl/dr/dl to title
+    # aliases over sefd_p1/sefd_p2/d_p1/d_p2. Title aliases live in
+    # dtype.fields (a dict including aliases), not dtype.names (primary only).
+    fields = _DTARR_DTYPE.fields
     for col in ("site", "x", "y", "z", "sefdr", "sefdl",
                 "dr", "dl", "fr_par", "fr_elev", "fr_off"):
-        assert col in names
+        assert col in fields
 
 
 def test_init_empty_array_has_empty_tkey():

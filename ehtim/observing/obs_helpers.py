@@ -36,12 +36,14 @@ import scipy.ndimage as nd
 import scipy.spatial.distance
 
 import ehtim.const_def as ehc
+import ehtim.observing.pol_conventions as pc
+import ehtim.warnings as ehw
 from ehtim.backends import array_namespace
 
 warnings.filterwarnings("ignore", message="divide by zero encountered in double_scalars")
 
 ##################################################################################################
-# Other Functions
+# Observing & uv Functions
 ##################################################################################################
 
 
@@ -247,833 +249,6 @@ def compute_uv_coordinates(array, site1, site2, time, mjd, ra, dec, rf, timetype
     # return times and uv points where we have  data
     return (time, u, v)
 
-
-def make_bispectrum(l1, l2, l3, vistype, polrep='stokes'):
-    """Make a list of bispectra and errors
-       l1,l2,l3 are full datatables of visibility entries
-       vtype is visibility types
-    """
-
-    if vistype == 'pvis':
-        vtype = 'rlvis'
-    else:
-        vtype = vistype
-
-    # Choose the appropriate polarization and compute the bs and err
-    if polrep == 'stokes':
-        if vtype in ["vis", "qvis", "uvis", "vvis"]:
-            if vtype == 'vis':
-                sigmatype = 'sigma'
-            elif vtype == 'qvis':
-                sigmatype = 'qsigma'
-            elif vtype == 'uvis':
-                sigmatype = 'usigma'
-            elif vtype == 'vvis':
-                sigmatype = 'vsigma'
-
-            p1 = l1[vtype]
-            p2 = l2[vtype]
-            p3 = l3[vtype]
-
-            var1 = l1[sigmatype]**2
-            var2 = l2[sigmatype]**2
-            var3 = l3[sigmatype]**2
-
-        elif vtype == "rrvis":
-            p1 = l1['vis'] + l1['vvis']
-            p2 = l2['vis'] + l2['vvis']
-            p3 = l3['vis'] + l3['vvis']
-
-            var1 = l1['sigma']**2 + l1['vsigma']**2
-            var2 = l2['sigma']**2 + l2['vsigma']**2
-            var3 = l3['sigma']**2 + l3['vsigma']**2
-
-        elif vtype == "llvis":
-            p1 = l1['vis'] - l1['vvis']
-            p2 = l2['vis'] - l2['vvis']
-            p3 = l3['vis'] - l3['vvis']
-
-            var1 = l1['sigma']**2 + l1['vsigma']**2
-            var2 = l2['sigma']**2 + l2['vsigma']**2
-            var3 = l3['sigma']**2 + l3['vsigma']**2
-
-        elif vtype == "lrvis":
-            p1 = l1['qvis'] - 1j*l1['uvis']
-            p2 = l2['qvis'] - 1j*l2['uvis']
-            p3 = l3['qvis'] - 1j*l3['uvis']
-
-            var1 = l1['qsigma']**2 + l1['usigma']**2
-            var2 = l2['qsigma']**2 + l2['usigma']**2
-            var3 = l3['qsigma']**2 + l3['usigma']**2
-
-        elif vtype == "rlvis":
-            p1 = l1['qvis'] + 1j*l1['uvis']
-            p2 = l2['qvis'] + 1j*l2['uvis']
-            p3 = l3['qvis'] + 1j*l3['uvis']
-
-            var1 = l1['qsigma']**2 + l1['usigma']**2
-            var2 = l2['qsigma']**2 + l2['usigma']**2
-            var3 = l3['qsigma']**2 + l3['usigma']**2
-
-    elif polrep == 'circ':
-        if vtype in ["rrvis", "llvis", "rlvis", "lrvis"]:
-
-
-
-            if vtype == 'rrvis':
-                sigmatype = 'rrsigma'
-            elif vtype == 'llvis':
-                sigmatype = 'llsigma'
-            elif vtype == 'rlvis':
-                sigmatype = 'rlsigma'
-            elif vtype == 'lrvis':
-                sigmatype = 'lrsigma'
-
-            p1 = l1[vtype]
-            p2 = l2[vtype]
-            p3 = l3[vtype]
-
-            var1 = l1[sigmatype]**2
-            var2 = l2[sigmatype]**2
-            var3 = l3[sigmatype]**2
-
-        elif vtype == "vis":
-            p1 = 0.5*(l1['rrvis'] + l1['llvis'])
-            p2 = 0.5*(l2['rrvis'] + l2['llvis'])
-            p3 = 0.5*(l3['rrvis'] + l3['llvis'])
-
-            var1 = 0.25*(l1['rrsigma']**2 + l1['llsigma']**2)
-            var2 = 0.25*(l2['rrsigma']**2 + l2['llsigma']**2)
-            var3 = 0.25*(l3['rrsigma']**2 + l3['llsigma']**2)
-
-        elif vtype == "vvis":
-            p1 = 0.5*(l1['rrvis'] - l1['llvis'])
-            p2 = 0.5*(l2['rrvis'] - l2['llvis'])
-            p3 = 0.5*(l3['rrvis'] - l3['llvis'])
-
-            var1 = 0.25*(l1['rrsigma']**2 + l1['llsigma']**2)
-            var2 = 0.25*(l2['rrsigma']**2 + l2['llsigma']**2)
-            var3 = 0.25*(l3['rrsigma']**2 + l3['llsigma']**2)
-
-        elif vtype == "qvis":
-            p1 = 0.5*(l1['lrvis'] + l1['rlvis'])
-            p2 = 0.5*(l2['lrvis'] + l2['rlvis'])
-            p3 = 0.5*(l3['lrvis'] + l3['rlvis'])
-
-            var1 = 0.25*(l1['lrsigma']**2 + l1['rlsigma']**2)
-            var2 = 0.25*(l2['lrsigma']**2 + l2['rlsigma']**2)
-            var3 = 0.25*(l3['lrsigma']**2 + l3['rlsigma']**2)
-
-        elif vtype == "uvis":
-            p1 = 0.5j*(l1['lrvis'] - l1['rlvis'])
-            p2 = 0.5j*(l2['lrvis'] - l2['rlvis'])
-            p3 = 0.5j*(l3['lrvis'] - l3['rlvis'])
-
-            var1 = 0.25*(l1['lrsigma']**2 + l1['rlsigma']**2)
-            var2 = 0.25*(l2['lrsigma']**2 + l2['rlsigma']**2)
-            var3 = 0.25*(l3['lrsigma']**2 + l3['rlsigma']**2)
-    else:
-        raise Exception("only 'stokes' and 'circ' are supported polreps!")
-
-    # Make the bispectrum and its uncertainty
-    bi = p1*p2*p3
-    bisig = np.abs(bi) * np.sqrt(var1/np.abs(p1)**2 +
-                                 var2/np.abs(p2)**2 +
-                                 var3/np.abs(p3)**2)
-
-    return (bi, bisig)
-
-
-def make_closure_amplitude(blue1, blue2, red1, red2, vtype,
-                           ctype='camp', debias=True, polrep='stokes'):
-    """Make a list of closure amplitudes and errors
-       blue1 and blue2 are full datatables numerator entries
-       red1 and red2 are full datatables of denominator entries
-       vtype is the  visibility type
-    """
-
-    if ctype not in ['camp', 'logcamp']:
-        raise Exception("closure amplitude type must be 'camp' or 'logcamp'!")
-
-    if polrep == 'stokes':
-
-        if vtype in ["vis", "qvis", "uvis", "vvis"]:
-            if vtype == 'vis':
-                sigmatype = 'sigma'
-            if vtype == 'qvis':
-                sigmatype = 'qsigma'
-            if vtype == 'uvis':
-                sigmatype = 'usigma'
-            if vtype == 'vvis':
-                sigmatype = 'vsigma'
-
-            sig1 = blue1[sigmatype]
-            sig2 = blue2[sigmatype]
-            sig3 = red1[sigmatype]
-            sig4 = red2[sigmatype]
-
-            p1 = np.abs(blue1[vtype])
-            p2 = np.abs(blue2[vtype])
-            p3 = np.abs(red1[vtype])
-            p4 = np.abs(red2[vtype])
-
-        elif vtype == "rrvis":
-            sig1 = np.sqrt(blue1['sigma']**2 + blue1['vsigma']**2)
-            sig2 = np.sqrt(blue2['sigma']**2 + blue2['vsigma']**2)
-            sig3 = np.sqrt(red1['sigma']**2 + red1['vsigma']**2)
-            sig4 = np.sqrt(red2['sigma']**2 + red2['vsigma']**2)
-
-            p1 = np.abs(blue1['vis'] + blue1['vvis'])
-            p2 = np.abs(blue2['vis'] + blue2['vvis'])
-            p3 = np.abs(red1['vis'] + red1['vvis'])
-            p4 = np.abs(red2['vis'] + red2['vvis'])
-
-        elif vtype == "llvis":
-            sig1 = np.sqrt(blue1['sigma']**2 + blue1['vsigma']**2)
-            sig2 = np.sqrt(blue2['sigma']**2 + blue2['vsigma']**2)
-            sig3 = np.sqrt(red1['sigma']**2 + red1['vsigma']**2)
-            sig4 = np.sqrt(red2['sigma']**2 + red2['vsigma']**2)
-
-            p1 = np.abs(blue1['vis'] - blue1['vvis'])
-            p2 = np.abs(blue2['vis'] - blue2['vvis'])
-            p3 = np.abs(red1['vis'] - red1['vvis'])
-            p4 = np.abs(red2['vis'] - red2['vvis'])
-
-        elif vtype == "lrvis":
-            sig1 = np.sqrt(blue1['qsigma']**2 + blue1['usigma']**2)
-            sig2 = np.sqrt(blue2['qsigma']**2 + blue2['usigma']**2)
-            sig3 = np.sqrt(red1['qsigma']**2 + red1['usigma']**2)
-            sig4 = np.sqrt(red2['qsigma']**2 + red2['usigma']**2)
-
-            p1 = np.abs(blue1['qvis'] - 1j*blue1['uvis'])
-            p2 = np.abs(blue2['qvis'] - 1j*blue2['uvis'])
-            p3 = np.abs(red1['qvis'] - 1j*red1['uvis'])
-            p4 = np.abs(red2['qvis'] - 1j*red2['uvis'])
-
-        elif vtype in ["pvis", "rlvis"]:
-            sig1 = np.sqrt(blue1['qsigma']**2 + blue1['usigma']**2)
-            sig2 = np.sqrt(blue2['qsigma']**2 + blue2['usigma']**2)
-            sig3 = np.sqrt(red1['qsigma']**2 + red1['usigma']**2)
-            sig4 = np.sqrt(red2['qsigma']**2 + red2['usigma']**2)
-
-            p1 = np.abs(blue1['qvis'] + 1j*blue1['uvis'])
-            p2 = np.abs(blue2['qvis'] + 1j*blue2['uvis'])
-            p3 = np.abs(red1['qvis'] + 1j*red1['uvis'])
-            p4 = np.abs(red2['qvis'] + 1j*red2['uvis'])
-
-    elif polrep == 'circ':
-        if vtype in ["rrvis", "llvis", "rlvis", "lrvis", 'pvis']:
-            if vtype == 'pvis':
-                vtype = 'rlvis'  # p = rl
-
-            if vtype == 'rrvis':
-                sigmatype = 'rrsigma'
-            if vtype == 'llvis':
-                sigmatype = 'llsigma'
-            if vtype == 'rlvis':
-                sigmatype = 'rlsigma'
-            if vtype == 'lrvis':
-                sigmatype = 'lrsigma'
-
-            sig1 = blue1[sigmatype]
-            sig2 = blue2[sigmatype]
-            sig3 = red1[sigmatype]
-            sig4 = red2[sigmatype]
-
-            p1 = np.abs(blue1[vtype])
-            p2 = np.abs(blue2[vtype])
-            p3 = np.abs(red1[vtype])
-            p4 = np.abs(red2[vtype])
-
-        elif vtype == "vis":
-            sig1 = 0.5*np.sqrt(blue1['rrsigma']**2 + blue1['llsigma']**2)
-            sig2 = 0.5*np.sqrt(blue2['rrsigma']**2 + blue2['llsigma']**2)
-            sig3 = 0.5*np.sqrt(red1['rrsigma']**2 + red1['llsigma']**2)
-            sig4 = 0.5*np.sqrt(red2['rrsigma']**2 + red2['llsigma']**2)
-
-            p1 = 0.5*np.abs(blue1['rrvis'] + blue1['llvis'])
-            p2 = 0.5*np.abs(blue2['rrvis'] + blue2['llvis'])
-            p3 = 0.5*np.abs(red1['rrvis'] + red1['llvis'])
-            p4 = 0.5*np.abs(red2['rrvis'] + red2['llvis'])
-
-        elif vtype == "vvis":
-            sig1 = 0.5*np.sqrt(blue1['rrsigma']**2 + blue1['llsigma']**2)
-            sig2 = 0.5*np.sqrt(blue2['rrsigma']**2 + blue2['llsigma']**2)
-            sig3 = 0.5*np.sqrt(red1['rrsigma']**2 + red1['llsigma']**2)
-            sig4 = 0.5*np.sqrt(red2['rrsigma']**2 + red2['llsigma']**2)
-
-            p1 = 0.5*np.abs(blue1['rrvis'] - blue1['llvis'])
-            p2 = 0.5*np.abs(blue2['rrvis'] - blue2['llvis'])
-            p3 = 0.5*np.abs(red1['rrvis'] - red1['llvis'])
-            p4 = 0.5*np.abs(red2['rrvis'] - red2['llvis'])
-
-        elif vtype == "qvis":
-            sig1 = 0.5*np.sqrt(blue1['lrsigma']**2 + blue1['rlsigma']**2)
-            sig2 = 0.5*np.sqrt(blue2['lrsigma']**2 + blue2['rlsigma']**2)
-            sig3 = 0.5*np.sqrt(red1['lrsigma']**2 + red1['rlsigma']**2)
-            sig4 = 0.5*np.sqrt(red2['lrsigma']**2 + red2['rlsigma']**2)
-
-            p1 = 0.5*np.abs(blue1['lrvis'] + blue1['rlvis'])
-            p2 = 0.5*np.abs(blue2['lrvis'] + blue2['rlvis'])
-            p3 = 0.5*np.abs(red1['lrvis'] + red1['rlvis'])
-            p4 = 0.5*np.abs(red2['lrvis'] + red2['rlvis'])
-
-        elif vtype == "uvis":
-            sig1 = 0.5*np.sqrt(blue1['lrsigma']**2 + blue1['rlsigma']**2)
-            sig2 = 0.5*np.sqrt(blue2['lrsigma']**2 + blue2['rlsigma']**2)
-            sig3 = 0.5*np.sqrt(red1['lrsigma']**2 + red1['rlsigma']**2)
-            sig4 = 0.5*np.sqrt(red2['lrsigma']**2 + red2['rlsigma']**2)
-
-            p1 = 0.5*np.abs(blue1['lrvis'] - blue1['rlvis'])
-            p2 = 0.5*np.abs(blue2['lrvis'] - blue2['rlvis'])
-            p3 = 0.5*np.abs(red1['lrvis'] - red1['rlvis'])
-            p4 = 0.5*np.abs(red2['lrvis'] - red2['rlvis'])
-    else:
-        raise Exception("only 'stokes' and 'circ' are supported polreps!")
-
-    # Debias the amplitude
-    if debias:
-        p1 = amp_debias(p1, sig1, force_nonzero=True)
-        p2 = amp_debias(p2, sig2, force_nonzero=True)
-        p3 = amp_debias(p3, sig3, force_nonzero=True)
-        p4 = amp_debias(p4, sig4, force_nonzero=True)
-    else:
-        p1 = np.abs(p1)
-        p2 = np.abs(p2)
-        p3 = np.abs(p3)
-        p4 = np.abs(p4)
-
-    # Get snrs
-    snr1 = p1/sig1
-    snr2 = p2/sig2
-    snr3 = p3/sig3
-    snr4 = p4/sig4
-
-    # Compute the closure amplitude and its uncertainty
-    if ctype == 'camp':
-        camp = np.abs((p1*p2)/(p3*p4))
-        camperr = camp * np.sqrt(1./(snr1**2) + 1./(snr2**2) + 1./(snr3**2) + 1./(snr4**2))
-
-        # Debias
-        if debias:
-            camp = camp_debias(camp, snr3, snr4)
-
-    elif ctype == 'logcamp':
-        camp = np.log(np.abs(p1)) + np.log(np.abs(p2)) - np.log(np.abs(p3)) - np.log(np.abs(p4))
-        camperr = np.sqrt(1./(snr1**2) + 1./(snr2**2) + 1./(snr3**2) + 1./(snr4**2))
-
-        # Debias
-        if debias:
-            camp = logcamp_debias(camp, snr1, snr2, snr3, snr4)
-
-    return (camp, camperr)
-
-
-def amp_debias(amp, sigma, force_nonzero=False):
-    """Return debiased visibility amplitudes
-    """
-
-    deb2 = np.abs(amp)**2 - np.abs(sigma)**2
-
-    # puts amplitude at 0 if snr < 1
-    deb2 *= (np.nan_to_num(np.abs(amp)) > np.nan_to_num(np.abs(sigma)))
-
-    # raises amplitude to sigma to force nonzero
-    if force_nonzero:
-        deb2 += (np.nan_to_num(np.abs(amp)) < np.nan_to_num(np.abs(sigma))) * np.abs(sigma)**2
-    out = np.sqrt(deb2)
-
-    return out
-
-
-def camp_debias(camp, snr3, snr4):
-    """Debias closure amplitudes
-       snr3 and snr4 are snr of visibility amplitudes #3 and 4.
-    """
-
-    camp_debias = camp / (1 + 1./(snr3**2) + 1./(snr4**2))
-    return camp_debias
-
-
-def logcamp_debias(log_camp, snr1, snr2, snr3, snr4):
-    """Debias log closure amplitudes
-       The snrs are the snr of the component visibility amplitudes
-    """
-
-    log_camp_debias = log_camp + 0.5*(1./(snr1**2) + 1./(snr2**2) - 1./(snr3**2) - 1./(snr4**2))
-    return log_camp_debias
-
-
-def uv_area_triangle(u1, v1, u2, v2):
-    """Signed-magnitude area of the uv-plane triangle spanned by two of its baseline vectors.
-
-       For a closure triangle 1-2-3 with baselines b12=(u1,v1) and b23=(u2,v2), the
-       enclosed uv-area is ``A = (1/2) * |u1*v2 - u2*v1|``. Independent of which two
-       of the three baselines are passed; sign-stripped so it can be used directly
-       as an x-axis variable.
-
-       Args:
-           u1, v1 (array-like): uv components of the first baseline (in lambda)
-           u2, v2 (array-like): uv components of the second baseline (in lambda)
-
-       Returns:
-           (numpy.ndarray): triangle uv-area in lambda^2 (>=0)
-    """
-    return 0.5 * np.abs(np.asarray(u1) * np.asarray(v2) - np.asarray(u2) * np.asarray(v1))
-
-
-def uv_area_quadrangle(u1, v1, u2, v2, u3, v3):
-    """Signed-magnitude area of the uv-plane quadrangle for a closure-amplitude quad.
-
-       A closure quadrangle 1-2-3-4 is built from four baselines whose vectors sum to
-       zero; any three are independent. Treating the quadrangle as two triangles
-       sharing a diagonal, ``A = (1/2) * |u1*v2 - u2*v1| + (1/2) * |u2*v3 - u3*v2|``.
-
-       Args:
-           u1..v3 (array-like): uv components of three independent baselines (in lambda)
-
-       Returns:
-           (numpy.ndarray): quadrangle uv-area in lambda^2 (>=0)
-    """
-    u1, v1 = np.asarray(u1), np.asarray(v1)
-    u2, v2 = np.asarray(u2), np.asarray(v2)
-    u3, v3 = np.asarray(u3), np.asarray(v3)
-    return 0.5 * (np.abs(u1 * v2 - u2 * v1) + np.abs(u2 * v3 - u3 * v2))
-
-
-def gauss_uv(u, v, flux, beamparams, x=0., y=0.):
-    """Return the value of the Gaussian FT with
-       beamparams is [FWHMmaj, FWHMmin, theta, x, y], all in radian
-       x,y are the center coordinates
-    """
-
-    sigma_maj = beamparams[0]/(2*np.sqrt(2*np.log(2)))
-    sigma_min = beamparams[1]/(2*np.sqrt(2*np.log(2)))
-    theta = -beamparams[2]  # theta needs to be negative in this convention!
-
-    # Covariance matrix
-    a = (sigma_min * np.cos(theta))**2 + (sigma_maj*np.sin(theta))**2
-    b = (sigma_maj * np.cos(theta))**2 + (sigma_min*np.sin(theta))**2
-    c = (sigma_min**2 - sigma_maj**2) * np.cos(theta) * np.sin(theta)
-    m = np.array([[a, c], [c, b]])
-
-    uv = np.array([[u[i], v[i]] for i in range(len(u))])
-    x2 = np.array([np.dot(uvi, np.dot(m, uvi)) for uvi in uv])
-
-    g = np.exp(-2 * np.pi**2 * x2)
-    p = np.exp(-2j * np.pi * (u*x + v*y))
-
-    return flux * g * p
-
-
-def rbf_kernel_covariance(x, sigma):
-    """Compute a covariance matrix from an RBF kernel
-
-    Args:
-        x (ndarray): 1D data points for which to compute the covariance
-        sigma (float): std for the covariance. Controls correlation length / time.
-
-    Returns:
-       cov (ndarray): Covariance matrix
-    """
-    x = np.expand_dims(x, 1) if x.ndim == 1 else x
-    norm = -0.5 * scipy.spatial.distance.cdist(x, x, 'sqeuclidean') / sigma**2
-    cov = np.exp(norm)
-    cov *= 1.0 / cov.sum(axis=0)
-    return cov
-
-
-def sgra_kernel_uv(rf, u, v):
-    """Return the value of the Sgr A* scattering kernel at a given u,v (in lambda)
-
-    Args:
-        rf (float): The observation frequency in Hz
-        u (float or ndarray): an array of u coordinates
-        v (float or ndarray): an array of v coordinates
-
-    Returns:
-       g (float ndarray): Sgr A* scattering kernel
-    """
-    u = np.array(u)
-    v = np.array(v)
-    assert u.size == v.size, 'u and v should have the same size'
-
-    lcm = (ehc.C / rf) * 100  # in cm
-    sigma_maj = ehc.FWHM_MAJ * (lcm ** 2) / (2 * np.sqrt(2 * np.log(2))) * ehc.RADPERUAS
-    sigma_min = ehc.FWHM_MIN * (lcm ** 2) / (2 * np.sqrt(2 * np.log(2))) * ehc.RADPERUAS
-    theta = -ehc.POS_ANG * ehc.DEGREE  # theta needs to be negative in this convention!
-
-    # Covariance matrix
-    a = (sigma_min * np.cos(theta)) ** 2 + (sigma_maj * np.sin(theta)) ** 2
-    b = (sigma_maj * np.cos(theta)) ** 2 + (sigma_min * np.sin(theta)) ** 2
-    c = (sigma_min ** 2 - sigma_maj ** 2) * np.cos(theta) * np.sin(theta)
-    m = np.array([[a, c], [c, b]])
-    uv = np.array([u, v])
-
-    x2 = (uv * np.dot(m, uv)).sum(axis=0)
-    g = np.exp(-2 * np.pi ** 2 * x2)
-
-    return g
-
-
-def sgra_kernel_params(rf):
-    """Return elliptical gaussian parameters in radian for the Sgr A* scattering ellipse
-       at a given frequency rf
-    """
-
-    lcm = (ehc.C/rf) * 100  # in cm
-    fwhm_maj_rf = ehc.FWHM_MAJ * (lcm**2) * ehc.RADPERUAS
-    fwhm_min_rf = ehc.FWHM_MIN * (lcm**2) * ehc.RADPERUAS
-    theta = ehc.POS_ANG * ehc.DEGREE
-
-    return np.array([fwhm_maj_rf, fwhm_min_rf, theta])
-
-
-def blnoise(sefd1, sefd2, tint, bw):
-    """Determine the standard deviation of Gaussian thermal noise on a baseline
-       This is the noise on the rr/ll/rl/lr product, not the Stokes parameter
-       2-bit quantization is responsible for the 0.88 factor
-    """
-
-    noise = np.sqrt(sefd1*sefd2/(2*bw*tint))/0.88
-    # noise = np.sqrt(sefd1*sefd2/(bw*tint))/0.88
-
-    return noise
-
-
-def merr(sigma, qsigma, usigma, I, m):
-    """Return the error in mbreve real and imaginary parts given stokes input
-    """
-
-    err = np.sqrt((qsigma**2 + usigma**2 + (sigma*np.abs(m))**2)/(np.abs(I) ** 2))
-
-    return err
-
-
-def merr2(rlsigma, rrsigma, llsigma, I, m):
-    """Return the error in mbreve real and imaginary parts given polprod input
-    """
-
-    err = np.sqrt((rlsigma**2 + (rrsigma**2 + llsigma**2)*np.abs(m)**2)/(np.abs(I) ** 2))
-
-    return err
-
-
-def cerror(sigma):
-    """Return a complex number drawn from a circular complex Gaussian of zero mean
-    """
-
-    noise = np.random.normal(loc=0, scale=sigma) + 1j*np.random.normal(loc=0, scale=sigma)
-    return noise
-
-
-def cerror_hash(sigma, *args):
-    """Return a complex number drawn from a circular complex Gaussian of zero mean
-    """
-
-    reargs = list(args)
-    reargs.append('re')
-    np.random.seed(hash(",".join(map(repr, reargs))) % 4294967295)
-    re = np.random.randn()
-
-    imargs = list(args)
-    imargs.append('im')
-    np.random.seed(hash(",".join(map(repr, imargs))) % 4294967295)
-    im = np.random.randn()
-
-    err = sigma * (re + 1j*im)
-
-    return err
-
-
-def hashmultivariaterandn(size, cov, *args):
-    """set the seed according to a collection of arguments and return random multivariate gaussian var
-    """
-    np.random.seed(hash(",".join(map(repr, args))) % 4294967295)
-    mean = np.zeros(size)
-    noise = np.random.multivariate_normal(mean, cov, check_valid='ignore')
-    return noise
-
-
-def hashrandn(*args):
-    """set the seed according to a collection of arguments and return random gaussian var
-    """
-
-    np.random.seed(hash(",".join(map(repr, args))) % 4294967295)
-    noise = np.random.randn()
-    return noise
-
-
-def hashrand(*args):
-    """set the seed according to a collection of arguments and return random number in 0,1
-    """
-
-    np.random.seed(hash(",".join(map(repr, args))) % 4294967295)
-    noise = np.random.rand()
-    return noise
-
-
-def image_centroid(im):
-    """Return the image centroid (in radians)
-    """
-
-    xlist = np.arange(0, -im.xdim, -1)*im.psize + (im.psize*im.xdim)/2.0 - im.psize/2.0
-    ylist = np.arange(0, -im.ydim, -1)*im.psize + (im.psize*im.ydim)/2.0 - im.psize/2.0
-
-    x0 = np.sum(np.outer(0.0*ylist+1.0, xlist).ravel()*im.imvec)/np.sum(im.imvec)
-    y0 = np.sum(np.outer(ylist, 0.0*xlist+1.0).ravel()*im.imvec)/np.sum(im.imvec)
-
-    return np.array([x0, y0])
-
-
-def ftmatrix(pdim, xdim, ydim, uvlist, pulse=ehc.PULSE_DEFAULT, mask=[]):
-    """Return a DFT matrix for the xdim*ydim image with pixel width pdim
-       that extracts spatial frequencies of the uv points in uvlist.
-    """
-
-    xlist = np.arange(0, -xdim, -1)*pdim + (pdim*xdim)/2.0 - pdim/2.0
-    ylist = np.arange(0, -ydim, -1)*pdim + (pdim*ydim)/2.0 - pdim/2.0
-
-    # original sign convention
-    # ftmatrices = [pulse(2*np.pi*uv[0], 2*np.pi*uv[1], pdim, dom="F") *
-    #              np.outer(np.exp(-2j*np.pi*ylist*uv[1]), np.exp(-2j*np.pi*xlist*uv[0]))
-    #              for uv in uvlist]
-
-    # changed the sign convention to agree with BU data (Jan 2017)
-    # this is correct for a u,v definition from site 1-2 as (x1-x2)/lambda
-    ftmatrices = [pulse(2*np.pi*uv[0], 2*np.pi*uv[1], pdim, dom="F") *
-                  np.outer(np.exp(2j*np.pi*ylist*uv[1]), np.exp(2j*np.pi*xlist*uv[0]))
-                  for uv in uvlist]
-    ftmatrices = np.reshape(np.array(ftmatrices), (len(uvlist), xdim*ydim))
-
-    if len(mask):
-        ftmatrices = ftmatrices[:, mask]
-
-    return ftmatrices
-
-
-def ftmatrix_centered(im, pdim, xdim, ydim, uvlist, pulse=ehc.PULSE_DEFAULT):
-    """Return a DFT matrix for the xdim*ydim image with pixel width pdim
-       that extracts spatial frequencies of the uv points in uvlist.
-       in this version, it puts the image centroid at the origin
-    """
-
-    # TODO : there is a residual value for the center being around 0,
-    # maybe we should chop this off to be exactly 0?
-    xlist = np.arange(0, -xdim, -1)*pdim + (pdim*xdim)/2.0 - pdim/2.0
-    ylist = np.arange(0, -ydim, -1)*pdim + (pdim*ydim)/2.0 - pdim/2.0
-    x0 = np.sum(np.outer(0.0*ylist+1.0, xlist).ravel()*im)/np.sum(im)
-    y0 = np.sum(np.outer(ylist, 0.0*xlist+1.0).ravel()*im)/np.sum(im)
-
-    # Now shift the lists
-    xlist = xlist - x0
-    ylist = ylist - y0
-
-    # list of matrices at each spatial freq
-    ftmatrices = [pulse(2*np.pi*uv[0], 2*np.pi*uv[1], pdim, dom="F") *
-                  np.outer(np.exp(-2j*np.pi*ylist*uv[1]), np.exp(-2j*np.pi*xlist*uv[0]))
-                  for uv in uvlist]
-    ftmatrices = np.reshape(np.array(ftmatrices), (len(uvlist), xdim*ydim))
-    return ftmatrices
-
-
-def ticks(axisdim, psize, nticks=8):
-    """Return a list of ticklocs and ticklabels
-       psize should be in desired units
-    """
-
-    axisdim = int(axisdim)
-    nticks = int(nticks)
-    if not axisdim % 2:
-        axisdim += 1
-    if nticks % 2:
-        nticks -= 1
-    tickspacing = float(axisdim-1)/nticks
-    ticklocs = np.arange(0, axisdim+1, tickspacing) - 0.5
-    ticklabels = np.around(psize * np.arange((axisdim-1)/2.0, -
-                                             (axisdim)/2.0, -tickspacing), decimals=1)
-
-    return (ticklocs, ticklabels)
-
-
-def power_of_two(target):
-    """Finds the next greatest power of two
-    """
-    cur = 1
-    if target > 1:
-        for i in range(0, int(target)):
-            if (cur >= target):
-                return cur
-            else:
-                cur *= 2
-    else:
-        return 1
-
-
-def paritycompare(perm1, perm2):
-    """Compare the parity of two permutations.
-       Assume both lists are equal length and with same elements
-       Copied from: http://stackoverflow.com/questions/1503072/how-to-check-if-permutations-have-equal-parity
-    """
-
-    perm2 = list(perm2)
-    perm2_map = dict((v, i) for i, v in enumerate(perm2))
-    transCount = 0
-    for loc, p1 in enumerate(perm1):
-        p2 = perm2[loc]
-        if p1 != p2:
-            sloc = perm2_map[p1]
-            perm2[loc], perm2[sloc] = p1, p2
-            perm2_map[p1], perm2_map[p2] = sloc, loc
-            transCount += 1
-
-    if not (transCount % 2):
-        return 1
-    else:
-        return -1
-
-
-def sigtype(datatype):
-    """Return the type of noise corresponding to the data type
-    """
-
-    datatype = str(datatype)
-    if datatype in ['vis', 'amp']:
-        sigmatype = 'sigma'
-    elif datatype in ['qvis', 'qamp']:
-        sigmatype = 'qsigma'
-    elif datatype in ['uvis', 'uamp']:
-        sigmatype = 'usigma'
-    elif datatype in ['vvis', 'vamp']:
-        sigmatype = 'vsigma'
-    elif datatype in ['pvis', 'pamp']:
-        sigmatype = 'psigma'
-    elif datatype in ['evis', 'eamp']:
-        sigmatype = 'esigma'
-    elif datatype in ['bvis', 'bamp']:
-        sigmatype = 'esigma'
-    elif datatype in ['rrvis', 'rramp']:
-        sigmatype = 'rrsigma'
-    elif datatype in ['llvis', 'llamp']:
-        sigmatype = 'llsigma'
-    elif datatype in ['rlvis', 'rlamp']:
-        sigmatype = 'rlsigma'
-    elif datatype in ['lrvis', 'lramp']:
-        sigmatype = 'lrsigma'
-    elif datatype in ['rrllvis', 'rrllamp']:
-        sigmatype = 'rrllsigma'
-    elif datatype in ['m', 'mamp']:
-        sigmatype = 'msigma'
-    elif datatype in ['phase']:
-        sigmatype = 'sigma_phase'
-    elif datatype in ['qphase']:
-        sigmatype = 'qsigma_phase'
-    elif datatype in ['uphase']:
-        sigmatype = 'usigma_phase'
-    elif datatype in ['vphase']:
-        sigmatype = 'vsigma_phase'
-    elif datatype in ['pphase']:
-        sigmatype = 'psigma_phase'
-    elif datatype in ['ephase']:
-        sigmatype = 'esigma_phase'
-    elif datatype in ['bphase']:
-        sigmatype = 'bsigma_phase'
-    elif datatype in ['mphase']:
-        sigmatype = 'msigma_phase'
-    elif datatype in ['rrphase']:
-        sigmatype = 'rrsigma_phase'
-    elif datatype in ['llphase']:
-        sigmatype = 'llsigma_phase'
-    elif datatype in ['rlphase']:
-        sigmatype = 'rlsigma_phase'
-    elif datatype in ['lrphase']:
-        sigmatype = 'lrsigma_phase'
-    elif datatype in ['rrllphase']:
-        sigmatype = 'rrllsigma_phase'
-
-    else:
-        sigmatype = False
-
-    return sigmatype
-
-
-def rastring(ra):
-    """Convert a ra in fractional hours to formatted string
-    """
-    h = int(ra)
-    m = int((ra-h)*60.)
-    s = (ra-h-m/60.)*3600.
-    out = f"{h:2d} h {m:2d} m {s:2.4f} s"
-
-    return out
-
-
-def decstring(dec):
-    """Convert a dec in fractional degrees to formatted string
-    """
-
-    deg = int(dec)
-    m = int((abs(dec)-abs(deg))*60.)
-    s = (abs(dec)-abs(deg)-m/60.)*3600.
-    out = f"{deg:2d} deg {m:2d} m {s:2.4f} s"
-
-    return out
-
-
-def gmtstring(gmt):
-    """Convert a gmt in fractional hours to formatted string
-    """
-
-    if gmt > 24.0:
-        gmt = gmt-24.0
-    h = int(gmt)
-    m = int((gmt-h)*60.)
-    s = (gmt-h-m/60.)*3600.
-    out = f"{h:02d}:{m:02d}:{s:2.4f}"
-
-    return out
-
-# TODO fix this hacky way to do it!!
-
-
-def gmst_to_utc(gmst, mjd):
-    """Convert gmst times in hours to utc hours using astropy.
-
-    Inverse of :func:`utc_to_gmst` on the canonical solar day of ``mjd``:
-    returns UTC in [0, 24). The local sidereal rate is sampled directly
-    from astropy across that day (mean GMST is polynomial in UT, so
-    within a day it's linear to ~1e-14 hours -- no iteration needed).
-
-    Note: an obs that spans > ~23.93 solar hours aliases in GMST and
-    cannot be uniquely round-tripped through this inverse; callers
-    must keep their obs inside a single sidereal day.
-    """
-
-    mjd = int(mjd)
-    t0 = at.Time(mjd, format='mjd', scale='utc')
-    t1 = at.Time(mjd + 1, format='mjd', scale='utc')
-    s0 = t0.sidereal_time('mean', 'greenwich').hour
-    s1 = t1.sidereal_time('mean', 'greenwich').hour
-    # Sidereal hours elapsed in 24 solar hours (~24.0657)
-    sidereal_per_day = ((s1 - s0) % 24.0) + 24.0
-    # Wrap into [0, 24) sidereal so utc lands in [0, 24) of mjd
-    delta_sidereal = (gmst - s0) % 24.0
-    time_utc = delta_sidereal * 24.0 / sidereal_per_day
-
-    return time_utc
-
-
-def utc_to_gmst(utc, mjd):
-    """Convert utc times in hours to gmst using astropy
-    """
-
-    mjd = int(mjd)  # MJD should always be an integer, but was float in older versions of the code
-    time_obj = at.Time(utc/24.0 + np.floor(mjd), format='mjd', scale='utc')
-    time_sidereal = time_obj.sidereal_time('mean', 'greenwich').hour
-
-    return time_sidereal
-
-
 def earthrot(vecs, thetas):
     """Rotate a vector / array of vectors about the z-direction by theta / array of thetas (radian)
     """
@@ -1195,6 +370,548 @@ def xyz_2_latlong(obsvecs):
 
     return out
 
+def sat_skyfield_from_elements(satname, epoch_mjd, perigee_mjd,
+                               period_days, eccentricity,
+                               inclination, arg_perigee, long_ascending):
+
+    """skyfield EarthSatellite object from keplerian orbital elements
+       perfect keplerian orbit is assumed, no derivatives
+       epoch, pericenter given in mjd
+       period given in days
+       inclination, arg_perigee, long_ascending given in degrees
+    """
+
+    if not(0<=eccentricity<1):
+        raise Exception("eccentricity must be between 0 and 1")
+    if not(0<=inclination<=180):
+        raise Exception("inclination must be between 0 and 180")
+    if not(0<=arg_perigee<=180):
+        raise Exception("arg_perigee must be between 0 and 180")
+    if not(0<=long_ascending<=360):
+        raise Exception("arg_perigee must be between 0 and 360")
+
+    satrec = Satrec()
+    ts = skyfield.api.load.timescale()
+    ref_mjd = 33281. # mjd 1949 December 31 00:00 UT
+    epoch_wrt_ref = epoch_mjd - ref_mjd
+
+    inclination_rad = inclination*ehc.DEGREE
+    arg_perigee_rad = arg_perigee*ehc.DEGREE
+    long_ascending_rad = long_ascending*ehc.DEGREE
+
+    mean_motion = 2*np.pi/(period_days*24.*60.) # radians/minute
+
+    mean_anomaly = mean_motion*(epoch_mjd - perigee_mjd)
+    mean_anomaly = np.mod(mean_anomaly, 2*np.pi)
+
+    satrec.sgp4init(
+        WGS72,           # gravity model
+        'i',             # 'a' = old AFSPC mode, 'i' = improved mode
+        1,               # satnum: Satellite number
+        epoch_wrt_ref,     # epoch: days since 1949 December 31 00:00 UT
+        0.0,             # bstar: drag coefficient (/earth radii)
+        0.0,             # ndot: ballistic coefficient (revs/day)
+        0.0,             # nddot: second derivative of mean motion (revs/day^3)
+        eccentricity,    # ecco: eccentricity
+        arg_perigee_rad,     # argpo: argument of perigee (radians)
+        inclination_rad,     # inclo: inclination (radians)
+        mean_anomaly,    # mo: mean anomaly (radians)
+        mean_motion,     # no_kozai: mean motion (radians/minute)
+        long_ascending_rad,    # nodeo: right ascension of ascending node (radians)
+    )
+    sat_skyfield = skyfield.api.EarthSatellite.from_satrec(satrec, ts)
+
+    return sat_skyfield
+
+def sat_skyfield_from_tle(satname, line1, line2):
+    ts = skyfield.api.load.timescale()
+    sat_skyfield = skyfield.api.EarthSatellite(line1, line2, satname, ts)
+    return sat_skyfield
+
+def sat_skyfield_from_ephementry(satname, ephem, epoch_mjd):
+    if len(ephem[satname])==3: # TLE
+        line1 = ephem[satname][1]
+        line2 = ephem[satname][2]
+        sat = sat_skyfield_from_tle(satname, line1, line2)
+    elif len(ephem[satname])==6: #keplerian elements
+        elements = ephem[satname]
+        sat = sat_skyfield_from_elements(satname, epoch_mjd,
+                                         elements[0],elements[1],elements[2],elements[3],elements[4],elements[5])
+    else:
+        raise Exception(f"ephemeris format not recognized for {satname}")
+
+    return sat
+
+def orbit_skyfield(sat, fracmjds, whichout='itrs'):
+
+    """uses skyfield to propagate a earth satellite orbit and return x,y,z coordinates in co-rotating earth frame
+       sat is a skyfield.sgp4lib.EarthSatellite object
+       times is a list of fractional mjds
+       whichout is 'itrs' (co-rotating) or 'gcrs' (fixed x-axis to equinox)
+    """
+
+    #fractional days of orbit in jd
+    mjd_to_jd = 2400000.5
+    ts = skyfield.api.load.timescale()
+    t = ts.ut1_jd(mjd_to_jd+fracmjds)
+
+    # propagate orbit
+    time_data = sat.at(t)
+
+    if whichout=='gcrs':
+        # GCRS coordinates in km
+        positions = time_data.xyz.m
+
+    elif whichout=='itrs':
+        # get coordinates in earth frame (WGS84 ellipsiod)
+        geographic_position = skyfield.api.wgs84.geographic_position_of(time_data)
+        positions = geographic_position.itrs_xyz.m
+
+    else:
+        raise Exception("orbit_skyfield whichout must be 'itrs' or 'gcrs'")
+
+    return positions
+##################################################################################################
+# Unpack Helpers
+##################################################################################################
+
+_STOKES_VTYPES = ('vis', 'qvis', 'uvis', 'vvis')
+_CIRC_VTYPES = ('rrvis', 'llvis', 'rlvis', 'lrvis')
+_LIN_VTYPES = ('xxvis', 'yyvis', 'xyvis', 'yxvis')
+_GENERIC_VTYPES = ('p1p1vis', 'p2p2vis', 'p1p2vis', 'p2p1vis')
+
+
+def vis_component(l, vtype, polrep):
+    """Return (visibility, sigma) for a single correlation `vtype` from one
+       datatable `l`. Native correlations are read directly; correlations in a
+       different basis are synthesized through ehtim.observing.pol_conventions
+       so the basis-transform conventions live in exactly one place.
+    """
+    if vtype == 'pvis':  # polarized visibility == RL == Q + iU
+        vtype = 'rlvis'
+
+    if polrep == 'mixed':
+        if vtype in _STOKES_VTYPES:
+            vals, sigs = unpack_mixed_stokes(l, vtype)
+            return vals, sigs
+
+        if vtype in _CIRC_VTYPES + _LIN_VTYPES:
+            pref = vtype[:-3]    # 'rrvis' -> 'rr'; the two chars are the feed letters
+            vals, sigs, n_nan = unpack_mixed_correlation(l, pref[0], pref[1])
+            if n_nan > 0:
+                warnings.warn(
+                    f"vis_component on a mixed-feed obs: {n_nan} rows have "
+                    f"no {pref.upper()} correlation and were returned as NaN.",
+                    ehw.MixedPolUnpackNaNWarning)
+
+            return vals, sigs
+
+    if polrep == 'stokes':
+        if vtype in _STOKES_VTYPES:
+            return l[vtype], l[vtype[:-3] + 'sigma']
+        i, q, u, v = l['vis'], l['qvis'], l['uvis'], l['vvis']
+        si, sq, su, sv = l['sigma'], l['qsigma'], l['usigma'], l['vsigma']
+        if vtype in _CIRC_VTYPES:
+            vals = dict(zip(_CIRC_VTYPES, pc.stokes_to_circ(i, q, u, v)))
+            sigs = dict(zip(_CIRC_VTYPES, pc.stokes_to_circ_sigma(si, sq, su, sv)))
+            return vals[vtype], sigs[vtype]
+        if vtype in _LIN_VTYPES:
+            vals = dict(zip(_LIN_VTYPES, pc.stokes_to_lin(i, q, u, v)))
+            sigs = dict(zip(_LIN_VTYPES, pc.stokes_to_lin_sigma(si, sq, su, sv)))
+            return vals[vtype], sigs[vtype]
+
+    elif polrep == 'circ':
+        if vtype in _CIRC_VTYPES:
+            return l[vtype], l[vtype[:-3] + 'sigma']
+        if vtype in _STOKES_VTYPES:
+            rr, ll, rl, lr = l['rrvis'], l['llvis'], l['rlvis'], l['lrvis']
+            srr, sll, srl, slr = l['rrsigma'], l['llsigma'], l['rlsigma'], l['lrsigma']
+            vals = dict(zip(_STOKES_VTYPES, pc.circ_to_stokes(rr, ll, rl, lr)))
+            sigs = dict(zip(_STOKES_VTYPES, pc.circ_to_stokes_sigma(srr, sll, srl, slr)))
+            return vals[vtype], sigs[vtype]
+
+    elif polrep == 'lin':
+        if vtype in _LIN_VTYPES:
+            return l[vtype], l[vtype[:-3] + 'sigma']
+        if vtype in _STOKES_VTYPES:
+            xx, yy, xy, yx = l['xxvis'], l['yyvis'], l['xyvis'], l['yxvis']
+            sxx, syy, sxy, syx = l['xxsigma'], l['yysigma'], l['xysigma'], l['yxsigma']
+            vals = dict(zip(_STOKES_VTYPES, pc.lin_to_stokes(xx, yy, xy, yx)))
+            sigs = dict(zip(_STOKES_VTYPES, pc.lin_to_stokes_sigma(sxx, syy, sxy, syx)))
+            return vals[vtype], sigs[vtype]
+
+    raise Exception(f"vtype {vtype!r} not supported for polrep {polrep!r}")
+
+
+def unpack_generic_slot(data, slot, polrep):
+    """Return (vis, sigma) for a generic feed slot ('p1p1'/'p2p2'/'p1p2'/'p2p1')
+       directly via the DTPOL title alias.
+       Defined for circ/lin/mixed (the slot aliases the physical correlation);
+       stokes has no feed slots."""
+    if polrep == 'stokes':
+        raise Exception(f"unpack: generic slot {slot}vis has no meaning "
+                        "for polrep 'stokes'")
+    return data[slot + 'vis'], data[slot + 'sigma']
+
+
+def unpack_mixed_stokes(data, vtype):
+    """Recover stokes vtype and sigma from a MIXED datatable via
+       coherency_to_stokes, grouped by polbasis.
+       Valid on every row (including heterogeneous baselines)
+       under the ideal-feed assumption."""
+    pb = data['polbasis']
+    scalar = not len(data.shape)   # single-row np.void record
+    n = 1 if scalar else len(data)
+    ivis = np.empty(n, dtype='c16')
+    q = np.empty(n, dtype='c16')
+    u = np.empty(n, dtype='c16')
+    v = np.empty(n, dtype='c16')
+    si = np.empty(n, dtype='f8')
+    sq = np.empty(n, dtype='f8')
+    su = np.empty(n, dtype='f8')
+    sv = np.empty(n, dtype='f8')
+    for code in np.unique(pb):    # loop over unique polbasis values
+        m = (pb == code)
+        t1f, t2f = str(code)[:2], str(code)[2:]    # t1 and t2 feed types
+        iv, qv, uv, vv = pc.coherency_to_stokes(
+            data['p1p1vis'][m], data['p2p2vis'][m],
+            data['p1p2vis'][m], data['p2p1vis'][m], t1f, t2f)
+        siv, sqv, suv, svv = pc.coherency_to_stokes_sigma(
+            data['p1p1sigma'][m], data['p2p2sigma'][m],
+            data['p1p2sigma'][m], data['p2p1sigma'][m], t1f, t2f)
+        ivis[m], q[m], u[m], v[m] = iv, qv, uv, vv
+        si[m], sq[m], su[m], sv[m] = siv, sqv, suv, svv
+
+    if vtype == 'vis':
+        val, sig = ivis, si
+    elif vtype == 'qvis':
+        val, sig = q, sq
+    elif vtype == 'uvis':
+        val, sig = u, su
+    elif vtype == 'vvis':
+        val, sig = v, sv
+    else:
+        raise Exception(f"vtype {vtype!r} not recognized in unpack_mixed_stokes")
+    # single-row input -> scalar out, matching a direct datatable slot read
+    # (make_bispectrum / make_closure_amplitude pass one row at a time)
+    return (val[0], sig[0]) if scalar else (val, sig)
+
+def unpack_mixed_correlation(data, feed_a, feed_b):
+    """Recover physical correlation feed_a * conj(feed_b) (e.g. 'r','r' -> 'rrvis')
+       from a MIXED datatable. Return the matching generic slot where the row's feeds
+       provide it, NaN elsewhere; no coherency transformation.
+       Returns (vis, sigma, n_nanfilled)."""
+    pb = data['polbasis']
+    scalar = not len(data.shape)   # single-row np.void record
+    n = 1 if scalar else len(data)
+    out = np.full(n, np.nan, dtype='c16')
+    sig = np.full(n, np.nan, dtype='f8')
+    n_nan = 0
+    for code in np.unique(pb):    # loop over unique polbasis values
+        m = (pb == code)
+        # which generic slot holds this correlation on this feed pairing (or None)
+        slot = pc.correlation_slot(str(code)[:2], str(code)[2:], feed_a, feed_b)
+        if slot is None:
+            n_nan += int(np.sum(m))
+            continue
+        out[m] = data[slot][m]
+        sig[m] = data[slot[:-3] + 'sigma'][m]
+    # single-row input -> scalar out, matching a direct datatable slot read
+    # (make_bispectrum / make_closure_amplitude pass one row at a time)
+    return (out[0], sig[0], n_nan) if scalar else (out, sig, n_nan)
+
+def unpack_vis(data, field, polrep):
+    """Return (out, sig, ty) for a vis-family field on a stokes/circ/lin/mixed
+       datatable. Direct correlations route through vis_component (so all basis
+       transforms come from pol_conventions); the derived fields (pvis/m/evis/
+       bvis/rrllvis) keep their per-basis algebra.
+       Mixed dtypes NaN fill correlations following unpack_mixed_correlation.
+       Raises for unsupported fields and (field, polrep) combinations."""
+    if field in ['vis', 'amp', 'phase', 'snr', 'sigma', 'sigma_phase']:
+        out, sig = vis_component(data, 'vis', polrep)
+        return out, sig, 'c16'
+    if field in ['qvis', 'qamp', 'qphase', 'qsnr', 'qsigma', 'qsigma_phase']:
+        out, sig = vis_component(data, 'qvis', polrep)
+        return out, sig, 'c16'
+    if field in ['uvis', 'uamp', 'uphase', 'usnr', 'usigma', 'usigma_phase']:
+        out, sig = vis_component(data, 'uvis', polrep)
+        return out, sig, 'c16'
+    if field in ['vvis', 'vamp', 'vphase', 'vsnr', 'vsigma', 'vsigma_phase']:
+        out, sig = vis_component(data, 'vvis', polrep)
+        return out, sig, 'c16'
+    if field in ['pvis', 'pamp', 'pphase', 'psnr', 'psigma', 'psigma_phase']:
+        if polrep in ('stokes', 'circ'):
+            out, sig = vis_component(data, 'rlvis', polrep)  # P = RL
+        elif polrep in ('lin', 'mixed'):
+            q, qsig = vis_component(data, 'qvis', polrep)
+            u, usig = vis_component(data, 'uvis', polrep)
+            out = q + 1j * u
+            sig = np.sqrt(qsig**2 + usig**2)
+        return out, sig, 'c16'
+    if field in ['m', 'mamp', 'mphase', 'msnr', 'msigma', 'msigma_phase']:
+        if polrep == 'stokes':
+            out = (data['qvis'] + 1j * data['uvis']) / data['vis']
+            sig = merr(data['sigma'], data['qsigma'], data['usigma'], data['vis'], out)
+        elif polrep == 'circ':
+            out = 2 * data['rlvis'] / (data['rrvis'] + data['llvis'])
+            sig = merr2(data['rlsigma'], data['rrsigma'], data['llsigma'],
+                        0.5 * (data['rrvis'] + data['llvis']), out)
+        elif polrep in ('lin', 'mixed'):
+            ivis, isig = vis_component(data, 'vis', polrep)
+            q, qsig = vis_component(data, 'qvis', polrep)
+            u, usig = vis_component(data, 'uvis', polrep)
+            out = (q + 1j * u) / ivis
+            sig = merr(isig, qsig, usig, ivis, out)
+        return out, sig, 'c16'
+    if field in ['evis', 'eamp', 'ephase', 'esnr', 'esigma', 'esigma_phase']:
+        ang = np.arctan2(data['u'], data['v'])  # TODO: correct convention EofN?
+        q, qsig = vis_component(data, 'qvis', polrep)
+        u, usig = vis_component(data, 'uvis', polrep)
+        out = (np.cos(2 * ang) * q + np.sin(2 * ang) * u)
+        sig = np.sqrt(0.5 * ((np.cos(2 * ang) * qsig)**2 + (np.sin(2 * ang) * usig)**2))
+        return out, sig, 'c16'
+    if field in ['bvis', 'bamp', 'bphase', 'bsnr', 'bsigma', 'bsigma_phase']:
+        ang = np.arctan2(data['u'], data['v'])  # TODO: correct convention EofN?
+        q, qsig = vis_component(data, 'qvis', polrep)
+        u, usig = vis_component(data, 'uvis', polrep)
+        out = (-np.sin(2 * ang) * q + np.cos(2 * ang) * u)
+        sig = np.sqrt(0.5 * ((np.sin(2 * ang) * qsig)**2 + (np.cos(2 * ang) * usig)**2))
+        return out, sig, 'c16'
+    if field in ['rrvis', 'rramp', 'rrphase', 'rrsnr', 'rrsigma', 'rrsigma_phase']:
+        out, sig = vis_component(data, 'rrvis', polrep)
+        return out, sig, 'c16'
+    if field in ['llvis', 'llamp', 'llphase', 'llsnr', 'llsigma', 'llsigma_phase']:
+        out, sig = vis_component(data, 'llvis', polrep)
+        return out, sig, 'c16'
+    if field in ['rlvis', 'rlamp', 'rlphase', 'rlsnr', 'rlsigma', 'rlsigma_phase']:
+        out, sig = vis_component(data, 'rlvis', polrep)
+        return out, sig, 'c16'
+    if field in ['lrvis', 'lramp', 'lrphase', 'lrsnr', 'lrsigma', 'lrsigma_phase']:
+        out, sig = vis_component(data, 'lrvis', polrep)
+        return out, sig, 'c16'
+    if field in ['xxvis', 'xxamp', 'xxphase', 'xxsnr', 'xxsigma', 'xxsigma_phase']:
+        out, sig = vis_component(data, 'xxvis', polrep)
+        return out, sig, 'c16'
+    if field in ['yyvis', 'yyamp', 'yyphase', 'yysnr', 'yysigma', 'yysigma_phase']:
+        out, sig = vis_component(data, 'yyvis', polrep)
+        return out, sig, 'c16'
+    if field in ['xyvis', 'xyamp', 'xyphase', 'xysnr', 'xysigma', 'xysigma_phase']:
+        out, sig = vis_component(data, 'xyvis', polrep)
+        return out, sig, 'c16'
+    if field in ['yxvis', 'yxamp', 'yxphase', 'yxsnr', 'yxsigma', 'yxsigma_phase']:
+        out, sig = vis_component(data, 'yxvis', polrep)
+        return out, sig, 'c16'
+    if field in ['rrllvis', 'rrllamp', 'rrllphase', 'rrllsnr',
+                 'rrllsigma', 'rrllsigma_phase']:
+        if polrep == 'stokes':
+            out = (data['vis'] + data['vvis']) / (data['vis'] - data['vvis'])
+            sig = (2.0**0.5 * (np.abs(data['vis'])**2 + np.abs(data['vvis'])**2)**0.5
+                   / np.abs(data['vis'] - data['vvis'])**2
+                   * (data['sigma']**2 + data['vsigma']**2)**0.5)
+        elif polrep == 'circ':
+            out = data['rrvis'] / data['llvis']
+            sig = np.sqrt(np.abs(data['rrsigma'] / data['llvis'])**2
+                          + np.abs(data['llsigma'] * data['rrvis'] / data['llvis'])**2)
+        elif polrep == 'mixed':
+            ivis, isig = vis_component(data, 'vis', 'mixed')
+            v, vsig = vis_component(data, 'vvis', 'mixed')
+            out = (ivis + v) / (ivis - v)
+            sig = (2.0**0.5 * (np.abs(ivis)**2 + np.abs(v)**2)**0.5
+                   / np.abs(ivis - v)**2 * (isig**2 + vsig**2)**0.5)
+        else:
+            raise Exception(f"unpack: field {field!r} not supported for "
+                            f"polrep {polrep!r}")
+        return out, sig, 'c16'
+    if field in ['p1p1vis', 'p1p1amp', 'p1p1phase', 'p1p1snr',
+                 'p1p1sigma', 'p1p1sigma_phase']:
+        out, sig = unpack_generic_slot(data, 'p1p1', polrep)
+        return out, sig, 'c16'
+    if field in ['p2p2vis', 'p2p2amp', 'p2p2phase', 'p2p2snr',
+                 'p2p2sigma', 'p2p2sigma_phase']:
+        out, sig = unpack_generic_slot(data, 'p2p2', polrep)
+        return out, sig, 'c16'
+    if field in ['p1p2vis', 'p1p2amp', 'p1p2phase', 'p1p2snr',
+                 'p1p2sigma', 'p1p2sigma_phase']:
+        out, sig = unpack_generic_slot(data, 'p1p2', polrep)
+        return out, sig, 'c16'
+    if field in ['p2p1vis', 'p2p1amp', 'p2p1phase', 'p2p1snr',
+                 'p2p1sigma', 'p2p1sigma_phase']:
+        out, sig = unpack_generic_slot(data, 'p2p1', polrep)
+        return out, sig, 'c16'
+
+    raise Exception(f"{field} is not a valid field \n" +
+                    "valid field values are: " + ' '.join(ehc.FIELDS))
+
+
+##################################################################################################
+# Closure Quantity Construction
+##################################################################################################
+
+
+def uv_area_triangle(u1, v1, u2, v2):
+    """Signed-magnitude area of the uv-plane triangle spanned by two of its baseline vectors.
+
+       For a closure triangle 1-2-3 with baselines b12=(u1,v1) and b23=(u2,v2), the
+       enclosed uv-area is ``A = (1/2) * |u1*v2 - u2*v1|``. Independent of which two
+       of the three baselines are passed; sign-stripped so it can be used directly
+       as an x-axis variable.
+
+       Args:
+           u1, v1 (array-like): uv components of the first baseline (in lambda)
+           u2, v2 (array-like): uv components of the second baseline (in lambda)
+
+       Returns:
+           (numpy.ndarray): triangle uv-area in lambda^2 (>=0)
+    """
+    return 0.5 * np.abs(np.asarray(u1) * np.asarray(v2) - np.asarray(u2) * np.asarray(v1))
+
+
+def uv_area_quadrangle(u1, v1, u2, v2, u3, v3):
+    """Signed-magnitude area of the uv-plane quadrangle for a closure-amplitude quad.
+
+       A closure quadrangle 1-2-3-4 is built from four baselines whose vectors sum to
+       zero; any three are independent. Treating the quadrangle as two triangles
+       sharing a diagonal, ``A = (1/2) * |u1*v2 - u2*v1| + (1/2) * |u2*v3 - u3*v2|``.
+
+       Args:
+           u1..v3 (array-like): uv components of three independent baselines (in lambda)
+
+       Returns:
+           (numpy.ndarray): quadrangle uv-area in lambda^2 (>=0)
+    """
+    u1, v1 = np.asarray(u1), np.asarray(v1)
+    u2, v2 = np.asarray(u2), np.asarray(v2)
+    u3, v3 = np.asarray(u3), np.asarray(v3)
+    return 0.5 * (np.abs(u1 * v2 - u2 * v1) + np.abs(u2 * v3 - u3 * v2))
+
+
+def valid_closure_vtypes(polrep):
+    """Visibility types from which closure quantities can be formed for a polrep.
+
+       Stokes is the complete basis: it can synthesize both circular and linear
+       correlations. Each feed basis can give its own correlations plus Stokes,
+       but not the other feed basis directly (that would need the two-step
+       circ<->stokes<->lin composition, which is out of scope for the kernels).
+    """
+    if polrep == 'stokes':
+        return _STOKES_VTYPES + _CIRC_VTYPES + _LIN_VTYPES
+    if polrep == 'circ':
+        return _CIRC_VTYPES + _STOKES_VTYPES
+    if polrep == 'lin':
+        return _LIN_VTYPES + _STOKES_VTYPES
+    if polrep == 'mixed':
+        # Permissive: all feed-basis names pass here so the per-triangle filter
+        # (closure_skip_polbasis) can reject Stokes/generic vtypes in the body.
+        return _STOKES_VTYPES + _CIRC_VTYPES + _LIN_VTYPES + _GENERIC_VTYPES
+    raise Exception(f"unsupported polrep {polrep!r} for closure quantities")
+
+
+def closure_skip_polbasis(vtype):
+    """For a mixed-feed observation, return the homogeneous per-baseline polbasis that a
+       closure of this vtype requires. Raises for vtypes with no single-baseline
+       feed-basis meaning (Stokes or generic p1p1vis-style)."""
+    if vtype in _CIRC_VTYPES or vtype == 'pvis':
+        return 'rlrl'
+    if vtype in _LIN_VTYPES:
+        return 'xyxy'
+    raise Exception(
+        f"closure quantity vtype={vtype!r} is not implemented on a mixed-feed "
+        "observation: only single-correlation feed-basis vtypes "
+        "(rrvis/llvis/rlvis/lrvis or xxvis/yyvis/xyvis/yxvis) can be formed per "
+        "triangle. Stokes and generic p1p1vis-style closures need a homogeneous "
+        "feed basis; use switch_polrep('stokes') after calibration instead.")
+
+
+def closure_skip_message(n_skipped, count, kind='triangles'):
+    """Message for MixedPolClosureSkipWarning when feed-mixing baselines are
+       dropped. For minimal sets, note that the (site-based) minimal set is not
+       baseline-aware, so some recoverable closures may be lost."""
+    msg = (f"{n_skipped} {kind} skipped: closures require baselines between "
+           "stations with the same polarization basis.")
+    if count in ('min', 'min-cut0bl'):
+        msg += " Minimal set is site-based, not baseline-aware; use count='max' to keep all."
+    return msg
+
+
+def make_bispectrum(l1, l2, l3, vistype, polrep='stokes'):
+    """Make a list of bispectra and errors
+       l1,l2,l3 are full datatables of visibility entries
+       vtype is visibility types
+    """
+
+    # Per-correlation values and sigmas (synthesis routed via pol_conventions)
+    p1, s1 = vis_component(l1, vistype, polrep)
+    p2, s2 = vis_component(l2, vistype, polrep)
+    p3, s3 = vis_component(l3, vistype, polrep)
+
+    var1, var2, var3 = s1**2, s2**2, s3**2
+
+    # Make the bispectrum and its uncertainty
+    bi = p1*p2*p3
+    bisig = np.abs(bi) * np.sqrt(var1/np.abs(p1)**2 +
+                                 var2/np.abs(p2)**2 +
+                                 var3/np.abs(p3)**2)
+
+    return (bi, bisig)
+
+
+def make_closure_amplitude(blue1, blue2, red1, red2, vtype,
+                           ctype='camp', debias=True, polrep='stokes'):
+    """Make a list of closure amplitudes and errors
+       blue1 and blue2 are full datatables numerator entries
+       red1 and red2 are full datatables of denominator entries
+       vtype is the  visibility type
+    """
+
+    if ctype not in ['camp', 'logcamp']:
+        raise Exception("closure amplitude type must be 'camp' or 'logcamp'!")
+
+    # Per-correlation values and sigmas (synthesis routed via pol_conventions).
+    # blue1/blue2 are numerator baselines; red1/red2 are denominator baselines.
+    cblue1, sigblue1 = vis_component(blue1, vtype, polrep)
+    cblue2, sigblue2 = vis_component(blue2, vtype, polrep)
+    cred1, sigred1 = vis_component(red1, vtype, polrep)
+    cred2, sigred2 = vis_component(red2, vtype, polrep)
+
+    # Debias the amplitude
+    if debias:
+        pblue1 = amp_debias(np.abs(cblue1), sigblue1, force_nonzero=True)
+        pblue2 = amp_debias(np.abs(cblue2), sigblue2, force_nonzero=True)
+        pred1 = amp_debias(np.abs(cred1), sigred1, force_nonzero=True)
+        pred2 = amp_debias(np.abs(cred2), sigred2, force_nonzero=True)
+    else:
+        pblue1 = np.abs(cblue1)
+        pblue2 = np.abs(cblue2)
+        pred1 = np.abs(cred1)
+        pred2 = np.abs(cred2)
+
+    # Get snrs
+    snrblue1 = pblue1/sigblue1
+    snrblue2 = pblue2/sigblue2
+    snrred1 = pred1/sigred1
+    snrred2 = pred2/sigred2
+
+    # Compute the closure amplitude and its uncertainty
+    if ctype == 'camp':
+        camp = np.abs((pblue1*pblue2)/(pred1*pred2))
+        camperr = camp * np.sqrt(1./(snrblue1**2) + 1./(snrblue2**2) +
+                                 1./(snrred1**2) + 1./(snrred2**2))
+
+        # Debias
+        if debias:
+            camp = camp_debias(camp, snrred1, snrred2)
+
+    elif ctype == 'logcamp':
+        camp = (np.log(np.abs(pblue1)) + np.log(np.abs(pblue2)) -
+                np.log(np.abs(pred1)) - np.log(np.abs(pred2)))
+        camperr = np.sqrt(1./(snrblue1**2) + 1./(snrblue2**2) +
+                          1./(snrred1**2) + 1./(snrred2**2))
+
+        # Debias
+        if debias:
+            camp = logcamp_debias(camp, snrblue1, snrblue2, snrred1, snrred2)
+
+    return (camp, camperr)
 
 def tri_minimal_set(sites, tarr, tkey):
     """returns a minimal set of triangles for bispectra and closure phase"""
@@ -1284,8 +1001,6 @@ def reduce_tri_minimal(obs, datarr):
 
 # TODO This returns A minimal set if input is maximal, but it is not necessarily the same
 # minimal set as we would from  calling c_amplitudes(count='min'). This is because of  inverses.
-
-
 def reduce_quad_minimal(obs, datarr, ctype='camp'):
     """Reduce a closure amplitude or log closure amplitude array
        FROM a maximal set TO a minimal set
@@ -1392,16 +1107,327 @@ def reduce_quad_minimal(obs, datarr, ctype='camp'):
         out = np.array(out, dtype=dtype)
     return out
 
+##################################################################################################
+# Debiasing Functions
+##################################################################################################
+def amp_debias(amp, sigma, force_nonzero=False):
+    """Return debiased visibility amplitudes
+    """
 
-def qimage(iimage, mimage, chiimage):
-    """Return the Q image from m and chi"""
-    return iimage * mimage * np.cos(2*chiimage)
+    deb2 = np.abs(amp)**2 - np.abs(sigma)**2
+
+    # puts amplitude at 0 if snr < 1
+    deb2 *= (np.nan_to_num(np.abs(amp)) > np.nan_to_num(np.abs(sigma)))
+
+    # raises amplitude to sigma to force nonzero
+    if force_nonzero:
+        deb2 += (np.nan_to_num(np.abs(amp)) < np.nan_to_num(np.abs(sigma))) * np.abs(sigma)**2
+    out = np.sqrt(deb2)
+
+    return out
+
+def camp_debias(camp, snr3, snr4):
+    """Debias closure amplitudes
+       snr3 and snr4 are snr of visibility amplitudes #3 and 4.
+    """
+
+    camp_debias = camp / (1 + 1./(snr3**2) + 1./(snr4**2))
+    return camp_debias
 
 
-def uimage(iimage, mimage, chiimage):
-    """Return the U image from m and chi"""
-    return iimage * mimage * np.sin(2*chiimage)
+def logcamp_debias(log_camp, snr1, snr2, snr3, snr4):
+    """Debias log closure amplitudes
+       The snrs are the snr of the component visibility amplitudes
+    """
 
+    log_camp_debias = log_camp + 0.5*(1./(snr1**2) + 1./(snr2**2) - 1./(snr3**2) - 1./(snr4**2))
+    return log_camp_debias
+
+##################################################################################################
+# Scattering Functions
+##################################################################################################
+
+def gauss_uv(u, v, flux, beamparams, x=0., y=0.):
+    """Return the value of the Gaussian FT with
+       beamparams is [FWHMmaj, FWHMmin, theta, x, y], all in radian
+       x,y are the center coordinates
+    """
+
+    sigma_maj = beamparams[0]/(2*np.sqrt(2*np.log(2)))
+    sigma_min = beamparams[1]/(2*np.sqrt(2*np.log(2)))
+    theta = -beamparams[2]  # theta needs to be negative in this convention!
+
+    # Covariance matrix
+    a = (sigma_min * np.cos(theta))**2 + (sigma_maj*np.sin(theta))**2
+    b = (sigma_maj * np.cos(theta))**2 + (sigma_min*np.sin(theta))**2
+    c = (sigma_min**2 - sigma_maj**2) * np.cos(theta) * np.sin(theta)
+    m = np.array([[a, c], [c, b]])
+
+    uv = np.array([[u[i], v[i]] for i in range(len(u))])
+    x2 = np.array([np.dot(uvi, np.dot(m, uvi)) for uvi in uv])
+
+    g = np.exp(-2 * np.pi**2 * x2)
+    p = np.exp(-2j * np.pi * (u*x + v*y))
+
+    return flux * g * p
+
+
+def rbf_kernel_covariance(x, sigma):
+    """Compute a covariance matrix from an RBF kernel
+
+    Args:
+        x (ndarray): 1D data points for which to compute the covariance
+        sigma (float): std for the covariance. Controls correlation length / time.
+
+    Returns:
+       cov (ndarray): Covariance matrix
+    """
+    x = np.expand_dims(x, 1) if x.ndim == 1 else x
+    norm = -0.5 * scipy.spatial.distance.cdist(x, x, 'sqeuclidean') / sigma**2
+    cov = np.exp(norm)
+    cov *= 1.0 / cov.sum(axis=0)
+    return cov
+
+
+def sgra_kernel_uv(rf, u, v):
+    """Return the value of the Sgr A* scattering kernel at a given u,v (in lambda)
+
+    Args:
+        rf (float): The observation frequency in Hz
+        u (float or ndarray): an array of u coordinates
+        v (float or ndarray): an array of v coordinates
+
+    Returns:
+       g (float ndarray): Sgr A* scattering kernel
+    """
+    u = np.array(u)
+    v = np.array(v)
+    assert u.size == v.size, 'u and v should have the same size'
+
+    lcm = (ehc.C / rf) * 100  # in cm
+    sigma_maj = ehc.FWHM_MAJ * (lcm ** 2) / (2 * np.sqrt(2 * np.log(2))) * ehc.RADPERUAS
+    sigma_min = ehc.FWHM_MIN * (lcm ** 2) / (2 * np.sqrt(2 * np.log(2))) * ehc.RADPERUAS
+    theta = -ehc.POS_ANG * ehc.DEGREE  # theta needs to be negative in this convention!
+
+    # Covariance matrix
+    a = (sigma_min * np.cos(theta)) ** 2 + (sigma_maj * np.sin(theta)) ** 2
+    b = (sigma_maj * np.cos(theta)) ** 2 + (sigma_min * np.sin(theta)) ** 2
+    c = (sigma_min ** 2 - sigma_maj ** 2) * np.cos(theta) * np.sin(theta)
+    m = np.array([[a, c], [c, b]])
+    uv = np.array([u, v])
+
+    x2 = (uv * np.dot(m, uv)).sum(axis=0)
+    g = np.exp(-2 * np.pi ** 2 * x2)
+
+    return g
+
+
+def sgra_kernel_params(rf):
+    """Return elliptical gaussian parameters in radian for the Sgr A* scattering ellipse
+       at a given frequency rf
+    """
+
+    lcm = (ehc.C/rf) * 100  # in cm
+    fwhm_maj_rf = ehc.FWHM_MAJ * (lcm**2) * ehc.RADPERUAS
+    fwhm_min_rf = ehc.FWHM_MIN * (lcm**2) * ehc.RADPERUAS
+    theta = ehc.POS_ANG * ehc.DEGREE
+
+    return np.array([fwhm_maj_rf, fwhm_min_rf, theta])
+
+##################################################################################################
+# Noise Functions
+##################################################################################################
+
+def blnoise(sefd1, sefd2, tint, bw):
+    """Determine the standard deviation of Gaussian thermal noise on a baseline
+       This is the noise on the rr/ll/rl/lr product, not the Stokes parameter
+       2-bit quantization is responsible for the 0.88 factor
+    """
+
+    noise = np.sqrt(sefd1*sefd2/(2*bw*tint))/0.88
+    # noise = np.sqrt(sefd1*sefd2/(bw*tint))/0.88
+
+    return noise
+
+
+def merr(sigma, qsigma, usigma, I, m):
+    """Return the error in mbreve real and imaginary parts given stokes input
+    """
+
+    err = np.sqrt((qsigma**2 + usigma**2 + (sigma*np.abs(m))**2)/(np.abs(I) ** 2))
+
+    return err
+
+
+def merr2(rlsigma, rrsigma, llsigma, I, m):
+    """Return the error in mbreve real and imaginary parts given polprod input
+    """
+
+    err = np.sqrt((rlsigma**2 + (rrsigma**2 + llsigma**2)*np.abs(m)**2)/(np.abs(I) ** 2))
+
+    return err
+
+
+def cerror(sigma):
+    """Return a complex number drawn from a circular complex Gaussian of zero mean
+    """
+
+    noise = np.random.normal(loc=0, scale=sigma) + 1j*np.random.normal(loc=0, scale=sigma)
+    return noise
+
+
+def cerror_hash(sigma, *args):
+    """Return a complex number drawn from a circular complex Gaussian of zero mean
+    """
+
+    reargs = list(args)
+    reargs.append('re')
+    np.random.seed(hash(",".join(map(repr, reargs))) % 4294967295)
+    re = np.random.randn()
+
+    imargs = list(args)
+    imargs.append('im')
+    np.random.seed(hash(",".join(map(repr, imargs))) % 4294967295)
+    im = np.random.randn()
+
+    err = sigma * (re + 1j*im)
+
+    return err
+
+
+def hashmultivariaterandn(size, cov, *args):
+    """set the seed according to a collection of arguments and return random multivariate gaussian var
+    """
+    np.random.seed(hash(",".join(map(repr, args))) % 4294967295)
+    mean = np.zeros(size)
+    noise = np.random.multivariate_normal(mean, cov, check_valid='ignore')
+    return noise
+
+
+def hashrandn(*args):
+    """set the seed according to a collection of arguments and return random gaussian var
+    """
+
+    np.random.seed(hash(",".join(map(repr, args))) % 4294967295)
+    noise = np.random.randn()
+    return noise
+
+
+def hashrand(*args):
+    """set the seed according to a collection of arguments and return random number in 0,1
+    """
+
+    np.random.seed(hash(",".join(map(repr, args))) % 4294967295)
+    noise = np.random.rand()
+    return noise
+
+##################################################################################################
+# Time Functions
+##################################################################################################
+
+def gmst_to_utc(gmst, mjd):
+    """Convert gmst times in hours to utc hours using astropy.
+
+    Inverse of :func:`utc_to_gmst` on the canonical solar day of ``mjd``:
+    returns UTC in [0, 24). The local sidereal rate is sampled directly
+    from astropy across that day (mean GMST is polynomial in UT, so
+    within a day it's linear to ~1e-14 hours -- no iteration needed).
+
+    Note: an obs that spans > ~23.93 solar hours aliases in GMST and
+    cannot be uniquely round-tripped through this inverse; callers
+    must keep their obs inside a single sidereal day.
+    """
+
+    mjd = int(mjd)
+    t0 = at.Time(mjd, format='mjd', scale='utc')
+    t1 = at.Time(mjd + 1, format='mjd', scale='utc')
+    s0 = t0.sidereal_time('mean', 'greenwich').hour
+    s1 = t1.sidereal_time('mean', 'greenwich').hour
+    # Sidereal hours elapsed in 24 solar hours (~24.0657)
+    sidereal_per_day = ((s1 - s0) % 24.0) + 24.0
+    # Wrap into [0, 24) sidereal so utc lands in [0, 24) of mjd
+    delta_sidereal = (gmst - s0) % 24.0
+    time_utc = delta_sidereal * 24.0 / sidereal_per_day
+
+    return time_utc
+
+
+def utc_to_gmst(utc, mjd):
+    """Convert utc times in hours to gmst using astropy
+    """
+
+    mjd = int(mjd)  # MJD should always be an integer, but was float in older versions of the code
+    time_obj = at.Time(utc/24.0 + np.floor(mjd), format='mjd', scale='utc')
+    time_sidereal = time_obj.sidereal_time('mean', 'greenwich').hour
+
+    return time_sidereal
+
+##################################################################################################
+# DFT Functions
+##################################################################################################
+
+def image_centroid(im):
+    """Return the image centroid (in radians)
+    """
+
+    xlist = np.arange(0, -im.xdim, -1)*im.psize + (im.psize*im.xdim)/2.0 - im.psize/2.0
+    ylist = np.arange(0, -im.ydim, -1)*im.psize + (im.psize*im.ydim)/2.0 - im.psize/2.0
+
+    x0 = np.sum(np.outer(0.0*ylist+1.0, xlist).ravel()*im.imvec)/np.sum(im.imvec)
+    y0 = np.sum(np.outer(ylist, 0.0*xlist+1.0).ravel()*im.imvec)/np.sum(im.imvec)
+
+    return np.array([x0, y0])
+
+
+def ftmatrix(pdim, xdim, ydim, uvlist, pulse=ehc.PULSE_DEFAULT, mask=[]):
+    """Return a DFT matrix for the xdim*ydim image with pixel width pdim
+       that extracts spatial frequencies of the uv points in uvlist.
+    """
+
+    xlist = np.arange(0, -xdim, -1)*pdim + (pdim*xdim)/2.0 - pdim/2.0
+    ylist = np.arange(0, -ydim, -1)*pdim + (pdim*ydim)/2.0 - pdim/2.0
+
+    # original sign convention
+    # ftmatrices = [pulse(2*np.pi*uv[0], 2*np.pi*uv[1], pdim, dom="F") *
+    #              np.outer(np.exp(-2j*np.pi*ylist*uv[1]), np.exp(-2j*np.pi*xlist*uv[0]))
+    #              for uv in uvlist]
+
+    # changed the sign convention to agree with BU data (Jan 2017)
+    # this is correct for a u,v definition from site 1-2 as (x1-x2)/lambda
+    ftmatrices = [pulse(2*np.pi*uv[0], 2*np.pi*uv[1], pdim, dom="F") *
+                  np.outer(np.exp(2j*np.pi*ylist*uv[1]), np.exp(2j*np.pi*xlist*uv[0]))
+                  for uv in uvlist]
+    ftmatrices = np.reshape(np.array(ftmatrices), (len(uvlist), xdim*ydim))
+
+    if len(mask):
+        ftmatrices = ftmatrices[:, mask]
+
+    return ftmatrices
+
+
+def ftmatrix_centered(im, pdim, xdim, ydim, uvlist, pulse=ehc.PULSE_DEFAULT):
+    """Return a DFT matrix for the xdim*ydim image with pixel width pdim
+       that extracts spatial frequencies of the uv points in uvlist.
+       in this version, it puts the image centroid at the origin
+    """
+
+    # TODO : there is a residual value for the center being around 0,
+    # maybe we should chop this off to be exactly 0?
+    xlist = np.arange(0, -xdim, -1)*pdim + (pdim*xdim)/2.0 - pdim/2.0
+    ylist = np.arange(0, -ydim, -1)*pdim + (pdim*ydim)/2.0 - pdim/2.0
+    x0 = np.sum(np.outer(0.0*ylist+1.0, xlist).ravel()*im)/np.sum(im)
+    y0 = np.sum(np.outer(ylist, 0.0*xlist+1.0).ravel()*im)/np.sum(im)
+
+    # Now shift the lists
+    xlist = xlist - x0
+    ylist = ylist - y0
+
+    # list of matrices at each spatial freq
+    ftmatrices = [pulse(2*np.pi*uv[0], 2*np.pi*uv[1], pdim, dom="F") *
+                  np.outer(np.exp(-2j*np.pi*ylist*uv[1]), np.exp(-2j*np.pi*xlist*uv[0]))
+                  for uv in uvlist]
+    ftmatrices = np.reshape(np.array(ftmatrices), (len(uvlist), xdim*ydim))
+    return ftmatrices
 
 ##################################################################################################
 # FFT & NFFT helper functions
@@ -1759,6 +1785,171 @@ def recarr_to_ndarr(x, typ):
     y = x.astype(dt).view(typ).reshape(shape)
     return y
 
+def qimage(iimage, mimage, chiimage):
+    """Return the Q image from m and chi"""
+    return iimage * mimage * np.cos(2*chiimage)
+
+
+def uimage(iimage, mimage, chiimage):
+    """Return the U image from m and chi"""
+    return iimage * mimage * np.sin(2*chiimage)
+
+
+def ticks(axisdim, psize, nticks=8):
+    """Return a list of ticklocs and ticklabels
+       psize should be in desired units
+    """
+
+    axisdim = int(axisdim)
+    nticks = int(nticks)
+    if not axisdim % 2:
+        axisdim += 1
+    if nticks % 2:
+        nticks -= 1
+    tickspacing = float(axisdim-1)/nticks
+    ticklocs = np.arange(0, axisdim+1, tickspacing) - 0.5
+    ticklabels = np.around(psize * np.arange((axisdim-1)/2.0, -
+                                             (axisdim)/2.0, -tickspacing), decimals=1)
+
+    return (ticklocs, ticklabels)
+
+
+def power_of_two(target):
+    """Finds the next greatest power of two
+    """
+    cur = 1
+    if target > 1:
+        for i in range(0, int(target)):
+            if (cur >= target):
+                return cur
+            else:
+                cur *= 2
+    else:
+        return 1
+
+
+def paritycompare(perm1, perm2):
+    """Compare the parity of two permutations.
+       Assume both lists are equal length and with same elements
+       Copied from: http://stackoverflow.com/questions/1503072/how-to-check-if-permutations-have-equal-parity
+    """
+
+    perm2 = list(perm2)
+    perm2_map = dict((v, i) for i, v in enumerate(perm2))
+    transCount = 0
+    for loc, p1 in enumerate(perm1):
+        p2 = perm2[loc]
+        if p1 != p2:
+            sloc = perm2_map[p1]
+            perm2[loc], perm2[sloc] = p1, p2
+            perm2_map[p1], perm2_map[p2] = sloc, loc
+            transCount += 1
+
+    if not (transCount % 2):
+        return 1
+    else:
+        return -1
+
+
+def sigtype(datatype):
+    """Return the type of noise corresponding to the data type
+    """
+
+    datatype = str(datatype)
+    if datatype in ['vis', 'amp']:
+        sigmatype = 'sigma'
+    elif datatype in ['qvis', 'qamp']:
+        sigmatype = 'qsigma'
+    elif datatype in ['uvis', 'uamp']:
+        sigmatype = 'usigma'
+    elif datatype in ['vvis', 'vamp']:
+        sigmatype = 'vsigma'
+    elif datatype in ['pvis', 'pamp']:
+        sigmatype = 'psigma'
+    elif datatype in ['evis', 'eamp']:
+        sigmatype = 'esigma'
+    elif datatype in ['bvis', 'bamp']:
+        sigmatype = 'esigma'
+    elif datatype in ['rrvis', 'rramp']:
+        sigmatype = 'rrsigma'
+    elif datatype in ['llvis', 'llamp']:
+        sigmatype = 'llsigma'
+    elif datatype in ['rlvis', 'rlamp']:
+        sigmatype = 'rlsigma'
+    elif datatype in ['lrvis', 'lramp']:
+        sigmatype = 'lrsigma'
+    elif datatype in ['rrllvis', 'rrllamp']:
+        sigmatype = 'rrllsigma'
+    elif datatype in ['m', 'mamp']:
+        sigmatype = 'msigma'
+    elif datatype in ['phase']:
+        sigmatype = 'sigma_phase'
+    elif datatype in ['qphase']:
+        sigmatype = 'qsigma_phase'
+    elif datatype in ['uphase']:
+        sigmatype = 'usigma_phase'
+    elif datatype in ['vphase']:
+        sigmatype = 'vsigma_phase'
+    elif datatype in ['pphase']:
+        sigmatype = 'psigma_phase'
+    elif datatype in ['ephase']:
+        sigmatype = 'esigma_phase'
+    elif datatype in ['bphase']:
+        sigmatype = 'bsigma_phase'
+    elif datatype in ['mphase']:
+        sigmatype = 'msigma_phase'
+    elif datatype in ['rrphase']:
+        sigmatype = 'rrsigma_phase'
+    elif datatype in ['llphase']:
+        sigmatype = 'llsigma_phase'
+    elif datatype in ['rlphase']:
+        sigmatype = 'rlsigma_phase'
+    elif datatype in ['lrphase']:
+        sigmatype = 'lrsigma_phase'
+    elif datatype in ['rrllphase']:
+        sigmatype = 'rrllsigma_phase'
+
+    else:
+        sigmatype = False
+
+    return sigmatype
+
+
+def rastring(ra):
+    """Convert a ra in fractional hours to formatted string
+    """
+    h = int(ra)
+    m = int((ra-h)*60.)
+    s = (ra-h-m/60.)*3600.
+    out = f"{h:2d} h {m:2d} m {s:2.4f} s"
+
+    return out
+
+
+def decstring(dec):
+    """Convert a dec in fractional degrees to formatted string
+    """
+
+    deg = int(dec)
+    m = int((abs(dec)-abs(deg))*60.)
+    s = (abs(dec)-abs(deg)-m/60.)*3600.
+    out = f"{deg:2d} deg {m:2d} m {s:2.4f} s"
+
+    return out
+
+
+def gmtstring(gmt):
+    """Convert a gmt in fractional hours to formatted string
+    """
+
+    if gmt > 24.0:
+        gmt = gmt-24.0
+    h = int(gmt)
+    m = int((gmt-h)*60.)
+    s = (gmt-h-m/60.)*3600.
+    out = f"{h:02d}:{m:02d}:{s:2.4f}"
+
+    return out
 
 def prog_msg(nscan, totscans, msgtype='bar', nscan_last=0):
     """print a progress method for calibration
@@ -1850,105 +2041,5 @@ def prog_msg(nscan, totscans, msgtype='bar', nscan_last=0):
         sys.stdout.write(printstr % barparams)
         sys.stdout.flush()
 
-def sat_skyfield_from_elements(satname, epoch_mjd, perigee_mjd,
-                               period_days, eccentricity,
-                               inclination, arg_perigee, long_ascending):
 
-    """skyfield EarthSatellite object from keplerian orbital elements
-       perfect keplerian orbit is assumed, no derivatives
-       epoch, pericenter given in mjd
-       period given in days
-       inclination, arg_perigee, long_ascending given in degrees
-    """
-
-    if not(0<=eccentricity<1):
-        raise Exception("eccentricity must be between 0 and 1")
-    if not(0<=inclination<=180):
-        raise Exception("inclination must be between 0 and 180")
-    if not(0<=arg_perigee<=180):
-        raise Exception("arg_perigee must be between 0 and 180")
-    if not(0<=long_ascending<=360):
-        raise Exception("arg_perigee must be between 0 and 360")
-
-    satrec = Satrec()
-    ts = skyfield.api.load.timescale()
-    ref_mjd = 33281. # mjd 1949 December 31 00:00 UT
-    epoch_wrt_ref = epoch_mjd - ref_mjd
-
-    inclination_rad = inclination*ehc.DEGREE
-    arg_perigee_rad = arg_perigee*ehc.DEGREE
-    long_ascending_rad = long_ascending*ehc.DEGREE
-
-    mean_motion = 2*np.pi/(period_days*24.*60.) # radians/minute
-
-    mean_anomaly = mean_motion*(epoch_mjd - perigee_mjd)
-    mean_anomaly = np.mod(mean_anomaly, 2*np.pi)
-
-    satrec.sgp4init(
-        WGS72,           # gravity model
-        'i',             # 'a' = old AFSPC mode, 'i' = improved mode
-        1,               # satnum: Satellite number
-        epoch_wrt_ref,     # epoch: days since 1949 December 31 00:00 UT
-        0.0,             # bstar: drag coefficient (/earth radii)
-        0.0,             # ndot: ballistic coefficient (revs/day)
-        0.0,             # nddot: second derivative of mean motion (revs/day^3)
-        eccentricity,    # ecco: eccentricity
-        arg_perigee_rad,     # argpo: argument of perigee (radians)
-        inclination_rad,     # inclo: inclination (radians)
-        mean_anomaly,    # mo: mean anomaly (radians)
-        mean_motion,     # no_kozai: mean motion (radians/minute)
-        long_ascending_rad,    # nodeo: right ascension of ascending node (radians)
-    )
-    sat_skyfield = skyfield.api.EarthSatellite.from_satrec(satrec, ts)
-
-    return sat_skyfield
-
-def sat_skyfield_from_tle(satname, line1, line2):
-    ts = skyfield.api.load.timescale()
-    sat_skyfield = skyfield.api.EarthSatellite(line1, line2, satname, ts)
-    return sat_skyfield
-
-def sat_skyfield_from_ephementry(satname, ephem, epoch_mjd):
-    if len(ephem[satname])==3: # TLE
-        line1 = ephem[satname][1]
-        line2 = ephem[satname][2]
-        sat = sat_skyfield_from_tle(satname, line1, line2)
-    elif len(ephem[satname])==6: #keplerian elements
-        elements = ephem[satname]
-        sat = sat_skyfield_from_elements(satname, epoch_mjd,
-                                         elements[0],elements[1],elements[2],elements[3],elements[4],elements[5])
-    else:
-        raise Exception(f"ephemeris format not recognized for {satname}")
-
-    return sat
-
-def orbit_skyfield(sat, fracmjds, whichout='itrs'):
-
-    """uses skyfield to propagate a earth satellite orbit and return x,y,z coordinates in co-rotating earth frame
-       sat is a skyfield.sgp4lib.EarthSatellite object
-       times is a list of fractional mjds
-       whichout is 'itrs' (co-rotating) or 'gcrs' (fixed x-axis to equinox)
-    """
-
-    #fractional days of orbit in jd
-    mjd_to_jd = 2400000.5
-    ts = skyfield.api.load.timescale()
-    t = ts.ut1_jd(mjd_to_jd+fracmjds)
-
-    # propagate orbit
-    time_data = sat.at(t)
-
-    if whichout=='gcrs':
-        # GCRS coordinates in km
-        positions = time_data.xyz.m
-
-    elif whichout=='itrs':
-        # get coordinates in earth frame (WGS84 ellipsiod)
-        geographic_position = skyfield.api.wgs84.geographic_position_of(time_data)
-        positions = geographic_position.itrs_xyz.m
-
-    else:
-        raise Exception("orbit_skyfield whichout must be 'itrs' or 'gcrs'")
-
-    return positions
 
