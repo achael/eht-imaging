@@ -19,6 +19,8 @@
 import matplotlib.pyplot as plt
 import numpy as np
 
+from ehtim.backends import array_namespace
+
 try:
     from pynfft.nfft import NFFT
     _HAS_NFFT = True
@@ -27,7 +29,7 @@ except ImportError:
     _HAS_NFFT = False
 
 from ehtim.const_def import FFT_PAD_DEFAULT, GRIDDER_P_RAD_DEFAULT, NFFT_EPS_DEFAULT, RADPERAS
-from ehtim.observing.obs_helpers import NFFTInfo, ftmatrix, ticks
+from ehtim.observing.obs_helpers import NFFTInfo, ftmatrix, nufft2_backend, ticks
 
 TANWIDTH_M = 0.5
 TANWIDTH_V = 1
@@ -66,11 +68,11 @@ def make_i_image(imarr):
     return imarr[0]
 
 def make_p_image(imarr):
-    """construct a polarimetric image P = RL = Q + iU
+    """construct a polarimetric image P = RL = Q + iU (see CONVENTIONS at top)
     """
-    # NOTE! We replaced EVPA chi with phi=2chi in the imarr
-    # see conventions above
-    pimage = imarr[0] * imarr[1] * np.exp(1j*imarr[2]) * np.cos(imarr[3])
+
+    xp = array_namespace(imarr)
+    pimage = imarr[0] * imarr[1] * xp.exp(1j*imarr[2]) * xp.cos(imarr[3])
 
     return pimage
 
@@ -78,7 +80,8 @@ def make_m_image(imarr):
     """construct a polarimetric ratrio image abs(P/I) = abs(Q + iU)/I
     """
 
-    mimage = imarr[1] * np.cos(imarr[3])
+    xp = array_namespace(imarr)
+    mimage = imarr[1] * xp.cos(imarr[3])
 
     return mimage
 
@@ -101,15 +104,18 @@ def make_q_image(imarr):
     """construct an image of stokes Q
     """
 
-    qimage = imarr[0] * imarr[1] * np.cos(imarr[2]) *  np.cos(imarr[3])
+    # NOTE! We replaced EVPA chi with phi=2chi in the imarr
+    xp = array_namespace(imarr)
+    qimage = imarr[0] * imarr[1] * xp.cos(imarr[2]) *  xp.cos(imarr[3])
 
     return qimage
 
 def make_u_image(imarr):
     """construct an image of stokes U
     """
-
-    uimage = imarr[0] * imarr[1] * np.sin(imarr[2]) *  np.cos(imarr[3])
+    # NOTE! We replaced EVPA chi with phi=2chi in the imarr
+    xp = array_namespace(imarr)
+    uimage = imarr[0] * imarr[1] * xp.sin(imarr[2]) *  xp.cos(imarr[3])
 
     return uimage
 
@@ -117,7 +123,8 @@ def make_v_image(imarr):
     """construct an image of stokes V
     """
 
-    vimage = imarr[0] * imarr[1] * np.sin(imarr[3])
+    xp = array_namespace(imarr)
+    vimage = imarr[0] * imarr[1] * xp.sin(imarr[3])
 
     return vimage
 
@@ -125,7 +132,8 @@ def make_vf_image(imarr):
     """construct an image of stokes V/I
     """
 
-    vfimage = imarr[1] * np.sin(imarr[3])
+    xp = array_namespace(imarr)
+    vfimage = imarr[1] * xp.sin(imarr[3])
 
     return vfimage
 
@@ -135,13 +143,14 @@ def polcv(imarr):
        input is solver values, output is physical values
     """
 
+    xp = array_namespace(imarr)
     rho_prime =  imarr[1]
-    rho = 0.5 + np.arctan(rho_prime/TANWIDTH_M)/np.pi
+    rho = 0.5 + xp.arctan(rho_prime/TANWIDTH_M)/np.pi
 
     psi_prime = imarr[3]
-    psi = np.arctan(psi_prime/TANWIDTH_PSI)
+    psi = xp.arctan(psi_prime/TANWIDTH_PSI)
 
-    out = np.array((imarr[0], rho, imarr[2], psi))
+    out = xp.stack((imarr[0], rho, imarr[2], psi))
     return out
 
 def polcv_r(imarr):
@@ -189,24 +198,35 @@ def polcv_grad(imarr, gradarr):
     return out
 
 
+def _rho_psi_safe(xp, mfrac, vfrac):
+    """rho=sqrt(mfrac^2+vfrac^2), psi=arcsin(vfrac/rho), guarded so jax.grad stays finite
+    at zero-polarization pixels (sqrt(0) and arcsin(+/-1) singularities). Values are
+    unchanged where rho>0 and |vfrac/rho|<1.
+    """
+    r2 = mfrac**2 + vfrac**2
+    rho = xp.where(r2 > 0, xp.sqrt(xp.where(r2 > 0, r2, 1.0)), 0.0)
+    s = vfrac / xp.where(rho > 0, rho, 1.0)
+    inbound = xp.abs(s) < 1
+    psi = xp.where(inbound, xp.arcsin(xp.where(inbound, s, 0.0)), xp.sign(s) * (np.pi / 2))
+    return rho, psi
+
+
 def mcv(imarr):
     """change of variables m(n') from range (-inf, inf) to (0,1) keeping v=V/I fixed
        input is solver values, output is physical values
     """
-    # when using this transform, transformed imarr[3] is the fixed vfrac=\rho sin(\psi)
-    vfrac = imarr[3]
-    mfrac_max = 1-np.abs(vfrac)
-    if np.any(mfrac_max>1):
-        raise Exception("mfrac_max>1 in mcv!")
+
+    xp = array_namespace(imarr)
+    vfrac = imarr[3] # when using this transform, we interpret transformed imarr[3] as mfrac=\rho sin(\psi)
+    mfrac_max = 1-xp.abs(vfrac)
 
     # transformed imarr[1] is m' --> the transformed mfrac = \rho cos(\psi)
     mfrac_prime =  imarr[1]
-    mfrac = mfrac_max*(0.5 + np.arctan(mfrac_prime/TANWIDTH_M)/np.pi)
+    mfrac = mfrac_max*(0.5 + xp.arctan(mfrac_prime/TANWIDTH_M)/np.pi)
 
-    rho = np.sqrt(mfrac**2 + vfrac**2)
-    psi = np.arcsin(vfrac/rho)
+    rho, psi = _rho_psi_safe(xp, mfrac, vfrac)
 
-    out = np.array((imarr[0], rho, imarr[2], psi))
+    out = xp.stack((imarr[0], rho, imarr[2], psi))
     return out
 
 def mcv_r(imarr):
@@ -276,20 +296,17 @@ def vcv(imarr):
     """change of variables for v(v') from range (-inf,inf) to (-1+|m|,1-|m|) keeping m=P/I fixed
        input is solver values, output is physical values"""
 
-    # when using this transform, transformed imarr[1] is the fixed mfrac=\rho cos(\psi)
-    mfrac = imarr[1]
-    vfrac_max = 1-np.abs(mfrac)
-    if np.any(vfrac_max>1):
-        raise Exception("vfrac_max>1 in vcv!")
+    xp = array_namespace(imarr)
+    mfrac = imarr[1] # when using this transform, we interpret transformed imarr[1] as mfrac=\rho cos(\psi)
+    vfrac_max = 1-xp.abs(mfrac)
 
     # transformed imarr[3] is v' --> the transformed vfrac = \rho sin(\psi)
     vfrac_prime = imarr[3]
-    vfrac = 2*vfrac_max*np.arctan(vfrac_prime/TANWIDTH_V)/np.pi
+    vfrac = 2*vfrac_max*xp.arctan(vfrac_prime/TANWIDTH_V)/np.pi
 
-    rho = np.sqrt(mfrac**2 + vfrac**2)
-    psi = np.arcsin(vfrac/rho)
+    rho, psi = _rho_psi_safe(xp, mfrac, vfrac)
 
-    out = np.array((imarr[0], rho, imarr[2], psi))
+    out = xp.stack((imarr[0], rho, imarr[2], psi))
     return out
 
 def vcv_r(imarr):
@@ -452,9 +469,10 @@ def chisq_p(imarr, Amatrix, p, sigmap):
     """Polarimetric visibility chi-squared
     """
 
+    xp = array_namespace(imarr)
     pimage = make_p_image(imarr)
-    psamples = np.dot(Amatrix, pimage)
-    chisq =  np.sum(np.abs(p - psamples)**2/(sigmap**2)) / (2*len(p))
+    psamples = xp.dot(Amatrix, pimage)
+    chisq =  xp.sum(xp.abs(p - psamples)**2/(sigmap**2)) / (2*len(p))
     return chisq
 
 def chisqgrad_p(imarr, Amatrix, p, sigmap,pol_solve=POL_SOLVE_DEFAULT):
@@ -500,10 +518,11 @@ def chisq_m(imarr, Amatrix, m, sigmam):
     """Polarimetric ratio chi-squared
     """
 
+    xp = array_namespace(imarr)
     iimage = make_i_image(imarr)
     pimage = make_p_image(imarr)
-    msamples = np.dot(Amatrix, pimage) / np.dot(Amatrix, iimage)
-    chisq = np.sum(np.abs(m - msamples)**2/(sigmam**2)) / (2*len(m))
+    msamples = xp.dot(Amatrix, pimage) / xp.dot(Amatrix, iimage)
+    chisq = xp.sum(xp.abs(m - msamples)**2/(sigmam**2)) / (2*len(m))
     return chisq
 
 def chisqgrad_m(imarr, Amatrix, m, sigmam,pol_solve=POL_SOLVE_DEFAULT):
@@ -553,9 +572,10 @@ def chisq_vvis(imarr, Amatrix, v, sigmav):
     """V visibility chi-squared
     """
 
+    xp = array_namespace(imarr)
     vimage = make_v_image(imarr)
-    vsamples = np.dot(Amatrix, vimage)
-    chisq =  np.sum(np.abs(v - vsamples)**2/(sigmav**2)) / (2*len(v))
+    vsamples = xp.dot(Amatrix, vimage)
+    chisq =  xp.sum(xp.abs(v - vsamples)**2/(sigmav**2)) / (2*len(v))
     return chisq
 
 def chisqgrad_vvis(imarr, Amatrix, v, sigmav, pol_solve=POL_SOLVE_DEFAULT_V):
@@ -596,24 +616,12 @@ def chisqgrad_vvis(imarr, Amatrix, v, sigmav, pol_solve=POL_SOLVE_DEFAULT_V):
 # NFFT Chi-squared and Gradient Functions
 ##################################################################################################
 def chisq_p_nfft(imarr, A, p, sigmap):
-    """P visibility chi-squared
+    """P visibility chi-squared from nfft
     """
+    xp = array_namespace(imarr)
     pimage = make_p_image(imarr)
-
-    #get nfft object
-    nfft_info = A[0]
-    plan = nfft_info.plan
-    pulsefac = nfft_info.pulsefac
-
-    #compute uniform --> nonuniform transform
-    plan.f_hat = pimage.copy().reshape((nfft_info.ydim,nfft_info.xdim)).T
-    plan.trafo()
-    psamples = plan.f.copy()*pulsefac
-
-    #compute chi^2
-    chisq =  np.sum(np.abs(p - psamples)**2/(sigmap**2)) / (2*len(p))
-
-    return chisq
+    psamples = nufft2_backend(pimage, A[0]) * A[0].pulsefac
+    return xp.sum(xp.abs(p - psamples)**2/(sigmap**2)) / (2*len(p))
 
 def chisqgrad_p_nfft(imarr, A, p, sigmap,pol_solve=POL_SOLVE_DEFAULT):
     """P visibility chi-squared gradient
@@ -669,29 +677,15 @@ def chisqgrad_p_nfft(imarr, A, p, sigmap,pol_solve=POL_SOLVE_DEFAULT):
 
 
 def chisq_m_nfft(imarr, A, m, sigmam):
-    """Polarimetric ratio chi-squared
+    """Polarimetric ratio chi-squared from nfft
     """
+    xp = array_namespace(imarr)
     iimage = make_i_image(imarr)
     pimage = make_p_image(imarr)
-
-    #get nfft object
-    nfft_info = A[0]
-    plan = nfft_info.plan
-    pulsefac = nfft_info.pulsefac
-
-    #compute uniform --> nonuniform transform
-    plan.f_hat = iimage.copy().reshape((nfft_info.ydim,nfft_info.xdim)).T
-    plan.trafo()
-    isamples = plan.f.copy()*pulsefac
-
-    plan.f_hat = pimage.copy().reshape((nfft_info.ydim,nfft_info.xdim)).T
-    plan.trafo()
-    psamples = plan.f.copy()*pulsefac
-
-    #compute chi^2
-    msamples = psamples/isamples
-    chisq = np.sum(np.abs(m - msamples)**2/(sigmam**2)) / (2*len(m))
-    return chisq
+    isamples = nufft2_backend(iimage, A[0]) * A[0].pulsefac
+    psamples = nufft2_backend(pimage, A[0]) * A[0].pulsefac
+    msamples = psamples / isamples
+    return xp.sum(xp.abs(m - msamples)**2/(sigmam**2)) / (2*len(m))
 
 def chisqgrad_m_nfft(imarr, A, m, sigmam,pol_solve=POL_SOLVE_DEFAULT):
     """Polarimetric ratio chi-squared gradient
@@ -755,24 +749,12 @@ def chisqgrad_m_nfft(imarr, A, m, sigmam,pol_solve=POL_SOLVE_DEFAULT):
     return gradout
 
 def chisq_vvis_nfft(imarr, A, v, sigmav):
-    """V visibility chi-squared
+    """V visibility chi-squared from nfft
     """
+    xp = array_namespace(imarr)
     vimage = make_v_image(imarr)
-
-    #get nfft object
-    nfft_info = A[0]
-    plan = nfft_info.plan
-    pulsefac = nfft_info.pulsefac
-
-    #compute uniform --> nonuniform transform
-    plan.f_hat = vimage.copy().reshape((nfft_info.ydim,nfft_info.xdim)).T
-    plan.trafo()
-    vsamples = plan.f.copy()*pulsefac
-
-    #compute chi^2
-    chisq =  np.sum(np.abs(v - vsamples)**2/(sigmav**2)) / (2*len(v))
-
-    return chisq
+    vsamples = nufft2_backend(vimage, A[0]) * A[0].pulsefac
+    return xp.sum(xp.abs(v - vsamples)**2/(sigmav**2)) / (2*len(v))
 
 def chisqgrad_vvis_nfft(imarr, A, v, sigmav,pol_solve=POL_SOLVE_DEFAULT):
     """V visibility chi-squared gradient
@@ -838,13 +820,13 @@ def chisqgrad_vvis_nfft(imarr, A, v, sigmav,pol_solve=POL_SOLVE_DEFAULT):
 
 def reg_msimple(imarr, mask, **kwargs):
     """Simple polarimetric entropy regularizer."""
+    xp = array_namespace(imarr)
     flux = kwargs['flux']
     norm = flux if kwargs.get('norm_reg', True) else 1
 
     iimage = make_i_image(imarr)
     mimage = make_m_image(imarr)
-
-    return np.sum(iimage * np.log(mimage)) / norm
+    return xp.sum(iimage * xp.log(mimage)) / norm
 
 
 def reggrad_msimple(imarr, mask, **kwargs):
@@ -879,14 +861,14 @@ def reggrad_msimple(imarr, mask, **kwargs):
 
 def reg_hw(imarr, mask, **kwargs):
     """Holdaway-Wardle polarimetric entropy regularizer."""
+    xp = array_namespace(imarr)
     flux = kwargs['flux']
     norm = flux if kwargs.get('norm_reg', True) else 1
 
     iimage = make_i_image(imarr)
     mimage = make_m_image(imarr)
-
-    return np.sum(iimage * (((1+mimage)/2) * np.log((1+mimage)/2)
-                         + ((1-mimage)/2) * np.log((1-mimage)/2))) / norm
+    return xp.sum(iimage * (((1+mimage)/2) * xp.log((1+mimage)/2)
+                            + ((1-mimage)/2) * xp.log((1-mimage)/2))) / norm
 
 
 def reggrad_hw(imarr, mask, **kwargs):
@@ -924,6 +906,7 @@ def reg_ptv(imarr, mask, **kwargs):
     """Linear polarimetric total-variation regularizer."""
     # embed image if masked
     from ehtim.imaging.imager_utils import embed_imarr
+    xp = array_namespace(imarr)
     if np.any(np.invert(mask)):
         imarr = embed_imarr(imarr, mask, randomfloor=True)
 
@@ -937,10 +920,13 @@ def reg_ptv(imarr, mask, **kwargs):
     # compute TV
     pimage = make_p_image(imarr)
     im = pimage.reshape(ny, nx)
-    impad = np.pad(im, 1, mode='constant', constant_values=0)
-    im_l1 = np.roll(impad, -1, axis=0)[1:ny+1, 1:nx+1]
-    im_l2 = np.roll(impad, -1, axis=1)[1:ny+1, 1:nx+1]
-    return np.sum(np.sqrt(np.abs(im_l1 - im)**2 + np.abs(im_l2 - im)**2 + epsilon)) / norm
+    impad = xp.pad(im, 1, mode='constant', constant_values=0)
+    im_l1 = xp.roll(impad, -1, axis=0)[1:ny+1, 1:nx+1]
+    im_l2 = xp.roll(impad, -1, axis=1)[1:ny+1, 1:nx+1]
+    # epsilon_tv (default 0, matching reg_tv) regularizes the sqrt so the gradient
+    # is finite at near-zero-|P|-difference pixels; epsilon=0 is byte-identical.
+    epsilon = kwargs.get('epsilon_tv', 0.)
+    return xp.sum(xp.sqrt(xp.abs(im_l1 - im)**2 + xp.abs(im_l2 - im)**2 + epsilon)) / norm
 
 
 def reggrad_ptv(imarr, mask, **kwargs):
@@ -982,18 +968,18 @@ def reggrad_ptv(imarr, mask, **kwargs):
     im_l1r2 = np.roll(np.roll(impad, -1, axis=0),  1, axis=1)[1:ny+1, 1:nx+1]
 
     # Denominators: |forward-l1|+|forward-l2|, |back-r1|+|cross|, |back-r2|+|cross|.
+    # epsilon_tv (default 0, matching reg_ptv) keeps these finite at zero-|P| diffs.
+    epsilon = kwargs.get('epsilon_tv', 0.)
     d1 = np.sqrt(np.abs(im_l1 - im)**2 + np.abs(im_l2 - im)**2 + epsilon)
     d2 = np.sqrt(np.abs(im_r1 - im)**2 + np.abs(im_r1l2 - im_r1)**2 + epsilon)
     d3 = np.sqrt(np.abs(im_r2 - im)**2 + np.abs(im_l1r2 - im_r2)**2 + epsilon)
-
-    # The back-neighbor (m2/d2, m3/d3) terms reference a pixel that does not
-    # exist on the first row/column (it is the zero pad), so they must be zeroed
+    # Numerators below use cos/sin of the single-angle difference between
+    # neighbors, from d|P_l1 - P|^2/d|P| = 2|P| - 2|P_l1|*cos(angle(P_l1) - angle(P)).
+    # mask first-row/col back-neighbor terms that don't exist (as reggrad_tv does)
     mask1 = np.zeros(im.shape, dtype=bool)
-    mask1[0, :] = True   # no back-neighbor in axis 0
     mask2 = np.zeros(im.shape, dtype=bool)
-    mask2[:, 0] = True   # no back-neighbor in axis 1
-
-    # compute gradient
+    mask1[0, :] = True
+    mask2[:, 0] = True
     gradout = np.zeros(imarr.shape)
     # dR/dI numerators (chain through |P| = I*m)
     if pol_solve[0] != 0:
@@ -1037,10 +1023,11 @@ def reggrad_ptv(imarr, mask, **kwargs):
 
 def reg_vflux(imarr, mask, **kwargs):
     """Total circular flux regularizer"""
+    xp = array_namespace(imarr)
     vflux = kwargs['vflux']
     norm = np.abs(vflux)**2 if kwargs.get('norm_reg', True) else 1
     vimage = make_v_image(imarr)
-    return (np.sum(vimage) - vflux)**2 / norm
+    return (xp.sum(vimage) - vflux)**2 / norm
 
 
 def reggrad_vflux(imarr, mask, **kwargs):
@@ -1080,10 +1067,11 @@ def reggrad_vflux(imarr, mask, **kwargs):
 
 def reg_l1v(imarr, mask, **kwargs):
     """Stokes V L1-norm regularizer"""
+    xp = array_namespace(imarr)
     vflux = kwargs['vflux']
     norm = np.abs(vflux) if kwargs.get('norm_reg', True) else 1
     vimage = make_v_image(imarr)
-    return np.sum(np.abs(vimage)) / norm
+    return xp.sum(xp.abs(vimage)) / norm
 
 
 def reggrad_l1v(imarr, mask, **kwargs):
@@ -1123,10 +1111,11 @@ def reggrad_l1v(imarr, mask, **kwargs):
 
 def reg_l2v(imarr, mask, **kwargs):
     """Stokes V L2-norm regularizer"""
+    xp = array_namespace(imarr)
     vflux = kwargs['vflux']
     norm = np.abs(vflux**2) if kwargs.get('norm_reg', True) else 1
     vimage = make_v_image(imarr)
-    return np.sum(vimage**2) / norm
+    return xp.sum(vimage**2) / norm
 
 
 def reggrad_l2v(imarr, mask, **kwargs):
@@ -1168,6 +1157,7 @@ def reg_vtv(imarr, mask, **kwargs):
     """Stokes V total-variation regularizer"""
     # embed image if masked
     from ehtim.imaging.imager_utils import embed_imarr
+    xp = array_namespace(imarr)
     if np.any(np.invert(mask)):
         imarr = embed_imarr(imarr, mask, randomfloor=True)
 
@@ -1181,10 +1171,11 @@ def reg_vtv(imarr, mask, **kwargs):
     # compute TV
     vimage = make_v_image(imarr)
     im = vimage.reshape(ny, nx)
-    impad = np.pad(im, 1, mode='constant', constant_values=0)
-    im_l1 = np.roll(impad, -1, axis=0)[1:ny+1, 1:nx+1]
-    im_l2 = np.roll(impad, -1, axis=1)[1:ny+1, 1:nx+1]
-    return np.sum(np.sqrt(np.abs(im_l1 - im)**2 + np.abs(im_l2 - im)**2 + epsilon)) / norm
+    impad = xp.pad(im, 1, mode='constant', constant_values=0)
+    im_l1 = xp.roll(impad, -1, axis=0)[1:ny+1, 1:nx+1]
+    im_l2 = xp.roll(impad, -1, axis=1)[1:ny+1, 1:nx+1]
+    epsilon = kwargs.get('epsilon_tv', 0.)
+    return xp.sum(xp.sqrt(xp.abs(im_l1 - im)**2 + xp.abs(im_l2 - im)**2 + epsilon)) / norm
 
 
 def reggrad_vtv(imarr, mask, **kwargs):
@@ -1210,6 +1201,7 @@ def reggrad_vtv(imarr, mask, **kwargs):
     norm = np.abs(vflux) * psize / beam_size if kwargs.get('norm_reg', True) else 1
 
     # compute necessary images
+    epsilon = kwargs.get('epsilon_tv', 0.)  # default 0 -> byte-identical; matches reg_vtv
     iimage = make_i_image(imarr)
     vimage = make_v_image(imarr)
     vfimage = make_vf_image(imarr)
@@ -1262,6 +1254,7 @@ def reg_vtv2(imarr, mask, **kwargs):
     """Stokes V total-squared-variation regularizer"""
     # embed image if masked
     from ehtim.imaging.imager_utils import embed_imarr
+    xp = array_namespace(imarr)
     if np.any(np.invert(mask)):
         imarr = embed_imarr(imarr, mask, randomfloor=True)
 
@@ -1274,10 +1267,10 @@ def reg_vtv2(imarr, mask, **kwargs):
     # compute TV2
     vimage = make_v_image(imarr)
     im = vimage.reshape(ny, nx)
-    impad = np.pad(im, 1, mode='constant', constant_values=0)
-    im_l1 = np.roll(impad, -1, axis=0)[1:ny+1, 1:nx+1]
-    im_l2 = np.roll(impad, -1, axis=1)[1:ny+1, 1:nx+1]
-    return np.sum((im_l1 - im)**2 + (im_l2 - im)**2) / norm
+    impad = xp.pad(im, 1, mode='constant', constant_values=0)
+    im_l1 = xp.roll(impad, -1, axis=0)[1:ny+1, 1:nx+1]
+    im_l2 = xp.roll(impad, -1, axis=1)[1:ny+1, 1:nx+1]
+    return xp.sum((im_l1 - im)**2 + (im_l2 - im)**2) / norm
 
 
 def reggrad_vtv2(imarr, mask, **kwargs):

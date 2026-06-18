@@ -26,6 +26,7 @@ import scipy.sparse as sps
 import ehtim.const_def as ehc
 import ehtim.observing.obs_helpers as obsh
 from ehtim.backends import array_namespace
+from ehtim.observing.obs_helpers import nufft2_backend
 
 ##################################################################################################
 # Constants & Definitions
@@ -894,23 +895,10 @@ def chisqgrad_logamp_fft(vis_arr, A, amp, sigma):
 
 
 def chisq_vis_nfft(imvec, A, vis, sigma):
-    """Visibility chi-squared from nfft
-    """
-
-    # get nfft object
-    nfft_info = A[0]
-    plan = nfft_info.plan
-    pulsefac = nfft_info.pulsefac
-
-    # compute uniform --> nonuniform transform
-    plan.f_hat = imvec.copy().reshape((nfft_info.ydim, nfft_info.xdim)).T
-    plan.trafo()
-    samples = plan.f.copy()*pulsefac
-
-    # compute chi^2
-    chisq = np.sum(np.abs((samples-vis)/sigma)**2)/(2*len(vis))
-
-    return chisq
+    """Visibility chi-squared from nfft"""
+    xp = array_namespace(imvec)
+    samples = nufft2_backend(imvec, A[0]) * A[0].pulsefac
+    return xp.sum(xp.abs((samples-vis)/sigma)**2)/(2*len(vis))
 
 
 def chisqgrad_vis_nfft(imvec, A, vis, sigma):
@@ -937,23 +925,10 @@ def chisqgrad_vis_nfft(imvec, A, vis, sigma):
 
 
 def chisq_amp_nfft(imvec, A, amp, sigma):
-    """Visibility amplitude chi-squared from nfft
-    """
-    # get nfft object
-    nfft_info = A[0]
-    plan = nfft_info.plan
-    pulsefac = nfft_info.pulsefac
-
-    # compute uniform --> nonuniform transform
-    plan.f_hat = imvec.copy().reshape((nfft_info.ydim, nfft_info.xdim)).T
-    plan.trafo()
-    samples = plan.f.copy()*pulsefac
-
-    # compute chi^2
-    amp_samples = np.abs(samples)
-    chisq = np.sum(np.abs((amp_samples-amp)/sigma)**2)/(len(amp))
-
-    return chisq
+    """Visibility amplitude chi-squared from nfft"""
+    xp = array_namespace(imvec)
+    amp_samples = xp.abs(nufft2_backend(imvec, A[0]) * A[0].pulsefac)
+    return xp.sum(xp.abs((amp_samples-amp)/sigma)**2)/(len(amp))
 
 
 def chisqgrad_amp_nfft(imvec, A, amp, sigma):
@@ -982,38 +957,13 @@ def chisqgrad_amp_nfft(imvec, A, amp, sigma):
 
 
 def chisq_bs_nfft(imvec, A, bis, sigma):
-    """Bispectrum chi-squared from fft"""
-
-    # get nfft objects
-    nfft_info1 = A[0]
-    plan1 = nfft_info1.plan
-    pulsefac1 = nfft_info1.pulsefac
-
-    nfft_info2 = A[1]
-    plan2 = nfft_info2.plan
-    pulsefac2 = nfft_info2.pulsefac
-
-    nfft_info3 = A[2]
-    plan3 = nfft_info3.plan
-    pulsefac3 = nfft_info3.pulsefac
-
-    # compute uniform --> nonuniform transforms
-    plan1.f_hat = imvec.copy().reshape((nfft_info1.ydim, nfft_info1.xdim)).T
-    plan1.trafo()
-    samples1 = plan1.f.copy()*pulsefac1
-
-    plan2.f_hat = imvec.copy().reshape((nfft_info2.ydim, nfft_info2.xdim)).T
-    plan2.trafo()
-    samples2 = plan2.f.copy()*pulsefac2
-
-    plan3.f_hat = imvec.copy().reshape((nfft_info3.ydim, nfft_info3.xdim)).T
-    plan3.trafo()
-    samples3 = plan3.f.copy()*pulsefac3
-
-    # compute chi^2
+    """Bispectrum chi-squared from nfft"""
+    xp = array_namespace(imvec)
+    samples1 = nufft2_backend(imvec, A[0]) * A[0].pulsefac
+    samples2 = nufft2_backend(imvec, A[1]) * A[1].pulsefac
+    samples3 = nufft2_backend(imvec, A[2]) * A[2].pulsefac
     bisamples = samples1*samples2*samples3
-    chisq = np.sum(np.abs((bis - bisamples)/sigma)**2)/(2.*len(bis))
-    return chisq
+    return xp.sum(xp.abs((bis - bisamples)/sigma)**2)/(2.*len(bis))
 
 
 def chisqgrad_bs_nfft(imvec, A, bis, sigma):
@@ -1070,43 +1020,15 @@ def chisqgrad_bs_nfft(imvec, A, bis, sigma):
 
 
 def chisq_cphase_nfft(imvec, A, clphase, sigma):
-    """Closure Phases (normalized) chi-squared from nfft
-    """
-
+    """Closure Phases (normalized) chi-squared from nfft"""
+    xp = array_namespace(imvec)
     clphase = clphase * ehc.DEGREE
     sigma = sigma * ehc.DEGREE
-
-    # get nfft objects
-    nfft_info1 = A[0]
-    plan1 = nfft_info1.plan
-    pulsefac1 = nfft_info1.pulsefac
-
-    nfft_info2 = A[1]
-    plan2 = nfft_info2.plan
-    pulsefac2 = nfft_info2.pulsefac
-
-    nfft_info3 = A[2]
-    plan3 = nfft_info3.plan
-    pulsefac3 = nfft_info3.pulsefac
-
-    # compute uniform --> nonuniform transforms
-    plan1.f_hat = imvec.copy().reshape((nfft_info1.ydim, nfft_info1.xdim)).T
-    plan1.trafo()
-    samples1 = plan1.f.copy()*pulsefac1
-
-    plan2.f_hat = imvec.copy().reshape((nfft_info2.ydim, nfft_info2.xdim)).T
-    plan2.trafo()
-    samples2 = plan2.f.copy()*pulsefac2
-
-    plan3.f_hat = imvec.copy().reshape((nfft_info3.ydim, nfft_info3.xdim)).T
-    plan3.trafo()
-    samples3 = plan3.f.copy()*pulsefac3
-
-    # compute chi^2
-    clphase_samples = np.angle(samples1*samples2*samples3)
-    chisq = (2.0/len(clphase)) * np.sum((1.0 - np.cos(clphase-clphase_samples))/(sigma**2))
-
-    return chisq
+    samples1 = nufft2_backend(imvec, A[0]) * A[0].pulsefac
+    samples2 = nufft2_backend(imvec, A[1]) * A[1].pulsefac
+    samples3 = nufft2_backend(imvec, A[2]) * A[2].pulsefac
+    clphase_samples = xp.angle(samples1*samples2*samples3)
+    return (2.0/len(clphase)) * xp.sum((1.0 - xp.cos(clphase-clphase_samples))/(sigma**2))
 
 
 def chisqgrad_cphase_nfft(imvec, A, clphase, sigma):
@@ -1278,47 +1200,14 @@ def chisqgrad_cphase_diag_nfft(imvec, A, clphase_diag, sigma):
 
 
 def chisq_camp_nfft(imvec, A, clamp, sigma):
-    """Closure Amplitudes (normalized) chi-squared from fft
-    """
-
-    # get nfft objects
-    nfft_info1 = A[0]
-    plan1 = nfft_info1.plan
-    pulsefac1 = nfft_info1.pulsefac
-
-    nfft_info2 = A[1]
-    plan2 = nfft_info2.plan
-    pulsefac2 = nfft_info2.pulsefac
-
-    nfft_info3 = A[2]
-    plan3 = nfft_info3.plan
-    pulsefac3 = nfft_info3.pulsefac
-
-    nfft_info4 = A[3]
-    plan4 = nfft_info4.plan
-    pulsefac4 = nfft_info4.pulsefac
-
-    # compute uniform --> nonuniform transforms
-    plan1.f_hat = imvec.copy().reshape((nfft_info1.ydim, nfft_info1.xdim)).T
-    plan1.trafo()
-    samples1 = plan1.f.copy()*pulsefac1
-
-    plan2.f_hat = imvec.copy().reshape((nfft_info2.ydim, nfft_info2.xdim)).T
-    plan2.trafo()
-    samples2 = plan2.f.copy()*pulsefac2
-
-    plan3.f_hat = imvec.copy().reshape((nfft_info3.ydim, nfft_info3.xdim)).T
-    plan3.trafo()
-    samples3 = plan3.f.copy()*pulsefac3
-
-    plan4.f_hat = imvec.copy().reshape((nfft_info4.ydim, nfft_info4.xdim)).T
-    plan4.trafo()
-    samples4 = plan4.f.copy()*pulsefac4
-
-    # compute chi^2
-    clamp_samples = np.abs((samples1*samples2)/(samples3*samples4))
-    chisq = np.sum(np.abs((clamp - clamp_samples)/sigma)**2)/len(clamp)
-    return chisq
+    """Closure Amplitudes (normalized) chi-squared from nfft"""
+    xp = array_namespace(imvec)
+    samples1 = nufft2_backend(imvec, A[0]) * A[0].pulsefac
+    samples2 = nufft2_backend(imvec, A[1]) * A[1].pulsefac
+    samples3 = nufft2_backend(imvec, A[2]) * A[2].pulsefac
+    samples4 = nufft2_backend(imvec, A[3]) * A[3].pulsefac
+    clamp_samples = xp.abs((samples1*samples2)/(samples3*samples4))
+    return xp.sum(xp.abs((clamp - clamp_samples)/sigma)**2)/len(clamp)
 
 
 def chisqgrad_camp_nfft(imvec, A, clamp, sigma):
@@ -1390,48 +1279,15 @@ def chisqgrad_camp_nfft(imvec, A, clamp, sigma):
 
 
 def chisq_logcamp_nfft(imvec, A, log_clamp, sigma):
-    """Log Closure Amplitudes (normalized) chi-squared from fft
-    """
-
-    # get nfft objects
-    nfft_info1 = A[0]
-    plan1 = nfft_info1.plan
-    pulsefac1 = nfft_info1.pulsefac
-
-    nfft_info2 = A[1]
-    plan2 = nfft_info2.plan
-    pulsefac2 = nfft_info2.pulsefac
-
-    nfft_info3 = A[2]
-    plan3 = nfft_info3.plan
-    pulsefac3 = nfft_info3.pulsefac
-
-    nfft_info4 = A[3]
-    plan4 = nfft_info4.plan
-    pulsefac4 = nfft_info4.pulsefac
-
-    # compute uniform --> nonuniform transforms
-    plan1.f_hat = imvec.copy().reshape((nfft_info1.ydim, nfft_info1.xdim)).T
-    plan1.trafo()
-    samples1 = plan1.f.copy()*pulsefac1
-
-    plan2.f_hat = imvec.copy().reshape((nfft_info2.ydim, nfft_info2.xdim)).T
-    plan2.trafo()
-    samples2 = plan2.f.copy()*pulsefac2
-
-    plan3.f_hat = imvec.copy().reshape((nfft_info3.ydim, nfft_info3.xdim)).T
-    plan3.trafo()
-    samples3 = plan3.f.copy()*pulsefac3
-
-    plan4.f_hat = imvec.copy().reshape((nfft_info4.ydim, nfft_info4.xdim)).T
-    plan4.trafo()
-    samples4 = plan4.f.copy()*pulsefac4
-
-    # compute chi^2
-    log_clamp_samples = (np.log(np.abs(samples1)) + np.log(np.abs(samples2)) -
-                         np.log(np.abs(samples3)) - np.log(np.abs(samples4)))
-    chisq = np.sum(np.abs((log_clamp - log_clamp_samples)/sigma)**2) / (len(log_clamp))
-    return chisq
+    """Log Closure Amplitudes (normalized) chi-squared from nfft"""
+    xp = array_namespace(imvec)
+    samples1 = nufft2_backend(imvec, A[0]) * A[0].pulsefac
+    samples2 = nufft2_backend(imvec, A[1]) * A[1].pulsefac
+    samples3 = nufft2_backend(imvec, A[2]) * A[2].pulsefac
+    samples4 = nufft2_backend(imvec, A[3]) * A[3].pulsefac
+    log_clamp_samples = (xp.log(xp.abs(samples1)) + xp.log(xp.abs(samples2)) -
+                         xp.log(xp.abs(samples3)) - xp.log(xp.abs(samples4)))
+    return xp.sum(xp.abs((log_clamp - log_clamp_samples)/sigma)**2) / (len(log_clamp))
 
 
 def chisqgrad_logcamp_nfft(imvec, A, log_clamp, sigma):
@@ -1852,10 +1708,11 @@ def reggrad_gs(imvec, mask, **kwargs):
 
 def reg_patch(imvec, mask, **kwargs):
     """Patch prior regularizer (CHIRP)"""
+    xp = array_namespace(imvec)
     priorvec = kwargs['nprior']
     flux = kwargs['flux']
     norm = flux**2 if kwargs.get('norm_reg', True) else 1
-    return 0.5 * np.sum((imvec - priorvec)**2) / norm
+    return 0.5 * xp.sum((imvec - priorvec)**2) / norm
 
 
 def reggrad_patch(imvec, mask, **kwargs):
@@ -1869,6 +1726,7 @@ def reggrad_patch(imvec, mask, **kwargs):
 def reg_cm(imvec, mask, **kwargs):
     """Center-of-mass regularizer"""
     # embed image
+    xp = array_namespace(imvec)
     if np.any(np.invert(mask)):
         imvec = embed(imvec, mask, randomfloor=True)
     # parameters and normalization
@@ -1880,7 +1738,7 @@ def reg_cm(imvec, mask, **kwargs):
     xx, yy = np.meshgrid(range(nx//2, -nx//2, -1), range(ny//2, -ny//2, -1))
     xx = psize * xx.flatten()
     yy = psize * yy.flatten()
-    return (np.sum(imvec*xx)**2 + np.sum(imvec*yy)**2) / norm
+    return (xp.sum(imvec*xx)**2 + xp.sum(imvec*yy)**2) / norm
 
 
 def reggrad_cm(imvec, mask, **kwargs):
@@ -1904,6 +1762,7 @@ def reggrad_cm(imvec, mask, **kwargs):
 def reg_tv(imvec, mask, **kwargs):
     """Total Variation regularizer"""
     # embed image
+    xp = array_namespace(imvec)
     if np.any(np.invert(mask)):
         imvec = embed(imvec, mask, randomfloor=True)
     # parameters and normalization
@@ -1914,10 +1773,10 @@ def reg_tv(imvec, mask, **kwargs):
     norm = flux * psize / beam_size if kwargs.get('norm_reg', True) else 1
     # compute TV
     im = imvec.reshape(ny, nx)
-    impad = np.pad(im, 1, mode='constant', constant_values=0)
-    im_l1 = np.roll(impad, -1, axis=0)[1:ny+1, 1:nx+1]
-    im_l2 = np.roll(impad, -1, axis=1)[1:ny+1, 1:nx+1]
-    return np.sum(np.sqrt(np.abs(im_l1 - im)**2 + np.abs(im_l2 - im)**2 + epsilon)) / norm
+    impad = xp.pad(im, 1, mode='constant', constant_values=0)
+    im_l1 = xp.roll(impad, -1, axis=0)[1:ny+1, 1:nx+1]
+    im_l2 = xp.roll(impad, -1, axis=1)[1:ny+1, 1:nx+1]
+    return xp.sum(xp.sqrt(xp.abs(im_l1 - im)**2 + xp.abs(im_l2 - im)**2 + epsilon)) / norm
 
 
 def reggrad_tv(imvec, mask, **kwargs):
@@ -1962,6 +1821,7 @@ def reggrad_tv(imvec, mask, **kwargs):
 def reg_tvlog(imvec, mask, **kwargs):
     """Total Variation Regularizer on the log image"""
     # embed image
+    xp = array_namespace(imvec)
     epsilon = kwargs.get('epsilon_tv', 0.)
     if np.any(np.invert(mask)):
         imvec = embed(imvec, mask, clipfloor=epsilon, randomfloor=True)
@@ -1972,8 +1832,7 @@ def reg_tvlog(imvec, mask, **kwargs):
     logflux = npix * np.abs(np.log(flux / npix))
     log_kwargs = dict(kwargs)
     log_kwargs['flux'] = logflux
-    # compute TV on log image
-    return reg_tv(np.log(imvec), np.ones_like(imvec, dtype=bool), **log_kwargs)
+    return reg_tv(xp.log(imvec), np.ones(imvec.shape, dtype=bool), **log_kwargs)
 
 
 def reggrad_tvlog(imvec, mask, **kwargs):
@@ -1997,6 +1856,7 @@ def reggrad_tvlog(imvec, mask, **kwargs):
 def reg_tv2(imvec, mask, **kwargs):
     """Total Squard Variation regularizer"""
     # embed image
+    xp = array_namespace(imvec)
     if np.any(np.invert(mask)):
         imvec = embed(imvec, mask, randomfloor=True)
     # parameters and normalization
@@ -2006,10 +1866,10 @@ def reg_tv2(imvec, mask, **kwargs):
     norm = psize**4 * flux**2 / beam_size**4 if kwargs.get('norm_reg', True) else 1
     # compute TV2
     im = imvec.reshape(ny, nx)
-    impad = np.pad(im, 1, mode='constant', constant_values=0)
-    im_l1 = np.roll(impad, -1, axis=0)[1:ny+1, 1:nx+1]
-    im_l2 = np.roll(impad, -1, axis=1)[1:ny+1, 1:nx+1]
-    return np.sum((im_l1 - im)**2 + (im_l2 - im)**2) / norm
+    impad = xp.pad(im, 1, mode='constant', constant_values=0)
+    im_l1 = xp.roll(impad, -1, axis=0)[1:ny+1, 1:nx+1]
+    im_l2 = xp.roll(impad, -1, axis=1)[1:ny+1, 1:nx+1]
+    return xp.sum((im_l1 - im)**2 + (im_l2 - im)**2) / norm
 
 
 def reggrad_tv2(imvec, mask, **kwargs):
@@ -2049,6 +1909,7 @@ def reggrad_tv2(imvec, mask, **kwargs):
 def reg_tv2log(imvec, mask, **kwargs):
     """TV2 regularizer on the log image"""
     # embed image
+    xp = array_namespace(imvec)
     epsilon = kwargs.get('epsilon_tv', 0.)
     if np.any(np.invert(mask)):
         imvec = embed(imvec, mask, clipfloor=epsilon, randomfloor=True)
@@ -2059,8 +1920,7 @@ def reg_tv2log(imvec, mask, **kwargs):
     logflux = npix * np.abs(np.log(flux / npix))
     log_kwargs = dict(kwargs)
     log_kwargs['flux'] = logflux
-    # compute TV2 on the log image
-    return reg_tv2(np.log(imvec), np.ones_like(imvec, dtype=bool), **log_kwargs)
+    return reg_tv2(xp.log(imvec), np.ones(imvec.shape, dtype=bool), **log_kwargs)
 
 
 def reggrad_tv2log(imvec, mask, **kwargs):
@@ -2086,6 +1946,7 @@ def reggrad_tv2log(imvec, mask, **kwargs):
 def reg_compact(imvec, mask, **kwargs):
     """compactness regularizer"""
     # embed image
+    xp = array_namespace(imvec)
     if np.any(np.invert(mask)):
         imvec = embed(imvec, mask, randomfloor=True)
     # parameters and normalization
@@ -2098,9 +1959,9 @@ def reg_compact(imvec, mask, **kwargs):
     xx, yy = np.meshgrid(range(nx), range(ny))
     xxpsize = (xx - (nx-1)/2.0) * psize
     yypsize = (yy - (ny-1)/2.0) * psize
-    x0 = np.sum(im * xxpsize) / flux
-    y0 = np.sum(im * yypsize) / flux
-    return np.sum(im * ((xxpsize - x0)**2 + (yypsize - y0)**2)) / norm
+    x0 = xp.sum(im * xxpsize) / flux
+    y0 = xp.sum(im * yypsize) / flux
+    return xp.sum(im * ((xxpsize - x0)**2 + (yypsize - y0)**2)) / norm
 
 
 def reggrad_compact(imvec, mask, **kwargs):
@@ -2130,6 +1991,7 @@ def reggrad_compact(imvec, mask, **kwargs):
 def reg_compact2(imvec, mask, **kwargs):
     """Compactness regularizer, version 2"""
     # embed image
+    xp = array_namespace(imvec)
     if np.any(np.invert(mask)):
         imvec = embed(imvec, mask, randomfloor=True)
     # parameters and normalization
@@ -2142,7 +2004,7 @@ def reg_compact2(imvec, mask, **kwargs):
     xx, yy = np.meshgrid(range(nx), range(ny))
     xxpsize = (xx - (nx-1)/2.0) * psize
     yypsize = (yy - (ny-1)/2.0) * psize
-    return np.sum(im**2 * (xxpsize**2 + yypsize**2)) / norm
+    return xp.sum(im**2 * (xxpsize**2 + yypsize**2)) / norm
 
 
 def reggrad_compact2(imvec, mask, **kwargs):
@@ -2168,6 +2030,7 @@ def reggrad_compact2(imvec, mask, **kwargs):
 def reg_rgauss(imvec, mask, **kwargs):
     """Rgauss regularizer (Issaoun+ 2019)"""
     # embed image
+    xp = array_namespace(imvec)
     if np.any(np.invert(mask)):
         imvec = embed(imvec, mask, randomfloor=True)
     # Gaussian parameters
@@ -2185,13 +2048,12 @@ def reg_rgauss(imvec, mask, **kwargs):
     xlist, ylist = np.meshgrid(range(xdim), range(ydim))
     xx = (xlist - (xdim-1)/2.0) * psize
     yy = (ylist - (ydim-1)/2.0) * psize
-    S = np.sum(im)
-    x0 = np.sum(xx * im) / S
-    y0 = np.sum(yy * im) / S
-    sigxx = np.sum((xx - x0)**2 * im) / S
-    sigyy = np.sum((yy - y0)**2 * im) / S
-    sigxy = np.sum((xx - x0) * (yy - y0) * im) / S
-    # rgauss regularizer
+    S = xp.sum(im)
+    x0 = xp.sum(xx * im) / S
+    y0 = xp.sum(yy * im) / S
+    sigxx = xp.sum((xx - x0)**2 * im) / S
+    sigyy = xp.sum((yy - y0)**2 * im) / S
+    sigxy = xp.sum((xx - x0) * (yy - y0) * im) / S
     rgauss = (sigxx - sigxx_prime)**2 + (sigyy - sigyy_prime)**2 + 2*(sigxy - sigxy_prime)**2
     # reg_rgauss has no norm_reg option; always normalized by major^2 * minor^2.
     return rgauss / (major**2 * minor**2)
@@ -3572,20 +3434,25 @@ def plot_i(im, Prior, nit, chi2_dict, **kwargs):
 def embed(imvec, mask, clipfloor=0., randomfloor=False):
     """Embeds a 1d image vector into the size of boolean embed mask
     """
-
-    out = np.zeros(len(mask))
-
-    # Here's a much faster version than before
-    out[mask.nonzero()] = imvec
-
-    #if clipfloor != 0.0:
+    xp = array_namespace(imvec)
+    mbool = mask.astype(bool)
+    on = mbool.nonzero()[0]
+    off = (~mbool).nonzero()[0]
     if randomfloor:  # prevent total variation gradient singularities
-        out[(mask-1).nonzero()] = clipfloor * \
-            np.abs(np.random.normal(size=len((mask-1).nonzero()[0])))
+        floor = clipfloor * np.abs(np.random.normal(size=len(off)))
     else:
-        out[(mask-1).nonzero()] = clipfloor
+        floor = np.full(len(off), clipfloor)
 
-    return out
+    if xp is np:
+        out = np.zeros(len(mask))
+        out[on] = imvec
+        out[off] = floor
+        return out
+    else:
+        # jax: functional scatter so embed is traceable under jax.grad/jit
+        out = xp.zeros(len(mask))
+        out = out.at[on].set(imvec)
+        return out.at[off].set(floor)
 
 
 def embed_imarr(imarr, mask, clipfloor=0., randomfloor=False):
@@ -3643,17 +3510,25 @@ def embed_imarr(imarr, mask, clipfloor=0., randomfloor=False):
         raise Exception("in embed_imarr, number of masked pixels is not consistent with imarr shape!")
 
     nimage_out = len(mask)
-    outarr = np.empty((nsolve, nimage_out))
-    # Vectorized over the nsolve axis: scatter imarr into the masked columns
-    # of outarr, then fill non-mask columns with clipfloor (or random).
-    not_mask = ~mask.astype(bool)
-    outarr[:, mask.astype(bool)] = imarr
+    # Vectorized over the nsolve axis: scatter imarr into the masked columns,
+    # then fill non-mask columns with clipfloor (or random). Functional on jax.
+    xp = array_namespace(imarr)
+    mbool = mask.astype(bool)
+    on_cols = mbool.nonzero()[0]
+    off_cols = (~mbool).nonzero()[0]
     if randomfloor:
-        outarr[:, not_mask] = clipfloor * np.abs(
-            np.random.normal(size=(nsolve, int(not_mask.sum())))
-        )
+        floor = clipfloor * np.abs(np.random.normal(size=(nsolve, len(off_cols))))
     else:
-        outarr[:, not_mask] = clipfloor
+        floor = np.full((nsolve, len(off_cols)), clipfloor)
+
+    if xp is np:
+        outarr = np.empty((nsolve, nimage_out))
+        outarr[:, on_cols] = imarr
+        outarr[:, off_cols] = floor
+    else:
+        outarr = xp.zeros((nsolve, nimage_out))
+        outarr = outarr.at[:, on_cols].set(imarr)
+        outarr = outarr.at[:, off_cols].set(floor)
 
     if imarrdim == 1:
         outarr = outarr[0]

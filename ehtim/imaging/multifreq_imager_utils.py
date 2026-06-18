@@ -19,6 +19,8 @@
 
 import numpy as np
 
+from ehtim.backends import array_namespace
+
 NORM_REGULARIZER = True
 EPSILON = 1.e-12
 DD_RHOPOL = 1 # transform paramter for multifrequency polarization fraction
@@ -29,6 +31,7 @@ DD_RHOPOL = 1 # transform paramter for multifrequency polarization fraction
 def image_at_freq(mfarr, log_freqratio):
         """Get the image or polarization image tuple from multifrequency data
         """
+        xp = array_namespace(mfarr)
 
         # Stokes I only
         if len(mfarr)==3:
@@ -36,8 +39,8 @@ def image_at_freq(mfarr, log_freqratio):
             alpha  = mfarr[1] # spectral index
             beta   = mfarr[2] # spectral curvature
 
-            logimvec = np.log(imvec0) + alpha*log_freqratio + beta*log_freqratio*log_freqratio
-            imvec = np.exp(logimvec)
+            logimvec = xp.log(imvec0) + alpha*log_freqratio + beta*log_freqratio*log_freqratio
+            imvec = xp.exp(logimvec)
             out = imvec
 
 
@@ -56,25 +59,25 @@ def image_at_freq(mfarr, log_freqratio):
             rm = mfarr[8] # Dimensionless Faraday Rotation Measure
             cm = mfarr[9] # Dimensionless Faraday Conversion Measure
 
-            logimvec = np.log(imvec0) + alpha*log_freqratio + beta*log_freqratio*log_freqratio
-            imvec = np.exp(logimvec)
+            logimvec = xp.log(imvec0) + alpha*log_freqratio + beta*log_freqratio*log_freqratio
+            imvec = xp.exp(logimvec)
 
-            logrhovec_prime = np.log(rhovec0) + alpha_pol*log_freqratio + beta_pol*log_freqratio*log_freqratio
-            rhovec_prime = np.exp(logrhovec_prime)
+            logrhovec_prime = xp.log(rhovec0) + alpha_pol*log_freqratio + beta_pol*log_freqratio*log_freqratio
+            rhovec_prime = xp.exp(logrhovec_prime)
 
             # transformation of rhovec to ensure it is always < 1 at any frequency
             # TODO: what to do about rhoprime=0?
             rhovec = (rhovec_prime**(-DD_RHOPOL) + 1)**(-1/DD_RHOPOL)
 
             # we use dimensionless rm scaled by lambda0^2 = c^2/nu0^2
-            phivec = phivec0 + rm*(np.exp(-2*log_freqratio)-1)
+            phivec = phivec0 + rm*(xp.exp(-2*log_freqratio)-1)
 
             # TODO: we require psi be between -pi/2 and pi/2 for m=rho*cos(psi) to work
             # for now, we will just keep multifrequency V off
             # and dimensionless conversion measure scaled by lamba0^3 = c^3/nu0^3
             psivec = psivec0 #Plot + cm*(np.exp(-3*log_freqratio)-1)
 
-            out = np.array((imvec, rhovec, phivec, psivec))
+            out = xp.stack((imvec, rhovec, phivec, psivec))
 
         else:
             raise Exception("in image_at_freq, len(mfarr) must be 3 or 10!")
@@ -227,9 +230,10 @@ def regularizergrad_mf(imvec, nprior, mask, xdim, ydim, psize, stype, **kwargs):
 
 
 def reg_l2_spec(imvec, mask, **kwargs):
+    xp = array_namespace(imvec)
     priorvec = kwargs['nprior']
     norm = float(len(imvec)) if kwargs.get('norm_reg', True) else 1
-    return np.sum((imvec - priorvec)**2) / norm
+    return xp.sum((imvec - priorvec)**2) / norm
 
 
 def reggrad_l2_spec(imvec, mask, **kwargs):
@@ -240,16 +244,17 @@ def reggrad_l2_spec(imvec, mask, **kwargs):
 
 def reg_tv_spec(imvec, mask, **kwargs):
     from ehtim.imaging.imager_utils import embed
+    xp = array_namespace(imvec)
     if np.any(np.invert(mask)):
         imvec = embed(imvec, mask, clipfloor=0, randomfloor=False)
     nx, ny, psize = kwargs['xdim'], kwargs['ydim'], kwargs['psize']
     beam_size = kwargs.get('beam_size') or psize
     norm = len(imvec) * psize / beam_size if kwargs.get('norm_reg', True) else 1
     im = imvec.reshape(ny, nx)
-    impad = np.pad(im, 1, mode='constant', constant_values=0)
-    im_l1 = np.roll(impad, -1, axis=0)[1:ny+1, 1:nx+1]
-    im_l2 = np.roll(impad, -1, axis=1)[1:ny+1, 1:nx+1]
-    return np.sum(np.sqrt(np.abs(im_l1 - im)**2 + np.abs(im_l2 - im)**2 + EPSILON)) / norm
+    impad = xp.pad(im, 1, mode='constant', constant_values=0)
+    im_l1 = xp.roll(impad, -1, axis=0)[1:ny+1, 1:nx+1]
+    im_l2 = xp.roll(impad, -1, axis=1)[1:ny+1, 1:nx+1]
+    return xp.sum(xp.sqrt(xp.abs(im_l1 - im)**2 + xp.abs(im_l2 - im)**2 + EPSILON)) / norm
 
 
 def reggrad_tv_spec(imvec, mask, **kwargs):

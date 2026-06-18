@@ -58,6 +58,7 @@ from ehtim.imaging.imager_backend import (
     compute_objective_grad,
     compute_reg_dict,
     compute_reggrad_dict,
+    make_objective_jax,
     transform_imarr,
     unpack_imarr,
     validate_limits,
@@ -439,6 +440,10 @@ class Imager:
            Args:
                pol (str): which polarization to image
                grads (bool): whether or not to use image gradients
+               use_jax (bool): use the jax autodiff objective (GPU-capable) in place
+                   of the numpy analytic gradient; the objective is identical
+               jax_device: jax device for the objective when use_jax=True; None uses the
+                   jax default. e.g. jax.devices('gpu')[0] or jax.devices('cpu')[0]
 
                show_updates (bool): whether or not to show imager progress
                update_interval (int): step interval for plotting if show_updates=True
@@ -508,7 +513,19 @@ class Imager:
 
 
         tstart = time.time()
-        if grads:
+        if kwargs.get('use_jax', False):
+            # jax autodiff objective (GPU-capable). make_objective_jax returns a
+            # scipy fun(x) -> (value, grad); jax is imported lazily inside it.
+            fun = make_objective_jax(
+                self._init_arr, self._config, self._which_solve, self._data_tuples,
+                self._logfreqratio_list, len(self.obslist_next),
+                self.dat_term_next, self.reg_term_next,
+                self._prior_arr, self.norm_reg, self._regparams(),
+                self._embed_mask, device=kwargs.get('jax_device', None),
+            )
+            res = opt.minimize(fun, self._init_vec, method='L-BFGS-B', jac=True,
+                               options=optdict, callback=callback_func)
+        elif grads:
             res = opt.minimize(self.objfunc, self._init_vec, method='L-BFGS-B', jac=self.objgrad,
                                options=optdict, callback=callback_func)
         else:

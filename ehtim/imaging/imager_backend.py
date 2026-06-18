@@ -1,6 +1,7 @@
 # imager_backend.py
 # Pure functional backend for imager.py
 
+import warnings
 from collections.abc import Sequence
 from typing import NamedTuple
 
@@ -10,6 +11,7 @@ import ehtim.imaging.imager_utils as imutils
 import ehtim.imaging.multifreq_imager_utils as mfutils
 import ehtim.imaging.pol_imager_utils as polutils
 import ehtim.observing.obs_helpers as obsh
+from ehtim.backends import array_namespace
 
 # -----------------------------------------------------------------------------
 # Naming convention for image arguments throughout this module
@@ -369,6 +371,7 @@ def unpack_imarr(vec, init_arr, which_solve):
       - if which_solve[k] == 0, fall back to `init_arr[k]` (the *initial*
         image, NOT a regularizer prior).
     """
+    xp = array_namespace(vec)
 
     imarrdim = len(init_arr.shape)
     if imarrdim==2:
@@ -384,17 +387,20 @@ def unpack_imarr(vec, init_arr, which_solve):
     if nsolve != len(which_solve):
         raise Exception("in unpack_imarr, init_arr has inconsistent shape with which_solve!")
 
+    # Build the rows then stack, rather than np.empty + in-place assignment, so
+    # jax.grad/jit can trace through: solved slots take the next nimage values of
+    # `vec`, not-solved slots fall back to the initial image. On numpy this is
+    # identical to the old buffer-fill; on jax the host init_arr rows promote to
+    # constants alongside the traced vec slices.
     imct = 0
-    # TODO(jax): build this functionally (e.g. xp.stack of the rows) so
-    # jax.grad(compute_objective) can trace it -- np.empty + in-place assignment
-    # is not jax-traceable.
-    imarr = np.empty((nsolve, nimage))
+    rows = []
     for kk in range(nsolve):
         if which_solve[kk]==0:
-            imarr[kk] = init_arr[kk]
+            rows.append(init_arr[kk])
         else:
-            imarr[kk] = vec[imct*nimage:(imct+1)*nimage]
+            rows.append(vec[imct*nimage:(imct+1)*nimage])
             imct += 1
+    imarr = xp.stack(rows)
 
     if imarrdim==1:
         imarr = imarr[0]
@@ -424,26 +430,32 @@ def transform_imarr(imarr, transforms, which_solve):
     else:
         raise Exception("transform_imarr requires imarr.shape[0] be either 1, 3, 4, or 10!")
 
-    # TODO(jax): the in-place assignments below (outarr[0] = ...) block tracing;
-    # rewrite functionally for the jax objective (Stokes-I just needs xp.exp).
-    outarr = imarr.copy()
-    if nimage==1 and ('log' in transforms):
-        outarr = np.exp(outarr)
-    elif nimage==3 and ('log' in transforms):
-        outarr[0] = np.exp(outarr[0])
+    xp = array_namespace(imarr)
+    if nimage==1:  # single-pol Stokes I: functional so jax.grad/jit can trace it
+        return xp.exp(imarr) if ('log' in transforms) else imarr.copy()
+
+    # pol / mf (nimage 3, 4, 10): functional (stack/concatenate) so jax can trace.
+    if nimage==3:  # multifrequency Stokes I: log on I only
+        if 'log' in transforms:
+            return xp.stack([xp.exp(imarr[0]), imarr[1], imarr[2]])
+        return imarr.copy()
+
+    # Build the 4 Stokes rows (log on I, then polcv/mcv/vcv), keeping any trailing
+    # multifrequency rows (4:nimage) unchanged.
+    row0 = xp.exp(imarr[0]) if (pol_which_solve[0]==1 and ('log' in transforms)) else imarr[0]
+    pol_in = xp.stack([row0, imarr[1], imarr[2], imarr[3]])
+    if (pol_which_solve[1]==1 and pol_which_solve[3]==1 and ('polcv' in transforms)):
+        pol_out = polutils.polcv(pol_in)
+    elif (pol_which_solve[1]==1) and ('mcv' in transforms):
+        pol_out = polutils.mcv(pol_in)
+    elif (pol_which_solve[3]==1) and ('vcv' in transforms):
+        pol_out = polutils.vcv(pol_in)
     else:
+        pol_out = pol_in
 
-        if pol_which_solve[0]==1 and ('log' in transforms):  # full polarization, including stokes I imaging
-            outarr[0] = np.exp(outarr[0])
-
-        if (pol_which_solve[1]==1 and pol_which_solve[3]==1 and ('polcv' in transforms)):
-            outarr[0:4] = polutils.polcv(outarr)
-        elif (pol_which_solve[1]==1) and ('mcv' in transforms):
-            outarr[0:4] = polutils.mcv(outarr)
-        elif (pol_which_solve[3]==1) and ('vcv' in transforms):
-            outarr[0:4] = polutils.vcv(outarr)
-
-    return outarr
+    if nimage==4:
+        return pol_out
+    return xp.concatenate([pol_out, imarr[4:nimage]])
 
 def transform_imarr_inverse(imarr, transforms, which_solve):
     """Apply inverse transformation from physical to solver values for all polarizations"""
@@ -723,9 +735,9 @@ def validate_params(prior, init, config, dat_term_keys, reg_term_keys, freq_list
         raise Exception("Initial image polrep is 'circ': pol_next must be 'RR' or 'LL'")
 
     if (prior.polrep == 'stokes'
-        and pol not in ['I', 'Q', 'U', 'V', 'P','IP','IQU','IV','IQUV']):
+        and pol not in ['I', 'Q', 'U', 'V', 'P','IP','IQU','IV','IQUV','IPV']):
         raise Exception(
-            "Initial image polrep is 'stokes': pol_next must be in 'I', 'Q', 'U', 'V', 'P','IP','IQU','IV','IQUV'!")
+            "Initial image polrep is 'stokes': pol_next must be in 'I', 'Q', 'U', 'V', 'P','IP','IQU','IV','IQUV','IPV'!")
 
     if ('log' in transforms and pol in ['Q', 'U', 'V']):
         raise Exception("Cannot image Stokes Q, U, V with log image transformation!")
@@ -1960,3 +1972,52 @@ def compute_objective_grad(imvec, initvec, config,
     grad = datterm + regterm
     grad = transform_gradients(grad, imcur_prime, transforms, which_solve)
     return pack_imarr(grad, which_solve)
+
+
+def make_objective_jax(initvec, config, which_solve, data_tuples, logfreqratio_list,
+                       n_obs, dat_term, reg_term, priorvec, norm_reg, reg_params,
+                       embed_mask, device=None):
+    """Return a scipy fun(x) -> (value, grad) for the imaging objective, via jax.
+
+    Same arguments as compute_objective minus the solver vector x. The value is
+    compute_objective; the gradient is its jax autodiff, which matches the
+    hand-written compute_objective_grad. Works for any pol mode / ttype the
+    backend supports. jax is imported lazily so `import ehtim` stays jax-free.
+    """
+    import jax
+    import jax.numpy as jnp
+
+    # Double precision is essential: in float32 the gradient is only ~1e-3
+    # accurate (and the nfft tolerance clamps), so warn rather than silently
+    # return a bad gradient.
+    if not jax.config.read("jax_enable_x64"):
+        warnings.warn("jax x64 is disabled -- the objective runs in float32 and "
+                      "gradients will be inaccurate. Set "
+                      "jax.config.update('jax_enable_x64', True) before imaging.",
+                      stacklevel=2)
+
+    # Move arrays onto the chosen device (a GPU if `device` is set) once, up front.
+    def put(a):
+        a = jnp.asarray(a)
+        return jax.device_put(a, device) if device is not None else a
+
+    # Each data tuple may hold a non-array entry (the nfft NFFTInfo); leave it be.
+    data_d = {key: tuple(put(v) if hasattr(v, "shape") else v for v in val)
+              for key, val in data_tuples.items()}
+    prior_d, init_d = put(priorvec), put(initvec)
+
+    # x is the only traced input; capturing everything else lets jit compile once
+    # and reuse that compilation across every L-BFGS-B step.
+    def loss(x):
+        return compute_objective(x, init_d, config, which_solve, data_d,
+                                 logfreqratio_list, n_obs, dat_term, reg_term,
+                                 prior_d, norm_reg, reg_params, embed_mask)
+
+    # jit the value-and-grad so scipy gets both from one compiled call.
+    value_and_grad = jax.jit(jax.value_and_grad(loss))
+
+    def fun(x):
+        value, grad = value_and_grad(jnp.asarray(x))
+        return float(value), np.asarray(grad, dtype=np.float64)
+
+    return fun
