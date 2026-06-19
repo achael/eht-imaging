@@ -219,7 +219,7 @@ class ImagerInitState(NamedTuple):
     data_tuples: dict            # keyed by dname or f"{dname}_{i}"
     embed_mask: np.ndarray       # boolean
     coord_matrix: np.ndarray     # pixel-coord companion to embed_mask
-    logfreqratio_list: list      # log(nu_i / reffreq)
+    logfreqratio_list: np.ndarray  # log(nu_i / reffreq)
     nimage: int                  # number of active pixels = sum(embed_mask)
     which_solve: np.ndarray      # int 0/1 flags
     reffreq: float               # may be re-bound to init.rf when mf=True
@@ -633,15 +633,16 @@ def make_initarr(image, mask, norm_init=False, flux=1,
         # Caller (compute_init_state) decides when random-pol init applies.
         # Here we just honor the flag: True means "use random pol initialization
         # regardless of init image content"; False means "use init image's pol".
+        pol_rng = np.random.default_rng(0)  # seeded so the random pol init is reproducible
         if randompol_lin:
             print("Initializing linear polarization with 20% pol and random orientation!")
-            init_rho = meanpol * (np.ones(nimage) + sigmapol * np.random.rand(nimage))
-            init_phi = np.zeros(nimage) + sigmapol * np.random.rand(nimage)
+            init_rho = meanpol * (np.ones(nimage) + sigmapol * pol_rng.random(nimage))
+            init_phi = np.zeros(nimage) + sigmapol * pol_rng.random(nimage)
 
         if randompol_circ:
             print("Initializing circular polarization with random values!")
-            init_rho = meanpol * (np.ones(nimage) + sigmapol * np.random.rand(nimage))
-            init_psi = np.zeros(nimage) + sigmapol * np.random.rand(nimage)
+            init_rho = meanpol * (np.ones(nimage) + sigmapol * pol_rng.random(nimage))
+            init_psi = np.zeros(nimage) + sigmapol * pol_rng.random(nimage)
 
         if not(mf):
             initarr = np.array((init_I, init_rho, init_phi, init_psi))
@@ -915,10 +916,10 @@ def compute_logfreqratios(freq_list, reffreq):
 
     Returns
     -------
-    list of float
+    np.ndarray
         log(nu_i / reffreq) for each nu_i in freq_list.
     """
-    return [np.log(nu / reffreq) for nu in freq_list]
+    return np.array([np.log(nu / reffreq) for nu in freq_list])
 
 
 def compute_which_solve(config):
@@ -1974,6 +1975,50 @@ def compute_objective_grad(imvec, initvec, config,
     return pack_imarr(grad, which_solve)
 
 
+def _place_jax_arrays(data_tuples, priorvec, initvec, device=None):
+    """Device-place the captured arrays once for a jax objective.
+
+    Returns (data_d, prior_d, init_d, put); `put` places a host array onto the chosen device
+    like the captured ones. Warns if x64 is off -- in float32 the gradient is only ~1e-3
+    accurate (and the nfft tolerance clamps), so we warn rather than return a bad gradient.
+    """
+    import jax
+    import jax.numpy as jnp
+
+    if not jax.config.read("jax_enable_x64"):
+        warnings.warn("jax x64 is disabled -- the objective runs in float32 and "
+                      "gradients will be inaccurate. Set "
+                      "jax.config.update('jax_enable_x64', True) before imaging.",
+                      stacklevel=3)
+
+    def put(a):
+        a = jnp.asarray(a)
+        return jax.device_put(a, device) if device is not None else a
+
+    # Each data tuple may hold a non-array entry (the nfft NFFTInfo); leave it be.
+    data_d = {key: tuple(put(v) if hasattr(v, "shape") else v for v in val)
+              for key, val in data_tuples.items()}
+    return data_d, put(priorvec), put(initvec), put
+
+
+def _prepare_jax_loss(initvec, config, which_solve, data_tuples, logfreqratio_list,
+                      n_obs, dat_term, reg_term, priorvec, norm_reg, reg_params,
+                      embed_mask, device=None):
+    """Build the shared jax loss(x) closure for the imaging objective.
+
+    Device-places the captured arrays once and closes over them so x is the only traced
+    input. Returns (loss, put).
+    """
+    data_d, prior_d, init_d, put = _place_jax_arrays(data_tuples, priorvec, initvec, device)
+
+    def loss(x):
+        return compute_objective(x, init_d, config, which_solve, data_d,
+                                 logfreqratio_list, n_obs, dat_term, reg_term,
+                                 prior_d, norm_reg, reg_params, embed_mask)
+
+    return loss, put
+
+
 def make_objective_jax(initvec, config, which_solve, data_tuples, logfreqratio_list,
                        n_obs, dat_term, reg_term, priorvec, norm_reg, reg_params,
                        embed_mask, device=None):
@@ -1987,31 +2032,9 @@ def make_objective_jax(initvec, config, which_solve, data_tuples, logfreqratio_l
     import jax
     import jax.numpy as jnp
 
-    # Double precision is essential: in float32 the gradient is only ~1e-3
-    # accurate (and the nfft tolerance clamps), so warn rather than silently
-    # return a bad gradient.
-    if not jax.config.read("jax_enable_x64"):
-        warnings.warn("jax x64 is disabled -- the objective runs in float32 and "
-                      "gradients will be inaccurate. Set "
-                      "jax.config.update('jax_enable_x64', True) before imaging.",
-                      stacklevel=2)
-
-    # Move arrays onto the chosen device (a GPU if `device` is set) once, up front.
-    def put(a):
-        a = jnp.asarray(a)
-        return jax.device_put(a, device) if device is not None else a
-
-    # Each data tuple may hold a non-array entry (the nfft NFFTInfo); leave it be.
-    data_d = {key: tuple(put(v) if hasattr(v, "shape") else v for v in val)
-              for key, val in data_tuples.items()}
-    prior_d, init_d = put(priorvec), put(initvec)
-
-    # x is the only traced input; capturing everything else lets jit compile once
-    # and reuse that compilation across every L-BFGS-B step.
-    def loss(x):
-        return compute_objective(x, init_d, config, which_solve, data_d,
-                                 logfreqratio_list, n_obs, dat_term, reg_term,
-                                 prior_d, norm_reg, reg_params, embed_mask)
+    loss, _ = _prepare_jax_loss(initvec, config, which_solve, data_tuples,
+                                logfreqratio_list, n_obs, dat_term, reg_term,
+                                priorvec, norm_reg, reg_params, embed_mask, device)
 
     # jit the value-and-grad so scipy gets both from one compiled call.
     value_and_grad = jax.jit(jax.value_and_grad(loss))
@@ -2021,3 +2044,53 @@ def make_objective_jax(initvec, config, which_solve, data_tuples, logfreqratio_l
         return float(value), np.asarray(grad, dtype=np.float64)
 
     return fun
+
+
+def make_value_and_grad_jax(initvec, config, which_solve, data_tuples, logfreqratio_list,
+                            n_obs, dat_term, reg_term, priorvec, norm_reg, reg_params,
+                            embed_mask, device=None):
+    """Return (value_and_grad, loss, to_device) for the on-device optimizer lane.
+
+    Unlike make_objective_jax -- which jits value_and_grad and returns a host
+    fun(x) that round-trips to numpy every call -- this returns the un-jitted
+    jax.value_and_grad and the loss closure, so the optimizer can jit the whole
+    iteration loop and keep x on device. to_device places a host x0 like the
+    captured arrays.
+    """
+    import jax
+
+    loss, put = _prepare_jax_loss(initvec, config, which_solve, data_tuples,
+                                  logfreqratio_list, n_obs, dat_term, reg_term,
+                                  priorvec, norm_reg, reg_params, embed_mask, device)
+    return jax.value_and_grad(loss), loss, put
+
+
+def make_survey_value_and_grad(initvec, config, which_solve, data_tuples, logfreqratio_list,
+                               n_obs, priorvec, norm_reg, base_reg_params, embed_mask,
+                               device=None):
+    """Return (value_and_grad, loss, to_device, chisq_dict) for parameter surveys.
+
+    Unlike make_value_and_grad_jax (weights baked in), the data-term / reg-term weights and
+    RegParams scalars arrive as a TRACED `hparams` pytree, so jax.vmap can batch a
+    hyperparameter grid while config / data / image structure stay static. `hparams` is
+    {"dat_term": {dname: w}, "reg_term": {regname: w}, "reg_params": {field: scalar}}; every
+    active key must be present (swept ones vary across the batch, fixed ones held constant).
+    `chisq_dict(imcur)` returns the per-term reduced chi^2 of a reconstructed image (the same
+    chi^2 the objective minimizes, weight-independent), for ranking survey reconstructions.
+    """
+    import jax
+
+    data_d, prior_d, init_d, put = _place_jax_arrays(data_tuples, priorvec, initvec, device)
+    dat_keys = sorted(data_d)            # single-frequency survey: keys are the data-term names
+
+    def loss(x, hparams):
+        reg_params = base_reg_params._replace(**hparams["reg_params"])
+        return compute_objective(x, init_d, config, which_solve, data_d, logfreqratio_list,
+                                 n_obs, hparams["dat_term"], hparams["reg_term"], prior_d,
+                                 norm_reg, reg_params, embed_mask)
+
+    def chisq_dict(imcur):
+        return compute_chisq_dict(imcur, dat_keys, config, data_d, logfreqratio_list,
+                                  n_obs, embed_mask)
+
+    return jax.value_and_grad(loss, argnums=0), loss, put, chisq_dict

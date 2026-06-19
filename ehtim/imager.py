@@ -27,7 +27,6 @@ from dataclasses import dataclass
 from typing import Any
 
 import numpy as np
-import scipy.optimize as opt
 
 import ehtim.const_def as ehc
 import ehtim.image
@@ -59,12 +58,14 @@ from ehtim.imaging.imager_backend import (
     compute_reg_dict,
     compute_reggrad_dict,
     make_objective_jax,
+    make_value_and_grad_jax,
     transform_imarr,
     unpack_imarr,
     validate_limits,
     validate_params,
 )
 from ehtim.imaging.imager_utils import embed_imarr
+from ehtim.imaging.optimizers import classify_optimizer, run_optimizer
 
 MAXIT = 200  # number of iterations
 NHIST = 50   # number of steps to store for hessian approx
@@ -203,6 +204,10 @@ class Imager:
         self._fft_pad_factor = kwargs.get('fft_pad_factor', FFT_PAD_DEFAULT)
         self._fft_interp_order = kwargs.get('fft_interp_order', FFT_INTERP_DEFAULT)
         self._nfft_eps = kwargs.get('nfft_eps', NFFT_EPS_DEFAULT)
+        self._optimizer = kwargs.get('optimizer', None)
+        self._shard = kwargs.get('shard', False)
+        self._mesh = kwargs.get('mesh', None)
+        self._shard_axis = kwargs.get('shard_axis', 'baseline')
 
         # multifrequency
         mf = kwargs.get('mf', False)
@@ -513,24 +518,58 @@ class Imager:
 
 
         tstart = time.time()
-        if kwargs.get('use_jax', False):
-            # jax autodiff objective (GPU-capable). make_objective_jax returns a
-            # scipy fun(x) -> (value, grad); jax is imported lazily inside it.
-            fun = make_objective_jax(
+        optimizer = kwargs.get('optimizer', self._optimizer)
+        use_jax = kwargs.get('use_jax', False)
+        device = kwargs.get('jax_device', None)
+        shard = kwargs.get('shard', self._shard)
+        mesh = kwargs.get('mesh', self._mesh)
+        shard_axis = kwargs.get('shard_axis', self._shard_axis)
+
+        # multi-GPU sharding runs through the on-device optax lane, so it needs an
+        # optax optimizer; default to optax-lbfgs when none was given.
+        if shard and (optimizer is None or classify_optimizer(optimizer) != 'optax'):
+            optimizer = 'optax-lbfgs'
+            print("sharding: using optax-lbfgs (the sharded objective runs on-device)")
+
+        # an optax / device optimizer needs the on-device jax objective
+        if optimizer is not None and not use_jax and classify_optimizer(optimizer) == 'optax':
+            print("using the jax objective (required by the optax optimizer)")
+            use_jax = True
+
+        def build_scipy():
+            # host objective/gradient handles for the scipy and callable lanes
+            if use_jax:
+                fun = make_objective_jax(
+                    self._init_arr, self._config, self._which_solve, self._data_tuples,
+                    self._logfreqratio_list, len(self.obslist_next),
+                    self.dat_term_next, self.reg_term_next,
+                    self._prior_arr, self.norm_reg, self._regparams(),
+                    self._embed_mask, device=device,
+                )
+                return fun, True
+            if grads:
+                return self.objfunc, self.objgrad
+            return self.objfunc, None
+
+        def build_device_vg(dev):
+            # un-jitted on-device value_and_grad for the optax lane; sharded across
+            # a GPU mesh when shard=True
+            backend_args = (
                 self._init_arr, self._config, self._which_solve, self._data_tuples,
                 self._logfreqratio_list, len(self.obslist_next),
                 self.dat_term_next, self.reg_term_next,
-                self._prior_arr, self.norm_reg, self._regparams(),
-                self._embed_mask, device=kwargs.get('jax_device', None),
+                self._prior_arr, self.norm_reg, self._regparams(), self._embed_mask,
             )
-            res = opt.minimize(fun, self._init_vec, method='L-BFGS-B', jac=True,
-                               options=optdict, callback=callback_func)
-        elif grads:
-            res = opt.minimize(self.objfunc, self._init_vec, method='L-BFGS-B', jac=self.objgrad,
-                               options=optdict, callback=callback_func)
-        else:
-            res = opt.minimize(self.objfunc, self._init_vec, method='L-BFGS-B',
-                               options=optdict, callback=callback_func)
+            if shard:
+                from ehtim.imaging.sharding import build_mesh, make_sharded_value_and_grad
+                m = mesh if mesh is not None else build_mesh()
+                return make_sharded_value_and_grad(*backend_args, mesh=m, shard_axis=shard_axis)
+            vg, loss_fn, to_device = make_value_and_grad_jax(*backend_args, device=dev)
+            return vg, loss_fn, to_device, None
+
+        res = run_optimizer(optimizer, x0=self._init_vec, optdict=optdict,
+                            callback=callback_func, build_scipy=build_scipy,
+                            build_device_vg=build_device_vg, device=device)
         tstop = time.time()
 
         # Format output

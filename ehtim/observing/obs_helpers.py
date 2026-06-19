@@ -1520,6 +1520,12 @@ def nufft2_backend(imvec, nfft_info):
         return nfft_info.plan.f.copy()
     else:
         # jax_finufft autodiffs the transform; the finufft plan is not used here.
+        transform = getattr(nfft_info, "_sharded_transform", None)
+        if transform is not None:
+            # multi-GPU: imaging.sharding injects a custom_vjp sharded transform here --
+            # jax_finufft's nufft2 transpose is wrong under shard_map, so its backward is
+            # replaced by an explicit forward nufft1 (see make_sharded_value_and_grad).
+            return transform(f_hat.astype(xp.complex128))
         from jax_finufft import nufft2
         uvf = nfft_info.uv_finufft
         return nufft2(f_hat.astype(xp.complex128), uvf[:, 0], uvf[:, 1],
