@@ -28,13 +28,18 @@ import pytest
 
 import ehtim as eh
 from ehtim.imaging.imager_backend import (
+    REGULARIZERS,
+    REGULARIZERS_SPECTRAL,
     ImagerConfig,
     MfConfig,
     compute_chisq_term,
     compute_chisqdata_term,
     compute_chisqgrad_term,
+    compute_regularizer_term,
+    compute_regularizergrad_term,
 )
 from ehtim.imaging.imager_utils import chisq, chisqdata, chisqgrad
+from ehtim.imaging.pol_imager_utils import REGULARIZERS_POL
 
 # --- finite-difference harness (one implementation for every section) ---------
 FD_EPS = 1e-6
@@ -60,17 +65,23 @@ def fd_grad(value_fn, x, eps=FD_EPS):
     return g
 
 
-def assert_grad_close(analytic, fd, rtol=FD_RTOL, label=""):
+def assert_grad_close(analytic, fd, rtol=FD_RTOL, label="", allow_zero=False):
     """Assert analytic == fd by max fractional error relative to the gradient scale.
 
-    A genuinely-zero gradient (scale below ABS_FLOOR) must have a ~0 analytic too;
-    otherwise each component is normalized by max(|analytic|, |fd|, REL_FLOOR*scale)
-    so near-zero components do not blow up the ratio while a real missing term does.
+    Each component is normalized by max(|analytic|, |fd|, REL_FLOOR*scale) so near-zero
+    components do not blow up the ratio while a real missing term gives an O(1) ratio.
+
+    A finite-difference gradient at machine zero (scale below ABS_FLOOR) is rejected as a
+    vacuous test unless ``allow_zero`` -- a slot that is identically zero by construction
+    (e.g. the vvis EVPA slot, or a V regularizer's EVPA slot). When allowed, the analytic
+    slot must be ~0 too. Callers pair this with a per-case non-vacuousness check so a term
+    whose every slot collapses to zero still fails.
     """
     analytic = np.asarray(analytic, dtype=float)
     fd = np.asarray(fd, dtype=float)
     scale = float(np.max(np.abs(fd))) if fd.size else 0.0
     if scale < ABS_FLOOR:
+        assert allow_zero, f"{label}: finite-difference gradient is ~0 -- vacuous test"
         amax = float(np.max(np.abs(analytic))) if analytic.size else 0.0
         assert amax < ABS_FLOOR, f"{label}: expected ~0 gradient, got max|analytic|={amax:.2e}"
         return
@@ -78,6 +89,13 @@ def assert_grad_close(analytic, fd, rtol=FD_RTOL, label=""):
     frac = np.abs(analytic - fd) / denom
     assert np.max(frac) < rtol, (
         f"{label}: max frac err {np.max(frac):.2e} (median {np.median(frac):.2e})")
+
+
+def assert_nonvacuous(fd, label=""):
+    """A real gradient must be exercised somewhere -- guards against a setup that
+    silently zeros every component and turns the finite-difference check into a no-op."""
+    assert float(np.max(np.abs(np.asarray(fd)))) > ABS_FLOOR, (
+        f"{label}: gradient is ~0 everywhere -- the test exercises nothing")
 
 
 def _rtol(ttype):
@@ -228,5 +246,105 @@ class TestChisqGradientPol:
         analytic = compute_chisqgrad_term(imcur, dtype, A, data, sigma, ttype=ttype, mask=mask,
                                           pol_solve=np.array([1, 1, 1, 1]))
         fd = fd_grad(lambda im: compute_chisq_term(im, dtype, A, data, sigma, ttype=ttype, mask=mask), imcur)
+        assert_nonvacuous(fd, label=f"{dtype} {ttype}")
         for s in range(4):
-            assert_grad_close(analytic[s], fd[s], rtol=_rtol(ttype), label=f"{dtype} {ttype} slot{s}")
+            assert_grad_close(analytic[s], fd[s], rtol=_rtol(ttype),
+                              label=f"{dtype} {ttype} slot{s}", allow_zero=True)
+
+
+# ============================ regularizers (S3/S4/S5) =========================
+# Full-grid finite differences on a small image so the zero-pad boundary (row 0 / col 0),
+# where the TV neighbour-roll gradients live, is always covered. epsilon_tv rounds the |.|
+# kink where neighbouring pixels coincide (a smooth source's extrema); it is negligible at
+# every other pixel and does not change the gradient formula, so a dropped/factor/boundary
+# term still gives an O(1) finite-difference mismatch.
+REG_BEAM = 20 * eh.RADPERUAS
+REG_EPS = 1e-8
+REG_XDIM, REG_YDIM = 6, 8
+REG_N = REG_XDIM * REG_YDIM
+
+
+# ------------------------------- S3: reg Stokes-I ----------------------------
+@pytest.fixture(scope="module")
+def reg_si_setup(make_asym_image):
+    """Small (6x8) asymmetric Stokes-I image + parameters every regularizer can draw from."""
+    im = make_asym_image(REG_XDIM, REG_YDIM)
+    im.imvec = im.imvec * 2.0 / im.total_flux()
+    imvec = im.imvec
+    mask = np.ones(imvec.size, dtype=bool)
+    nprior = np.full(imvec.size, imvec.mean())          # uniform prior != imvec
+    kw = dict(nprior=nprior, flux=0.5 * imvec.sum(),    # flux != sum so reg_flux gradient != 0
+              xdim=im.xdim, ydim=im.ydim, psize=im.psize,
+              beam_size=REG_BEAM, alpha_A=5000.0, epsilon_tv=REG_EPS,
+              major=50 * eh.RADPERUAS, minor=60 * eh.RADPERUAS, PA=np.pi / 3, norm_reg=True)
+    return imvec, mask, kw
+
+
+class TestRegularizerGradientStokesI:
+    """Analytic Stokes-I regularizer gradients match central finite differences."""
+
+    @pytest.mark.parametrize("rtype", REGULARIZERS)
+    def test_grad_matches_fd(self, reg_si_setup, rtype):
+        imvec, mask, kw = reg_si_setup
+        analytic = compute_regularizergrad_term(imvec, rtype, mask, **kw)
+        fd = fd_grad(lambda v: compute_regularizer_term(v, rtype, mask, **kw), imvec)
+        assert_nonvacuous(fd, label=rtype)
+        assert_grad_close(analytic, fd, label=rtype)
+
+
+# --------------------------------- S4: reg pol -------------------------------
+@pytest.fixture(scope="module")
+def reg_pol_setup():
+    """Physical imarr [I, rho, phi, psi] with v != 0 AND m != 0 at every pixel.
+
+    pol_solve=(1,1,1,1) ungates every slot so the finite differences check the full
+    gradient formula, not just the slots the solver happens to optimize.
+    """
+    rng = np.random.default_rng(SEED)
+    imarr = np.stack([
+        0.5 + rng.random(REG_N),                # I > 0
+        0.2 + 0.6 * rng.random(REG_N),          # rho (total pol frac) in (0.2, 0.8)
+        2 * np.pi * rng.random(REG_N),          # phi = 2*chi
+        0.3 + 0.5 * rng.random(REG_N),          # psi in (0.3, 0.8) -> v != 0 and m != 0
+    ])
+    mask = np.ones(REG_N, dtype=bool)
+    kw = dict(flux=1.0, pflux=0.3, vflux=0.1, xdim=REG_XDIM, ydim=REG_YDIM, psize=1.0,
+              beam_size=2.0, epsilon_tv=REG_EPS, norm_reg=True, pol_solve=(1, 1, 1, 1))
+    return imarr, mask, kw
+
+
+class TestRegularizerGradientPol:
+    """Analytic pol regularizer gradients match central finite differences in all four slots."""
+
+    @pytest.mark.parametrize("rtype", REGULARIZERS_POL)
+    def test_grad_matches_fd(self, reg_pol_setup, rtype):
+        imarr, mask, kw = reg_pol_setup
+        analytic = compute_regularizergrad_term(imarr, rtype, mask, **kw)
+        fd = fd_grad(lambda im: compute_regularizer_term(im, rtype, mask, **kw), imarr)
+        assert_nonvacuous(fd, label=rtype)
+        for s in range(4):
+            assert_grad_close(analytic[s], fd[s], label=f"{rtype} slot{s}", allow_zero=True)
+
+
+# ------------------------------ S5: reg spectral -----------------------------
+@pytest.fixture(scope="module")
+def reg_spectral_setup(make_asym_image):
+    """Small (6x8) spectral-coefficient map (e.g. alpha) + a half-amplitude prior."""
+    im = make_asym_image(REG_XDIM, REG_YDIM)
+    imvec = im.imvec * 2.0 / im.total_flux()
+    mask = np.ones(imvec.size, dtype=bool)
+    kw = dict(nprior=imvec * 0.5, xdim=im.xdim, ydim=im.ydim, psize=im.psize,
+              beam_size=REG_BEAM, epsilon_tv=REG_EPS, norm_reg=True)
+    return imvec, mask, kw
+
+
+class TestRegularizerGradientSpectral:
+    """Analytic spectral-index regularizer gradients match central finite differences."""
+
+    @pytest.mark.parametrize("rtype", REGULARIZERS_SPECTRAL)
+    def test_grad_matches_fd(self, reg_spectral_setup, rtype):
+        imvec, mask, kw = reg_spectral_setup
+        analytic = compute_regularizergrad_term(imvec, rtype, mask, **kw)
+        fd = fd_grad(lambda v: compute_regularizer_term(v, rtype, mask, **kw), imvec)
+        assert_nonvacuous(fd, label=rtype)
+        assert_grad_close(analytic, fd, label=rtype)
