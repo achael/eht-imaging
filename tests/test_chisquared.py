@@ -1,8 +1,10 @@
-"""Tests for chi-squared consistency across transform types (direct, fast, nfft).
+"""Tests for chi-squared cross-transform consistency (direct, fast, nfft).
 
-Verifies that chi-squared values and gradients agree between DFT, FFT, and NFFT
-for all standard data types. All tests use a 32x48 image so xdim != ydim
-exercises the rectangular-image code paths (rect subsumes square).
+Verifies that chi-squared values and gradients AGREE across DFT, FFT, and NFFT for all
+data types -- a cross-check, not a standalone correctness proof: the direct path is the
+reference, finite-difference-validated in test_gradients.py (the canonical FD suite), so a
+tight direct-vs-nfft gradient bound pins nfft gradient correctness. All tests use a 32x48
+image so xdim != ydim exercises the rectangular-image code paths (rect subsumes square).
 """
 
 import numpy as np
@@ -14,7 +16,6 @@ from ehtim.imaging.imager_backend import (
     MfConfig,
     compute_chisq_term,
     compute_chisqdata_term,
-    compute_chisqgrad_term,
 )
 from ehtim.imaging.imager_utils import chisq, chisqdata, chisqgrad
 
@@ -33,20 +34,20 @@ DATATERMS = ["vis", "bs", "amp", "cphase", "cphase_diag",
 # Transform type pairs to compare
 TTYPE_PAIRS = [("direct", "fast"), ("direct", "nfft"), ("nfft", "fast")]
 
-# NFFT max gradient tolerance is much wider at this resolution
-GRAD_MAX_TOL_NFFT = 10.0
+# Cross-transform gradient agreement. The direct DFT path is the trusted reference -- its
+# gradients are finite-difference-validated in test_gradients.py -- so a tight direct-vs-nfft
+# bound effectively pins nfft gradient correctness. Pairs that include the gridded 'fast' FFT
+# are limited by its interpolation accuracy, not by a gradient bug, so they stay looser.
+GRAD_MAX_TOL_DIRECT_NFFT = 1e-2
+GRAD_MAX_TOL = 0.25            # any pair containing 'fast'
 
-# Diagonalized closures orthogonalize per-timestamp covariance, which can
-# amplify direct-vs-fast tail outliers in test_grad_max_frac_diff. Bump the
-# max-fractional-diff tolerance for these dtypes only; median tolerance and
-# chi-squared tolerance unchanged.
+# Diagonalized closures orthogonalize per-timestamp covariance, which amplifies tail outliers.
 GRAD_MAX_TOL_DIAG = 0.5
 DIAG_DTYPES = {"cphase_diag", "logcamp_diag"}
 
 # Tolerances (calibrated on 32x48 synthetic Gaussian)
 CHISQ_FRAC_TOL = 0.01
 GRAD_MEDIAN_TOL = 0.05
-GRAD_MAX_TOL = 0.25
 
 # ---------------------------------------------------------------------------
 # chisqdata optional parameters (explicit for tracking across refactors)
@@ -175,12 +176,10 @@ class TestChisqGradConsistency:
     @pytest.mark.parametrize("pair", TTYPE_PAIRS, ids=lambda p: f"{p[0]}-{p[1]}")
     def test_grad_max_frac_diff(self, chisq_setup, dtype, pair):
         _, max_frac = _gradient_comparison(chisq_setup, dtype, pair)
-        if "nfft" in pair:
-            tol = GRAD_MAX_TOL_NFFT
-        elif dtype in DIAG_DTYPES:
-            tol = GRAD_MAX_TOL_DIAG
+        if pair == ("direct", "nfft"):
+            tol = GRAD_MAX_TOL_DIAG if dtype in DIAG_DTYPES else GRAD_MAX_TOL_DIRECT_NFFT
         else:
-            tol = GRAD_MAX_TOL
+            tol = GRAD_MAX_TOL_DIAG if dtype in DIAG_DTYPES else GRAD_MAX_TOL
         assert max_frac < tol, (
             f"{dtype} {pair[0]}-{pair[1]}: grad max frac diff = {max_frac:.6f}"
         )
@@ -210,14 +209,6 @@ def _gradient_comparison(chisq_setup, dtype, pair):
 # Polarimetric chi-squared (pvis / m / vvis). Pol has no 'fast' ttype.
 # ---------------------------------------------------------------------------
 POL_DATATERMS = ["pvis", "m", "vvis"]
-POL_FD_REL = 1e-6
-POL_FD_FLOOR = 1e-9
-# fractional FD vs analytic (same ttype, self-consistent). median is tight (any
-# systematic gradient error blows it up); max is looser to tolerate 2nd-order FD
-# truncation outliers at small-gradient pixels of the structured-pol imcur. Real
-# pol-gradient bugs are %-level (e.g. the mcv slot-3 coupling), far above these.
-POL_GRAD_FD_MEDIAN_TOL = 1e-5
-POL_GRAD_FD_MAX_TOL = 1e-3
 POL_CHISQ_FRAC_TOL = 0.01   # direct-vs-nfft value agreement
 
 
@@ -283,65 +274,3 @@ class TestPolChisqConsistency:
             vals[tt] = compute_chisq_term(imcur, dtype, A, data, sigma, ttype=tt, mask=mask)
         frac = abs((vals["direct"] - vals["nfft"]) / abs(vals["direct"]))
         assert frac < POL_CHISQ_FRAC_TOL, f"{dtype}: chisq frac diff = {frac:.6f}"
-
-
-class TestPolChisqGradConsistency:
-    """Pol chi-squared gradients agree between direct and nfft."""
-
-    @pytest.mark.parametrize("dtype", POL_DATATERMS)
-    def test_grad_values(self, chisq_setup_pol, dtype):
-        obs, prior = chisq_setup_pol["obs"], chisq_setup_pol["prior"]
-        mask, imcur = chisq_setup_pol["mask"], chisq_setup_pol["imcur"]
-        grads = {}
-        for tt in ("direct", "nfft"):
-            A, data, sigma = _pol_data_tuple(obs, prior, mask, dtype, tt)
-            grads[tt] = compute_chisqgrad_term(
-                imcur, dtype, A, data, sigma, ttype=tt, mask=mask,
-                pol_solve=np.array([1, 1, 1, 1]))
-        a, b = grads["direct"], grads["nfft"]
-        floor = np.min(np.abs(a)) * 1e-20 + 1e-100
-        frac = np.abs((a - b) / (np.abs(a) + floor))
-        assert np.median(frac) < GRAD_MEDIAN_TOL
-        assert np.max(frac) < GRAD_MAX_TOL_NFFT
-
-
-class TestPolChisqGradFD:
-    """Pol chisqgrad matches finite differences of the chisq value, in all four
-    physical slots (driven with pol_solve=[1,1,1,1]). vvis slot 2 (EVPA) is
-    asserted identically zero -- Stokes V is independent of EVPA -- and its FD
-    is also zero, so the all-slot loop covers it consistently."""
-
-    @pytest.mark.parametrize("dtype", POL_DATATERMS)
-    @pytest.mark.parametrize("ttype", ["direct", "nfft"])
-    def test_grad_matches_fd(self, chisq_setup_pol, dtype, ttype):
-        obs, prior = chisq_setup_pol["obs"], chisq_setup_pol["prior"]
-        mask, imcur = chisq_setup_pol["mask"], chisq_setup_pol["imcur"]
-        A, data, sigma = _pol_data_tuple(obs, prior, mask, dtype, ttype)
-        grad = compute_chisqgrad_term(
-            imcur, dtype, A, data, sigma, ttype=ttype, mask=mask,
-            pol_solve=np.array([1, 1, 1, 1]))
-
-        if dtype == "vvis":   # V is independent of EVPA
-            np.testing.assert_array_equal(grad[2], 0.0)
-
-        rng = np.random.default_rng(RNG_SEED)
-        n = imcur.shape[1]
-        sample = rng.choice(n, size=min(30, n), replace=False)
-        frac = []
-        for slot in range(4):
-            for j in sample:
-                dx = max(POL_FD_REL * abs(imcur[slot, j]), POL_FD_FLOOR)
-                ip = imcur.copy()
-                ip[slot, j] += dx
-                im_ = imcur.copy()
-                im_[slot, j] -= dx
-                fd = (compute_chisq_term(ip, dtype, A, data, sigma, ttype=ttype, mask=mask)
-                      - compute_chisq_term(im_, dtype, A, data, sigma, ttype=ttype, mask=mask)) / (2 * dx)
-                ex = grad[slot, j]
-                denom = max(abs(ex), abs(fd), POL_FD_FLOOR)
-                frac.append(abs(ex - fd) / denom)
-        frac = np.array(frac)
-        assert np.median(frac) < POL_GRAD_FD_MEDIAN_TOL, (
-            f"{dtype} {ttype}: median frac diff = {np.median(frac):.4g}")
-        assert np.max(frac) < POL_GRAD_FD_MAX_TOL, (
-            f"{dtype} {ttype}: max frac diff = {np.max(frac):.4g}")
