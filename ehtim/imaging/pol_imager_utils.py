@@ -198,10 +198,12 @@ def polcv_grad(imarr, gradarr):
     return out
 
 
-def _rho_psi_safe(xp, mfrac, vfrac):
-    """rho=sqrt(mfrac^2+vfrac^2), psi=arcsin(vfrac/rho), guarded so jax.grad stays finite
-    at zero-polarization pixels (sqrt(0) and arcsin(+/-1) singularities). Values are
-    unchanged where rho>0 and |vfrac/rho|<1.
+def rho_psi_from_mfrac_vfrac(xp, mfrac, vfrac):
+    """Polar coordinates (rho, psi) of the (mfrac, vfrac) polarization vector.
+
+    rho = sqrt(mfrac^2 + vfrac^2), psi = arcsin(vfrac/rho), guarded so jax.grad
+    stays finite at zero-polarization pixels (the sqrt(0) and arcsin(+/-1)
+    singularities). Values are unchanged where rho > 0 and |vfrac/rho| < 1.
     """
     r2 = mfrac**2 + vfrac**2
     rho = xp.where(r2 > 0, xp.sqrt(xp.where(r2 > 0, r2, 1.0)), 0.0)
@@ -224,7 +226,7 @@ def mcv(imarr):
     mfrac_prime =  imarr[1]
     mfrac = mfrac_max*(0.5 + xp.arctan(mfrac_prime/TANWIDTH_M)/np.pi)
 
-    rho, psi = _rho_psi_safe(xp, mfrac, vfrac)
+    rho, psi = rho_psi_from_mfrac_vfrac(xp, mfrac, vfrac)
 
     out = xp.stack((imarr[0], rho, imarr[2], psi))
     return out
@@ -304,7 +306,7 @@ def vcv(imarr):
     vfrac_prime = imarr[3]
     vfrac = 2*vfrac_max*xp.arctan(vfrac_prime/TANWIDTH_V)/np.pi
 
-    rho, psi = _rho_psi_safe(xp, mfrac, vfrac)
+    rho, psi = rho_psi_from_mfrac_vfrac(xp, mfrac, vfrac)
 
     out = xp.stack((imarr[0], rho, imarr[2], psi))
     return out

@@ -90,3 +90,29 @@ def test_three_way_gradient(reg_setup, rtype):
     frac = np.abs((g_fd - g_analytic[idx]) / (np.abs(g_analytic[idx]) + 1e-100))
     assert np.median(frac) < FD_MEDIAN_TOL
     assert np.max(frac) < FD_MAX_TOL
+
+
+# ============================== embed / partial mask ==============================
+def test_embed_functional_jax():
+    # embed's functional scatter is byte-identical on numpy and differentiable on jax
+    mask = np.array([True, False, True, False, True, True])
+    imvec = np.array([1.0, 2.0, 3.0, 4.0])
+    assert np.array_equal(iu.embed(imvec, mask), np.asarray(iu.embed(jnp.asarray(imvec), mask)))
+    g = jax.grad(lambda v: jnp.sum(iu.embed(v, mask) ** 2))(jnp.asarray(imvec))
+    assert np.allclose(np.asarray(g), 2 * imvec)  # grad routes only to on-mask pixels
+
+
+def test_spatial_reg_partial_mask_parity():
+    # reg_tv with a partial mask exercises the embed scatter under jax; clipfloor=0
+    # makes the off-mask fill deterministic (no seed needed for numpy<->jax parity).
+    rng = np.random.default_rng(0)
+    ny, nx = 6, 6
+    full = rng.uniform(0.1, 1.0, ny * nx)
+    mask = np.ones(ny * nx, dtype=bool)
+    mask[rng.choice(ny * nx, 8, replace=False)] = False
+    imvec = full[mask]
+    kw = dict(xdim=nx, ydim=ny, psize=1.0, flux=float(full.sum()), beam_size=2.0, norm_reg=True)
+    assert np.allclose(iu.reg_tv(imvec, mask, **kw),
+                       float(iu.reg_tv(jnp.asarray(imvec), mask, **kw)), rtol=1e-12)
+    g_jax = np.asarray(jax.grad(lambda v: iu.reg_tv(v, mask, **kw))(jnp.asarray(imvec)))
+    assert np.allclose(g_jax, iu.reggrad_tv(imvec, mask, **kw), rtol=1e-8, atol=1e-10)

@@ -22,7 +22,6 @@ import numpy as np
 from ehtim.backends import array_namespace
 
 NORM_REGULARIZER = True
-EPSILON = 1.e-12
 DD_RHOPOL = 1 # transform paramter for multifrequency polarization fraction
 ##################################################################################################
 # multifrequency transformations
@@ -249,12 +248,13 @@ def reg_tv_spec(imvec, mask, **kwargs):
         imvec = embed(imvec, mask, clipfloor=0, randomfloor=False)
     nx, ny, psize = kwargs['xdim'], kwargs['ydim'], kwargs['psize']
     beam_size = kwargs.get('beam_size') or psize
+    epsilon = kwargs.get('epsilon_tv', 0.)
     norm = len(imvec) * psize / beam_size if kwargs.get('norm_reg', True) else 1
     im = imvec.reshape(ny, nx)
     impad = xp.pad(im, 1, mode='constant', constant_values=0)
     im_l1 = xp.roll(impad, -1, axis=0)[1:ny+1, 1:nx+1]
     im_l2 = xp.roll(impad, -1, axis=1)[1:ny+1, 1:nx+1]
-    return xp.sum(xp.sqrt(xp.abs(im_l1 - im)**2 + xp.abs(im_l2 - im)**2 + EPSILON)) / norm
+    return xp.sum(xp.sqrt(xp.abs(im_l1 - im)**2 + xp.abs(im_l2 - im)**2 + epsilon)) / norm
 
 
 def reggrad_tv_spec(imvec, mask, **kwargs):
@@ -263,6 +263,7 @@ def reggrad_tv_spec(imvec, mask, **kwargs):
         imvec = embed(imvec, mask, clipfloor=0, randomfloor=False)
     nx, ny, psize = kwargs['xdim'], kwargs['ydim'], kwargs['psize']
     beam_size = kwargs.get('beam_size') or psize
+    epsilon = kwargs.get('epsilon_tv', 0.)
     norm = len(imvec) * psize / beam_size if kwargs.get('norm_reg', True) else 1
     im = imvec.reshape(ny, nx)
     impad = np.pad(im, 1, mode='constant', constant_values=0)
@@ -272,9 +273,9 @@ def reggrad_tv_spec(imvec, mask, **kwargs):
     im_r2 = np.roll(impad, 1, axis=1)[1:ny+1, 1:nx+1]
     im_r1l2 = np.roll(np.roll(impad,  1, axis=0), -1, axis=1)[1:ny+1, 1:nx+1]
     im_l1r2 = np.roll(np.roll(impad, -1, axis=0),  1, axis=1)[1:ny+1, 1:nx+1]
-    g1 = (2*im - im_l1 - im_l2) / np.sqrt((im - im_l1)**2 + (im - im_l2)**2 + EPSILON)
-    g2 = (im - im_r1) / np.sqrt((im - im_r1)**2 + (im_r1l2 - im_r1)**2 + EPSILON)
-    g3 = (im - im_r2) / np.sqrt((im - im_r2)**2 + (im_l1r2 - im_r2)**2 + EPSILON)
+    g1 = (2*im - im_l1 - im_l2) / np.sqrt((im - im_l1)**2 + (im - im_l2)**2 + epsilon)
+    g2 = (im - im_r1) / np.sqrt((im - im_r1)**2 + (im_r1l2 - im_r1)**2 + epsilon)
+    g3 = (im - im_r2) / np.sqrt((im - im_r2)**2 + (im_l1r2 - im_r2)**2 + epsilon)
     mask1 = np.zeros(im.shape)
     mask2 = np.zeros(im.shape)
     mask1[0, :] = 1
