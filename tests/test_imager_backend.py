@@ -3641,7 +3641,14 @@ class TestPolSolveBlock:
 
 
 class TestComputeRegularizerTerm:
-    """Parity between compute_regularizer_term and the legacy outer dispatchers."""
+    """Routing parity between compute_regularizer_term and the legacy outer dispatchers.
+
+    The legacy dispatchers are thin shims that forward to compute_regularizer{,grad}_term,
+    so these assert the two entry points reach the SAME leaf (a routing/forwarding check),
+    NOT that the leaf gradient is mathematically correct. The analytic-vs-finite-difference
+    gradient correctness for every regularizer lives in test_gradients.py (the canonical FD
+    suite); a leaf bug would pass here (both sides share it) but fail there.
+    """
 
     @pytest.fixture(scope="class")
     def stokes_setup(self, make_rect_image):
