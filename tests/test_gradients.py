@@ -39,7 +39,18 @@ from ehtim.imaging.imager_backend import (
     compute_regularizergrad_term,
 )
 from ehtim.imaging.imager_utils import chisq, chisqdata, chisqgrad
-from ehtim.imaging.pol_imager_utils import REGULARIZERS_POL
+from ehtim.imaging.pol_imager_utils import (
+    REGULARIZERS_POL,
+    mcv,
+    mcv_grad,
+    mcv_r,
+    polcv,
+    polcv_grad,
+    polcv_r,
+    vcv,
+    vcv_grad,
+    vcv_r,
+)
 
 # --- finite-difference harness (one implementation for every section) ---------
 FD_EPS = 1e-6
@@ -348,3 +359,50 @@ class TestRegularizerGradientSpectral:
         fd = fd_grad(lambda v: compute_regularizer_term(v, rtype, mask, **kw), imvec)
         assert_nonvacuous(fd, label=rtype)
         assert_grad_close(analytic, fd, label=rtype)
+
+
+# ============================== S6: transforms ===============================
+# Each change-of-variables maps a solver image to a physical one. We finite-difference an
+# arbitrary DENSE linear objective sum(grad_phys * fwd(solver)) w.r.t. the solver slots and
+# compare to the transform's Jacobian-vector product (its grad fn returns slots 1,2,3). A
+# dense grad_phys exercises every output slot -- a real objective like chi^2_p is blind to
+# the slot a transform holds constant, which is how the mcv/vcv cross-term bugs once hid.
+TRANSFORMS = {
+    # name: (forward, grad, reverse, solved slots, held-constant slot)
+    "mcv":   (mcv,   mcv_grad,   mcv_r,   [1, 2], 3),       # solve m', phi; hold v
+    "vcv":   (vcv,   vcv_grad,   vcv_r,   [2, 3], 1),       # solve phi, v'; hold m
+    "polcv": (polcv, polcv_grad, polcv_r, [1, 2, 3], None),
+}
+
+
+def _phys_imarr(n, seed=SEED):
+    """Physical imarr [I, rho, phi, psi] with v != 0 AND m != 0 at every pixel."""
+    rng = np.random.default_rng(seed)
+    return np.stack([
+        0.5 + rng.random(n),
+        0.2 + 0.6 * rng.random(n),
+        2 * np.pi * rng.random(n),
+        0.3 + 0.5 * rng.random(n),
+    ])
+
+
+class TestTransformGradient:
+    """Analytic change-of-variables Jacobian-vector products match finite differences.
+
+    The forward transforms only touch slots 1,2,3 (slot 0 is the log-Stokes-I path), and the
+    grad functions return those three slots; the held-constant slot must come back ~0.
+    """
+
+    @pytest.mark.parametrize("name", list(TRANSFORMS))
+    def test_grad_matches_fd(self, name):
+        fwd, gradfn, rev, free, fixed = TRANSFORMS[name]
+        solver = rev(_phys_imarr(REG_N))
+        grad_phys = np.random.default_rng(SEED + 5).standard_normal((4, REG_N))
+        analytic = gradfn(solver, grad_phys)                         # J^T @ grad_phys, slots 1..3
+        fd = fd_grad(lambda s: float(np.sum(grad_phys * fwd(s))), solver)
+        assert_nonvacuous(fd, label=name)
+        for slot in free:
+            assert_grad_close(analytic[slot - 1], fd[slot], label=f"{name} slot{slot}")
+        if fixed is not None:
+            held = float(np.max(np.abs(analytic[fixed - 1])))
+            assert held < ABS_FLOOR, f"{name}: held slot {fixed} gradient not ~0 (got {held:.2e})"
