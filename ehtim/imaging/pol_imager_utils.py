@@ -907,7 +907,7 @@ def reggrad_hw(imarr, mask, **kwargs):
 def reg_ptv(imarr, mask, **kwargs):
     """Linear polarimetric total-variation regularizer."""
     # embed image if masked
-    from ehtim.imaging.imager_utils import embed_imarr
+    from ehtim.imaging.imager_utils import _safe_sqrt, embed_imarr
     xp = array_namespace(imarr)
     if np.any(np.invert(mask)):
         imarr = embed_imarr(imarr, mask, randomfloor=True)
@@ -925,10 +925,10 @@ def reg_ptv(imarr, mask, **kwargs):
     impad = xp.pad(im, 1, mode='constant', constant_values=0)
     im_l1 = xp.roll(impad, -1, axis=0)[1:ny+1, 1:nx+1]
     im_l2 = xp.roll(impad, -1, axis=1)[1:ny+1, 1:nx+1]
-    # epsilon_tv (default 0, matching reg_tv) regularizes the sqrt so the gradient
-    # is finite at near-zero-|P|-difference pixels; epsilon=0 is byte-identical.
+    # _safe_sqrt keeps the jax gradient finite at near-zero-|P|-difference pixels
+    # (epsilon_tv default 0); the forward value is unchanged for any epsilon_tv.
     epsilon = kwargs.get('epsilon_tv', 0.)
-    return xp.sum(xp.sqrt(xp.abs(im_l1 - im)**2 + xp.abs(im_l2 - im)**2 + epsilon)) / norm
+    return xp.sum(_safe_sqrt(xp, xp.abs(im_l1 - im)**2 + xp.abs(im_l2 - im)**2 + epsilon)) / norm
 
 
 def reggrad_ptv(imarr, mask, **kwargs):
@@ -1158,7 +1158,7 @@ def reggrad_l2v(imarr, mask, **kwargs):
 def reg_vtv(imarr, mask, **kwargs):
     """Stokes V total-variation regularizer"""
     # embed image if masked
-    from ehtim.imaging.imager_utils import embed_imarr
+    from ehtim.imaging.imager_utils import _safe_sqrt, embed_imarr
     xp = array_namespace(imarr)
     if np.any(np.invert(mask)):
         imarr = embed_imarr(imarr, mask, randomfloor=True)
@@ -1177,7 +1177,7 @@ def reg_vtv(imarr, mask, **kwargs):
     im_l1 = xp.roll(impad, -1, axis=0)[1:ny+1, 1:nx+1]
     im_l2 = xp.roll(impad, -1, axis=1)[1:ny+1, 1:nx+1]
     epsilon = kwargs.get('epsilon_tv', 0.)
-    return xp.sum(xp.sqrt(xp.abs(im_l1 - im)**2 + xp.abs(im_l2 - im)**2 + epsilon)) / norm
+    return xp.sum(_safe_sqrt(xp, xp.abs(im_l1 - im)**2 + xp.abs(im_l2 - im)**2 + epsilon)) / norm
 
 
 def reggrad_vtv(imarr, mask, **kwargs):

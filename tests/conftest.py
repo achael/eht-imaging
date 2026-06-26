@@ -4,7 +4,10 @@ import os
 
 import pytest
 
-# Enable JAX float64 before any array is created in the test session.
+# Enable JAX float64 before any array is created in the test session, and let JAX
+# allocate GPU memory on demand: the default grabs ~75% per device, which is
+# antisocial on a shared multi-GPU node and unnecessary at the test sizes.
+os.environ.setdefault("XLA_PYTHON_CLIENT_PREALLOCATE", "false")
 try:
     import jax as _jax
     _jax.config.update("jax_enable_x64", True)

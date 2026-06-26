@@ -162,14 +162,14 @@ class TestComputeLogfreqratios:
         assert result[1] == 0.0
         assert result[2] > 0.0
 
-    def test_returns_list(self):
-        """Return type is a list (not a numpy array)."""
+    def test_returns_array(self):
+        """Return type is a numpy array (vmap-friendly for multifrequency)."""
         result = compute_logfreqratios([230e9, 345e9], 230e9)
-        assert isinstance(result, list)
+        assert isinstance(result, np.ndarray)
 
     def test_empty_freq_list(self):
         """Empty input -> empty output (degenerate but well-defined)."""
-        assert compute_logfreqratios([], 230e9) == []
+        assert compute_logfreqratios([], 230e9).size == 0
 
     def test_matches_imager_obslist_setter(self, gauss_im, observe):
         """Backend output matches obslist_next.setter computation."""
@@ -492,7 +492,7 @@ def _assert_state_matches_imager(state, imgr):
     np.testing.assert_array_equal(state.embed_mask, imgr._embed_mask)
     np.testing.assert_array_equal(state.coord_matrix, imgr._coord_matrix)
     np.testing.assert_array_equal(state.which_solve, imgr._which_solve)
-    assert state.logfreqratio_list == imgr._logfreqratio_list
+    np.testing.assert_array_equal(state.logfreqratio_list, imgr._logfreqratio_list)
     assert state.nimage == imgr._nimage
     assert state.reffreq == imgr.reffreq
     assert set(state.data_tuples.keys()) == set(imgr._data_tuples.keys())
@@ -2706,14 +2706,14 @@ class TestMakeInitarr:
         assert np.all(rho >= 0.2)
         assert np.all(rho <= 0.2 * (1 + 1e-2))
 
-    def test_pol_randompol_lin_different_seeds_differ(self, gauss_im_pol):
-        """Different seeds yield different random pol initializations."""
+    def test_pol_randompol_lin_independent_of_global_seed(self, gauss_im_pol):
+        """randompol_lin uses a fixed internal rng, so the result is independent of the global np.random seed."""
         mask = np.ones(gauss_im_pol.imvec.size, dtype=bool)
         np.random.seed(1)
         out1 = make_initarr(gauss_im_pol, mask, pol=True, randompol_lin=True)
         np.random.seed(2)
         out2 = make_initarr(gauss_im_pol, mask, pol=True, randompol_lin=True)
-        assert not np.array_equal(out1[1], out2[1])
+        np.testing.assert_array_equal(out1[1], out2[1])
 
     def test_pol_randompol_circ_seeded(self, gauss_im_pol):
         """randompol_circ writes rho and psi (slot 3), not phi (slot 2)."""
