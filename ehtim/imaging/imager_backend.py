@@ -591,8 +591,12 @@ def physical_grad_slots(pol_solve, transforms):
 def make_initarr(image, mask, norm_init=False, flux=1,
                  mf=False, pol=False,
                  randompol_lin=False, randompol_circ=False,
-                 meanpol=0.2, sigmapol=1.e-2):
-    """Make initial image array from image object, or initialize with default values"""
+                 meanpol=0.2, sigmapol=1.e-2, seed=0):
+    """Make initial image array from image object, or initialize with default values.
+
+    `seed` seeds the random polarization initialization (used only when randompol_lin or
+    randompol_circ is set), so a run can be made reproducible or deliberately varied.
+    """
     # set initial and prior images
     init_I = image.imvec[mask]
     nimage = len(init_I)
@@ -633,7 +637,7 @@ def make_initarr(image, mask, norm_init=False, flux=1,
         # Caller (compute_init_state) decides when random-pol init applies.
         # Here we just honor the flag: True means "use random pol initialization
         # regardless of init image content"; False means "use init image's pol".
-        pol_rng = np.random.default_rng(0)  # seeded so the random pol init is reproducible
+        pol_rng = np.random.default_rng(seed)  # seeded so the random pol init is reproducible
         if randompol_lin:
             print("Initializing linear polarization with 20% pol and random orientation!")
             init_rho = meanpol * (np.ones(nimage) + sigmapol * pol_rng.random(nimage))
@@ -1301,7 +1305,7 @@ def compute_init_state(
     norm_init, flux, clipfloor,
     dat_term_keys,
     data_weighting, fourier_grid,
-    *, compute_data=True, prior_data_tuples=None,
+    *, compute_data=True, prior_data_tuples=None, seed=0,
 ):
     """Build solver-ready imager state. Pure function.
 
@@ -1394,7 +1398,7 @@ def compute_init_state(
         norm_init=norm_init, flux=flux,
         mf=mf, pol=is_pol,
         randompol_lin=randompol_lin, randompol_circ=randompol_circ,
-        meanpol=MEANPOL_INIT, sigmapol=SIGMAPOL_INIT,
+        meanpol=MEANPOL_INIT, sigmapol=SIGMAPOL_INIT, seed=seed,
     )
     prior_phys = make_initarr(
         prior_image, embed_mask,
@@ -2004,10 +2008,11 @@ def _place_jax_arrays(data_tuples, priorvec, initvec, device=None):
 def _prepare_jax_loss(initvec, config, which_solve, data_tuples, logfreqratio_list,
                       n_obs, dat_term, reg_term, priorvec, norm_reg, reg_params,
                       embed_mask, device=None):
-    """Build the shared jax loss(x) closure for the imaging objective.
+    """Place the captured arrays on the device once and return ``(loss, to_device)``.
 
-    Device-places the captured arrays once and closes over them so x is the only traced
-    input. Returns (loss, put).
+    The data, prior, and init arrays are device-placed a single time and closed over, so
+    x is the only traced input to ``loss(x)``. Used by ``make_value_and_grad_jax`` (and so,
+    transitively, by ``make_objective_jax``).
     """
     data_d, prior_d, init_d, put = _place_jax_arrays(data_tuples, priorvec, initvec, device)
 
@@ -2022,22 +2027,21 @@ def _prepare_jax_loss(initvec, config, which_solve, data_tuples, logfreqratio_li
 def make_objective_jax(initvec, config, which_solve, data_tuples, logfreqratio_list,
                        n_obs, dat_term, reg_term, priorvec, norm_reg, reg_params,
                        embed_mask, device=None):
-    """Return a scipy fun(x) -> (value, grad) for the imaging objective, via jax.
+    """Build a host objective ``fun(x) -> (value, grad)`` for scipy, backed by jax.
 
-    Same arguments as compute_objective minus the solver vector x. The value is
-    compute_objective; the gradient is its jax autodiff, which matches the
-    hand-written compute_objective_grad. Works for any pol mode / ttype the
-    backend supports. jax is imported lazily so `import ehtim` stays jax-free.
+    Use this to drive scipy's L-BFGS-B with the jax objective and its autodiff gradient
+    (any pol mode / ttype). It is just the on-device value-and-grad from
+    ``make_value_and_grad_jax``, jitted so scipy gets value and gradient from one
+    compiled call, with the result copied back to numpy each step. For a fully on-device
+    run (no per-step host copy) use the optax lane via ``make_value_and_grad_jax`` directly.
     """
     import jax
     import jax.numpy as jnp
 
-    loss, _ = _prepare_jax_loss(initvec, config, which_solve, data_tuples,
-                                logfreqratio_list, n_obs, dat_term, reg_term,
-                                priorvec, norm_reg, reg_params, embed_mask, device)
-
-    # jit the value-and-grad so scipy gets both from one compiled call.
-    value_and_grad = jax.jit(jax.value_and_grad(loss))
+    value_and_grad, _loss, _to_device = make_value_and_grad_jax(
+        initvec, config, which_solve, data_tuples, logfreqratio_list, n_obs,
+        dat_term, reg_term, priorvec, norm_reg, reg_params, embed_mask, device=device)
+    value_and_grad = jax.jit(value_and_grad)
 
     def fun(x):
         value, grad = value_and_grad(jnp.asarray(x))
@@ -2049,13 +2053,12 @@ def make_objective_jax(initvec, config, which_solve, data_tuples, logfreqratio_l
 def make_value_and_grad_jax(initvec, config, which_solve, data_tuples, logfreqratio_list,
                             n_obs, dat_term, reg_term, priorvec, norm_reg, reg_params,
                             embed_mask, device=None):
-    """Return (value_and_grad, loss, to_device) for the on-device optimizer lane.
+    """Build on-device handles ``(value_and_grad, loss, to_device)`` for the optax lane.
 
-    Unlike make_objective_jax -- which jits value_and_grad and returns a host
-    fun(x) that round-trips to numpy every call -- this returns the un-jitted
-    jax.value_and_grad and the loss closure, so the optimizer can jit the whole
-    iteration loop and keep x on device. to_device places a host x0 like the
-    captured arrays.
+    Returns jax's un-jitted ``value_and_grad``, the underlying ``loss(x)``, and a
+    ``to_device`` helper that places a host x0 next to the captured arrays. The optax
+    optimizer jits the whole iteration loop around these, so x stays on the device with
+    no per-step host copy. ``make_objective_jax`` wraps this for the scipy lane.
     """
     import jax
 
@@ -2068,15 +2071,16 @@ def make_value_and_grad_jax(initvec, config, which_solve, data_tuples, logfreqra
 def make_survey_value_and_grad(initvec, config, which_solve, data_tuples, logfreqratio_list,
                                n_obs, priorvec, norm_reg, base_reg_params, embed_mask,
                                device=None):
-    """Return (value_and_grad, loss, to_device, chisq_dict) for parameter surveys.
+    """Build on-device handles ``(value_and_grad, loss, to_device, chisq_dict)`` for surveys.
 
-    Unlike make_value_and_grad_jax (weights baked in), the data-term / reg-term weights and
-    RegParams scalars arrive as a TRACED `hparams` pytree, so jax.vmap can batch a
-    hyperparameter grid while config / data / image structure stay static. `hparams` is
-    {"dat_term": {dname: w}, "reg_term": {regname: w}, "reg_params": {field: scalar}}; every
-    active key must be present (swept ones vary across the batch, fixed ones held constant).
-    `chisq_dict(imcur)` returns the per-term reduced chi^2 of a reconstructed image (the same
-    chi^2 the objective minimizes, weight-independent), for ranking survey reconstructions.
+    Like ``make_value_and_grad_jax``, but the data-term / reg-term weights and RegParams
+    scalars arrive as a *traced* ``hparams`` pytree instead of being baked in, so a single
+    ``jax.vmap`` can reconstruct a whole hyperparameter grid while the config / data / image
+    structure stay static. ``hparams`` is
+    ``{"dat_term": {name: w}, "reg_term": {name: w}, "reg_params": {field: scalar}}`` and every
+    active key must be present (swept ones vary across the batch, fixed ones are held constant).
+    ``chisq_dict(imcur)`` gives the per-term reduced chi^2 of a reconstruction (weight-independent),
+    for ranking the survey's Top Set.
     """
     import jax
 

@@ -98,7 +98,7 @@ def test_scipy_lane_matches_direct_scipy(make_opt_imager):
                "maxcor": NHIST, "maxls": MAXLS}
     x0 = imgr._init_vec
     res_dispatch = run_optimizer(None, x0=x0, optdict=optdict, callback=None,
-                                 build_scipy=lambda: (imgr.objfunc, imgr.objgrad))
+                                 build_loss=lambda: (imgr.objfunc, imgr.objgrad))
     res_direct = scipy.optimize.minimize(imgr.objfunc, x0, method="L-BFGS-B",
                                          jac=imgr.objgrad, options=optdict)
     np.testing.assert_array_equal(res_dispatch.x, res_direct.x)

@@ -525,20 +525,19 @@ class Imager:
         mesh = kwargs.get('mesh', self._mesh)
         shard_axis = kwargs.get('shard_axis', self._shard_axis)
 
-        # multi-GPU sharding runs through the on-device optax lane, so it needs an
-        # optax optimizer; default to optax-lbfgs when none was given.
+        # Multi-GPU sharding runs the objective on-device through the optax lane, so it
+        # needs an optax optimizer. Require the user to opt in explicitly rather than
+        # silently overriding the optimizer they chose.
         if shard and (optimizer is None or classify_optimizer(optimizer) != 'optax'):
-            optimizer = 'optax-lbfgs'
-            print("sharding: using optax-lbfgs (the sharded objective runs on-device)")
-
-        # an optax / device optimizer needs the on-device jax objective
-        if optimizer is not None and not use_jax and classify_optimizer(optimizer) == 'optax':
-            print("using the jax objective (required by the optax optimizer)")
-            use_jax = True
+            raise ValueError(
+                "shard=True runs the sharded objective on-device, which needs an optax "
+                "optimizer; pass optimizer='optax-lbfgs' (or another optax optimizer).")
+        # (the optax lane builds the jax objective itself in build_device_vg below, so the
+        #  user's use_jax flag is irrelevant there and is left untouched.)
 
         def build_scipy():
-            # host objective/gradient handles for the scipy and callable lanes
-            if use_jax:
+            # Host (value, grad) handles for the scipy and callable lanes.
+            if use_jax:    # jitted jax objective + autodiff gradient, as a host fun(x) -> (value, grad)
                 fun = make_objective_jax(
                     self._init_arr, self._config, self._which_solve, self._data_tuples,
                     self._logfreqratio_list, len(self.obslist_next),
@@ -547,29 +546,32 @@ class Imager:
                     self._embed_mask, device=device,
                 )
                 return fun, True
-            if grads:
+            elif grads:    # default scipy with the analytic numpy gradient
                 return self.objfunc, self.objgrad
-            return self.objfunc, None
+            else:          # default scipy, no gradient (scipy finite-differences the objective)
+                return self.objfunc, None
 
         def build_device_vg(dev):
-            # un-jitted on-device value_and_grad for the optax lane; sharded across
-            # a GPU mesh when shard=True
+            # Un-jitted on-device value_and_grad (+ loss, to_device, aux) for the optax lane.
             backend_args = (
                 self._init_arr, self._config, self._which_solve, self._data_tuples,
                 self._logfreqratio_list, len(self.obslist_next),
                 self.dat_term_next, self.reg_term_next,
                 self._prior_arr, self.norm_reg, self._regparams(), self._embed_mask,
             )
-            if shard:
+            if shard:      # sharded across the GPU mesh
                 from ehtim.imaging.sharding import build_mesh, make_sharded_value_and_grad
                 m = mesh if mesh is not None else build_mesh()
                 return make_sharded_value_and_grad(*backend_args, mesh=m, shard_axis=shard_axis)
-            vg, loss_fn, to_device = make_value_and_grad_jax(*backend_args, device=dev)
-            return vg, loss_fn, to_device, None
+            else:          # single device
+                vg, loss_fn, to_device = make_value_and_grad_jax(*backend_args, device=dev)
+                return vg, loss_fn, to_device, None
 
+        # The optax lane uses the on-device builder; the scipy / callable lanes use the host builder.
+        build_loss = (build_device_vg if classify_optimizer(optimizer) == 'optax'
+                      else build_scipy)
         res = run_optimizer(optimizer, x0=self._init_vec, optdict=optdict,
-                            callback=callback_func, build_scipy=build_scipy,
-                            build_device_vg=build_device_vg, device=device)
+                            callback=callback_func, build_loss=build_loss, device=device)
         tstop = time.time()
 
         # Format output

@@ -10,9 +10,9 @@ from functools import partial
 import numpy as np
 import scipy.optimize
 
-# Built-in optax optimizers, resolved in the optax lane. Listed here so
+# Built-in optimizer names, resolved in their respective lanes. Listed here so
 # classify_optimizer can route the names without importing optax.
-_OPTAX_BUILTINS = frozenset({"optax-lbfgs", "adam", "adamw", "sgd", "rmsprop"})
+_OPTAX_NAMES = frozenset({"optax-lbfgs", "optax-lbfgs-bt", "adam", "adamw", "sgd", "rmsprop"})
 _SCIPY_NAMES = frozenset({"lbfgs", "l-bfgs-b", "scipy", "scipy-lbfgs"})
 
 
@@ -28,7 +28,7 @@ def classify_optimizer(optimizer):
         name = optimizer.lower()
         if name in _SCIPY_NAMES:
             return "scipy"
-        if name in _OPTAX_BUILTINS:
+        if name in _OPTAX_NAMES:
             return "optax"
         raise ValueError(f"unknown optimizer name {optimizer!r}")
     # an optax GradientTransformation is a NamedTuple exposing init/update
@@ -39,9 +39,14 @@ def classify_optimizer(optimizer):
     raise TypeError(f"unsupported optimizer {optimizer!r}")
 
 
-def run_optimizer(optimizer, *, x0, optdict, callback=None,
-                  build_scipy=None, build_device_vg=None, device=None, mesh=None):
+def run_optimizer(optimizer, *, x0, optdict, callback=None, build_loss=None,
+                  device=None, mesh=None):
     """Minimize the imaging objective with the chosen optimizer.
+
+    The caller supplies one `build_loss` builder appropriate to the lane (the lane
+    only ever needs one): the host builder for the scipy/callable lanes, or the
+    on-device builder for the optax lane. Each lane below calls it with the
+    signature it expects, so passing the wrong builder fails fast (arity mismatch).
 
     Parameters
     ----------
@@ -54,12 +59,11 @@ def run_optimizer(optimizer, *, x0, optdict, callback=None,
         Also the source of the iteration cap and tolerances for the optax lane.
     callback : callable, optional
         Per-iteration callback(xk) for the host lanes (scipy / callable).
-    build_scipy : callable
-        () -> (fun, jac): host handles. `fun` is `objfunc` or a jax objective
-        returning (value, grad); `jac` is `objgrad`, True, or None.
-    build_device_vg : callable, optional
-        (device) -> (value_and_grad, loss, to_device): on-device handles for the
-        optax lane.
+    build_loss : callable
+        Lane-appropriate builder of the loss handles:
+        - scipy / callable lanes: `() -> (fun, jac)` host handles. `fun` is `objfunc`
+          or a jax objective returning (value, grad); `jac` is `objgrad`, True, or None.
+        - optax lane: `(device) -> (value_and_grad, loss, to_device, aux)` on-device handles.
     device, mesh : optional
         Device / sharding mesh for the optax lane.
 
@@ -71,13 +75,13 @@ def run_optimizer(optimizer, *, x0, optdict, callback=None,
     kind = classify_optimizer(optimizer)
 
     if kind == "scipy":
-        fun, jac = build_scipy()
+        fun, jac = build_loss()
         return scipy.optimize.minimize(fun, x0, method="L-BFGS-B", jac=jac,
                                        options=optdict, callback=callback)
 
-    if kind == "callable":
+    elif kind == "callable":
         # The escape hatch: hand the user a host value_and_grad(x) -> (value, grad).
-        fun, jac = build_scipy()
+        fun, jac = build_loss()
         if jac is True:
             value_and_grad = fun           # fun already returns (value, grad)
         elif jac is None:
@@ -89,10 +93,11 @@ def run_optimizer(optimizer, *, x0, optdict, callback=None,
         return optimizer(value_and_grad, x0, maxiter=optdict["maxiter"],
                          tol=optdict["gtol"], callback=callback)
 
-    # kind == "optax": run an optax optimizer entirely on device.
-    gt, needs_ls = _resolve_optax(optimizer, optdict)
-    value_and_grad, loss, to_device, aux = build_device_vg(device)
-    return _run_optax(gt, needs_ls, value_and_grad, loss, to_device(x0), optdict, aux=aux)
+    else:
+        # kind == "optax": run an optax optimizer entirely on device.
+        gt, needs_ls = _resolve_optax(optimizer, optdict)
+        value_and_grad, loss, to_device, aux = build_loss(device)
+        return _run_optax(gt, needs_ls, value_and_grad, loss, to_device(x0), optdict, aux=aux)
 
 
 _DEFAULT_LR = 1e-2  # step size for the first-order optax builtins (adam/sgd/...)
