@@ -361,6 +361,37 @@ class TestRegularizerGradientSpectral:
         assert_grad_close(analytic, fd, label=rtype)
 
 
+# Flat spectral map at epsilon_tv == 0 is the multifreq imaging start (add_const_mf gives a
+# constant alpha): every neighbour difference is 0, so the naive sqrt(0) leaves a 0/0 in both
+# the value (autodiff) and the analytic gradient. The S5 fixture above uses a structured map
+# with epsilon_tv != 0, so it never exercised this; reg_tv_spec must stay finite here.
+SPECTRAL_TV = [r for r in REGULARIZERS_SPECTRAL if r.startswith("tv_")]
+
+
+class TestSpectralTVFlatMapFinite:
+    @pytest.mark.parametrize("rtype", SPECTRAL_TV)
+    def test_analytic_finite_on_flat(self, reg_spectral_setup, rtype):
+        _, mask, kw = reg_spectral_setup
+        kw = {**kw, "epsilon_tv": 0.0}
+        flat = np.ones(mask.size)
+        grad = compute_regularizergrad_term(flat, rtype, mask, **kw)
+        val = compute_regularizer_term(flat, rtype, mask, **kw)
+        assert np.all(np.isfinite(grad)), f"{rtype}: NaN/inf in analytic grad on flat map"
+        assert np.isfinite(val), f"{rtype}: NaN/inf in value on flat map"
+
+    @pytest.mark.jax
+    @pytest.mark.parametrize("rtype", SPECTRAL_TV)
+    def test_autodiff_finite_on_flat(self, reg_spectral_setup, rtype):
+        import jax
+        import jax.numpy as jnp
+        jax.config.update("jax_enable_x64", True)
+        _, mask, kw = reg_spectral_setup
+        kw = {**kw, "epsilon_tv": 0.0}
+        flat = jnp.ones(mask.size)
+        grad = jax.grad(lambda v: compute_regularizer_term(v, rtype, mask, **kw))(flat)
+        assert np.all(np.isfinite(np.asarray(grad))), f"{rtype}: NaN in jax.grad on flat map"
+
+
 # ============================== S6: transforms ===============================
 # Each change-of-variables maps a solver image to a physical one. We finite-difference an
 # arbitrary DENSE linear objective sum(grad_phys * fwd(solver)) w.r.t. the solver slots and
