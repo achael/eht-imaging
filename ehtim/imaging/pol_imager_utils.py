@@ -925,10 +925,12 @@ def reg_ptv(imarr, mask, **kwargs):
     impad = xp.pad(im, 1, mode='constant', constant_values=0)
     im_l1 = xp.roll(impad, -1, axis=0)[1:ny+1, 1:nx+1]
     im_l2 = xp.roll(impad, -1, axis=1)[1:ny+1, 1:nx+1]
-    # epsilon_tv (default 0, matching reg_tv) regularizes the sqrt so the gradient
-    # is finite at near-zero-|P|-difference pixels; epsilon=0 is byte-identical.
+    # _safe_sqrt keeps the value and its autodiff gradient finite at a flat-|P| pixel (sq == 0) when
+    # epsilon_tv == 0; identical to xp.sqrt for any epsilon_tv > 0.
+    from ehtim.imaging.imager_utils import _safe_sqrt
     epsilon = kwargs.get('epsilon_tv', 0.)
-    return xp.sum(xp.sqrt(xp.abs(im_l1 - im)**2 + xp.abs(im_l2 - im)**2 + epsilon)) / norm
+    sq = xp.abs(im_l1 - im)**2 + xp.abs(im_l2 - im)**2 + epsilon
+    return xp.sum(_safe_sqrt(xp, sq)) / norm
 
 
 def reggrad_ptv(imarr, mask, **kwargs):
@@ -975,6 +977,12 @@ def reggrad_ptv(imarr, mask, **kwargs):
     d1 = np.sqrt(np.abs(im_l1 - im)**2 + np.abs(im_l2 - im)**2 + epsilon)
     d2 = np.sqrt(np.abs(im_r1 - im)**2 + np.abs(im_r1l2 - im_r1)**2 + epsilon)
     d3 = np.sqrt(np.abs(im_r2 - im)**2 + np.abs(im_l1r2 - im_r2)**2 + epsilon)
+    # Guarded denominators (mirror reggrad_tv_spec): at a flat-|P| pixel d == 0 when epsilon_tv == 0,
+    # and the numerators below are 0 there too (cos terms cancel, sin -> 0), so each m/d term is 0
+    # rather than 0/0 = NaN. Unchanged wherever d > 0, so non-flat results are identical.
+    d1 = np.where(d1 > 0, d1, 1.0)
+    d2 = np.where(d2 > 0, d2, 1.0)
+    d3 = np.where(d3 > 0, d3, 1.0)
     # Numerators below use cos/sin of the single-angle difference between
     # neighbors, from d|P_l1 - P|^2/d|P| = 2|P| - 2|P_l1|*cos(angle(P_l1) - angle(P)).
     # mask first-row/col back-neighbor terms that don't exist (as reggrad_tv does)
@@ -1176,8 +1184,12 @@ def reg_vtv(imarr, mask, **kwargs):
     impad = xp.pad(im, 1, mode='constant', constant_values=0)
     im_l1 = xp.roll(impad, -1, axis=0)[1:ny+1, 1:nx+1]
     im_l2 = xp.roll(impad, -1, axis=1)[1:ny+1, 1:nx+1]
+    # _safe_sqrt keeps the value and its autodiff gradient finite at a flat-V pixel (sq == 0) when
+    # epsilon_tv == 0; identical to xp.sqrt for any epsilon_tv > 0.
+    from ehtim.imaging.imager_utils import _safe_sqrt
     epsilon = kwargs.get('epsilon_tv', 0.)
-    return xp.sum(xp.sqrt(xp.abs(im_l1 - im)**2 + xp.abs(im_l2 - im)**2 + epsilon)) / norm
+    sq = xp.abs(im_l1 - im)**2 + xp.abs(im_l2 - im)**2 + epsilon
+    return xp.sum(_safe_sqrt(xp, sq)) / norm
 
 
 def reggrad_vtv(imarr, mask, **kwargs):
@@ -1219,10 +1231,15 @@ def reggrad_vtv(imarr, mask, **kwargs):
     im_r1l2 = np.roll(np.roll(impad,  1, axis=0), -1, axis=1)[1:ny+1, 1:nx+1]
     im_l1r2 = np.roll(np.roll(impad, -1, axis=0),  1, axis=1)[1:ny+1, 1:nx+1]
 
-    # base gradient terms
-    g1 = (2*im - im_l1 - im_l2) / np.sqrt((im - im_l1)**2 + (im - im_l2)**2 + epsilon)
-    g2 = (im - im_r1) / np.sqrt((im - im_r1)**2 + (im_r1l2 - im_r1)**2 + epsilon)
-    g3 = (im - im_r2) / np.sqrt((im - im_r2)**2 + (im_l1r2 - im_r2)**2 + epsilon)
+    # base gradient terms. Guarded division (mirrors reggrad_tv_spec): at a flat pixel the denominator
+    # is 0 when epsilon_tv == 0, so the gradient is 0 rather than 0/0 = NaN. Identical to the plain
+    # division wherever the denominator is > 0, so non-flat results are unchanged.
+    d1 = np.sqrt((im - im_l1)**2 + (im - im_l2)**2 + epsilon)
+    d2 = np.sqrt((im - im_r1)**2 + (im_r1l2 - im_r1)**2 + epsilon)
+    d3 = np.sqrt((im - im_r2)**2 + (im_l1r2 - im_r2)**2 + epsilon)
+    g1 = np.where(d1 > 0, (2*im - im_l1 - im_l2) / np.where(d1 > 0, d1, 1.0), 0.0)
+    g2 = np.where(d2 > 0, (im - im_r1) / np.where(d2 > 0, d2, 1.0), 0.0)
+    g3 = np.where(d3 > 0, (im - im_r2) / np.where(d3 > 0, d3, 1.0), 0.0)
 
     # The back-neighbor (g2, g3) terms reference a pixel that does not
     # exist on the first row/column (it is the zero pad), so they must be zeroed

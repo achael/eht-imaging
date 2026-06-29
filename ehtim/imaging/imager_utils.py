@@ -1759,6 +1759,17 @@ def reggrad_cm(imvec, mask, **kwargs):
     return g[mask]
 
 
+def _safe_sqrt(xp, sq):
+    """sqrt(sq) with a finite autodiff gradient at sq == 0 (0 rather than inf).
+
+    Forward equals xp.sqrt for sq >= 0, so values are unchanged for any epsilon_tv > 0 -- only
+    the backward pass differs. Keeps autodiff of the TV regularizers from producing NaNs at flat
+    pixels when epsilon_tv == 0.
+    """
+    safe = xp.where(sq > 0, sq, 1.0)
+    return xp.where(sq > 0, xp.sqrt(safe), 0.0)
+
+
 def reg_tv(imvec, mask, **kwargs):
     """Total Variation regularizer"""
     # embed image
@@ -1776,7 +1787,10 @@ def reg_tv(imvec, mask, **kwargs):
     impad = xp.pad(im, 1, mode='constant', constant_values=0)
     im_l1 = xp.roll(impad, -1, axis=0)[1:ny+1, 1:nx+1]
     im_l2 = xp.roll(impad, -1, axis=1)[1:ny+1, 1:nx+1]
-    return xp.sum(xp.sqrt(xp.abs(im_l1 - im)**2 + xp.abs(im_l2 - im)**2 + epsilon)) / norm
+    # _safe_sqrt keeps the value and its autodiff gradient finite at a flat pixel (sq == 0) when
+    # epsilon_tv == 0; identical to xp.sqrt for any epsilon_tv > 0.
+    sq = xp.abs(im_l1 - im)**2 + xp.abs(im_l2 - im)**2 + epsilon
+    return xp.sum(_safe_sqrt(xp, sq)) / norm
 
 
 def reggrad_tv(imvec, mask, **kwargs):
@@ -1799,10 +1813,15 @@ def reggrad_tv(imvec, mask, **kwargs):
     im_r2 = np.roll(impad, 1, axis=1)[1:ny+1, 1:nx+1]
     im_r1l2 = np.roll(np.roll(impad,  1, axis=0), -1, axis=1)[1:ny+1, 1:nx+1]
     im_l1r2 = np.roll(np.roll(impad, -1, axis=0),  1, axis=1)[1:ny+1, 1:nx+1]
-    # gradient terms
-    g1 = (2*im - im_l1 - im_l2) / np.sqrt((im - im_l1)**2 + (im - im_l2)**2 + epsilon)
-    g2 = (im - im_r1) / np.sqrt((im - im_r1)**2 + (im_r1l2 - im_r1)**2 + epsilon)
-    g3 = (im - im_r2) / np.sqrt((im - im_r2)**2 + (im_l1r2 - im_r2)**2 + epsilon)
+    # gradient terms. Guarded division (mirrors reggrad_tv_spec): at a flat pixel the denominator
+    # is 0 when epsilon_tv == 0, so the gradient is 0 rather than 0/0 = NaN. Identical to the plain
+    # division wherever the denominator is > 0, so non-flat results are unchanged.
+    d1 = np.sqrt((im - im_l1)**2 + (im - im_l2)**2 + epsilon)
+    d2 = np.sqrt((im - im_r1)**2 + (im_r1l2 - im_r1)**2 + epsilon)
+    d3 = np.sqrt((im - im_r2)**2 + (im_l1r2 - im_r2)**2 + epsilon)
+    g1 = np.where(d1 > 0, (2*im - im_l1 - im_l2) / np.where(d1 > 0, d1, 1.0), 0.0)
+    g2 = np.where(d2 > 0, (im - im_r1) / np.where(d2 > 0, d2, 1.0), 0.0)
+    g3 = np.where(d3 > 0, (im - im_r2) / np.where(d3 > 0, d3, 1.0), 0.0)
     # The back-neighbor (g2, g3) terms reference a pixel that does not
     # exist on the first row/column (it is the zero pad), so they must be zeroed
     mask1 = np.zeros(im.shape)

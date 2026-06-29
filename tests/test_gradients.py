@@ -392,6 +392,60 @@ class TestSpectralTVFlatMapFinite:
         assert np.all(np.isfinite(np.asarray(grad))), f"{rtype}: NaN in jax.grad on flat map"
 
 
+# The same flat-map 0/0 lives in the Stokes-I (reg_tv) and pol (reg_ptv / reg_vtv) TV terms: a flat
+# region (e.g. a uniform init) makes every neighbour difference 0, so the naive sqrt(0) leaves a 0/0
+# in both the value (autodiff) and the analytic gradient. The S3/S4 fixtures use a structured map
+# with epsilon_tv != 0, so they never exercised it. tv2 / tv2log are curvature-based (no sqrt) -- safe.
+STOKESI_TV = ["tv", "tvlog"]
+POL_TV = ["ptv", "vtv"]
+
+
+class TestStokesIPolTVFlatMapFinite:
+    @pytest.mark.parametrize("rtype", STOKESI_TV)
+    def test_stokesI_analytic_finite_on_flat(self, reg_si_setup, rtype):
+        imvec, mask, kw = reg_si_setup
+        kw = {**kw, "epsilon_tv": 0.0}
+        flat = np.full(imvec.shape, 0.5)
+        grad = compute_regularizergrad_term(flat, rtype, mask, **kw)
+        val = compute_regularizer_term(flat, rtype, mask, **kw)
+        assert np.all(np.isfinite(grad)), f"{rtype}: NaN/inf in analytic grad on flat map"
+        assert np.isfinite(val), f"{rtype}: NaN/inf in value on flat map"
+
+    @pytest.mark.parametrize("rtype", POL_TV)
+    def test_pol_analytic_finite_on_flat(self, reg_pol_setup, rtype):
+        imarr, mask, kw = reg_pol_setup
+        kw = {**kw, "epsilon_tv": 0.0}
+        flat = np.stack([np.full(mask.size, c) for c in (0.5, 0.3, 1.0, 0.5)])
+        grad = compute_regularizergrad_term(flat, rtype, mask, **kw)
+        val = compute_regularizer_term(flat, rtype, mask, **kw)
+        assert np.all(np.isfinite(grad)), f"{rtype}: NaN/inf in analytic grad on flat map"
+        assert np.isfinite(val), f"{rtype}: NaN/inf in value on flat map"
+
+    @pytest.mark.jax
+    @pytest.mark.parametrize("rtype", STOKESI_TV)
+    def test_stokesI_autodiff_finite_on_flat(self, reg_si_setup, rtype):
+        import jax
+        import jax.numpy as jnp
+        jax.config.update("jax_enable_x64", True)
+        _, mask, kw = reg_si_setup
+        kw = {**kw, "epsilon_tv": 0.0}
+        flat = jnp.full(mask.size, 0.5)
+        grad = jax.grad(lambda v: compute_regularizer_term(v, rtype, mask, **kw))(flat)
+        assert np.all(np.isfinite(np.asarray(grad))), f"{rtype}: NaN in jax.grad on flat map"
+
+    @pytest.mark.jax
+    @pytest.mark.parametrize("rtype", POL_TV)
+    def test_pol_autodiff_finite_on_flat(self, reg_pol_setup, rtype):
+        import jax
+        import jax.numpy as jnp
+        jax.config.update("jax_enable_x64", True)
+        _, mask, kw = reg_pol_setup
+        kw = {**kw, "epsilon_tv": 0.0}
+        flat = jnp.stack([jnp.full(mask.size, c) for c in (0.5, 0.3, 1.0, 0.5)])
+        grad = jax.grad(lambda v: compute_regularizer_term(v, rtype, mask, **kw))(flat)
+        assert np.all(np.isfinite(np.asarray(grad))), f"{rtype}: NaN in jax.grad on flat map"
+
+
 # ============================== S6: transforms ===============================
 # Each change-of-variables maps a solver image to a physical one. We finite-difference an
 # arbitrary DENSE linear objective sum(grad_phys * fwd(solver)) w.r.t. the solver slots and
