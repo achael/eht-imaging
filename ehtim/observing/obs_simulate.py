@@ -28,6 +28,7 @@ from scipy.interpolate import interp1d
 import ehtim.const_def as ehc
 
 from . import obs_helpers as obsh
+from . import pol_conventions
 
 ##################################################################################################
 # Generate U-V Points
@@ -63,13 +64,8 @@ def make_uvpoints(array, ra, dec, rf, bw, tint, tadv, tstart, tstop,
        Returns:
            (Obsdata): an observation object with all visibilities zeroed
     """
-
-    if polrep == 'stokes':
-        poltype = ehc.DTPOL_STOKES
-    elif polrep == 'circ':
-        poltype = ehc.DTPOL_CIRC
-    else:
-        raise Exception("only 'stokes' and 'circ' are supported polreps!")
+    # Define the dtype for the output array
+    poltype = ehc.feed_dtype_for_polrep(polrep)
 
     # Set up time start and steps
     tstep = tadv/3600.0
@@ -116,25 +112,25 @@ def make_uvpoints(array, ra, dec, rf, bw, tint, tadv, tstart, tstop,
                     tau2 = 0.
 
                 # Noise on the correlations
-                if np.any(array.tarr['sefdr'] <= 0) or np.any(array.tarr['sefdl'] <= 0):
+                if np.any(array.tarr['sefd_p1'] <= 0) or np.any(array.tarr['sefd_p2'] <= 0):
                     print("Warning!: in make_uvpoints, some SEFDs are <= 0!")
 
-                sig_rr = obsh.blnoise(array.tarr[i1]['sefdr'], array.tarr[i2]['sefdr'], tint, bw)
-                sig_ll = obsh.blnoise(array.tarr[i1]['sefdl'], array.tarr[i2]['sefdl'], tint, bw)
-                sig_rl = obsh.blnoise(array.tarr[i1]['sefdr'], array.tarr[i2]['sefdl'], tint, bw)
-                sig_lr = obsh.blnoise(array.tarr[i1]['sefdl'], array.tarr[i2]['sefdr'], tint, bw)
+                ft1 = str(array.tarr[i1]['feed_type'])   # e.g. 'rl' or 'xy'
+                ft2 = str(array.tarr[i2]['feed_type'])
+
+                # Slot order matches DTPOL_*: p1p1, p2p2, p1p2, p2p1.
+                # feed1 = first char of feed_type, feed2 = second char.
+                sig_p1p1 = obsh.blnoise(array.sefd_for_feed(site1, ft1[0]), array.sefd_for_feed(site2, ft2[0]), tint, bw)
+                sig_p2p2 = obsh.blnoise(array.sefd_for_feed(site1, ft1[1]), array.sefd_for_feed(site2, ft2[1]), tint, bw)
+                sig_p1p2 = obsh.blnoise(array.sefd_for_feed(site1, ft1[0]), array.sefd_for_feed(site2, ft2[1]), tint, bw)
+                sig_p2p1 = obsh.blnoise(array.sefd_for_feed(site1, ft1[1]), array.sefd_for_feed(site2, ft2[0]), tint, bw)
+
                 if polrep == 'stokes':
-                    sig_iv = 0.5*np.sqrt(sig_rr**2 + sig_ll**2)
-                    sig_qu = 0.5*np.sqrt(sig_rl**2 + sig_lr**2)
-                    sig1 = sig_iv
-                    sig2 = sig_qu
-                    sig3 = sig_qu
-                    sig4 = sig_iv
-                elif polrep == 'circ':
-                    sig1 = sig_rr
-                    sig2 = sig_ll
-                    sig3 = sig_rl
-                    sig4 = sig_lr
+                    sig_iv = 0.5*np.sqrt(sig_p1p1**2 + sig_p2p2**2)
+                    sig_qu = 0.5*np.sqrt(sig_p1p2**2 + sig_p2p1**2)
+                    sig1, sig2, sig3, sig4 = sig_iv, sig_qu, sig_qu, sig_iv
+                else:  # circ, lin, mixed all carry the four correlations directly
+                    sig1, sig2, sig3, sig4 = sig_p1p1, sig_p2p2, sig_p1p2, sig_p2p1
 
                 uvdat = obsh.compute_uv_coordinates(array, site1, site2, times, mjd,
                                                     ra, dec, rf, timetype=timetype,
@@ -144,13 +140,13 @@ def make_uvpoints(array, ra, dec, rf, bw, tint, tadv, tstart, tstop,
 
                 (timesout, uout, vout) = uvdat
                 for k in range(len(timesout)):
-                    outlist.append(np.array((
+                    row = (
                         timesout[k],
                         tint,     # Integration
                         site1,    # Station 1
                         site2,    # Station 2
                         tau1,     # Station 1 zenith optical depth
-                        tau2,     # Station 1 zenith optical depth
+                        tau2,     # Station 2 zenith optical depth
                         uout[k],  # u (lambda)
                         vout[k],  # v (lambda)
                         0.0,      # 1st Visibility (Jy)
@@ -160,9 +156,11 @@ def make_uvpoints(array, ra, dec, rf, bw, tint, tadv, tstart, tstop,
                         sig1,     # 1st Sigma (Jy)
                         sig2,     # 2nd Sigma
                         sig3,     # 3rd Sigma
-                        sig4      # 4th Sigma
-                    ), dtype=poltype
-                    ))
+                        sig4,     # 4th Sigma
+                    )
+                    if polrep == 'mixed':
+                        row = row + (ft1 + ft2,)   # polbasis, e.g. 'rlxy'
+                    outlist.append(np.array(row, dtype=poltype))
 
     obsarr = np.array(outlist)
 
@@ -201,8 +199,18 @@ def sample_vis(im_org, uv, sgrscat=False, polrep_obs='stokes',
     elif polrep_obs == 'circ':
         im = im_org.switch_polrep('circ', 'RR')
         pollist = ['RR', 'LL', 'RL', 'LR']  # TODO what if we have to RR image?
+    elif polrep_obs == 'lin':
+        im = im_org.switch_polrep('lin', 'XX')
+        pollist = ['XX', 'YY', 'XY', 'YX']
+    elif polrep_obs == 'mixed':
+        # There is no single image basis for a mixed-feed observation (the
+        # correlation basis varies per baseline). Sample in Stokes here; the
+        # caller converts each baseline to its polbasis via
+        # pack_sampled_visibilities -> pol_conventions.stokes_to_coherency.
+        im = im_org.switch_polrep('stokes', 'I')
+        pollist = ['I', 'Q', 'U', 'V']
     else:
-        raise Exception("only 'stokes' and 'circ' are supported polreps!")
+        raise Exception("polrep_obs must be 'stokes', 'circ', 'lin', or 'mixed'!")
 
     uv = np.array(uv)
     if uv.shape[1] != 2:
@@ -344,6 +352,71 @@ def sample_vis(im_org, uv, sgrscat=False, polrep_obs='stokes',
             data *= ker
 
     return obsdata
+
+def pack_sampled_visibilities(obsdata, data, polrep):
+    """Write the four sampled visibility vectors from sample_vis into the
+    correct fields of an obsdata recarray.
+
+       Args:
+           obsdata (np.recarray): the data table to fill, in representation
+               `polrep`. For 'mixed' it must carry a populated 'polbasis' column.
+           data (list): the four visibility vectors returned by sample_vis. For
+               'stokes'/'circ'/'lin' these are the four basis correlations; for
+               'mixed' they are Stokes (I, Q, U, V).
+           polrep (str): one of 'stokes', 'circ', 'lin', 'mixed'.
+
+       Returns:
+           (np.recarray): the same obsdata, mutated in place and returned.
+    """
+    if polrep == 'stokes':
+        obsdata['vis'] = data[0]
+        if data[1] is not None:
+            obsdata['qvis'] = data[1]
+            obsdata['uvis'] = data[2]
+            obsdata['vvis'] = data[3]
+
+    elif polrep == 'circ':
+        obsdata['rrvis'] = data[0]
+        if data[1] is not None:
+            obsdata['llvis'] = data[1]
+        if data[2] is not None:
+            obsdata['rlvis'] = data[2]
+            obsdata['lrvis'] = data[3]
+
+    elif polrep == 'lin':
+        obsdata['xxvis'] = data[0]
+        if data[1] is not None:
+            obsdata['yyvis'] = data[1]
+        if data[2] is not None:
+            obsdata['xyvis'] = data[2]
+            obsdata['yxvis'] = data[3]
+
+    elif polrep == 'mixed':
+        # data is Stokes (I, Q, U, V). Convert to the four generic correlation
+        # slots per baseline; rows sharing a polbasis share one feed pairing,
+        # so we group by polbasis and convert each group with one operator.
+        I, Q, U, V = (np.asarray(d) for d in data)
+        p1p1 = np.empty(len(obsdata), dtype=complex)
+        p2p2 = np.empty(len(obsdata), dtype=complex)
+        p1p2 = np.empty(len(obsdata), dtype=complex)
+        p2p1 = np.empty(len(obsdata), dtype=complex)
+        for basis in np.unique(obsdata['polbasis']):
+            mask = obsdata['polbasis'] == basis
+            t1_feed, t2_feed = str(basis)[:2], str(basis)[2:]
+            corr = pol_conventions.stokes_to_coherency(
+                I[mask], Q[mask], U[mask], V[mask], t1_feed, t2_feed)
+            p1p1[mask], p2p2[mask], p1p2[mask], p2p1[mask] = corr
+        obsdata['p1p1vis'] = p1p1
+        obsdata['p2p2vis'] = p2p2
+        obsdata['p1p2vis'] = p1p2
+        obsdata['p2p1vis'] = p2p1
+
+    else:
+        raise ValueError(
+            f"polrep must be one of 'stokes', 'circ', 'lin', 'mixed'; got {polrep!r}")
+
+    return obsdata
+
 
 ##################################################################################################
 # Noise + miscalibration funcitons

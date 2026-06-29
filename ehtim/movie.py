@@ -1221,21 +1221,9 @@ class Movie:
                                      zero_empty_pol=zero_empty_pol, verbose=verbose)
             verbose = False # only print for one frame
 
-            # Put visibilities into the obsdata
-            if obs.polrep == 'stokes':
-                obsdata['vis'] = data[0]
-                if data[1] is not None:
-                    obsdata['qvis'] = data[1]
-                    obsdata['uvis'] = data[2]
-                    obsdata['vvis'] = data[3]
-
-            elif obs.polrep == 'circ':
-                obsdata['rrvis'] = data[0]
-                if data[1] is not None:
-                    obsdata['llvis'] = data[1]
-                if data[2] is not None:
-                    obsdata['rlvis'] = data[2]
-                    obsdata['lrvis'] = data[3]
+            # Put visibilities into the obsdata (mixed: converts Stokes -> per-baseline
+            # correlations using each row's polbasis)
+            obsdata = simobs.pack_sampled_visibilities(obsdata, data, obs.polrep)
 
             if len(obsdata_out):
                 obsdata_out = np.hstack((obsdata_out, obsdata))

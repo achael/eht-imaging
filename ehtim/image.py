@@ -2633,8 +2633,10 @@ class Image:
                (list): a list of [I,Q,U,V] visibilities
         """
 
-        if polrep_obs not in ['stokes', 'circ']:
-            raise Exception("polrep_obs must be either 'stokes' or 'circ'")
+        if polrep_obs not in ['stokes', 'circ', 'lin']:
+            # 'mixed' is excluded: the per-baseline Stokes->coherency conversion
+            # needs feed-pairing info that this bare-uv helper does not have.
+            raise Exception("polrep_obs must be 'stokes', 'circ', or 'lin'")
 
         data = simobs.sample_vis(self, uv, polrep_obs=polrep_obs, sgrscat=sgrscat,
                                  ttype=ttype, cache=cache, fft_pad_factor=fft_pad_factor,
@@ -2682,21 +2684,9 @@ class Image:
                                  ttype=ttype, cache=cache, fft_pad_factor=fft_pad_factor,
                                  zero_empty_pol=zero_empty_pol, verbose=verbose)
 
-        # put visibilities into the obsdata
-        if obs.polrep == 'stokes':
-            obsdata['vis'] = data[0]
-            if data[1] is not None:
-                obsdata['qvis'] = data[1]
-                obsdata['uvis'] = data[2]
-                obsdata['vvis'] = data[3]
-
-        elif obs.polrep == 'circ':
-            obsdata['rrvis'] = data[0]
-            if data[1] is not None:
-                obsdata['llvis'] = data[1]
-            if data[2] is not None:
-                obsdata['rlvis'] = data[2]
-                obsdata['lrvis'] = data[3]
+        # put visibilities into the obsdata (mixed: converts Stokes -> per-baseline
+        # correlations using each row's polbasis)
+        obsdata = simobs.pack_sampled_visibilities(obsdata, data, obs.polrep)
 
         obs_no_noise = ehtim.obsdata.Obsdata(self.ra, self.dec, obs.rf, obs.bw, obsdata, obs.tarr,
                                              source=self.source, mjd=self.mjd, polrep=obs.polrep,

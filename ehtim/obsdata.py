@@ -252,7 +252,7 @@ class Obsdata:
             ft_arr = self.tarr['feed_type']
             self.data['polbasis'] = np.char.add(ft_arr[t1_idx], ft_arr[t2_idx])
 
-        if np.any(self.tarr['sefdr'] != 0) or np.any(self.tarr['sefdl'] != 0):
+        if np.any(self.tarr['sefd_p1'] != 0) or np.any(self.tarr['sefd_p2'] != 0):
             self.reorder_tarr_sefd(reorder_baselines=False)
 
         # reorder baselines to uvfits convention

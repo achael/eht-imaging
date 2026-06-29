@@ -790,12 +790,13 @@ def test_obsdata_polrep_lin_on_rl_array_raises():
         arr.obsdata(polrep='lin', **_obs_kwargs())
 
 
-def test_obsdata_polrep_lin_on_xy_array_raises_not_implemented():
-    # Validation passes (all xy) but simulation backend doesn't support
-    # 'lin' yet — should raise NotImplementedError pointing to Phase 5.
+def test_obsdata_polrep_lin_on_xy_array():
+    # 'lin' simulation on an all-xy array is supported (Phase 6).
     arr = ea.Array(_eht_like_xy_array())
-    with pytest.raises(NotImplementedError, match="is not yet supported"):
-        arr.obsdata(polrep='lin', **_obs_kwargs())
+    obs = arr.obsdata(polrep='lin', **_obs_kwargs())
+    assert obs.polrep == 'lin'
+    assert len(obs.data) > 0
+    assert 'xxvis' in obs.data.dtype.names
 
 
 def test_obsdata_polrep_mixed_on_homogeneous_array_raises():
@@ -805,10 +806,14 @@ def test_obsdata_polrep_mixed_on_homogeneous_array_raises():
         arr.obsdata(polrep='mixed', **_obs_kwargs())
 
 
-def test_obsdata_polrep_mixed_on_mixed_array_raises_not_implemented():
+def test_obsdata_polrep_mixed_on_mixed_array():
+    # 'mixed' simulation on a heterogeneous-feed array is supported (Phase 6).
     arr = ea.Array(_eht_like_mixed_array())
-    with pytest.raises(NotImplementedError, match="is not yet supported"):
-        arr.obsdata(polrep='mixed', **_obs_kwargs())
+    obs = arr.obsdata(polrep='mixed', **_obs_kwargs())
+    assert obs.polrep == 'mixed'
+    assert len(obs.data) > 0
+    # every row's polbasis is two 2-char feed_types concatenated
+    assert {len(str(b)) for b in obs.data['polbasis']} == {4}
 
 
 # ----- save_array_txt v2 + load_array_txt round-trip ------------------------

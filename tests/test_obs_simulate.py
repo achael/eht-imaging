@@ -43,6 +43,26 @@ def asymmetric_array(array):
     arr.tarr = tarr
     return arr
 
+@pytest.fixture(scope="module")
+def lin_array(asymmetric_array):
+    """All-'xy' (linear) array; sefd_p1 != sefd_p2 so the four sigmas differ."""
+    arr = asymmetric_array.copy()
+    tarr = np.asarray(arr.tarr).copy()
+    tarr["feed_type"] = "xy"
+    arr.tarr = tarr
+    return arr
+
+
+@pytest.fixture(scope="module")
+def mixed_array(asymmetric_array):
+    """Heterogeneous feeds: first half 'rl', second half 'xy'."""
+    arr = asymmetric_array.copy()
+    tarr = np.asarray(arr.tarr).copy()
+    half = len(tarr) // 2
+    tarr["feed_type"][half:] = "xy"
+    arr.tarr = tarr
+    return arr
+
 
 @pytest.fixture(scope="module")
 def asymmetric_image():
@@ -107,10 +127,14 @@ class TestMakeUvpoints:
         assert set(out.dtype.names) >= {"rrvis", "llvis", "rlvis", "lrvis",
                                         "rrsigma", "llsigma", "rlsigma", "lrsigma"}
 
+    # def test_invalid_polrep_raises(self, array):
+    #     with pytest.raises(Exception, match="only 'stokes' and 'circ'"):
+    #         os_sim.make_uvpoints(array, 17.761, -29.0, 230e9, BW,
+    #                              TINT, TADV, TSTART, TSTOP, polrep="linear")
     def test_invalid_polrep_raises(self, array):
-        with pytest.raises(Exception, match="only 'stokes' and 'circ'"):
+        with pytest.raises(ValueError, match="must be one of"):
             os_sim.make_uvpoints(array, 17.761, -29.0, 230e9, BW,
-                                 TINT, TADV, TSTART, TSTOP, polrep="linear")
+                                TINT, TADV, TSTART, TSTOP, polrep="linear")
 
     def test_baseline_ordering(self, array):
         out = os_sim.make_uvpoints(array, 17.761, -29.0, 230e9, BW,
@@ -157,6 +181,31 @@ class TestMakeUvpoints:
         np.testing.assert_allclose(row["llsigma"], obsh.blnoise(sefdl1, sefdl2, TINT, BW))
         np.testing.assert_allclose(row["rlsigma"], obsh.blnoise(sefdr1, sefdl2, TINT, BW))
         np.testing.assert_allclose(row["lrsigma"], obsh.blnoise(sefdl1, sefdr2, TINT, BW))
+
+    def test_mixed_sigma_layout(self, mixed_array):
+        """rl x xy baseline: slots p1p1,p2p2,p1p2,p2p1 = R.X, L.Y, R.Y, L.X."""
+        out = os_sim.make_uvpoints(mixed_array, 17.761, -29.0, 230e9, BW,
+                                   TINT, TADV, TSTART, TSTOP, polrep="mixed")
+        row = out[0]
+        t1, t2 = row["t1"], row["t2"]
+        ft1 = str(mixed_array.tarr[list(mixed_array.tarr["site"]).index(t1)]["feed_type"])
+        ft2 = str(mixed_array.tarr[list(mixed_array.tarr["site"]).index(t2)]["feed_type"])
+
+        # each slot pairs one feed of t1 with one feed of t2: (slot, t1 feed, t2 feed)
+        slot_pairings = [
+            ("p1p1sigma", ft1[0], ft2[0]),
+            ("p2p2sigma", ft1[1], ft2[1]),
+            ("p1p2sigma", ft1[0], ft2[1]),
+            ("p2p1sigma", ft1[1], ft2[0]),
+        ]
+        for slot, fa, fb in slot_pairings:
+            expected = obsh.blnoise(mixed_array.sefd_for_feed(t1, fa),
+                                    mixed_array.sefd_for_feed(t2, fb), TINT, BW)
+            np.testing.assert_allclose(row[slot], expected)
+
+        # make_uvpoints fills polbasis directly; Obsdata.__init__ would recompute it
+        assert row["polbasis"] == ft1 + ft2
+
 
     def test_scalar_tau_applied(self, array):
         out = os_sim.make_uvpoints(array, 17.761, -29.0, 230e9, BW,
@@ -293,7 +342,7 @@ class TestSampleVisBranches:
 
     def test_invalid_polrep_raises(self, asymmetric_image, obs):
         uv = np.column_stack([obs.data["u"], obs.data["v"]])
-        with pytest.raises(Exception, match="only 'stokes' and 'circ'"):
+        with pytest.raises(Exception, match="must be 'stokes', 'circ', 'lin', or 'mixed'"):
             os_sim.sample_vis(asymmetric_image, uv, polrep_obs="linear", ttype="direct")
 
     def test_nfft_rejects_odd_dims(self, array):
