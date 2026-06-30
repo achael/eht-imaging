@@ -14,6 +14,17 @@ try:
 except ImportError:
     pass
 
+# Use astropy's bundled IERS-B Earth-orientation table instead of fetching the latest
+# IERS-A over the network. CI runners sometimes can't reach the IERS server and the
+# download hangs the ephemeris-dependent tests until the job times out; the bundled
+# table is plenty accurate for synthetic test observations. Guarded like the jax
+# import above so collection still works in a minimal env without astropy.
+try:
+    from astropy.utils import iers
+    iers.conf.auto_download = False
+except ImportError:
+    pass
+
 import ehtim as eh
 from ehtim.imaging.imager_backend import (
     POLARIZATION_MODES,
