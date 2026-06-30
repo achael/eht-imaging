@@ -2012,8 +2012,21 @@ def _prepare_jax_loss(initvec, config, which_solve, data_tuples, logfreqratio_li
 
     The data, prior, and init arrays go to the device once and stay there, so x is the only
     thing that changes from one loss(x) call to the next -- which is what lets jax
-    differentiate and compile it cleanly. Returns the loss and a small helper that puts a
-    starting x on the same device. make_value_and_grad_jax builds on this.
+    differentiate and compile it cleanly. make_value_and_grad_jax builds on this.
+
+    Parameters
+    ----------
+    initvec ... embed_mask
+        The same backend-objective arguments as compute_objective.
+    device : jax device, optional
+        Device to place the captured arrays on; None uses jax's default device.
+
+    Returns
+    -------
+    loss : callable
+        loss(x) -> scalar objective, with the data and image arrays already on the device.
+    to_device : callable
+        Places a host x0 on the same device as those arrays.
     """
     data_d, prior_d, init_d, put = _place_jax_arrays(data_tuples, priorvec, initvec, device)
 
@@ -2041,6 +2054,19 @@ def make_objective_jax(initvec, config, which_solve, data_tuples, logfreqratio_l
     whichever device jax is using (your GPU, if you have one); only the value and gradient get
     copied back each step. To keep everything on the device with no copying in between, use an
     optax optimizer, which calls make_value_and_grad_jax directly.
+
+    Parameters
+    ----------
+    initvec ... embed_mask
+        The same backend-objective arguments as compute_objective.
+    device : jax device, optional
+        Device the objective runs on; None uses jax's default device.
+
+    Returns
+    -------
+    fun : callable
+        fun(x) -> (value, gradient): takes a numpy x, returns a Python float and a numpy
+        gradient, ready for scipy.optimize.minimize(..., jac=True).
     """
     import jax
     import jax.numpy as jnp
@@ -2067,6 +2093,22 @@ def make_value_and_grad_jax(initvec, config, which_solve, data_tuples, logfreqra
     iteration loop around them, so x lives on the device from start to finish with nothing
     copied back to numpy in between. That same on-device loop is what the multi-GPU sharding
     path builds on. If you want scipy instead, make_objective_jax wraps these.
+
+    Parameters
+    ----------
+    initvec ... embed_mask
+        The same backend-objective arguments as compute_objective.
+    device : jax device, optional
+        Device to run on; None uses jax's default device.
+
+    Returns
+    -------
+    value_and_grad : callable
+        Un-jitted jax value_and_grad(loss): x (on device) -> (value, gradient).
+    loss : callable
+        The scalar loss(x) on its own (optax's line search needs it).
+    to_device : callable
+        Places a host x0 on the device next to the captured arrays.
     """
     import jax
 
@@ -2089,6 +2131,27 @@ def make_survey_value_and_grad(initvec, config, which_solve, data_tuples, logfre
     include every active key -- the ones you're sweeping vary across the batch, the rest are held
     constant. The extra chisq_dict(imcur) gives each term's reduced chi^2 for a result, regardless
     of the weights, which is how the survey ranks its Top Set.
+
+    Parameters
+    ----------
+    initvec ... embed_mask
+        Backend-objective arguments as in compute_objective, except there is no dat_term /
+        reg_term here -- those arrive per call inside hparams.
+    base_reg_params : RegParams
+        Default RegParams; the swept scalars in hparams["reg_params"] override its fields.
+    device : jax device, optional
+        Device to run on; None uses jax's default device.
+
+    Returns
+    -------
+    value_and_grad : callable
+        value_and_grad(x, hparams) -> (value, gradient), differentiated w.r.t. x.
+    loss : callable
+        loss(x, hparams) -> scalar objective.
+    to_device : callable
+        Places a host x0 on the device.
+    chisq_dict : callable
+        chisq_dict(imcur) -> per-term reduced chi^2, weight-independent, for ranking.
     """
     import jax
 
