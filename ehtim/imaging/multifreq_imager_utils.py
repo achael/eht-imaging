@@ -242,7 +242,7 @@ def reggrad_l2_spec(imvec, mask, **kwargs):
 
 
 def reg_tv_spec(imvec, mask, **kwargs):
-    from ehtim.imaging.imager_utils import embed
+    from ehtim.imaging.imager_utils import _safe_sqrt, embed
     xp = array_namespace(imvec)
     if np.any(np.invert(mask)):
         imvec = embed(imvec, mask, clipfloor=0, randomfloor=False)
@@ -254,11 +254,10 @@ def reg_tv_spec(imvec, mask, **kwargs):
     impad = xp.pad(im, 1, mode='constant', constant_values=0)
     im_l1 = xp.roll(impad, -1, axis=0)[1:ny+1, 1:nx+1]
     im_l2 = xp.roll(impad, -1, axis=1)[1:ny+1, 1:nx+1]
-    # autodiff-safe sqrt: a flat map gives sq == 0 when epsilon_tv == 0, where the
-    # gradient of sqrt is undefined; the double-where keeps both value and grad finite.
+    # _safe_sqrt keeps the value and its autodiff gradient finite at a flat pixel (sq == 0) when
+    # epsilon_tv == 0; identical to xp.sqrt for any epsilon_tv > 0.
     sq = xp.abs(im_l1 - im)**2 + xp.abs(im_l2 - im)**2 + epsilon
-    safe = xp.where(sq > 0, sq, 1.0)
-    return xp.sum(xp.where(sq > 0, xp.sqrt(safe), 0.0)) / norm
+    return xp.sum(_safe_sqrt(xp, sq)) / norm
 
 
 def reggrad_tv_spec(imvec, mask, **kwargs):

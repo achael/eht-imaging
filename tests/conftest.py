@@ -4,10 +4,24 @@ import os
 
 import pytest
 
-# Enable JAX float64 before any array is created in the test session.
+# Enable JAX float64 before any array is created in the test session, and let JAX
+# allocate GPU memory on demand: the default grabs ~75% per device, which is
+# antisocial on a shared multi-GPU node and unnecessary at the test sizes.
+os.environ.setdefault("XLA_PYTHON_CLIENT_PREALLOCATE", "false")
 try:
     import jax as _jax
     _jax.config.update("jax_enable_x64", True)
+except ImportError:
+    pass
+
+# Use astropy's bundled IERS-B Earth-orientation table instead of fetching the latest
+# IERS-A over the network. CI runners sometimes can't reach the IERS server and the
+# download hangs the ephemeris-dependent tests until the job times out; the bundled
+# table is plenty accurate for synthetic test observations. Guarded like the jax
+# import above so collection still works in a minimal env without astropy.
+try:
+    from astropy.utils import iers
+    iers.conf.auto_download = False
 except ImportError:
     pass
 
