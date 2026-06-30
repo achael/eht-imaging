@@ -2008,11 +2008,12 @@ def _place_jax_arrays(data_tuples, priorvec, initvec, device=None):
 def _prepare_jax_loss(initvec, config, which_solve, data_tuples, logfreqratio_list,
                       n_obs, dat_term, reg_term, priorvec, norm_reg, reg_params,
                       embed_mask, device=None):
-    """Place the captured arrays on the device once and return ``(loss, to_device)``.
+    """Set up the loss with its data and image arrays already sitting on the device.
 
-    The data, prior, and init arrays are device-placed a single time and closed over, so
-    x is the only traced input to ``loss(x)``. Used by ``make_value_and_grad_jax`` (and so,
-    transitively, by ``make_objective_jax``).
+    The data, prior, and init arrays go to the device once and stay there, so x is the only
+    thing that changes from one loss(x) call to the next -- which is what lets jax
+    differentiate and compile it cleanly. Returns the loss and a small helper that puts a
+    starting x on the same device. make_value_and_grad_jax builds on this.
     """
     data_d, prior_d, init_d, put = _place_jax_arrays(data_tuples, priorvec, initvec, device)
 
@@ -2027,13 +2028,19 @@ def _prepare_jax_loss(initvec, config, which_solve, data_tuples, logfreqratio_li
 def make_objective_jax(initvec, config, which_solve, data_tuples, logfreqratio_list,
                        n_obs, dat_term, reg_term, priorvec, norm_reg, reg_params,
                        embed_mask, device=None):
-    """Build a host objective ``fun(x) -> (value, grad)`` for scipy, backed by jax.
+    """Wrap the jax objective as a plain fun(x) so scipy's L-BFGS-B can drive it.
 
-    Use this to drive scipy's L-BFGS-B with the jax objective and its autodiff gradient
-    (any pol mode / ttype). It is just the on-device value-and-grad from
-    ``make_value_and_grad_jax``, jitted so scipy gets value and gradient from one
-    compiled call, with the result copied back to numpy each step. For a fully on-device
-    run (no per-step host copy) use the optax lane via ``make_value_and_grad_jax`` directly.
+    Returns fun(x) -> (value, gradient) in numpy, ready to pass straight to
+    scipy.optimize.minimize(..., jac=True). The value and its autodiff gradient come out of
+    one jitted call. This works for every pol mode and ttype, and is the easiest way to get a
+    jax run that closely tracks the numpy result -- a good first step before moving to a fully
+    on-device optimizer.
+
+    One thing to be clear about: "host" means scipy itself runs in Python and gets numpy back
+    each step, not that the math runs on the CPU. The objective and gradient still run on
+    whichever device jax is using (your GPU, if you have one); only the value and gradient get
+    copied back each step. To keep everything on the device with no copying in between, use an
+    optax optimizer, which calls make_value_and_grad_jax directly.
     """
     import jax
     import jax.numpy as jnp
@@ -2053,12 +2060,13 @@ def make_objective_jax(initvec, config, which_solve, data_tuples, logfreqratio_l
 def make_value_and_grad_jax(initvec, config, which_solve, data_tuples, logfreqratio_list,
                             n_obs, dat_term, reg_term, priorvec, norm_reg, reg_params,
                             embed_mask, device=None):
-    """Build on-device handles ``(value_and_grad, loss, to_device)`` for the optax lane.
+    """On-device value, gradient, and loss for an optax optimizer to run with.
 
-    Returns jax's un-jitted ``value_and_grad``, the underlying ``loss(x)``, and a
-    ``to_device`` helper that places a host x0 next to the captured arrays. The optax
-    optimizer jits the whole iteration loop around these, so x stays on the device with
-    no per-step host copy. ``make_objective_jax`` wraps this for the scipy lane.
+    Returns jax's value_and_grad(loss), the loss on its own, and a helper that puts the
+    starting x on the device. These come back un-jitted on purpose: optax compiles the whole
+    iteration loop around them, so x lives on the device from start to finish with nothing
+    copied back to numpy in between. That same on-device loop is what the multi-GPU sharding
+    path builds on. If you want scipy instead, make_objective_jax wraps these.
     """
     import jax
 
@@ -2071,16 +2079,16 @@ def make_value_and_grad_jax(initvec, config, which_solve, data_tuples, logfreqra
 def make_survey_value_and_grad(initvec, config, which_solve, data_tuples, logfreqratio_list,
                                n_obs, priorvec, norm_reg, base_reg_params, embed_mask,
                                device=None):
-    """Build on-device handles ``(value_and_grad, loss, to_device, chisq_dict)`` for surveys.
+    """On-device handles for sweeping a grid of hyperparameters in one vmap.
 
-    Like ``make_value_and_grad_jax``, but the data-term / reg-term weights and RegParams
-    scalars arrive as a *traced* ``hparams`` pytree instead of being baked in, so a single
-    ``jax.vmap`` can reconstruct a whole hyperparameter grid while the config / data / image
-    structure stay static. ``hparams`` is
-    ``{"dat_term": {name: w}, "reg_term": {name: w}, "reg_params": {field: scalar}}`` and every
-    active key must be present (swept ones vary across the batch, fixed ones are held constant).
-    ``chisq_dict(imcur)`` gives the per-term reduced chi^2 of a reconstruction (weight-independent),
-    for ranking the survey's Top Set.
+    Same idea as make_value_and_grad_jax, except the data-term and reg-term weights and the
+    RegParams scalars are passed in at call time as an hparams pytree rather than baked into the
+    closure. That lets a single jax.vmap run a whole grid of hyperparameters at once while the
+    config, data, and image structure stay fixed. hparams looks like
+    {"dat_term": {name: weight}, "reg_term": {name: weight}, "reg_params": {field: scalar}};
+    include every active key -- the ones you're sweeping vary across the batch, the rest are held
+    constant. The extra chisq_dict(imcur) gives each term's reduced chi^2 for a result, regardless
+    of the weights, which is how the survey ranks its Top Set.
     """
     import jax
 
