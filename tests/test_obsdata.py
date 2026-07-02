@@ -235,8 +235,8 @@ def test_reorder_baselines_time_sorted(obs_direct):
     assert np.all(np.diff(obs_direct.data["time"]) >= 0)
 
 
-def test_trial_speedups_matches_default(obs_direct):
-    # The trial_speedups flag in reorder_baselines is now a no-op; both
+def test_speedups_matches_default(obs_direct):
+    # The speedups flag in reorder_baselines is now a no-op; both
     # invocations must produce byte-identical output, including when the
     # input contains conjugate pairs and true duplicates.
     extra = obs_direct.data[0].copy()
@@ -246,11 +246,11 @@ def test_trial_speedups_matches_default(obs_direct):
     seeded = obs_direct.copy()
     seeded.data = np.concatenate([obs_direct.data, np.array([extra], dtype=obs_direct.data.dtype)])
 
-    obs_default = seeded.copy()
-    obs_default.reorder_baselines(trial_speedups=False)
-    obs_trial = seeded.copy()
-    obs_trial.reorder_baselines(trial_speedups=True)
-    np.testing.assert_array_equal(obs_default.data, obs_trial.data)
+    obs_legacy = seeded.copy()
+    obs_legacy.reorder_baselines(speedups=False)
+    obs_fast = seeded.copy()
+    obs_fast.reorder_baselines(speedups=True)
+    np.testing.assert_array_equal(obs_legacy.data, obs_fast.data)
 
 
 def _seed_extra_row(obs, **overrides):
