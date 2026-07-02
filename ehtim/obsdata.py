@@ -124,7 +124,7 @@ class Obsdata:
     def __init__(self, ra, dec, rf, bw, datatable, tarr, scantable=None,
                  polrep='stokes', source=ehc.SOURCE_DEFAULT, mjd=ehc.MJD_DEFAULT, timetype='UTC',
                  ampcal=True, phasecal=True, opacitycal=True, dcal=True, frcal=True,
-                 trial_speedups=False):
+                 speedups=False):
         """A polarimetric VLBI observation of visibility amplitudes and phases (in Jy).
 
            Args:
@@ -256,7 +256,7 @@ class Obsdata:
             self.reorder_tarr_sefd(reorder_baselines=False)
 
         # reorder baselines to uvfits convention
-        self.reorder_baselines(trial_speedups=trial_speedups)
+        self.reorder_baselines(speedups=speedups)
 
         # Get tstart, mjd and tstop
         times = self.unpack(['time'])['time']
@@ -511,7 +511,7 @@ class Obsdata:
 
         return newobs
 
-    def reorder_baselines(self, trial_speedups=False):
+    def reorder_baselines(self, speedups=False):
         """Reorder baselines to canonical order (tkey[t1] < tkey[t2]) and handle duplicates.
 
         Within each timestep, any row whose baseline is in reversed order is swapped
@@ -528,7 +528,7 @@ class Obsdata:
             so loaders that flatten multi-channel files lose information here.
 
         Args:
-            trial_speedups (bool): kept for API compatibility; the implementation
+            speedups (bool): kept for API compatibility; the implementation
                 is now always vectorized and this flag has no effect.
         """
         dat = self.data.copy()
@@ -4604,8 +4604,10 @@ def load_txt(fname, polrep='stokes'):
 def load_uvfits(fname, flipbl=False, remove_nan=False, force_singlepol=None,
                 channel=all, IF=all, polrep='stokes', allow_singlepol=True,
                 ignore_pzero_date=True,
-                trial_speedups=False,
-                invvar_channel_avg=True):
+                speedups=True,
+                invvar_channel_avg=True,
+                average_if=True,
+                average_channel=True):
     """Load observation data from a uvfits file.
 
        Args:
@@ -4619,21 +4621,32 @@ def load_uvfits(fname, flipbl=False, remove_nan=False, force_singlepol=None,
            remove_nan (bool): whether or not to remove entries with nan data
            ignore_pzero_date (bool): if True, ignore the offset parameters in DATE field
                                      TODO: what is the correct behavior per AIPS memo 117?
-           trial_speedups (bool): if True, use faster array/telescope handling paths
+           speedups (bool): if True (default), use the faster vectorized read paths
            invvar_channel_avg (bool): if True, average IFs/channels with inverse-variance
                                       weighting. If False, use simple averaging.
+           average_if (bool): if True (default), average over all IFs; if False, keep
+                              each IF/SPW as its own frequency point (returns a list)
+           average_channel (bool): if True (default), average the fine channels within
+                              each IF; if False, keep each channel (returns a list)
        Returns:
-           obs (Obsdata): Obsdata object loaded from file
+           obs (Obsdata): the averaged observation, if average_if and average_channel
+           obslist (list of Obsdata): one per surviving (IF-group, channel-group) otherwise
     """
+
+    if not (average_if and average_channel):
+        return ehtim.io.load.load_obs_uvfits_spectral(
+            fname, polrep=polrep, flipbl=flipbl, allow_singlepol=allow_singlepol,
+            force_singlepol=force_singlepol, channel=channel, IF=IF,
+            remove_nan=remove_nan, invvar_channel_avg=invvar_channel_avg,
+            ignore_pzero_date=ignore_pzero_date,
+            average_if=average_if, average_channel=average_channel)
 
     return ehtim.io.load.load_obs_uvfits(fname, flipbl=flipbl, force_singlepol=force_singlepol,
                                          channel=channel, IF=IF, polrep=polrep,
                                          remove_nan=remove_nan, allow_singlepol=allow_singlepol,
                                          ignore_pzero_date=ignore_pzero_date,
-                                         trial_speedups=trial_speedups,
+                                         speedups=speedups,
                                          invvar_channel_avg=invvar_channel_avg)
-
-
 
 
 def load_maps(arrfile, obsspec, ifile, qfile=0, ufile=0, vfile=0,
