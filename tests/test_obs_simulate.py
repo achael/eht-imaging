@@ -127,14 +127,10 @@ class TestMakeUvpoints:
         assert set(out.dtype.names) >= {"rrvis", "llvis", "rlvis", "lrvis",
                                         "rrsigma", "llsigma", "rlsigma", "lrsigma"}
 
-    # def test_invalid_polrep_raises(self, array):
-    #     with pytest.raises(Exception, match="only 'stokes' and 'circ'"):
-    #         os_sim.make_uvpoints(array, 17.761, -29.0, 230e9, BW,
-    #                              TINT, TADV, TSTART, TSTOP, polrep="linear")
     def test_invalid_polrep_raises(self, array):
         with pytest.raises(ValueError, match="must be one of"):
             os_sim.make_uvpoints(array, 17.761, -29.0, 230e9, BW,
-                                TINT, TADV, TSTART, TSTOP, polrep="linear")
+                                 TINT, TADV, TSTART, TSTOP, polrep="linear")
 
     def test_baseline_ordering(self, array):
         out = os_sim.make_uvpoints(array, 17.761, -29.0, 230e9, BW,
@@ -406,6 +402,31 @@ class TestSampleVisBranches:
                                   s * uv[:, 0] + c * uv[:, 1]])
         out_pa0 = os_sim.sample_vis(asymmetric_image, uv_rot, ttype="direct", verbose=False)[0]
         np.testing.assert_allclose(out_pa, out_pa0, atol=1e-12)
+
+
+# ---------------------------------------------------------------------------
+# pack_sampled_visibilities
+# ---------------------------------------------------------------------------
+
+
+class TestPackSampledVisibilities:
+    """Coverage for pack_sampled_visibilities (writes sampled vis into obsdata)."""
+
+    def test_mixed_none_stokes_treated_as_zeros(self, mixed_array):
+        """Unpolarized source: sample_vis returns None for Q/U/V. The mixed
+        branch must treat those as zeros rather than crash (regression)."""
+        empty = mixed_array.obsdata(17.761, -29.0, 230e9, BW,
+                                    TINT, TADV, TSTART, TSTOP, polrep="mixed")
+        n = len(empty.data)
+        ivis = np.arange(1, n + 1, dtype=complex)   # nonzero, distinct per row
+        zeros = np.zeros(n, dtype=complex)
+        # None for Q/U/V (unpolarized) must match passing explicit zeros
+        out_none = os_sim.pack_sampled_visibilities(
+            empty.data.copy(), [ivis, None, None, None], "mixed")
+        out_zero = os_sim.pack_sampled_visibilities(
+            empty.data.copy(), [ivis, zeros, zeros, zeros], "mixed")
+        for slot in ("p1p1vis", "p2p2vis", "p1p2vis", "p2p1vis"):
+            np.testing.assert_array_equal(out_none[slot], out_zero[slot])
 
 
 # ---------------------------------------------------------------------------

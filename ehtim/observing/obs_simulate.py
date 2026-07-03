@@ -395,11 +395,15 @@ def pack_sampled_visibilities(obsdata, data, polrep):
         # data is Stokes (I, Q, U, V). Convert to the four generic correlation
         # slots per baseline; rows sharing a polbasis share one feed pairing,
         # so we group by polbasis and convert each group with one operator.
-        I, Q, U, V = (np.asarray(d) for d in data)
-        p1p1 = np.empty(len(obsdata), dtype=complex)
-        p2p2 = np.empty(len(obsdata), dtype=complex)
-        p1p2 = np.empty(len(obsdata), dtype=complex)
-        p2p1 = np.empty(len(obsdata), dtype=complex)
+        # sample_vis returns None for absent Stokes (e.g. an unpolarized source),
+        # so fill those with zeros before converting.
+        n = len(obsdata)
+        I, Q, U, V = (np.asarray(d) if d is not None else np.zeros(n, complex)
+                      for d in data)
+        p1p1 = np.empty(n, dtype=complex)
+        p2p2 = np.empty(n, dtype=complex)
+        p1p2 = np.empty(n, dtype=complex)
+        p2p1 = np.empty(n, dtype=complex)
         for basis in np.unique(obsdata['polbasis']):
             mask = obsdata['polbasis'] == basis
             t1_feed, t2_feed = str(basis)[:2], str(basis)[2:]
