@@ -251,6 +251,150 @@ def test_apply_inverse_jones_roundtrip_small_dterms():
     np.testing.assert_allclose(V_recovered, V_true, atol=1e-12)
 
 
+def test_apply_jones_forward_matches_definition_and_inverts():
+    """apply_jones_to_coherency == J1 V J2^dag, and apply_inverse recovers V."""
+    V_true = np.array([[1.0 + 0j, 0.05 + 0.02j],
+                       [0.05 - 0.02j, 0.8 + 0j]])
+    J1 = pc.jones_matrix(1.05 + 0.01j, 0.97 - 0.02j, 0.03, -0.02)
+    J2 = pc.jones_matrix(0.98 - 0.01j, 1.02 + 0.02j, -0.01, 0.04)
+    V_obs = pc.apply_jones_to_coherency(V_true, J1, J2)
+    np.testing.assert_allclose(V_obs, J1 @ V_true @ J2.conj().T, atol=1e-14)
+    V_rec = pc.apply_inverse_jones_to_coherency(V_obs, J1, J2)
+    np.testing.assert_allclose(V_rec, V_true, atol=1e-12)
+
+
+def test_apply_jones_forward_broadcasts():
+    """Leading axes broadcast (a stack of baselines/times)."""
+    V = np.broadcast_to(np.eye(2, dtype=complex), (4, 2, 2))
+    J = np.broadcast_to(np.diag([2.0 + 0j, 3.0 + 0j]), (4, 2, 2))
+    V_obs = pc.apply_jones_to_coherency(V, J, J)
+    expected = np.broadcast_to(np.diag([4.0 + 0j, 9.0 + 0j]), (4, 2, 2))
+    np.testing.assert_allclose(V_obs, expected, atol=1e-14)
+
+
+# ---------------------------------------------------------------------------
+# Forward Jones assembly (field_rotation_matrix, assemble_jones)
+# ---------------------------------------------------------------------------
+
+
+def test_field_rotation_matrix_circular_diagonal_phase():
+    """'rl' field rotation is diag(exp(-i*phi), exp(+i*phi))."""
+    phi = np.array([0.0, 0.3, -1.2])
+    Phi = pc.field_rotation_matrix('rl', phi)
+    assert Phi.shape == (3, 2, 2)
+    np.testing.assert_allclose(Phi[:, 0, 0], np.exp(-1j * phi))
+    np.testing.assert_allclose(Phi[:, 1, 1], np.exp(1j * phi))
+    np.testing.assert_allclose(Phi[:, 0, 1], 0, atol=1e-15)
+    np.testing.assert_allclose(Phi[:, 1, 0], 0, atol=1e-15)
+
+
+def test_field_rotation_matrix_zero_is_identity():
+    np.testing.assert_allclose(pc.field_rotation_matrix('rl', 0.0), np.eye(2), atol=1e-15)
+
+
+def test_field_rotation_matrix_linear_real_rotation():
+    """'xy' field rotation is the real rotation [[cos, sin], [-sin, cos]]."""
+    phi = np.array([0.0, 0.3, -1.2])
+    Phi = pc.field_rotation_matrix('xy', phi)
+    assert Phi.shape == (3, 2, 2)
+    np.testing.assert_allclose(Phi[:, 0, 0], np.cos(phi))
+    np.testing.assert_allclose(Phi[:, 0, 1], np.sin(phi))
+    np.testing.assert_allclose(Phi[:, 1, 0], -np.sin(phi))
+    np.testing.assert_allclose(Phi[:, 1, 1], np.cos(phi))
+
+
+def test_field_rotation_matrix_linear_consistent_with_circular():
+    """The linear Phi is fixed by consistency with the circular convention:
+    Phi_lin == F^{-1} Phi_circ F, F = BASIS_LIN_TO_CIRC. (This is the ASSUMPTION
+    awaiting Andrew's sign confirmation; the test pins the derivation.)"""
+    F = pc.BASIS_LIN_TO_CIRC
+    for phi in [0.0, 0.3, 1.1, -0.7]:
+        Phi_circ = pc.field_rotation_matrix('rl', phi)
+        Phi_lin = pc.field_rotation_matrix('xy', phi)
+        np.testing.assert_allclose(np.linalg.inv(F) @ Phi_circ @ F, Phi_lin, atol=1e-14)
+
+
+def test_field_rotation_matrix_hybrid_not_implemented():
+    with pytest.raises(NotImplementedError):
+        pc.field_rotation_matrix('rx', 0.5)
+
+
+def test_assemble_jones_default_identity():
+    """Unit gains, no D-terms, no field rotation -> identity."""
+    J = pc.assemble_jones(1.0, 1.0, 0.0, 0.0, 'rl', 0.0)
+    np.testing.assert_allclose(J, np.eye(2), atol=1e-15)
+
+
+def test_assemble_jones_hybrid_not_implemented():
+    with pytest.raises(NotImplementedError):
+        pc.assemble_jones(1.0, 1.0, 0.0, 0.0, 'rx', 0.0)
+
+
+def test_assemble_jones_linear_forward_is_G_IpD_Philin():
+    """Linear feeds, fr_angle_D=0: J = G (I + D) Phi_lin."""
+    gX, gY = 1.05 + 0.01j, 0.97 - 0.02j
+    dX, dY = 0.03 + 0.0j, -0.02 + 0.0j
+    phi = 0.4
+    J = pc.assemble_jones(gX, gY, dX, dY, 'xy', phi, 0.0)
+    G = np.array([[gX, 0], [0, gY]])
+    IpD = np.array([[1, dX], [dY, 1]])
+    Phi = np.array([[np.cos(phi), np.sin(phi)], [-np.sin(phi), np.cos(phi)]])
+    np.testing.assert_allclose(J, G @ IpD @ Phi, atol=1e-14)
+
+
+def test_assemble_jones_linear_frD_not_implemented():
+    """Nonzero fr_angle_D with a non-circular feed is gated (see LIMITATION)."""
+    with pytest.raises(NotImplementedError):
+        pc.assemble_jones(1.0, 1.0, 0.0, 0.0, 'xy', 0.1, 0.2)
+
+
+def test_assemble_jones_matches_make_jones_formula():
+    """assemble_jones reproduces the explicit elementwise circular assembly in
+    obs_simulate.make_jones for arbitrary gains / D-terms / rotation angles.
+
+    This is the transitive guarantee that make_jones's random gain/phase paths
+    (which flow through the same assembly) stay bit-identical after it is
+    rewired to call assemble_jones.
+    """
+    rng = np.random.default_rng(0)
+    n = 7
+
+    def crand(shape):
+        return rng.standard_normal(shape) + 1j * rng.standard_normal(shape)
+
+    gR = crand(n)
+    gL = crand(n)
+    dR = 0.03 + 0.02j
+    dL = -0.01 + 0.04j
+    phi = rng.standard_normal(n)      # fr_angle
+    phiD = rng.standard_normal(n)     # fr_angle_D
+
+    # Reference: the exact matrix built in obs_simulate.make_jones (lines ~806-813).
+    J_ref = np.empty((n, 2, 2), dtype=complex)
+    for j in range(n):
+        J_ref[j] = np.array([
+            [np.exp(-1j * phi[j]) * gR[j],
+             np.exp(1j * (phi[j] + phiD[j])) * dR * gR[j]],
+            [np.exp(-1j * (phi[j] + phiD[j])) * dL * gL[j],
+             np.exp(1j * phi[j]) * gL[j]],
+        ])
+
+    J = pc.assemble_jones(gR, gL, dR, dL, 'rl', phi, phiD)
+    np.testing.assert_allclose(J, J_ref, atol=1e-13)
+
+
+def test_assemble_jones_frD_zero_is_G_IpD_Phi():
+    """With fr_angle_D=0 the assembly is exactly G (I + D) Phi."""
+    gR, gL = 1.05 + 0.01j, 0.97 - 0.02j
+    dR, dL = 0.03 + 0.0j, -0.02 + 0.0j
+    phi = 0.4
+    J = pc.assemble_jones(gR, gL, dR, dL, 'rl', phi, 0.0)
+    G = np.array([[gR, 0], [0, gL]])
+    IpD = np.array([[1, dR], [dL, 1]])
+    Phi = np.array([[np.exp(-1j * phi), 0], [0, np.exp(1j * phi)]])
+    np.testing.assert_allclose(J, G @ IpD @ Phi, atol=1e-14)
+
+
 # ---------------------------------------------------------------------------
 # MixedPolConventionWarning fires exactly once per session
 # ---------------------------------------------------------------------------
