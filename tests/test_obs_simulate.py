@@ -105,6 +105,40 @@ def obs_asym(asymmetric_image, asymmetric_array):
     return _observe(asymmetric_image, asymmetric_array)
 
 
+@pytest.fixture(scope="module")
+def obs_pol_asym(asymmetric_image_pol, asymmetric_array):
+    """Polarized observation against the asymmetric array (nonzero cross-hands,
+    sefdr != sefdl, nonzero D-terms) -- exercises all four correlations."""
+    return _observe(asymmetric_image_pol, asymmetric_array)
+
+
+@pytest.fixture(scope="module")
+def obs_lin(asymmetric_image, lin_array):
+    """Observation against an all-linear ('xy') array."""
+    return _observe(asymmetric_image, lin_array)
+
+
+@pytest.fixture(scope="module")
+def obs_mixed(asymmetric_image_pol, mixed_array):
+    """Polarized clean observation of a heterogeneous ('rl' + 'xy') array in the
+    native 'mixed' polrep. Built via observe_same_nonoise (stokes cannot be
+    switched to 'mixed', and the legacy add_noise path is still stokes/circ-only)."""
+    im = asymmetric_image_pol
+    empty = mixed_array.obsdata(im.ra, im.dec, im.rf, BW, TINT, TADV, TSTART, TSTOP,
+                                polrep="mixed")
+    return im.observe_same_nonoise(empty, ttype="direct", verbose=False)
+
+
+@pytest.fixture(scope="module")
+def obs_lin_pol(asymmetric_image_pol, lin_array):
+    """Polarized clean observation of an all-linear array in the native 'lin'
+    polrep (feed basis matches polrep, for physically-consistent Jones)."""
+    im = asymmetric_image_pol
+    empty = lin_array.obsdata(im.ra, im.dec, im.rf, BW, TINT, TADV, TSTART, TSTOP,
+                              polrep="lin")
+    return im.observe_same_nonoise(empty, ttype="direct", verbose=False)
+
+
 # ---------------------------------------------------------------------------
 # make_uvpoints
 # ---------------------------------------------------------------------------
@@ -458,6 +492,46 @@ class TestMakeJones:
         for site_dict in jm.values():
             assert len(site_dict) > 0
 
+    def test_circular_golden_snapshot(self, obs_asym):
+        """Golden-rule regression: freeze make_jones's assembled matrix values so
+        the upcoming refactor (moving Jones assembly into pol_conventions) stays
+        bit-identical for homogeneous-circular input.
+
+        Drives only corruption whose values come from geometry (field rotation,
+        opacity) or tarr (fixed D-terms) -- NOT from hashrandn -- so the snapshot
+        is reproducible across processes without pinning PYTHONHASHSEED. This
+        exercises the full G*(I+D)*Phi assembly (diagonal gains, off-diagonal
+        D-terms, field-rotation phases) deterministically. The random gain/phase
+        paths flow through the same assembly and are covered transitively by the
+        forthcoming pol_conventions.assemble_jones unit test.
+        """
+        jm = os_sim.make_jones(obs_asym, ampcal=True, phasecal=True,
+                               opacitycal=False, taup=0.0,
+                               dcal=False, frcal=False, dterm_offset=0.0, seed=42)
+        mats = _all_jones(jm)
+
+        assert mats.shape == (856, 2, 2)
+
+        # Independent global reductions: any drift in the assembly changes these.
+        np.testing.assert_allclose(
+            mats.sum(), 226.70283377478205 + 2.9733093453652755j, rtol=1e-12)
+        np.testing.assert_allclose(
+            np.abs(mats).sum(), 1.642259141326637e+03, rtol=1e-12)
+        np.testing.assert_allclose(
+            (mats**2).sum(), -7.652189779067328 - 0.04215025965783799j, rtol=1e-12)
+
+        # Exact anchor matrices (first and last), full 2x2.
+        m0 = np.array([[-0.6270516546475777 - 0.7789776777313551j,
+                        -0.020330809870265105 + 0.009309037008151326j],
+                       [0.017955181712446103 - 0.0016159980424001142j,
+                        -0.6270516546475777 + 0.7789776777313551j]])
+        mlast = np.array([[0.6899314917976136 - 0.5848676363109235j,
+                           0.007949953472843035 + 0.018596667644194605j],
+                          [0.0018736996266877181 + 0.016197648740073442j,
+                           0.6899314917976136 + 0.5848676363109235j]])
+        np.testing.assert_allclose(mats[0], m0, rtol=0, atol=1e-12)
+        np.testing.assert_allclose(mats[-1], mlast, rtol=0, atol=1e-12)
+
     def test_seed_reproducible(self, obs):
         jm1 = os_sim.make_jones(obs, ampcal=False, phasecal=False, seed=42)
         jm2 = os_sim.make_jones(obs, ampcal=False, phasecal=False, seed=42)
@@ -587,6 +661,46 @@ class TestMakeJones:
         files = list(caldir.iterdir())
         assert len(files) > 0
 
+    def test_linear_array_jones_is_real_rotation(self, obs_lin):
+        """On an all-linear array, field rotation yields real orthogonal
+        rotation matrices (not the circular diagonal-phase form)."""
+        jm = os_sim.make_jones(obs_lin, frcal=False, seed=1)  # field rotation only
+        J = _all_jones(jm)
+        # linear Phi = [[cos, sin], [-sin, cos]]: real, orthogonal, det 1
+        np.testing.assert_allclose(J.imag, 0, atol=1e-12)
+        np.testing.assert_allclose(J @ J.transpose(0, 2, 1),
+                                   np.broadcast_to(np.eye(2), J.shape), atol=1e-10)
+        np.testing.assert_allclose(np.linalg.det(J), 1.0, atol=1e-10)
+        # rotation actually happens somewhere (off-diagonals not all ~0)
+        assert np.max(np.abs(J[:, 0, 1])) > 1e-3
+
+    def test_mixed_array_jones_per_station_feed_basis(self, obs_mixed):
+        """Heterogeneous array: each station's Jones matrix is built in its own
+        feed basis -- linear ('xy') stations get real rotations, circular ('rl')
+        stations get diagonal unit-modulus phases -- and both are exercised."""
+        jm = os_sim.make_jones(obs_mixed, frcal=False, seed=1)  # field rotation only
+        feed = {str(r["site"]): str(r["feed_type"]) for r in obs_mixed.tarr}
+        saw_lin_rotation = False
+        saw_circ_phase = False
+        for site, tdict in jm.items():
+            J = np.array(list(tdict.values()))  # (ntimes, 2, 2)
+            if feed[site] == "xy":
+                # linear: real orthogonal rotation
+                np.testing.assert_allclose(J.imag, 0, atol=1e-12)
+                np.testing.assert_allclose(J @ J.transpose(0, 2, 1),
+                                           np.broadcast_to(np.eye(2), J.shape), atol=1e-10)
+                if np.max(np.abs(J[:, 0, 1])) > 1e-6:
+                    saw_lin_rotation = True
+            else:  # 'rl' circular: diagonal, unit modulus, opposite phases
+                np.testing.assert_allclose(J[:, 0, 1], 0, atol=1e-12)
+                np.testing.assert_allclose(J[:, 1, 0], 0, atol=1e-12)
+                np.testing.assert_allclose(np.abs(J[:, 0, 0]), 1.0, atol=1e-12)
+                np.testing.assert_allclose(J[:, 0, 0], np.conj(J[:, 1, 1]), atol=1e-12)
+                if np.max(np.abs(J[:, 0, 0].imag)) > 1e-6:
+                    saw_circ_phase = True
+        assert saw_lin_rotation, "no linear station exhibited field-rotation mixing"
+        assert saw_circ_phase, "no circular station exhibited a rotation phase"
+
 
 # ---------------------------------------------------------------------------
 # make_jones_inverse
@@ -664,12 +778,69 @@ class TestMakeJonesInverse:
 
 class TestAddJonesAndNoise:
 
+    def test_circular_golden_snapshot(self, obs_pol_asym):
+        """Golden-rule regression: freeze the deterministic circular corruption
+        (geometry/tarr-driven, no thermal noise) so the generalization of
+        add_jones_and_noise to lin/mixed stays bit-identical for homogeneous-
+        circular input. See TestMakeJones.test_circular_golden_snapshot for the
+        cross-process reproducibility rationale."""
+        obs_circ = obs_pol_asym.switch_polrep('circ')
+        out = os_sim.add_jones_and_noise(
+            obs_circ, add_th_noise=False, verbose=False,
+            opacitycal=False, taup=0.0, dcal=False, frcal=False,
+            dterm_offset=0.0, seed=42)
+        assert len(out) == 1030
+        # (complex sum, abs sum) reference from the current circular code path.
+        refs = {
+            'rrvis': (56.9320983911918 + 45.76183280802089j, 2.106697842642e+02),
+            'llvis': (80.97232013367554 - 33.50067542284446j, 2.022889706126e+02),
+            'rlvis': (-0.6565234574877421 + 1.8765209227202262j, 2.108708588243e+01),
+            'lrvis': (-4.761736644962417 - 1.3786150379036752j, 2.512659399893e+01),
+            'rrsigma': (9.069973670591652 + 0j, 9.069973670592e+00),
+            'llsigma': (13.60496050588748 + 0j, 1.360496050589e+01),
+            'rlsigma': (11.108403736713875 + 0j, 1.110840373671e+01),
+            'lrsigma': (11.108403736713875 + 0j, 1.110840373671e+01),
+        }
+        for col, (csum, abssum) in refs.items():
+            v = np.asarray(out[col], dtype=complex)
+            np.testing.assert_allclose(v.sum(), csum, rtol=1e-12)
+            np.testing.assert_allclose(np.abs(v).sum(), abssum, rtol=1e-12)
+
     def test_identity_preserves_vis(self, obs):
         """All cal True, no thermal noise -> visibilities and sigmas unchanged."""
         obsdat = os_sim.add_jones_and_noise(obs, add_th_noise=False,
                                             verbose=False, seed=42)
         np.testing.assert_allclose(obsdat["vis"], obs.data["vis"], atol=1e-12)
         np.testing.assert_allclose(obsdat["sigma"], obs.data["sigma"], atol=1e-12)
+
+    def test_linear_array_identity_preserves_vis(self, obs_lin):
+        """Linear array, all cal True, no noise: round-trips through the generic
+        path (stokes -> lin -> lin -> stokes) with visibilities unchanged."""
+        out = os_sim.add_jones_and_noise(obs_lin, add_th_noise=False,
+                                         verbose=False, seed=42)
+        for col in ("vis", "qvis", "uvis", "vvis"):
+            np.testing.assert_allclose(out[col], obs_lin.data[col], atol=1e-10)
+
+    def test_mixed_array_identity_preserves_vis(self, obs_mixed):
+        """Heterogeneous array (native 'mixed' polrep), all cal True, no noise:
+        the identity Jones leaves the generic-slot correlations unchanged."""
+        out = os_sim.add_jones_and_noise(obs_mixed, add_th_noise=False,
+                                         verbose=False, seed=42)
+        for col in ("p1p1vis", "p2p2vis", "p1p2vis", "p2p1vis"):
+            np.testing.assert_allclose(out[col], obs_mixed.data[col], atol=1e-10)
+
+    def test_linear_array_corruption_changes_data(self, obs_lin):
+        """Gain corruption on a linear array actually perturbs the visibilities."""
+        out = os_sim.add_jones_and_noise(obs_lin, add_th_noise=False, ampcal=False,
+                                         verbose=False, seed=42)
+        assert not np.allclose(out["vis"], obs_lin.data["vis"])
+
+    def test_mixed_array_field_rotation_changes_data(self, obs_mixed):
+        """Field rotation on a mixed array perturbs the correlations (exercises
+        the per-station-basis Jones application with mixed feed pairings)."""
+        out = os_sim.add_jones_and_noise(obs_mixed, add_th_noise=False, frcal=False,
+                                         verbose=False, seed=42)
+        assert not np.allclose(out["p1p1vis"], obs_mixed.data["p1p1vis"])
 
     def test_seed_reproducible_no_noise(self, obs):
         """Without thermal noise, same seed -> identical output."""
@@ -824,6 +995,30 @@ class TestApplyJonesInverse:
         obs_back.data = os_sim.apply_jones_inverse(obs_corr, opacitycal=False, verbose=False)
         np.testing.assert_allclose(obs_back.data["vis"], obs.data["vis"], atol=1e-10)
 
+    @staticmethod
+    def _roundtrip_dterms_fr(obs, cols):
+        """Corrupt with D-terms + field rotation (deterministic: dterm_offset=0 so
+        the forward D-terms equal the tarr D-terms the inverse uses), then invert.
+        The inverse must recover the clean correlations to machine precision."""
+        obs_corr = obs.copy()
+        obs_corr.data = os_sim.add_jones_and_noise(
+            obs, add_th_noise=False, dcal=False, frcal=False, dterm_offset=0.0,
+            verbose=False, seed=1)
+        rec = os_sim.apply_jones_inverse(obs_corr, dcal=False, frcal=False, verbose=False)
+        for col in cols:
+            np.testing.assert_allclose(rec[col], obs.data[col], atol=1e-9,
+                                       err_msg=f"{col} not recovered")
+
+    def test_roundtrip_dterms_fr_circ(self, obs_pol_asym):
+        self._roundtrip_dterms_fr(obs_pol_asym.switch_polrep("circ"),
+                                  ("rrvis", "llvis", "rlvis", "lrvis"))
+
+    def test_roundtrip_dterms_fr_lin(self, obs_lin_pol):
+        self._roundtrip_dterms_fr(obs_lin_pol, ("xxvis", "yyvis", "xyvis", "yxvis"))
+
+    def test_roundtrip_dterms_fr_mixed(self, obs_mixed):
+        self._roundtrip_dterms_fr(obs_mixed, ("p1p1vis", "p2p2vis", "p1p2vis", "p2p1vis"))
+
 
 # ---------------------------------------------------------------------------
 # add_noise  (legacy path)
@@ -836,6 +1031,42 @@ class TestAddNoiseLegacy:
         out = os_sim.add_noise(obs, add_th_noise=False, verbose=False, seed=42)
         np.testing.assert_allclose(out["vis"], obs.data["vis"], atol=1e-12)
         np.testing.assert_allclose(out["sigma"], obs.data["sigma"], atol=1e-12)
+
+    def test_sigma_golden_snapshot(self, obs_pol_asym):
+        """Golden-rule: freeze the recomputed perfect sigmas (deterministic, no
+        noise) for stokes and circ, so the shared-helper refactor stays
+        bit-identical. Values from the pre-refactor code."""
+        refs = {
+            "stokes": {"sigma": 8.175563784107e+00, "qsigma": 7.854827610388e+00,
+                       "usigma": 7.854827610388e+00, "vsigma": 8.175563784107e+00},
+            "circ": {"rrsigma": 9.069973670592e+00, "llsigma": 1.360496050589e+01,
+                     "rlsigma": 1.110840373671e+01, "lrsigma": 1.110840373671e+01},
+        }
+        for rep, cols in refs.items():
+            out = os_sim.add_noise(obs_pol_asym.switch_polrep(rep),
+                                   add_th_noise=False, verbose=False, seed=42)
+            for col, s in cols.items():
+                np.testing.assert_allclose(np.asarray(out[col], float).sum(), s, rtol=1e-12)
+
+    def test_lin_array_stokes_runs(self, obs_lin):
+        """add_noise on a Stokes obs of a linear array no longer crashes and
+        preserves visibilities with all cal True + no noise (was UnboundLocalError)."""
+        out = os_sim.add_noise(obs_lin, add_th_noise=False, verbose=False, seed=42)
+        np.testing.assert_allclose(out["vis"], obs_lin.data["vis"], atol=1e-10)
+        assert np.all(np.asarray(out["sigma"], float) > 0)
+
+    def test_lin_polrep_runs(self, obs_lin_pol):
+        """add_noise on a native 'lin' obs: sigmas = the four correlation sigmas."""
+        out = os_sim.add_noise(obs_lin_pol, add_th_noise=False, verbose=False, seed=42)
+        for col in ("xxvis", "yyvis", "xyvis", "yxvis"):
+            np.testing.assert_allclose(out[col], obs_lin_pol.data[col], atol=1e-10)
+        assert np.all(np.asarray(out["xxsigma"], float) > 0)
+
+    def test_mixed_polrep_runs(self, obs_mixed):
+        """add_noise on a native 'mixed' obs preserves the generic-slot correlations."""
+        out = os_sim.add_noise(obs_mixed, add_th_noise=False, verbose=False, seed=42)
+        for col in ("p1p1vis", "p2p2vis", "p1p2vis", "p2p1vis"):
+            np.testing.assert_allclose(out[col], obs_mixed.data[col], atol=1e-10)
 
     def test_seed_reproducible(self, obs):
         o1 = os_sim.add_noise(obs, add_th_noise=False, ampcal=False,

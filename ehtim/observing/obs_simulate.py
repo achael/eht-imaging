@@ -427,6 +427,47 @@ def pack_sampled_visibilities(obsdata, data, polrep):
 ##################################################################################################
 
 
+def _baseline_correlation_sigmas(obs, t1, t2, tints):
+    """Thermal noise sigmas for the four generic correlations of each baseline.
+
+    Returns ``(sig_p1p1, sig_p2p2, sig_p1p2, sig_p2p1)`` -- one array per generic
+    DTPOL slot -- from the stations' per-feed SEFDs (``sefd_p1``/``sefd_p2``) via
+    :func:`obs_helpers.blnoise`. Each slot pairs the two stations' feeds
+    (p1p1 = t1-feed1 x t2-feed1, p1p2 = t1-feed1 x t2-feed2, etc.). Reduces
+    exactly to the legacy circular ``sig_rr/sig_ll/sig_rl/sig_lr`` pairing
+    (``sefd_p1`` == ``sefdr``, ``sefd_p2`` == ``sefdl``).
+
+    Parameters
+    ----------
+    obs : Obsdata
+        Provides ``tarr``/``tkey`` (SEFDs) and ``bw``.
+    t1, t2 : sequence of str
+        Per-row station names for the two ends of each baseline.
+    tints : sequence of float
+        Per-row integration times.
+
+    Returns
+    -------
+    tuple of four np.ndarray
+        ``(sig_p1p1, sig_p2p2, sig_p1p2, sig_p2p1)``.
+    """
+    n = len(t1)
+    tarr, tkey, bw = obs.tarr, obs.tkey, obs.bw
+
+    def _sefd(site, slot):
+        return tarr[tkey[site]]['sefd_p1' if slot == 0 else 'sefd_p2']
+
+    sig_p1p1 = np.fromiter((obsh.blnoise(_sefd(t1[i], 0), _sefd(t2[i], 0), tints[i], bw)
+                            for i in range(n)), float)
+    sig_p2p2 = np.fromiter((obsh.blnoise(_sefd(t1[i], 1), _sefd(t2[i], 1), tints[i], bw)
+                            for i in range(n)), float)
+    sig_p1p2 = np.fromiter((obsh.blnoise(_sefd(t1[i], 0), _sefd(t2[i], 1), tints[i], bw)
+                            for i in range(n)), float)
+    sig_p2p1 = np.fromiter((obsh.blnoise(_sefd(t1[i], 1), _sefd(t2[i], 0), tints[i], bw)
+                            for i in range(n)), float)
+    return sig_p1p1, sig_p2p2, sig_p1p2, sig_p2p1
+
+
 def make_jones(obs, opacitycal=True, ampcal=True, phasecal=True, dcal=True,
                frcal=True, rlgaincal=True,
                stabilize_scan_phase=False, stabilize_scan_amp=False, neggains=False,
@@ -802,15 +843,14 @@ def make_jones(obs, opacitycal=True, ampcal=True, phasecal=True, dcal=True,
             fr_angle_D = 2.0*(tarr[i]['fr_elev']*el_angles + tarr[i]
                               ['fr_par']*par_angles + tarr[i]['fr_off']*ehc.DEGREE)
 
-        # Assemble the Jones Matrices and save to dictionary
-        j_matrices = {times[j]: np.array([
-            [np.exp(-1j*fr_angle[j])*gainR[j],
-             np.exp(1j*(fr_angle[j]+fr_angle_D[j]))*dR*gainR[j]],
-            [np.exp(-1j*(fr_angle[j]+fr_angle_D[j]))*dL*gainL[j],
-             np.exp(1j*fr_angle[j])*gainL[j]]
-        ])
-            for j in range(len(times))
-        }
+        # Assemble the Jones matrices (J = G (I + D_rot) Phi) and save to dict.
+        # gainR/gainL are the p1/p2 complex gains, dR/dL the p1/p2 D-terms, built
+        # per station in that station's own feed basis. feed_type selects the
+        # field-rotation form (diagonal phase for 'rl', real rotation for 'xy').
+        feed_type = str(tarr[i]['feed_type'])
+        J = pol_conventions.assemble_jones(gainR, gainL, dR, dL, feed_type,
+                                           fr_angle, fr_angle_D)
+        j_matrices = {times[j]: J[j] for j in range(len(times))}
 
         out[site] = j_matrices
 
@@ -936,15 +976,15 @@ def make_jones_inverse(obs, opacitycal=True, dcal=True, frcal=True):
             fr_angle_D = 2.0*(tarr[i]['fr_elev']*el_angles + tarr[i]
                               ['fr_par']*par_angles + tarr[i]['fr_off']*ehc.DEGREE)
 
-        # Assemble the inverse Jones Matrices and save to dictionary
-        pref = 1.0/(gainL*gainR*(1.0 - dL*dR))
-        j_matrices_inv = {times[j]: pref[j]*np.array([
-            [np.exp(1j*fr_angle[j])*gainL[j],
-             -np.exp(1j*(fr_angle[j] + fr_angle_D[j]))*dR*gainR[j]],
-            [-np.exp(-1j*(fr_angle[j] + fr_angle_D[j]))*dL*gainL[j],
-             np.exp(-1j*fr_angle[j])*gainR[j]]
-        ]) for j in range(len(times))
-        }
+        # Assemble the forward Jones matrices (J = G (I + D_rot) Phi) in this
+        # station's feed basis, then invert. This reproduces the analytic
+        # circular inverse (inv of the make_jones matrix) and generalizes to
+        # linear/mixed feeds. gainR/gainL are p1/p2 gains, dR/dL are p1/p2 D-terms.
+        feed_type = str(tarr[i]['feed_type'])
+        J = pol_conventions.assemble_jones(gainR, gainL, dR, dL, feed_type,
+                                           fr_angle, fr_angle_D)
+        J_inv = pol_conventions.invert_jones(J)
+        j_matrices_inv = {times[j]: J_inv[j] for j in range(len(times))}
 
         out[site] = j_matrices_inv
 
@@ -1031,45 +1071,68 @@ def add_jones_and_noise(obs, add_th_noise=True,
                          rlgsigmat=rlgsigmat,rlpsigmat=rlpsigmat,
                          caltable_path=caltable_path, seed=seed)
 
-    # Change pol rep:
-    obs_circ = obs.switch_polrep('circ')
-    obsdata = copy.copy(obs_circ.data)
+    # Choose the correlation basis to corrupt in. A Jones matrix acts on a
+    # station's feed-basis coherency, so we need the four feed correlations.
+    # If the obs is already in a correlation basis (circ/lin/mixed) we corrupt
+    # in place; a Stokes obs is switched to the array's feed basis first.
+    # Homogeneous-circular reduces exactly to the legacy path (feed-letter noise
+    # tags below reproduce the 'rr'/'rl'/... keys).
+    feed_of = {str(r['site']): str(r['feed_type']) for r in obs.tarr}
+    feeds = set(feed_of.values())
+
+    if obs.polrep in ('circ', 'lin', 'mixed'):
+        obs_work = obs
+        switch_back = False
+    else:  # 'stokes' -> switch to the array's feed correlation basis
+        if feeds <= {'rl'}:
+            target, hand = 'circ', 'R'
+        elif feeds <= {'xy'}:
+            target, hand = 'lin', 'X'
+        else:
+            raise NotImplementedError(
+                "add_jones_and_noise: corrupting a Stokes observation of a "
+                "heterogeneous (mixed-feed) array is not supported because "
+                "switch_polrep cannot yet target 'mixed'. Build the observation "
+                "directly in polrep='mixed' (e.g. observe(..., polrep_obs='mixed')) "
+                "before adding Jones corruption. See docs/polarization_conventions.md sec 12.")
+        obs_work = obs.switch_polrep(target, singlepol_hand=hand)
+        switch_back = True
+
+    obsdata = copy.copy(obs_work.data)
+    pd = obs_work.poldict
 
     times = obsdata['time']
     t1 = obsdata['t1']
     t2 = obsdata['t2']
     tints = obsdata['tint']
-    rr = obsdata['rrvis']
-    ll = obsdata['llvis']
-    rl = obsdata['rlvis']
-    lr = obsdata['lrvis']
+    n = len(times)
 
-    # Recompute the noise std. deviations from the SEFDs
-    if np.any(obs.tarr['sefdr'] <= 0) or np.any(obs.tarr['sefdl'] <= 0):
+    # Generic correlation slots: vis1=p1p1, vis2=p2p2, vis3=p1p2, vis4=p2p1.
+    v_p1p1 = obsdata[pd['vis1']]
+    v_p2p2 = obsdata[pd['vis2']]
+    v_p1p2 = obsdata[pd['vis3']]
+    v_p2p1 = obsdata[pd['vis4']]
+
+    # Per-row feed types (for the noise correlation labels). t1f[0]/t1f[1] are
+    # the station's p1/p2 feed letters, so t1f[0]+t2f[0] is the p1p1 label etc.
+    t1f = [feed_of[t1[i]] for i in range(n)]
+    t2f = [feed_of[t2[i]] for i in range(n)]
+
+    # Recompute the four per-correlation noise sigmas from SEFDs. Each slot
+    # pairs the two stations' feeds; sefd_p1/sefd_p2 are the p1/p2 feed SEFDs
+    # (== sefdr/sefdl for circular), so this reduces exactly to the legacy
+    # sig_rr/sig_ll/sig_rl/sig_lr computation.
+    if np.any(obs.tarr['sefd_p1'] <= 0) or np.any(obs.tarr['sefd_p2'] <= 0):
         if verbose:
             print("Warning!: in add_jones_and_noise, some SEFDs are <= 0!")
             print("Resorting to data point sigmas, which may add too much systematic noise!")
-        sig_rr = obsdata['rrsigma']
-        sig_ll = obsdata['llsigma']
-        sig_rl = obsdata['rlsigma']
-        sig_lr = obsdata['lrsigma']
+        sig_p1p1 = obsdata[pd['sigma1']]
+        sig_p2p2 = obsdata[pd['sigma2']]
+        sig_p1p2 = obsdata[pd['sigma3']]
+        sig_p2p1 = obsdata[pd['sigma4']]
     else:
-        sig_rr = np.fromiter((obsh.blnoise(obs.tarr[obs.tkey[t1[i]]]['sefdr'],
-                                           obs.tarr[obs.tkey[t2[i]]]['sefdr'],
-                                           tints[i], obs.bw)
-                              for i in range(len(rr))), float)
-        sig_ll = np.fromiter((obsh.blnoise(obs.tarr[obs.tkey[t1[i]]]['sefdl'],
-                                           obs.tarr[obs.tkey[t2[i]]]['sefdl'],
-                                           tints[i], obs.bw)
-                              for i in range(len(ll))), float)
-        sig_rl = np.fromiter((obsh.blnoise(obs.tarr[obs.tkey[t1[i]]]['sefdr'],
-                                           obs.tarr[obs.tkey[t2[i]]]['sefdl'],
-                                           tints[i], obs.bw)
-                              for i in range(len(rl))), float)
-        sig_lr = np.fromiter((obsh.blnoise(obs.tarr[obs.tkey[t1[i]]]['sefdl'],
-                                           obs.tarr[obs.tkey[t2[i]]]['sefdr'],
-                                           tints[i], obs.bw)
-                              for i in range(len(lr))), float)
+        sig_p1p1, sig_p2p2, sig_p1p2, sig_p2p1 = _baseline_correlation_sigmas(
+            obs, t1, t2, tints)
 
     if verbose and not opacitycal:
         print("   Applying opacity attenuation: opacitycal-->False")
@@ -1084,43 +1147,44 @@ def add_jones_and_noise(obs, add_th_noise=True,
     if verbose and add_th_noise:
         print("Adding thermal noise to data . . . ")
 
-    # Corrupt each IQUV visibility set with the jones matrices and add noise
-    for i in range(len(times)):
-        # Form the visibility correlation matrix
-        corr_matrix = np.array([[rr[i], rl[i]], [lr[i], ll[i]]])
+    # Corrupt each baseline's coherency matrix with the Jones matrices + noise.
+    for i in range(n):
+        # Coherency matrix in generic-slot order [[p1p1, p1p2], [p2p1, p2p2]].
+        corr_matrix = np.array([[v_p1p1[i], v_p1p2[i]], [v_p2p1[i], v_p2p2[i]]])
 
-        # Get the jones matrices and corrupt the corr_matrix
         j1 = jm_dict[t1[i]][times[i]]
         j2 = jm_dict[t2[i]][times[i]]
+        corr_matrix_corrupt = pol_conventions.apply_jones_to_coherency(corr_matrix, j1, j2)
 
-        corr_matrix_corrupt = np.dot(j1, np.dot(corr_matrix, np.conjugate(j2.T)))
-
-        # Add noise
+        # Add noise. Labels are the feed-letter correlation names (p1p1 -> e.g.
+        # 'rr'/'xx'/'rx'), which reproduce the legacy circular keys exactly.
         if add_th_noise:
             noise_matrix = np.array([
-                [obsh.cerror_hash(sig_rr[i], t1[i], t2[i], times[i], 'rr', seed),
-                 obsh.cerror_hash(sig_rl[i], t1[i], t2[i], times[i], 'rl', seed)],
-                [obsh.cerror_hash(sig_lr[i], t1[i], t2[i], times[i], 'lr', seed),
-                 obsh.cerror_hash(sig_ll[i], t1[i], t2[i], times[i], 'll', seed)],
+                [obsh.cerror_hash(sig_p1p1[i], t1[i], t2[i], times[i], t1f[i][0] + t2f[i][0], seed),
+                 obsh.cerror_hash(sig_p1p2[i], t1[i], t2[i], times[i], t1f[i][0] + t2f[i][1], seed)],
+                [obsh.cerror_hash(sig_p2p1[i], t1[i], t2[i], times[i], t1f[i][1] + t2f[i][0], seed),
+                 obsh.cerror_hash(sig_p2p2[i], t1[i], t2[i], times[i], t1f[i][1] + t2f[i][1], seed)],
             ])
-            corr_matrix_corrupt += noise_matrix
+            corr_matrix_corrupt = corr_matrix_corrupt + noise_matrix
 
-        # Put the corrupted data back into the data table
-        obsdata['rrvis'][i] = corr_matrix_corrupt[0][0]
-        obsdata['llvis'][i] = corr_matrix_corrupt[1][1]
-        obsdata['rlvis'][i] = corr_matrix_corrupt[0][1]
-        obsdata['lrvis'][i] = corr_matrix_corrupt[1][0]
+        # Put the corrupted correlations back into the generic slots.
+        obsdata[pd['vis1']][i] = corr_matrix_corrupt[0][0]  # p1p1
+        obsdata[pd['vis2']][i] = corr_matrix_corrupt[1][1]  # p2p2
+        obsdata[pd['vis3']][i] = corr_matrix_corrupt[0][1]  # p1p2
+        obsdata[pd['vis4']][i] = corr_matrix_corrupt[1][0]  # p2p1
 
-        # Put the recomputed sigmas back into the data table
-        obsdata['rrsigma'][i] = sig_rr[i]
-        obsdata['llsigma'][i] = sig_ll[i]
-        obsdata['rlsigma'][i] = sig_rl[i]
-        obsdata['lrsigma'][i] = sig_lr[i]
+        obsdata[pd['sigma1']][i] = sig_p1p1[i]
+        obsdata[pd['sigma2']][i] = sig_p2p2[i]
+        obsdata[pd['sigma3']][i] = sig_p1p2[i]
+        obsdata[pd['sigma4']][i] = sig_p2p1[i]
 
     # put back into input polvec
-    obs_circ.data = obsdata
-    obs_back = obs_circ.switch_polrep(obs.polrep)
-    obsdata_back = obs_back.data
+    if switch_back:
+        obs_work.data = obsdata
+        obs_back = obs_work.switch_polrep(obs.polrep)
+        obsdata_back = obs_back.data
+    else:
+        obsdata_back = obsdata
 
     # Return observation data
     return obsdata_back
@@ -1145,105 +1209,110 @@ def apply_jones_inverse(obs, opacitycal=True, dcal=True, frcal=True, verbose=Tru
     # Build Inverse Jones Matrices
     jm_dict = make_jones_inverse(obs, opacitycal=opacitycal, dcal=dcal, frcal=frcal)
 
-    # Change pol rep:
-    obs_circ = obs.switch_polrep('circ')
+    # Choose the correlation basis to correct in (same logic as
+    # add_jones_and_noise): in place for circ/lin/mixed, switch a Stokes obs to
+    # the array's feed basis first. Homogeneous-circular reduces to the legacy path.
+    feed_of = {str(r['site']): str(r['feed_type']) for r in obs.tarr}
+    feeds = set(feed_of.values())
 
-    # Get data
-    obsdata = copy.deepcopy(obs_circ.data)
+    if obs.polrep in ('circ', 'lin', 'mixed'):
+        obs_work = obs
+        switch_back = False
+    else:  # 'stokes' -> switch to the array's feed correlation basis
+        if feeds <= {'rl'}:
+            target, hand = 'circ', 'R'
+        elif feeds <= {'xy'}:
+            target, hand = 'lin', 'X'
+        else:
+            raise NotImplementedError(
+                "apply_jones_inverse: a Stokes observation of a heterogeneous "
+                "(mixed-feed) array is not supported because switch_polrep cannot "
+                "yet target 'mixed'. Provide the observation in polrep='mixed'. "
+                "See docs/polarization_conventions.md sec 12.")
+        obs_work = obs.switch_polrep(target, singlepol_hand=hand)
+        switch_back = True
+
+    obsdata = copy.deepcopy(obs_work.data)
+    pd = obs_work.poldict
     times = obsdata['time']
     t1 = obsdata['t1']
     t2 = obsdata['t2']
     tints = obsdata['tint']
-    rr = obsdata['rrvis']
-    ll = obsdata['llvis']
-    rl = obsdata['rlvis']
-    lr = obsdata['lrvis']
+    n = len(times)
 
-    # Recompute the noise std. deviations from the SEFDs
-    if np.any(obs.tarr['sefdr'] <= 0) or np.any(obs.tarr['sefdl'] <= 0):
+    # Generic correlation slots: vis1=p1p1, vis2=p2p2, vis3=p1p2, vis4=p2p1.
+    v_p1p1 = obsdata[pd['vis1']]
+    v_p2p2 = obsdata[pd['vis2']]
+    v_p1p2 = obsdata[pd['vis3']]
+    v_p2p1 = obsdata[pd['vis4']]
+
+    # Recompute the four per-correlation sigmas from SEFDs (feed-aware; reduces
+    # to the legacy sig_rr/ll/rl/lr computation for circular).
+    if np.any(obs.tarr['sefd_p1'] <= 0) or np.any(obs.tarr['sefd_p2'] <= 0):
         if verbose:
-            print("Warning!: in add_jones_and_noise, some SEFDs are <= 0!")
+            print("Warning!: in apply_jones_inverse, some SEFDs are <= 0!")
             print("resorting to data point sigmas, which may add too much systematic noise!")
-        sig_rr = obsdata['rrsigma']
-        sig_ll = obsdata['llsigma']
-        sig_rl = obsdata['rlsigma']
-        sig_lr = obsdata['lrsigma']
+        sig_p1p1 = obsdata[pd['sigma1']]
+        sig_p2p2 = obsdata[pd['sigma2']]
+        sig_p1p2 = obsdata[pd['sigma3']]
+        sig_p2p1 = obsdata[pd['sigma4']]
     else:
-        # TODO why are there sqrt(2)s here and not below?
-        sig_rr = np.fromiter((obsh.blnoise(obs.tarr[obs.tkey[t1[i]]]['sefdr'],
-                                           obs.tarr[obs.tkey[t2[i]]]['sefdr'],
-                                           tints[i], obs.bw)
-                              for i in range(len(rr))), float)
-        sig_ll = np.fromiter((obsh.blnoise(obs.tarr[obs.tkey[t1[i]]]['sefdl'],
-                                           obs.tarr[obs.tkey[t2[i]]]['sefdl'],
-                                           tints[i], obs.bw)
-                              for i in range(len(ll))), float)
-        sig_rl = np.fromiter((obsh.blnoise(obs.tarr[obs.tkey[t1[i]]]['sefdr'],
-                                           obs.tarr[obs.tkey[t2[i]]]['sefdl'],
-                                           tints[i], obs.bw)
-                              for i in range(len(rl))), float)
-        sig_lr = np.fromiter((obsh.blnoise(obs.tarr[obs.tkey[t1[i]]]['sefdl'],
-                                           obs.tarr[obs.tkey[t2[i]]]['sefdr'],
-                                           tints[i], obs.bw)
-                              for i in range(len(lr))), float)
+        sig_p1p1, sig_p2p2, sig_p1p2, sig_p2p1 = _baseline_correlation_sigmas(
+            obs, t1, t2, tints)
 
-    if not opacitycal:
-        if verbose:
-            print("   Applying opacity corrections: opacitycal-->True")
-        opacitycal = True
-    if not dcal:
-        if verbose:
-            print("   Applying D Term corrections: dcal-->True")
-        dcal = True
-    if not frcal:
-        if verbose:
-            print("   Applying Field Rotation corrections: frcal-->True")
-        frcal = True
+    if verbose and not opacitycal:
+        print("   Applying opacity corrections: opacitycal-->True")
+    if verbose and not dcal:
+        print("   Applying D Term corrections: dcal-->True")
+    if verbose and not frcal:
+        print("   Applying Field Rotation corrections: frcal-->True")
 
-    # Apply the inverse Jones matrices to each visibility
-    for i in range(len(times)):
-
-        # Get the inverse jones matrices
+    # Apply the (already-inverse) Jones matrices to each baseline's coherency
+    # matrix and propagate the four per-slot sigmas.
+    for i in range(n):
         inv_j1 = jm_dict[t1[i]][times[i]]
         inv_j2 = jm_dict[t2[i]][times[i]]
 
-        # Form the visibility correlation matrix
-        corr_matrix = np.array([[rr[i], rl[i]], [lr[i], ll[i]]])
+        # Coherency matrix in generic-slot order [[p1p1, p1p2], [p2p1, p2p2]].
+        corr_matrix = np.array([[v_p1p1[i], v_p1p2[i]], [v_p2p1[i], v_p2p2[i]]])
 
-        # Form the sigma matrices
-        sig_rr_matrix = np.array([[sig_rr[i], 0.0], [0.0, 0.0]])
-        sig_ll_matrix = np.array([[0.0, 0.0], [0.0, sig_ll[i]]])
-        sig_rl_matrix = np.array([[0.0, sig_rl[i]], [0.0, 0.0]])
-        sig_lr_matrix = np.array([[0.0, 0.0], [sig_lr[i], 0.0]])
+        # Per-slot sigma matrices (same generic-slot layout).
+        sig_p1p1_matrix = np.array([[sig_p1p1[i], 0.0], [0.0, 0.0]])
+        sig_p2p2_matrix = np.array([[0.0, 0.0], [0.0, sig_p2p2[i]]])
+        sig_p1p2_matrix = np.array([[0.0, sig_p1p2[i]], [0.0, 0.0]])
+        sig_p2p1_matrix = np.array([[0.0, 0.0], [sig_p2p1[i], 0.0]])
 
-        # Apply the inverse Jones Matrices to the visibility correlation matrix and sigma matrices
-        corr_matrix_new = np.dot(inv_j1, np.dot(corr_matrix, np.conjugate(inv_j2.T)))
+        # inv_j is already the inverse Jones, so applying it forward-style
+        # (J_inv V J_inv^dag) is the a-priori correction.
+        corr_matrix_new = pol_conventions.apply_jones_to_coherency(corr_matrix, inv_j1, inv_j2)
 
-        sig_rr_matrix_new = np.dot(inv_j1, np.dot(sig_rr_matrix, np.conjugate(inv_j2.T)))
-        sig_ll_matrix_new = np.dot(inv_j1, np.dot(sig_ll_matrix, np.conjugate(inv_j2.T)))
-        sig_rl_matrix_new = np.dot(inv_j1, np.dot(sig_rl_matrix, np.conjugate(inv_j2.T)))
-        sig_lr_matrix_new = np.dot(inv_j1, np.dot(sig_lr_matrix, np.conjugate(inv_j2.T)))
+        sig_p1p1_new = pol_conventions.apply_jones_to_coherency(sig_p1p1_matrix, inv_j1, inv_j2)
+        sig_p2p2_new = pol_conventions.apply_jones_to_coherency(sig_p2p2_matrix, inv_j1, inv_j2)
+        sig_p1p2_new = pol_conventions.apply_jones_to_coherency(sig_p1p2_matrix, inv_j1, inv_j2)
+        sig_p2p1_new = pol_conventions.apply_jones_to_coherency(sig_p2p1_matrix, inv_j1, inv_j2)
 
-        # Get the final sigma matrix as a quadrature sum
-        sig_matrix_new = np.sqrt(np.abs(sig_rr_matrix_new)**2 + np.abs(sig_ll_matrix_new)**2 +
-                                 np.abs(sig_rl_matrix_new)**2 + np.abs(sig_lr_matrix_new)**2)
+        # Final sigma matrix as a quadrature sum (independence assumption).
+        sig_matrix_new = np.sqrt(np.abs(sig_p1p1_new)**2 + np.abs(sig_p2p2_new)**2 +
+                                 np.abs(sig_p1p2_new)**2 + np.abs(sig_p2p1_new)**2)
 
-        # Put the corrupted data back into the data table
-        obsdata['rrvis'][i] = corr_matrix_new[0][0]
-        obsdata['llvis'][i] = corr_matrix_new[1][1]
-        obsdata['rlvis'][i] = corr_matrix_new[0][1]
-        obsdata['lrvis'][i] = corr_matrix_new[1][0]
+        # Put the corrected correlations back into the generic slots.
+        obsdata[pd['vis1']][i] = corr_matrix_new[0][0]  # p1p1
+        obsdata[pd['vis2']][i] = corr_matrix_new[1][1]  # p2p2
+        obsdata[pd['vis3']][i] = corr_matrix_new[0][1]  # p1p2
+        obsdata[pd['vis4']][i] = corr_matrix_new[1][0]  # p2p1
 
-        # Put the recomputed sigmas back into the data table
-        obsdata['rrsigma'][i] = sig_matrix_new[0][0]
-        obsdata['llsigma'][i] = sig_matrix_new[1][1]
-        obsdata['rlsigma'][i] = sig_matrix_new[0][1]
-        obsdata['lrsigma'][i] = sig_matrix_new[1][0]
+        obsdata[pd['sigma1']][i] = sig_matrix_new[0][0]  # p1p1
+        obsdata[pd['sigma2']][i] = sig_matrix_new[1][1]  # p2p2
+        obsdata[pd['sigma3']][i] = sig_matrix_new[0][1]  # p1p2
+        obsdata[pd['sigma4']][i] = sig_matrix_new[1][0]  # p2p1
 
     # put back into input polvec
-    obs_circ.data = obsdata
-    obs_back = obs_circ.switch_polrep(obs.polrep)
-    obsdata_back = obs_back.data
+    if switch_back:
+        obs_work.data = obsdata
+        obs_back = obs_work.switch_polrep(obs.polrep)
+        obsdata_back = obs_back.data
+    else:
+        obsdata_back = obsdata
 
     # Return observation data
     return obsdata_back
@@ -1336,8 +1405,7 @@ def add_noise(obs, add_th_noise=True, opacitycal=True, ampcal=True, phasecal=Tru
         times_stable_amp = times_stable.copy()
 
     # Recompute perfect sigmas from SEFDs
-    bw = obs.bw
-    if np.any(obs.tarr['sefdr'] <= 0):
+    if np.any(obs.tarr['sefd_p1'] <= 0) or np.any(obs.tarr['sefd_p2'] <= 0):
         if verbose:
             print("Warning!: in add_noise, some SEFDs are <= 0!")
             print("NOT recomputing sigmas, which may result in double systematic noise")
@@ -1346,30 +1414,33 @@ def add_noise(obs, add_th_noise=True, opacitycal=True, ampcal=True, phasecal=Tru
         sigma_perf3 = obsdata[obs.poldict['sigma3']]
         sigma_perf4 = obsdata[obs.poldict['sigma4']]
     else:
-        sig_rr = np.fromiter((obsh.blnoise(obs.tarr[obs.tkey[sites[i][0]]]['sefdr'],
-                                           obs.tarr[obs.tkey[sites[i][1]]]['sefdr'], tint[i], bw)
-                              for i in range(len(tint))), float)
-        sig_ll = np.fromiter((obsh.blnoise(obs.tarr[obs.tkey[sites[i][0]]]['sefdl'],
-                                           obs.tarr[obs.tkey[sites[i][1]]]['sefdl'], tint[i], bw)
-                              for i in range(len(tint))), float)
-        sig_rl = np.fromiter((obsh.blnoise(obs.tarr[obs.tkey[sites[i][0]]]['sefdr'],
-                                           obs.tarr[obs.tkey[sites[i][1]]]['sefdl'], tint[i], bw)
-                              for i in range(len(tint))), float)
-        sig_lr = np.fromiter((obsh.blnoise(obs.tarr[obs.tkey[sites[i][0]]]['sefdl'],
-                                           obs.tarr[obs.tkey[sites[i][1]]]['sefdr'], tint[i], bw)
-                              for i in range(len(tint))), float)
+        # Four feed-correlation sigmas (p1p1, p2p2, p1p2, p2p1); shared with
+        # add_jones_and_noise / apply_jones_inverse.
+        sig_p1p1, sig_p2p2, sig_p1p2, sig_p2p1 = _baseline_correlation_sigmas(
+            obs, sites[:, 0], sites[:, 1], tint)
         if obs.polrep == 'stokes':
-            sig_iv = 0.5*np.sqrt(sig_rr**2 + sig_ll**2)
-            sig_qu = 0.5*np.sqrt(sig_rl**2 + sig_lr**2)
-            sigma_perf1 = sig_iv
-            sigma_perf2 = sig_qu
-            sigma_perf3 = sig_qu
-            sigma_perf4 = sig_iv
-        elif obs.polrep == 'circ':
-            sigma_perf1 = sig_rr
-            sigma_perf2 = sig_ll
-            sigma_perf3 = sig_rl
-            sigma_perf4 = sig_lr
+            # Propagate to Stokes using the array's feed convention. Reduces to
+            # the legacy circular sig_iv/sig_qu (circ_to_stokes_sigma).
+            feeds = set(str(ft) for ft in obs.tarr['feed_type'])
+            if feeds <= {'rl'}:
+                (sigma_perf1, sigma_perf2, sigma_perf3, sigma_perf4) = \
+                    pol_conventions.circ_to_stokes_sigma(
+                        sig_p1p1, sig_p2p2, sig_p1p2, sig_p2p1)
+            elif feeds <= {'xy'}:
+                (sigma_perf1, sigma_perf2, sigma_perf3, sigma_perf4) = \
+                    pol_conventions.lin_to_stokes_sigma(
+                        sig_p1p1, sig_p2p2, sig_p1p2, sig_p2p1)
+            else:
+                raise NotImplementedError(
+                    "add_noise: Stokes noise for a heterogeneous (mixed-feed) "
+                    "array is not supported (Stokes sigma is per-baseline for "
+                    "mixed feeds). Use polrep='mixed', 'circ', or 'lin'. "
+                    "See docs/polarization_conventions.md sec 12.")
+        else:  # 'circ' / 'lin' / 'mixed': the four correlation sigmas directly
+            sigma_perf1 = sig_p1p1
+            sigma_perf2 = sig_p2p2
+            sigma_perf3 = sig_p1p2
+            sigma_perf4 = sig_p2p1
 
     # Seed for random number generators
     if seed is False:
