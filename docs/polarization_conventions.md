@@ -300,45 +300,81 @@ For a baseline $(i, j)$ the observed coherency matrix is
 
 $$C^{ij}_{\text{obs}} = J_i \, C^{ij}_{\text{true}} \, J_j^\dagger,$$
 
-where $J_i, J_j$ are the per-station Jones matrices. Inverting gives
-the calibration formula in §11.
+where $J_i, J_j$ are the per-station Jones matrices. This **forward**
+direction is what simulation applies to corrupt clean visibilities; the
+**inverse** (§11) is what a-priori calibration applies. Both use the same
+per-station $J$, assembled in §10.
 
-(The full mixed-pol Jones treatment lives in Alex's mixed-pol imaging
-work. This module ships the per-station algebra so that downstream
-calibration code has a single home to call into.)
-
-Implemented at: scaffolding in
-`ehtim/observing/pol_conventions.py:310-330` (`jones_matrix`),
-`:332-337` (`invert_jones`), `:340-357`
-(`apply_inverse_jones_to_coherency`).
+Implemented at (`ehtim/observing/pol_conventions.py`): `assemble_jones`
+builds $J$; `apply_jones_to_coherency` applies the forward
+$J_1 C J_2^\dagger$; `apply_inverse_jones_to_coherency` / `invert_jones`
+apply the inverse. These are driven from `ehtim/observing/obs_simulate.py`:
+`make_jones` (random corruption) and `make_jones_inverse` (estimated
+inverse) build the per-station matrices; `add_jones_and_noise` and
+`apply_jones_inverse` apply them per baseline.
 
 ---
 
-## §10. Jones factoring: $J = G \cdot (I + D)$
+## §10. Jones factoring: $J = G \cdot (I + D) \cdot \Phi$
 
-ehtim factors a station's Jones matrix into a diagonal complex gain and
-a D-term cross-coupling matrix:
+ehtim factors a station's Jones matrix into a complex gain, a D-term
+cross-coupling, and a field-rotation factor (EHT Paper VII,
+[arXiv:2105.01169](https://arxiv.org/pdf/2105.01169), Eq. 4):
 
-$$J = G \cdot (I + D), \quad
-  G = \begin{pmatrix} g_{p_1} & 0 \\ 0 & g_{p_2} \end{pmatrix}, \quad
+$$J = G \cdot (I + D) \cdot \Phi.$$
+
+Here $D$ denotes the off-diagonal leakage matrix so that $I+D$ is the full leakage operator.
+
+### Gain and leakage ($G$, $I + D$)
+
+$$G = \begin{pmatrix} g_{p_1} & 0 \\ 0 & g_{p_2} \end{pmatrix}, \qquad
   I + D = \begin{pmatrix} 1 & d_{p_1} \\ d_{p_2} & 1 \end{pmatrix}.$$
-
-Equivalently,
-
-$$J = \begin{pmatrix} g_{p_1} & g_{p_1} d_{p_1} \\
-                       g_{p_2} d_{p_2} & g_{p_2} \end{pmatrix}.$$
 
 The $d_{p_1}, d_{p_2}$ entries are the per-feed leakage of the
 *other* feed into this one (so $d_{p_1}$ is the leakage of $p_2$ into
-$p_1$).
+$p_1$). This matches the convention used in CASA's polcal and in the
+EHT calibration pipeline. When the first full-Jones `applycal` lands,
+verify against existing `pol_cal*` code — flip here if a sign mismatch
+is found.
 
-This factoring matches the convention used in CASA's polcal and in the
-EHT calibration pipeline. When the first consumer (full-Jones
-`applycal`) lands, verify against existing `pol_cal*` code in this
-repo — flip here if a sign mismatch is found.
+### Field rotation ($\Phi$) — basis dependent
 
-Implemented at: `ehtim/observing/pol_conventions.py:310-330`
-(`jones_matrix`).
+Field rotation by angle $\varphi$ (from the station mount geometry,
+$\varphi = \texttt{fr\_elev}\cdot\text{el} + \texttt{fr\_par}\cdot\text{par}
++ \texttt{fr\_off}$) acts *differently in each feed basis*:
+
+- **Circular feeds** ($p_1,p_2 = R,L$): a diagonal phase,
+  $$\Phi_{\text{circ}} = \begin{pmatrix} e^{-i\varphi} & 0 \\ 0 & e^{+i\varphi}\end{pmatrix}.$$
+- **Linear feeds** ($p_1,p_2 = X,Y$): a real rotation of the feed axes,
+  $$\Phi_{\text{lin}} = \begin{pmatrix} \cos\varphi & \sin\varphi \\ -\sin\varphi & \cos\varphi \end{pmatrix}.$$
+
+These are the *same physical operator* in two bases: with $F = $
+`BASIS_LIN_TO_CIRC` (§2), $\Phi_{\text{lin}} = F^{-1}\,\Phi_{\text{circ}}\,F$
+(verified for all $\varphi$). So the linear form is **not** a free
+choice once the circular convention is fixed.
+
+> **Convention assumption (to verify):** the circular
+> $\Phi_{\text{circ}} = \mathrm{diag}(e^{-i\varphi}, e^{+i\varphi})$
+> (with $R = p_1$) is taken as the reference, matching the existing
+> `obs_simulate.make_jones` behavior; the derived $\Phi_{\text{lin}}$ and
+> the sign of $\varphi$ (from `fr_elev`/`fr_par`) are assumed to match
+> Paper VII's field-rotation Jones. Hybrid feeds (e.g. `'rx'`, one
+> circular + one linear channel) have no agreed field-rotation
+> convention and are not yet supported.
+
+### Field-rotation-corrected residual
+
+When field rotation has already been removed from the data but leakage
+has not, the leakage must "double-rotate." The assembly carries a
+second angle `fr_angle_D` and applies $J = G\,(I + \Phi_D^{-1} D)\,\Phi$,
+where $\Phi_D^{-1} = \Phi(-\texttt{fr\_angle\_D})$. For circular
+(diagonal) $\Phi$ this reproduces the $e^{\pm i\,\texttt{fr\_angle\_D}}$
+leakage rotation in the legacy circular code. This one-sided form is only
+correct for diagonal $\Phi$, so a nonzero `fr_angle_D` with linear/mixed
+feeds currently raises (pending the linear conjugation form).
+
+Implemented at: `pol_conventions.assemble_jones` (assembly),
+`field_rotation_matrix` ($\Phi$, circular and linear).
 
 ---
 
@@ -349,12 +385,15 @@ matrix $C^{ij}_{\text{obs}}$, the calibrated coherency is
 
 $$C^{ij}_{\text{corr}} = J_i^{-1} \, C^{ij}_{\text{obs}} \, (J_j^\dagger)^{-1}.$$
 
-When gains and D-terms are well-determined and the feed model is
-correct, $C^{ij}_{\text{corr}}$ recovers the true sky-domain coherency
-matrix up to noise.
+This is the exact inverse of the §9 forward corruption: applying the
+forward Jones and then this correction recovers the clean coherency to
+machine precision (checked by a corrupt→invert round-trip for circular,
+linear, and mixed feeds).
 
-Implemented at: `ehtim/observing/pol_conventions.py:340-357`
-(`apply_inverse_jones_to_coherency`).
+Implemented at: `pol_conventions.apply_inverse_jones_to_coherency`.
+`obs_simulate.make_jones_inverse` builds each estimated $J$ (via
+`assemble_jones`) and inverts it with `invert_jones`;
+`obs_simulate.apply_jones_inverse` applies the result per baseline.
 
 ---
 
@@ -370,16 +409,28 @@ quantities depending on the feed types of the two stations:
 | circ–linear (i.e. station $i$ has circular feed, $j$ has linear) | $V_{RX}$ | $V_{RY}$ | $V_{LX}$ | $V_{LY}$ | `'mixed'` (per-baseline) |
 | stokes (sky-frame; only meaningful at calibrated-image level) | $I$ | $Q + iU$ | $Q - iU$ | $V$ | `'stokes'` |
 
-The Jones machinery in §9-§11 operates on the coherency matrix and is
-**polrep-agnostic** — it does not know which physical quantities are
-in each slot. The polrep is used only to label the slots when packing
-results back into ehtim's column-storage layout (`rrvis`/`xxvis`/etc.).
+Each station's $J$ is assembled **in that station's own feed basis**,
+selected by its `tarr['feed_type']`: circular stations get the
+diagonal-phase $\Phi$, linear stations the rotation $\Phi$. On a
+baseline the two matrices $J_i, J_j$ may therefore be in different bases;
+the congruence $J_i C J_j^\dagger$ is still well-defined because $C$'s
+rows are indexed by station $i$'s feeds and its columns by station $j$'s.
 
-For `'mixed'` polrep the slot interpretation varies per baseline, so
-the per-baseline `polbasis` field on the DTPOL_MIXED dtype carries the
-feed-pair label needed to route results correctly. This is set up in
-the schema layer (DTPOL_MIXED definition in `ehtim/const_def.py`)
-and consumed by Obsdata polrep-dispatching code.
+The Jones machinery in §9–§11 operates on the coherency matrix and is
+otherwise **polrep-agnostic** — it does not care which physical
+quantities sit in each slot. The polrep only labels the slots when
+packing results back into ehtim's column storage: the generic
+`p1p1/p2p2/p1p2/p2p1` slots map to `rrvis/llvis/rlvis/lrvis` (circ),
+`xxvis/yyvis/xyvis/yxvis` (lin), or stay generic (mixed).
 
-Implemented at: dispatch logic in `Obsdata.switch_polrep` and friends
-(forthcoming).
+`obs_simulate` corrupts/corrects in the observation's correlation basis:
+a `circ`/`lin`/`mixed` obs is used in place; a `stokes` obs is first
+switched to the array's feed basis (`circ` or `lin`). For `'mixed'` the
+per-baseline `polbasis` field on the DTPOL_MIXED dtype carries the
+feed-pair label, so noise/thermal sigmas are built per feed pairing.
+
+Implemented at: `obs_simulate.add_jones_and_noise` (forward) and
+`apply_jones_inverse` (inverse), applying $J$ per baseline in the
+correlation basis; `Obsdata.switch_polrep` handles `stokes`↔`circ`/`lin`
+(a `mixed` obs must be built natively — switching *to* `'mixed'` is not
+yet supported).
