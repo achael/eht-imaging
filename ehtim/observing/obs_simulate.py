@@ -532,6 +532,15 @@ def make_jones(obs, opacitycal=True, ampcal=True, phasecal=True, dcal=True,
     dec = obs_tmp.dec
     sourcevec = np.array([np.cos(dec*ehc.DEGREE), 0, np.sin(dec*ehc.DEGREE)])
 
+    # Up-front guard: the frcal-but-not-dcal leakage double-rotation is only
+    # derived for circular feeds (see pol_conventions.assemble_jones). Fail
+    # clearly here rather than deep inside the per-station assembly.
+    if frcal and not dcal and not set(str(ft) for ft in tarr['feed_type']) <= {'rl'}:
+        raise NotImplementedError(
+            "make_jones: frcal=True with dcal=False (field rotation corrected, "
+            "leakage not) is only supported for circular feeds. For linear/mixed "
+            "feeds use dcal=True or frcal=False. See jones_mixedpol_plan.md.")
+
     # Create a dictionary of taus and a list of unique times
     nsites = len(obs_tmp.tarr['site'])
     taudict = {site: np.array([]) for site in obs_tmp.tarr['site']}
@@ -895,6 +904,15 @@ def make_jones_inverse(obs, opacitycal=True, dcal=True, frcal=True):
     ra = obs.ra
     dec = obs.dec
     sourcevec = np.array([np.cos(dec*ehc.DEGREE), 0, np.sin(dec*ehc.DEGREE)])
+
+    # Up-front guard: the frcal-but-not-dcal leakage double-rotation is only
+    # derived for circular feeds (see pol_conventions.assemble_jones). Fail
+    # clearly here rather than deep inside the per-station assembly.
+    if frcal and not dcal and not set(str(ft) for ft in tarr['feed_type']) <= {'rl'}:
+        raise NotImplementedError(
+            "make_jones_inverse: frcal=True with dcal=False (field rotation "
+            "corrected, leakage not) is only supported for circular feeds. For "
+            "linear/mixed feeds use dcal=True or frcal=False. See jones_mixedpol_plan.md.")
 
     # Create a dictionary of taus and a list of unique times
     nsites = len(obs.tarr['site'])

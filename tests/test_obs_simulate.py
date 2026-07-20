@@ -65,6 +65,20 @@ def mixed_array(asymmetric_array):
 
 
 @pytest.fixture(scope="module")
+def xy_first_array(asymmetric_array):
+    """Heterogeneous feeds with the FIRST station linear ('xy') and the rest
+    circular ('rl'). Because make_uvpoints emits baselines with i1 < i2, this
+    yields xy x rl baselines (t1 linear, t2 circular) -- the reversed pairing
+    that mixed_array (rl first) never produces."""
+    arr = asymmetric_array.copy()
+    tarr = np.asarray(arr.tarr).copy()
+    tarr["feed_type"] = "rl"
+    tarr["feed_type"][0] = "xy"
+    arr.tarr = tarr
+    return arr
+
+
+@pytest.fixture(scope="module")
 def asymmetric_image():
     """Off-centre elongated Gaussian: distinguishes axes and tests centering."""
     im = eh.image.make_empty(64, 200 * eh.RADPERUAS, 17.761, -29.0, rf=230e9)
@@ -213,28 +227,43 @@ class TestMakeUvpoints:
         np.testing.assert_allclose(row["lrsigma"], obsh.blnoise(sefdl1, sefdr2, TINT, BW))
 
     def test_mixed_sigma_layout(self, mixed_array):
-        """rl x xy baseline: slots p1p1,p2p2,p1p2,p2p1 = R.X, L.Y, R.Y, L.X."""
+        """A genuine rl x xy baseline: slots p1p1,p2p2,p1p2,p2p1 pair
+        (R,X), (L,Y), (R,Y), (L,X). Feeds are spelled out explicitly so the test
+        cannot silently pass on the rl x rl baseline that sorts first."""
         out = os_sim.make_uvpoints(mixed_array, 17.761, -29.0, 230e9, BW,
                                    TINT, TADV, TSTART, TSTOP, polrep="mixed")
-        row = out[0]
-        t1, t2 = row["t1"], row["t2"]
-        ft1 = str(mixed_array.tarr[list(mixed_array.tarr["site"]).index(t1)]["feed_type"])
-        ft2 = str(mixed_array.tarr[list(mixed_array.tarr["site"]).index(t2)]["feed_type"])
+        feed_of = {str(r["site"]): str(r["feed_type"]) for r in mixed_array.tarr}
+        rows = [r for r in out if feed_of[r["t1"]] == "rl" and feed_of[r["t2"]] == "xy"]
+        assert rows, "fixture produced no rl x xy baseline"
+        row = rows[0]
+        assert row["polbasis"] == "rlxy"
 
-        # each slot pairs one feed of t1 with one feed of t2: (slot, t1 feed, t2 feed)
-        slot_pairings = [
-            ("p1p1sigma", ft1[0], ft2[0]),
-            ("p2p2sigma", ft1[1], ft2[1]),
-            ("p1p2sigma", ft1[0], ft2[1]),
-            ("p2p1sigma", ft1[1], ft2[0]),
-        ]
-        for slot, fa, fb in slot_pairings:
+        t1, t2 = row["t1"], row["t2"]
+        # (slot, t1 feed letter, t2 feed letter) -- explicit, not read back from tarr
+        for slot, fa, fb in [("p1p1sigma", "r", "x"), ("p2p2sigma", "l", "y"),
+                             ("p1p2sigma", "r", "y"), ("p2p1sigma", "l", "x")]:
             expected = obsh.blnoise(mixed_array.sefd_for_feed(t1, fa),
                                     mixed_array.sefd_for_feed(t2, fb), TINT, BW)
             np.testing.assert_allclose(row[slot], expected)
 
-        # make_uvpoints fills polbasis directly; Obsdata.__init__ would recompute it
-        assert row["polbasis"] == ft1 + ft2
+    def test_mixed_sigma_layout_reversed(self, xy_first_array):
+        """The reversed xy x rl baseline (t1 linear, t2 circular): slots pair
+        (X,R), (Y,L), (X,L), (Y,R). Guards the feed-ordering that the rl-first
+        fixture never exercises."""
+        out = os_sim.make_uvpoints(xy_first_array, 17.761, -29.0, 230e9, BW,
+                                   TINT, TADV, TSTART, TSTOP, polrep="mixed")
+        feed_of = {str(r["site"]): str(r["feed_type"]) for r in xy_first_array.tarr}
+        rows = [r for r in out if feed_of[r["t1"]] == "xy" and feed_of[r["t2"]] == "rl"]
+        assert rows, "fixture produced no xy x rl baseline"
+        row = rows[0]
+        assert row["polbasis"] == "xyrl"
+
+        t1, t2 = row["t1"], row["t2"]
+        for slot, fa, fb in [("p1p1sigma", "x", "r"), ("p2p2sigma", "y", "l"),
+                             ("p1p2sigma", "x", "l"), ("p2p1sigma", "y", "r")]:
+            expected = obsh.blnoise(xy_first_array.sefd_for_feed(t1, fa),
+                                    xy_first_array.sefd_for_feed(t2, fb), TINT, BW)
+            np.testing.assert_allclose(row[slot], expected)
 
 
     def test_scalar_tau_applied(self, array):
@@ -841,6 +870,36 @@ class TestAddJonesAndNoise:
         out = os_sim.add_jones_and_noise(obs_mixed, add_th_noise=False, frcal=False,
                                          verbose=False, seed=42)
         assert not np.allclose(out["p1p1vis"], obs_mixed.data["p1p1vis"])
+
+    def test_field_rotation_stokes_consistent_across_bases(self, obs_pol_asym, obs_lin_pol):
+        """Physical cross-check of the linear field-rotation Phi: the SAME
+        polarized source observed on the SAME geometry with a circular array vs a
+        linear array, corrupted with field rotation only, must recover the SAME
+        Stokes. A wrong-sign Phi_lin would rotate the EVPA the opposite way and
+        this would fail. (obs_pol_asym and obs_lin_pol share asymmetric_image_pol
+        and asymmetric_array geometry; only the feed basis differs.)"""
+        obs_c = obs_pol_asym.switch_polrep("circ")
+        corr_c = obs_c.copy()
+        corr_c.data = os_sim.add_jones_and_noise(obs_c, add_th_noise=False,
+                                                 frcal=False, verbose=False, seed=1)
+        corr_l = obs_lin_pol.copy()
+        corr_l.data = os_sim.add_jones_and_noise(obs_lin_pol, add_th_noise=False,
+                                                 frcal=False, verbose=False, seed=1)
+        sc = corr_c.switch_polrep("stokes").data
+        sl = corr_l.switch_polrep("stokes").data
+        for col in ("vis", "qvis", "uvis", "vvis"):
+            np.testing.assert_allclose(
+                sc[col], sl[col], atol=1e-9,
+                err_msg=f"{col} differs between circular and linear "
+                        "field-rotation corruption")
+
+    def test_frcal_true_dcal_false_noncircular_raises(self, obs_lin_pol):
+        """frcal=True with dcal=False (field rotation corrected, leakage not) is a
+        normal cal mode but the linear leakage double-rotation is not derived, so
+        it must fail up front with a clear error on a non-circular array."""
+        with pytest.raises(NotImplementedError, match="frcal.*dcal|circular feeds"):
+            os_sim.add_jones_and_noise(obs_lin_pol, add_th_noise=False, dcal=False,
+                                       verbose=False, seed=1)
 
     def test_seed_reproducible_no_noise(self, obs):
         """Without thermal noise, same seed -> identical output."""
