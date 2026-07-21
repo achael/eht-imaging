@@ -1057,7 +1057,11 @@ def load_obs_uvfits(filename, polrep='stokes', flipbl=False,
 
        Args:
            filename (str or HDUList): path to either an input text file or an HDUList object
-           polrep (str): load data as either 'stokes' or 'circ'
+           polrep (str): output representation: 'stokes', 'circ', 'lin', or 'mixed'.
+                         Feed types are read per-station from the AIPS AN table
+                         POLTYA/POLTYB tags (defaulting to circular 'rl' when
+                         absent). A mixed-feed file loads only as 'mixed'; a
+                         homogeneous file cannot be loaded as 'mixed'.
            flipbl (bool): flip baseline phases if True.
            allow_singlepol (bool): If True and polrep='stokes',
                                    treat single-polarization data as Stokes I
@@ -1076,8 +1080,8 @@ def load_obs_uvfits(filename, polrep='stokes', flipbl=False,
            obs (Obsdata): Obsdata object loaded from file
     """
 
-    if polrep not in ['stokes', 'circ']:
-        raise Exception("polrep should be 'stokes' or 'circ' in load_uvfits")
+    if polrep not in ['stokes', 'circ', 'lin', 'mixed']:
+        raise Exception("polrep should be 'stokes', 'circ', 'lin', or 'mixed' in load_uvfits")
     if not(force_singlepol is None or force_singlepol is False) and polrep != 'stokes':
         raise Exception(
             "force_singlepol is incompatible with polrep!='stokes' in load_uvfits")
@@ -1109,32 +1113,58 @@ def load_obs_uvfits(filename, polrep='stokes', flipbl=False,
     dr = np.zeros(len(tnames)) + 1j * np.zeros(len(tnames))
     dl = np.zeros(len(tnames)) + 1j * np.zeros(len(tnames))
 
-    # Detect antenna feed types and raise if the observation is mixed-polarization
-    # (full POLTYA/POLTYB -> feed_type parsing is not yet implemented). Both feed
-    # columns are checked, so a hybrid station (e.g. POLTYA='R', POLTYB='X') is
-    # caught rather than silently loaded as circular.
-    feeds = set()
-    for col in ('POLTYA', 'POLTYB'):
-        try:
-            poltys = hdulist['AIPS AN'].data[col]
-        except KeyError:
-            continue
-        for p in poltys:
-            s = (p.decode() if isinstance(p, bytes) else str(p)).strip().upper()
-            if s:
-                feeds.add(s)
-    if not feeds <= {'R', 'L'}:
-        raise NotImplementedError(
-            "mixed-pol / linear-feed uvfits load is not yet supported; "
-            f"detected feed types {sorted(feeds)} in POLTYA/POLTYB. "
-            "See obsdata_mixedpol_plan.md.")
+    # Parse per-station feed types from the AIPS AN table POLTYA/POLTYB columns.
+    # POLTYA is the station's first feed, POLTYB the second, so (POLTYA, POLTYB)
+    # maps to a 2-char feed_type code ('rl' circular, 'xy' linear, 'rx' hybrid,
+    # etc.).
+    def _feedchar(col, i):
+        if col is None:
+            return ''
+        p = col[i]
+        return (p.decode() if isinstance(p, bytes) else str(p)).strip().upper()
 
-    # TODO (Phase 7 mixed-pol): read POLTYA/POLTYB from the AIPS AN table
-    # to populate per-station feed_type. Until then, assume circular feeds.
+    # When POLTY tags are absent, infer the default feed basis from the STOKES
+    # axis (CRVAL3) rather than blindly assuming circular: -5 (linear XX/YY/...)
+    # -> 'xy', anything else (circular -1 or Stokes +1) -> 'rl'. This stops a
+    # POLTY-less pure-linear file from being silently mislabeled circular and its
+    # XX/YY/XY/YX read as RR/LL/RL/LR.
+    try:
+        stokes_crval3 = header['CRVAL3']
+    except KeyError:
+        stokes_crval3 = -1
+    default_feed = 'xy' if stokes_crval3 == -5 else 'rl'
+
+    poltya = poltyb = None
+    try:
+        poltya = hdulist['AIPS AN'].data['POLTYA']
+    except KeyError:
+        pass
+    try:
+        poltyb = hdulist['AIPS AN'].data['POLTYB']
+    except KeyError:
+        pass
+    if poltya is None and poltyb is None:
+        print(f"Warning: no POLTYA/POLTYB in AIPS AN table; assuming {default_feed!r} "
+              f"feeds inferred from CRVAL3={stokes_crval3}")
+
+    feed_types = []
+    for i in range(len(tnames)):
+        a = _feedchar(poltya, i)
+        b = _feedchar(poltyb, i)
+        ft = (a + b).lower()
+        if ft == '':
+            ft = default_feed   # no POLTY tags recorded; inferred from CRVAL3
+        elif ft not in ehc.VALID_FEED_TYPES:
+            raise NotImplementedError(
+                f"unsupported feed pair POLTYA={a!r}/POLTYB={b!r} for station "
+                f"{str(tnames[i])!r}; valid feed types are "
+                f"{sorted(ehc.VALID_FEED_TYPES)}. See obsdata_mixedpol_plan.md.")
+        feed_types.append(ft)
+
     tarr = [np.array((
             str(tnames[i]), xyz[i][0], xyz[i][1], xyz[i][2],
             sefdr[i], sefdl[i], dr[i], dl[i],
-            fr_par[i], fr_el[i], fr_off[i], 'rl'),
+            fr_par[i], fr_el[i], fr_off[i], feed_types[i]),
         dtype=ehc.DTARR) for i in range(len(tnames))]
 
     tarr = np.array(tarr)
@@ -1186,8 +1216,19 @@ def load_obs_uvfits(filename, polrep='stokes', flipbl=False,
         if header['CTYPE3'] == 'STOKES':
             if header['CRVAL3'] == 1:
                 polrep_uvfits = 'stokes'
-            elif header['CRVAL3'] == -1:
-                polrep_uvfits = 'circ'
+            elif header['CRVAL3'] in (-1, -5):
+                # Feed-basis storage. The native polrep is decided by the
+                # per-station feed types (circular / linear / mixed) read from
+                # POLTYA/POLTYB, not by CRVAL3: for a mixed-feed array each
+                # baseline's four products differ, so the STOKES axis is only a
+                # nominal 4-slot grid (CRVAL3=-1 circular / -5 linear naming).
+                feedset = set(str(ft) for ft in tarr['feed_type'])
+                if feedset <= {'rl'}:
+                    polrep_uvfits = 'circ'
+                elif feedset <= {'xy'}:
+                    polrep_uvfits = 'lin'
+                else:
+                    polrep_uvfits = 'mixed'
             else:
                 raise Exception("header[CRVAL3] not a recognized polarization basis!")
     except BaseException:
@@ -1203,9 +1244,43 @@ def load_obs_uvfits(filename, polrep='stokes', flipbl=False,
     # Determine the number of correlation products in the data
     num_corr = data['DATA'].shape[5]
     print("Number of uvfits Correlation Products:", num_corr)
+
+    # Consistency between the STOKES axis and the parsed feed types. (a) The
+    # axis naming (CRVAL3) must not contradict the feeds -- e.g. linear planes
+    # (-5) tagged with circular feeds. (b) The four correlation planes are read
+    # positionally (slot0..3, below); this is only valid for the standard
+    # unit-step axis, so reject a non-(-1)/(+1) CDELT3 rather than silently
+    # mis-slotting a reordered/rescaled STOKES axis.
+    crval3 = header['CRVAL3']
+    if crval3 == -5 and polrep_uvfits == 'circ':
+        raise Exception("uvfits STOKES axis is linear (CRVAL3=-5) but station feeds "
+                        "are circular (POLTYA/POLTYB=R/L) -- inconsistent file")
+    if crval3 == -1 and polrep_uvfits == 'lin':
+        raise Exception("uvfits STOKES axis is circular (CRVAL3=-1) but station feeds "
+                        "are linear (POLTYA/POLTYB=X/Y) -- inconsistent file")
+    if num_corr > 1:
+        expected_cdelt3 = 1 if polrep_uvfits == 'stokes' else -1
+        cdelt3 = header.get('CDELT3', expected_cdelt3)
+        if cdelt3 != expected_cdelt3:
+            raise Exception(
+                f"uvfits STOKES axis CDELT3={cdelt3} is not the supported unit step "
+                f"{expected_cdelt3}; the four correlation planes are read by position "
+                "(slot0..3) and a reordered/rescaled STOKES axis would be mis-slotted.")
+
     if num_corr == 1 and force_singlepol is not None:
         print("Cannot force single polarization when file is not full polarization.")
         force_singlepol = None
+
+    # force_singlepol selects a single circular hand (R/L) and is only defined
+    # for circular-feed data. The enforcement block below is gated on 'circ', so
+    # on a linear/mixed file the request would otherwise be silently dropped.
+    # X/Y single-pol selection is deferred to Phase 4.
+    if (not (force_singlepol is None or force_singlepol is False)
+            and polrep_uvfits != 'circ'):
+        raise NotImplementedError(
+            "force_singlepol is only supported for circular-feed uvfits files "
+            f"(native feed basis is {polrep_uvfits!r}); "
+            "load without force_singlepol.")
 
     # If the user selects force_singlepol, then we must allow_singlepol for stokes conversion
     if force_singlepol is not None and polrep == 'stokes':
@@ -1245,8 +1320,11 @@ def load_obs_uvfits(filename, polrep='stokes', flipbl=False,
     if (np.max(IF) >= full_nifs) or (np.min(IF) < 0):
         raise Exception('The specified IF does not exist')
 
-    # NOTE: here we are assuming data is in RR, LL, RL, LR basis with the variable names
-    # BUT: polrep_uvfits will correctly interpret these data as IQUV if necessary
+    # NOTE: the rr/ll/rl/lr variable names are historical. They hold the four
+    # data-cube correlation slots in order (slot0, slot1, slot2, slot3), which
+    # map to the generic DTPOL slots (p1p1, p2p2, p1p2, p2p1). The physical
+    # meaning depends on polrep_uvfits: RR/LL/RL/LR (circ), XX/YY/XY/YX (lin),
+    # I/Q/U/V (stokes), or per-baseline feed products (mixed).
     # TODO: change the variable names!
     rrweight = data['DATA'][:, 0, 0, IF, channel, 0, 2].reshape(nvis, nifs, nchannels)
     if num_corr >= 2:
@@ -1309,13 +1387,15 @@ def load_obs_uvfits(filename, polrep='stokes', flipbl=False,
     lrmask = np.any(np.any(lrmask_2d, axis=2), axis=1)
 
     # Total intensity mask
-    if polrep_uvfits == 'circ':
-        mask = rrmask + llmask
-    elif polrep_uvfits == 'stokes':
+    if polrep_uvfits == 'stokes':
         mask = rrmask  # remember rr is really I when polrep_uvfits=='stokes'!
+    else:
+        # circ / lin / mixed: the two parallel-hand slots (p1p1, p2p2 = slot0,
+        # slot1) carry the total-intensity information.
+        mask = rrmask + llmask
 
     if not np.any(mask):
-        raise Exception("No unflagged RR or LL data in uvfits file!")
+        raise Exception("No unflagged parallel-hand (slot0/slot1) data in uvfits file!")
     if np.any(~(rrmask * llmask)):
         print("Warning: removing flagged data present!")
 
@@ -1509,14 +1589,12 @@ def load_obs_uvfits(filename, polrep='stokes', flipbl=False,
         u = -u
         v = -v
 
-    # determine correct data type:
-    # TODO add linear!
-    if polrep_uvfits == 'circ':
-        dtpol_out = ehc.DTPOL_CIRC
-        poldict_out = ehc.POLDICT_CIRC
-    elif polrep_uvfits == 'stokes':
-        dtpol_out = ehc.DTPOL_STOKES
-        poldict_out = ehc.POLDICT_STOKES
+    # determine correct data type (stokes / circ / lin / mixed)
+    dtpol_out = ehc.feed_dtype_for_polrep(polrep_uvfits)
+    poldict_out = ehc.polrep_to_poldict[polrep_uvfits]
+
+    # NOTE: for 'mixed' the DTPOL_MIXED 'polbasis' field is left blank here --
+    # Obsdata.__init__ populates it from tarr (t1_feed + t2_feed) on construction.
 
     #TODO new, faster,
     if trial_speedups:
@@ -1537,18 +1615,19 @@ def load_obs_uvfits(filename, polrep='stokes', flipbl=False,
         datatable[poldict_out['sigma2']] = llsig
         datatable[poldict_out['sigma3']] = rlsig
         datatable[poldict_out['sigma4']] = lrsig
+        if polrep_uvfits == 'mixed':
+            datatable['polbasis'] = ''  # placeholder; filled by Obsdata.__init__
     else: # original, slower code
         datatable = []
         for i in range(len(times)):
-            datatable.append(np.array
-                             ((
-                                 times[i], tints[i],
-                                 t1[i], t2[i], tau1[i], tau2[i],
-                                 u[i], v[i],
-                                 rr[i], ll[i], rl[i], lr[i],
-                                 rrsig[i], llsig[i], rlsig[i], lrsig[i]
-                             ), dtype=dtpol_out
-                             ))
+            row = (times[i], tints[i],
+                   t1[i], t2[i], tau1[i], tau2[i],
+                   u[i], v[i],
+                   rr[i], ll[i], rl[i], lr[i],
+                   rrsig[i], llsig[i], rlsig[i], lrsig[i])
+            if polrep_uvfits == 'mixed':
+                row = row + ('',)   # polbasis placeholder; filled by Obsdata.__init__
+            datatable.append(np.array(row, dtype=dtpol_out))
         datatable = np.array(datatable)
 
     obs = ehtim.obsdata.Obsdata(ra, dec, rf, bw, datatable, tarr, polrep=polrep_uvfits,
@@ -1556,15 +1635,29 @@ def load_obs_uvfits(filename, polrep='stokes', flipbl=False,
                                 trial_speedups=trial_speedups)
 
     if remove_nan:
-        if polrep_uvfits == 'circ':
-            (obs.data['rrsigma'], obs.data['llsigma'],
-             obs.data['rlsigma'], obs.data['lrsigma']) = _fill_nan_sigmas(
-                obs.data['rrsigma'], obs.data['llsigma'],
-                obs.data['rlsigma'], obs.data['lrsigma'])
+        if polrep_uvfits in ('circ', 'lin', 'mixed'):
+            # Generic slot names work for all feed-basis dtypes: they are the
+            # primary names on DTPOL_MIXED and title aliases on DTPOL_CIRC/LIN.
+            (obs.data['p1p1sigma'], obs.data['p2p2sigma'],
+             obs.data['p1p2sigma'], obs.data['p2p1sigma']) = _fill_nan_sigmas(
+                obs.data['p1p1sigma'], obs.data['p2p2sigma'],
+                obs.data['p1p2sigma'], obs.data['p2p1sigma'])
         else:
             print("WARNING: remove_nan not implemented with stokes uvfits files!")
 
-    obs = obs.switch_polrep(polrep, allow_singlepol=allow_singlepol)
+    # Convert to the requested output polrep. A mixed-feed observation cannot be
+    # converted out of 'mixed' at the data layer (per-baseline interpretation
+    # needs Jones-level D-terms), so it is returned as-is; conversely 'mixed'
+    # cannot be synthesized from a homogeneous-feed file.
+    if polrep_uvfits == 'mixed':
+        if polrep != 'mixed':
+            print(f"Warning: mixed-feed uvfits loads only as polrep='mixed' "
+                  f"(requested {polrep!r}); returning a mixed-basis Obsdata.")
+    elif polrep == 'mixed':
+        raise Exception("polrep='mixed' was requested but the uvfits array has "
+                        "homogeneous feeds; load as 'stokes', 'circ', or 'lin'.")
+    else:
+        obs = obs.switch_polrep(polrep, allow_singlepol=allow_singlepol)
 
     # TODO get calibration flags from uvfits?
     return obs
