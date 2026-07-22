@@ -1,16 +1,20 @@
-"""Tests for ehtim.observing.obs_helpers.
-
-Focus: the hash-seeded random helpers must be reproducible across Python
-processes. CPython salts str hashing per process (PYTHONHASHSEED), so seeding
-numpy from the builtin hash() produced different simulated noise every run;
-_stable_seed (zlib.crc32) makes the draws identical across processes.
-"""
+"""Tests for ehtim.observing.obs_helpers."""
 import os
 import subprocess
 import sys
 import zlib
 
 from ehtim.observing import obs_helpers as obsh
+
+
+# ---------------------------------------------------------------------------
+# Hash-seeded random helpers: reproducibility across processes
+#
+# The hash-seeded random helpers must be reproducible across Python processes.
+# CPython salts str hashing per process (PYTHONHASHSEED), so seeding numpy from
+# the builtin hash() produced different simulated noise every run; _stable_seed
+# (zlib.crc32) makes the draws identical across processes.
+# ---------------------------------------------------------------------------
 
 
 def test_stable_seed_matches_crc32():
