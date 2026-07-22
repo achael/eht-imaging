@@ -6,7 +6,6 @@ import zlib
 
 from ehtim.observing import obs_helpers as obsh
 
-
 # ---------------------------------------------------------------------------
 # Hash-seeded random helpers: reproducibility across processes
 #
