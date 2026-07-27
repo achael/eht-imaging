@@ -10,14 +10,14 @@ from functools import partial
 import numpy as np
 import scipy.optimize
 
-# Built-in optimizer names, resolved in their respective lanes. Listed here so
+# Built-in optimizer names, resolved in their respective paths. Listed here so
 # classify_optimizer can route the names without importing optax.
 _OPTAX_NAMES = frozenset({"optax-lbfgs", "optax-lbfgs-bt", "adam", "adamw", "sgd", "rmsprop"})
 _SCIPY_NAMES = frozenset({"lbfgs", "l-bfgs-b", "scipy", "scipy-lbfgs"})
 
 
 def classify_optimizer(optimizer):
-    """Return the lane that handles `optimizer`: 'scipy', 'optax', or 'callable'.
+    """Return the path that handles `optimizer`: 'scipy', 'optax', or 'callable'.
 
     None and the scipy aliases map to 'scipy'; an optax built-in name or a
     GradientTransformation maps to 'optax'; any other callable maps to 'callable'.
@@ -39,43 +39,50 @@ def classify_optimizer(optimizer):
     raise TypeError(f"unsupported optimizer {optimizer!r}")
 
 
-def run_optimizer(optimizer, *, x0, optdict, callback=None, build_loss=None,
-                  device=None, mesh=None):
-    """Minimize the imaging objective with the chosen optimizer.
+def run_optimizer(optimizer, build_loss, *, x0, optdict, callback=None, device=None):
+    """Minimize the imaging objective with whichever optimizer the caller picked.
 
-    The caller supplies one `build_loss` builder appropriate to the lane (the lane
-    only ever needs one): the host builder for the scipy/callable lanes, or the
-    on-device builder for the optax lane. Each lane below calls it with the
-    signature it expects, so passing the wrong builder fails fast (arity mismatch).
+    There are three paths. Scipy is the historical default and is a straight
+    pass-through to L-BFGS-B. The optax path keeps the image vector and the
+    optimizer state on the GPU for the whole solve, so there is no host round trip
+    per iteration. The callable path is an escape hatch for anything else.
+
+    The objective arrives as a builder rather than ready-made because the paths
+    need different things from it: the host paths want plain numpy callables,
+    while the optax path wants device arrays and a jax value_and_grad. The caller
+    passes the builder that matches its path, and each path calls it with the
+    signature it expects, so a mismatch fails immediately.
 
     Parameters
     ----------
     optimizer : None, str, optax.GradientTransformation, or callable
-        Selects the lane (see `classify_optimizer`). None keeps scipy L-BFGS-B.
+        Picks the path (see `classify_optimizer`). None keeps scipy L-BFGS-B.
+    build_loss : callable
+        Host paths: `() -> (fun, jac)`, where `jac` is a gradient function, True if
+        `fun` already returns (value, grad), or None if there is no gradient.
+        Optax path: `(device) -> (value_and_grad, loss, to_device, aux)`.
     x0 : numpy.ndarray
         Initial solver vector.
     optdict : dict
-        scipy L-BFGS-B options ('maxiter', 'ftol', 'gtol', 'maxcor', 'maxls').
-        Also the source of the iteration cap and tolerances for the optax lane.
+        scipy L-BFGS-B options ('maxiter', 'ftol', 'gtol', 'maxcor', 'maxls'). The
+        optax path stops on maxiter/ftol/gtol and configures itself from maxcor/maxls.
     callback : callable, optional
-        Per-iteration callback(xk) for the host lanes (scipy / callable).
-    build_loss : callable
-        Lane-appropriate builder of the loss handles:
-        - scipy / callable lanes: `() -> (fun, jac)` host handles. `fun` is `objfunc`
-          or a jax objective returning (value, grad); `jac` is `objgrad`, True, or None.
-        - optax lane: `(device) -> (value_and_grad, loss, to_device, aux)` on-device handles.
-    device, mesh : optional
-        Device / sharding mesh for the optax lane.
+        Called with the current x each iteration (host paths only).
+    device : optional
+        Device for the optax path.
 
     Returns
     -------
     scipy.optimize.OptimizeResult
-        Carries at least `.x` and `.fun`.
+        Whatever the path, so callers read `.x` and `.fun` the same way.
     """
     kind = classify_optimizer(optimizer)
 
     if kind == "scipy":
         fun, jac = build_loss()
+        # TODO: this path is hardwired to L-BFGS-B. Other scipy methods would drop
+        # in here, but optdict currently carries L-BFGS-B-only keys (maxcor, maxls),
+        # so a method argument would need those made optional first.
         return scipy.optimize.minimize(fun, x0, method="L-BFGS-B", jac=jac,
                                        options=optdict, callback=callback)
 
@@ -85,6 +92,8 @@ def run_optimizer(optimizer, *, x0, optdict, callback=None, build_loss=None,
         if jac is True:
             value_and_grad = fun           # fun already returns (value, grad)
         elif jac is None:
+            # no analytic gradient (grads=False); the scipy path would finite-difference
+            # here, so hand the user None and let their optimizer decide
             def value_and_grad(x):
                 return fun(x), None
         else:
@@ -95,7 +104,7 @@ def run_optimizer(optimizer, *, x0, optdict, callback=None, build_loss=None,
 
     else:
         # kind == "optax": run an optax optimizer entirely on device.
-        gt, needs_ls = _resolve_optax(optimizer, optdict)
+        gt, needs_ls = resolve_optax(optimizer, optdict)
         value_and_grad, loss, to_device, aux = build_loss(device)
         return _run_optax(gt, needs_ls, value_and_grad, loss, to_device(x0), optdict, aux=aux)
 
@@ -103,13 +112,17 @@ def run_optimizer(optimizer, *, x0, optdict, callback=None, build_loss=None,
 _DEFAULT_LR = 1e-2  # step size for the first-order optax builtins (adam/sgd/...)
 
 
-def _resolve_optax(optimizer, optdict):
-    """Return (gradient_transformation, needs_linesearch) for the optax lane.
+def resolve_optax(optimizer, optdict):
+    """Return (gradient_transformation, needs_linesearch) for the optax path.
 
     A string names a built-in; an optax.GradientTransformation is used as given.
     L-BFGS honors maxcor (memory) and maxls (line-search steps) from optdict; the
     first-order builtins use _DEFAULT_LR (pass your own GradientTransformation to
     control the step size).
+
+    `needs_linesearch` tells the step function below whether this optimizer wants
+    the current value and a way to re-evaluate the loss, which line searches do
+    and plain first-order rules do not.
     """
     import optax
 
@@ -135,18 +148,39 @@ def _resolve_optax(optimizer, optdict):
     return builders[name](_DEFAULT_LR), False
 
 
-def _run_optax(gt, needs_ls, value_and_grad, loss, x0, optdict, aux=None):
-    """Minimize on device with a single jitted while_loop.
+def _optax_step(gt, needs_ls, value_and_grad, loss, x, state):
+    """Take one optax step. Returns (x, state, value, gradient).
 
-    value_and_grad -> optax update -> apply_updates, converging on gradient norm
-    and relative value change. x and the optimizer state stay on device for the
-    whole loop (no per-step host sync). `aux` (None for single device) carries the
-    sharded data as a jit argument -- closing over sharded arrays mis-partitions
-    them. Returns a scipy OptimizeResult.
+    Both drivers below share this, so the update rule is written once and they
+    differ only in when they stop.
+    """
+    import optax
+
+    val, grad = value_and_grad(x)
+    if needs_ls:
+        # a line search also needs the current value and a way to re-evaluate the loss
+        updates, state = gt.update(grad, state, x, value=val, grad=grad, value_fn=loss)
+    else:
+        updates, state = gt.update(grad, state, x)
+    return optax.apply_updates(x, updates), state, val, grad
+
+
+def _run_optax(gt, needs_ls, value_and_grad, loss, x0, optdict, aux=None):
+    """Minimize on device, stopping on gradient norm, value change, or maxiter.
+
+    This is the single-image driver. The whole loop is one jitted while_loop, so x
+    and the optimizer state stay on the GPU from start to finish with no host sync
+    per step. `maxiter` caps the iteration count just like the same-named scipy
+    option, and the tolerances stop it earlier once it has converged.
+
+    `aux` carries the sharded data (None on a single device). It has to be a jit
+    argument rather than a closure, because closing over sharded arrays makes jax
+    re-partition them.
+
+    Returns a scipy OptimizeResult.
     """
     import jax
     import jax.numpy as jnp
-    import optax
 
     maxiter = int(optdict["maxiter"])
     gtol = float(optdict["gtol"])
@@ -169,13 +203,7 @@ def _run_optax(gt, needs_ls, value_and_grad, loss, x0, optdict, aux=None):
 
         def body(carry):
             i, x, st, _, prev, _ = carry
-            val, grad = vg(x)
-            if needs_ls:
-                updates, st = gt.update(grad, st, x, value=val, grad=grad,
-                                        value_fn=lossfn)
-            else:
-                updates, st = gt.update(grad, st, x)
-            x = optax.apply_updates(x, updates)
+            x, st, val, grad = _optax_step(gt, needs_ls, vg, lossfn, x, st)
             rel = jnp.abs(prev - val) / jnp.maximum(jnp.abs(val), 1.0)
             return (i + 1, x, st, jnp.linalg.norm(grad), val, rel)
 
@@ -191,23 +219,22 @@ def _run_optax(gt, needs_ls, value_and_grad, loss, x0, optdict, aux=None):
 
 
 def optimize_fixed(value_and_grad, loss, x0, gt, needs_ls, maxiter):
-    """Run exactly `maxiter` optax steps with no value-dependent stop.
+    """Run exactly `maxiter` optax steps, with no convergence check.
 
-    Pure jax (no jit), so it is safe to `vmap` over a batch -- parameter surveys vmap this
-    over a hyperparameter grid, where a while_loop's per-element stop would be ill-defined.
+    Same update as `_run_optax`, different stopping rule. A parameter survey solves
+    a whole grid of hyperparameters at once under `vmap`, and there "stop when this
+    one has converged" has no meaning for a batch, so this driver always runs the
+    full count. It is also left un-jitted for the caller to jit around the vmap.
+    Use `_run_optax` for a single image, where stopping early is worth having.
+
     Returns (x, final_value).
     """
     import jax
-    import optax
 
     def body(_, carry):
         x, st = carry
-        val, grad = value_and_grad(x)
-        if needs_ls:
-            updates, st = gt.update(grad, st, x, value=val, grad=grad, value_fn=loss)
-        else:
-            updates, st = gt.update(grad, st, x)
-        return optax.apply_updates(x, updates), st
+        x, st, _, _ = _optax_step(gt, needs_ls, value_and_grad, loss, x, st)
+        return x, st
 
     x, _ = jax.lax.fori_loop(0, maxiter, body, (x0, gt.init(x0)))
     return x, loss(x)

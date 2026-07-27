@@ -525,18 +525,18 @@ class Imager:
         mesh = kwargs.get('mesh', self._mesh)
         shard_axis = kwargs.get('shard_axis', self._shard_axis)
 
-        # Multi-GPU sharding runs the objective on-device through the optax lane, so it
+        # Multi-GPU sharding runs the objective on-device through the optax path, so it
         # needs an optax optimizer. Require the user to opt in explicitly rather than
         # silently overriding the optimizer they chose.
         if shard and (optimizer is None or classify_optimizer(optimizer) != 'optax'):
             raise ValueError(
                 "shard=True runs the sharded objective on-device, which needs an optax "
                 "optimizer; pass optimizer='optax-lbfgs' (or another optax optimizer).")
-        # (the optax lane builds the jax objective itself in build_device_vg below, so the
+        # (the optax path builds the jax objective itself in build_vg_ondevice below, so the
         #  user's use_jax flag is irrelevant there and is left untouched.)
 
-        def build_scipy():
-            # Host (value, grad) handles for the scipy and callable lanes.
+        def build_vg_onhost():
+            # (value, grad) as host callables, for scipy and for user-supplied optimizers.
             if use_jax:    # jitted jax objective + autodiff gradient, as a host fun(x) -> (value, grad)
                 fun = make_objective_jax(
                     self._init_arr, self._config, self._which_solve, self._data_tuples,
@@ -551,8 +551,8 @@ class Imager:
             else:          # default scipy, no gradient (scipy finite-differences the objective)
                 return self.objfunc, None
 
-        def build_device_vg(dev):
-            # Un-jitted on-device value_and_grad (+ loss, to_device, aux) for the optax lane.
+        def build_vg_ondevice(dev):
+            # Un-jitted on-device value_and_grad (+ loss, to_device, aux) for the optax path.
             backend_args = (
                 self._init_arr, self._config, self._which_solve, self._data_tuples,
                 self._logfreqratio_list, len(self.obslist_next),
@@ -567,11 +567,15 @@ class Imager:
                 vg, loss_fn, to_device = make_value_and_grad_jax(*backend_args, device=dev)
                 return vg, loss_fn, to_device, None
 
-        # The optax lane uses the on-device builder; the scipy / callable lanes use the host builder.
-        build_loss = (build_device_vg if classify_optimizer(optimizer) == 'optax'
-                      else build_scipy)
-        res = run_optimizer(optimizer, x0=self._init_vec, optdict=optdict,
-                            callback=callback_func, build_loss=build_loss, device=device)
+        # Pick the builder that matches the optimizer: optax runs the objective on the
+        # GPU, while scipy and user callables want host arrays.
+        if classify_optimizer(optimizer) == 'optax':
+            build_loss = build_vg_ondevice
+        else:
+            build_loss = build_vg_onhost
+
+        res = run_optimizer(optimizer, build_loss, x0=self._init_vec, optdict=optdict,
+                            callback=callback_func, device=device)
         tstop = time.time()
 
         # Format output

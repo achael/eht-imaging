@@ -23,7 +23,7 @@ from ehtim.imaging.imager_backend import (
     transform_imarr,
     unpack_imarr,
 )
-from ehtim.imaging.optimizers import _resolve_optax, optimize_fixed
+from ehtim.imaging.optimizers import optimize_fixed, resolve_optax
 
 NHIST = 50   # optax-lbfgs memory
 MAXLS = 5    # zoom line-search cap; small so vmap doesn't pay the batch-worst-case every step
@@ -73,7 +73,7 @@ def _inner_survey(imgr, weight_grid, regparam_grid, maxit, x0, optimizer, device
         imgr._regparams(), imgr._embed_mask, device=device)
 
     maxit = int(maxit if maxit is not None else imgr.maxit_next)
-    gt, needs_ls = _resolve_optax(optimizer, {"maxiter": maxit, "maxcor": NHIST, "maxls": MAXLS})
+    gt, needs_ls = resolve_optax(optimizer, {"maxiter": maxit, "maxcor": NHIST, "maxls": MAXLS})
     x0 = put(np.asarray(imgr._init_vec, float) if x0 is None else x0)
     init_d = put(np.asarray(imgr._init_arr))
     which_solve, transforms = imgr._which_solve, imgr._config.transforms

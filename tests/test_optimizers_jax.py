@@ -1,7 +1,7 @@
 """Tests for the modular optimizer layer (ehtim.imaging.optimizers).
 
 Covers: classify_optimizer routing; the scipy default is unchanged (the dispatcher's
-scipy lane reproduces a direct scipy.optimize.minimize call bit-for-bit); the on-device
+scipy path reproduces a direct scipy.optimize.minimize call bit-for-bit); the on-device
 value_and_grad matches the host make_objective_jax; optax-lbfgs and a custom optax
 GradientTransformation recover the source; and a user callable plugs in via the escape
 hatch. optax-running tests are marked slow.
@@ -86,10 +86,10 @@ def test_device_vg_matches_host(make_opt_imager):
     assert np.allclose(np.asarray(grad), g_host, rtol=GRAD_RTOL)
 
 
-# ============================== scipy lane (default unchanged) ==============================
+# ============================== scipy path (default unchanged) ==============================
 @pytest.mark.slow
 def test_scipy_lane_matches_direct_scipy(make_opt_imager):
-    # the dispatcher's default lane is a bit-for-bit pass-through to scipy L-BFGS-B
+    # the dispatcher's default path is a bit-for-bit pass-through to scipy L-BFGS-B
     imgr = make_opt_imager()
     imgr.check_params()
     imgr.check_limits()
@@ -97,8 +97,8 @@ def test_scipy_lane_matches_direct_scipy(make_opt_imager):
     optdict = {"maxiter": imgr.maxit_next, "ftol": imgr.stop_next, "gtol": imgr.stop_next,
                "maxcor": NHIST, "maxls": MAXLS}
     x0 = imgr._init_vec
-    res_dispatch = run_optimizer(None, x0=x0, optdict=optdict, callback=None,
-                                 build_loss=lambda: (imgr.objfunc, imgr.objgrad))
+    res_dispatch = run_optimizer(None, lambda: (imgr.objfunc, imgr.objgrad),
+                                 x0=x0, optdict=optdict, callback=None)
     res_direct = scipy.optimize.minimize(imgr.objfunc, x0, method="L-BFGS-B",
                                          jac=imgr.objgrad, options=optdict)
     np.testing.assert_array_equal(res_dispatch.x, res_direct.x)
@@ -119,7 +119,7 @@ def test_optax_lbfgs_recovers(make_opt_imager, gauss_im):
 
 @pytest.mark.slow
 def test_custom_gradient_transformation_recovers(make_opt_imager, gauss_im):
-    # any optax GradientTransformation works through the optax lane
+    # any optax GradientTransformation works through the optax path
     out = make_opt_imager().make_image(optimizer=optax.adam(3e-2), show_updates=False)
     assert _nxcorr(out.imvec, gauss_im.imvec) > NXCORR_FLOOR
 
