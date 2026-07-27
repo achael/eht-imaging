@@ -123,8 +123,7 @@ class Obsdata:
 
     def __init__(self, ra, dec, rf, bw, datatable, tarr, scantable=None,
                  polrep='stokes', source=ehc.SOURCE_DEFAULT, mjd=ehc.MJD_DEFAULT, timetype='UTC',
-                 ampcal=True, phasecal=True, opacitycal=True, dcal=True, frcal=True,
-                 speedups=False):
+                 ampcal=True, phasecal=True, opacitycal=True, dcal=True, frcal=True):
         """A polarimetric VLBI observation of visibility amplitudes and phases (in Jy).
 
            Args:
@@ -256,7 +255,7 @@ class Obsdata:
             self.reorder_tarr_sefd(reorder_baselines=False)
 
         # reorder baselines to uvfits convention
-        self.reorder_baselines(speedups=speedups)
+        self.reorder_baselines()
 
         # Get tstart, mjd and tstop
         times = self.unpack(['time'])['time']
@@ -511,7 +510,7 @@ class Obsdata:
 
         return newobs
 
-    def reorder_baselines(self, speedups=False):
+    def reorder_baselines(self):
         """Reorder baselines to canonical order (tkey[t1] < tkey[t2]) and handle duplicates.
 
         Within each timestep, any row whose baseline is in reversed order is swapped
@@ -526,10 +525,6 @@ class Obsdata:
             ``UserWarning`` is emitted and only the first row is kept. The
             single-frequency Obsdata schema cannot represent per-channel data,
             so loaders that flatten multi-channel files lose information here.
-
-        Args:
-            speedups (bool): kept for API compatibility; the implementation
-                is now always vectorized and this flag has no effect.
         """
         dat = self.data.copy()
 

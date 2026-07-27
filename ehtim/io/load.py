@@ -1045,6 +1045,116 @@ def _fill_nan_sigmas(rr, ll, rl, lr):
     return rr_filled, ll_filled, rl_filled, lr_filled
 
 
+# ------------------------------------------------------------------------------------
+# Header readers shared by load_obs_uvfits and load_obs_uvfits_spectral. The two loaders
+# differ in how they read the DATA cube (one averages the spectral axis away, the other
+# keeps it), but everything they take from the header tables is the same, so it lives
+# here and neither copy can drift from the other.
+# ------------------------------------------------------------------------------------
+
+
+def _read_antenna_table(hdulist):
+    """Read the AIPS AN table into a tarr. Returns (tarr, station numbers).
+
+    Circular feeds only. A linear or hybrid station raises instead of being loaded as
+    circular by mistake, since turning POLTYA/POLTYB into per-station feed types is the
+    mixed-pol loader's job.
+    """
+    an = hdulist['AIPS AN'].data
+    tnames = an['ANNAME']
+    tnums = an['NOSTA'] - 1
+    xyz = np.real(an['STABXYZ'])
+    nant = len(tnames)
+    try:
+        sefdr = np.real(an['SEFD'])
+        sefdl = np.real(an['SEFD'])  # TODO add sefdl to uvfits?
+    except KeyError:
+        sefdr = np.zeros(nant)
+        sefdl = np.zeros(nant)
+
+    # TODO - get the *actual* values of these telescope parameters from the uvfits file?
+    fr_par = np.zeros(nant)
+    fr_el = np.zeros(nant)
+    fr_off = np.zeros(nant)
+    dr = np.zeros(nant, dtype=complex)
+    dl = np.zeros(nant, dtype=complex)
+
+    # Check both feed columns, so a hybrid station (say POLTYA='R', POLTYB='X') is caught
+    # rather than quietly loaded as circular.
+    feeds = set()
+    for col in ('POLTYA', 'POLTYB'):
+        try:
+            poltys = an[col]
+        except KeyError:
+            continue
+        for p in poltys:
+            s = (p.decode() if isinstance(p, bytes) else str(p)).strip().upper()
+            if s:
+                feeds.add(s)
+    if not feeds <= {'R', 'L'}:
+        raise NotImplementedError(
+            "mixed-pol / linear-feed uvfits load is not yet supported; "
+            f"detected feed types {sorted(feeds)} in POLTYA/POLTYB. "
+            "See obsdata_mixedpol_plan.md.")
+
+    # TODO (Phase 7 mixed-pol): read POLTYA/POLTYB here to fill in per-station
+    # feed_type. Until then, assume circular feeds.
+    tarr = np.array([np.array((
+        str(tnames[i]), xyz[i][0], xyz[i][1], xyz[i][2],
+        sefdr[i], sefdl[i], dr[i], dl[i],
+        fr_par[i], fr_el[i], fr_off[i], 'rl'), dtype=ehc.DTARR)
+        for i in range(nant)])
+    return tarr, tnums
+
+
+def _read_source_position(header):
+    """Read the source position and name from the header. Returns (ra, dec, source).
+
+    RA comes back in fractional hours. Some files write it in decimal degrees instead,
+    which shows up as a value above 24; we convert those and say so.
+    """
+    try:
+        ra = header['OBSRA'] * 12. / 180.
+        dec = header['OBSDEC']
+    except KeyError:
+        if header.get('CTYPE6') == 'RA':
+            ra = header['CRVAL6'] * 12. / 180.
+        else:
+            raise Exception('Cannot find RA!')
+        if header.get('CTYPE7') == 'DEC':
+            dec = header['CRVAL7']
+        else:
+            raise Exception('Cannot find DEC!')
+
+    if ra > 24 and ra >= 0:
+        ranew = ra * 12 / 180.
+        if ranew < 24:
+            print(f' Warning! file RA>24, interpreting as decimal deg. : '
+                  f'{ra:.3f} deg -> {ranew:.3f} hr')
+            ra = ranew
+        else:
+            raise Exception(f"Cannot interpret fits file RA {ra:.3f}!")
+    elif ra < 0:
+        raise Exception(f'fits file RA {ra:.3f}<0!')
+
+    return ra, dec, header['OBJECT']
+
+
+def _read_scan_table(hdulist):
+    """Read scan start/stop times (in hours) from the AIPS NX table, or None if absent."""
+    try:
+        scantable = []
+        for scan in hdulist['AIPS NX'].data:
+            scan_start = scan['TIME']          # days since the reference date
+            scan_dur = scan['TIME INTERVAL']
+            scantable.append([scan_start - 0.5 * scan_dur,
+                              scan_start + 0.5 * scan_dur])
+        return np.array(scantable) * 24
+    except BaseException:
+        print("No NX table in uvfits!")
+        return None
+
+
 # TODO can we save new telescope array terms and flags to uvfits and load them?
 # TODO uv coordinates, multiply by IF freqs and not header FREQ?
 def load_obs_uvfits(filename, polrep='stokes', flipbl=False,
@@ -1092,79 +1202,10 @@ def load_obs_uvfits(filename, polrep='stokes', flipbl=False,
     data = hdulist[0].data
 
     # Load the array data
-    tnames = hdulist['AIPS AN'].data['ANNAME']
-    tnums = hdulist['AIPS AN'].data['NOSTA'] - 1
-    xyz = np.real(hdulist['AIPS AN'].data['STABXYZ'])
-    try:
-        sefdr = np.real(hdulist['AIPS AN'].data['SEFD'])
-        sefdl = np.real(hdulist['AIPS AN'].data['SEFD'])  # TODO add sefdl to uvfits?
-    except KeyError:
-        sefdr = np.zeros(len(tnames))
-        sefdl = np.zeros(len(tnames))
-
-    # TODO - get the *actual* values of these telescope parameters from the uvfits file?
-    fr_par = np.zeros(len(tnames))
-    fr_el = np.zeros(len(tnames))
-    fr_off = np.zeros(len(tnames))
-    dr = np.zeros(len(tnames)) + 1j * np.zeros(len(tnames))
-    dl = np.zeros(len(tnames)) + 1j * np.zeros(len(tnames))
-
-    # Detect antenna feed types and raise if the observation is mixed-polarization
-    # (full POLTYA/POLTYB -> feed_type parsing is not yet implemented). Both feed
-    # columns are checked, so a hybrid station (e.g. POLTYA='R', POLTYB='X') is
-    # caught rather than silently loaded as circular.
-    feeds = set()
-    for col in ('POLTYA', 'POLTYB'):
-        try:
-            poltys = hdulist['AIPS AN'].data[col]
-        except KeyError:
-            continue
-        for p in poltys:
-            s = (p.decode() if isinstance(p, bytes) else str(p)).strip().upper()
-            if s:
-                feeds.add(s)
-    if not feeds <= {'R', 'L'}:
-        raise NotImplementedError(
-            "mixed-pol / linear-feed uvfits load is not yet supported; "
-            f"detected feed types {sorted(feeds)} in POLTYA/POLTYB. "
-            "See obsdata_mixedpol_plan.md.")
-
-    # TODO (Phase 7 mixed-pol): read POLTYA/POLTYB from the AIPS AN table
-    # to populate per-station feed_type. Until then, assume circular feeds.
-    tarr = [np.array((
-            str(tnames[i]), xyz[i][0], xyz[i][1], xyz[i][2],
-            sefdr[i], sefdl[i], dr[i], dl[i],
-            fr_par[i], fr_el[i], fr_off[i], 'rl'),
-        dtype=ehc.DTARR) for i in range(len(tnames))]
-
-    tarr = np.array(tarr)
+    tarr, tnums = _read_antenna_table(hdulist)
 
     # Various header parameters
-    try:
-        ra = header['OBSRA'] * 12. / 180.
-        dec = header['OBSDEC']
-    except KeyError:
-        if header['CTYPE6'] == 'RA':
-            ra = header['CRVAL6'] * 12. / 180.
-        else:
-            raise Exception('Cannot find RA!')
-        if header['CTYPE7'] == 'DEC':
-            dec = header['CRVAL7']
-        else:
-            raise Exception('Cannot find DEC!')
-
-    # catch bug if RA is in decimal degrees and > 24
-    if ra>24 and ra>=0:
-        ranew = ra*12/180.
-        if ranew<24:
-            print(f' Warning! file RA>24, interpreting as decimal deg. : {ra:.3f} deg -> {ranew:.3f} hr')
-            ra = ranew
-        else:
-            raise Exception(f"Cannot interpret fits file RA {ra:.3f}!")
-    elif ra<0:
-        raise Exception(f'fits file RA {ra:.3f}<0!')
-
-    src = header['OBJECT']
+    ra, dec, src = _read_source_position(header)
     rf = hdulist['AIPS AN'].header['FREQ']
 
     if header['CTYPE4'] == 'FREQ':
@@ -1350,21 +1391,7 @@ def load_obs_uvfits(filename, polrep='stokes', flipbl=False,
     mjd = int(np.min(jds) - 2400000.5)
     times = (jds - 2400000.5 - mjd) * 24.0
 
-    try:
-        scantable = []
-        nxtable = hdulist['AIPS NX']
-        for scan in nxtable.data:
-            scan_start = scan['TIME']  # in days since reference date
-            scan_dur = scan['TIME INTERVAL']
-            startvis = scan['START VIS'] - 1
-            endvis = scan['END VIS'] - 1
-            scantable.append([scan_start - 0.5 * scan_dur,
-                              scan_start + 0.5 * scan_dur])
-        scantable = np.array(scantable) * 24
-
-    except BaseException:
-        print("No NX table in uvfits!")
-        scantable = None
+    scantable = _read_scan_table(hdulist)
 
     # Integration times
     try:
@@ -1552,8 +1579,7 @@ def load_obs_uvfits(filename, polrep='stokes', flipbl=False,
         datatable = np.array(datatable)
 
     obs = ehtim.obsdata.Obsdata(ra, dec, rf, bw, datatable, tarr, polrep=polrep_uvfits,
-                                source=src, mjd=mjd, scantable=scantable,
-                                speedups=speedups)
+                                source=src, mjd=mjd, scantable=scantable)
 
     if remove_nan:
         if polrep_uvfits == 'circ':
@@ -1629,66 +1655,10 @@ def load_obs_uvfits_spectral(filename, polrep: str = 'stokes', flipbl: bool = Fa
     data = hdulist[0].data
 
     # --- antenna table -> tarr (circular / Stokes feeds only) ---
-    tnames = hdulist['AIPS AN'].data['ANNAME']
-    tnums = hdulist['AIPS AN'].data['NOSTA'] - 1
-    xyz = np.real(hdulist['AIPS AN'].data['STABXYZ'])
-    try:
-        sefdr = np.real(hdulist['AIPS AN'].data['SEFD'])
-        sefdl = np.real(hdulist['AIPS AN'].data['SEFD'])
-    except KeyError:
-        sefdr = np.zeros(len(tnames))
-        sefdl = np.zeros(len(tnames))
-    fr_par = np.zeros(len(tnames))
-    fr_el = np.zeros(len(tnames))
-    fr_off = np.zeros(len(tnames))
-    dr = np.zeros(len(tnames), dtype=complex)
-    dl = np.zeros(len(tnames), dtype=complex)
-
-    # Linear / mixed feeds are handled by the mixed-pol loader, not here.
-    feeds = set()
-    for col in ('POLTYA', 'POLTYB'):
-        try:
-            poltys = hdulist['AIPS AN'].data[col]
-        except KeyError:
-            continue
-        for p in poltys:
-            s = (p.decode() if isinstance(p, bytes) else str(p)).strip().upper()
-            if s:
-                feeds.add(s)
-    if not feeds <= {'R', 'L'}:
-        raise NotImplementedError(
-            "load_uvfits_spectral supports only circular/Stokes feeds; detected "
-            f"{sorted(feeds)} in POLTYA/POLTYB. Linear/mixed-feed uvfits loading "
-            "is handled by the mixed-polarization loader.")
-
-    tarr = np.array([np.array((
-        str(tnames[i]), xyz[i][0], xyz[i][1], xyz[i][2],
-        sefdr[i], sefdl[i], dr[i], dl[i],
-        fr_par[i], fr_el[i], fr_off[i], 'rl'), dtype=ehc.DTARR)
-        for i in range(len(tnames))])
+    tarr, tnums = _read_antenna_table(hdulist)
 
     # --- source position and name ---
-    try:
-        ra = header['OBSRA'] * 12. / 180.
-        dec = header['OBSDEC']
-    except KeyError:
-        if header.get('CTYPE6') == 'RA':
-            ra = header['CRVAL6'] * 12. / 180.
-        else:
-            raise Exception('Cannot find RA!')
-        if header.get('CTYPE7') == 'DEC':
-            dec = header['CRVAL7']
-        else:
-            raise Exception('Cannot find DEC!')
-    if ra > 24 and ra >= 0:
-        ranew = ra * 12 / 180.
-        if ranew < 24:
-            ra = ranew
-        else:
-            raise Exception(f"Cannot interpret fits file RA {ra:.3f}!")
-    elif ra < 0:
-        raise Exception(f'fits file RA {ra:.3f}<0!')
-    src = header['OBJECT']
+    ra, dec, src = _read_source_position(header)
 
     # --- frequency grid: reference freq + per-IF offset + per-channel step ---
     if header['CTYPE4'] != 'FREQ':
@@ -1811,16 +1781,7 @@ def load_obs_uvfits_spectral(filename, polrep: str = 'stokes', flipbl: bool = Fa
         vv = -vv
 
     # Scan table (shared across channels).
-    try:
-        scantable = []
-        for scan in hdulist['AIPS NX'].data:
-            scan_start = scan['TIME']
-            scan_dur = scan['TIME INTERVAL']
-            scantable.append([scan_start - 0.5 * scan_dur,
-                              scan_start + 0.5 * scan_dur])
-        scantable = np.array(scantable) * 24
-    except BaseException:
-        scantable = None
+    scantable = _read_scan_table(hdulist)
 
     if polrep_uvfits == 'circ':
         dtpol_out = ehc.DTPOL_CIRC
@@ -1942,7 +1903,7 @@ def load_obs_uvfits_spectral(filename, polrep: str = 'stokes', flipbl: bool = Fa
             bw = ch_bw * len(chg) * len(ifg)
             obs = ehtim.obsdata.Obsdata(ra, dec, freq, bw, datatable, tarr,
                                         polrep=polrep_uvfits, source=src, mjd=mjd,
-                                        scantable=scantable, speedups=True)
+                                        scantable=scantable)
             if remove_nan and polrep_uvfits == 'circ':
                 (obs.data['rrsigma'], obs.data['llsigma'],
                  obs.data['rlsigma'], obs.data['lrsigma']) = _fill_nan_sigmas(
