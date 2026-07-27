@@ -1,27 +1,35 @@
-"""Multi-GPU sharding for the imaging objective.
+"""Spread the imaging objective across several GPUs.
 
-``make_sharded_value_and_grad`` returns a device value_and_grad whose data products are
-split across a mesh of GPUs while the image and regularizers stay replicated -- only the
-data-fidelity (chi^2) term is distributed. Two axes are supported:
+Only the data term gets divided up. The image and the regularizers are small, so every
+GPU keeps its own copy of those; what we split is the chi^2 sum over the data, which is
+where the time actually goes. `make_sharded_value_and_grad` hands back a (value, grad)
+function with the same signature as the single-device one, so the optax loop in
+`imaging.optimizers` never needs to know which of the two it is driving.
 
-- ``shard_axis="baseline"``: split each data term over its visibility/baseline axis. Good
-  for a single large image or many visibilities.
-- ``shard_axis="frequency"``: give each GPU a subset of frequency channels. Good for
-  multifrequency data; needs more than one channel.
+There are two ways to divide the work:
 
-jax requires the sharded axis to divide evenly across the mesh, so each term is padded to a
-multiple of the device count with zero-weight rows: the operator is padded with ones (keeping
-the padded sample finite, so closures don't hit log(0)/angle(0)) and sigma with infinity (so
-the row adds exactly 0 to chi^2). Padding still inflates the 1/len(data) normalization, so each
-chi^2 is multiplied by pad_len/true_len -- the sharded objective is then bit-for-bit the
-single-device one, for linear (vis/amp) and closure (cphase/logcamp) terms alike.
+- `shard_axis="baseline"` gives each GPU a slice of the visibilities. This is the general
+  case and works for any dataset.
+- `shard_axis="frequency"` gives each GPU a few frequency channels. Only useful for
+  multifrequency data, and you need at least as many channels as GPUs.
 
-The ``direct`` transform shards its dense Fourier matrix and reduces with shard_map + pmean.
-The ``nfft`` transform can't be differentiated through shard_map (jax_finufft's nufft2
-transpose is wrong under SPMD), so its grid->samples map is a custom_vjp with a forward-nufft1
-backward (see ``_make_sharded_nufft2``). Either way the returned value_and_grad has the same
-(x) -> (value, grad) shape as the single-device factory and drops straight into the optax loop
-in ``imaging.optimizers``. jax / sharding imports are lazy so ``import ehtim`` stays jax-free.
+Padding. jax insists that the split axis divide evenly across the GPUs, and real datasets
+rarely oblige, so each data term is padded up to a multiple of the device count. The padded
+rows have to be inert. Sigma is set to infinity, so the row contributes exactly zero to
+chi^2, and the operator is set to one rather than zero, so the padded sample stays finite
+(a zero would put us at log(0) or angle(0) in the closure terms). Padding still inflates
+the 1/len(data) normalization, so each chi^2 is scaled back by pad_len/true_len. With that
+in place the sharded objective agrees with the single-device one to the last bit, for the
+linear terms (vis, amp) and the closure terms alike.
+
+Fourier transforms. The `direct` transform simply shards its dense matrix and adds up the
+pieces with shard_map and pmean. The `nfft` transform needs more care: jax_finufft's nufft2
+has an incorrect transpose rule under shard_map, so we cannot differentiate through it as
+it stands. Instead its grid->samples step is wrapped in a custom_vjp whose backward pass is
+an explicit forward nufft1 (see `_make_sharded_nufft2`).
+
+jax and the sharding machinery are imported lazily, so `import ehtim` still works for
+people who do not have jax installed.
 """
 import numpy as np
 
@@ -55,11 +63,13 @@ def _pad_rows(arr, pad, fill=0.0):
 
 
 class _NFFTView:
-    """Minimal NFFTInfo stand-in for the sharded jax path: nufft2_backend reads
-    xdim/ydim/uv_finufft/eps and the nfft chi2 kernels read pulsefac. Rebuilt per
-    device inside shard_map from the sharded uv_finufft + pulsefac, so each GPU runs
-    jax_finufft.nufft2 on its own slice of visibilities. The stateful numpy finufft
-    plan is not needed (the sharded path is jax-only)."""
+    """A stand-in for NFFTInfo carrying just the fields the sharded jax path reads.
+
+    Each GPU builds one of these inside shard_map from its own slice of uv_finufft and
+    pulsefac, so it runs jax_finufft.nufft2 on its own visibilities. The real NFFTInfo
+    also holds a stateful numpy finufft plan, which is no use here because this path is
+    jax-only.
+    """
 
     def __init__(self, uv_finufft, pulsefac, eps, xdim, ydim):
         self.uv_finufft = uv_finufft
@@ -70,12 +80,16 @@ class _NFFTView:
 
 
 def _make_sharded_nufft2(mesh, axis, uv_sharded, eps, shape):
-    """custom_vjp for a replicated image grid -> sharded visibility samples on `mesh`.
+    """Map a replicated image grid to sharded visibility samples, with a hand-written gradient.
 
-    Forward runs jax_finufft.nufft2 per device on its uv slice; backward applies the type-1
-    adjoint as an explicit FORWARD nufft1 + psum. jax_finufft's registered nufft2 transpose
-    is incorrect under shard_map, but a forward nufft1 is correct and type-1 is additive over
-    points, so psum(nufft1(local)) == nufft1(global). `shape` is the (xdim, ydim) grid.
+    The forward pass is just nufft2 on each GPU's slice of uv. The backward pass is the part
+    that needs explaining: jax_finufft registers a transpose rule for nufft2 that is wrong
+    under shard_map, so rather than rely on it we write the adjoint ourselves as a forward
+    nufft1 followed by a psum. That is legitimate because a type-1 transform is a sum over
+    points, so adding up each device's nufft1 gives the same answer as one nufft1 over all
+    of them.
+
+    `shape` is the (xdim, ydim) image grid.
     """
     import jax
     from jax.sharding import PartitionSpec as P
@@ -104,15 +118,16 @@ def make_sharded_value_and_grad(initvec, config, which_solve, data_tuples,
                                 logfreqratio_list, n_obs, dat_term, reg_term,
                                 priorvec, norm_reg, reg_params, embed_mask,
                                 mesh, shard_axis="baseline"):
-    """Return (value_and_grad, loss, to_device) with data sharded across `mesh`.
+    """Return (value_and_grad, loss, to_device, aux) with the data sharded across `mesh`.
 
-    Same arguments as make_value_and_grad_jax plus the device `mesh`. The data
-    tuples are padded + row-sharded; the solver vector / prior / init stay
-    replicated. value_and_grad has signature (x, aux) -> (value, grad): the sharded
-    device arrays are bundled into `aux` and passed as a JIT ARGUMENT, not closed
-    over -- closing over sharded arrays makes jax mis-partition them (it materializes
-    them from the wrong/uninitialized device buffers), giving non-deterministic NaN
-    results. Returns (value_and_grad, loss, to_device, aux).
+    Takes the same arguments as make_value_and_grad_jax plus the device `mesh`. The data
+    tuples are padded and split by row; the solver vector, prior and init stay replicated
+    on every device.
+
+    value_and_grad has signature (x, aux) -> (value, grad). The sharded arrays ride along
+    in `aux` and are passed as a jit argument rather than closed over, and that part is not
+    stylistic: closing over sharded arrays makes jax partition them wrongly, reading from
+    uninitialized device buffers, and you get NaNs that come and go between runs.
     """
     import jax
     import jax.numpy as jnp
@@ -148,23 +163,22 @@ def make_sharded_value_and_grad(initvec, config, which_solve, data_tuples,
             pad = (-true_n) % k
             return jax.device_put(jnp.asarray(_pad_rows(a, pad, fill)), sharding), true_n, pad
 
-        # Pad + shard each data term on its data-point (visibility/closure) axis. The
-        # operator is padded with ones and sigma with infinity, so padded rows keep finite
-        # samples (closures stay clear of log(0)/angle(0)) yet add exactly 0 to chi^2;
-        # correction[key] = pad_len/true_len then fixes the inflated 1/len(data) normalization.
-        # The direct and nfft branches below differ in how they shard the operator and reduce.
+        # Pad each data term out to a multiple of the device count, then split it by row.
+        # Sigma is padded with infinity so the extra rows add nothing to chi^2, and the
+        # operator with ones so those rows stay finite (see the padding note at the top of
+        # the file). correction[key] undoes the 1/len(data) that the padding inflated.
+        # direct and nfft differ below in how they shard the operator and reduce.
         data_d, correction, data_specs = {}, {}, {}
         aux = {"init": init_d, "prior": prior_d, "data": data_d}
 
         if config.ttype == "nfft":
-            # nfft: the operator is a list of NFFTInfo. jax_finufft's nufft2 forward shards
-            # cleanly but its transpose is wrong under shard_map, so each NFFTInfo's grid ->
-            # samples map is wrapped as a custom_vjp whose backward is an explicit forward
-            # nufft1 + psum (_make_sharded_nufft2, injected via nufft2_backend). The reused
-            # chi^2 kernels then run at top level and GSPMD all-reduces the chi^2 sums over the
-            # sharded visibility axis. Sharded uv/pulsefac/data/sigma are passed as jit args;
-            # the views (which carry the transform closure) are rebuilt inside the loss so
-            # nothing closes over a sharded array as a compile-time constant.
+            # nfft: the operator is a list of NFFTInfo. The forward nufft2 shards fine, but
+            # its transpose is wrong under shard_map, so we swap in _make_sharded_nufft2 --
+            # a custom_vjp whose backward is a forward nufft1 plus a psum. The chi^2 kernels
+            # themselves are untouched and run at the top level, where GSPMD all-reduces the
+            # sums over the sharded visibility axis. uv/pulsefac/data/sigma go in as jit
+            # arguments, and the views holding the transform are rebuilt inside the loss, so
+            # no sharded array ends up baked in as a compile-time constant.
             nfft_static = {}
             for key, (data, sigma, A) in data_tuples.items():
                 data_s, true_n, pad = shard_rows(data, rows)
