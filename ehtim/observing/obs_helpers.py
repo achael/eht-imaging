@@ -28,6 +28,7 @@ import copy
 import itertools as it
 import sys
 import warnings
+import zlib
 
 import astropy.time as at
 import finufft
@@ -1276,18 +1277,33 @@ def cerror(sigma):
     return noise
 
 
+def _stable_seed(*args):
+    """Deterministic 32-bit seed derived from the repr of *args.
+
+    Used to seed numpy from a collection of arguments (station names, time,
+    polarization, ...) so that a given quantity always draws the same random
+    value regardless of data ordering. Uses zlib.crc32 rather than the builtin
+    hash(): CPython salts str/bytes hashing per process (PYTHONHASHSEED), so
+    hash() gives a different seed -- and different noise -- every run, whereas
+    crc32 of the same text is identical across processes, machines, and Python
+    versions. crc32 already returns a value in [0, 2**32 - 1], the valid range
+    for np.random.seed.
+    """
+    return zlib.crc32(",".join(map(repr, args)).encode())
+
+
 def cerror_hash(sigma, *args):
     """Return a complex number drawn from a circular complex Gaussian of zero mean
     """
 
     reargs = list(args)
     reargs.append('re')
-    np.random.seed(hash(",".join(map(repr, reargs))) % 4294967295)
+    np.random.seed(_stable_seed(*reargs))
     re = np.random.randn()
 
     imargs = list(args)
     imargs.append('im')
-    np.random.seed(hash(",".join(map(repr, imargs))) % 4294967295)
+    np.random.seed(_stable_seed(*imargs))
     im = np.random.randn()
 
     err = sigma * (re + 1j*im)
@@ -1298,7 +1314,7 @@ def cerror_hash(sigma, *args):
 def hashmultivariaterandn(size, cov, *args):
     """set the seed according to a collection of arguments and return random multivariate gaussian var
     """
-    np.random.seed(hash(",".join(map(repr, args))) % 4294967295)
+    np.random.seed(_stable_seed(*args))
     mean = np.zeros(size)
     noise = np.random.multivariate_normal(mean, cov, check_valid='ignore')
     return noise
@@ -1308,7 +1324,7 @@ def hashrandn(*args):
     """set the seed according to a collection of arguments and return random gaussian var
     """
 
-    np.random.seed(hash(",".join(map(repr, args))) % 4294967295)
+    np.random.seed(_stable_seed(*args))
     noise = np.random.randn()
     return noise
 
@@ -1317,7 +1333,7 @@ def hashrand(*args):
     """set the seed according to a collection of arguments and return random number in 0,1
     """
 
-    np.random.seed(hash(",".join(map(repr, args))) % 4294967295)
+    np.random.seed(_stable_seed(*args))
     noise = np.random.rand()
     return noise
 
