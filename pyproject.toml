@@ -47,9 +47,13 @@ dev = [
     "paramsurvey",
     "plotly",
     "jax",
+    "jax-finufft>=1.3",
+    "optax>=0.2",
 ]
 gpu = [
     "jax[cuda12]",
+    "jax-finufft>=1.3",
+    "optax>=0.2",
 ]
 
 [project.urls]

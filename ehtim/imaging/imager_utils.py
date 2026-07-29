@@ -1759,6 +1759,17 @@ def reggrad_cm(imvec, mask, **kwargs):
     return g[mask]
 
 
+def _safe_sqrt(xp, sq):
+    """sqrt(sq) with a finite autodiff gradient at sq == 0 (0 rather than inf).
+
+    Forward equals xp.sqrt for sq >= 0, so values are unchanged for any
+    epsilon_tv > 0 -- only the backward pass differs. Keeps jax autodiff of the
+    TV regularizer from producing NaNs at flat pixels when epsilon_tv == 0.
+    """
+    safe = xp.where(sq > 0, sq, 1.0)
+    return xp.where(sq > 0, xp.sqrt(safe), 0.0)
+
+
 def reg_tv(imvec, mask, **kwargs):
     """Total Variation regularizer"""
     # embed image
@@ -1776,7 +1787,7 @@ def reg_tv(imvec, mask, **kwargs):
     impad = xp.pad(im, 1, mode='constant', constant_values=0)
     im_l1 = xp.roll(impad, -1, axis=0)[1:ny+1, 1:nx+1]
     im_l2 = xp.roll(impad, -1, axis=1)[1:ny+1, 1:nx+1]
-    return xp.sum(xp.sqrt(xp.abs(im_l1 - im)**2 + xp.abs(im_l2 - im)**2 + epsilon)) / norm
+    return xp.sum(_safe_sqrt(xp, xp.abs(im_l1 - im)**2 + xp.abs(im_l2 - im)**2 + epsilon)) / norm
 
 
 def reggrad_tv(imvec, mask, **kwargs):
@@ -1799,10 +1810,15 @@ def reggrad_tv(imvec, mask, **kwargs):
     im_r2 = np.roll(impad, 1, axis=1)[1:ny+1, 1:nx+1]
     im_r1l2 = np.roll(np.roll(impad,  1, axis=0), -1, axis=1)[1:ny+1, 1:nx+1]
     im_l1r2 = np.roll(np.roll(impad, -1, axis=0),  1, axis=1)[1:ny+1, 1:nx+1]
-    # gradient terms
-    g1 = (2*im - im_l1 - im_l2) / np.sqrt((im - im_l1)**2 + (im - im_l2)**2 + epsilon)
-    g2 = (im - im_r1) / np.sqrt((im - im_r1)**2 + (im_r1l2 - im_r1)**2 + epsilon)
-    g3 = (im - im_r2) / np.sqrt((im - im_r2)**2 + (im_l1r2 - im_r2)**2 + epsilon)
+    # gradient terms. Guarded division (mirrors reggrad_tv_spec): at a flat pixel the denominator
+    # is 0 when epsilon_tv == 0, so the gradient is 0 rather than 0/0 = NaN. Identical to the plain
+    # division wherever the denominator is > 0, so non-flat results are unchanged.
+    d1 = np.sqrt((im - im_l1)**2 + (im - im_l2)**2 + epsilon)
+    d2 = np.sqrt((im - im_r1)**2 + (im_r1l2 - im_r1)**2 + epsilon)
+    d3 = np.sqrt((im - im_r2)**2 + (im_l1r2 - im_r2)**2 + epsilon)
+    g1 = np.where(d1 > 0, (2*im - im_l1 - im_l2) / np.where(d1 > 0, d1, 1.0), 0.0)
+    g2 = np.where(d2 > 0, (im - im_r1) / np.where(d2 > 0, d2, 1.0), 0.0)
+    g3 = np.where(d3 > 0, (im - im_r2) / np.where(d3 > 0, d3, 1.0), 0.0)
     # The back-neighbor (g2, g3) terms reference a pixel that does not
     # exist on the first row/column (it is the zero pad), so they must be zeroed
     mask1 = np.zeros(im.shape)
@@ -3431,6 +3447,12 @@ def plot_i(im, Prior, nit, chi2_dict, **kwargs):
 
 # TODO: consolidate `embed` (1D, this function) and `embed_imarr`
 # (1D or 2D, below) into a single implementation -- their bodies overlap.
+# Fixed seed so the random off-mask floor is reproducible run-to-run (a deterministic
+# objective) and independent of global np.random state. The floor only breaks TV
+# gradient symmetry on not-solved-for pixels, so a fixed pattern serves the same purpose.
+_FLOOR_SEED = 0
+
+
 def embed(imvec, mask, clipfloor=0., randomfloor=False):
     """Embeds a 1d image vector into the size of boolean embed mask
     """
@@ -3439,7 +3461,7 @@ def embed(imvec, mask, clipfloor=0., randomfloor=False):
     on = mbool.nonzero()[0]
     off = (~mbool).nonzero()[0]
     if randomfloor:  # prevent total variation gradient singularities
-        floor = clipfloor * np.abs(np.random.normal(size=len(off)))
+        floor = clipfloor * np.abs(np.random.default_rng(_FLOOR_SEED).normal(size=len(off)))
     else:
         floor = np.full(len(off), clipfloor)
 
@@ -3516,8 +3538,8 @@ def embed_imarr(imarr, mask, clipfloor=0., randomfloor=False):
     mbool = mask.astype(bool)
     on_cols = mbool.nonzero()[0]
     off_cols = (~mbool).nonzero()[0]
-    if randomfloor:
-        floor = clipfloor * np.abs(np.random.normal(size=(nsolve, len(off_cols))))
+    if randomfloor:  # seeded for reproducibility (see embed / _FLOOR_SEED)
+        floor = clipfloor * np.abs(np.random.default_rng(_FLOOR_SEED).normal(size=(nsolve, len(off_cols))))
     else:
         floor = np.full((nsolve, len(off_cols)), clipfloor)
 

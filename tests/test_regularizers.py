@@ -251,9 +251,10 @@ class TestPolRegularizerGradients:
                 f"{rtype} slot {s}: gradient disagrees with FD on the grid")
 
     @pytest.mark.parametrize("rtype, is_pol", [("tv", False), ("ptv", True), ("vtv", True)])
-    def test_tv_epsilon_removes_singularity(self, rtype, is_pol):
-        """A spatially-constant image zeros the neighbor diffs (0/0 in the TV sqrt);
-        epsilon_tv keeps the gradient finite (default 0 stays byte-identical)."""
+    def test_tv_grad_finite_on_constant_image(self, rtype, is_pol):
+        """A spatially-constant image zeros every neighbor diff, so the TV sqrt hits 0/0.
+        The gradient stays finite either way -- a flat pixel just gets a zero gradient --
+        whether or not epsilon_tv is set."""
         ny = nx = 6
         n = ny * nx
         mask = np.ones(n, dtype=bool)
@@ -270,8 +271,8 @@ class TestPolRegularizerGradients:
             reggrad = getattr(iu, f"reggrad_{rtype}")
         g0 = np.asarray(reggrad(x, mask, epsilon_tv=0.0, **kw))
         ge = np.asarray(reggrad(x, mask, epsilon_tv=0.01, **kw))
-        assert not np.all(np.isfinite(g0)), f"{rtype}: expected singular grad at epsilon_tv=0"
-        assert np.all(np.isfinite(ge)), f"{rtype}: expected finite grad at epsilon_tv>0"
+        assert np.all(np.isfinite(g0)), f"{rtype}: grad not finite at epsilon_tv=0"
+        assert np.all(np.isfinite(ge)), f"{rtype}: grad not finite at epsilon_tv>0"
 
 
 # reggrad_{ptv,vtv,tv} zero their back-neighbor (m2/m3, g2/g3) terms on the
