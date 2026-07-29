@@ -235,22 +235,14 @@ def test_reorder_baselines_time_sorted(obs_direct):
     assert np.all(np.diff(obs_direct.data["time"]) >= 0)
 
 
-def test_trial_speedups_matches_default(obs_direct):
-    # The trial_speedups flag in reorder_baselines is now a no-op; both
-    # invocations must produce byte-identical output, including when the
-    # input contains conjugate pairs and true duplicates.
-    extra = obs_direct.data[0].copy()
-    extra["t1"], extra["t2"] = obs_direct.data[0]["t2"], obs_direct.data[0]["t1"]
-    extra["u"], extra["v"] = -obs_direct.data[0]["u"], -obs_direct.data[0]["v"]
-    extra["vis"] = np.conj(obs_direct.data[0]["vis"])
-    seeded = obs_direct.copy()
-    seeded.data = np.concatenate([obs_direct.data, np.array([extra], dtype=obs_direct.data.dtype)])
+def test_reorder_baselines_speedups_kwarg_removed(obs_direct):
+    """reorder_baselines is always vectorized now, so the old flag is gone.
 
-    obs_default = seeded.copy()
-    obs_default.reorder_baselines(trial_speedups=False)
-    obs_trial = seeded.copy()
-    obs_trial.reorder_baselines(trial_speedups=True)
-    np.testing.assert_array_equal(obs_default.data, obs_trial.data)
+    The behaviour it used to guard is covered by the conjugate-pair and duplicate
+    tests below.
+    """
+    with pytest.raises(TypeError):
+        obs_direct.reorder_baselines(speedups=True)
 
 
 def _seed_extra_row(obs, **overrides):

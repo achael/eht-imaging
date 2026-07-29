@@ -1045,13 +1045,123 @@ def _fill_nan_sigmas(rr, ll, rl, lr):
     return rr_filled, ll_filled, rl_filled, lr_filled
 
 
+# ------------------------------------------------------------------------------------
+# Header readers shared by load_obs_uvfits and load_obs_uvfits_spectral. The two loaders
+# differ in how they read the DATA cube (one averages the spectral axis away, the other
+# keeps it), but everything they take from the header tables is the same, so it lives
+# here and neither copy can drift from the other.
+# ------------------------------------------------------------------------------------
+
+
+def _read_antenna_table(hdulist):
+    """Read the AIPS AN table into a tarr. Returns (tarr, station numbers).
+
+    Circular feeds only. A linear or hybrid station raises instead of being loaded as
+    circular by mistake, since turning POLTYA/POLTYB into per-station feed types is the
+    mixed-pol loader's job.
+    """
+    an = hdulist['AIPS AN'].data
+    tnames = an['ANNAME']
+    tnums = an['NOSTA'] - 1
+    xyz = np.real(an['STABXYZ'])
+    nant = len(tnames)
+    try:
+        sefdr = np.real(an['SEFD'])
+        sefdl = np.real(an['SEFD'])  # TODO add sefdl to uvfits?
+    except KeyError:
+        sefdr = np.zeros(nant)
+        sefdl = np.zeros(nant)
+
+    # TODO - get the *actual* values of these telescope parameters from the uvfits file?
+    fr_par = np.zeros(nant)
+    fr_el = np.zeros(nant)
+    fr_off = np.zeros(nant)
+    dr = np.zeros(nant, dtype=complex)
+    dl = np.zeros(nant, dtype=complex)
+
+    # Check both feed columns, so a hybrid station (say POLTYA='R', POLTYB='X') is caught
+    # rather than quietly loaded as circular.
+    feeds = set()
+    for col in ('POLTYA', 'POLTYB'):
+        try:
+            poltys = an[col]
+        except KeyError:
+            continue
+        for p in poltys:
+            s = (p.decode() if isinstance(p, bytes) else str(p)).strip().upper()
+            if s:
+                feeds.add(s)
+    if not feeds <= {'R', 'L'}:
+        raise NotImplementedError(
+            "mixed-pol / linear-feed uvfits load is not yet supported; "
+            f"detected feed types {sorted(feeds)} in POLTYA/POLTYB. "
+            "See obsdata_mixedpol_plan.md.")
+
+    # TODO (Phase 7 mixed-pol): read POLTYA/POLTYB here to fill in per-station
+    # feed_type. Until then, assume circular feeds.
+    tarr = np.array([np.array((
+        str(tnames[i]), xyz[i][0], xyz[i][1], xyz[i][2],
+        sefdr[i], sefdl[i], dr[i], dl[i],
+        fr_par[i], fr_el[i], fr_off[i], 'rl'), dtype=ehc.DTARR)
+        for i in range(nant)])
+    return tarr, tnums
+
+
+def _read_source_position(header):
+    """Read the source position and name from the header. Returns (ra, dec, source).
+
+    RA comes back in fractional hours. Some files write it in decimal degrees instead,
+    which shows up as a value above 24; we convert those and say so.
+    """
+    try:
+        ra = header['OBSRA'] * 12. / 180.
+        dec = header['OBSDEC']
+    except KeyError:
+        if header.get('CTYPE6') == 'RA':
+            ra = header['CRVAL6'] * 12. / 180.
+        else:
+            raise Exception('Cannot find RA!')
+        if header.get('CTYPE7') == 'DEC':
+            dec = header['CRVAL7']
+        else:
+            raise Exception('Cannot find DEC!')
+
+    if ra > 24 and ra >= 0:
+        ranew = ra * 12 / 180.
+        if ranew < 24:
+            print(f' Warning! file RA>24, interpreting as decimal deg. : '
+                  f'{ra:.3f} deg -> {ranew:.3f} hr')
+            ra = ranew
+        else:
+            raise Exception(f"Cannot interpret fits file RA {ra:.3f}!")
+    elif ra < 0:
+        raise Exception(f'fits file RA {ra:.3f}<0!')
+
+    return ra, dec, header['OBJECT']
+
+
+def _read_scan_table(hdulist):
+    """Read scan start/stop times (in hours) from the AIPS NX table, or None if absent."""
+    try:
+        scantable = []
+        for scan in hdulist['AIPS NX'].data:
+            scan_start = scan['TIME']          # days since the reference date
+            scan_dur = scan['TIME INTERVAL']
+            scantable.append([scan_start - 0.5 * scan_dur,
+                              scan_start + 0.5 * scan_dur])
+        return np.array(scantable) * 24
+    except BaseException:
+        print("No NX table in uvfits!")
+        return None
+
+
 # TODO can we save new telescope array terms and flags to uvfits and load them?
 # TODO uv coordinates, multiply by IF freqs and not header FREQ?
 def load_obs_uvfits(filename, polrep='stokes', flipbl=False,
                     allow_singlepol=True, force_singlepol=None,
                     channel=all, IF=all, remove_nan=False,
                     ignore_pzero_date=True,
-                    trial_speedups=True,
+                    speedups=True,
                     invvar_channel_avg=True):
     """Load observation data from a uvfits file.
 
@@ -1067,9 +1177,9 @@ def load_obs_uvfits(filename, polrep='stokes', flipbl=False,
            remove_nan (bool): whether or not to remove entries with nan data
            ignore_pzero_date (bool): if True, ignore the offset parameters in DATE field
                                      TODO: what is the correct behavior per AIPS memo 117?
-           trial_speedups (bool): if True (default), use faster vectorized
-                                  array/telescope handling paths; produces data
-                                  and tarr identical to the legacy paths
+           speedups (bool): if True (default), use faster vectorized
+                            array/telescope handling paths; produces data
+                            and tarr identical to the legacy paths
            invvar_channel_avg (bool): if True, average IFs/channels with inverse-variance
                                       weighting. If False, use the original simple averaging.
        Returns:
@@ -1092,79 +1202,10 @@ def load_obs_uvfits(filename, polrep='stokes', flipbl=False,
     data = hdulist[0].data
 
     # Load the array data
-    tnames = hdulist['AIPS AN'].data['ANNAME']
-    tnums = hdulist['AIPS AN'].data['NOSTA'] - 1
-    xyz = np.real(hdulist['AIPS AN'].data['STABXYZ'])
-    try:
-        sefdr = np.real(hdulist['AIPS AN'].data['SEFD'])
-        sefdl = np.real(hdulist['AIPS AN'].data['SEFD'])  # TODO add sefdl to uvfits?
-    except KeyError:
-        sefdr = np.zeros(len(tnames))
-        sefdl = np.zeros(len(tnames))
-
-    # TODO - get the *actual* values of these telescope parameters from the uvfits file?
-    fr_par = np.zeros(len(tnames))
-    fr_el = np.zeros(len(tnames))
-    fr_off = np.zeros(len(tnames))
-    dr = np.zeros(len(tnames)) + 1j * np.zeros(len(tnames))
-    dl = np.zeros(len(tnames)) + 1j * np.zeros(len(tnames))
-
-    # Detect antenna feed types and raise if the observation is mixed-polarization
-    # (full POLTYA/POLTYB -> feed_type parsing is not yet implemented). Both feed
-    # columns are checked, so a hybrid station (e.g. POLTYA='R', POLTYB='X') is
-    # caught rather than silently loaded as circular.
-    feeds = set()
-    for col in ('POLTYA', 'POLTYB'):
-        try:
-            poltys = hdulist['AIPS AN'].data[col]
-        except KeyError:
-            continue
-        for p in poltys:
-            s = (p.decode() if isinstance(p, bytes) else str(p)).strip().upper()
-            if s:
-                feeds.add(s)
-    if not feeds <= {'R', 'L'}:
-        raise NotImplementedError(
-            "mixed-pol / linear-feed uvfits load is not yet supported; "
-            f"detected feed types {sorted(feeds)} in POLTYA/POLTYB. "
-            "See obsdata_mixedpol_plan.md.")
-
-    # TODO (Phase 7 mixed-pol): read POLTYA/POLTYB from the AIPS AN table
-    # to populate per-station feed_type. Until then, assume circular feeds.
-    tarr = [np.array((
-            str(tnames[i]), xyz[i][0], xyz[i][1], xyz[i][2],
-            sefdr[i], sefdl[i], dr[i], dl[i],
-            fr_par[i], fr_el[i], fr_off[i], 'rl'),
-        dtype=ehc.DTARR) for i in range(len(tnames))]
-
-    tarr = np.array(tarr)
+    tarr, tnums = _read_antenna_table(hdulist)
 
     # Various header parameters
-    try:
-        ra = header['OBSRA'] * 12. / 180.
-        dec = header['OBSDEC']
-    except KeyError:
-        if header['CTYPE6'] == 'RA':
-            ra = header['CRVAL6'] * 12. / 180.
-        else:
-            raise Exception('Cannot find RA!')
-        if header['CTYPE7'] == 'DEC':
-            dec = header['CRVAL7']
-        else:
-            raise Exception('Cannot find DEC!')
-
-    # catch bug if RA is in decimal degrees and > 24
-    if ra>24 and ra>=0:
-        ranew = ra*12/180.
-        if ranew<24:
-            print(f' Warning! file RA>24, interpreting as decimal deg. : {ra:.3f} deg -> {ranew:.3f} hr')
-            ra = ranew
-        else:
-            raise Exception(f"Cannot interpret fits file RA {ra:.3f}!")
-    elif ra<0:
-        raise Exception(f'fits file RA {ra:.3f}<0!')
-
-    src = header['OBJECT']
+    ra, dec, src = _read_source_position(header)
     rf = hdulist['AIPS AN'].header['FREQ']
 
     if header['CTYPE4'] == 'FREQ':
@@ -1350,21 +1391,7 @@ def load_obs_uvfits(filename, polrep='stokes', flipbl=False,
     mjd = int(np.min(jds) - 2400000.5)
     times = (jds - 2400000.5 - mjd) * 24.0
 
-    try:
-        scantable = []
-        nxtable = hdulist['AIPS NX']
-        for scan in nxtable.data:
-            scan_start = scan['TIME']  # in days since reference date
-            scan_dur = scan['TIME INTERVAL']
-            startvis = scan['START VIS'] - 1
-            endvis = scan['END VIS'] - 1
-            scantable.append([scan_start - 0.5 * scan_dur,
-                              scan_start + 0.5 * scan_dur])
-        scantable = np.array(scantable) * 24
-
-    except BaseException:
-        print("No NX table in uvfits!")
-        scantable = None
+    scantable = _read_scan_table(hdulist)
 
     # Integration times
     try:
@@ -1379,7 +1406,7 @@ def load_obs_uvfits(filename, polrep='stokes', flipbl=False,
     t2c = t2c - 1
 
     # TODO make site identificantion faster
-    if trial_speedups and (not np.any(tnums!=np.arange(len(tnums)))):
+    if speedups and (not np.any(tnums!=np.arange(len(tnums)))):
         sites = tarr['site']
         t1 = sites[t1c]
         t2 = sites[t2c]
@@ -1519,7 +1546,7 @@ def load_obs_uvfits(filename, polrep='stokes', flipbl=False,
         poldict_out = ehc.POLDICT_STOKES
 
     #TODO new, faster,
-    if trial_speedups:
+    if speedups:
         datatable = np.empty((len(times)),dtype=dtpol_out)
         datatable['time'] = times
         datatable['tint'] = tints
@@ -1552,8 +1579,7 @@ def load_obs_uvfits(filename, polrep='stokes', flipbl=False,
         datatable = np.array(datatable)
 
     obs = ehtim.obsdata.Obsdata(ra, dec, rf, bw, datatable, tarr, polrep=polrep_uvfits,
-                                source=src, mjd=mjd, scantable=scantable,
-                                trial_speedups=trial_speedups)
+                                source=src, mjd=mjd, scantable=scantable)
 
     if remove_nan:
         if polrep_uvfits == 'circ':
@@ -1568,6 +1594,325 @@ def load_obs_uvfits(filename, polrep='stokes', flipbl=False,
 
     # TODO get calibration flags from uvfits?
     return obs
+
+
+def load_obs_uvfits_spectral(filename, polrep: str = 'stokes', flipbl: bool = False,
+                             allow_singlepol: bool = True, force_singlepol=None,
+                             channel=all, IF=all, remove_nan: bool = False,
+                             invvar_channel_avg: bool = True, ignore_pzero_date: bool = True,
+                             average_if: bool = False, average_channel: bool = False) -> list:
+    """Load a uvfits file keeping the spectral axis (partly) resolved.
+
+    ``load_obs_uvfits`` collapses every channel and IF into one visibility per
+    baseline-time. This instead treats the (IF, channel) grid as two axes you can
+    independently average or keep: an averaged axis becomes one group over all its
+    indices, a kept axis yields one group per index. Each surviving frequency group
+    is read in one vectorized pass and returned as its own Obsdata, carrying its own
+    reference frequency and its own u,v (the light-second UU/VV scaled by that
+    group's sky frequency, not by a single reference frequency). The list drops
+    straight into ``ehtim.imager.Imager(obslist, ...)`` for multi-frequency imaging.
+    With both flags True everything averages into a one-element list; ``load_uvfits``
+    routes that case to the single-Obsdata path instead.
+
+    Only circular and Stokes uvfits are supported, the same basis coverage as
+    ``load_obs_uvfits``; linear or mixed-feed files raise NotImplementedError
+    (that path is handled by the mixed-polarization loader).
+
+    Args:
+        filename (str or HDUList): path to a uvfits file, or an open HDUList
+        polrep (str): return the Obsdata as 'stokes' or 'circ'
+        flipbl (bool): flip baseline sign (u,v -> -u,-v) if True
+        allow_singlepol (bool): with polrep='stokes', treat single-pol data as Stokes I
+        force_singlepol (str): 'R'/'L'/'RL'/'LR' to keep one hand as Stokes I (circ files only)
+        channel (list): channel indices to load; channel=all loads every channel
+        IF (list): IF indices to load; IF=all loads every IF
+        remove_nan (bool): fill nan sigmas from the surviving hands (circ files)
+        invvar_channel_avg (bool): average within a group by inverse variance if True,
+            else by a simple mean
+        ignore_pzero_date (bool): ignore nonzero PZERO offsets on the DATE params
+        average_if (bool): average over all IFs (one group) if True, else one group per IF
+        average_channel (bool): average the channels within each IF group if True,
+            else one group per channel
+
+    Returns:
+        obslist (list of Obsdata): one Obsdata per surviving (IF-group, channel-group),
+            ordered IF-major then channel. Groups with no unflagged data are skipped.
+            Each carries its own rf and per-group u,v, so ``[o.rf for o in obslist]`` is
+            the frequency list the multi-frequency imager expects.
+    """
+
+    if polrep not in ('stokes', 'circ'):
+        raise Exception("polrep should be 'stokes' or 'circ' in load_uvfits_spectral")
+    if not (force_singlepol is None or force_singlepol is False) and polrep != 'stokes':
+        raise Exception("force_singlepol is incompatible with polrep!='stokes'")
+
+    if isinstance(filename, fits.HDUList):
+        hdulist = filename.copy()
+    else:
+        print("Loading uvfits (spectral, non-averaging): ", filename)
+        hdulist = fits.open(filename)
+    header = hdulist[0].header
+    data = hdulist[0].data
+
+    # --- antenna table -> tarr (circular / Stokes feeds only) ---
+    tarr, tnums = _read_antenna_table(hdulist)
+
+    # --- source position and name ---
+    ra, dec, src = _read_source_position(header)
+
+    # --- frequency grid: reference freq + per-IF offset + per-channel step ---
+    if header['CTYPE4'] != 'FREQ':
+        raise Exception('Cannot find observing frequencies (CTYPE4 is not FREQ)!')
+    ch1_freq = header['CRVAL4']
+    ch_bw = header['CDELT4']
+    crpix4 = header.get('CRPIX4', 1)
+
+    nvis = data['DATA'].shape[0]
+    nif = data['DATA'].shape[3]
+    nchan = data['DATA'].shape[4]
+    num_corr = data['DATA'].shape[5]
+
+    # Which IFs / channels to load (all by default); validate the requested indices.
+    sel_if = list(range(nif)) if IF is all else [int(i) for i in np.atleast_1d(IF)]
+    sel_ch = list(range(nchan)) if channel is all else [int(c) for c in np.atleast_1d(channel)]
+    if min(sel_if) < 0 or max(sel_if) >= nif:
+        raise Exception(f"requested IF out of range (file has {nif} IFs)")
+    if min(sel_ch) < 0 or max(sel_ch) >= nchan:
+        raise Exception(f"requested channel out of range (file has {nchan} channels)")
+
+    # Per-IF sky-frequency offsets from the AIPS FQ table (0 if the table is absent).
+    if_freqs = np.zeros(nif)
+    fq_ok = False
+    try:
+        fqcol = np.asarray(hdulist['AIPS FQ'].data['IF FREQ'])
+        fqrow = fqcol.reshape(len(hdulist['AIPS FQ'].data), -1)[0]
+        if len(fqrow) == nif:
+            if_freqs = fqrow.astype(float)
+            fq_ok = True
+    except Exception:
+        pass
+    if nif > 1 and not fq_ok:
+        print("Warning! could not read per-IF frequency offsets from the AIPS FQ table; "
+              "the IFs will share a frequency and their u,v scaling may be wrong.")
+
+    try:
+        if header['CTYPE3'] != 'STOKES':
+            raise Exception("STOKES field not in expected header position 'CTYPE3'!")
+        if header['CRVAL3'] == 1:
+            polrep_uvfits = 'stokes'
+        elif header['CRVAL3'] == -1:
+            polrep_uvfits = 'circ'
+        else:
+            raise Exception("header[CRVAL3] not a recognized polarization basis!")
+    except KeyError:
+        raise Exception("STOKES field not in expected header position 'CTYPE3'!")
+    if polrep_uvfits == 'stokes' and force_singlepol is not None:
+        raise Exception("force_singlepol not implemented for native Stokes uvfits files!")
+
+    # --- per-record quantities (identical for every channel) ---
+    # Observation times from the DATE (+ _DATE) random parameters.
+    try:
+        paridx = data.parnames.index("DATE") + 1
+        jd1scal = header.get(f"PSCAL{paridx}", 1.0)
+        jd1zero = header.get(f"PZERO{paridx}", 0.0)
+        jd2scal = header.get(f"PSCAL{paridx + 1}", 1.0)
+        jd2zero = header.get(f"PZERO{paridx + 1}", 0.0)
+    except ValueError:
+        jd1scal = jd2scal = 1.0
+        jd1zero = jd2zero = 0.0
+    if ignore_pzero_date:
+        if jd1zero != 0. or jd2zero != 0.:
+            print("Warning! ignoring nonzero header PZERO values for DATE.")
+        jd1zero = jd2zero = 0.0
+    jds = jd1scal * data['DATE'].astype('d') + jd1zero
+    try:
+        jds = jds + jd2scal * data['_DATE'].astype('d') + jd2zero
+    except KeyError:
+        pass
+    # Reference mjd from records that are unflagged somewhere (as load_obs_uvfits does),
+    # so a fully-flagged early record on an earlier day cannot shift the reference day.
+    ti_corrs = (0, 1) if (polrep_uvfits == 'circ' and num_corr >= 2) else (0,)
+    gmask = np.zeros(nvis, dtype=bool)
+    for i in sel_if:
+        for c in sel_ch:
+            for corr in ti_corrs:
+                w = data['DATA'][:, 0, 0, i, c, corr, 2].astype(float)
+                gmask |= np.isfinite(w) & (w > 0.)
+    if not np.any(gmask):
+        gmask[:] = True
+    mjd = int(np.min(jds[gmask]) - 2400000.5)
+    times_all = (jds - 2400000.5 - mjd) * 24.0
+
+    # Site names from the BASELINE code (256*t1 + t2, 1-based NOSTA).
+    bl = data['BASELINE'].astype(int)
+    t1c = bl // 256 - 1
+    t2c = bl - (bl // 256) * 256 - 1
+    if not np.any(tnums != np.arange(len(tnums))):
+        sites = tarr['site']
+        t1_all = sites[t1c]
+        t2_all = sites[t2c]
+    else:
+        t1_all = np.array([tarr[np.where(tnums == i)[0][0]]['site'] for i in t1c])
+        t2_all = np.array([tarr[np.where(tnums == i)[0][0]]['site'] for i in t2c])
+
+    try:
+        tint_all = data['INTTIM']
+    except KeyError:
+        tint_all = np.zeros(nvis)
+    try:
+        tau1_all = data['TAU1']
+        tau2_all = data['TAU2']
+    except KeyError:
+        tau1_all = np.zeros(nvis)
+        tau2_all = np.zeros(nvis)
+
+    # UU/VV are in light-seconds; each channel scales them by its own frequency.
+    for uname, vname in (('UU---SIN', 'VV---SIN'), ('UU', 'VV'), ('UU--', 'VV--')):
+        try:
+            uu = data[uname].astype('d')
+            vv = data[vname].astype('d')
+            break
+        except KeyError:
+            continue
+    else:
+        raise Exception("Cant figure out column label for UV coords")
+    if flipbl:
+        uu = -uu
+        vv = -vv
+
+    # Scan table (shared across channels).
+    scantable = _read_scan_table(hdulist)
+
+    if polrep_uvfits == 'circ':
+        dtpol_out = ehc.DTPOL_CIRC
+        poldict_out = ehc.POLDICT_CIRC
+    else:
+        dtpol_out = ehc.DTPOL_STOKES
+        poldict_out = ehc.POLDICT_STOKES
+
+    # Sky frequency of a single (IF, channel) point.
+    def _point_freq(if_idx, ch_idx):
+        return ch1_freq + if_freqs[if_idx] + (ch_idx + 1 - crpix4) * ch_bw
+
+    # DATA axes are (group, dec, ra, IF, FREQ, corr, [re, im, weight]).
+    def _read_point(if_idx, ch_idx, corr):
+        cube = data['DATA'][:, 0, 0, if_idx, ch_idx, corr, :]
+        return cube[:, 0] + 1j * cube[:, 1], cube[:, 2].astype(float)
+
+    def _zero_acc():
+        z = np.zeros(nvis)
+        return [np.zeros(nvis, dtype=complex), z.copy(),
+                np.zeros(nvis, dtype=complex), z.copy(), z.copy()]
+
+    # Accumulate one correlation over a set of (IF, channel) points. A slot counts only
+    # when its weight is positive AND its visibility is finite, so a NaN visibility with a
+    # stray positive weight cannot poison the average. Returns the sums needed for both
+    # inverse-variance and simple-mean combination.
+    def _accumulate(points, corr):
+        sum_vw = np.zeros(nvis, dtype=complex)   # sum(vis * weight)
+        sum_w = np.zeros(nvis)                   # sum(weight)
+        sum_v = np.zeros(nvis, dtype=complex)    # sum(vis)
+        sum_iv = np.zeros(nvis)                  # sum(1 / weight)
+        count = np.zeros(nvis)                   # number of good slots
+        for if_idx, ch_idx in points:
+            vis, wt = _read_point(if_idx, ch_idx, corr)
+            good = np.isfinite(wt) & (wt > 0.) & np.isfinite(vis)
+            wt = np.where(good, wt, 0.)
+            vis = np.where(good, vis, 0.)
+            sum_vw += vis * wt
+            sum_w += wt
+            sum_v += vis
+            sum_iv += np.where(good, 1., 0.) / np.where(good, wt, 1.)
+            count += good
+        return [sum_vw, sum_w, sum_v, sum_iv, count]
+
+    # Drop a correlation (used by force_singlepol) by zeroing its weight/count.
+    def _mask_out(acc):
+        return [acc[0] * 0., acc[1] * 0., acc[2] * 0., acc[3] * 0., acc[4] * 0.]
+
+    # Combine an accumulator into (visibility, sigma, mask) by the chosen averaging.
+    def _reduce(acc):
+        sum_vw, sum_w, sum_v, sum_iv, count = acc
+        mask = count > 0
+        with np.errstate(divide='ignore', invalid='ignore'):
+            if invvar_channel_avg:
+                vis = np.where(mask, sum_vw / sum_w, np.nan)
+                sig = np.where(mask, 1. / np.sqrt(sum_w), np.nan)
+            else:
+                vis = np.where(mask, sum_v / count, np.nan)
+                sig = np.where(mask, np.sqrt(sum_iv) / count, np.nan)
+        return vis, sig, mask
+
+    # An averaged axis collapses to one group over its selected indices; a kept axis
+    # yields one group per selected index. Output is one Obsdata per (IF-group, ch-group).
+    if_groups = [sel_if] if average_if else [[i] for i in sel_if]
+    ch_groups = [sel_ch] if average_channel else [[c] for c in sel_ch]
+
+    obslist = []
+    for ifg in if_groups:
+        for chg in ch_groups:
+            points = [(i, c) for i in ifg for c in chg]
+            freq = float(np.mean([_point_freq(i, c) for i, c in points]))
+
+            rr_acc = _accumulate(points, 0)
+            ll_acc = _accumulate(points, 1) if num_corr >= 2 else _zero_acc()
+            rl_acc = _accumulate(points, 2) if num_corr >= 3 else _zero_acc()
+            lr_acc = _accumulate(points, 3) if num_corr >= 4 else _zero_acc()
+
+            if polrep_uvfits == 'circ' and force_singlepol is not None:
+                if force_singlepol in ('L', 'LL'):
+                    rr_acc, rl_acc, lr_acc = _mask_out(rr_acc), _mask_out(rl_acc), _mask_out(lr_acc)
+                elif force_singlepol in ('R', 'RR'):
+                    ll_acc, rl_acc, lr_acc = _mask_out(ll_acc), _mask_out(rl_acc), _mask_out(lr_acc)
+                elif force_singlepol == 'LR':
+                    rr_acc, ll_acc, rl_acc, lr_acc = (lr_acc, _mask_out(ll_acc),
+                                                      _mask_out(rl_acc), _mask_out(lr_acc))
+                elif force_singlepol == 'RL':
+                    rr_acc, ll_acc, rl_acc, lr_acc = (rl_acc, _mask_out(ll_acc),
+                                                      _mask_out(rl_acc), _mask_out(lr_acc))
+
+            rr, rrsig, rrm = _reduce(rr_acc)
+            ll, llsig, llm = _reduce(ll_acc)
+            rl, rlsig, rlm = _reduce(rl_acc)
+            lr, lrsig, lrm = _reduce(lr_acc)
+
+            keep = (rrm | llm) if polrep_uvfits == 'circ' else rrm
+            if not np.any(keep):
+                print(f"  no unflagged data in IF group {ifg}, channel group {chg}; skipping")
+                continue
+
+            datatable = np.empty(int(np.sum(keep)), dtype=dtpol_out)
+            datatable['time'] = times_all[keep]
+            datatable['tint'] = tint_all[keep]
+            datatable['t1'] = t1_all[keep]
+            datatable['t2'] = t2_all[keep]
+            datatable['tau1'] = tau1_all[keep]
+            datatable['tau2'] = tau2_all[keep]
+            datatable['u'] = uu[keep] * freq
+            datatable['v'] = vv[keep] * freq
+            datatable[poldict_out['vis1']] = rr[keep]
+            datatable[poldict_out['vis2']] = ll[keep]
+            datatable[poldict_out['vis3']] = rl[keep]
+            datatable[poldict_out['vis4']] = lr[keep]
+            datatable[poldict_out['sigma1']] = rrsig[keep]
+            datatable[poldict_out['sigma2']] = llsig[keep]
+            datatable[poldict_out['sigma3']] = rlsig[keep]
+            datatable[poldict_out['sigma4']] = lrsig[keep]
+
+            # Group bandwidth spans the averaged channels across the averaged IFs.
+            bw = ch_bw * len(chg) * len(ifg)
+            obs = ehtim.obsdata.Obsdata(ra, dec, freq, bw, datatable, tarr,
+                                        polrep=polrep_uvfits, source=src, mjd=mjd,
+                                        scantable=scantable)
+            if remove_nan and polrep_uvfits == 'circ':
+                (obs.data['rrsigma'], obs.data['llsigma'],
+                 obs.data['rlsigma'], obs.data['lrsigma']) = _fill_nan_sigmas(
+                    obs.data['rrsigma'], obs.data['llsigma'],
+                    obs.data['rlsigma'], obs.data['lrsigma'])
+            obs = obs.switch_polrep(polrep, allow_singlepol=allow_singlepol)
+            obslist.append(obs)
+
+    return obslist
 
 
 def load_obs_maps(arrfile, obsspec, ifile, qfile=0, ufile=0, vfile=0,
