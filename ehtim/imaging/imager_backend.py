@@ -41,7 +41,7 @@ POLARIZATION_MODES = ['P', 'QU', 'IP', 'IQU', 'V', 'IV', 'IQUV', 'IPV']  # TODO:
 # Imported by ehtim.imager for backward compatibility.
 REGULARIZERS = ['gs', 'tv', 'tvlog', 'tv2', 'tv2log', 'l1', 'l1w', 'lA', 'patch',
                 'flux', 'cm', 'simple', 'compact', 'compact2', 'rgauss']
-REGULARIZERS_POL = ['msimple', 'hw', 'ptv', 'l1v', 'l2v', 'vtv', 'vtv2', 'vflux']
+REGULARIZERS_POL = ['msimple', 'hw', 'ptv', 'ptv2', 'l1v', 'l2v', 'vtv', 'vtv2', 'vflux']
 
 REGULARIZERS_ALLFREQS_I = ['flux_mf']
 REGULARIZERS += REGULARIZERS_ALLFREQS_I
@@ -188,6 +188,7 @@ _REGULARIZER_DISPATCH = {
     'msimple':  (polutils.reg_msimple, polutils.reggrad_msimple, 'pol'),
     'hw':       (polutils.reg_hw,      polutils.reggrad_hw,      'pol'),
     'ptv':      (polutils.reg_ptv,     polutils.reggrad_ptv,     'pol'),
+    'ptv2':     (polutils.reg_ptv2,    polutils.reggrad_ptv2,    'pol'),
     'vflux':    (polutils.reg_vflux,   polutils.reggrad_vflux,   'pol'),
     'l1v':      (polutils.reg_l1v,     polutils.reggrad_l1v,     'pol'),
     'l2v':      (polutils.reg_l2v,     polutils.reggrad_l2v,     'pol'),

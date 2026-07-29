@@ -44,7 +44,7 @@ RANDOMFLOOR=True
 
 NORM_REGULARIZER = True
 DATATERMS_POL = ['pvis', 'm','vvis']
-REGULARIZERS_POL = ['msimple', 'hw', 'ptv', 'l1v', 'l2v', 'vtv', 'vtv2', 'vflux']
+REGULARIZERS_POL = ['msimple', 'hw', 'ptv', 'ptv2', 'l1v', 'l2v', 'vtv', 'vtv2', 'vflux']
 
 nit = 0 # global variable to track the iteration number in the plotting callback
 
@@ -1028,6 +1028,112 @@ def reggrad_ptv(imarr, mask, **kwargs):
         gradout[3] = gradm * (-mimage * np.tan(psiimage))
     g = gradout / norm
     return g[:, mask] if do_slice else g
+
+
+def reg_ptv2(imarr, mask, **kwargs):
+    """Linear polarimetric total-squared-variation regularizer.
+
+    The quadratic counterpart of reg_ptv: sums |P_l - P|^2 over neighboring pixels
+    of the complex linear polarization image P = I*m*exp(i*phi). Smooth everywhere
+    (no kink at zero |P| difference), which makes it the well-behaved choice for
+    gradient-based samplers where ptv is not.
+    """
+    # embed image if masked
+    from ehtim.imaging.imager_utils import embed_imarr
+    xp = array_namespace(imarr)
+    if np.any(np.invert(mask)):
+        imarr = embed_imarr(imarr, mask, randomfloor=True)
+
+    # parameters and normalization
+    flux = kwargs['flux']
+    nx, ny, psize = kwargs['xdim'], kwargs['ydim'], kwargs['psize']
+    beam_size = kwargs.get('beam_size', 1) or psize
+    norm = psize**4 * flux**2 / beam_size**4 if kwargs.get('norm_reg', True) else 1
+
+    # compute TSV on the complex P image
+    pimage = make_p_image(imarr)
+    im = pimage.reshape(ny, nx)
+    impad = xp.pad(im, 1, mode='constant', constant_values=0)
+    im_l1 = xp.roll(impad, -1, axis=0)[1:ny+1, 1:nx+1]
+    im_l2 = xp.roll(impad, -1, axis=1)[1:ny+1, 1:nx+1]
+    return xp.sum(xp.abs(im_l1 - im)**2 + xp.abs(im_l2 - im)**2) / norm
+
+
+def reggrad_ptv2(imarr, mask, **kwargs):
+    """Gradient of the polarimetric total-squared-variation regularizer.
+
+    pol_solve here flags the required physical gradients (I, rho, phi, psi),
+    not the solver variables.
+    """
+    # embed image if masked
+    from ehtim.imaging.imager_utils import embed_imarr
+    do_slice = np.any(np.invert(mask))
+    if do_slice:
+        imarr = embed_imarr(imarr, mask, randomfloor=True)
+
+    # pol_solve output mask
+    pol_solve = kwargs.get('pol_solve', POL_SOLVE_DEFAULT)
+
+    # parameters and normalization
+    flux = kwargs['flux']
+    nx, ny, psize = kwargs['xdim'], kwargs['ydim'], kwargs['psize']
+    beam_size = kwargs.get('beam_size', 1) or psize
+    norm = psize**4 * flux**2 / beam_size**4 if kwargs.get('norm_reg', True) else 1
+
+    # necessary images
+    iimage = make_i_image(imarr)
+    mimage = make_m_image(imarr)
+    psiimage = make_psi_image(imarr)
+    pimage = make_p_image(imarr)
+    im = pimage.reshape(ny, nx)
+
+    # shifted 2D images
+    impad = np.pad(im, 1, mode='constant', constant_values=0)
+    im_l1 = np.roll(impad, -1, axis=0)[1:ny+1, 1:nx+1]
+    im_l2 = np.roll(impad, -1, axis=1)[1:ny+1, 1:nx+1]
+    im_r1 = np.roll(impad, 1, axis=0)[1:ny+1, 1:nx+1]
+    im_r2 = np.roll(impad, 1, axis=1)[1:ny+1, 1:nx+1]
+
+    # complex TSV gradient (Wirtinger dR/dPbar): pixel j appears in its own two
+    # forward differences and as the forward neighbor of its back-pixels
+    g1 = 2*im - im_l1 - im_l2
+    g2 = im - im_r1
+    g3 = im - im_r2
+
+    # The back-neighbor (g2, g3) terms reference a pixel that does not
+    # exist on the first row/column (it is the zero pad), so they must be zeroed
+    mask1 = np.zeros(im.shape, dtype=bool)
+    mask2 = np.zeros(im.shape, dtype=bool)
+    mask1[0, :] = True
+    mask2[:, 0] = True
+    g2[mask1] = 0
+    g3[mask2] = 0
+    G = g1 + g2 + g3
+
+    # dR/d|P| = 2 Re[G e^{-i angle(P)}] and dR/dphi = 2 Im[G conj(P)]
+    # (angle(P) = phi = 2*chi, so the phi slot needs no extra chain factor)
+    dRdA = 2 * np.real(G * np.exp(-1j*np.angle(im))).flatten()
+    dRdphi = 2 * np.imag(G * np.conj(im)).flatten()
+
+    gradout = np.zeros(imarr.shape)
+    # dR/dI via |P| = I*m
+    if pol_solve[0] != 0:
+        gradout[0] = mimage * dRdA
+    # dR/drho via |P| = I*m and dm/drho = cos(psi)
+    if pol_solve[1] != 0:
+        gradm = iimage * dRdA
+        gradout[1] = gradm * np.cos(psiimage)
+    # dR/dphi
+    if pol_solve[2] != 0:
+        gradout[2] = dRdphi
+    # dR/dpsi via dm/dpsi = -m*tan(psi)
+    if pol_solve[3] != 0:
+        gradm = iimage * dRdA
+        gradout[3] = gradm * (-mimage * np.tan(psiimage))
+
+    g = gradout / norm
+    return g[:, mask] if do_slice else g
+
 
 def reg_vflux(imarr, mask, **kwargs):
     """Total circular flux regularizer"""
