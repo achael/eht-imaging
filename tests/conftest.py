@@ -197,12 +197,27 @@ def flat_prior(gauss_im):
 
     `gauss_prior` is a blur of the truth and already scores nxcorr 0.989 against it, so
     "recovers the source" passes there without optimizing. Flat scores 0.0.
+
+    Only usable where the data fix absolute phase (a `vis` term). Closure-only data cannot
+    converge from flat: use `wide_prior`.
     """
     import numpy as np
 
     im = gauss_im.copy()
     im.imvec = np.full(gauss_im.imvec.size, gauss_im.total_flux() / gauss_im.imvec.size)
     return im
+
+
+@pytest.fixture(scope="session")
+def wide_prior(gauss_im):
+    """A 100 uas Gaussian built independently of the truth, for closure-data recovery tests.
+
+    Twice the 50 uas source and carrying none of its structure, but enough of a starting
+    model for amp/cphase/logcamp to lock on, which they cannot do from flat. Scores 0.828.
+    """
+    im = gauss_im.copy()
+    im.imvec = 0.0 * im.imvec
+    return im.add_gauss(gauss_im.total_flux(), (100 * eh.RADPERUAS, 100 * eh.RADPERUAS, 0, 0, 0))
 
 
 @pytest.fixture(scope="session")

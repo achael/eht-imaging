@@ -333,22 +333,26 @@ def _nxcorr(a, b):
 
 
 @pytest.mark.slow
-def test_make_image_use_jax_recovers_and_matches_numpy(obs_direct, gauss_im, flat_prior):
-    # make_image(use_jax=True) recovers the source and matches the numpy path. Starting flat is
-    # what gives both assertions teeth: from a blur of the truth an identically-zero jax
-    # gradient returns that image, clears the first threshold and agrees with numpy on the second.
+def test_make_image_use_jax_recovers_and_matches_numpy(obs_direct, gauss_im, wide_prior):
+    # make_image(use_jax=True) recovers the source and matches the numpy path. The start is an
+    # independent 100 uas Gaussian, not a blur of the truth: from a blur an identically-zero jax
+    # gradient returns that image, clears any fixed threshold and agrees with numpy anyway.
+    # Measured here: start 0.828, numpy 0.968, jax 0.971.
     def recon(use_jax):
         imgr = eh.imager.Imager(
-            obs_direct, flat_prior, prior_im=flat_prior, flux=gauss_im.total_flux(),
+            obs_direct, wide_prior, prior_im=wide_prior, flux=gauss_im.total_flux(),
             data_term={"amp": 100, "cphase": 100, "logcamp": 50},
             reg_term={"simple": 1, "tv": 10}, ttype="direct", pol="I", maxit=200,
         )
         return imgr.make_image_I(niter=1, show_updates=False, use_jax=use_jax).imvec
 
     truth = gauss_im.imvec
+    start = _nxcorr(wide_prior.imvec, truth)
     im_np, im_jx = recon(False), recon(True)
-    assert _nxcorr(im_jx, truth) > 0.8     # jax recon recovers the source
-    assert _nxcorr(im_jx, im_np) > 0.95    # jax matches numpy
+    # stated against the starting image, so it cannot go vacuous if the fixture changes
+    assert _nxcorr(im_jx, truth) > start + 0.10   # jax recon moves toward the source
+    assert _nxcorr(im_np, truth) > start + 0.10   # and so does numpy, else parity is trivial
+    assert _nxcorr(im_jx, im_np) > 0.95           # jax matches numpy
 
 
 # ============================== GPU ==============================
