@@ -559,7 +559,7 @@ def transform_gradients(gradarr, imarr, transforms, which_solve):
     return outarr
 
 
-def physical_grad_slots(pol_solve, transforms):
+def physical_grad_slots(pol_solve, transforms, mf_spectral_I=False):
     """Physical gradout slots the gradient kernels must fill, given the DOF mask.
 
     pol_solve is the 4-wide Stokes DOF mask (I, rho/m', chi, psi/v'); the chisq
@@ -572,6 +572,25 @@ def physical_grad_slots(pol_solve, transforms):
     The transform <-> pol-mode pairing this branches on (mcv for P/QU/IP/IQU,
     vcv for V/IV, polcv for IPV/IQUV) is enforced in validate_params, so the
     mcv/vcv checks here are unambiguous and mutually exclusive.
+
+    Parameters
+    ----------
+    pol_solve : sequence of int
+        Stokes DOF mask, 4-wide for a polarization mode and shorter for single-pol.
+    transforms : sequence of str
+        Active change-of-variables names; only 'mcv' and 'vcv' widen the mask.
+    mf_spectral_I : bool, optional
+        Set when a multifrequency Stokes-I spectral coefficient (alpha or beta) is
+        being solved. Those coefficients reach the objective only through I(nu), so
+        mf_all_grads_chain builds their gradients out of the physical Stokes-I slot;
+        without this the kernel leaves that slot at zero and the spectral gradient
+        comes back identically zero. Pol modes under mf do not solve for I at the
+        reference frequency, which is exactly when the widening is needed.
+
+    Returns
+    -------
+    mask : np.ndarray of int
+        Physical slots the gradient kernel must populate.
     """
     mask = np.array(pol_solve, dtype=int).copy()
     # Cross-coupling only exists for the full 4-wide Stokes block. Single-pol
@@ -580,6 +599,8 @@ def physical_grad_slots(pol_solve, transforms):
     # check alone is not enough. Mirror transform_gradients' shape gating.
     if len(mask) < 4:
         return mask
+    if mf_spectral_I:                            # alpha/beta -> I (via mf_all_grads_chain)
+        mask[0] = 1
     if 'mcv' in transforms and pol_solve[1]:     # m' (slot 1) -> rho AND psi
         mask[1] = 1
         mask[3] = 1
@@ -587,6 +608,32 @@ def physical_grad_slots(pol_solve, transforms):
         mask[1] = 1
         mask[3] = 1
     return mask
+
+
+# Rows 4 and 5 of a multifrequency imarr are the Stokes-I spectral index and curvature
+# (see multifreq_imager_utils.image_at_freq); the pol expansion terms follow at 6-9.
+MF_SPECTRAL_I_SLOTS = slice(4, 6)
+
+
+def mf_solves_spectral_I(which_solve, mf):
+    """True when a multifrequency run is solving for the Stokes-I spectral index or curvature.
+
+    Parameters
+    ----------
+    which_solve : sequence of int
+        Full solved-DOF mask over the imarr rows.
+    mf : bool
+        Whether multifrequency imaging is active.
+
+    Returns
+    -------
+    bool
+        Whether physical_grad_slots needs to request the Stokes-I gradient slot.
+    """
+    if not mf:
+        return False
+    which_solve = np.asarray(which_solve)
+    return bool(np.any(which_solve[MF_SPECTRAL_I_SLOTS]))
 
 
 def make_initarr(image, mask, norm_init=False, flux=1,
@@ -1569,7 +1616,9 @@ def compute_chisqgrad_dict(imcur, dat_term_keys, config,
 
     chi2grad_dict = {}
     pol_solve = _pol_solve_block(which_solve, pol)
-    pol_grad_slots = physical_grad_slots(pol_solve, config.transforms)
+    pol_grad_slots = physical_grad_slots(
+        pol_solve, config.transforms,
+        mf_spectral_I=mf_solves_spectral_I(which_solve, mf))
     # np.array((...)) below copies, so sharing zero_row across iterations is safe.
     zero_row = np.zeros(nimage)
     is_pol_mode = pol in POLARIZATION_MODES
