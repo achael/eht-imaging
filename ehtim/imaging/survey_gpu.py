@@ -142,6 +142,14 @@ def run_survey_gpu(imgr, *, weight_grid=None, regparam_grid=None, prior_fwhm=Non
             for sysn in syss:
                 if sysn is not None:
                     imgr.obslist_next = [o.add_fractional_noise(sysn) for o in base_obs]
+                # init_imager only rebuilds the data products when this flag is set, and the
+                # Imager constructor clears it after its own first call. Without it the swapped
+                # obslist above never reaches the objective and every sys_noise row silently
+                # reuses the first row's sigmas. The prior swap happens to survive today,
+                # because with the default clipfloor the embed mask covers every pixel whatever
+                # the prior looks like, but it feeds the data products through that mask as soon
+                # as clipfloor is nonzero, so set the flag for both.
+                imgr._change_imgr_params = True
                 imgr.init_imager()
                 im_b, ob_b, gr_b, ch_b = _inner_survey(imgr, weight_grid, regparam_grid,
                                                        maxit, x0, optimizer, device)
