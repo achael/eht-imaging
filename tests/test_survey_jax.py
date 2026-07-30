@@ -54,6 +54,23 @@ def test_survey_runs_and_shapes(obs_direct, gauss_im, gauss_prior):
     assert chis["vis"].shape == (4,) and np.all(chis["vis"] > 0)
 
 
+def test_survey_grid_changes_the_reconstruction(obs_direct, gauss_im, gauss_prior):
+    """Every grid point must give a different image, and the recorded weights must match.
+
+    The shape and finiteness checks above hold for any four images whatsoever, including four
+    copies of the starting image, so on their own they pass with the optimizer taking no steps
+    or the weight grid ignored. Weights spanning two orders of magnitude have to move the
+    reconstruction; if they do not, the grid is not reaching the objective.
+    """
+    from ehtim.imaging.survey_gpu import run_survey_gpu
+    tvs = np.array([1.0, 100.0])
+    images, _, rec, _ = run_survey_gpu(_imager(obs_direct, gauss_im, gauss_prior),
+                                       weight_grid={"tv": tvs}, maxit=20)
+    np.testing.assert_allclose(np.sort(np.unique(rec["tv"])), tvs)
+    spread = np.max(np.abs(images[0] - images[1])) / np.max(np.abs(images[0]))
+    assert spread > 1e-3, f"tv=1 and tv=100 gave the same image (max rel diff {spread:.2e})"
+
+
 def test_survey_batch_matches_single(obs_direct, gauss_im, gauss_prior):
     from ehtim.imaging.survey_gpu import run_survey_gpu
     tvs = np.array([1.0, 50.0])
@@ -75,12 +92,30 @@ def test_survey_prior_fwhm_outer_axis(obs_direct, gauss_im, gauss_prior):
     assert rec["tv"].shape == (4,) and set(np.unique(rec["prior_fwhm"])) == {40.0, 60.0}
     assert chis["vis"].shape == (4,) and np.all(np.isfinite(images))
 
+    # rec["prior_fwhm"] is filled from the caller's own list, so matching it proves nothing
+    # about whether the prior reached the objective. Rows 0,1 are fwhm=40 and rows 2,3 are
+    # fwhm=60 at the same two tv weights, so equal rows across that split mean the outer axis
+    # was dropped.
+    spread = np.max(np.abs(images[0] - images[2])) / np.max(np.abs(images[0]))
+    assert spread > 1e-6, f"prior_fwhm 40 and 60 gave the same image (max rel diff {spread:.2e})"
+
 
 def test_survey_sys_noise_outer_axis_and_restore(obs_direct, gauss_im, gauss_prior):
     from ehtim.imaging.survey_gpu import run_survey_gpu
     imgr = _imager(obs_direct, gauss_im, gauss_prior)
-    base_prior = imgr.prior_next
+    base_prior, base_init = imgr.prior_next, imgr.init_next
+    base_obs = list(imgr.obslist_next)
     images, objval, rec, _ = run_survey_gpu(imgr, weight_grid={"tv": np.array([1.0])},
                                             sys_noise=[0.0, 0.05], maxit=8)
     assert images.shape[0] == 2 and set(np.unique(rec["sys_noise"])) == {0.0, 0.05}
-    assert imgr.prior_next is base_prior  # imager restored after the survey
+    # The survey swaps all three of these out per grid point and restores them in a finally.
+    # Checking prior_next alone is the weakest of the three: a sys_noise sweep rebuilds
+    # obslist_next (add_fractional_noise) while leaving the prior untouched, so the obslist is
+    # the one that would actually be left dirty.
+    assert imgr.prior_next is base_prior
+    assert imgr.init_next is base_init
+    assert imgr.obslist_next == base_obs
+
+    # sys_noise inflates the errors, so the two rows must not be the same reconstruction
+    spread = np.max(np.abs(images[0] - images[1])) / np.max(np.abs(images[0]))
+    assert spread > 1e-6, f"sys_noise made no difference (max rel diff {spread:.2e})"
