@@ -193,12 +193,10 @@ def gauss_prior(gauss_im):
 
 @pytest.fixture(scope="session")
 def flat_prior(gauss_im):
-    """A featureless image at the same total flux, for tests that must start from nothing.
+    """A featureless image at the same total flux, for recovery tests.
 
-    `gauss_prior` is a blur of the truth, so it already correlates with it at nxcorr 0.989.
-    Any test asserting that a reconstruction "recovers the source" from that starting point
-    passes without the optimizer doing anything. Starting flat scores 0.0 against the truth,
-    so the same assertion then measures the reconstruction rather than the fixture.
+    `gauss_prior` is a blur of the truth and already scores nxcorr 0.989 against it, so
+    "recovers the source" passes there without optimizing. Flat scores 0.0.
     """
     import numpy as np
 

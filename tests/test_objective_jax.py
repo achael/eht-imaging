@@ -334,12 +334,9 @@ def _nxcorr(a, b):
 
 @pytest.mark.slow
 def test_make_image_use_jax_recovers_and_matches_numpy(obs_direct, gauss_im, flat_prior):
-    # make_image(use_jax=True) runs the jax objective end to end through scipy L-BFGS-B and
-    # recovers the source; it matches the numpy path (same objective).
-    #
-    # Starting flat is what gives both assertions teeth. From a blur of the truth the source
-    # is already in the starting image, so an identically-zero jax gradient would return that
-    # image, clear the first threshold, and agree with numpy on the second.
+    # make_image(use_jax=True) recovers the source and matches the numpy path. Starting flat is
+    # what gives both assertions teeth: from a blur of the truth an identically-zero jax
+    # gradient returns that image, clears the first threshold and agrees with numpy on the second.
     def recon(use_jax):
         imgr = eh.imager.Imager(
             obs_direct, flat_prior, prior_im=flat_prior, flux=gauss_im.total_flux(),

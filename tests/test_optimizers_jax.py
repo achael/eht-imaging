@@ -25,11 +25,8 @@ EPSILON_TV = 1e-10
 RNG_SEED = 4
 PERTURB = 0.10
 
-# Recovery floors, from a flat start (see the flat_prior fixture and the guard test below).
-# Measured on this setup at maxit=100: scipy 0.893, optax-lbfgs 0.879, a user callable driving
-# scipy CG 0.887. adam is first-order at a fixed step and only reaches 0.530 in the same budget
-# (0.803 by maxit=400), so it gets its own floor rather than 400 iterations of test runtime.
-# Doing nothing at all scores 0.186, which is what NO_OP_CEILING pins.
+# Recovery floors from a flat start, at maxit=100: scipy 0.893, optax-lbfgs 0.879, callable CG
+# 0.887, adam 0.530 (first-order, slower), doing nothing 0.186.
 NXCORR_FLOOR = 0.80
 NXCORR_FLOOR_FIRST_ORDER = 0.45
 NO_OP_CEILING = 0.30
@@ -46,8 +43,7 @@ def _nxcorr(a, b):
 def make_opt_imager(obs_direct, gauss_im, flat_prior):
     """Factory: a fresh Stokes-I imager per call (make_image mutates the imager).
 
-    Both the initial image and the prior are featureless, so the reconstruction has to come
-    from the data. Accepts a maxit override so the guard test can ask for zero iterations.
+    Init and prior are both featureless, so the reconstruction has to come from the data.
     """
     def build(maxit=100):
         return eh.imager.Imager(
@@ -132,9 +128,7 @@ def test_optax_lbfgs_recovers(make_opt_imager, gauss_im):
 @pytest.mark.slow
 def test_custom_gradient_transformation_recovers(make_opt_imager, gauss_im):
     # any optax GradientTransformation works through the optax path. adam is first-order, so
-    # it is much further from the source than L-BFGS at the same iteration count; what is under
-    # test is that a user-supplied transformation is accepted and does real work, not that adam
-    # is a good imager.
+    # it lands well short of L-BFGS at the same iteration count.
     out = make_opt_imager().make_image(optimizer=optax.adam(3e-2), show_updates=False)
     assert _nxcorr(out.imvec, gauss_im.imvec) > NXCORR_FLOOR_FIRST_ORDER
 
@@ -153,13 +147,9 @@ def test_custom_callable_recovers(make_opt_imager, gauss_im):
 
 @pytest.mark.slow
 def test_recovery_floors_are_not_vacuous(make_opt_imager, gauss_im):
-    """Doing no iterations must fail every floor the tests above assert.
+    """Guard on the four tests above: doing no iterations must fail every floor they assert.
 
-    This is the guard on the four tests above, not a test of the optimizer. They previously
-    started from a blur of the truth, which already scored 0.989 against it, so all of them
-    passed on the untouched starting image and would have kept passing with the optimizer
-    removed entirely. If someone makes the fixture informative again, this fails first and
-    says why.
+    They previously started from a blur of the truth and passed on the untouched image.
     """
     out = make_opt_imager(maxit=0).make_image(show_updates=False)
     no_op = _nxcorr(out.imvec, gauss_im.imvec)

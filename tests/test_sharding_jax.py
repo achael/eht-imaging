@@ -26,8 +26,7 @@ requires_2gpu = pytest.mark.skipif(_N_GPU < 2, reason="needs >= 2 GPUs")
 VALUE_RTOL = 1e-9
 GRAD_RTOL = 1e-9
 EPSILON_TV = 1e-10
-# Recovery floor from a flat start, and what doing nothing scores. See the flat_prior fixture
-# and test_optimizers_jax, which calibrates the same pair against every optimizer path.
+# Flat-start recovery floor and the no-op score; calibrated in test_optimizers_jax.
 NXCORR_FLOOR = 0.8
 NO_OP_CEILING = 0.30
 
@@ -97,8 +96,8 @@ def test_baseline_sharded_matches(obs_direct, gauss_im, gauss_prior, ttype, data
 @requires_2gpu
 @pytest.mark.slow
 def test_sharded_make_image_recovers(obs_direct, gauss_im, flat_prior):
-    # shard=True runs the objective on device, so it needs an optax optimizer; without one
-    # make_image raises before it ever reaches build_mesh, and this test could never run.
+    # shard=True needs an optax optimizer; without one make_image raises before build_mesh
+    # and this test could never run.
     out = _build_imager(obs_direct, gauss_im, flat_prior).make_image(
         shard=True, optimizer="optax-lbfgs", show_updates=False)
     assert _nxcorr(out.imvec, gauss_im.imvec) > NXCORR_FLOOR
