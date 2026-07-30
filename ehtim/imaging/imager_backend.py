@@ -610,13 +610,14 @@ def physical_grad_slots(pol_solve, transforms, mf_spectral_I=False):
     return mask
 
 
-# Rows 4 and 5 of a multifrequency imarr are the Stokes-I spectral index and curvature
-# (see multifreq_imager_utils.image_at_freq); the pol expansion terms follow at 6-9.
-MF_SPECTRAL_I_SLOTS = slice(4, 6)
+def _mf_solves_spectral_I(which_solve, mf):
+    """True when a multifrequency run solves for the Stokes-I spectral index or curvature.
 
-
-def mf_solves_spectral_I(which_solve, mf):
-    """True when a multifrequency run is solving for the Stokes-I spectral index or curvature.
+    Only the 10-row mf-pol layout needs this: there rows 4 and 5 are the Stokes-I spectral
+    index and curvature (see multifreq_imager_utils.image_at_freq), while the block gating
+    the chi^2 kernel is built from rows 0-3 alone, so the kernel never learns that a row it
+    cannot see depends on Stokes I. The 3-row Stokes-I mf layout runs an ungated kernel and
+    needs no widening.
 
     Parameters
     ----------
@@ -628,12 +629,10 @@ def mf_solves_spectral_I(which_solve, mf):
     Returns
     -------
     bool
-        Whether physical_grad_slots needs to request the Stokes-I gradient slot.
+        Whether physical_grad_slots should request the Stokes-I gradient slot.
     """
-    if not mf:
-        return False
     which_solve = np.asarray(which_solve)
-    return bool(np.any(which_solve[MF_SPECTRAL_I_SLOTS]))
+    return bool(mf and len(which_solve) == 10 and np.any(which_solve[4:6]))
 
 
 def make_initarr(image, mask, norm_init=False, flux=1,
@@ -1618,7 +1617,7 @@ def compute_chisqgrad_dict(imcur, dat_term_keys, config,
     pol_solve = _pol_solve_block(which_solve, pol)
     pol_grad_slots = physical_grad_slots(
         pol_solve, config.transforms,
-        mf_spectral_I=mf_solves_spectral_I(which_solve, mf))
+        mf_spectral_I=_mf_solves_spectral_I(which_solve, mf))
     # np.array((...)) below copies, so sharing zero_row across iterations is safe.
     zero_row = np.zeros(nimage)
     is_pol_mode = pol in POLARIZATION_MODES
