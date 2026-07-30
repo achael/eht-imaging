@@ -126,9 +126,14 @@ def mf_all_grads_chain(funcgrad, image_cur, mfarr, log_freqratio):
             # TODO: what to do about rho=0?
             drho_drhoprime = (rhovec_prime**(-1-DD_RHOPOL))*((1 + rhovec_prime**(-DD_RHOPOL))**(-1-1/DD_RHOPOL))
 
-            dfunc_drho0     = dfunc_drho * drho_drhoprime * rhovec_cur / rho0
-            dfunc_dalphapol = dfunc_drho * drho_drhoprime * rhovec_cur * log_freqratio
-            dfunc_dbetapol  = dfunc_drho * drho_drhoprime * rhovec_cur * log_freqratio * log_freqratio
+            # rho reaches the coefficients through rho_prime, not directly: the spectral
+            # expansion is log(rho') = log(rho0) + alpha_pol*L + beta_pol*L^2, so
+            # d(rho')/d(rho0) = rho'/rho0 and the two spectral slots pick up rho' * L^n.
+            # rho itself only enters via drho_drhoprime above. (Stokes I at line 121 has no
+            # such second layer, which is why it uses imvec_cur directly.)
+            dfunc_drho0     = dfunc_drho * drho_drhoprime * rhovec_prime / rho0
+            dfunc_dalphapol = dfunc_drho * drho_drhoprime * rhovec_prime * log_freqratio
+            dfunc_dbetapol  = dfunc_drho * drho_drhoprime * rhovec_prime * log_freqratio * log_freqratio
 
             # apply chain rule for derivatives w/r/t phi and psi
             dfunc_dphi0 = dfunc_dphi
