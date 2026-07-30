@@ -1785,6 +1785,12 @@ def compute_reggrad_dict(imcur, reg_term_keys, config,
 
         if mf:
             if regname in REGULARIZERS_POL:
+                # No mf_spectral_I here, and the spectral rows below stay at zero on
+                # purpose: this regularizer is evaluated on the reference-frequency
+                # image (imcur[0:4]) and never runs through mf_all_grads_chain, so it
+                # genuinely does not depend on alpha/beta. The value side does the same
+                # thing, so the two agree. Regularizers that should see every frequency
+                # are the REGULARIZERS_ALLFREQS_I ('_mf') variants handled below.
                 pol_grad_slots = physical_grad_slots(
                     _pol_solve_block(which_solve, pol), config.transforms)
                 regp = compute_regularizergrad_term(
