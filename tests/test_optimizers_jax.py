@@ -139,3 +139,78 @@ def test_custom_callable_recovers(make_opt_imager, gauss_im):
 def test_unknown_optimizer_raises(make_opt_imager):
     with pytest.raises(ValueError):
         make_opt_imager().make_image(optimizer="not-an-optimizer", show_updates=False)
+
+
+# ============================== what the optax path reports ==============================
+# The driver returns a scipy OptimizeResult, so callers read .x/.fun/.success the same way for
+# every backend and Imager.make_image prints .fun as "J:". These pin that the report describes
+# the run that actually happened. A small quadratic is enough: the objective is incidental,
+# what is under test is the bookkeeping around the loop.
+OPTDICT = {"maxiter": 1, "ftol": 1e-12, "gtol": 1e-12, "maxcor": NHIST, "maxls": MAXLS}
+
+
+def _toy_builder(loss_fn):
+    """build_loss for the optax path, wrapping a plain jax scalar function.
+
+    Parameters
+    ----------
+    loss_fn : callable
+        jax scalar objective of one array argument.
+
+    Returns
+    -------
+    build : callable
+        Takes a device and returns (value_and_grad, loss, to_device, aux), the four-tuple
+        run_optimizer hands to the optax driver.
+    """
+    import jax
+    import jax.numpy as jnp
+
+    def build(device):
+        return jax.value_and_grad(loss_fn), loss_fn, jnp.asarray, None
+    return build
+
+
+def test_result_fun_is_the_objective_at_the_returned_x():
+    # res.fun must describe res.x. Evaluating inside the step, before the update is applied,
+    # pairs the new iterate with the previous iterate's value.
+    import jax.numpy as jnp
+
+    def loss(x):
+        return jnp.sum((x - 3.0) ** 2)
+
+    x0 = np.array([0.0, 0.0, 0.0])
+    res = run_optimizer("adam", _toy_builder(loss), x0=x0, optdict=OPTDICT)
+    assert res.fun == pytest.approx(float(loss(jnp.asarray(res.x))), rel=1e-9)
+
+
+def test_maxiter_truncation_is_not_reported_as_success():
+    # scipy returns success=False / status=1 when it runs out of iterations; the optax path
+    # should agree rather than calling every exit a convergence.
+    import jax.numpy as jnp
+
+    def loss(x):
+        return jnp.sum((x - 3.0) ** 2)
+
+    x0 = np.array([0.0, 0.0, 0.0])
+    res = run_optimizer("adam", _toy_builder(loss), x0=x0, optdict=OPTDICT)
+    assert res.nit == 1
+    assert res.success is False
+    assert res.status != 0
+
+
+def test_nonfinite_gradient_is_reported_as_failure():
+    # sqrt of a negative argument is NaN in both value and derivative, so the very first
+    # evaluation is non-finite. Both while_loop conditions compare False against NaN, so the
+    # loop falls straight out; without an explicit check that is indistinguishable from
+    # having converged, which would silently hand back a NaN image as a success.
+    import jax.numpy as jnp
+
+    def loss(x):
+        return jnp.sum(jnp.sqrt(x))
+
+    x0 = np.array([-1.0, -1.0])
+    res = run_optimizer("adam", _toy_builder(loss), x0=x0, optdict=OPTDICT)
+    assert res.success is False
+    assert not np.isfinite(res.fun)
+    assert "converge" not in res.message.lower()
