@@ -192,6 +192,22 @@ def gauss_prior(gauss_im):
 
 
 @pytest.fixture(scope="session")
+def flat_prior(gauss_im):
+    """A featureless image at the same total flux, for tests that must start from nothing.
+
+    `gauss_prior` is a blur of the truth, so it already correlates with it at nxcorr 0.989.
+    Any test asserting that a reconstruction "recovers the source" from that starting point
+    passes without the optimizer doing anything. Starting flat scores 0.0 against the truth,
+    so the same assertion then measures the reconstruction rather than the fixture.
+    """
+    import numpy as np
+
+    im = gauss_im.copy()
+    im.imvec = np.full(gauss_im.imvec.size, gauss_im.total_flux() / gauss_im.imvec.size)
+    return im
+
+
+@pytest.fixture(scope="session")
 def make_rect_image():
     """Factory fixture: construct a Gaussian image with arbitrary (xdim, ydim)."""
     import numpy as np

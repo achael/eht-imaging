@@ -21,10 +21,18 @@ optax = pytest.importorskip("optax")
 
 VALUE_RTOL = 1e-9
 GRAD_RTOL = 1e-9
-NXCORR_FLOOR = 0.8
 EPSILON_TV = 1e-10
 RNG_SEED = 4
 PERTURB = 0.10
+
+# Recovery floors, from a flat start (see the flat_prior fixture and the guard test below).
+# Measured on this setup at maxit=100: scipy 0.893, optax-lbfgs 0.879, a user callable driving
+# scipy CG 0.887. adam is first-order at a fixed step and only reaches 0.530 in the same budget
+# (0.803 by maxit=400), so it gets its own floor rather than 400 iterations of test runtime.
+# Doing nothing at all scores 0.186, which is what NO_OP_CEILING pins.
+NXCORR_FLOOR = 0.80
+NXCORR_FLOOR_FIRST_ORDER = 0.45
+NO_OP_CEILING = 0.30
 
 
 def _nxcorr(a, b):
@@ -35,13 +43,17 @@ def _nxcorr(a, b):
 
 
 @pytest.fixture(scope="module")
-def make_opt_imager(obs_direct, gauss_im, gauss_prior):
-    """Factory: a fresh Stokes-I imager per call (make_image mutates the imager)."""
-    def build():
+def make_opt_imager(obs_direct, gauss_im, flat_prior):
+    """Factory: a fresh Stokes-I imager per call (make_image mutates the imager).
+
+    Both the initial image and the prior are featureless, so the reconstruction has to come
+    from the data. Accepts a maxit override so the guard test can ask for zero iterations.
+    """
+    def build(maxit=100):
         return eh.imager.Imager(
-            obs_direct, gauss_prior, prior_im=gauss_prior, flux=gauss_im.total_flux(),
+            obs_direct, flat_prior, prior_im=flat_prior, flux=gauss_im.total_flux(),
             data_term={"vis": 1}, reg_term={"simple": 1, "tv": 1},
-            ttype="direct", pol="I", maxit=100, epsilon_tv=EPSILON_TV)
+            ttype="direct", pol="I", maxit=maxit, epsilon_tv=EPSILON_TV)
     return build
 
 
@@ -119,9 +131,12 @@ def test_optax_lbfgs_recovers(make_opt_imager, gauss_im):
 
 @pytest.mark.slow
 def test_custom_gradient_transformation_recovers(make_opt_imager, gauss_im):
-    # any optax GradientTransformation works through the optax path
+    # any optax GradientTransformation works through the optax path. adam is first-order, so
+    # it is much further from the source than L-BFGS at the same iteration count; what is under
+    # test is that a user-supplied transformation is accepted and does real work, not that adam
+    # is a good imager.
     out = make_opt_imager().make_image(optimizer=optax.adam(3e-2), show_updates=False)
-    assert _nxcorr(out.imvec, gauss_im.imvec) > NXCORR_FLOOR
+    assert _nxcorr(out.imvec, gauss_im.imvec) > NXCORR_FLOOR_FIRST_ORDER
 
 
 @pytest.mark.slow
@@ -134,6 +149,24 @@ def test_custom_callable_recovers(make_opt_imager, gauss_im):
 
     out = make_opt_imager().make_image(optimizer=my_optimizer, show_updates=False)
     assert _nxcorr(out.imvec, gauss_im.imvec) > NXCORR_FLOOR
+
+
+@pytest.mark.slow
+def test_recovery_floors_are_not_vacuous(make_opt_imager, gauss_im):
+    """Doing no iterations must fail every floor the tests above assert.
+
+    This is the guard on the four tests above, not a test of the optimizer. They previously
+    started from a blur of the truth, which already scored 0.989 against it, so all of them
+    passed on the untouched starting image and would have kept passing with the optimizer
+    removed entirely. If someone makes the fixture informative again, this fails first and
+    says why.
+    """
+    out = make_opt_imager(maxit=0).make_image(show_updates=False)
+    no_op = _nxcorr(out.imvec, gauss_im.imvec)
+    assert no_op < NO_OP_CEILING, (
+        f"an unoptimized image scores {no_op:.3f}: the starting point carries source structure, "
+        "so the recovery floors above no longer measure the reconstruction")
+    assert NO_OP_CEILING <= NXCORR_FLOOR_FIRST_ORDER <= NXCORR_FLOOR
 
 
 def test_unknown_optimizer_raises(make_opt_imager):
