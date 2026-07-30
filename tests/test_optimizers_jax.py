@@ -80,7 +80,9 @@ def test_classify_optimizer():
 
 
 def test_device_vg_matches_host(make_opt_imager):
-    # the on-device value_and_grad reproduces the validated host objective
+    # both jax factories agree with each other AND with the numpy analytic. Without the numpy
+    # anchor the two factories are built from the same args by the same family, so a shared
+    # error would cancel.
     imgr = make_opt_imager()
     imgr.check_params()
     imgr.check_limits()
@@ -92,6 +94,9 @@ def test_device_vg_matches_host(make_opt_imager):
     val, grad = vg(to_device(x))
     assert np.allclose(float(val), v_host, rtol=VALUE_RTOL)
     assert np.allclose(np.asarray(grad), g_host, rtol=GRAD_RTOL)
+
+    assert np.allclose(v_host, float(imgr.objfunc(x)), rtol=VALUE_RTOL)
+    assert np.allclose(g_host, np.asarray(imgr.objgrad(x)), rtol=GRAD_RTOL)
 
 
 # ============================== scipy path (default unchanged) ==============================
