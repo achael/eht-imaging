@@ -177,7 +177,26 @@ def _run_optax(gt, needs_ls, value_and_grad, loss, x0, optdict, aux=None):
     argument rather than a closure, because closing over sharded arrays makes jax
     re-partition them.
 
-    Returns a scipy OptimizeResult.
+    Parameters
+    ----------
+    gt : optax.GradientTransformation
+        The update rule, already resolved by `resolve_optax`.
+    needs_ls : bool
+        Whether `gt` runs a line search and so needs the value and a way to re-evaluate.
+    value_and_grad, loss : callable
+        On-device objective. Both take `(x, aux)` when `aux` is given, otherwise `(x)`.
+    x0 : jax array
+        Starting point, already placed on the device.
+    optdict : dict
+        Reads 'maxiter', 'gtol' and 'ftol'.
+    aux : optional
+        Sharded data to thread through as a jit argument.
+
+    Returns
+    -------
+    scipy.optimize.OptimizeResult
+        `.fun` is the objective at `.x`, and `.success`/`.status`/`.message` follow scipy's
+        convention: converged, out of iterations, or stopped on a non-finite value.
     """
     import jax
     import jax.numpy as jnp
@@ -208,14 +227,31 @@ def _run_optax(gt, needs_ls, value_and_grad, loss, x0, optdict, aux=None):
             return (i + 1, x, st, jnp.linalg.norm(grad), val, rel)
 
         init = (0, x_init, gt.init(x_init), jnp.inf, jnp.inf, jnp.inf)
-        i, x, _, _, val, _ = jax.lax.while_loop(cond, body, init)
-        return x, val, i
+        i, x, _, gnorm, _, dval = jax.lax.while_loop(cond, body, init)
+        # One extra evaluation, at the iterate we are about to hand back. The value carried
+        # through the loop belongs to the step's starting point, so reporting it would pair
+        # x_{k+1} with f(x_k).
+        return x, lossfn(x), i, gnorm, dval
 
-    x, val, nit = run(x0, aux)
+    x, val, nit, gnorm, dval = run(x0, aux)
+    val, nit, gnorm, dval = float(val), int(nit), float(gnorm), float(dval)
+
+    # A NaN fails every comparison in cond, so the loop falls straight out and looks exactly
+    # like convergence. Check it first, and only trust gnorm if the loop actually ran (it
+    # starts at inf, which is not a real non-finite gradient when maxiter is 0).
+    if not np.isfinite(val) or (nit > 0 and not np.isfinite(gnorm)):
+        success, status = False, 3
+        message = "STOP: NON-FINITE OBJECTIVE OR GRADIENT"
+    elif gnorm <= gtol or dval <= ftol:
+        success, status = True, 0
+        message = "optax on-device convergence"
+    else:
+        success, status = False, 1
+        message = "STOP: TOTAL NO. OF ITERATIONS REACHED LIMIT"
+
     return scipy.optimize.OptimizeResult(
-        x=np.asarray(x, dtype=np.float64), fun=float(val), nit=int(nit),
-        njev=int(nit), success=True, status=0,
-        message="optax on-device convergence")
+        x=np.asarray(x, dtype=np.float64), fun=val, nit=nit,
+        njev=nit, success=success, status=status, message=message)
 
 
 def optimize_fixed(value_and_grad, loss, x0, gt, needs_ls, maxiter):
