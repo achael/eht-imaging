@@ -559,7 +559,15 @@ def transform_gradients(gradarr, imarr, transforms, which_solve):
     return outarr
 
 
-def physical_grad_slots(pol_solve, transforms, mf_spectral_I=False):
+# Multifrequency pol imarr layout: 4 physical rows then 6 spectral ones. Each spectral row
+# reaches the objective only through the physical slot listed here.
+MF_POL_ROWS = 10
+MF_SPECTRAL_ROWS = {0: slice(4, 6),   # alpha, beta   -> I
+                    1: slice(6, 8),   # alpha_pol, beta_pol -> rho
+                    2: slice(8, 9)}   # rm            -> phi
+
+
+def physical_grad_slots(pol_solve, transforms, mf_solve=None):
     """Physical gradout slots the gradient kernels must fill, given the DOF mask.
 
     pol_solve is the 4-wide Stokes DOF mask (I, rho/m', chi, psi/v'); the chisq
@@ -579,13 +587,15 @@ def physical_grad_slots(pol_solve, transforms, mf_spectral_I=False):
         Stokes DOF mask, 4-wide for a polarization mode and shorter for single-pol.
     transforms : sequence of str
         Active change-of-variables names; only 'mcv' and 'vcv' widen the mask.
-    mf_spectral_I : bool, optional
-        Set when a multifrequency Stokes-I spectral coefficient (alpha or beta) is
-        being solved. Those coefficients reach the objective only through I(nu), so
-        mf_all_grads_chain builds their gradients out of the physical Stokes-I slot;
-        without this the kernel leaves that slot at zero and the spectral gradient
-        comes back identically zero. Pol modes under mf do not solve for I at the
-        reference frequency, which is exactly when the widening is needed.
+    mf_solve : sequence of int, optional
+        Full solved-DOF mask for a multifrequency run, if this is one. The 10-row mf-pol
+        layout carries spectral rows that reach the objective only through a physical slot
+        (rows 4,5 through I; 6,7 through rho; 8 through phi; see
+        multifreq_imager_utils.mf_all_grads_chain). pol_solve is built from rows 0-3 alone,
+        so the kernel never learns that a row it cannot see depends on one of them, and the
+        spectral gradient comes back identically zero. A solved spectral row therefore needs
+        its physical slot filled even when that slot is not itself a DOF. The 3-row Stokes-I
+        mf layout runs an ungated kernel and needs nothing.
 
     Returns
     -------
@@ -599,8 +609,15 @@ def physical_grad_slots(pol_solve, transforms, mf_spectral_I=False):
     # check alone is not enough. Mirror transform_gradients' shape gating.
     if len(mask) < 4:
         return mask
-    if mf_spectral_I:                            # alpha/beta -> I (via mf_all_grads_chain)
-        mask[0] = 1
+    if mf_solve is not None:
+        ms = np.asarray(mf_solve)
+        if len(ms) == MF_POL_ROWS:
+            # today only slot 0 can be off (pol='P'/'QU' hold I fixed) while a spectral row
+            # is solved, but keep all three symmetric so a future mode that holds rho0 or
+            # phi0 fixed does not reintroduce this one row over.
+            for slot, rows in MF_SPECTRAL_ROWS.items():
+                if np.any(ms[rows]):
+                    mask[slot] = 1
     if 'mcv' in transforms and pol_solve[1]:     # m' (slot 1) -> rho AND psi
         mask[1] = 1
         mask[3] = 1
@@ -608,31 +625,6 @@ def physical_grad_slots(pol_solve, transforms, mf_spectral_I=False):
         mask[1] = 1
         mask[3] = 1
     return mask
-
-
-def _mf_solves_spectral_I(which_solve, mf):
-    """True when a multifrequency run solves for the Stokes-I spectral index or curvature.
-
-    Only the 10-row mf-pol layout needs this: there rows 4 and 5 are the Stokes-I spectral
-    index and curvature (see multifreq_imager_utils.image_at_freq), while the block gating
-    the chi^2 kernel is built from rows 0-3 alone, so the kernel never learns that a row it
-    cannot see depends on Stokes I. The 3-row Stokes-I mf layout runs an ungated kernel and
-    needs no widening.
-
-    Parameters
-    ----------
-    which_solve : sequence of int
-        Full solved-DOF mask over the imarr rows.
-    mf : bool
-        Whether multifrequency imaging is active.
-
-    Returns
-    -------
-    bool
-        Whether physical_grad_slots should request the Stokes-I gradient slot.
-    """
-    which_solve = np.asarray(which_solve)
-    return bool(mf and len(which_solve) == 10 and np.any(which_solve[4:6]))
 
 
 def make_initarr(image, mask, norm_init=False, flux=1,
@@ -1616,8 +1608,7 @@ def compute_chisqgrad_dict(imcur, dat_term_keys, config,
     chi2grad_dict = {}
     pol_solve = _pol_solve_block(which_solve, pol)
     pol_grad_slots = physical_grad_slots(
-        pol_solve, config.transforms,
-        mf_spectral_I=_mf_solves_spectral_I(which_solve, mf))
+        pol_solve, config.transforms, mf_solve=which_solve if mf else None)
     # np.array((...)) below copies, so sharing zero_row across iterations is safe.
     zero_row = np.zeros(nimage)
     is_pol_mode = pol in POLARIZATION_MODES
