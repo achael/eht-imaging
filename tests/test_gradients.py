@@ -32,13 +32,17 @@ from ehtim.imaging.imager_backend import (
     REGULARIZERS_SPECTRAL,
     ImagerConfig,
     MfConfig,
+    compute_chisq_dict,
     compute_chisq_term,
     compute_chisqdata_term,
+    compute_chisqgrad_dict,
     compute_chisqgrad_term,
     compute_regularizer_term,
     compute_regularizergrad_term,
+    compute_which_solve,
 )
 from ehtim.imaging.imager_utils import chisq, chisqdata, chisqgrad
+from ehtim.imaging.multifreq_imager_utils import image_at_freq, mf_all_grads_chain
 from ehtim.imaging.pol_imager_utils import (
     REGULARIZERS_POL,
     mcv,
@@ -491,3 +495,142 @@ class TestTransformGradient:
         if fixed is not None:
             held = float(np.max(np.abs(analytic[fixed - 1])))
             assert held < ABS_FLOOR, f"{name}: held slot {fixed} gradient not ~0 (got {held:.2e})"
+
+
+# ============================= S7: multifrequency ============================
+# The multifreq chain rule maps a gradient w.r.t. the image at one frequency back onto the
+# reference-frequency image and the spectral coefficients. Two levels, because the two ways
+# it can go wrong live in different places:
+#
+#   S7a  mf_all_grads_chain alone, against an arbitrary DENSE upstream gradient. Dense so
+#        every coefficient slot is exercised, the same reason S6 uses a dense grad_phys.
+#   S7b  the composed chi^2 path, which is where the upstream gradient is produced by a real
+#        pol kernel under pol_solve gating. A slot can be right in S7a and still arrive as
+#        zero here if the gating drops the physical slot it chains through.
+MF_LFR = 0.35     # log(nu/nu_ref); ~230 -> ~326 GHz
+MF_N = 24
+
+
+def _mfarr_si(n, seed=SEED):
+    """Stokes-I multifreq coefficients [I0, alpha, beta]."""
+    rng = np.random.default_rng(seed)
+    return np.stack([
+        0.5 + rng.random(n),                    # I0 > 0
+        -1.0 + 2.0 * rng.random(n),             # alpha
+        -0.3 + 0.6 * rng.random(n),             # beta
+    ])
+
+
+def _mfarr_pol(n, seed=SEED):
+    """Full-pol multifreq coefficients, reference-frequency image then spectral terms.
+
+    Rows are [I0, rho0, phi0, psi0, alpha, beta, alpha_pol, beta_pol, rm, cm]. rho0 stays
+    well inside (0,1) so the rho' <-> rho squashing transform and its inverse are both
+    finite, and psi0 is away from 0 so v != 0 and m != 0 at every pixel.
+    """
+    rng = np.random.default_rng(seed)
+    return np.stack([
+        0.5 + rng.random(n),                    # I0 > 0
+        0.2 + 0.5 * rng.random(n),              # rho0 in (0.2, 0.7)
+        2 * np.pi * rng.random(n),              # phi0 = 2*chi
+        0.3 + 0.5 * rng.random(n),              # psi0 in (0.3, 0.8)
+        -1.0 + 2.0 * rng.random(n),             # alpha
+        -0.3 + 0.6 * rng.random(n),             # beta
+        -1.0 + 2.0 * rng.random(n),             # alpha_pol
+        -0.3 + 0.6 * rng.random(n),             # beta_pol
+        -0.5 + 1.0 * rng.random(n),             # rm
+        -0.5 + 1.0 * rng.random(n),             # cm
+    ])
+
+
+# cm has no effect on the forward model yet: image_at_freq holds psi(nu) = psi0 pending the
+# psi in (-pi/2, pi/2) constraint, so both the finite difference and the analytic chain are
+# ~0 in that slot. Kept in the parametrization so it starts failing the day cm is wired up.
+MF_CASES = {"stokesI": (_mfarr_si, 1), "pol": (_mfarr_pol, 4)}
+
+
+class TestMfChainRule:
+    """mf_all_grads_chain matches finite differences of image_at_freq, slot by slot.
+
+    Checks the chain rule in isolation: given an arbitrary dense gradient w.r.t. the image at
+    one frequency, the returned gradient w.r.t. every reference-image and spectral coefficient
+    must match central differences of the same composition.
+    """
+
+    @pytest.mark.parametrize("case", list(MF_CASES))
+    def test_grad_matches_fd(self, case):
+        build, nrow = MF_CASES[case]
+        mfarr = build(MF_N)
+        funcgrad = np.random.default_rng(SEED + 11).standard_normal(
+            (MF_N,) if nrow == 1 else (nrow, MF_N))
+
+        image_cur = np.asarray(image_at_freq(mfarr, MF_LFR))
+        analytic = mf_all_grads_chain(funcgrad, image_cur, mfarr, MF_LFR)
+        fd = fd_grad(
+            lambda a: float(np.sum(funcgrad * np.asarray(image_at_freq(a, MF_LFR)))), mfarr)
+
+        assert_nonvacuous(fd, label=f"mf {case}")
+        for slot in range(mfarr.shape[0]):
+            assert_grad_close(analytic[slot], fd[slot],
+                              label=f"mf {case} slot{slot}", allow_zero=True)
+
+
+@pytest.fixture(scope="module")
+def mf_pol_setup(eht_array, make_asym_image):
+    """Two-frequency polarized observation plus the 10-row coefficient array to solve for.
+
+    pol='P' is the only polarization mode validate_params allows under mf. Returns everything
+    compute_chisq_dict / compute_chisqgrad_dict need, so the test drives the production
+    composition rather than reassembling it.
+    """
+    im = make_asym_image(4, 6)
+    im.imvec = im.imvec * 2.0 / im.total_flux()
+    im = im.add_random_pol(0.25, 40 * eh.RADPERUAS, cmag=0.06, ccorr=40 * eh.RADPERUAS, seed=7)
+
+    config = ImagerConfig(pol="P", transforms=[], ttype="direct", mf=True,
+                          mf_config=MfConfig(mf_order=1, mf_order_pol=1, mf_rm=1, mf_cm=0))
+    mask = np.ones(im.imvec.size, dtype=bool)
+    logfreqratios = [0.0, MF_LFR]
+
+    data_tuples = {}
+    for i, lfr in enumerate(logfreqratios):
+        im_nu = im.copy()
+        im_nu.rf = im.rf * np.exp(lfr)
+        obs = im_nu.observe(eht_array, TINT_SEC, TADV_SEC, TSTART_HR, TSTOP_HR, BW_HZ,
+                            ampcal=True, phasecal=True, ttype="direct", add_th_noise=False)
+        for dname in ("pvis", "m"):
+            data_tuples[f"{dname}_{i}"] = compute_chisqdata_term(obs, im, mask, dname, config)
+
+    return {"config": config, "mask": mask, "data_tuples": data_tuples,
+            "logfreqratios": logfreqratios, "mfarr": _mfarr_pol(im.imvec.size)}
+
+
+class TestMfPolChisqGradient:
+    """The composed mf-pol chi^2 gradient matches finite differences in every solved slot.
+
+    Only the slots compute_which_solve marks as solved are compared: the others never reach
+    the optimizer. The spectral index is one of them, and it chains through the Stokes-I
+    physical slot, so gating that slot away silently freezes it.
+    """
+
+    def test_grad_matches_fd(self, mf_pol_setup):
+        config, mask, data_tuples, lfrs, mfarr = (
+            mf_pol_setup[k] for k in
+            ("config", "mask", "data_tuples", "logfreqratios", "mfarr"))
+        which_solve = np.asarray(compute_which_solve(config), dtype=int)
+        n_obs, nimage = len(lfrs), int(mask.sum())
+        keys = ["pvis", "m"]
+
+        def value(a):
+            terms = compute_chisq_dict(a, keys, config, data_tuples, lfrs, n_obs, mask)
+            return float(sum(terms.values()))
+
+        grads = compute_chisqgrad_dict(mfarr, keys, config, data_tuples, lfrs, n_obs,
+                                       mask, which_solve, nimage)
+        analytic = sum(np.asarray(g) for g in grads.values())
+        fd = fd_grad(value, mfarr)
+
+        assert_nonvacuous(fd, label="mf pol chisq")
+        assert which_solve.any(), "no slots solved: the setup exercises nothing"
+        for slot in np.flatnonzero(which_solve):
+            assert_grad_close(analytic[slot], fd[slot], label=f"mf pol chisq slot{slot}")
