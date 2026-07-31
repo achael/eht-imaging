@@ -142,6 +142,9 @@ def run_survey_gpu(imgr, *, weight_grid=None, regparam_grid=None, prior_fwhm=Non
             for sysn in syss:
                 if sysn is not None:
                     imgr.obslist_next = [o.add_fractional_noise(sysn) for o in base_obs]
+                # init_imager only rebuilds the data products when this flag is set, and the
+                # constructor clears it; without this every sys_noise row reuses row 0's sigmas.
+                imgr._change_imgr_params = True
                 imgr.init_imager()
                 im_b, ob_b, gr_b, ch_b = _inner_survey(imgr, weight_grid, regparam_grid,
                                                        maxit, x0, optimizer, device)
@@ -157,6 +160,9 @@ def run_survey_gpu(imgr, *, weight_grid=None, regparam_grid=None, prior_fwhm=Non
                     grid.setdefault("sys_noise", []).append(np.full(ob_b.size, sysn))
     finally:
         imgr.prior_next, imgr.init_next, imgr.obslist_next = base_prior, base_init, base_obs
+        # the loop above consumed the flag, so without setting it again the restore puts the
+        # caller's attributes back but leaves the last grid point's data products in place
+        imgr._change_imgr_params = True
         imgr.init_imager()
 
     grid = {k: np.concatenate(v) for k, v in grid.items()}
