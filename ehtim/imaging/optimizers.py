@@ -227,24 +227,31 @@ def _run_optax(gt, needs_ls, value_and_grad, loss, x0, optdict, aux=None):
             return (i + 1, x, st, jnp.linalg.norm(grad), val, rel)
 
         init = (0, x_init, gt.init(x_init), jnp.inf, jnp.inf, jnp.inf)
-        i, x, _, gnorm, _, dval = jax.lax.while_loop(cond, body, init)
-        # One extra evaluation, at the iterate we are about to hand back. The value carried
-        # through the loop belongs to the step's starting point, so reporting it would pair
-        # x_{k+1} with f(x_k).
-        return x, lossfn(x), i, gnorm, dval
+        i, x, _, _, _, dval = jax.lax.while_loop(cond, body, init)
+        # One extra evaluation at the iterate we hand back. The loop carries the value and
+        # gradient from the START of the last step, so reporting those would describe x_{k-1}
+        # and could call a converged run truncated.
+        val, grad = vg(x)
+        return x, val, i, jnp.linalg.norm(grad), dval
 
     x, val, nit, gnorm, dval = run(x0, aux)
     val, nit, gnorm, dval = float(val), int(nit), float(gnorm), float(dval)
 
-    # A NaN fails every comparison in cond, so the loop falls straight out and looks exactly
-    # like convergence. Check it first, and only trust gnorm if the loop actually ran (it
-    # starts at inf, which is not a real non-finite gradient when maxiter is 0).
-    if not np.isfinite(val) or (nit > 0 and not np.isfinite(gnorm)):
-        success, status = False, 3
-        message = "STOP: NON-FINITE OBJECTIVE OR GRADIENT"
-    elif gnorm <= gtol or dval <= ftol:
+    # A non-finite value fails every comparison in cond, so the loop falls straight out and
+    # looks exactly like convergence. Check that first. dval is inf until the loop has run
+    # twice, so only trust it from there.
+    if not np.isfinite(val) or not np.isfinite(gnorm) or (nit > 1 and not np.isfinite(dval)):
+        # scipy's L-BFGS-B answers a non-finite objective with status 2; 3 means success
+        # elsewhere in scipy (least_squares xtol), so do not reuse it.
+        success, status = False, 2
+        message = "ABNORMAL: NON-FINITE OBJECTIVE OR GRADIENT"
+    elif gnorm <= gtol:
         success, status = True, 0
-        message = "optax on-device convergence"
+        message = "CONVERGENCE: GRADIENT NORM <= GTOL"
+    elif dval <= ftol:
+        # Reported separately from gtol: a stalled step also lands here, with a large gradient.
+        success, status = True, 0
+        message = "CONVERGENCE: RELATIVE REDUCTION OF F <= FTOL"
     else:
         success, status = False, 1
         message = "STOP: TOTAL NO. OF ITERATIONS REACHED LIMIT"
