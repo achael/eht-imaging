@@ -279,10 +279,9 @@ def test_pol_nfft_grad_finite_difference(pol_imager_nfft, pol_nfft_x0):
     _assert_grad_fd(pol_imager_nfft, pol_nfft_x0)
 
 
-# ============================== Multifrequency (Stokes-I) ==============================
+# ============================== Multifrequency ==============================
 # TODO: this uses a 2-frequency synthetic Gaussian with a constant spectral index. Add
-# real multifrequency synthetic data (multiple realistic bands) for thorough coverage,
-# and extend to multifrequency *polarization* (currently only Stokes-I mf is covered).
+# real multifrequency synthetic data (multiple realistic bands) for thorough coverage.
 @pytest.fixture(scope="module")
 def _mf_setup(gauss_im, eht_array):
     im = gauss_im.copy().add_const_mf(1.0, 0)  # alpha=1, beta=0
@@ -323,6 +322,45 @@ def test_mf_grad_parity_autodiff_vs_analytic(mf_imager, mf_x0):
 
 def test_mf_grad_finite_difference(mf_imager, mf_x0):
     _assert_grad_fd(mf_imager, mf_x0)
+
+
+# Multifrequency polarization. jax.grad differentiates image_at_freq directly and never runs
+# mf_all_grads_chain, so this is an independent check of the hand-written mf chain rule rather
+# than a second reading of it. Both mf-pol gradient bugs fixed in this PR fail here.
+@pytest.fixture(scope="module")
+def mf_pol_imager(gauss_im_pol, eht_array):
+    im = gauss_im_pol.copy().add_const_mf(1.0, 0, alpha_pol=0.5)
+    prior = im.blur_circ(40 * eh.RADPERUAS)
+    obslist = [
+        im.get_image_mf(nu).observe(eht_array, 5, 600, 0, 24, 4e9, ampcal=True,
+                                    phasecal=True, ttype="direct", add_th_noise=True, seed=42)
+        for nu in (220e9, 240e9)
+    ]
+    imgr = eh.imager.Imager(
+        obslist, prior, prior_im=prior, flux=im.total_flux(),
+        data_term={"pvis": 100, "m": 50}, reg_term={"ptv": 1, "l2_alphap": 1},
+        ttype="direct", pol="P", mf=True, mf_order=1, mf_order_pol=1, mf_rm=1,
+        maxit=100, epsilon_tv=EPSILON_TV,
+    )
+    imgr.init_imager()
+    return imgr
+
+
+@pytest.fixture(scope="module")
+def mf_pol_x0(mf_pol_imager):
+    return _x0(mf_pol_imager)
+
+
+def test_mf_pol_value_numpy_jax_consistent(mf_pol_imager, mf_pol_x0):
+    _assert_value(mf_pol_imager, mf_pol_x0)
+
+
+def test_mf_pol_grad_parity_autodiff_vs_analytic(mf_pol_imager, mf_pol_x0):
+    _assert_grad_analytic(mf_pol_imager, mf_pol_x0)
+
+
+def test_mf_pol_grad_finite_difference(mf_pol_imager, mf_pol_x0):
+    _assert_grad_fd(mf_pol_imager, mf_pol_x0)
 
 
 # ============================== OO integration ==============================
