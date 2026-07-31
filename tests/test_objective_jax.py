@@ -349,10 +349,15 @@ def test_make_image_use_jax_recovers_and_matches_numpy(obs_direct, gauss_im, wid
     truth = gauss_im.imvec
     start = _nxcorr(wide_prior.imvec, truth)
     im_np, im_jx = recon(False), recon(True)
-    # stated against the starting image, so it cannot go vacuous if the fixture changes
-    assert _nxcorr(im_jx, truth) > start + 0.10   # jax recon moves toward the source
-    assert _nxcorr(im_np, truth) > start + 0.10   # and so does numpy, else parity is trivial
-    assert _nxcorr(im_jx, im_np) > 0.95           # jax matches numpy
+    # Stated against the starting image, so it cannot go vacuous if the fixture changes. The
+    # margin is deliberately small: the failure this catches is a path that returns the start
+    # unchanged (a zeroed gradient scores exactly `start`), not one that converges less far.
+    # A large offset would only buy sensitivity to optimizer-trajectory drift, which this
+    # config is known to show at the 0.1 level across scipy versions. Measured here: start
+    # 0.828, numpy 0.968, jax 0.970.
+    assert _nxcorr(im_jx, truth) > start + 0.02   # jax recon moves toward the source
+    assert _nxcorr(im_np, truth) > start + 0.02   # and so does numpy, else parity is trivial
+    assert _nxcorr(im_jx, im_np) > 0.95           # jax matches numpy, the sharp assertion here
 
 
 # ============================== GPU ==============================

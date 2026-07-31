@@ -150,18 +150,19 @@ def test_custom_callable_recovers(make_opt_imager, gauss_im):
     assert _nxcorr(out.imvec, gauss_im.imvec) > NXCORR_FLOOR
 
 
-@pytest.mark.slow
-def test_recovery_floors_are_not_vacuous(make_opt_imager, gauss_im):
-    """Guard on the four tests above: doing no iterations must fail every floor they assert.
+def test_recovery_floors_are_not_vacuous(flat_prior, gauss_im):
+    """Guard on the four tests above: the start must carry none of the source.
 
-    They previously started from a blur of the truth and passed on the untouched image.
+    They previously began from a blur of the truth, which scores 0.989 against it, so they
+    passed on the untouched starting image. Asserted on the fixture rather than on a
+    zero-iteration run: scipy L-BFGS-B completes one line search before it checks the
+    iteration count, so `maxit=0` is not a no-op and scores 0.186, which would leave this
+    guard measuring one optimizer step instead of the fixture.
     """
-    out = make_opt_imager(maxit=0).make_image(show_updates=False)
-    no_op = _nxcorr(out.imvec, gauss_im.imvec)
-    assert no_op < NO_OP_CEILING, (
-        f"an unoptimized image scores {no_op:.3f}: the starting point carries source structure, "
-        "so the recovery floors above no longer measure the reconstruction")
-    assert NO_OP_CEILING <= NXCORR_FLOOR_FIRST_ORDER <= NXCORR_FLOOR
+    start = _nxcorr(flat_prior.imvec, gauss_im.imvec)
+    assert start < NO_OP_CEILING, (
+        f"the starting image scores {start:.3f} against the truth, so the recovery floors "
+        "above no longer measure the reconstruction")
 
 
 def test_unknown_optimizer_raises(make_opt_imager):

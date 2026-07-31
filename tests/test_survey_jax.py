@@ -79,9 +79,14 @@ def test_survey_batch_matches_single(obs_direct, gauss_im, gauss_prior):
 
 def test_survey_prior_fwhm_outer_axis(obs_direct, gauss_im, gauss_prior):
     from ehtim.imaging.survey_gpu import run_survey_gpu
-    images, objval, rec, chis = run_survey_gpu(_imager(obs_direct, gauss_im, gauss_prior),
-                                               weight_grid={"tv": np.array([1.0, 10.0])},
-                                               prior_fwhm=[40.0, 60.0], maxit=8)
+    imgr = _imager(obs_direct, gauss_im, gauss_prior)
+    imgr.init_imager()
+    # pin the start vector. prior_fwhm also sets init_next, and x0 defaults to imgr._init_vec,
+    # so without this the rows differ before a single iteration runs and the spread below
+    # measures the starting images rather than the prior reaching the objective.
+    x0 = np.asarray(imgr._init_vec, float)
+    images, objval, rec, chis = run_survey_gpu(imgr, weight_grid={"tv": np.array([1.0, 10.0])},
+                                               prior_fwhm=[40.0, 60.0], maxit=8, x0=x0)
     assert images.shape[0] == 4 and objval.shape == (4,)
     assert rec["tv"].shape == (4,) and set(np.unique(rec["prior_fwhm"])) == {40.0, 60.0}
     assert chis["vis"].shape == (4,) and np.all(np.isfinite(images))
@@ -97,6 +102,8 @@ def test_survey_sys_noise_outer_axis_and_restore(obs_direct, gauss_im, gauss_pri
     imgr = _imager(obs_direct, gauss_im, gauss_prior)
     base_prior, base_init = imgr.prior_next, imgr.init_next
     base_obs = list(imgr.obslist_next)
+    imgr.init_imager()
+    base_sigma = np.array(imgr._data_tuples["vis"][1], copy=True)
     images, objval, rec, _ = run_survey_gpu(imgr, weight_grid={"tv": np.array([1.0])},
                                             sys_noise=[0.0, 0.05], maxit=8)
     assert images.shape[0] == 2 and set(np.unique(rec["sys_noise"])) == {0.0, 0.05}
@@ -105,6 +112,12 @@ def test_survey_sys_noise_outer_axis_and_restore(obs_direct, gauss_im, gauss_pri
     assert imgr.prior_next is base_prior
     assert imgr.init_next is base_init
     assert imgr.obslist_next == base_obs
+
+    # and the data products, which are what those attributes exist to produce. Restoring the
+    # attributes is not enough: the derived sigmas are cached, so the caller was left imaging
+    # the last grid point's inflated errors.
+    imgr.init_imager()
+    np.testing.assert_allclose(imgr._data_tuples["vis"][1], base_sigma, rtol=1e-12)
 
     # sys_noise inflates the errors, so the two rows must not be the same reconstruction
     spread = np.max(np.abs(images[0] - images[1])) / np.max(np.abs(images[0]))
