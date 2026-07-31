@@ -598,7 +598,8 @@ def mf_pol_setup(eht_array, make_asym_image):
         im_nu.rf = im.rf * np.exp(lfr)
         obs = im_nu.observe(eht_array, TINT_SEC, TADV_SEC, TSTART_HR, TSTOP_HR, BW_HZ,
                             ampcal=True, phasecal=True, ttype="direct", add_th_noise=False)
-        data_tuples[f"pvis_{i}"] = compute_chisqdata_term(obs, im, mask, "pvis", config)
+        for dname in ("pvis", "m"):
+            data_tuples[f"{dname}_{i}"] = compute_chisqdata_term(obs, im, mask, dname, config)
 
     return {"config": config, "mask": mask, "data_tuples": data_tuples,
             "logfreqratios": logfreqratios, "mfarr": _mfarr_pol(im.imvec.size)}
@@ -618,7 +619,7 @@ class TestMfPolChisqGradient:
             ("config", "mask", "data_tuples", "logfreqratios", "mfarr"))
         which_solve = np.asarray(compute_which_solve(config), dtype=int)
         n_obs, nimage = len(lfrs), int(mask.sum())
-        keys = ["pvis"]
+        keys = ["pvis", "m"]
 
         def value(a):
             terms = compute_chisq_dict(a, keys, config, data_tuples, lfrs, n_obs, mask)
@@ -629,7 +630,7 @@ class TestMfPolChisqGradient:
         analytic = sum(np.asarray(g) for g in grads.values())
         fd = fd_grad(value, mfarr)
 
-        assert_nonvacuous(fd, label="mf pol pvis")
+        assert_nonvacuous(fd, label="mf pol chisq")
         assert which_solve.any(), "no slots solved: the setup exercises nothing"
         for slot in np.flatnonzero(which_solve):
-            assert_grad_close(analytic[slot], fd[slot], label=f"mf pol pvis slot{slot}")
+            assert_grad_close(analytic[slot], fd[slot], label=f"mf pol chisq slot{slot}")
