@@ -23,6 +23,7 @@
 
 import copy
 import time
+import warnings
 from dataclasses import dataclass
 from typing import Any
 
@@ -609,6 +610,14 @@ class Imager:
                 print(res.message.decode())
         except Exception:  # TODO -- issues for some users with res.message
             pass
+
+        # Outside the try above, which swallows everything: a non-finite solution means the
+        # image below is unusable, and printing alone is too easy to miss.
+        if not np.all(np.isfinite(res.x)):
+            warnings.warn(
+                f"the optimizer returned a non-finite image, so this result is not usable "
+                f"({getattr(res, 'message', 'no message')})",
+                RuntimeWarning, stacklevel=2)
 
         print("==============================")
 
