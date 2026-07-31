@@ -365,6 +365,34 @@ class TestPhysicalGradSlots:
         out = physical_grad_slots([1, 0, 0, 0], ["log"])
         np.testing.assert_array_equal(out, [1, 0, 0, 0])
 
+    def test_mf_spectral_rows_widen_their_physical_slot(self):
+        # each spectral row reaches the objective only through one physical slot, so solving
+        # it requires that slot even when it is not itself a DOF. pol='P' holds I fixed.
+        p_solve = [0, 1, 1, 0]
+        alpha = [0, 1, 1, 0, 1, 0, 0, 0, 0, 0]        # Stokes-I spectral index -> slot 0
+        np.testing.assert_array_equal(
+            physical_grad_slots(p_solve, [], mf_solve=alpha), [1, 1, 1, 0])
+
+        # and the same for the rows that are only safe today because compute_which_solve
+        # happens to hardcode do_rho / do_phi to 1
+        alpha_pol = [0, 0, 0, 0, 0, 0, 1, 0, 0, 0]    # -> slot 1
+        np.testing.assert_array_equal(
+            physical_grad_slots([0, 0, 0, 0], [], mf_solve=alpha_pol), [0, 1, 0, 0])
+        rm = [0, 0, 0, 0, 0, 0, 0, 0, 1, 0]           # -> slot 2
+        np.testing.assert_array_equal(
+            physical_grad_slots([0, 0, 0, 0], [], mf_solve=rm), [0, 0, 1, 0])
+
+    def test_mf_widening_only_for_solved_spectral_rows(self):
+        # no spectral row solved -> unchanged; cm (row 9) has no effect on the objective
+        no_spectral = [0, 1, 1, 0, 0, 0, 0, 0, 0, 1]
+        np.testing.assert_array_equal(
+            physical_grad_slots([0, 1, 1, 0], [], mf_solve=no_spectral), [0, 1, 1, 0])
+
+    def test_mf_widening_ignores_the_stokes_i_layout(self):
+        # the 3-row Stokes-I mf mask runs an ungated kernel and needs no widening
+        np.testing.assert_array_equal(
+            physical_grad_slots([1, 0, 0, 0], [], mf_solve=[1, 1, 1]), [1, 0, 0, 0])
+
     def test_single_pol_mask_passthrough_despite_mcv(self):
         # Stokes-I carries 'mcv' in transforms inertly; a sub-4-wide mask has
         # no rho/psi DOFs to couple and must pass through (no IndexError).
