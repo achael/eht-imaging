@@ -25,12 +25,6 @@ EPSILON_TV = 1e-10
 RNG_SEED = 4
 PERTURB = 0.10
 
-# Recovery floors from a flat start, at maxit=100: scipy 0.893, optax-lbfgs 0.879, callable CG
-# 0.887, adam 0.530 (first-order, slower), doing nothing 0.186.
-NXCORR_FLOOR = 0.80
-NXCORR_FLOOR_FIRST_ORDER = 0.45
-NO_OP_CEILING = 0.30
-
 
 def _nxcorr(a, b):
     a = a - a.mean()
@@ -118,28 +112,28 @@ def test_scipy_lane_matches_direct_scipy(make_opt_imager):
 
 
 @pytest.mark.slow
-def test_default_recovers(make_opt_imager, gauss_im):
+def test_default_recovers(make_opt_imager, gauss_im, recovery_floors):
     out = make_opt_imager().make_image(show_updates=False)
-    assert _nxcorr(out.imvec, gauss_im.imvec) > NXCORR_FLOOR
+    assert _nxcorr(out.imvec, gauss_im.imvec) > recovery_floors.floor
 
 
 # ============================== optax + custom optimizers ==============================
 @pytest.mark.slow
-def test_optax_lbfgs_recovers(make_opt_imager, gauss_im):
+def test_optax_lbfgs_recovers(make_opt_imager, gauss_im, recovery_floors):
     out = make_opt_imager().make_image(optimizer="optax-lbfgs", show_updates=False)
-    assert _nxcorr(out.imvec, gauss_im.imvec) > NXCORR_FLOOR
+    assert _nxcorr(out.imvec, gauss_im.imvec) > recovery_floors.floor
 
 
 @pytest.mark.slow
-def test_custom_gradient_transformation_recovers(make_opt_imager, gauss_im):
+def test_custom_gradient_transformation_recovers(make_opt_imager, gauss_im, recovery_floors):
     # any optax GradientTransformation works through the optax path. adam is first-order, so
     # it lands well short of L-BFGS at the same iteration count.
     out = make_opt_imager().make_image(optimizer=optax.adam(3e-2), show_updates=False)
-    assert _nxcorr(out.imvec, gauss_im.imvec) > NXCORR_FLOOR_FIRST_ORDER
+    assert _nxcorr(out.imvec, gauss_im.imvec) > recovery_floors.first_order
 
 
 @pytest.mark.slow
-def test_custom_callable_recovers(make_opt_imager, gauss_im):
+def test_custom_callable_recovers(make_opt_imager, gauss_im, recovery_floors):
     # the escape hatch: a user callable receives a host value_and_grad and returns
     # anything with .x / .fun. Here it plugs scipy CG.
     def my_optimizer(value_and_grad, x0, *, maxiter, tol, callback=None):
@@ -147,10 +141,10 @@ def test_custom_callable_recovers(make_opt_imager, gauss_im):
                                        options={"maxiter": maxiter}, callback=callback)
 
     out = make_opt_imager().make_image(optimizer=my_optimizer, show_updates=False)
-    assert _nxcorr(out.imvec, gauss_im.imvec) > NXCORR_FLOOR
+    assert _nxcorr(out.imvec, gauss_im.imvec) > recovery_floors.floor
 
 
-def test_recovery_floors_are_not_vacuous(flat_prior, gauss_im):
+def test_recovery_floors_are_not_vacuous(flat_prior, gauss_im, recovery_floors):
     """Guard on the four tests above: the start must carry none of the source.
 
     They previously began from a blur of the truth, which scores 0.989 against it, so they
@@ -159,8 +153,9 @@ def test_recovery_floors_are_not_vacuous(flat_prior, gauss_im):
     iteration count, so `maxit=0` is not a no-op and scores 0.186, which would leave this
     guard measuring one optimizer step instead of the fixture.
     """
+    # a featureless image has zero variance, so _nxcorr returns its 0.0 guard value
     start = _nxcorr(flat_prior.imvec, gauss_im.imvec)
-    assert start < NO_OP_CEILING, (
+    assert start < recovery_floors.no_op_ceiling, (
         f"the starting image scores {start:.3f} against the truth, so the recovery floors "
         "above no longer measure the reconstruction")
 

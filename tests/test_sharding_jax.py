@@ -26,9 +26,6 @@ requires_2gpu = pytest.mark.skipif(_N_GPU < 2, reason="needs >= 2 GPUs")
 VALUE_RTOL = 1e-9
 GRAD_RTOL = 1e-9
 EPSILON_TV = 1e-10
-# Flat-start recovery floor and the no-op score; calibrated in test_optimizers_jax.
-NXCORR_FLOOR = 0.8
-NO_OP_CEILING = 0.30
 
 
 def _nxcorr(a, b):
@@ -95,23 +92,14 @@ def test_baseline_sharded_matches(obs_direct, gauss_im, gauss_prior, ttype, data
 
 @requires_2gpu
 @pytest.mark.slow
-def test_sharded_make_image_recovers(obs_direct, gauss_im, flat_prior):
+def test_sharded_make_image_recovers(obs_direct, gauss_im, flat_prior, recovery_floors):
     # shard=True needs an optax optimizer; without one make_image raises before build_mesh
-    # and this test could never run.
+    # and this test could never run. The guard that the floor is unreachable without
+    # optimizing lives in test_optimizers_jax: it is a property of the fixture, not of the
+    # sharded path, and asserting it here would cost a mesh build and a compile.
     out = _build_imager(obs_direct, gauss_im, flat_prior).make_image(
         shard=True, optimizer="optax-lbfgs", show_updates=False)
-    assert _nxcorr(out.imvec, gauss_im.imvec) > NXCORR_FLOOR
-
-
-@requires_2gpu
-@pytest.mark.slow
-def test_sharded_recovery_floor_is_not_vacuous(obs_direct, gauss_im, flat_prior):
-    """Guard on the test above: the floor must be out of reach without optimizing."""
-    out = _build_imager(obs_direct, gauss_im, flat_prior, maxit=0).make_image(
-        shard=True, optimizer="optax-lbfgs", show_updates=False)
-    no_op = _nxcorr(out.imvec, gauss_im.imvec)
-    assert no_op < NO_OP_CEILING, (
-        f"an unoptimized image scores {no_op:.3f}: the starting point carries source structure")
+    assert _nxcorr(out.imvec, gauss_im.imvec) > recovery_floors.floor
 
 
 @requires_2gpu

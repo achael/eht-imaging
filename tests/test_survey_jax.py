@@ -57,12 +57,17 @@ def test_survey_runs_and_shapes(obs_direct, gauss_im, gauss_prior):
 def test_survey_grid_changes_the_reconstruction(obs_direct, gauss_im, gauss_prior):
     """The grid must reach the objective: the checks above pass for any four images at all."""
     from ehtim.imaging.survey_gpu import run_survey_gpu
-    tvs = np.array([1.0, 100.0])
+    tvs, simples = np.array([1.0, 100.0]), np.array([1.0, 50.0])
     images, _, rec, _ = run_survey_gpu(_imager(obs_direct, gauss_im, gauss_prior),
-                                       weight_grid={"tv": tvs}, maxit=20)
+                                       weight_grid={"tv": tvs, "simple": simples}, maxit=20)
     np.testing.assert_allclose(np.sort(np.unique(rec["tv"])), tvs)
-    spread = np.max(np.abs(images[0] - images[1])) / np.max(np.abs(images[0]))
-    assert spread > 1e-3, f"tv=1 and tv=100 gave the same image (max rel diff {spread:.2e})"
+    np.testing.assert_allclose(np.sort(np.unique(rec["simple"])), simples)
+
+    # meshgrid(indexing="ij") over (tv, simple): rows 0,1 share tv and differ in simple;
+    # rows 0,2 share simple and differ in tv. Both weights must move the reconstruction.
+    for a, b, label in ((0, 1, "simple"), (0, 2, "tv")):
+        spread = np.max(np.abs(images[a] - images[b])) / np.max(np.abs(images[0]))
+        assert spread > 1e-3, f"{label} did not change the image (max rel diff {spread:.2e})"
 
 
 def test_survey_batch_matches_single(obs_direct, gauss_im, gauss_prior):
