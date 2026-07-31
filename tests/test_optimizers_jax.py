@@ -255,6 +255,23 @@ def test_nonfinite_gradient_behind_a_finite_value_is_reported_as_failure():
     assert np.isfinite(res.fun)
 
 
+def test_make_image_warns_when_the_optimizer_returns_a_non_finite_image(make_opt_imager,
+                                                                       monkeypatch):
+    # make_image prints the result inside a bare `except Exception: pass` and then builds the
+    # Image regardless, so without this the user gets a NaN image and no signal at all.
+    import ehtim.imager as imager_mod
+
+    def nan_result(*a, **kw):
+        n = np.asarray(kw["x0"]).size
+        return scipy.optimize.OptimizeResult(
+            x=np.full(n, np.nan), fun=np.nan, nit=1, njev=1, success=False, status=2,
+            message="ABNORMAL: NON-FINITE OBJECTIVE OR GRADIENT")
+
+    monkeypatch.setattr(imager_mod, "run_optimizer", nan_result)
+    with pytest.warns(RuntimeWarning, match="non-finite"):
+        make_opt_imager().make_image(show_updates=False)
+
+
 def test_nonfinite_value_behind_a_finite_gradient_is_reported_as_failure():
     # and the mirror image, so neither half of the finite check rests on the other.
     import jax.numpy as jnp
