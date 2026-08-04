@@ -45,7 +45,8 @@ jobs:
           python-version: ${{ matrix.python-version }}
           cache: 'pip'
       - run: pip install -e ".[dev]"
-      - run: pytest -m "not jax" --cov --cov-branch --cov-report=xml
+      # jax runs on CPU here (JAX_PLATFORMS above); only the tests needing real GPUs are skipped
+      - run: pytest -m "not gpu" --cov --cov-branch --cov-report=xml
       - uses: codecov/codecov-action@v4
         if: matrix.python-version == '3.12'
         with:
