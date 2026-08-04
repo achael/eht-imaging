@@ -2193,6 +2193,14 @@ def make_survey_value_and_grad(initvec, config, which_solve, data_tuples, logfre
     """
     import jax
 
+    # dat_keys below are bare term names. With more than one observation the keys arrive
+    # already suffixed and compute_chisq_dict suffixes them again, which surfaced as
+    # KeyError: 'vis_0_0' rather than anything a caller could act on.
+    if n_obs != 1:
+        raise ValueError(
+            f"the survey handles a single observation, got {n_obs}; pass one Obsdata, or "
+            f"run a survey per observation.")
+
     data_d, prior_d, init_d, put = _place_jax_arrays(data_tuples, priorvec, initvec, device)
     dat_keys = sorted(data_d)            # single-frequency survey: keys are the data-term names
 
