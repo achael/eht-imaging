@@ -1841,6 +1841,10 @@ def _embed_for_log(imvec, mask, **kwargs):
     measures instead of the image. Fill at the mean pixel value, the scale these functions
     already normalize the log by.
 
+    This shrinks the boundary term rather than removing it, and on a compact source the
+    fill sits above most real pixels, so the remaining edge is one-signed. Excluding
+    cross-boundary edges from the sum outright is the fix that removes it.
+
     Parameters
     ----------
     imvec : array
