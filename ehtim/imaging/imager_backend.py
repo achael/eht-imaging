@@ -56,6 +56,12 @@ REGULARIZERS_ISPECTRAL = REGULARIZERS_SPECIND + REGULARIZERS_CURV
 REGULARIZERS_POLSPECTRAL = REGULARIZERS_SPECIND_P + REGULARIZERS_CURV_P + REGULARIZERS_RM + REGULARIZERS_CM
 REGULARIZERS_SPECTRAL = REGULARIZERS_ISPECTRAL + REGULARIZERS_POLSPECTRAL
 
+# What the jax backend covers. 'fast' has no jaxified kernels (no chisq_*_fft dispatches
+# through array_namespace and fft_imvec is hard numpy), and the _diag closures carry a
+# 2-tuple of per-scan matrices that jax cannot bind as an argument.
+JAX_TTYPES = ['direct', 'nfft']
+JAX_UNSUPPORTED_DATATERMS = ['cphase_diag', 'logcamp_diag']
+
 # Default initial-polarization parameters used when init image has no Q/U/V.
 MEANPOL_INIT = 0.2     # mean polarization fraction
 SIGMAPOL_INIT = 1.e-2  # perturbation scale
@@ -1978,6 +1984,37 @@ def compute_objective_grad(imvec, initvec, config,
     grad = datterm + regterm
     grad = transform_gradients(grad, imcur_prime, transforms, which_solve)
     return pack_imarr(grad, which_solve)
+
+
+def check_jax_supported(ttype, dat_terms):
+    """Check that the jax backend covers this transform and these data terms.
+
+    Call before building any jax objective. Without it the run fails deep inside jax with a
+    tracer or argument-binding error that says nothing about the cause, since the missing
+    kernels fall back to numpy on traced values.
+
+    Parameters
+    ----------
+    ttype : str
+        Transform type: 'direct', 'nfft' or 'fast'.
+    dat_terms : iterable of str
+        Names of the active data terms.
+
+    Raises
+    ------
+    ValueError
+        If the transform or any data term has no jax kernel.
+    """
+    if ttype not in JAX_TTYPES:
+        raise ValueError(
+            f"ttype={ttype!r} has no jax kernels; use ttype='nfft' (or 'direct') to run on "
+            f"jax, or drop use_jax and the optax optimizers to image it on numpy.")
+    unsupported = sorted(set(dat_terms) & set(JAX_UNSUPPORTED_DATATERMS))
+    if unsupported:
+        raise ValueError(
+            f"data terms {unsupported} have no jax kernels; use their undiagonalized "
+            f"counterparts ('cphase', 'logcamp') to run on jax, or drop use_jax and the "
+            f"optax optimizers to image them on numpy.")
 
 
 def _place_jax_arrays(data_tuples, priorvec, initvec, device=None):

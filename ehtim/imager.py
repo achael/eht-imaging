@@ -49,6 +49,7 @@ from ehtim.imaging.imager_backend import (
     ImagerConfig,
     MfConfig,
     RegParams,
+    check_jax_supported,
     compute_chisq_dict,
     compute_chisqgrad_dict,
     compute_init_state,
@@ -534,6 +535,12 @@ class Imager:
                 "optimizer; pass optimizer='optax-lbfgs' (or another optax optimizer).")
         # (the optax path builds the jax objective itself in build_vg_ondevice below, so the
         #  user's use_jax flag is irrelevant there and is left untouched.)
+
+        # Refuse the combinations jax cannot run, before it fails somewhere inside a trace.
+        # Keyed on all three routes to jax, not just use_jax: optax builds the jax objective
+        # regardless of the flag, and sharding always does.
+        if use_jax or shard or classify_optimizer(optimizer) == 'optax':
+            check_jax_supported(self._config.ttype, self.dat_term_next)
 
         def build_vg_onhost():
             # (value, grad) as host callables, for scipy and for user-supplied optimizers.
