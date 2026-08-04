@@ -107,9 +107,8 @@ class TestImagerRefusesUnsupportedJaxRuns:
 # ============================== sharding and survey ==============================
 class TestShardingGuards:
     def test_baseline_sharding_refuses_fast_ttype(self, obs_direct, gauss_im, gauss_prior):
-        # the existing NotImplementedError is unreachable: for 'fast' the operator is a
-        # tuple, so the isinstance branch is taken and the run dies in _pad_rows with
-        # IndexError instead.
+        # 'fast' used to reach _pad_rows and raise IndexError: its operator is a tuple, so
+        # the isinstance branch was taken before the NotImplementedError below it.
         jax = pytest.importorskip("jax")
         from ehtim.imaging.sharding import build_mesh, make_sharded_value_and_grad
         imgr = _imager(obs_direct, gauss_im, gauss_prior, ttype="fast")
@@ -119,7 +118,7 @@ class TestShardingGuards:
                 imgr.reg_term_next, imgr._prior_arr, imgr.norm_reg, imgr._regparams(),
                 imgr._embed_mask)
         mesh = build_mesh(devices=jax.devices()[:1])
-        with pytest.raises(NotImplementedError, match="fast"):
+        with pytest.raises(ValueError, match="ttype='fast'"):
             make_sharded_value_and_grad(*args, mesh=mesh, shard_axis="baseline")
 
     def test_build_mesh_without_gpus_points_at_the_mesh_kwarg(self, monkeypatch):
@@ -154,3 +153,51 @@ class TestSurveyGuards:
                                               weight_grid={"tv": np.array([1.0, 10.0])},
                                               maxit=4)
         assert images.shape[0] == 2 and np.all(np.isfinite(objval))
+
+
+class TestBackendBuildersAreGuardedToo:
+    """The guard belongs to the backend, not only to Imager.make_image.
+
+    make_image is the common route but not the only one: run_survey_gpu and the jax
+    factories are public and were reachable with an unsupported ttype or data term, where
+    they raised the same raw errors make_image no longer does.
+    """
+
+    def _args(self, imgr):
+        imgr.init_imager()
+        return (imgr._init_arr, imgr._config, imgr._which_solve, imgr._data_tuples,
+                imgr._logfreqratio_list, len(imgr.obslist_next), imgr.dat_term_next,
+                imgr.reg_term_next, imgr._prior_arr, imgr.norm_reg, imgr._regparams(),
+                imgr._embed_mask)
+
+    def test_value_and_grad_factory_refuses_fast(self, obs_direct, gauss_im, gauss_prior):
+        from ehtim.imaging.imager_backend import make_value_and_grad_jax
+        args = self._args(_imager(obs_direct, gauss_im, gauss_prior, ttype="fast"))
+        with pytest.raises(ValueError, match="ttype='fast'"):
+            make_value_and_grad_jax(*args)
+
+    def test_objective_factory_refuses_diag_terms(self, obs_direct, gauss_im, gauss_prior):
+        from ehtim.imaging.imager_backend import make_objective_jax
+        args = self._args(_imager(obs_direct, gauss_im, gauss_prior,
+                                  data_term={"cphase_diag": 1}))
+        with pytest.raises(ValueError, match="cphase_diag"):
+            make_objective_jax(*args)
+
+    def test_survey_refuses_fast(self, obs_direct, gauss_im, gauss_prior):
+        from ehtim.imaging.survey_gpu import run_survey_gpu
+        with pytest.raises(ValueError, match="ttype='fast'"):
+            run_survey_gpu(_imager(obs_direct, gauss_im, gauss_prior, ttype="fast"),
+                           weight_grid={"tv": np.array([1.0])}, maxit=2)
+
+    def test_survey_refuses_diag_terms(self, obs_direct, gauss_im, gauss_prior):
+        from ehtim.imaging.survey_gpu import run_survey_gpu
+        with pytest.raises(ValueError, match="cphase_diag"):
+            run_survey_gpu(_imager(obs_direct, gauss_im, gauss_prior,
+                                   data_term={"cphase_diag": 1}),
+                           weight_grid={"tv": np.array([1.0])}, maxit=2)
+
+    def test_logamp_is_refused(self):
+        # numpy-only and unreachable through the Imager, but a valid dispatch key, so the
+        # public predicate should still say no
+        with pytest.raises(ValueError, match="logamp"):
+            check_jax_supported("direct", ["logamp"])
