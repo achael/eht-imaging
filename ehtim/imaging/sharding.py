@@ -212,6 +212,14 @@ def make_sharded_value_and_grad(initvec, config, which_solve, data_tuples,
                         datterm = datterm + dat_term[dname] * (chi2[key] * correction[key] - 1.0)
                 return datterm + regterm_of(imcur, aux["prior"])
         else:
+            # 'fast' also lands here, and its gridded operator is a tuple, so it would take
+            # the isinstance branch below and die in _pad_rows with IndexError rather than
+            # reaching the NotImplementedError. Check the transform itself.
+            if config.ttype != "direct":
+                raise NotImplementedError(
+                    f"baseline sharding does not support ttype={config.ttype!r}; "
+                    f"use ttype='direct' or ttype='nfft'.")
+
             # direct: the operator is a dense (Nvis, Npix) matrix (or a list of them for
             # closure terms). Shard its rows; differentiating the dense matmul through
             # shard_map is correct, so the default jax.value_and_grad(loss) is used.
