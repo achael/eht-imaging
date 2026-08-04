@@ -1,5 +1,12 @@
 # Changelog
 
+## Unreleased
+
+### Behaviour changes
+
+- **Settings assigned to an `Imager` after construction now take effect.** `Imager.__init__` builds the data products immediately, and the staleness check returned early before the first `make_image`, so anything set as an attribute rather than passed as a constructor kwarg was silently ignored. `clipfloor`, `maxset`, `ttype` and the Fourier-grid parameters were never compared at all, so changing them between runs reused data built for the old value. Both are fixed, which means a script that set those attributes and unknowingly got the old behaviour will now produce different (correct) results.
+- **`Imager(mf=True)` survives `make_image()`.** `make_image`'s `mf=False` default used to overwrite a constructor-set flag, so a multifrequency imager silently ran single-frequency on its first call. Pass `make_image(mf=False)` explicitly to turn it off.
+
 ## v1.4.0 (2026-06-02)
 
 ### Highlights
