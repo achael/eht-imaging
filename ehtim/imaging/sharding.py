@@ -48,9 +48,32 @@ def build_mesh(devices=None, axis="shard"):
 
     The sharded objective places its data on this mesh; the only requirement is that the
     sharded axis -- visibilities or channels, after padding -- divides evenly across it.
+
+    Parameters
+    ----------
+    devices : sequence of jax.Device, optional
+        Devices to build the mesh over. Defaults to every local GPU.
+    axis : str, optional
+        Name of the mesh axis the data is sharded along.
+
+    Returns
+    -------
+    jax.sharding.Mesh
+        A 1-D mesh over `devices`.
+
+    Raises
+    ------
+    ValueError
+        If no devices are given and no GPU is visible.
     """
     import jax
-    devices = devices if devices is not None else jax.devices("gpu")
+    if devices is None:
+        try:
+            devices = jax.devices("gpu")
+        except RuntimeError:
+            raise ValueError(
+                "sharding defaults to the local GPUs and none are visible; pass "
+                "mesh=build_mesh(devices=...) to shard over specific devices.") from None
     return jax.sharding.Mesh(np.asarray(devices), (axis,))
 
 
