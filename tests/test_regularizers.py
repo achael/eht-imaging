@@ -425,6 +425,24 @@ def logreg_setup(reg_setup):
 class TestLogRegularizersOnPartialMask:
     """tvlog / tv2log with pixels masked out, which is what clipfloor > 0 produces."""
 
+    @pytest.mark.parametrize("flux", [0.5, 7.0])
+    def test_fill_is_the_mean_pixel_value(self, logreg_setup, flux):
+        # pin the fill directly. The regularizer-level tests below are blind to this:
+        # the fixture has flux ~ 1 and npix ~ 2 * nmask, so a fill of 1/npix or of
+        # flux/nmask reproduces them while being wrong on any other image.
+        imvec, kwargs = logreg_setup
+        mask, masked = _masked_at(imvec, 0.5)
+        kw = {**kwargs, "flux": flux}
+        filled = iu._embed_for_log(masked, mask, **kw)
+        expected = flux / (kw["xdim"] * kw["ydim"])
+        assert np.allclose(filled[~mask], expected, rtol=1e-12)
+        assert np.allclose(filled[mask], masked, rtol=1e-12)
+
+    def test_full_mask_is_returned_untouched(self, logreg_setup):
+        imvec, kwargs = logreg_setup
+        full = np.ones(imvec.size, dtype=bool)
+        assert iu._embed_for_log(imvec, full, **kwargs) is imvec
+
     @pytest.mark.parametrize("name,func,grad", LOG_REG_FUNCS, ids=LOG_REG_IDS)
     def test_value_and_gradient_are_finite(self, logreg_setup, name, func, grad):
         imvec, kwargs = logreg_setup
@@ -436,10 +454,11 @@ class TestLogRegularizersOnPartialMask:
 
     @pytest.mark.parametrize("name,func,grad", LOG_REG_FUNCS, ids=LOG_REG_IDS)
     def test_the_fill_does_not_inflate_the_value(self, logreg_setup, name, func, grad):
-        # masking can only remove edges, so the partial-mask value must not exceed the
-        # unmasked one. A tiny fill passes the finiteness test above and fails this: the
-        # log jump from the image scale down to the fill is a large fake edge along the
-        # whole mask boundary.
+        # guards the fill-far-below-the-image failure mode, which is finite (so the test
+        # above passes) but reports a regularizer dominated by the log jump along the mask
+        # boundary. Not a universal invariant: the fill still leaves a boundary term, and
+        # on a compact core with a faint halo the partial-mask value can exceed the
+        # unmasked one slightly. On this broad fixture it does not.
         imvec, kwargs = logreg_setup
         full_mask = np.ones(imvec.size, dtype=bool)
         reference = func(imvec, full_mask, **kwargs)
@@ -464,7 +483,12 @@ class TestLogRegularizersOnPartialMask:
         imvec, kwargs = logreg_setup
         mask, masked = _masked_at(imvec, 0.5)
         g = np.asarray(grad(masked, mask, **kwargs))
-        idx = np.argsort(np.abs(g))[-15:]           # best-conditioned pixels
+        # the gradient carries a 1/I, so the largest components are the faintest pixels.
+        # Sample those plus a random spread, since this is the only partial-mask gradient
+        # coverage in the suite (test_gradients.py uses full masks throughout).
+        rng = np.random.default_rng(3)
+        idx = np.unique(np.concatenate([np.argsort(np.abs(g))[-15:],
+                                        rng.choice(g.size, 25, replace=False)]))
         step = 1e-7 * masked.mean()
         fd = np.empty(len(idx))
         for k, j in enumerate(idx):
@@ -472,6 +496,9 @@ class TestLogRegularizersOnPartialMask:
             up[j] += step
             dn[j] -= step
             fd[k] = (func(up, mask, **kwargs) - func(dn, mask, **kwargs)) / (2 * step)
-        rel = np.abs((fd - g[idx]) / (np.abs(g[idx]) + 1e-300))
+        # normalise against the gradient scale, not each component: the random sample
+        # includes near-zero components where a per-component relative error is dominated
+        # by the finite-difference noise rather than by any disagreement
+        rel = np.abs(fd - g[idx]) / (np.abs(g[idx]) + 1e-3 * np.abs(g).max())
         assert np.median(rel) < 1e-5
         assert np.max(rel) < 1e-4
