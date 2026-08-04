@@ -44,6 +44,7 @@ from ehtim.imaging.imager_backend import (
     validate_params,
 )
 from ehtim.imaging.imager_utils import embed_imarr
+from ehtim.warnings import PolWeightingIgnoredWarning
 
 # Parametrize over square, tall, and wide images
 IMAGE_SHAPES = [
@@ -501,6 +502,97 @@ def _assert_state_matches_imager(state, imgr):
     for key, expected in imgr._data_tuples.items():
         for arr_a, arr_b in zip(state.data_tuples[key], expected, strict=True):
             np.testing.assert_array_equal(arr_a, arr_b)
+
+
+class TestPolWeightingWarning:
+    """Data weighting reaches the Stokes-I terms only, and compute_data_tuples says so.
+
+    The polarimetric chisqdata leaves take the standard weighting kwargs so the dispatcher
+    can pass them uniformly, then use none of them. Imager builds `snrcut` with keys for
+    the polarimetric terms too, so `snrcut={'pvis': 5}` looks supported and does nothing.
+    Weighting the polarimetric data would move every polarimetric result, so it is a
+    separate change; these pin the warning and the gap it describes.
+    """
+
+    @staticmethod
+    def _imager(obs, im, **kwargs):
+        return eh.imager.Imager(obs, im, prior_im=im, flux=im.total_flux(),
+                                data_term={"amp": 1, "pvis": 1},
+                                reg_term={"simple": 1, "hw": 1}, ttype="direct",
+                                pol="IP", transform=["log", "mcv"], maxit=2, **kwargs)
+
+    @pytest.mark.parametrize("kwargs", [
+        {"snrcut": {"pvis": 5.0}},
+        {"debias": True},
+        {"systematic_noise": 0.1},
+        {"weighting": "uniform"},
+    ], ids=["snrcut", "debias", "systematic_noise", "weighting"])
+    def test_warns_when_a_pol_term_would_drop_the_weighting(self, gauss_im_pol, observe,
+                                                            kwargs):
+        obs = observe(gauss_im_pol, seed=42)
+        with pytest.warns(PolWeightingIgnoredWarning, match="Stokes-I"):
+            self._imager(obs, gauss_im_pol, **kwargs).init_imager()
+
+    def test_the_warning_names_the_offending_terms(self, gauss_im_pol, observe):
+        obs = observe(gauss_im_pol, seed=42)
+        with pytest.warns(PolWeightingIgnoredWarning, match=r"\['pvis'\]"):
+            self._imager(obs, gauss_im_pol, systematic_noise=0.1).init_imager()
+
+    @pytest.mark.parametrize("kwargs", [{}, {"snrcut": {"amp": 5.0}}],
+                             ids=["defaults", "snrcut-on-stokes-i-only"])
+    def test_does_not_warn_when_the_weighting_is_honoured(self, gauss_im_pol, observe,
+                                                          recwarn, kwargs):
+        # snrcut is per term: cutting amp alone is applied, so there is nothing to say
+        obs = observe(gauss_im_pol, seed=42)
+        self._imager(obs, gauss_im_pol, **kwargs).init_imager()
+        assert not [w for w in recwarn
+                    if issubclass(w.category, PolWeightingIgnoredWarning)]
+
+    def test_does_not_warn_without_a_pol_term(self, gauss_im, observe, recwarn):
+        obs = observe(gauss_im, seed=42)
+        eh.imager.Imager(obs, gauss_im, prior_im=gauss_im, flux=gauss_im.total_flux(),
+                         data_term={"amp": 1}, reg_term={"simple": 1}, ttype="direct",
+                         pol="I", maxit=2, systematic_noise=0.1).init_imager()
+        assert not [w for w in recwarn
+                    if issubclass(w.category, PolWeightingIgnoredWarning)]
+
+    @pytest.mark.parametrize("kwargs", [
+        {"snrcut": {"pvis": 5.0, "amp": 5.0}},
+        {"systematic_noise": 0.1},
+        {"weighting": "uniform"},
+    ], ids=["snrcut", "systematic_noise", "weighting"])
+    def test_pol_sigmas_are_untouched_while_stokes_i_moves(self, gauss_im_pol, observe,
+                                                           kwargs):
+        # pin the gap itself, so the warning cannot outlive what it warns about
+        obs = observe(gauss_im_pol, seed=42)
+        base = self._imager(obs, gauss_im_pol)
+        base.init_imager()
+        with pytest.warns(PolWeightingIgnoredWarning):
+            weighted = self._imager(obs, gauss_im_pol, **kwargs)
+            weighted.init_imager()
+        assert np.array_equal(np.asarray(base._data_tuples["pvis"][1]),
+                              np.asarray(weighted._data_tuples["pvis"][1]))
+        assert not np.array_equal(np.asarray(base._data_tuples["amp"][1]),
+                                  np.asarray(weighted._data_tuples["amp"][1]))
+
+    def test_debias_leaves_the_pol_data_alone(self, gauss_im_pol, observe):
+        # debias moves the data rather than the sigmas
+        obs = observe(gauss_im_pol, seed=42)
+        base = self._imager(obs, gauss_im_pol)
+        base.init_imager()
+        with pytest.warns(PolWeightingIgnoredWarning):
+            deb = self._imager(obs, gauss_im_pol, debias=True)
+            deb.init_imager()
+        assert np.array_equal(np.asarray(base._data_tuples["pvis"][0]),
+                              np.asarray(deb._data_tuples["pvis"][0]))
+        assert not np.array_equal(np.asarray(base._data_tuples["amp"][0]),
+                                  np.asarray(deb._data_tuples["amp"][0]))
+
+    def test_the_snrcut_dict_offers_pol_keys(self, gauss_im_pol, observe):
+        # the Imager invites snrcut={'pvis': ...}, which is why the warning exists
+        obs = observe(gauss_im_pol, seed=42)
+        imgr = self._imager(obs, gauss_im_pol)
+        assert {"pvis", "m", "vvis"} <= set(imgr.snrcut_next)
 
 
 class TestComputeInitState:
