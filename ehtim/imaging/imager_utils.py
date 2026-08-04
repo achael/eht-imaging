@@ -1832,15 +1832,40 @@ def reggrad_tv(imvec, mask, **kwargs):
     return g[mask]
 
 
-# tvlog / tv2log use clipfloor=epsilon_tv (not the default 0) so the log
-# transform stays defined where mask filled in values.
+def _embed_for_log(imvec, mask, **kwargs):
+    """Embed onto the full grid with a fill the log transform can take.
+
+    Masked-out pixels need a strictly positive fill or log() is -inf. epsilon_tv is the
+    wrong quantity for that: it smooths the TV square root and defaults to 0. Any tiny
+    fill also puts a huge artificial edge at the mask boundary, which the regularizer then
+    measures instead of the image. Fill at the mean pixel value, the scale these functions
+    already normalize the log by.
+
+    Parameters
+    ----------
+    imvec : array
+        Image values on the mask.
+    mask : ndarray of bool
+        Embed mask over the full grid.
+    **kwargs
+        Regularizer parameters; 'flux', 'xdim' and 'ydim' set the fill.
+
+    Returns
+    -------
+    array
+        Full-grid image, or `imvec` unchanged when the mask covers everything.
+    """
+    if not np.any(np.invert(mask)):
+        return imvec
+    npix = kwargs['xdim'] * kwargs['ydim']
+    return embed(imvec, mask, clipfloor=kwargs['flux'] / npix)
+
+
 def reg_tvlog(imvec, mask, **kwargs):
     """Total Variation Regularizer on the log image"""
     # embed image
     xp = array_namespace(imvec)
-    epsilon = kwargs.get('epsilon_tv', 0.)
-    if np.any(np.invert(mask)):
-        imvec = embed(imvec, mask, clipfloor=epsilon, randomfloor=True)
+    imvec = _embed_for_log(imvec, mask, **kwargs)
     # parameters and normalization -- update kwargs
     nx, ny = kwargs['xdim'], kwargs['ydim']
     flux = kwargs['flux']
@@ -1854,9 +1879,7 @@ def reg_tvlog(imvec, mask, **kwargs):
 def reggrad_tvlog(imvec, mask, **kwargs):
     """Gradient of the total variation regularizer on the log image"""
     # embed image
-    epsilon = kwargs.get('epsilon_tv', 0.)
-    if np.any(np.invert(mask)):
-        imvec = embed(imvec, mask, clipfloor=epsilon, randomfloor=True)
+    imvec = _embed_for_log(imvec, mask, **kwargs)
     # parameters and normalization -- update kwargs
     nx, ny = kwargs['xdim'], kwargs['ydim']
     flux = kwargs['flux']
@@ -1926,9 +1949,7 @@ def reg_tv2log(imvec, mask, **kwargs):
     """TV2 regularizer on the log image"""
     # embed image
     xp = array_namespace(imvec)
-    epsilon = kwargs.get('epsilon_tv', 0.)
-    if np.any(np.invert(mask)):
-        imvec = embed(imvec, mask, clipfloor=epsilon, randomfloor=True)
+    imvec = _embed_for_log(imvec, mask, **kwargs)
     # parameters and normalization -- update the kwargs
     nx, ny = kwargs['xdim'], kwargs['ydim']
     flux = kwargs['flux']
@@ -1942,9 +1963,7 @@ def reg_tv2log(imvec, mask, **kwargs):
 def reggrad_tv2log(imvec, mask, **kwargs):
     """Gradient of the TV2 regularizer on the log image"""
     # embed image
-    epsilon = kwargs.get('epsilon_tv', 0.)
-    if np.any(np.invert(mask)):
-        imvec = embed(imvec, mask, clipfloor=epsilon, randomfloor=True)
+    imvec = _embed_for_log(imvec, mask, **kwargs)
     # parameters and normalization -- update the kwargs
     nx, ny = kwargs['xdim'], kwargs['ydim']
     flux = kwargs['flux']
