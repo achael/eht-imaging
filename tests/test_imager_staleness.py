@@ -31,9 +31,10 @@ def noisy_obs(eht_array, gauss_im):
 @pytest.fixture
 def make_imager(noisy_obs, gauss_im, gauss_prior):
     def build(**kwargs):
+        kwargs.setdefault("ttype", "direct")
         return eh.imager.Imager(noisy_obs, gauss_prior, prior_im=gauss_prior,
                                 flux=gauss_im.total_flux(), data_term={"amp": 1},
-                                reg_term={"simple": 1}, ttype="direct", maxit=2,
+                                reg_term={"simple": 1}, maxit=2,
                                 epsilon_tv=1e-10, **kwargs)
     return build
 
