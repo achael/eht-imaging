@@ -12,6 +12,7 @@ import ehtim.imaging.multifreq_imager_utils as mfutils
 import ehtim.imaging.pol_imager_utils as polutils
 import ehtim.observing.obs_helpers as obsh
 from ehtim.backends import array_namespace
+from ehtim.warnings import PolWeightingIgnoredWarning
 
 # -----------------------------------------------------------------------------
 # Naming convention for image arguments throughout this module
@@ -1245,12 +1246,51 @@ def compute_regularizergrad_term(imvec_or_imarr, regname, mask, **kwargs):
     return grad_fn(imvec_or_imarr, mask=mask, **kwargs)
 
 
+def warn_if_pol_terms_ignore_weighting(dat_term_keys, data_weighting):
+    """Warn when data weighting is set but the active polarimetric terms drop it.
+
+    The polarimetric chisqdata leaves take the standard weighting kwargs so the
+    dispatcher can pass them uniformly, then use none of them. Imager builds `snrcut`
+    with keys for the polarimetric terms too, so asking for `snrcut={'pvis': 5}` looks
+    supported and silently does nothing.
+
+    Parameters
+    ----------
+    dat_term_keys : iterable of str
+        Names of the active data terms.
+    data_weighting : DataWeighting
+        The weighting bundle being forwarded to the leaves.
+    """
+    pol_terms = sorted(set(dat_term_keys) & set(DATATERMS_POL))
+    if not pol_terms:
+        return
+
+    ignored = []
+    if any(data_weighting.snrcut.get(term, 0.) for term in pol_terms):
+        ignored.append("snrcut")
+    if data_weighting.debias:
+        ignored.append("debias")
+    if data_weighting.systematic_noise:
+        ignored.append("systematic_noise")
+    if data_weighting.weighting != "natural":
+        ignored.append(f"weighting={data_weighting.weighting!r}")
+    if not ignored:
+        return
+
+    warnings.warn(
+        f"{', '.join(ignored)} is applied to the Stokes-I data terms only; the "
+        f"polarimetric terms {pol_terms} ignore it, so their sigmas and point counts are "
+        f"unchanged. Weighting the polarimetric data is not implemented yet.",
+        PolWeightingIgnoredWarning, stacklevel=3)
+
+
 def compute_data_tuples(obslist, prior, embed_mask, dat_term_keys, config,
                         data_weighting, fourier_grid):
     """Pre-compute (data, sigma, A) tuples for every (data-term, observation) pair.
 
     Dispatches to polutils.polchisqdata for polarimetric terms (in
-    DATATERMS_POL) and imutils.chisqdata for standard terms (in DATATERMS).
+    DATATERMS_POL) and imutils.chisqdata for standard terms (in DATATERMS). Warns if the
+    weighting is set but the active polarimetric terms would drop it.
 
     Parameters
     ----------
@@ -1275,6 +1315,8 @@ def compute_data_tuples(obslist, prior, embed_mask, dat_term_keys, config,
         Values are (data, sigma, A) tuples returned by chisqdata/polchisqdata.
     """
     n_obs = len(obslist)
+    warn_if_pol_terms_ignore_weighting(dat_term_keys, data_weighting)
+
     data_tuples = {}
 
     for dname in dat_term_keys:

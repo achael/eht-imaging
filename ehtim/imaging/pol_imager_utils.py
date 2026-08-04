@@ -1468,6 +1468,9 @@ def chisqdata_pvis(Obsdata, Prior, mask, **kwargs):
 
     Accepts and ignores standard-chisqdata kwargs (pol, snrcut, debias, etc.) so the
     unified compute_chisqdata_term dispatcher can pass them uniformly across all dtypes.
+    Nothing here honours them: the sigmas come straight from the observation, so an
+    imaging run weights its Stokes-I terms and leaves the polarimetric ones alone.
+    compute_data_tuples warns when that gap would bite.
     """
 
     data_arr = Obsdata.unpack(['u','v','pvis','psigma'], conj=True)
@@ -1505,6 +1508,9 @@ def chisqdata_m(Obsdata, Prior, mask, **kwargs):
 
     Accepts and ignores standard-chisqdata kwargs (pol, snrcut, debias, etc.) so the
     unified compute_chisqdata_term dispatcher can pass them uniformly across all dtypes.
+    Nothing here honours them: the sigmas come straight from the observation, so an
+    imaging run weights its Stokes-I terms and leaves the polarimetric ones alone.
+    compute_data_tuples warns when that gap would bite.
     """
 
     mdata = Obsdata.unpack(['u','v','m','msigma'], conj=True)
@@ -1542,6 +1548,9 @@ def chisqdata_vvis(Obsdata, Prior, mask, **kwargs):
 
     Accepts and ignores standard-chisqdata kwargs (pol, snrcut, debias, etc.) so the
     unified compute_chisqdata_term dispatcher can pass them uniformly across all dtypes.
+    Nothing here honours them: the sigmas come straight from the observation, so an
+    imaging run weights its Stokes-I terms and leaves the polarimetric ones alone.
+    compute_data_tuples warns when that gap would bite.
     """
 
     data_arr = Obsdata.unpack(['u','v','vvis','vsigma'], conj=False)
