@@ -35,6 +35,7 @@ import numpy as np
 
 import ehtim.imaging.multifreq_imager_utils as mfutils
 from ehtim.imaging.imager_backend import (
+    check_jax_supported,
     compute_chisq_dict,
     compute_chisq_term,
     compute_reg_dict,
@@ -70,10 +71,12 @@ def build_mesh(devices=None, axis="shard"):
     if devices is None:
         try:
             devices = jax.devices("gpu")
-        except RuntimeError:
+        except RuntimeError as e:
+            # chained deliberately: this also fires when the CUDA plugin fails to load, and
+            # that message is the only way to tell that apart from having no GPU at all
             raise ValueError(
                 "sharding defaults to the local GPUs and none are visible; pass "
-                "mesh=build_mesh(devices=...) to shard over specific devices.") from None
+                "mesh=build_mesh(devices=...) to shard over specific devices.") from e
     return jax.sharding.Mesh(np.asarray(devices), (axis,))
 
 
@@ -152,6 +155,7 @@ def make_sharded_value_and_grad(initvec, config, which_solve, data_tuples,
     stylistic: closing over sharded arrays makes jax partition them wrongly, reading from
     uninitialized device buffers, and you get NaNs that come and go between runs.
     """
+    check_jax_supported(config.ttype, dat_term)
     import jax
     import jax.numpy as jnp
     from jax.sharding import NamedSharding
@@ -235,14 +239,8 @@ def make_sharded_value_and_grad(initvec, config, which_solve, data_tuples,
                         datterm = datterm + dat_term[dname] * (chi2[key] * correction[key] - 1.0)
                 return datterm + regterm_of(imcur, aux["prior"])
         else:
-            # 'fast' also lands here, and its gridded operator is a tuple, so it would take
-            # the isinstance branch below and die in _pad_rows with IndexError rather than
-            # reaching the NotImplementedError. Check the transform itself.
-            if config.ttype != "direct":
-                raise NotImplementedError(
-                    f"baseline sharding does not support ttype={config.ttype!r}; "
-                    f"use ttype='direct' or ttype='nfft'.")
-
+            # only 'direct' reaches here: check_jax_supported above rejects 'fast', whose
+            # gridded operator is a tuple and used to reach _pad_rows and raise IndexError.
             # direct: the operator is a dense (Nvis, Npix) matrix (or a list of them for
             # closure terms). Shard its rows; differentiating the dense matmul through
             # shard_map is correct, so the default jax.value_and_grad(loss) is used.
@@ -257,7 +255,8 @@ def make_sharded_value_and_grad(initvec, config, which_solve, data_tuples,
                     a_spec = P(axis, None)
                 else:
                     raise NotImplementedError(
-                        f"baseline sharding does not support ttype={config.ttype!r}")
+                        f"cannot shard the operator for data term {key!r}: expected a dense "
+                        f"matrix or a tuple of them, got {type(A).__name__}")
                 data_d[key] = (data_s, sigma_s, A_s)
                 data_specs[key] = (P(axis), P(axis), a_spec)
                 correction[key] = (true_n + pad) / true_n
