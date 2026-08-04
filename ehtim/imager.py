@@ -865,10 +865,22 @@ class Imager:
         # transforms is an ndarray, so the config cannot be compared as-is
         config = self._config._replace(transforms=tuple(self._config.transforms))
         weighting = self._data_weighting_params()
-        return (tuple(self.obslist_next), self.prior_next, tuple(self.freq_list),
+        # snrcut and systematic_noise can both be per-term/per-site dicts
+        weighting = weighting._replace(
+            snrcut=dict(weighting.snrcut),
+            systematic_noise=(dict(weighting.systematic_noise)
+                              if isinstance(weighting.systematic_noise, dict)
+                              else weighting.systematic_noise))
+        # key the prior by value, not identity: make_image reassigns it through
+        # switch_polrep on every polarimetric call, and that copies even when the polrep
+        # already matches, so identity would rebuild the operators every run. Only the
+        # geometry and the embed mask reach the data products.
+        prior_key = (self.prior_next.xdim, self.prior_next.ydim, self.prior_next.psize,
+                     self.prior_next.pulse,
+                     (np.asarray(self.prior_next.imvec) > self.clipfloor_next).tobytes())
+        return (tuple(self.obslist_next), prior_key, tuple(self.freq_list),
                 self.reffreq, config, self.clipfloor_next,
-                tuple(sorted(self.dat_term_next.keys())),
-                weighting._replace(snrcut=dict(weighting.snrcut)),
+                tuple(sorted(self.dat_term_next.keys())), weighting,
                 self._fft_params())
 
     def _mark_stale_if_settings_changed(self):
@@ -877,7 +889,7 @@ class Imager:
         Called from both `check_params` and `init_imager` so the products are right
         whichever one the caller reaches first.
         """
-        if (self._data_sig_at_build is None
+        if (getattr(self, "_data_sig_at_build", None) is None
                 or self._data_signature() != self._data_sig_at_build):
             self._change_imgr_params = True
 
@@ -1106,7 +1118,9 @@ class Imager:
             clipfloor=self.clipfloor_next,
             snrcut=dict(self.snrcut_next),
             debias=self.debias_next,
-            systematic_noise=self.systematic_noise_next,
+            systematic_noise=(dict(self.systematic_noise_next)
+                              if isinstance(self.systematic_noise_next, dict)
+                              else self.systematic_noise_next),
             systematic_cphase_noise=self.systematic_cphase_noise_next,
             transform=self._config.transforms,
             weighting=self.weighting_next,
