@@ -15,9 +15,9 @@ import pytest
 import ehtim as eh
 from ehtim.imaging.imager_backend import check_jax_supported
 
-pytestmark = pytest.mark.jax
-
-pytest.importorskip("optax")
+# no module-level mark: TestCheckJaxSupported is pure python and should keep running even
+# when the jax tests are deselected. The classes that build imagers carry the mark instead.
+requires_jax = pytest.mark.jax
 
 EPSILON_TV = 1e-10
 
@@ -63,6 +63,7 @@ class TestCheckJaxSupported:
 
 
 # ============================== through the Imager ==============================
+@requires_jax
 class TestImagerRefusesUnsupportedJaxRuns:
     def test_fast_ttype_with_use_jax(self, obs_direct, gauss_im, gauss_prior):
         with pytest.raises(ValueError, match="ttype='fast'"):
@@ -105,6 +106,7 @@ class TestImagerRefusesUnsupportedJaxRuns:
 
 
 # ============================== sharding and survey ==============================
+@requires_jax
 class TestShardingGuards:
     def test_baseline_sharding_refuses_fast_ttype(self, obs_direct, gauss_im, gauss_prior):
         # 'fast' used to reach _pad_rows and raise IndexError: its operator is a tuple, so
@@ -134,6 +136,7 @@ class TestShardingGuards:
             sharding_mod.build_mesh()
 
 
+@requires_jax
 class TestSurveyGuards:
     def test_survey_refuses_multiple_observations(self, obs_direct, gauss_im, gauss_prior):
         # the survey keys its data terms by bare name; with n_obs > 1 they are already
@@ -155,6 +158,7 @@ class TestSurveyGuards:
         assert images.shape[0] == 2 and np.all(np.isfinite(objval))
 
 
+@requires_jax
 class TestBackendBuildersAreGuardedToo:
     """The guard belongs to the backend, not only to Imager.make_image.
 

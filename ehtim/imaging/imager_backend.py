@@ -2194,6 +2194,11 @@ def make_survey_value_and_grad(initvec, config, which_solve, data_tuples, logfre
         Places a host x0 on the device.
     chisq_dict : callable
         chisq_dict(imcur) -> per-term reduced chi^2, weight-independent, for ranking.
+
+    Raises
+    ------
+    ValueError
+        If the transform or a data term has no jax kernel, or if `n_obs` is not 1.
     """
     import jax
 

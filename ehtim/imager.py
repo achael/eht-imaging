@@ -506,19 +506,6 @@ class Imager:
         self._show_updates = kwargs.get('show_updates', True)
         self._update_interval = kwargs.get('update_interval', 1)
 
-        # Plot initial image
-        self.plotcur(self._init_vec, **kwargs)
-
-        # Minimize
-        print("Imaging . . .")
-        optdict = {'maxiter': self.maxit_next,
-                   'ftol': self.stop_next, 'gtol': self.stop_next,
-                   'maxcor': NHIST, 'maxls': MAXLS}
-        def callback_func(xcur):
-            self.plotcur(xcur, **kwargs)
-
-
-        tstart = time.time()
         optimizer = kwargs.get('optimizer', self._optimizer)
         use_jax = kwargs.get('use_jax', False)
         device = kwargs.get('jax_device', None)
@@ -542,6 +529,19 @@ class Imager:
         if use_jax or shard or classify_optimizer(optimizer) == 'optax':
             check_jax_supported(self._config.ttype, self.dat_term_next)
 
+        # Plot initial image
+        self.plotcur(self._init_vec, **kwargs)
+
+        # Minimize
+        print("Imaging . . .")
+        optdict = {'maxiter': self.maxit_next,
+                   'ftol': self.stop_next, 'gtol': self.stop_next,
+                   'maxcor': NHIST, 'maxls': MAXLS}
+        def callback_func(xcur):
+            self.plotcur(xcur, **kwargs)
+
+
+        tstart = time.time()
         def build_vg_onhost():
             # (value, grad) as host callables, for scipy and for user-supplied optimizers.
             if use_jax:    # jitted jax objective + autodiff gradient, as a host fun(x) -> (value, grad)
