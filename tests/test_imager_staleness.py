@@ -59,6 +59,30 @@ class TestSettingsAppliedAfterConstruction:
         assert imgr._change_imgr_params
         assert _n_amp(imgr) < before
 
+    @staticmethod
+    def _per_site_noise(imgr):
+        # real site names, or the per-site dict applies to nothing
+        sites = sorted(set(np.unique(imgr.obslist_next[0].data["t1"]).tolist()))
+        return {s: 0.1 for s in sites}
+
+    @pytest.mark.parametrize("edit", [
+        lambda g: g.snrcut_next.__setitem__("amp", 5.0),
+        lambda g: setattr(g, "systematic_noise_next",
+                          TestSettingsAppliedAfterConstruction._per_site_noise(g)),
+    ], ids=["snrcut-in-place", "per-site-systematic-noise"])
+    def test_edits_before_the_first_run_are_noticed(self, make_imager, edit):
+        # before the first make_image there is no history, so the legacy comparisons
+        # cannot run and the signature is the only thing that can catch this
+        imgr = make_imager()
+        imgr.init_imager()
+        before = float(np.asarray(imgr._data_tuples["amp"][1]).sum())
+        edit(imgr)
+        imgr.check_params()
+        assert imgr._change_imgr_params
+        imgr.init_imager()
+        # both edits move the sigmas: snrcut drops points, systematic noise inflates them
+        assert float(np.asarray(imgr._data_tuples["amp"][1]).sum()) != before
+
     @pytest.mark.parametrize("attr,value", [
         ("clipfloor_next", 0.02),
         ("maxset_next", True),
@@ -104,6 +128,20 @@ class TestNothingIsRecomputedWithoutCause:
         before = imgr._data_tuples["amp"][0]
         imgr.make_image(show_updates=False)
         assert imgr._data_tuples["amp"][0] is before
+
+    def test_a_polarimetric_run_does_not_rebuild_every_call(self, noisy_obs, gauss_im,
+                                                            gauss_prior):
+        # make_image reassigns prior_next through switch_polrep on every polarimetric
+        # call, and that copies even when the polrep already matches. Keying the prior by
+        # identity rebuilt the Fourier operators on every single call.
+        imgr = eh.imager.Imager(noisy_obs, gauss_prior, prior_im=gauss_prior,
+                                flux=gauss_im.total_flux(), data_term={"pvis": 1},
+                                reg_term={"msimple": 1}, ttype="direct", pol="P",
+                                maxit=2, epsilon_tv=1e-10)
+        imgr.make_image(show_updates=False)
+        before = imgr._data_tuples["pvis"][0]
+        imgr.make_image(show_updates=False)
+        assert imgr._data_tuples["pvis"][0] is before
 
     def test_a_regularizer_weight_change_does_not_rebuild_the_data(self, make_imager):
         # regularizers do not touch the data products
