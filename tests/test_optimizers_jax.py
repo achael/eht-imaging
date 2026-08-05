@@ -119,11 +119,15 @@ def test_no_option_is_silently_dropped(make_opt_imager, name, method):
     imgr.check_params()
     imgr.check_limits()
     imgr.init_imager()
-    with warnings.catch_warnings():
-        warnings.simplefilter("error", RuntimeWarning)
+    # record with "always" rather than raising on the first: Python dedups warnings per
+    # location, so a raising filter would only fire for whichever method ran first
+    with warnings.catch_warnings(record=True) as caught:
+        warnings.simplefilter("always")
         scipy.optimize.minimize(imgr.objfunc, imgr._init_vec, method=method,
                                 jac=imgr.objgrad,
                                 options=_scipy_options(method, optdict))
+    dropped = [str(w.message) for w in caught if "Unknown solver options" in str(w.message)]
+    assert not dropped, f"{method} silently dropped options: {dropped}"
 
 
 def test_tnc_gets_an_evaluation_cap_and_newton_cg_a_tolerance():
