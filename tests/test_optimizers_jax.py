@@ -6,6 +6,8 @@ value_and_grad matches the host make_objective_jax; optax-lbfgs and a custom opt
 GradientTransformation recover the source; and a user callable plugs in via the escape
 hatch. optax-running tests are marked slow.
 """
+import warnings
+
 import numpy as np
 import pytest
 import scipy.optimize
@@ -87,6 +89,86 @@ def test_device_vg_matches_host(make_opt_imager):
 
 
 # ============================== scipy path (default unchanged) ==============================
+# every scipy method the dispatcher accepts, and the options it should end up with. The
+# imager always passes maxiter/ftol/gtol/maxcor/maxls, and scipy only *warns* about keys a
+# method does not know, so an unfiltered optdict silently disables the stopping rule the
+# caller asked for: TNC drops maxiter and runs uncapped, Newton-CG drops both tolerances.
+SCIPY_METHOD_CASES = [
+    ("lbfgs", "L-BFGS-B"), ("l-bfgs-b", "L-BFGS-B"), ("scipy", "L-BFGS-B"),
+    ("scipy-lbfgs", "L-BFGS-B"), ("bfgs", "BFGS"), ("cg", "CG"),
+    ("newton-cg", "Newton-CG"), ("tnc", "TNC"), ("slsqp", "SLSQP"),
+]
+SCIPY_METHOD_IDS = [c[0] for c in SCIPY_METHOD_CASES]
+
+
+@pytest.mark.parametrize("name,method", SCIPY_METHOD_CASES, ids=SCIPY_METHOD_IDS)
+def test_every_scipy_alias_maps_to_its_method(name, method):
+    from ehtim.imaging.optimizers import _SCIPY_METHODS
+    assert classify_optimizer(name) == "scipy"
+    assert _SCIPY_METHODS[name.lower()] == method
+
+
+@pytest.mark.parametrize("name,method", SCIPY_METHOD_CASES, ids=SCIPY_METHOD_IDS)
+def test_no_option_is_silently_dropped(make_opt_imager, name, method):
+    # scipy raises RuntimeWarning for options a method does not read. Running with
+    # warnings as errors is what pins that the filter is right; without the filter this
+    # fails for every method except L-BFGS-B.
+    from ehtim.imaging.optimizers import _scipy_options
+    optdict = {"maxiter": 2, "ftol": 1e-6, "gtol": 1e-6, "maxcor": NHIST, "maxls": MAXLS}
+    imgr = make_opt_imager()
+    imgr.check_params()
+    imgr.check_limits()
+    imgr.init_imager()
+    with warnings.catch_warnings():
+        warnings.simplefilter("error", RuntimeWarning)
+        scipy.optimize.minimize(imgr.objfunc, imgr._init_vec, method=method,
+                                jac=imgr.objgrad,
+                                options=_scipy_options(method, optdict))
+
+
+def test_tnc_gets_an_evaluation_cap_and_newton_cg_a_tolerance():
+    # both rename rather than drop: TNC counts evaluations, Newton-CG takes only xtol
+    from ehtim.imaging.optimizers import _scipy_options
+    optdict = {"maxiter": 7, "ftol": 1e-5, "gtol": 1e-6, "maxcor": 50, "maxls": 40}
+    assert _scipy_options("TNC", optdict)["maxfun"] == 7
+    assert "maxiter" not in _scipy_options("TNC", optdict)
+    assert _scipy_options("Newton-CG", optdict)["xtol"] == 1e-5
+    assert _scipy_options("L-BFGS-B", optdict) == optdict
+
+
+@pytest.mark.slow
+@pytest.mark.parametrize("name", ["bfgs", "cg", "newton-cg", "tnc", "slsqp"])
+def test_the_other_methods_reduce_the_objective(make_opt_imager, name):
+    imgr = make_opt_imager()
+    imgr.check_params()
+    imgr.check_limits()
+    imgr.init_imager()
+    x0 = imgr._init_vec
+    f0 = float(imgr.objfunc(x0))
+    optdict = {"maxiter": 20, "ftol": 1e-6, "gtol": 1e-6, "maxcor": NHIST, "maxls": MAXLS}
+    res = run_optimizer(name, lambda: (imgr.objfunc, imgr.objgrad),
+                        x0=x0, optdict=optdict, callback=None)
+    assert float(imgr.objfunc(res.x)) < f0
+
+
+def test_bfgs_warns_when_the_dense_hessian_is_large(make_opt_imager):
+    # a 128x128 image needs 2 GiB for the inverse Hessian, 256x256 needs 32
+    from ehtim.imaging.optimizers import _warn_if_bfgs_hessian_is_large
+    with pytest.warns(ResourceWarning, match="dense"):
+        _warn_if_bfgs_hessian_is_large("BFGS", 128 * 128)
+    with warnings.catch_warnings():
+        warnings.simplefilter("error")
+        _warn_if_bfgs_hessian_is_large("BFGS", 32 * 32)      # 8 MiB, fine
+        _warn_if_bfgs_hessian_is_large("L-BFGS-B", 256 * 256)  # not BFGS, no dense matrix
+
+
+def test_resolve_optax_names_the_valid_optimizers():
+    # reachable through run_survey_gpu's optimizer kwarg, where it used to be a bare KeyError
+    from ehtim.imaging.optimizers import resolve_optax
+    with pytest.raises(ValueError, match="unknown optax optimizer"):
+        resolve_optax("lbfgs", {"maxcor": 50, "maxls": 40})
+
+
 @pytest.mark.slow
 def test_scipy_lane_matches_direct_scipy(make_opt_imager):
     # the dispatcher's default path is a bit-for-bit pass-through to scipy L-BFGS-B

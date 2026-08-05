@@ -5,6 +5,7 @@ the scipy L-BFGS-B default (unchanged), an optax optimizer running on-device, or
 a user-supplied callable. It always returns a `scipy.optimize.OptimizeResult`, so
 the caller unpacks `.x`/`.fun` the same way for every backend.
 """
+import warnings
 from functools import partial
 
 import numpy as np
@@ -13,7 +14,67 @@ import scipy.optimize
 # Built-in optimizer names, resolved in their respective paths. Listed here so
 # classify_optimizer can route the names without importing optax.
 _OPTAX_NAMES = frozenset({"optax-lbfgs", "optax-lbfgs-bt", "adam", "adamw", "sgd", "rmsprop"})
-_SCIPY_NAMES = frozenset({"lbfgs", "l-bfgs-b", "scipy", "scipy-lbfgs"})
+
+# Accepted optimizer names mapped to the scipy method they select. The imaging problem is
+# unconstrained (positivity comes from the log transform, pol fractions from mcv), so
+# L-BFGS-B is used as plain L-BFGS and the gradient-based unconstrained methods drop in.
+_SCIPY_METHODS = {
+    "lbfgs": "L-BFGS-B", "l-bfgs-b": "L-BFGS-B", "scipy": "L-BFGS-B",
+    "scipy-lbfgs": "L-BFGS-B", "bfgs": "BFGS", "cg": "CG",
+    "newton-cg": "Newton-CG", "tnc": "TNC", "slsqp": "SLSQP",
+}
+_SCIPY_NAMES = frozenset(_SCIPY_METHODS)
+
+# Which of the imager's option keys each method actually reads. Hand-written rather than
+# introspected, because scipy's per-method option lists are private. Passing a key a method
+# does not know is not an error: scipy warns and drops it, which silently disables the
+# stopping rule the caller asked for. TNC is the worst of these, dropping maxiter.
+_METHOD_OPTS = {
+    "L-BFGS-B": {"maxiter", "ftol", "gtol", "maxcor", "maxls"},
+    "BFGS": {"maxiter", "gtol"},
+    "CG": {"maxiter", "gtol"},
+    "Newton-CG": {"maxiter", "xtol"},
+    "TNC": {"maxfun", "ftol", "gtol"},
+    "SLSQP": {"maxiter", "ftol"},
+}
+
+# BFGS carries a dense N x N inverse Hessian: 2 GiB at a 128x128 image, 32 GiB at 256x256.
+_BFGS_DENSE_WARN_BYTES = 1 << 30
+
+
+def _scipy_options(method, optdict):
+    """Keep only the options `method` reads, renaming where its spelling differs.
+
+    Parameters
+    ----------
+    method : str
+        A scipy.optimize.minimize method name.
+    optdict : dict
+        The imager's options: maxiter, ftol, gtol, maxcor, maxls.
+
+    Returns
+    -------
+    dict
+        Options safe to hand to this method.
+    """
+    opts = {k: v for k, v in optdict.items() if k in _METHOD_OPTS[method]}
+    if method == "TNC" and "maxiter" in optdict:
+        opts["maxfun"] = optdict["maxiter"]     # TNC caps evaluations, not iterations
+    if method == "Newton-CG" and "ftol" in optdict:
+        opts["xtol"] = optdict["ftol"]          # its only tolerance
+    return opts
+
+
+def _warn_if_bfgs_hessian_is_large(method, n):
+    """Warn before BFGS allocates a dense inverse Hessian that will not fit."""
+    if method != "BFGS":
+        return
+    nbytes = 8 * n * n
+    if nbytes > _BFGS_DENSE_WARN_BYTES:
+        warnings.warn(
+            f"BFGS stores a dense {n} x {n} inverse Hessian, about "
+            f"{nbytes / 2**30:.1f} GiB for this image. Use optimizer='lbfgs' unless you "
+            f"have the memory for it.", ResourceWarning, stacklevel=3)
 
 
 def classify_optimizer(optimizer):
@@ -80,11 +141,11 @@ def run_optimizer(optimizer, build_loss, *, x0, optdict, callback=None, device=N
 
     if kind == "scipy":
         fun, jac = build_loss()
-        # TODO: this path is hardwired to L-BFGS-B. Other scipy methods would drop
-        # in here, but optdict currently carries L-BFGS-B-only keys (maxcor, maxls),
-        # so a method argument would need those made optional first.
-        return scipy.optimize.minimize(fun, x0, method="L-BFGS-B", jac=jac,
-                                       options=optdict, callback=callback)
+        method = _SCIPY_METHODS["scipy" if optimizer is None else optimizer.lower()]
+        _warn_if_bfgs_hessian_is_large(method, np.size(x0))
+        return scipy.optimize.minimize(fun, x0, method=method, jac=jac,
+                                       options=_scipy_options(method, optdict),
+                                       callback=callback)
 
     elif kind == "callable":
         # The escape hatch: hand the user a host value_and_grad(x) -> (value, grad).
@@ -145,6 +206,10 @@ def resolve_optax(optimizer, optdict):
                            linesearch=linesearch), True
     builders = {"adam": optax.adam, "adamw": optax.adamw,
                 "sgd": optax.sgd, "rmsprop": optax.rmsprop}
+    if name not in builders:
+        raise ValueError(
+            f"unknown optax optimizer {optimizer!r}; expected one of "
+            f"{sorted(_OPTAX_NAMES)}, or pass an optax GradientTransformation.")
     return builders[name](_DEFAULT_LR), False
 
 
