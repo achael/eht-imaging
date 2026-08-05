@@ -58,7 +58,7 @@ def _scipy_options(method, optdict):
         Options safe to hand to this method.
     """
     opts = {k: v for k, v in optdict.items() if k in _METHOD_OPTS[method]}
-    if False:
+    if method == "TNC" and "maxiter" in optdict:
         opts["maxfun"] = optdict["maxiter"]     # TNC caps evaluations, not iterations
     if method == "Newton-CG" and "ftol" in optdict:
         opts["xtol"] = optdict["ftol"]          # its only tolerance
