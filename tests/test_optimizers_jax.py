@@ -140,6 +140,29 @@ def test_tnc_gets_an_evaluation_cap_and_newton_cg_a_tolerance():
     assert _scipy_options("L-BFGS-B", optdict) == optdict
 
 
+@pytest.mark.parametrize("name,method", SCIPY_METHOD_CASES, ids=SCIPY_METHOD_IDS)
+def test_the_requested_method_reaches_scipy(monkeypatch, name, method):
+    # every method reduces the objective, so "it converged" cannot tell them apart: a
+    # dispatcher that ignored the request and always ran L-BFGS-B would pass every other
+    # test in this file. Watch the argument instead.
+    import ehtim.imaging.optimizers as opt_mod
+    seen = {}
+
+    def spy(fun, x0, **kwargs):
+        seen.update(kwargs)
+        return scipy.optimize.OptimizeResult(x=np.asarray(x0), fun=0.0, nit=0,
+                                             success=True, message="stub")
+
+    monkeypatch.setattr(opt_mod.scipy.optimize, "minimize", spy)
+    optdict = {"maxiter": 1, "ftol": 1e-6, "gtol": 1e-6, "maxcor": NHIST, "maxls": MAXLS}
+    run_optimizer(name, lambda: ((lambda x: 0.0), (lambda x: np.zeros_like(x))),
+                  x0=np.zeros(4), optdict=optdict, callback=None)
+    assert seen["method"] == method
+    # and the options it was handed are only the ones that method reads
+    from ehtim.imaging.optimizers import _METHOD_OPTS
+    assert set(seen["options"]) <= _METHOD_OPTS[method] | {"maxfun", "xtol"}
+
+
 @pytest.mark.slow
 @pytest.mark.parametrize("name", ["bfgs", "cg", "newton-cg", "tnc", "slsqp"])
 def test_the_other_methods_reduce_the_objective(make_opt_imager, name):
