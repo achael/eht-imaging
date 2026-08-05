@@ -4,6 +4,8 @@ Each test verifies that a backend function produces identical output
 to the corresponding Imager class method.
 """
 
+import re
+
 import numpy as np
 import pytest
 
@@ -514,29 +516,54 @@ class TestPolWeightingWarning:
     separate change; these pin the warning and the gap it describes.
     """
 
+    # each polarimetric term drops the weighting identically, so all three are exercised:
+    # a warning that only knew about pvis would otherwise pass the whole class
+    POL_CASES = [("pvis", "IP", ["log", "mcv"], {"hw": 1}),
+                 ("m", "IP", ["log", "mcv"], {"hw": 1}),
+                 ("vvis", "IV", ["log", "vcv"], {"l1v": 1})]
+    POL_IDS = [c[0] for c in POL_CASES]
+
     @staticmethod
-    def _imager(obs, im, **kwargs):
+    def _imager(obs, im, term="pvis", pol="IP", transform=None, reg=None, **kwargs):
         return eh.imager.Imager(obs, im, prior_im=im, flux=im.total_flux(),
-                                data_term={"amp": 1, "pvis": 1},
-                                reg_term={"simple": 1, "hw": 1}, ttype="direct",
-                                pol="IP", transform=["log", "mcv"], maxit=2, **kwargs)
+                                data_term={"amp": 1, term: 1},
+                                reg_term={"simple": 1, **(reg or {"hw": 1})},
+                                ttype="direct", pol=pol,
+                                transform=transform or ["log", "mcv"], maxit=2, **kwargs)
 
-    @pytest.mark.parametrize("kwargs", [
-        {"snrcut": {"pvis": 5.0}},
-        {"debias": True},
-        {"systematic_noise": 0.1},
-        {"weighting": "uniform"},
-    ], ids=["snrcut", "debias", "systematic_noise", "weighting"])
-    def test_warns_when_a_pol_term_would_drop_the_weighting(self, gauss_im_pol, observe,
-                                                            kwargs):
+    @pytest.mark.parametrize("term,pol,transform,reg", POL_CASES, ids=POL_IDS)
+    @pytest.mark.parametrize("setting", ["snrcut", "debias", "systematic_noise",
+                                         "weighting"])
+    def test_warns_for_every_pol_term_and_setting(self, gauss_im_pol, observe, term, pol,
+                                                  transform, reg, setting):
+        kwargs = {"snrcut": {term: 5.0}, "debias": True, "systematic_noise": 0.1,
+                  "weighting": "uniform"}
         obs = observe(gauss_im_pol, seed=42)
-        with pytest.warns(PolWeightingIgnoredWarning, match="Stokes-I"):
-            self._imager(obs, gauss_im_pol, **kwargs).init_imager()
+        with pytest.warns(PolWeightingIgnoredWarning, match="polarimetric data terms"):
+            self._imager(obs, gauss_im_pol, term=term, pol=pol, transform=transform,
+                         reg=reg, **{setting: kwargs[setting]}).init_imager()
 
-    def test_the_warning_names_the_offending_terms(self, gauss_im_pol, observe):
+    @pytest.mark.parametrize("term,pol,transform,reg", POL_CASES, ids=POL_IDS)
+    def test_the_warning_names_the_offending_terms(self, gauss_im_pol, observe, term, pol,
+                                                   transform, reg):
         obs = observe(gauss_im_pol, seed=42)
-        with pytest.warns(PolWeightingIgnoredWarning, match=r"\['pvis'\]"):
-            self._imager(obs, gauss_im_pol, systematic_noise=0.1).init_imager()
+        with pytest.warns(PolWeightingIgnoredWarning, match=rf"\['{term}'\]"):
+            self._imager(obs, gauss_im_pol, term=term, pol=pol, transform=transform,
+                         reg=reg, systematic_noise=0.1).init_imager()
+
+    @pytest.mark.parametrize("setting,expect", [
+        ({"systematic_noise": 0.1}, "systematic_noise"),
+        ({"debias": True}, "debias"),
+        ({"weighting": "uniform"}, "weighting='uniform'"),
+    ], ids=["systematic_noise", "debias", "weighting"])
+    def test_the_warning_names_the_setting_that_was_dropped(self, gauss_im_pol, observe,
+                                                            setting, expect):
+        # pins which way round the message reads: an inverted or mislabelled message
+        # still fires, and would otherwise pass every other test here
+        obs = observe(gauss_im_pol, seed=42)
+        with pytest.warns(PolWeightingIgnoredWarning,
+                          match=rf"{re.escape(expect)} does not reach the polarimetric"):
+            self._imager(obs, gauss_im_pol, **setting).init_imager()
 
     @pytest.mark.parametrize("kwargs", [{}, {"snrcut": {"amp": 5.0}}],
                              ids=["defaults", "snrcut-on-stokes-i-only"])
