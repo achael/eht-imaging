@@ -1,8 +1,8 @@
 """Pluggable optimizer dispatch for the imaging objective.
 
 `run_optimizer` lets `Imager.make_image` drive any optimizer through one seam:
-the scipy L-BFGS-B default (unchanged), an optax optimizer running on-device, or
-a user-supplied callable. It always returns a `scipy.optimize.OptimizeResult`, so
+any scipy minimizer (L-BFGS-B by default), an optax optimizer running on-device,
+or a user-supplied callable. It always returns a `scipy.optimize.OptimizeResult`, so
 the caller unpacks `.x`/`.fun` the same way for every backend.
 """
 import warnings
@@ -37,12 +37,15 @@ _METHOD_OPTS = {
     "SLSQP": {"maxiter", "ftol"},
 }
 
-# BFGS carries a dense N x N inverse Hessian: 2 GiB at a 128x128 image, 32 GiB at 256x256.
+# BFGS carries a dense N x N inverse Hessian, and scipy builds several N x N temporaries
+# per iteration on top of it, so peak memory runs 4-6x the matrix itself: measured about
+# 8 GiB at a 128x128 image. Warn once the matrix alone passes 1 GiB.
 _BFGS_DENSE_WARN_BYTES = 1 << 30
+_BFGS_PEAK_FACTOR = 5
 
 
 def _scipy_options(method, optdict):
-    """Keep only the options `method` reads, renaming where its spelling differs.
+    """Keep only the options `method` reads, translating where its knob differs.
 
     Parameters
     ----------
@@ -64,16 +67,28 @@ def _scipy_options(method, optdict):
     return opts
 
 
-def _warn_if_bfgs_hessian_is_large(method, n):
-    """Warn before BFGS allocates a dense inverse Hessian that will not fit."""
+def _warn_if_bfgs_hessian_is_large(method, n, stacklevel=4):
+    """Warn before BFGS allocates a dense inverse Hessian that will not fit.
+
+    Parameters
+    ----------
+    method : str
+        The scipy method about to run; only BFGS keeps a dense inverse Hessian.
+    n : int
+        Number of solver parameters.
+    stacklevel : int, optional
+        Frames to skip so the warning points at the caller rather than at this module.
+    """
     if method != "BFGS":
         return
     nbytes = 8 * n * n
     if nbytes > _BFGS_DENSE_WARN_BYTES:
         warnings.warn(
-            f"BFGS stores a dense {n} x {n} inverse Hessian, about "
-            f"{nbytes / 2**30:.1f} GiB for this image. Use optimizer='lbfgs' unless you "
-            f"have the memory for it.", ResourceWarning, stacklevel=3)
+            f"BFGS stores a dense {n} x {n} inverse Hessian, {nbytes / 2**30:.1f} GiB for "
+            f"this image, and scipy holds several matrices that size at once, so expect "
+            f"nearer {_BFGS_PEAK_FACTOR * nbytes / 2**30:.0f} GiB peak. Use "
+            f"optimizer='lbfgs' unless you have the memory for it.",
+            UserWarning, stacklevel=stacklevel)
 
 
 # -----------------------------------------------------------------------------
@@ -124,6 +139,9 @@ class ScipyBackend(OptimizerBackend):
     kind = "scipy"
 
     def __init__(self, method):
+        if method not in _METHOD_OPTS:
+            raise ValueError(f"no option table for scipy method {method!r}; known methods "
+                             f"are {sorted(_METHOD_OPTS)}")
         self.method = method
 
     def run(self, build_loss, x0, optdict, callback, device):
@@ -186,7 +204,12 @@ def register_optimizer(name, backend):
     backend : OptimizerBackend
         The backend that will run it.
     """
-    _BACKENDS[name.lower()] = backend
+    key = name.lower()
+    if key in _BACKENDS:
+        warnings.warn(f"replacing the built-in optimizer {key!r}", UserWarning, stacklevel=2)
+    if not isinstance(backend, OptimizerBackend):
+        raise TypeError(f"backend must be an OptimizerBackend, got {type(backend).__name__}")
+    _BACKENDS[key] = backend
 
 
 for _alias, _method in _SCIPY_METHODS.items():
