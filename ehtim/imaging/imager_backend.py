@@ -1265,6 +1265,9 @@ def warn_if_pol_terms_ignore_weighting(dat_term_keys, data_weighting):
     if not pol_terms:
         return
 
+    # maxset, cp_uv_min and systematic_cphase_noise are read only by the closure leaves,
+    # and DATATERMS_POL has no closure terms, so they cannot go missing here. Revisit if a
+    # polarimetric closure term is ever added.
     ignored = []
     if any(data_weighting.snrcut.get(term, 0.) for term in pol_terms):
         ignored.append("snrcut")
@@ -1277,11 +1280,16 @@ def warn_if_pol_terms_ignore_weighting(dat_term_keys, data_weighting):
     if not ignored:
         return
 
+    # the location is this backend call rather than the caller's: no single stacklevel
+    # reaches user code from both Imager() and a direct backend call, so the message
+    # carries what is actionable instead.
     warnings.warn(
-        f"{', '.join(ignored)} is applied to the Stokes-I data terms only; the "
-        f"polarimetric terms {pol_terms} ignore it, so their sigmas and point counts are "
-        f"unchanged. Weighting the polarimetric data is not implemented yet.",
-        PolWeightingIgnoredWarning, stacklevel=3)
+        f"{', '.join(ignored)} does not reach the polarimetric data terms {pol_terms}: "
+        f"their sigmas and point counts are unchanged, so the data-term weights are "
+        f"rebalanced between the Stokes-I and polarimetric halves of the objective. Only "
+        f"the Stokes-I terms honour data weighting; weighting the polarimetric data is "
+        f"not implemented yet.",
+        PolWeightingIgnoredWarning, stacklevel=2)
 
 
 def compute_data_tuples(obslist, prior, embed_mask, dat_term_keys, config,

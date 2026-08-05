@@ -1482,7 +1482,11 @@ def chisqdata_pvis(Obsdata, Prior, mask, **kwargs):
     return (vis, sigma, A)
 
 def chisqdata_pvis_nfft(Obsdata, Prior, **kwargs):
-    """Return the visibilities, sigmas, and nfft plan for an observation."""
+    """Return the visibilities, sigmas, and nfft plan for an observation.
+
+    Like the direct variant, this accepts and ignores the standard weighting kwargs: the
+    sigmas come straight from the observation. compute_data_tuples warns when that bites.
+    """
 
     # unpack keyword args
     fft_pad_factor = kwargs.get('fft_pad_factor',FFT_PAD_DEFAULT)
@@ -1522,7 +1526,11 @@ def chisqdata_m(Obsdata, Prior, mask, **kwargs):
     return (m, sigmam, A)
 
 def chisqdata_m_nfft(Obsdata, Prior, **kwargs):
-    """Return the pol ratios, sigmas, and nfft plan for an observation."""
+    """Return the pol ratios, sigmas, and nfft plan for an observation.
+
+    Like the direct variant, this accepts and ignores the standard weighting kwargs: the
+    sigmas come straight from the observation. compute_data_tuples warns when that bites.
+    """
 
     # unpack keyword args
     fft_pad_factor = kwargs.get('fft_pad_factor',FFT_PAD_DEFAULT)
@@ -1562,7 +1570,11 @@ def chisqdata_vvis(Obsdata, Prior, mask, **kwargs):
     return (vis, sigma, A)
 
 def chisqdata_vvis_nfft(Obsdata, Prior, **kwargs):
-    """Return the visibilities, sigmas, and nfft plan for an observation."""
+    """Return the visibilities, sigmas, and nfft plan for an observation.
+
+    Like the direct variant, this accepts and ignores the standard weighting kwargs: the
+    sigmas come straight from the observation. compute_data_tuples warns when that bites.
+    """
 
     # unpack keyword args
     fft_pad_factor = kwargs.get('fft_pad_factor',FFT_PAD_DEFAULT)
