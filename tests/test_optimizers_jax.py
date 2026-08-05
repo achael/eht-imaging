@@ -103,9 +103,56 @@ SCIPY_METHOD_IDS = [c[0] for c in SCIPY_METHOD_CASES]
 
 @pytest.mark.parametrize("name,method", SCIPY_METHOD_CASES, ids=SCIPY_METHOD_IDS)
 def test_every_scipy_alias_maps_to_its_method(name, method):
-    from ehtim.imaging.optimizers import _SCIPY_METHODS
+    from ehtim.imaging.optimizers import resolve_backend
     assert classify_optimizer(name) == "scipy"
-    assert _SCIPY_METHODS[name.lower()] == method
+    assert resolve_backend(name).method == method
+
+
+def test_a_new_optimizer_can_be_registered_without_editing_the_module():
+    # the point of the registry: a caller adds a backend rather than a branch
+    from ehtim.imaging.optimizers import (
+        _BACKENDS,
+        OptimizerBackend,
+        register_optimizer,
+        resolve_backend,
+    )
+
+    class CountingBackend(OptimizerBackend):
+        kind = "scipy"
+
+        def __init__(self):
+            self.calls = 0
+
+        def run(self, build_loss, x0, optdict, callback, device):
+            self.calls += 1
+            return scipy.optimize.OptimizeResult(x=np.asarray(x0), fun=0.0, nit=0,
+                                                 success=True, message="counted")
+
+    backend = CountingBackend()
+    register_optimizer("counting", backend)
+    try:
+        assert classify_optimizer("counting") == "scipy"
+        assert resolve_backend("counting") is backend
+        res = run_optimizer("counting", lambda: (None, None), x0=np.zeros(3),
+                            optdict={"maxiter": 1, "gtol": 1e-6}, callback=None)
+        assert backend.calls == 1 and res.message == "counted"
+    finally:
+        del _BACKENDS["counting"]
+
+
+def test_an_unknown_name_lists_the_registered_ones():
+    with pytest.raises(ValueError, match="registered names are"):
+        classify_optimizer("no-such-optimizer")
+
+
+@pytest.mark.parametrize("optimizer,kind", [
+    (None, "scipy"), ("bfgs", "scipy"), ("adam", "optax"),
+    (lambda *a, **k: None, "callable"),
+], ids=["default", "scipy-name", "optax-name", "user-callable"])
+def test_each_optimizer_shape_routes_to_its_backend(optimizer, kind):
+    from ehtim.imaging.optimizers import resolve_backend
+    assert classify_optimizer(optimizer) == kind
+    assert resolve_backend(optimizer).kind == kind
 
 
 @pytest.mark.parametrize("name,method", SCIPY_METHOD_CASES, ids=SCIPY_METHOD_IDS)
