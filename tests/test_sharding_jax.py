@@ -128,3 +128,62 @@ def test_frequency_sharded_matches_single_and_numpy(eht_array, gauss_im):
     assert np.allclose(v1, v0, rtol=VALUE_RTOL)
     assert np.linalg.norm(g1 - g0) / np.linalg.norm(g0) < GRAD_RTOL
     assert np.linalg.norm(g1 - gnp) / np.linalg.norm(gnp) < GRAD_RTOL
+
+
+# ---------------------------------------------------------------------------
+# Compile-time regression: sharded nfft with a multi-operator data term
+#
+# The nfft branch used to rebuild _NFFTView and _make_sharded_nufft2 inside the
+# loss body, once per operator per call, each carrying two nested shard_maps and
+# a custom_vjp. One operator was tolerable; a closure term was not. Measured on
+# 2 GPUs at 24x24, maxit=3: amp (1 operator) 5.5 s, cphase (3) and logcamp (4)
+# both still running at 420 s. Un-sharded the same terms take 0.7 s, and the
+# direct path with the same terms takes 5.0 s, so it is the per-operator rebuild
+# under sharding and not nfft cost.
+# ---------------------------------------------------------------------------
+
+SHARDED_NFFT_BUDGET_S = 180
+
+
+@requires_2gpu
+@pytest.mark.parametrize("dterm", [{"cphase": 1}, {"amp": 1, "cphase": 1}],
+                         ids=["cphase", "amp+cphase"])
+def test_sharded_nfft_closures_compile_in_reasonable_time(dterm, tmp_path):
+    """A closure term under shard+nfft must finish, not hang in compilation.
+
+    Runs in a subprocess so a regression costs this test rather than the whole
+    session, and so the budget is enforced even though pytest-timeout is not
+    installed here.
+    """
+    import subprocess
+    import sys
+    import textwrap
+    code = textwrap.dedent(f"""
+        import time, numpy as np, ehtim as eh
+        arr = eh.array.load_txt("arrays/EHT2017.txt")
+        im = eh.image.make_empty(24, 200*eh.RADPERUAS, 17.761, -29.0, rf=230e9)
+        im = im.add_gauss(1.0, (50*eh.RADPERUAS, 50*eh.RADPERUAS, 0, 0, 0))
+        obs = im.observe(arr, 60, 600, 0.0, 24.0, 4e9, ampcal=True, phasecal=True,
+                         ttype="nfft", add_th_noise=False)
+        prior = im.blur_circ(40*eh.RADPERUAS)
+        t0 = time.perf_counter()
+        imgr = eh.imager.Imager(obs, prior, prior, 1.0, data_term={dterm!r},
+                                reg_term={{"simple": 1}}, ttype="nfft", maxit=3,
+                                shard=True, optimizer="optax-lbfgs", show_updates=False)
+        imgr.make_image_I(show_updates=False)
+        v = imgr.out_last().imvec
+        print("RESULT", time.perf_counter()-t0, float(np.sum(v)), int(np.all(np.isfinite(v))))
+    """)
+    try:
+        r = subprocess.run([sys.executable, "-c", code], capture_output=True,
+                           text=True, timeout=SHARDED_NFFT_BUDGET_S)
+    except subprocess.TimeoutExpired:
+        pytest.fail(
+            f"shard+nfft with {dterm} did not finish in {SHARDED_NFFT_BUDGET_S}s; "
+            "the per-operator nfft closure rebuild is back")
+    line = [x for x in r.stdout.splitlines() if x.startswith("RESULT")]
+    assert line, f"subprocess failed:\n{r.stderr[-1200:]}"
+    _, wall, flux, finite = line[0].split()
+    assert int(finite) == 1, "reconstruction is not finite"
+    assert float(flux) > 0, f"degenerate reconstruction, flux={flux}"
+    print(f"shard+nfft {dterm} finished in {float(wall):.1f}s")
