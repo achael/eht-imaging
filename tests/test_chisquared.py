@@ -7,6 +7,8 @@ tight direct-vs-nfft gradient bound pins nfft gradient correctness. All tests us
 image so xdim != ydim exercises the rectangular-image code paths (rect subsumes square).
 """
 
+import tracemalloc
+
 import numpy as np
 import pytest
 
@@ -17,7 +19,8 @@ from ehtim.imaging.imager_backend import (
     compute_chisq_term,
     compute_chisqdata_term,
 )
-from ehtim.imaging.imager_utils import chisq, chisqdata, chisqgrad
+from ehtim.imaging.imager_utils import chisq, chisqdata, chisqgrad, chisqgrad_vis
+from ehtim.imaging.pol_imager_utils import chisqgrad_m, chisqgrad_p, chisqgrad_vvis
 
 # Observation parameters (must match conftest.py)
 TINT_SEC = 5
@@ -274,3 +277,94 @@ class TestPolChisqConsistency:
             vals[tt] = compute_chisq_term(imcur, dtype, A, data, sigma, ttype=tt, mask=mask)
         frac = abs((vals["direct"] - vals["nfft"]) / abs(vals["direct"]))
         assert frac < POL_CHISQ_FRAC_TOL, f"{dtype}: chisq frac diff = {frac:.6f}"
+
+
+# ---------------------------------------------------------------------------
+# Operator memory: the direct-transform gradients must not copy the operator
+#
+# `Amatrix.conj()` materializes a full (nvis, npix) copy of the Fourier operator;
+# only the subsequent `.T` is free. Every gradient below needs nothing more than
+# `Amatrix.conj().T @ vec`, which is the same arithmetic as conjugating the
+# (nvis,) input and the (npix,) output, both orders of magnitude smaller. These
+# tests bound the peak allocation of each gradient well under the operator.
+# ---------------------------------------------------------------------------
+
+OP_NVIS = 1200
+OP_NPIX = 2048
+
+# Measured on saturn before the fix: peak is 1.00x the operator for every
+# gradient here. After it, peak is a handful of (nvis,) and (npix,) vectors,
+# under 1% of the operator. A quarter of the operator sits clearly between the
+# two and leaves room for BLAS scratch.
+OP_PEAK_FRACTION = 0.25
+
+
+def _peak_mib(fn):
+    """Peak traced allocation in MiB during fn(). NumPy registers its own
+    tracemalloc domain, so array allocations are counted."""
+    tracemalloc.start()
+    tracemalloc.reset_peak()
+    fn()
+    _, peak = tracemalloc.get_traced_memory()
+    tracemalloc.stop()
+    return peak / 2**20
+
+
+@pytest.fixture(scope="module")
+def operator_setup():
+    """A dense complex operator plus matching Stokes-I and polarimetric inputs.
+
+    Synthetic rather than observation-derived: these tests measure allocation
+    against a known operator size, so the operator has to be sized here.
+    """
+    rng = np.random.default_rng(0)
+    A = (rng.standard_normal((OP_NVIS, OP_NPIX))
+         + 1j * rng.standard_normal((OP_NVIS, OP_NPIX)))
+    data = rng.standard_normal(OP_NVIS) + 1j * rng.standard_normal(OP_NVIS)
+    sigma = np.abs(rng.standard_normal(OP_NVIS)) + 0.1
+    imvec = np.abs(rng.standard_normal(OP_NPIX)) + 0.1
+    imarr = np.vstack([imvec,
+                       0.3 * np.ones(OP_NPIX),      # rho
+                       0.4 * np.ones(OP_NPIX),      # phi
+                       0.2 * np.ones(OP_NPIX)])     # psi
+    return {"A": A, "data": data, "sigma": sigma, "imvec": imvec, "imarr": imarr,
+            "op_mib": A.nbytes / 2**20}
+
+
+# (label, callable taking the setup dict) for every gradient that applies the
+# adjoint operator on the direct path.
+GRAD_CASES = [
+    ("chisqgrad_vis",
+     lambda s: chisqgrad_vis(s["imvec"], s["A"], s["data"], s["sigma"])),
+    ("chisqgrad_p",
+     lambda s: chisqgrad_p(s["imarr"], s["A"], s["data"], s["sigma"],
+                           pol_solve=(1, 1, 1, 1))),
+    ("chisqgrad_m",
+     lambda s: chisqgrad_m(s["imarr"], s["A"], s["data"], s["sigma"],
+                          pol_solve=(1, 1, 1, 1))),
+    ("chisqgrad_vvis",
+     lambda s: chisqgrad_vvis(s["imarr"], s["A"], s["data"], s["sigma"],
+                              pol_solve=(1, 1, 0, 1))),
+]
+
+
+class TestGradientOperatorNotCopied:
+    """Peak allocation during a direct-path gradient stays well under the operator."""
+
+    def test_tracemalloc_sees_numpy_allocations(self, operator_setup):
+        # Guard. If tracemalloc did not count numpy arrays every bound below
+        # would pass while the copies were still happening. Conjugating the
+        # operator outright must register as roughly its own size.
+        A, op_mib = operator_setup["A"], operator_setup["op_mib"]
+        peak = _peak_mib(lambda: A.conj())
+        assert peak > 0.9 * op_mib, (
+            f"tracemalloc reported {peak:.2f} MiB for an explicit copy of a "
+            f"{op_mib:.2f} MiB operator; the bounds below would be vacuous")
+
+    @pytest.mark.parametrize("label,call", GRAD_CASES, ids=[c[0] for c in GRAD_CASES])
+    def test_peak_allocation_well_under_operator(self, operator_setup, label, call):
+        op_mib = operator_setup["op_mib"]
+        peak = _peak_mib(lambda: call(operator_setup))
+        assert peak < OP_PEAK_FRACTION * op_mib, (
+            f"{label} peaked at {peak:.2f} MiB against a {op_mib:.2f} MiB "
+            f"operator ({peak/op_mib:.2f}x); it is copying the operator")
