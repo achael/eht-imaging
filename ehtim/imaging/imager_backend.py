@@ -7,10 +7,12 @@ from typing import NamedTuple
 
 import numpy as np
 
+import ehtim.const_def as ehc
 import ehtim.imaging.imager_utils as imutils
 import ehtim.imaging.multifreq_imager_utils as mfutils
 import ehtim.imaging.pol_imager_utils as polutils
 import ehtim.observing.obs_helpers as obsh
+import ehtim.warnings as ehw
 from ehtim.backends import array_namespace
 
 # -----------------------------------------------------------------------------
@@ -1070,8 +1072,42 @@ def compute_chisqdata_term(obs, prior, mask, dtype, config, **kwargs):
     # Only `direct` leaves take mask positionally; fast/nfft leaves index uv
     # coords from obs directly and ignore the embed mask.
     if ttype == 'direct':
-        return helper(obs, prior, mask, pol=pol, **kwargs)
+        out = helper(obs, prior, mask, pol=pol, **kwargs)
+        _warn_if_operator_oversized(out[2], dtype)
+        return out
     return helper(obs, prior, pol=pol, **kwargs)
+
+
+def _warn_if_operator_oversized(A, dtype):
+    """Warn once if a direct data term's dense operators exceed the threshold.
+
+    Checked here rather than in ``ftmatrix`` because the threshold is on the
+    total a term holds: closure phase builds three operators and closure
+    amplitude four, and it is the sum that runs a machine out of memory. This
+    is also the one place every direct data term passes through, so an
+    oversized run gets one warning per term instead of one per matrix.
+
+    Parameters
+    ----------
+    A : np.ndarray or tuple of np.ndarray
+        Operator(s) the data term just built.
+    dtype : str
+        Data term name, used in the message.
+    """
+
+    mats = A if isinstance(A, tuple) else (A,)
+    nbytes = sum(m.nbytes for m in mats if hasattr(m, 'nbytes'))
+    if nbytes <= ehc.DIRECT_MATRIX_WARN_GB*1e9:
+        return
+
+    count = f"{len(mats)} operators" if len(mats) > 1 else "1 operator"
+    warnings.warn(
+        f"data term {dtype!r} allocated {nbytes/1e9:.2f} GB of dense DFT "
+        f"operator ({count}) on the direct transform, and every other data "
+        f"term holds its own. Use ttype='nfft' for the same visibilities "
+        f"without the dense operator, or raise "
+        f"ehtim.const_def.DIRECT_MATRIX_WARN_GB.",
+        ehw.DirectMatrixSizeWarning, stacklevel=3)
 
 
 def _pol_solve_block(which_solve, pol):
