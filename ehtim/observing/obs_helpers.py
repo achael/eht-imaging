@@ -1395,6 +1395,33 @@ def image_centroid(im):
     return np.array([x0, y0])
 
 
+def adjoint_dot(Amatrix, vec):
+    """Apply the adjoint of a DFT operator without copying the operator.
+
+    Reach for this instead of ``np.dot(Amatrix.conj().T, vec)`` wherever a
+    gradient applies the conjugate transpose of a dense Fourier operator.
+    ``Amatrix.conj()`` materializes a full (nvis, npix) copy of the operator and
+    only the following ``.T`` is free, so on a direct-transform run the copy
+    dominates the memory of the gradient. Conjugating the (nvis,) input and the
+    (npix,) output is the same arithmetic on vectors orders of magnitude
+    smaller, and returns bit-identical values.
+
+    Parameters
+    ----------
+    Amatrix : np.ndarray
+        Complex (nvis, npix) DFT operator.
+    vec : np.ndarray
+        Complex (nvis,) vector to apply the adjoint operator to.
+
+    Returns
+    -------
+    np.ndarray
+        Complex (npix,) result, equal to ``np.dot(Amatrix.conj().T, vec)``.
+    """
+
+    return np.dot(vec.conj(), Amatrix).conj()
+
+
 def ftmatrix(pdim, xdim, ydim, uvlist, pulse=ehc.PULSE_DEFAULT, mask=[]):
     """Return a DFT matrix for the xdim*ydim image with pixel width pdim
        that extracts spatial frequencies of the uv points in uvlist.
