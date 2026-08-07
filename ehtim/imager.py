@@ -23,6 +23,7 @@
 
 import copy
 import time
+import warnings
 from dataclasses import dataclass
 from typing import Any
 
@@ -33,6 +34,7 @@ import ehtim.image
 import ehtim.imaging.imager_utils as imutils
 import ehtim.imaging.pol_imager_utils as polutils
 import ehtim.observing.obs_helpers as obsh
+import ehtim.warnings as ehw
 from ehtim.const_def import (
     FFT_INTERP_DEFAULT,
     FFT_PAD_DEFAULT,
@@ -531,7 +533,18 @@ class Imager:
         if shard and (optimizer is None or classify_optimizer(optimizer) != 'optax'):
             raise ValueError(
                 "shard=True runs the sharded objective on-device, which needs an optax "
-                "optimizer; pass optimizer='optax-lbfgs' (or another optax optimizer).")
+                "optimizer; pass optimizer='optax-lbfgs-bt' (or another optax optimizer).")
+        # The zoom line search fuses its bracket-and-zoom control flow into the same
+        # jitted loop as the objective, and XLA does not get through that module on a
+        # sharded multi-term nfft objective. Recommend backtracking rather than switching
+        # for them, matching the rule above: do not silently override a chosen optimizer.
+        if shard and isinstance(optimizer, str) and optimizer.lower() == 'optax-lbfgs':
+            warnings.warn(
+                "shard=True with optimizer='optax-lbfgs' uses the zoom line search, "
+                "which can hang in XLA compilation on a sharded objective with more "
+                "than one data term (measured: 14 of 16 runs, against 2 of 16 for "
+                "backtracking). Prefer optimizer='optax-lbfgs-bt'.",
+                ehw.ShardedLineSearchWarning, stacklevel=2)
         # (the optax path builds the jax objective itself in build_vg_ondevice below, so the
         #  user's use_jax flag is irrelevant there and is left untouched.)
 

@@ -46,3 +46,20 @@ class MixedPolUnpackNaNWarning(UserWarning):
     The warning reports, per field, how many rows were NaN-filled. It is
     deliberately verbose; suppress with the standard machinery if needed.
     """
+
+
+class ShardedLineSearchWarning(UserWarning):
+    """Emitted when a multi-GPU sharded run uses the zoom line search.
+
+    `optax-lbfgs` uses `scale_by_zoom_linesearch`, whose bracket-and-zoom
+    control flow is fused into the same jitted loop as the objective. On a
+    sharded nfft objective with more than one data term, XLA compilation of that
+    module does not terminate: measured on 2 GPUs at 24x24 with amp+cphase+
+    logcamp, zoom hung 14 of 16 runs against 2 of 16 for the backtracking line
+    search, at every line-search cap tried (5, 10, 20, 40).
+
+    `optax-lbfgs-bt` does a few value evaluations per step instead, and is the
+    recommended optimizer for `shard=True`. The residual 2-in-16 is not
+    understood and is tracked separately, so this is a mitigation rather than a
+    guarantee.
+    """

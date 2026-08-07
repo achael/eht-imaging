@@ -6,6 +6,8 @@ not approximate, even when Nvis does not divide the device count. Requires >= 2
 local GPUs. The value_and_grad is jitted: eager execution of a sharded graph stalls
 on per-op collectives (the optimizer loop jits the whole iteration, as here).
 """
+import warnings
+
 import numpy as np
 import pytest
 
@@ -133,13 +135,16 @@ def test_frequency_sharded_matches_single_and_numpy(eht_array, gauss_im):
 # ---------------------------------------------------------------------------
 # Compile-time regression: sharded nfft with a multi-operator data term
 #
-# The nfft branch used to rebuild _NFFTView and _make_sharded_nufft2 inside the
-# loss body, once per operator per call, each carrying two nested shard_maps and
-# a custom_vjp. One operator was tolerable; a closure term was not. Measured on
-# 2 GPUs at 24x24, maxit=3: amp (1 operator) 5.5 s, cphase (3) and logcamp (4)
-# both still running at 420 s. Un-sharded the same terms take 0.7 s, and the
-# direct path with the same terms takes 5.0 s, so it is the per-operator rebuild
-# under sharding and not nfft cost.
+# `optax-lbfgs` uses the zoom line search, whose bracket-and-zoom control flow is
+# fused into the same jitted loop as the objective; XLA does not get through that
+# module on a sharded nfft objective with more than one data term. Measured on
+# 2 GPUs at 24x24, maxit=3, amp+cphase+logcamp: zoom hung 14 of 16 runs and
+# backtracking 2 of 16, at every line-search cap tried (5, 10, 20, 40). The same
+# terms take 0.7 s unsharded and 5.0 s on the direct path, so it is the fused
+# optimizer module and not nfft cost.
+#
+# This pins the configuration the guard recommends. The residual 2-in-16 for
+# backtracking is not understood, so the budget is generous rather than tight.
 # ---------------------------------------------------------------------------
 
 SHARDED_NFFT_BUDGET_S = 180
@@ -169,7 +174,7 @@ def test_sharded_nfft_closures_compile_in_reasonable_time(dterm, tmp_path):
         t0 = time.perf_counter()
         imgr = eh.imager.Imager(obs, prior, prior, 1.0, data_term={dterm!r},
                                 reg_term={{"simple": 1}}, ttype="nfft", maxit=3,
-                                shard=True, optimizer="optax-lbfgs", show_updates=False)
+                                shard=True, optimizer="optax-lbfgs-bt", show_updates=False)
         imgr.make_image_I(show_updates=False)
         v = imgr.out_last().imvec
         print("RESULT", time.perf_counter()-t0, float(np.sum(v)), int(np.all(np.isfinite(v))))
@@ -179,11 +184,49 @@ def test_sharded_nfft_closures_compile_in_reasonable_time(dterm, tmp_path):
                            text=True, timeout=SHARDED_NFFT_BUDGET_S)
     except subprocess.TimeoutExpired:
         pytest.fail(
-            f"shard+nfft with {dterm} did not finish in {SHARDED_NFFT_BUDGET_S}s; "
-            "the per-operator nfft closure rebuild is back")
+            f"shard+nfft with {dterm} did not finish in {SHARDED_NFFT_BUDGET_S}s "
+            "under the backtracking line search")
     line = [x for x in r.stdout.splitlines() if x.startswith("RESULT")]
     assert line, f"subprocess failed:\n{r.stderr[-1200:]}"
     _, wall, flux, finite = line[0].split()
     assert int(finite) == 1, "reconstruction is not finite"
     assert float(flux) > 0, f"degenerate reconstruction, flux={flux}"
     print(f"shard+nfft {dterm} finished in {float(wall):.1f}s")
+
+
+def test_shard_guard_recommends_the_backtracking_optimizer(obs_direct, gauss_im, gauss_prior):
+    # The guard used to name optax-lbfgs, the zoom variant that hangs on exactly
+    # the configuration it gates.
+    imgr = _build_imager(obs_direct, gauss_im, gauss_prior)
+    with pytest.raises(ValueError, match="optax-lbfgs-bt"):
+        imgr.make_image_I(shard=True, show_updates=False)
+
+
+def test_shard_with_zoom_linesearch_warns(obs_direct, gauss_im, gauss_prior):
+    # Recommend rather than override: the surrounding code deliberately refuses to
+    # silently swap out an optimizer the caller chose.
+    import ehtim.warnings as ehw
+    imgr = _build_imager(obs_direct, gauss_im, gauss_prior)
+    with warnings.catch_warnings(record=True) as rec:
+        warnings.simplefilter("always")
+        try:
+            imgr.make_image_I(shard=True, optimizer="optax-lbfgs", maxit=1,
+                              show_updates=False)
+        except Exception:
+            pass          # only the warning is under test; the run itself may fail
+    got = [w for w in rec if issubclass(w.category, ehw.ShardedLineSearchWarning)]
+    assert len(got) == 1, f"expected one line-search warning, got {len(got)}"
+    assert "optax-lbfgs-bt" in str(got[0].message)
+
+
+def test_shard_with_backtracking_does_not_warn(obs_direct, gauss_im, gauss_prior):
+    import ehtim.warnings as ehw
+    imgr = _build_imager(obs_direct, gauss_im, gauss_prior)
+    with warnings.catch_warnings(record=True) as rec:
+        warnings.simplefilter("always")
+        try:
+            imgr.make_image_I(shard=True, optimizer="optax-lbfgs-bt", maxit=1,
+                              show_updates=False)
+        except Exception:
+            pass
+    assert [w for w in rec if issubclass(w.category, ehw.ShardedLineSearchWarning)] == []
