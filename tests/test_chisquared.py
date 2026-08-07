@@ -294,19 +294,27 @@ OP_NPIX = 2048
 
 # Measured on saturn before the fix: peak is 1.00x the operator for every
 # gradient here. After it, peak is a handful of (nvis,) and (npix,) vectors,
-# under 1% of the operator. A quarter of the operator sits clearly between the
-# two and leaves room for BLAS scratch.
+# at most 1.1% of the operator. A quarter of the operator sits clearly between
+# the two and leaves room for BLAS scratch.
 OP_PEAK_FRACTION = 0.25
 
 
 def _peak_mib(fn):
-    """Peak traced allocation in MiB during fn(). NumPy registers its own
-    tracemalloc domain, so array allocations are counted."""
+    """Peak traced allocation in MiB during fn().
+
+    NumPy registers its own tracemalloc domain, so array allocations are
+    counted. fn() runs once first because the polarimetric gradients lazily
+    import jax on their first call, which puts ~26 MiB inside the measurement
+    window and makes the result about import cost rather than the operator.
+    """
+    fn()
+    was_tracing = tracemalloc.is_tracing()
     tracemalloc.start()
     tracemalloc.reset_peak()
     fn()
     _, peak = tracemalloc.get_traced_memory()
-    tracemalloc.stop()
+    if not was_tracing:
+        tracemalloc.stop()
     return peak / 2**20
 
 

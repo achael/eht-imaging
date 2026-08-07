@@ -85,19 +85,30 @@ def _adj_operator(nvis, npix, seed=0):
 
 
 def _peak_mib(fn):
+    """Peak traced allocation in MiB during fn().
+
+    Calls fn() once first: several of these paths lazily import jax on their
+    first invocation, which lands ~26 MiB inside the measurement window and
+    makes the result about import cost rather than about the operator.
+    """
+    fn()
+    was_tracing = tracemalloc.is_tracing()
     tracemalloc.start()
     tracemalloc.reset_peak()
     fn()
     _, peak = tracemalloc.get_traced_memory()
-    tracemalloc.stop()
+    if not was_tracing:
+        tracemalloc.stop()
     return peak / 2**20
 
 
 @pytest.mark.parametrize("nvis,npix", ADJ_SHAPES, ids=lambda v: str(v))
 def test_adjoint_dot_matches_explicit_conjugate_transpose(nvis, npix):
-    # Bit-identity, not just closeness: this is the whole claim of the helper,
-    # and it kills the plausible wrong forms (dropping either conjugation, or
-    # conjugating the operator instead of the vectors).
+    # Exact value equality, not just closeness. Note this does NOT catch
+    # np.dot(vec, Amatrix.conj()), which is also exact but copies the operator;
+    # test_adjoint_dot_does_not_copy_the_operator is what rules that one out.
+    # np.array_equal is value equality, so -0.0 == 0.0: the final .conj() flips
+    # a +0.0 imaginary part to -0.0, which is inert but not byte-identical.
     A, vec = _adj_operator(nvis, npix)
     expected = np.dot(A.conj().T, vec)
     assert np.array_equal(obsh.adjoint_dot(A, vec), expected)
@@ -200,3 +211,63 @@ def test_ftmatrix_masked_build_does_not_allocate_the_full_stack():
     assert peak < FT_PEAK_FRACTION * result_mib, (
         f"ftmatrix peaked at {peak:.2f} MiB building a {result_mib:.2f} MiB "
         f"masked operator ({peak/result_mib:.2f}x)")
+
+
+def test_ftmatrix_preserves_the_memory_order_of_the_old_implementation():
+    # np.dot dispatches on layout, so a C-vs-F flip changes the BLAS reduction
+    # order and shifts every direct-path chi-squared and gradient at the 1e-15
+    # level. The old code returned C unmasked (reshape) and F masked (advanced
+    # column indexing); np.array_equal is blind to this, so it is pinned here.
+    uv = _uvlist(40)
+    unmasked = obsh.ftmatrix(FT_PSIZE, FT_XDIM, FT_YDIM, uv)
+    assert unmasked.flags["C_CONTIGUOUS"] and not unmasked.flags["F_CONTIGUOUS"]
+
+    rng = np.random.default_rng(11)
+    for mask in (np.ones(FT_XDIM * FT_YDIM, dtype=bool),          # the imager's call
+                 rng.random(FT_XDIM * FT_YDIM) > 0.4):
+        masked = obsh.ftmatrix(FT_PSIZE, FT_XDIM, FT_YDIM, uv, mask=mask)
+        assert masked.flags["F_CONTIGUOUS"] and not masked.flags["C_CONTIGUOUS"]
+        assert np.array_equal(
+            masked, _ftmatrix_reference(FT_PSIZE, FT_XDIM, FT_YDIM, uv, mask=mask))
+
+
+def test_ftmatrix_uses_the_pulse_it_is_given():
+    # Every caller passes pulse=Prior.pulse, but nothing exercised a non-default
+    # pulse, so ignoring the argument entirely used to pass the whole suite.
+    from ehtim.observing.pulses import deltaPulse2D
+    uv = _uvlist(40)
+    delta = obsh.ftmatrix(FT_PSIZE, FT_XDIM, FT_YDIM, uv, pulse=deltaPulse2D)
+    assert np.array_equal(
+        delta, _ftmatrix_reference(FT_PSIZE, FT_XDIM, FT_YDIM, uv, pulse=deltaPulse2D))
+    # and it must actually differ from the default, or the check above is empty
+    assert not np.array_equal(delta, obsh.ftmatrix(FT_PSIZE, FT_XDIM, FT_YDIM, uv))
+
+
+@pytest.mark.parametrize("mask_kind", ["bool", "int_index", "all_false", "unsorted_int"])
+def test_ftmatrix_matches_reference_across_mask_forms(mask_kind):
+    # The mask reaches ftmatrix straight from compute_embed as a bool array, but
+    # the signature has always accepted index arrays too, and an all-False mask
+    # is reachable from a prior that is zero everywhere.
+    npix = FT_XDIM * FT_YDIM
+    rng = np.random.default_rng(5)
+    mask = {"bool": rng.random(npix) > 0.4,
+            "int_index": np.array([0, 3, 7, npix - 1]),
+            "all_false": np.zeros(npix, dtype=bool),
+            "unsorted_int": np.array([npix - 1, 0, 5])}[mask_kind]
+    uv = _uvlist(30)
+    got = obsh.ftmatrix(FT_PSIZE, FT_XDIM, FT_YDIM, uv, mask=mask)
+    assert np.array_equal(
+        got, _ftmatrix_reference(FT_PSIZE, FT_XDIM, FT_YDIM, uv, mask=mask))
+
+
+def test_ftmatrix_handles_an_empty_uvlist():
+    # np.empty + fill-by-index returns uninitialized memory for any row the loop
+    # never writes, so the row count has to come from the array actually iterated.
+    out = obsh.ftmatrix(FT_PSIZE, FT_XDIM, FT_YDIM, np.zeros((0, 2)))
+    assert out.shape == (0, FT_XDIM * FT_YDIM)
+
+
+def test_ftmatrix_accepts_a_list_uvlist():
+    uv = _uvlist(12)
+    assert np.array_equal(obsh.ftmatrix(FT_PSIZE, FT_XDIM, FT_YDIM, [list(p) for p in uv]),
+                          obsh.ftmatrix(FT_PSIZE, FT_XDIM, FT_YDIM, uv))
