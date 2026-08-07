@@ -12,9 +12,9 @@ import pytest
 import ehtim as eh
 from ehtim.imaging.imager_backend import make_value_and_grad_jax
 
-# Only `jax` at module level: every GPU-requiring test below carries its own
-# @requires_2gpu skip, so a module-level `gpu` mark would only stop the
-# CPU-runnable tests here from ever being collected in CI.
+# `jax` at module level; `gpu` rides on requires_2gpu instead of the module, so the
+# CPU-runnable stacking tests below can be collected while `-m gpu` still selects
+# exactly the tests that need hardware.
 pytestmark = pytest.mark.jax
 
 jax = pytest.importorskip("jax")
@@ -24,7 +24,10 @@ try:
     _N_GPU = len(jax.devices("gpu"))
 except RuntimeError:
     _N_GPU = 0
-requires_2gpu = pytest.mark.skipif(_N_GPU < 2, reason="needs >= 2 GPUs")
+def requires_2gpu(fn):
+    """Mark a test as needing >= 2 GPUs: `gpu` for selection, skipif for safety."""
+    return pytest.mark.gpu(
+        pytest.mark.skipif(_N_GPU < 2, reason="needs >= 2 GPUs")(fn))
 
 VALUE_RTOL = 1e-9
 GRAD_RTOL = 1e-9
@@ -101,8 +104,14 @@ def test_sharded_make_image_recovers(obs_direct, gauss_im, gauss_prior):
     assert _nxcorr(out.imvec, gauss_im.imvec) > NXCORR_FLOOR
 
 
+# nchan=2 on a 2-device mesh pads to 2, i.e. NOT AT ALL, so it never exercises the
+# padding fill or the validity mask. nchan=3 pads to 4 and does. Without the padded
+# case, flipping the sigma fill from 1 to 0 turns the sharded objective into NaN with
+# the whole suite still green.
 @requires_2gpu
-def test_frequency_sharded_matches_single_and_numpy(eht_array, gauss_im):
+@pytest.mark.parametrize("freqs", [(220e9, 240e9), (220e9, 230e9, 240e9)],
+                         ids=["nchan2-unpadded", "nchan3-padded"])
+def test_frequency_sharded_matches_single_and_numpy(eht_array, gauss_im, freqs):
     # multifrequency: shard the channel axis (channel count padded to the mesh
     # size with a validity mask). Must match single-device + numpy bit-for-bit.
     from ehtim.imaging.sharding import build_mesh, make_sharded_value_and_grad
@@ -110,7 +119,7 @@ def test_frequency_sharded_matches_single_and_numpy(eht_array, gauss_im):
     prior = im.blur_circ(40 * eh.RADPERUAS)
     obslist = [im.get_image_mf(nu).observe(eht_array, 5, 600, 0, 24, 4e9, ampcal=True,
                                            phasecal=True, ttype="direct", add_th_noise=True, seed=42)
-               for nu in (220e9, 240e9)]
+               for nu in freqs]
     imgr = eh.imager.Imager(obslist, prior, prior_im=prior, flux=im.total_flux(),
                             data_term={"vis": 1}, reg_term={"simple": 1, "tv": 1},
                             ttype="direct", pol="I", mf=True, mf_order=1, maxit=100, epsilon_tv=EPSILON_TV)
@@ -174,53 +183,83 @@ def test_stack_channels_preserves_dtype_and_shape():
     assert np.asarray(got).dtype == np.complex128
 
 
-def test_stack_channels_allocates_less_than_the_host_stack():
-    """A/B against the pre-existing build, in one subprocess with 8 shards.
+@pytest.mark.parametrize("ndev,n_real,nf_pad", [(4, 4, 4), (4, 3, 4), (4, 6, 8), (2, 3, 4)])
+def test_stack_channels_matches_the_host_stack_across_a_real_mesh(ndev, n_real, nf_pad):
+    """Values over a genuinely partitioned mesh, not SingleDeviceSharding.
 
-    Measured as an A/B rather than an absolute bound because on the CPU backend
-    "device" memory is host memory, so tracemalloc cannot separate the staging
-    copy from the result. The naive build pays for both the np.zeros stack and
-    the device copy; this one pays for the result plus a single shard.
+    SingleDeviceSharding hands the callback the whole axis, so the shard loop
+    degenerates and index-arithmetic bugs (an i/j swap, an off-by-one in the
+    real-vs-padded test) cannot show up. Forcing CPU devices exercises the real
+    branch without needing a GPU.
     """
     import subprocess
     import sys
     import textwrap
-    code = textwrap.dedent("""
+    code = textwrap.dedent(f"""
         import os
-        os.environ["XLA_FLAGS"] = "--xla_force_host_platform_device_count=8"
-        import numpy as np, jax, jax.numpy as jnp, tracemalloc
+        os.environ["XLA_FLAGS"] = "--xla_force_host_platform_device_count={ndev}"
+        import numpy as np, jax
+        jax.config.update("jax_enable_x64", True)
         from jax.sharding import Mesh, NamedSharding, PartitionSpec as P
         from ehtim.imaging.sharding import stack_channels_on_device
-        NF, NVIS, NPIX = 8, 200, 2048
-        per = [np.ones((NVIS, NPIX), dtype=np.complex128) for _ in range(NF)]
-        full = NF * NVIS * NPIX * 16 / 2**20
-        mesh = Mesh(np.array(jax.devices("cpu")[:8]), ("shard",))
+        rng = np.random.default_rng(0)
+        per = [rng.standard_normal((3, 5)) + 1j*rng.standard_normal((3, 5))
+               for _ in range({n_real})]
+        mesh = Mesh(np.array(jax.devices("cpu")[:{ndev}]), ("shard",))
         sh = NamedSharding(mesh, P("shard", None, None))
-
-        def peak(fn):
-            tracemalloc.start(); tracemalloc.reset_peak()
-            fn().block_until_ready()
-            _, pk = tracemalloc.get_traced_memory(); tracemalloc.stop()
-            return pk / 2**20
-
-        def naive():
-            st = np.zeros((NF, NVIS, NPIX), dtype=np.complex128)
+        for fill in (0, 1):
+            got = np.asarray(stack_channels_on_device(per, {nf_pad}, sh, fill))
+            ref = np.full(({nf_pad}, 3, 5), fill, dtype=per[0].dtype)
             for i, a in enumerate(per):
-                st[i] = np.asarray(a)
-            return jax.device_put(jnp.asarray(st), sh)
-
-        p_new = peak(lambda: stack_channels_on_device(per, NF, sh, 0))
-        p_old = peak(naive)
-        print("RESULT", full, p_old, p_new, len(jax.devices("cpu")))
+                ref[i] = a
+            assert np.array_equal(got, ref), f"mismatch at fill={{fill}}"
+        print("RESULT ok", len(jax.devices("cpu")))
     """)
     r = subprocess.run([sys.executable, "-c", code], capture_output=True, text=True)
     line = [x for x in r.stdout.splitlines() if x.startswith("RESULT")]
-    assert line, f"subprocess failed:\n{r.stderr[-800:]}"
-    _, full, p_old, p_new, ndev = line[0].split()
-    full, p_old, p_new, ndev = float(full), float(p_old), float(p_new), int(ndev)
-    if ndev < 8:
-        pytest.skip(f"only {ndev} cpu devices; the per-shard saving is not observable")
-    assert p_new < 0.75 * p_old, (
-        f"{full:.1f} MiB stack across {ndev} shards: naive peaked at "
-        f"{p_old:.1f} MiB, this build at {p_new:.1f} MiB ({p_new/p_old:.2f}x) "
-        f"-- expected a clear saving")
+    assert line, f"subprocess failed:\n{r.stderr[-1200:]}"
+    assert int(line[0].split()[-1]) >= ndev
+
+
+@requires_2gpu
+def test_stack_channels_does_not_spike_one_device():
+    """The saving is on device, not host.
+
+    The previous build did jnp.asarray(padded_stack) before applying the
+    sharding, which lands the whole stack on the default device and then
+    reshards: device 0 peaks at several times its share, and the factor grows
+    with the device count. Host cost is unchanged either way, because jax
+    materializes every addressable shard before transferring -- an earlier
+    version of this test asserted a host saving and only passed because its
+    subprocess ran in complex64.
+    """
+    import jax.numpy as jnp
+    from jax.sharding import Mesh, NamedSharding
+    from jax.sharding import PartitionSpec as P
+
+    from ehtim.imaging.sharding import stack_channels_on_device
+    devs = jax.devices("gpu")[:2]
+    mesh = Mesh(np.array(devs), ("shard",))
+    sh = NamedSharding(mesh, P("shard", None, None))
+    n, nvis, npix = 4, 1500, 4096
+    per = [np.ones((nvis, npix), dtype=np.complex128) for _ in range(n)]
+    share = n * nvis * npix * 16 / len(devs)
+
+    def peak_after(build):
+        for d in devs:
+            d.memory_stats()  # touch before measuring
+        out = build()
+        out.block_until_ready()
+        pk = devs[0].memory_stats()["peak_bytes_in_use"]
+        del out
+        return pk
+
+    new = peak_after(lambda: stack_channels_on_device(per, n, sh, 0))
+    naive_stack = np.stack(per)
+    old = peak_after(lambda: jax.device_put(jnp.asarray(naive_stack), sh))
+    assert old > 1.5 * share, (
+        f"expected the naive build to overshoot device 0's {share/2**20:.0f} MiB "
+        f"share; got {old/2**20:.0f} MiB -- the premise no longer holds")
+    assert new < 0.7 * old, (
+        f"device 0 peak: naive {old/2**20:.0f} MiB, sharded build "
+        f"{new/2**20:.0f} MiB ({new/old:.2f}x)")

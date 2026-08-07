@@ -130,25 +130,52 @@ def test_survey_lbfgs_history_is_tunable(obs_direct, gauss_im, gauss_prior, monk
     assert seen["maxcor"] == 7
 
 
-def test_survey_lbfgs_history_reaches_optax_state(obs_direct, gauss_im, gauss_prior):
-    # Pins that maxcor actually sizes the optimizer state, not just that it is
-    # forwarded: a knob that is threaded but ignored would pass the spy tests.
-    optax = pytest.importorskip("optax")
+def test_survey_maxcor_sizes_the_optimizer_state():
+    # Goes through resolve_optax, which is where the optdict "maxcor" key is
+    # mapped onto optax's memory_size. Calling optax directly would not pin that
+    # mapping: hardcoding memory_size=50 inside resolve_optax passes such a test
+    # while making the knob inert.
+    pytest.importorskip("optax")
     import jax.numpy as jnp
 
+    from ehtim.imaging.optimizers import resolve_optax
+    from ehtim.imaging.survey_gpu import MAXLS
+
     def state_bytes(m):
-        st = optax.lbfgs(memory_size=m).init(jnp.zeros(4096, dtype=jnp.float64))
+        gt, _ = resolve_optax("optax-lbfgs-bt",
+                              {"maxiter": 1, "maxcor": m, "maxls": MAXLS})
+        st = gt.init(jnp.zeros(4096, dtype=jnp.float64))
         return sum(np.asarray(x).nbytes for x in jax.tree_util.tree_leaves(st))
 
+    # L-BFGS state is ~(2m+3) copies of the vector, so 50 must dominate 5.
     small, large = state_bytes(5), state_bytes(50)
     assert large > 4 * small, (
-        f"memory_size should dominate the state: 5 -> {small} B, 50 -> {large} B")
+        f"maxcor should size the state through resolve_optax: "
+        f"5 -> {small} B, 50 -> {large} B")
 
 
 def test_survey_smaller_history_still_reconstructs(obs_direct, gauss_im, gauss_prior):
+    # A shorter history converges more slowly, but must still reconstruct: an
+    # all-zero or noise result would pass a shape-and-finiteness check.
     from ehtim.imaging.survey_gpu import run_survey_gpu
-    imgs, objs, _, _ = run_survey_gpu(_imager(obs_direct, gauss_im, gauss_prior),
-                                      weight_grid={"tv": np.array([1.0, 10.0])},
-                                      maxit=15, maxcor=5)
+    imgs, objs, _, chis = run_survey_gpu(_imager(obs_direct, gauss_im, gauss_prior),
+                                         weight_grid={"tv": np.array([1.0, 10.0])},
+                                         maxit=60, maxcor=5)
     assert imgs.shape[0] == 2
     assert np.all(np.isfinite(imgs)) and np.all(np.isfinite(objs))
+    assert np.all(chis["vis"] > 0)
+    truth = gauss_im.imvec
+    for b in range(imgs.shape[0]):
+        a, t = imgs[b] - imgs[b].mean(), truth - truth.mean()
+        nx = float(np.sum(a * t) / np.sqrt(np.sum(a * a) * np.sum(t * t)))
+        assert nx > 0.8, f"grid point {b}: nxcorr {nx:.3f} against the source"
+
+
+@pytest.mark.parametrize("bad", [0, -1, 7.9, None])
+def test_survey_rejects_a_nonsense_maxcor(obs_direct, gauss_im, gauss_prior, bad):
+    # Without this these reach optax (or int()) only after run_survey_gpu has
+    # already rebuilt the prior and re-noised the observations for grid point 1.
+    from ehtim.imaging.survey_gpu import run_survey_gpu
+    with pytest.raises((ValueError, TypeError)):
+        run_survey_gpu(_imager(obs_direct, gauss_im, gauss_prior),
+                       weight_grid={"tv": np.array([1.0])}, maxit=3, maxcor=bad)

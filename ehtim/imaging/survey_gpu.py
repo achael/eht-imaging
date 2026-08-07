@@ -115,12 +115,17 @@ def run_survey_gpu(imgr, *, weight_grid=None, regparam_grid=None, prior_fwhm=Non
     x0, optimizer, device
         Shared start vector, optax optimizer name/GradientTransformation, jax device.
     maxcor : int, optional
-        L-BFGS history length (default `NHIST`). The optimizer state is roughly
+        L-BFGS history length (default `NHIST`). The optimizer state is exactly
         `2*maxcor+3` copies of the image vector and vmap replicates it per grid
-        point, so this is the term that decides whether a large grid fits: at
-        4096 pixels it is 3.22 MiB per point at the default 50, 25.75 GiB across
-        an 8192-point grid, against 5.75 GiB at 10. Lower it when the grid is
-        large; L-BFGS converges more slowly with a shorter history.
+        point, so it is the largest term that scales with the grid: at 4096
+        pixels that is 3.22 MiB per point at the default 50, or 25.75 GiB of
+        state across an 8192-point grid, against 5.75 GiB at 10. Measured device
+        peak moves by about two thirds of that arithmetic, since XLA reuses
+        buffers inside the jitted loop. Lower it when a grid will not fit;
+        L-BFGS converges more slowly with a shorter history (median chi^2 0.41
+        at 50 vs 0.60 at 10, 4096 px and 30 iterations), which is why the
+        default is unchanged. Ignored by the first-order optimizers (adam, sgd,
+        rmsprop) and by a GradientTransformation you construct yourself.
 
     Returns
     -------
@@ -133,6 +138,9 @@ def run_survey_gpu(imgr, *, weight_grid=None, regparam_grid=None, prior_fwhm=Non
     chisqs : dict
         {data_term: 1-D array of length B} reduced chi^2 of each reconstruction, per data term.
     """
+    if int(maxcor) < 1 or int(maxcor) != maxcor:
+        raise ValueError(f"maxcor must be a positive integer, got {maxcor!r}")
+
     weight_grid = weight_grid or {}
     regparam_grid = regparam_grid or {}
     fwhms = list(prior_fwhm) if prior_fwhm is not None else [None]
