@@ -84,3 +84,71 @@ def test_survey_sys_noise_outer_axis_and_restore(obs_direct, gauss_im, gauss_pri
                                             sys_noise=[0.0, 0.05], maxit=8)
     assert images.shape[0] == 2 and set(np.unique(rec["sys_noise"])) == {0.0, 0.05}
     assert imgr.prior_next is base_prior  # imager restored after the survey
+
+
+# ---------------------------------------------------------------------------
+# L-BFGS history size
+#
+# `optax.lbfgs(memory_size=m)` state is ~2m+3 copies of the image vector, and
+# _inner_survey vmaps the whole reconstruction, so the state is paid per batch
+# element. At the shipped memory_size=50 that is 3.22 MiB each (103x the 4096
+# pixel vector at float64): 3.22 GiB at B=1024 and 25.75 GiB at B=8192, the
+# Paper IV grid size this module models itself on. It was a module constant
+# with no way for a caller to change it.
+# ---------------------------------------------------------------------------
+
+
+def _spy_on_optdict(monkeypatch):
+    """Capture the option dict survey_gpu hands to resolve_optax."""
+    from ehtim.imaging import survey_gpu
+    seen = {}
+    real = survey_gpu.resolve_optax
+
+    def spy(optimizer, optdict):
+        seen.update(optdict)
+        return real(optimizer, optdict)
+
+    monkeypatch.setattr(survey_gpu, "resolve_optax", spy)
+    return seen
+
+
+def test_survey_lbfgs_history_defaults_to_the_module_constant(
+        obs_direct, gauss_im, gauss_prior, monkeypatch):
+    from ehtim.imaging.survey_gpu import NHIST, run_survey_gpu
+    seen = _spy_on_optdict(monkeypatch)
+    run_survey_gpu(_imager(obs_direct, gauss_im, gauss_prior),
+                   weight_grid={"tv": np.array([1.0])}, maxit=3)
+    assert seen["maxcor"] == NHIST
+
+
+def test_survey_lbfgs_history_is_tunable(obs_direct, gauss_im, gauss_prior, monkeypatch):
+    # The point of the knob: a large grid can trade convergence for memory.
+    from ehtim.imaging.survey_gpu import run_survey_gpu
+    seen = _spy_on_optdict(monkeypatch)
+    run_survey_gpu(_imager(obs_direct, gauss_im, gauss_prior),
+                   weight_grid={"tv": np.array([1.0])}, maxit=3, maxcor=7)
+    assert seen["maxcor"] == 7
+
+
+def test_survey_lbfgs_history_reaches_optax_state(obs_direct, gauss_im, gauss_prior):
+    # Pins that maxcor actually sizes the optimizer state, not just that it is
+    # forwarded: a knob that is threaded but ignored would pass the spy tests.
+    optax = pytest.importorskip("optax")
+    import jax.numpy as jnp
+
+    def state_bytes(m):
+        st = optax.lbfgs(memory_size=m).init(jnp.zeros(4096, dtype=jnp.float64))
+        return sum(np.asarray(x).nbytes for x in jax.tree_util.tree_leaves(st))
+
+    small, large = state_bytes(5), state_bytes(50)
+    assert large > 4 * small, (
+        f"memory_size should dominate the state: 5 -> {small} B, 50 -> {large} B")
+
+
+def test_survey_smaller_history_still_reconstructs(obs_direct, gauss_im, gauss_prior):
+    from ehtim.imaging.survey_gpu import run_survey_gpu
+    imgs, objs, _, _ = run_survey_gpu(_imager(obs_direct, gauss_im, gauss_prior),
+                                      weight_grid={"tv": np.array([1.0, 10.0])},
+                                      maxit=15, maxcor=5)
+    assert imgs.shape[0] == 2
+    assert np.all(np.isfinite(imgs)) and np.all(np.isfinite(objs))
