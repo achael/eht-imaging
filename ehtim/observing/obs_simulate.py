@@ -539,7 +539,7 @@ def make_jones(obs, opacitycal=True, ampcal=True, phasecal=True, dcal=True,
         raise NotImplementedError(
             "make_jones: frcal=True with dcal=False (field rotation corrected, "
             "leakage not) is only supported for circular feeds. For linear/mixed "
-            "feeds use dcal=True or frcal=False. See jones_mixedpol_plan.md.")
+            "feeds use dcal=True or frcal=False.")
 
     # Create a dictionary of taus and a list of unique times
     nsites = len(obs_tmp.tarr['site'])
@@ -912,7 +912,7 @@ def make_jones_inverse(obs, opacitycal=True, dcal=True, frcal=True):
         raise NotImplementedError(
             "make_jones_inverse: frcal=True with dcal=False (field rotation "
             "corrected, leakage not) is only supported for circular feeds. For "
-            "linear/mixed feeds use dcal=True or frcal=False. See jones_mixedpol_plan.md.")
+            "linear/mixed feeds use dcal=True or frcal=False.")
 
     # Create a dictionary of taus and a list of unique times
     nsites = len(obs.tarr['site'])
