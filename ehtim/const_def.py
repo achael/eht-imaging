@@ -30,9 +30,10 @@ from ehtim.observing.pulses import trianglePulse2D
 # here shows up as ehtim.<name> automatically via the star import in __init__.py.
 __all__ = [
     "BHIMAGE", "BOUNDS_ERROR", "C", "COLORLIST", "DEC_DEFAULT", "DEC_M87",
-    "DEC_SGRA", "DEGREE", "DTAMP", "DTARR", "DTBIS", "DTCAL", "DTCAMP",
-    "DTCPHASE", "DTCPHASEDIAG", "DTERMPDEF", "DTLOGCAMPDIAG", "DTPOL_CIRC",
-    "DTPOL_STOKES", "DTSCANS", "EHTIMAGE", "ELEV_HIGH", "ELEV_LOW", "EP",
+    "DEC_SGRA", "DEGREE", "DIRECT_MATRIX_WARN_GB", "DTAMP", "DTARR", "DTBIS",
+    "DTCAL", "DTCAMP", "DTCPHASE", "DTCPHASEDIAG", "DTERMPDEF",
+    "DTLOGCAMPDIAG", "DTPOL_CIRC", "DTPOL_STOKES", "DTSCANS", "EHTIMAGE",
+    "ELEV_HIGH", "ELEV_LOW", "EP",
     "FFT_INTERP_DEFAULT", "FFT_PAD_DEFAULT", "FIELD_LABELS", "FIELDS",
     "FIELDS_AMPS", "FIELDS_PHASE", "FIELDS_SIGPHASE", "FIELDS_SIGS",
     "FIELDS_SNRS", "FWHM_MAJ", "FWHM_MIN", "GAINPDEF",
@@ -95,6 +96,16 @@ FFT_INTERP_DEFAULT = 3
 # imaging (ALMA polarimetry, SKA-class arrays). Tighten to 1e-12 for ~1e6
 # dynamic range; relax to 1e-6 for fast low-SNR work.
 NFFT_EPS_DEFAULT = 1e-9
+
+# Total dense DFT operator per data term, in GB, above which the direct
+# transform warns. Sized as nvis x npix x 16 bytes and summed over the matrices
+# a term holds (one for vis/amp, three for closure phase, four for closure
+# amplitude): fine at EHT sizes, ~10 GB for one term at 128x128, and hopeless at
+# ALMA channel counts. Frequency-sharded runs force ttype 'direct', so without a
+# warning an oversized run is just an OOM kill. Assign to
+# ehtim.const_def.DIRECT_MATRIX_WARN_GB to change it; the ehtim.* name is a
+# separate binding made by the star import and setting it has no effect.
+DIRECT_MATRIX_WARN_GB = 1.0
 
 # Valid two-character feed_type strings for a single station (lowercase).
 VALID_FEED_TYPES = frozenset({
