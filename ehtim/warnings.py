@@ -46,3 +46,32 @@ class MixedPolUnpackNaNWarning(UserWarning):
     The warning reports, per field, how many rows were NaN-filled. It is
     deliberately verbose; suppress with the standard machinery if needed.
     """
+
+
+class FeedTagWarning(UserWarning):
+    """Emitted when the AIPS AN POLTYA/POLTYB feed tags of a uvfits file are
+    missing, incomplete, or not in canonical feed order.
+
+    Feed types are read per station from POLTYA (first feed) and POLTYB
+    (second feed). Three situations are reported:
+
+    * neither tag is present -- the feed basis is inferred from the STOKES
+      axis (CRVAL3) instead;
+    * one tag is present and the other is blank -- the partner feed is
+      completed from the known one (``R`` -> ``rl``, ``X`` -> ``xy``);
+    * the tags are in reversed order (``POLTYA='L'``, ``POLTYB='R'``) --
+      the pair is canonicalized to ``rl`` on read, and canonicalized (with
+      the four correlation slots permuted to match) on write, because the
+      uvfits STOKES axis labels its planes absolutely.
+    """
+
+
+class PolrepOverrideWarning(UserWarning):
+    """Emitted when a loader returns a different polrep than was requested.
+
+    A mixed-feed uvfits file can only be represented as ``polrep='mixed'``:
+    converting out of the mixed basis needs Jones-level D-terms and is not
+    available at the data layer. Requesting any other polrep for such a file
+    returns a mixed-basis Obsdata and raises this warning rather than
+    silently handing back something other than what was asked for.
+    """

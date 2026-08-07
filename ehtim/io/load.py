@@ -33,6 +33,7 @@ import ehtim.movie
 import ehtim.obsdata
 import ehtim.observing
 import ehtim.vex
+import ehtim.warnings as ehw
 
 warnings.filterwarnings("ignore", message="Mean of empty slice")
 warnings.filterwarnings("ignore", message="invalid value encountered in true_divide")
@@ -1143,23 +1144,91 @@ def load_obs_uvfits(filename, polrep='stokes', flipbl=False,
         poltyb = hdulist['AIPS AN'].data['POLTYB']
     except KeyError:
         pass
-    if poltya is None and poltyb is None:
-        print(f"Warning: no POLTYA/POLTYB in AIPS AN table; assuming {default_feed!r} "
-              f"feeds inferred from CRVAL3={stokes_crval3}")
+    columns_absent = poltya is None and poltyb is None
+    if columns_absent:
+        warnings.warn(
+            f"no POLTYA/POLTYB columns in the AIPS AN table; inferring "
+            f"{default_feed!r} feeds from CRVAL3={stokes_crval3}.",
+            ehw.FeedTagWarning)
 
-    feed_types = []
+    # 1. Parse each station's raw feed_type from its POLTY tags. Blanks are
+    #    errors (a possibly-mixed file must not have a feed basis assumed);
+    #    absent columns fall back to the CRVAL3-inferred default.
+    raw_feeds = []
     for i in range(len(tnames)):
         a = _feedchar(poltya, i)
         b = _feedchar(poltyb, i)
+        station = str(tnames[i])
+        if a == '' and b == '':
+            if columns_absent:
+                # No POLTY columns at all: fall back to the CRVAL3-inferred feed.
+                raw_feeds.append(default_feed)
+                continue
+            # Columns exist but this station's tags are blank. A feed basis
+            # cannot be assumed for a possibly-mixed file -- silently defaulting
+            # to circular is exactly wrong for a mixed-pol observation -- so
+            # fail loudly rather than guess.
+            raise Exception(
+                f"station {station!r} has empty POLTYA and POLTYB feed tags; "
+                f"its feed basis cannot be determined. Populate the AIPS AN "
+                f"POLTYA/POLTYB columns, or remove them entirely to fall back "
+                f"to the CRVAL3-inferred default.")
+        if a == '' or b == '':
+            # Exactly one feed tag present. Do not complete the pair from the
+            # known feed (that would silently assume, e.g., 'R' -> 'rl').
+            raise Exception(
+                f"station {station!r} has an incomplete feed tag "
+                f"(POLTYA={a!r}, POLTYB={b!r}); exactly one feed is blank. "
+                f"Provide both feed characters (e.g. POLTYA='R', POLTYB='L') "
+                f"or omit both columns.")
         ft = (a + b).lower()
-        if ft == '':
-            ft = default_feed   # no POLTY tags recorded; inferred from CRVAL3
-        elif ft not in ehc.VALID_FEED_TYPES:
+        if ft not in ehc.VALID_FEED_TYPES:
             raise NotImplementedError(
                 f"unsupported feed pair POLTYA={a!r}/POLTYB={b!r} for station "
-                f"{str(tnames[i])!r}; valid feed types are "
-                f"{sorted(ehc.VALID_FEED_TYPES)}. See obsdata_mixedpol_plan.md.")
-        feed_types.append(ft)
+                f"{station!r}; valid feed types are "
+                f"{sorted(ehc.VALID_FEED_TYPES)}.")
+        raw_feeds.append(ft)
+
+    # 2. Reject hybrid feeds -- a single station mixing a circular and a linear
+    #    feed (e.g. POLTYA='R'/POLTYB='X' -> 'rx'). Their convention is undecided
+    #    across the stack (pol_conventions.field_rotation_matrix raises on them),
+    #    so fail here rather than load data the rest of the pipeline cannot read.
+    hybrid_stations = sorted({
+        f"{str(tnames[i])}={raw_feeds[i]!r}"
+        for i in range(len(tnames))
+        if (raw_feeds[i][0] in 'rl') != (raw_feeds[i][1] in 'rl')})
+    if hybrid_stations:
+        raise NotImplementedError(
+            "hybrid feeds (a station with one circular and one linear feed, "
+            "e.g. POLTYA='R'/POLTYB='X') are not yet supported by the uvfits "
+            f"loader: {hybrid_stations}.")
+
+    # 3. Canonicalize feed order ONLY when the file's feed basis is homogeneous.
+    #    The uvfits STOKES axis labels its four correlation planes absolutely, so
+    #    for an all-circular or all-linear file a station whose POLTY tags are in
+    #    reversed order ('lr') describes the same physical feeds as canonical
+    #    'rl' and its planes are read identically -- canonicalize so reversed
+    #    tags are not misclassified as a distinct (mixed) basis. For a genuinely
+    #    MIXED file the STOKES axis is only nominal and each baseline's four
+    #    correlation slots are written in feed order, so per-station order is
+    #    meaningful and is preserved as-is (canonicalizing without permuting the
+    #    slots would silently mislabel correlations).
+    canon = [ehc.canonical_feed_type(ft) for ft in raw_feeds]
+    canon_set = {c[0] for c in canon}
+    if canon_set <= {'rl'} or canon_set <= {'xy'}:
+        feed_types = [c[0] for c in canon]
+        n_reversed = sum(c[1] for c in canon)
+        if n_reversed:
+            warnings.warn(
+                f"{n_reversed} station(s) had POLTYA/POLTYB feed tags in "
+                f"reversed order (e.g. POLTYA='L', POLTYB='R'); canonicalized "
+                f"to standard feed order. The uvfits STOKES axis fixes the "
+                f"correlation-plane meanings, so reversed tags would otherwise "
+                f"misclassify a homogeneous file as mixed.",
+                ehw.FeedTagWarning)
+    else:
+        # Genuinely mixed feed basis: preserve the recorded per-station order.
+        feed_types = raw_feeds
 
     tarr = [np.array((
             str(tnames[i]), xyz[i][0], xyz[i][1], xyz[i][2],
@@ -1233,7 +1302,6 @@ def load_obs_uvfits(filename, polrep='stokes', flipbl=False,
                 raise Exception("header[CRVAL3] not a recognized polarization basis!")
     except BaseException:
         raise Exception("STOKES field not in expected header position 'CTYPE3'!")
-    print('POLREP_UVFITS:', polrep_uvfits)
 
     if polrep_uvfits == 'stokes' and force_singlepol is not None:
         raise Exception("force_singlepole not implemented on native Stokes uvfits files!")
@@ -1274,7 +1342,7 @@ def load_obs_uvfits(filename, polrep='stokes', flipbl=False,
     # force_singlepol selects a single circular hand (R/L) and is only defined
     # for circular-feed data. The enforcement block below is gated on 'circ', so
     # on a linear/mixed file the request would otherwise be silently dropped.
-    # X/Y single-pol selection is deferred to Phase 4.
+    # X/Y single-pol selection is not yet implemented.
     if (not (force_singlepol is None or force_singlepol is False)
             and polrep_uvfits != 'circ'):
         raise NotImplementedError(
@@ -1342,11 +1410,11 @@ def load_obs_uvfits(filename, polrep='stokes', flipbl=False,
 
     # If necessary, enforce single polarization
     if polrep_uvfits == 'circ':
-        if force_singlepol in ['L' or 'LL']:
+        if force_singlepol in ('L', 'LL'):
             rrweight = rrweight * 0.0
             rlweight = rlweight * 0.0
             lrweight = lrweight * 0.0
-        elif force_singlepol in ['R' or 'RR']:
+        elif force_singlepol in ('R', 'RR'):
             llweight = llweight * 0.0
             rlweight = rlweight * 0.0
             lrweight = lrweight * 0.0
@@ -1651,8 +1719,10 @@ def load_obs_uvfits(filename, polrep='stokes', flipbl=False,
     # cannot be synthesized from a homogeneous-feed file.
     if polrep_uvfits == 'mixed':
         if polrep != 'mixed':
-            print(f"Warning: mixed-feed uvfits loads only as polrep='mixed' "
-                  f"(requested {polrep!r}); returning a mixed-basis Obsdata.")
+            warnings.warn(
+                f"mixed-feed uvfits loads only as polrep='mixed' "
+                f"(requested {polrep!r}); returning a mixed-basis Obsdata.",
+                ehw.PolrepOverrideWarning)
     elif polrep == 'mixed':
         raise Exception("polrep='mixed' was requested but the uvfits array has "
                         "homogeneous feeds; load as 'stokes', 'circ', or 'lin'.")
