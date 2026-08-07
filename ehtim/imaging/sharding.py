@@ -62,6 +62,52 @@ def _pad_rows(arr, pad, fill=0.0):
     return np.pad(np.asarray(arr), width, constant_values=fill)
 
 
+def stack_channels_on_device(per_channel, nf_pad, sharding, fill):
+    """Stack per-channel arrays onto the channel axis without staging them on host.
+
+    Use this instead of building the stack with ``np.zeros((nf_pad, ...))`` and
+    then ``device_put``: that holds a second full copy of the operator stack on
+    the host while the per-channel originals are still alive on the Imager, and
+    the padded stack is larger than the real data. Measured on 5 channels padded
+    to 8, 500 visibilities and 4096 pixels: 156 MiB of real operators became 250
+    MiB of host staging plus 250 MiB on device, 4.2x. Building shard by shard
+    materializes only the channels one device needs.
+
+    Padded channels (index >= len(per_channel)) are filled with `fill`; the
+    caller's validity mask zeroes their contribution.
+
+    Parameters
+    ----------
+    per_channel : sequence of np.ndarray
+        One array per real channel, all the same shape.
+    nf_pad : int
+        Padded channel count, a multiple of the mesh size.
+    sharding : jax.sharding.Sharding
+        Sharding for the (nf_pad, *tail) result, channel axis first.
+    fill : scalar
+        Value for padded channels (0 for data and operators, 1 for sigma).
+
+    Returns
+    -------
+    jax.Array
+        Sharded array of shape (nf_pad, *per_channel[0].shape).
+    """
+    import jax
+
+    first = np.asarray(per_channel[0])
+    tail, dtype, n_real = first.shape, first.dtype, len(per_channel)
+
+    def shard(index):
+        chans = range(*index[0].indices(nf_pad))
+        out = np.full((len(chans),) + tail, fill, dtype=dtype)
+        for j, i in enumerate(chans):
+            if i < n_real:
+                out[j] = np.asarray(per_channel[i])
+        return out[(slice(None),) + tuple(index[1:])]
+
+    return jax.make_array_from_callback((nf_pad,) + tail, sharding, shard)
+
+
 class _NFFTView:
     """A stand-in for NFFTInfo carrying just the fields the sharded jax path reads.
 
@@ -278,16 +324,10 @@ def make_sharded_value_and_grad(initvec, config, which_solve, data_tuples,
             if any(np.asarray(d).shape[0] != nvis for d, _, _ in per):
                 raise NotImplementedError("frequency sharding assumes equal Nvis per channel")
             npix = np.asarray(A0).shape[1]
-            data_st = np.zeros((nf_pad, nvis), dtype=np.asarray(per[0][0]).dtype)
-            sigma_st = np.ones((nf_pad, nvis), dtype=np.asarray(per[0][1]).dtype)
-            A_st = np.zeros((nf_pad, nvis, npix), dtype=np.asarray(A0).dtype)
-            for i, (d, s, A) in enumerate(per):
-                data_st[i] = np.asarray(d)
-                sigma_st[i] = np.asarray(s)
-                A_st[i] = np.asarray(A)
-            stacks[dname] = (jax.device_put(jnp.asarray(data_st), ch2d),
-                             jax.device_put(jnp.asarray(sigma_st), ch2d),
-                             jax.device_put(jnp.asarray(A_st), ch3d))
+            stacks[dname] = (
+                stack_channels_on_device([d for d, _, _ in per], nf_pad, ch2d, 0),
+                stack_channels_on_device([s for _, s, _ in per], nf_pad, ch2d, 1),
+                stack_channels_on_device([A for _, _, A in per], nf_pad, ch3d, 0))
         aux = {"init": init_d, "prior": prior_d, "stacks": stacks,
                "valid": jax.device_put(jnp.asarray(valid), ch),
                "logfreq": jax.device_put(jnp.asarray(logfreq), ch)}
