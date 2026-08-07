@@ -102,7 +102,11 @@ def stack_channels_on_device(per_channel, nf_pad, sharding, fill):
         Value for padded channels. The frequency path uses 0 for data and
         operators and 1 for sigma; the baseline path uses a different convention
         (see the padding note at the top of this file), so this is the caller's
-        choice, not a property of the term.
+        choice, not a property of the term. Only the sigma fill actually
+        matters: the validity mask zeroes a padded channel's contribution, so
+        any data or operator value gives bit-identical results, but sigma
+        reaches a 1/sigma**2 first and a zero there makes the whole objective
+        NaN before the mask can apply.
 
     Returns
     -------

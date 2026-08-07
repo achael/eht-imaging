@@ -130,7 +130,8 @@ def test_survey_lbfgs_history_is_tunable(obs_direct, gauss_im, gauss_prior, monk
     assert seen["maxcor"] == 7
 
 
-def test_survey_maxcor_sizes_the_optimizer_state():
+@pytest.mark.parametrize("name", ["optax-lbfgs", "optax-lbfgs-bt"])
+def test_survey_maxcor_sizes_the_optimizer_state(name):
     # Goes through resolve_optax, which is where the optdict "maxcor" key is
     # mapped onto optax's memory_size. Calling optax directly would not pin that
     # mapping: hardcoding memory_size=50 inside resolve_optax passes such a test
@@ -142,8 +143,7 @@ def test_survey_maxcor_sizes_the_optimizer_state():
     from ehtim.imaging.survey_gpu import MAXLS
 
     def state_bytes(m):
-        gt, _ = resolve_optax("optax-lbfgs-bt",
-                              {"maxiter": 1, "maxcor": m, "maxls": MAXLS})
+        gt, _ = resolve_optax(name, {"maxiter": 1, "maxcor": m, "maxls": MAXLS})
         st = gt.init(jnp.zeros(4096, dtype=jnp.float64))
         return sum(np.asarray(x).nbytes for x in jax.tree_util.tree_leaves(st))
 
