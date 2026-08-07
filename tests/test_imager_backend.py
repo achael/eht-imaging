@@ -20,6 +20,7 @@ from ehtim.imaging.imager_backend import (
     MfConfig,
     RegParams,
     _pol_solve_block,
+    _warn_if_operator_oversized,
     compute_chisq_dict,
     compute_chisq_term,
     compute_chisqdata_term,
@@ -3832,6 +3833,27 @@ class TestDirectMatrixSizeWarning:
         got, _ = _chisqdata_warnings(obs_direct, gauss_prior, "vis",
                                      _direct_config(make_test_config))
         assert got == []
+
+    def test_default_threshold_sits_between_half_a_gigabyte_and_two(self):
+        # Pins the shipped default in BOTH directions. The sizes are absolute
+        # and deliberately NOT derived from DIRECT_MATRIX_WARN_GB, or the test
+        # moves with the constant and pins nothing. A term at 0.5 GB is an
+        # ordinary EHT-scale run and must stay quiet; 2 GB is heading for an
+        # OOM and must not. No gigabyte is allocated: the guard reads .nbytes.
+        class _Stub:
+            def __init__(self, nbytes):
+                self.nbytes = nbytes
+
+        for total_gb, expected in [(0.5, 0), (2.0, 1)]:
+            half = int(total_gb * 1e9 / 2)
+            with warnings.catch_warnings(record=True) as rec:
+                warnings.simplefilter("always")
+                _warn_if_operator_oversized((_Stub(half), _Stub(half)), "cphase")
+            got = [w for w in rec
+                   if issubclass(w.category, ehw.DirectMatrixSizeWarning)]
+            assert len(got) == expected, (
+                f"{total_gb} GB term raised {len(got)} warnings at the default "
+                f"threshold of {ehc.DIRECT_MATRIX_WARN_GB} GB")
 
     def test_warns_when_the_term_total_exceeds_the_threshold(
             self, obs_direct, gauss_prior, make_test_config, monkeypatch):
