@@ -8,6 +8,7 @@ import zlib
 import numpy as np
 import pytest
 
+import ehtim.const_def as ehc
 from ehtim.observing import obs_helpers as obsh
 
 # ---------------------------------------------------------------------------
@@ -117,3 +118,85 @@ def test_adjoint_dot_does_not_copy_the_operator():
     assert peak < ADJ_PEAK_FRACTION * op_mib, (
         f"adjoint_dot peaked at {peak:.2f} MiB against a {op_mib:.2f} MiB "
         f"operator ({peak/op_mib:.2f}x)")
+
+
+# ---------------------------------------------------------------------------
+# ftmatrix build cost
+#
+# The operator was assembled as a Python list of nvis separate (ydim, xdim)
+# arrays and then copied into one contiguous block by np.array() while the list
+# was still alive, so building it peaked at twice the array it returns. With a
+# mask it was worse: the full unmasked stack was built and then sliced down.
+# ---------------------------------------------------------------------------
+
+# Post-fix the peak is the returned array plus a single (npix,) row; pre-fix it
+# is 2.00x measured. 1.35x separates them with room for the row and scratch.
+FT_PEAK_FRACTION = 1.35
+
+
+def _ftmatrix_reference(pdim, xdim, ydim, uvlist, pulse=ehc.PULSE_DEFAULT, mask=[]):
+    """The list-then-copy implementation, kept here as the value reference.
+
+    Spelled out rather than imported so the test pins the actual arithmetic
+    (sign convention, outer-product axis order, row ordering) and not just
+    whatever ftmatrix currently happens to do.
+    """
+    xlist = np.arange(0, -xdim, -1)*pdim + (pdim*xdim)/2.0 - pdim/2.0
+    ylist = np.arange(0, -ydim, -1)*pdim + (pdim*ydim)/2.0 - pdim/2.0
+    mats = [pulse(2*np.pi*uv[0], 2*np.pi*uv[1], pdim, dom="F") *
+            np.outer(np.exp(2j*np.pi*ylist*uv[1]), np.exp(2j*np.pi*xlist*uv[0]))
+            for uv in uvlist]
+    out = np.reshape(np.array(mats), (len(uvlist), xdim*ydim))
+    if len(mask):
+        out = out[:, mask]
+    return out
+
+
+def _uvlist(nvis, seed=3):
+    rng = np.random.default_rng(seed)
+    return rng.standard_normal((nvis, 2)) * 1e9
+
+
+# xdim != ydim throughout: a square grid hides axis-order mistakes.
+FT_XDIM, FT_YDIM = 16, 24
+FT_PSIZE = 200 * 4.848136811133344e-12 / FT_XDIM   # 200 uas FOV in radians
+
+
+def test_ftmatrix_matches_reference_unmasked():
+    uv = _uvlist(40)
+    got = obsh.ftmatrix(FT_PSIZE, FT_XDIM, FT_YDIM, uv)
+    assert np.array_equal(got, _ftmatrix_reference(FT_PSIZE, FT_XDIM, FT_YDIM, uv))
+
+
+def test_ftmatrix_matches_reference_masked():
+    # A partial mask is the interesting case: it is what the imager actually
+    # passes, and it is where a preallocating rewrite is easiest to get wrong.
+    uv = _uvlist(40)
+    rng = np.random.default_rng(11)
+    mask = rng.random(FT_XDIM * FT_YDIM) > 0.4
+    got = obsh.ftmatrix(FT_PSIZE, FT_XDIM, FT_YDIM, uv, mask=mask)
+    expected = _ftmatrix_reference(FT_PSIZE, FT_XDIM, FT_YDIM, uv, mask=mask)
+    assert got.shape == (len(uv), int(mask.sum()))
+    assert np.array_equal(got, expected)
+
+
+def test_ftmatrix_build_peak_stays_near_its_result():
+    uv = _uvlist(800)
+    peak = _peak_mib(lambda: obsh.ftmatrix(FT_PSIZE, 32, 32, uv))
+    result_mib = len(uv) * 32 * 32 * 16 / 2**20
+    assert peak < FT_PEAK_FRACTION * result_mib, (
+        f"ftmatrix peaked at {peak:.2f} MiB building a {result_mib:.2f} MiB "
+        f"operator ({peak/result_mib:.2f}x)")
+
+
+def test_ftmatrix_masked_build_does_not_allocate_the_full_stack():
+    # With a mask the returned array is much smaller than the full grid, and
+    # the build should never materialize the full one.
+    uv = _uvlist(800)
+    rng = np.random.default_rng(7)
+    mask = rng.random(32 * 32) > 0.75          # keep roughly a quarter
+    peak = _peak_mib(lambda: obsh.ftmatrix(FT_PSIZE, 32, 32, uv, mask=mask))
+    result_mib = len(uv) * int(mask.sum()) * 16 / 2**20
+    assert peak < FT_PEAK_FRACTION * result_mib, (
+        f"ftmatrix peaked at {peak:.2f} MiB building a {result_mib:.2f} MiB "
+        f"masked operator ({peak/result_mib:.2f}x)")
