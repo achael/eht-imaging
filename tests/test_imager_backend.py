@@ -4,11 +4,14 @@ Each test verifies that a backend function produces identical output
 to the corresponding Imager class method.
 """
 
+import warnings
+
 import numpy as np
 import pytest
 
 import ehtim as eh
 import ehtim.const_def as ehc
+import ehtim.warnings as ehw
 from ehtim.imaging.imager_backend import (
     DataWeighting,
     FourierGridParams,
@@ -3787,3 +3790,104 @@ class TestComputeRegularizerTerm:
         with pytest.raises(Exception, match="not recognized"):
             compute_regularizer_term(imvec, 'not_a_regularizer', mask)
 
+
+
+# ---------------------------------------------------------------------------
+# Direct-transform operator size guard
+#
+# The direct path holds a dense (nvis, npix) complex operator per data term,
+# and closure terms hold three or four at once. The threshold is on that
+# per-term total, checked in compute_chisqdata_term because it is the single
+# place every direct term passes through and the only one that sees the whole
+# set. Nothing warned before, so an oversized run was just an OOM kill.
+# ---------------------------------------------------------------------------
+
+
+def _direct_config(make_test_config):
+    return make_test_config(pol="I", mf=False)._replace(ttype="direct")
+
+
+def _chisqdata_warnings(obs, prior, dtype, config):
+    """Collect size warnings raised while building one direct data term.
+
+    catch_warnings(record=True) with "always" rather than simplefilter("error"):
+    a raising filter is subject to Python's per-location dedup, so it fires only
+    for whichever call reaches a given line first.
+    """
+    mask = np.ones(prior.xdim * prior.ydim, dtype=bool)
+    with warnings.catch_warnings(record=True) as rec:
+        warnings.simplefilter("always")
+        out = compute_chisqdata_term(obs, prior, mask, dtype, config)
+    return [w for w in rec
+            if issubclass(w.category, ehw.DirectMatrixSizeWarning)], out
+
+
+class TestDirectMatrixSizeWarning:
+    """The guard fires on the per-term total, once, and only on direct."""
+
+    def test_silent_at_the_shipped_default(self, obs_direct, gauss_prior,
+                                           make_test_config):
+        # An ordinary EHT-scale run must not warn at the untouched default,
+        # or the guard is noise. This pins the default in one direction.
+        got, _ = _chisqdata_warnings(obs_direct, gauss_prior, "vis",
+                                     _direct_config(make_test_config))
+        assert got == []
+
+    def test_warns_when_the_term_total_exceeds_the_threshold(
+            self, obs_direct, gauss_prior, make_test_config, monkeypatch):
+        # Threshold set just under what this term actually allocates.
+        cfg = _direct_config(make_test_config)
+        _, out = _chisqdata_warnings(obs_direct, gauss_prior, "vis", cfg)
+        nbytes = out[2].nbytes
+        monkeypatch.setattr(ehc, "DIRECT_MATRIX_WARN_GB", 0.5 * nbytes / 1e9)
+        got, _ = _chisqdata_warnings(obs_direct, gauss_prior, "vis", cfg)
+        assert len(got) == 1
+        assert f"{nbytes/1e9:.2f} GB" in str(got[0].message)
+        assert "nfft" in str(got[0].message)
+
+    def test_threshold_is_the_term_total_not_a_single_matrix(
+            self, obs_direct, gauss_prior, make_test_config, monkeypatch):
+        # cphase holds three operators. A threshold between one matrix and the
+        # sum must warn: checking matrices individually would stay silent, which
+        # is exactly how the first version of this guard missed real runs.
+        cfg = _direct_config(make_test_config)
+        _, out = _chisqdata_warnings(obs_direct, gauss_prior, "cphase", cfg)
+        mats = out[2]
+        assert len(mats) == 3, "cphase should build three operators"
+        one, total = mats[0].nbytes, sum(m.nbytes for m in mats)
+        assert one < total
+        monkeypatch.setattr(ehc, "DIRECT_MATRIX_WARN_GB",
+                            0.5 * (one + total) / 1e9)
+        got, _ = _chisqdata_warnings(obs_direct, gauss_prior, "cphase", cfg)
+        assert len(got) == 1, "guard is measuring a single matrix, not the term"
+
+    def test_warns_once_per_term_not_once_per_matrix(
+            self, obs_direct, gauss_prior, make_test_config, monkeypatch):
+        monkeypatch.setattr(ehc, "DIRECT_MATRIX_WARN_GB", 1e-9)
+        for dtype in ("vis", "cphase", "logcamp"):
+            got, _ = _chisqdata_warnings(obs_direct, gauss_prior, dtype,
+                                         _direct_config(make_test_config))
+            assert len(got) == 1, f"{dtype} raised {len(got)} warnings"
+
+    @pytest.mark.parametrize("ttype", ["fast", "nfft"])
+    def test_silent_on_the_gridded_transforms(self, obs_direct, gauss_prior,
+                                              make_test_config, monkeypatch,
+                                              ttype):
+        # fast/nfft never build the dense operator, so the guard must not fire
+        # there however low the threshold goes.
+        monkeypatch.setattr(ehc, "DIRECT_MATRIX_WARN_GB", 1e-12)
+        cfg = make_test_config(pol="I", mf=False)._replace(ttype=ttype)
+        got, _ = _chisqdata_warnings(obs_direct, gauss_prior, "vis", cfg)
+        assert got == []
+
+    def test_documented_knob_actually_changes_the_threshold(
+            self, obs_direct, gauss_prior, make_test_config, monkeypatch):
+        # The docstring points at ehtim.const_def.DIRECT_MATRIX_WARN_GB, not
+        # ehtim.DIRECT_MATRIX_WARN_GB: the star import in ehtim/__init__.py
+        # makes the latter a separate binding that the guard never reads.
+        # Setting the documented name must silence a warning that fires.
+        cfg = _direct_config(make_test_config)
+        monkeypatch.setattr(ehc, "DIRECT_MATRIX_WARN_GB", 1e-9)
+        assert len(_chisqdata_warnings(obs_direct, gauss_prior, "vis", cfg)[0]) == 1
+        monkeypatch.setattr(ehc, "DIRECT_MATRIX_WARN_GB", 1e6)
+        assert _chisqdata_warnings(obs_direct, gauss_prior, "vis", cfg)[0] == []
