@@ -1442,15 +1442,21 @@ def ftmatrix(pdim, xdim, ydim, uvlist, pulse=ehc.PULSE_DEFAULT, mask=[]):
     # and then copying with np.array() holds two full operators at once, and
     # when a mask is given it builds the whole unmasked stack only to slice most
     # of it away.
+    #
+    # The memory order deliberately matches what the old code happened to
+    # produce: C from the unmasked reshape, F from the masked column indexing.
+    # np.dot dispatches on layout, so preserving it keeps direct-path
+    # chi-squared and gradients byte-for-byte unchanged.
+    uvlist = np.asarray(uvlist)
     npix = xdim*ydim
     if len(mask):
         cols = np.arange(npix)[mask]
-        ncol = len(cols)
+        ncol, order = len(cols), 'F'
     else:
         cols = slice(None)
-        ncol = npix
+        ncol, order = npix, 'C'
 
-    ftmatrices = np.empty((len(uvlist), ncol), dtype=np.complex128)
+    ftmatrices = np.empty((len(uvlist), ncol), dtype=np.complex128, order=order)
     for k, uv in enumerate(uvlist):
         row = (pulse(2*np.pi*uv[0], 2*np.pi*uv[1], pdim, dom="F") *
                np.outer(np.exp(2j*np.pi*ylist*uv[1]), np.exp(2j*np.pi*xlist*uv[0])))
