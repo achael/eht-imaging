@@ -106,7 +106,7 @@ VALID_FEED_TYPES = frozenset({
 # Observation recarray datatypes
 # DTARR uses generic names primary because it is a single shared dtype across
 # all stations; legacy names are title aliases. Per-Obsdata/Caltable dtypes
-# (DTPOL_*, DTCAL_*) invert this — physical names primary, generic alias.
+# (DTPOL_*, DTCAL_*) invert this: physical names primary, generic alias.
 DTARR = [('site', 'U32'), ('x', 'f8'), ('y', 'f8'), ('z', 'f8'),
          (('sefdr', 'sefd_p1'), 'f8'), (('sefdl', 'sefd_p2'), 'f8'),
          (('dr', 'd_p1'), 'c16'), (('dl', 'd_p2'), 'c16'),

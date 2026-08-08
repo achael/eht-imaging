@@ -86,7 +86,7 @@ class TarrView:
     fly by Array.tarr's property getter and adds no persisted state.
 
     Note: this guard catches whole-column access (tarr['sefdr']). It does
-    not catch row-form access (tarr[i]['sefdr']) — the row is a numpy
+    not catch row-form access (tarr[i]['sefdr']): the row is a numpy
     void object owned by numpy. New code should prefer
     Array.sefd_for_feed / Array.dterm_for_feed for per-station lookups.
     """
@@ -513,7 +513,7 @@ class Array:
 
         """Add a ground station to the array
 
-           Pass either the legacy symmetric kwargs (`sefd`, `dr`, `dl` — only
+           Pass either the legacy symmetric kwargs (`sefd`, `dr`, `dl`, only
            valid for feed_type='rl') OR the generic per-feed kwargs
            (`sefd_p1`/`sefd_p2`, `d_p1`/`d_p2`). Mixing legacy and generic
            kwargs for the same field raises ValueError.
