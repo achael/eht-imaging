@@ -46,3 +46,28 @@ class MixedPolUnpackNaNWarning(UserWarning):
     The warning reports, per field, how many rows were NaN-filled. It is
     deliberately verbose; suppress with the standard machinery if needed.
     """
+
+
+class ShardedLineSearchWarning(UserWarning):
+    """Emitted when a multi-GPU sharded run uses the zoom line search.
+
+    Sharded nfft objectives execute the jax-finufft FFI, which creates cuFFT
+    plans per invocation; on some driver/hardware pairings (observed on sm_120
+    Blackwell) plan creation can enter an unbounded CUDA driver spin inside
+    ``cuModuleLoadData`` -- a native-stack-verified livelock (100% of one core,
+    58 minutes without completing), not an ehtim or XLA defect. Triggering is
+    probabilistic per plan creation, so a run's hang probability scales with
+    how many times the objective is evaluated.
+
+    ``optax-lbfgs`` (zoom line search) evaluates many more times per step than
+    ``optax-lbfgs-bt`` (backtracking): measured on 2 GPUs, a three-term nfft
+    objective hung 14/16 runs under zoom against 2/16 under backtracking, at
+    every line-search cap tried (5/10/20/40), and a single closure term hung
+    5/5 under zoom against 0/5 under backtracking. Backtracking is therefore
+    the recommended optimizer for ``shard=True`` -- an exposure reduction, not
+    a guarantee, since the livelock lives in the driver. Suppressible:
+
+        warnings.filterwarnings(
+            'ignore', category=ehtim.warnings.ShardedLineSearchWarning
+        )
+    """
