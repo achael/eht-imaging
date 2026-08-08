@@ -96,7 +96,12 @@ def test_baseline_sharded_matches(obs_direct, gauss_im, gauss_prior, ttype, data
 @requires_2gpu
 @pytest.mark.slow
 def test_sharded_make_image_recovers(obs_direct, gauss_im, gauss_prior):
-    out = _build_imager(obs_direct, gauss_im, gauss_prior).make_image(shard=True, show_updates=False)
+    # shard=True requires an optax optimizer; without one this raised before it ever
+    # reached build_mesh, so this test had never actually run a sharded reconstruction.
+    # optax-lbfgs-bt is what the guard recommends, and ttype here is 'direct', so this
+    # exercises the recommendation end to end without touching the nfft livelock path.
+    out = _build_imager(obs_direct, gauss_im, gauss_prior).make_image(
+        shard=True, optimizer="optax-lbfgs-bt", show_updates=False)
     assert _nxcorr(out.imvec, gauss_im.imvec) > NXCORR_FLOOR
 
 
