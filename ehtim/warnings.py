@@ -51,15 +51,23 @@ class MixedPolUnpackNaNWarning(UserWarning):
 class ShardedLineSearchWarning(UserWarning):
     """Emitted when a multi-GPU sharded run uses the zoom line search.
 
-    `optax-lbfgs` uses `scale_by_zoom_linesearch`, whose bracket-and-zoom
-    control flow is fused into the same jitted loop as the objective. On a
-    sharded nfft objective with more than one data term, XLA compilation of that
-    module does not terminate: measured on 2 GPUs at 24x24 with amp+cphase+
-    logcamp, zoom hung 14 of 16 runs against 2 of 16 for the backtracking line
-    search, at every line-search cap tried (5, 10, 20, 40).
+    Sharded nfft objectives execute the jax-finufft FFI, which creates cuFFT
+    plans per invocation; on some driver/hardware pairings (observed on sm_120
+    Blackwell) plan creation can enter an unbounded CUDA driver spin inside
+    ``cuModuleLoadData`` -- a native-stack-verified livelock (100% of one core,
+    58 minutes without completing), not an ehtim or XLA defect. Triggering is
+    probabilistic per plan creation, so a run's hang probability scales with
+    how many times the objective is evaluated.
 
-    `optax-lbfgs-bt` does a few value evaluations per step instead, and is the
-    recommended optimizer for `shard=True`. The residual 2-in-16 is not
-    understood and is tracked separately, so this is a mitigation rather than a
-    guarantee.
+    ``optax-lbfgs`` (zoom line search) evaluates many more times per step than
+    ``optax-lbfgs-bt`` (backtracking): measured on 2 GPUs, a three-term nfft
+    objective hung 14/16 runs under zoom against 2/16 under backtracking, at
+    every line-search cap tried (5/10/20/40), and a single closure term hung
+    5/5 under zoom against 0/5 under backtracking. Backtracking is therefore
+    the recommended optimizer for ``shard=True`` -- an exposure reduction, not
+    a guarantee, since the livelock lives in the driver. Suppressible:
+
+        warnings.filterwarnings(
+            'ignore', category=ehtim.warnings.ShardedLineSearchWarning
+        )
     """
