@@ -328,10 +328,14 @@ class ImagerConfig(NamedTuple):
 
     JAX note: this bundle is a *static* pytree, not a traced one. The string
     leaves (pol, ttype, transform names) and the dict leaf in the sibling
-    DataWeighting bundle (snrcut) aren't valid JAX traceable values. When
-    jitting backend functions that take a config, pass it as a
-    ``static_argname='config'`` so the structure participates in cache keying
-    rather than tracing.
+    DataWeighting bundle (snrcut) aren't valid JAX traceable values, so when
+    jitting a backend function that takes a config, mark it static:
+    ``jax.jit(fn, static_argnames=('config',))``.
+
+    A static argument has to be hashable, and this one is not as built:
+    ``transforms`` is a list. Convert it first, e.g.
+    ``config._replace(transforms=tuple(config.transforms))``, or jit will raise
+    ``unhashable type: 'list'``.
     """
     pol: str                       # imager polarization mode ('I', 'IP', 'IV', 'IPV', 'QU', ...)
     transforms: Sequence[str]      # bounded-value transform stack applied to imcur (e.g. ['log', 'mcv'])
@@ -1209,7 +1213,10 @@ def compute_regularizer_term(imvec_or_imarr, regname, mask, **kwargs):
     Returns
     -------
     float
-        Regularizer value, negated so positive values indicate a penalty to minimize.
+        Regularizer value as a penalty: larger means a worse image. The objective
+        adds ``weight * value`` and minimizes, so each leaf arranges its own sign
+        to that convention (most return a positive sum directly; ``reg_gs`` negates
+        an entropy that is otherwise maximized).
     """
     if regname not in _REGULARIZER_DISPATCH:
         raise Exception(f"regularizer term {regname} not recognized!")
@@ -1865,9 +1872,10 @@ def compute_objective(imvec, initvec, config,
     Notes
     -----
     The chi^2 and regularizer value kernels are backend-agnostic, so on the jax
-    backend ``jax.grad(compute_objective)`` will replace ``compute_objective_grad``
-    once ``unpack_imarr`` and ``transform_imarr`` are rewritten without their
-    in-place array assignment (jax cannot trace through it; see the TODOs there).
+    backend this function is differentiable as it stands: ``make_value_and_grad_jax``
+    builds ``jax.grad`` of it and is what the ``use_jax`` and sharded paths run.
+    ``compute_objective_grad`` remains the analytic gradient used by the numpy path,
+    and the two agree to within finite-difference tolerance.
     """
     transforms = config.transforms
 
