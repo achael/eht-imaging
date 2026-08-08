@@ -450,6 +450,19 @@ class Imager:
                jax_device: jax device for the objective when use_jax=True; None uses the
                    jax default. e.g. jax.devices('gpu')[0] or jax.devices('cpu')[0]
 
+               optimizer: which minimizer to run. None (default) uses scipy L-BFGS-B;
+                   a name from ehtim.imaging.optimizers ('optax-lbfgs-bt', 'adam', ...)
+                   runs on device; an optax GradientTransformation is used as given; any
+                   other callable is invoked as
+                   optimizer(value_and_grad, x0, maxiter=, tol=, callback=) and must
+                   return a scipy OptimizeResult-like object with .x and .fun
+               shard (bool): split the data term across several GPUs. Requires an optax
+                   optimizer; see ehtim.imaging.sharding for what each axis supports, and
+                   prefer optimizer='optax-lbfgs-bt' (see ShardedLineSearchWarning)
+               mesh: jax device mesh for shard=True; None builds one over all local GPUs
+               shard_axis (str): 'baseline' (default, split visibilities) or 'frequency'
+                   (split channels; multifrequency and linear data terms only)
+
                show_updates (bool): whether or not to show imager progress
                update_interval (int): step interval for plotting if show_updates=True
 
