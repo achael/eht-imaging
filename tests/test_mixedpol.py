@@ -170,6 +170,26 @@ def test_dtcal_legacy_alias_is_dtcal_circ():
     assert ehc.DTCAL is ehc.DTCAL_CIRC
 
 
+# ----- DTDTERM -------------------------------------------------------------
+
+def test_dtdterm_circ_alias_equivalence():
+    d = np.zeros(2, dtype=ehc.DTDTERM_CIRC)
+    d['dr'] = [0.01 + 0.02j, 0.03 - 0.01j]
+    assert np.array_equal(d['d_p1'], d['dr'])
+    d['dl'] = [0.04 + 0.0j, -0.02 + 0.01j]
+    assert np.array_equal(d['d_p2'], d['dl'])
+
+
+def test_dtdterm_lin_names():
+    # linear leakage carries only the generic names (no physical dr/dl aliases)
+    d = np.zeros(2, dtype=ehc.DTDTERM_LIN)
+    assert d.dtype.names == ('time', 'd_p1', 'd_p2')
+
+
+def test_dtdterm_legacy_alias_is_circ():
+    assert ehc.DTDTERM is ehc.DTDTERM_CIRC
+
+
 # ----- Polrep / feed dispatch helpers --------------------------------------
 
 def test_feed_dtype_for_polrep():

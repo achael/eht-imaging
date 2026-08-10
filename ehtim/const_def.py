@@ -31,7 +31,8 @@ from ehtim.observing.pulses import trianglePulse2D
 __all__ = [
     "BHIMAGE", "BOUNDS_ERROR", "C", "COLORLIST", "DEC_DEFAULT", "DEC_M87",
     "DEC_SGRA", "DEGREE", "DTAMP", "DTARR", "DTBIS", "DTCAL", "DTCAMP",
-    "DTCPHASE", "DTCPHASEDIAG", "DTERMPDEF", "DTLOGCAMPDIAG", "DTPOL_CIRC",
+    "DTCPHASE", "DTCPHASEDIAG", "DTDTERM", "DTERMPDEF", "DTLOGCAMPDIAG",
+    "DTPOL_CIRC",
     "DTPOL_STOKES", "DTSCANS", "EHTIMAGE", "ELEV_HIGH", "ELEV_LOW", "EP",
     "FFT_INTERP_DEFAULT", "FFT_PAD_DEFAULT", "FIELD_LABELS", "FIELDS",
     "FIELDS_AMPS", "FIELDS_PHASE", "FIELDS_SIGPHASE", "FIELDS_SIGS",
@@ -181,6 +182,17 @@ DTCAL_LIN = [('time', 'f8'),
              ('d_p1', 'c16'), ('d_p2', 'c16')]
 
 DTCAL = DTCAL_CIRC  # legacy alias
+
+# D-term (leakage) tables, kept separate from the gain tables (DTCAL_*) so gains
+# and D-terms can be sampled on independent time grids. The CIRC field specs
+# mirror the D-term columns of DTCAL_CIRC; DTDTERM_LIN mirrors DTCAL_LIN's
+# asymmetry (no established physical names for linear leakage).
+DTDTERM_CIRC = [('time', 'f8'),
+                (('d_p1', 'dr'), 'c16'), (('d_p2', 'dl'), 'c16')]
+
+DTDTERM_LIN = [('time', 'f8'), ('d_p1', 'c16'), ('d_p2', 'c16')]
+
+DTDTERM = DTDTERM_CIRC  # legacy alias
 
 DTSCANS = [('time', 'f8'), ('interval', 'f8'), ('startvis', 'f8'), ('endvis', 'f8')]
 
