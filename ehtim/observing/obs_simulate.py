@@ -738,11 +738,13 @@ def make_jones(obs, opacitycal=True, ampcal=True, phasecal=True, dcal=True,
         out[site] = j_matrices
 
         if caltable_path:
+            # the D-terms live on the tarr, which is what gets saved alongside
+            # the gains; the cal table itself carries gains only
             obs_tmp.tarr[i]['dr'] = dR
             obs_tmp.tarr[i]['dl'] = dL
             datatable = []
             for j in range(len(times)):
-                datatable.append(np.array((times[j], gainR[j], gainL[j], dR, dL),
+                datatable.append(np.array((times[j], gainR[j], gainL[j]),
                                           dtype=ehc.DTCAL))
             datatables[site] = np.array(datatable)
 

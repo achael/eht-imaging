@@ -174,12 +174,10 @@ DTLOGCAMPDIAG = [('time', 'f8'), ('camp', 'f8'), ('sigmaca', 'f8'),
                  ('quadrangles', 'O'), ('u', 'O'), ('v', 'O'), ('tform_matrix', 'O')]
 
 DTCAL_CIRC = [('time', 'f8'),
-              (('p1scale', 'rscale'), 'c16'), (('p2scale', 'lscale'), 'c16'),
-              (('d_p1', 'dr'), 'c16'), (('d_p2', 'dl'), 'c16')]
+              (('p1scale', 'rscale'), 'c16'), (('p2scale', 'lscale'), 'c16')]
 
 DTCAL_LIN = [('time', 'f8'),
-             (('p1scale', 'xscale'), 'c16'), (('p2scale', 'yscale'), 'c16'),
-             ('d_p1', 'c16'), ('d_p2', 'c16')]
+             (('p1scale', 'xscale'), 'c16'), (('p2scale', 'yscale'), 'c16')]
 
 DTCAL = DTCAL_CIRC  # legacy alias
 
@@ -255,23 +253,67 @@ def upgrade_dtpol_circ(data):
     return data
 
 
-def upgrade_dtcal_circ(data):
-    """Upgrade a legacy DTCAL recarray (time, rscale, lscale) to DTCAL_CIRC.
+def split_dtcal(data):
+    """Split a per-site cal recarray into separate gain and D-term tables.
 
-    Legacy DTCAL has no D-term fields; the upgrade allocates a new recarray
-    and zero-fills dr/dl. Idempotent.
+    Cal tables used to carry the D-terms in the gain rows, sharing one time
+    column. Gains and D-terms vary on different timescales, so they are stored
+    as two tables now. Use this on anything handed to Caltable to normalize it,
+    whichever vintage it came from: a legacy gains-only recarray, one of the
+    old welded recarrays, or an already-split table. Idempotent.
+
+    Parameters
+    ----------
+    data : numpy.recarray or list or None
+        One site's cal table. Solvers can hand over a bare record or a list
+        holding one, so those are accepted too and promoted to one row.
+
+    Returns
+    -------
+    gains : numpy.recarray
+        The gain table, dtype DTCAL_CIRC or DTCAL_LIN.
+    dterms : numpy.recarray or None
+        The D-terms lifted out of a welded table, on their own time column,
+        or None if there were none to lift. Anything unrecognized is passed
+        back untouched with no D-terms.
     """
     import numpy as _np
-    target = _np.dtype(DTCAL_CIRC)
-    if data.dtype == target:
-        return data
-    names = data.dtype.names or ()
-    if 'rscale' in names and 'dr' not in names:
-        new = _np.zeros(len(data), dtype=target)
-        for name in ('time', 'rscale', 'lscale'):
-            new[name] = data[name]
-        return new
-    return data
+    if data is None:
+        return data, None
+    if not isinstance(data, _np.ndarray):
+        data = _np.asarray(data)
+    if data.dtype.names is None:
+        return data, None
+    data = _np.atleast_1d(data)
+
+    fields = data.dtype.fields
+    lin = 'xscale' in fields
+    gain_t = _np.dtype(DTCAL_LIN if lin else DTCAL_CIRC)
+    dterm_t = _np.dtype(DTDTERM_LIN if lin else DTDTERM_CIRC)
+
+    if data.dtype == gain_t:
+        return data, None
+
+    if 'd_p1' not in fields and 'dr' not in fields:
+        # gains only: a view when the layout already matches, else leave it be
+        if data.dtype.names == gain_t.names and data.dtype.itemsize == gain_t.itemsize:
+            return data.view(gain_t), None
+        return data, None
+
+    if 'p1scale' not in fields:
+        return data, None
+
+    gains = _np.zeros(len(data), dtype=gain_t)
+    for name in ('time', 'p1scale', 'p2scale'):
+        gains[name] = data[name]
+
+    if _np.any(data['d_p1'] != 0) or _np.any(data['d_p2'] != 0):
+        dterms = _np.zeros(len(data), dtype=dterm_t)
+        for name in ('time', 'd_p1', 'd_p2'):
+            dterms[name] = data[name]
+        return gains, dterms
+
+    return gains, None
 
 
 @functools.lru_cache(maxsize=16)

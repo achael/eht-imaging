@@ -90,20 +90,33 @@ class Caltable:
         self.tarr = ehc.upgrade_tarr(tarr)
         self.tkey = {self.tarr[i]['site']: i for i in range(len(self.tarr))}
 
-        # Save the data (upgrade per-site DTCAL recarrays as needed)
+        # Save the data, splitting out D-terms from any older welded tables
+        self.dterms = {}
         if isinstance(datadict, dict):
-            self.data = {site: ehc.upgrade_dtcal_circ(d)
-                         for site, d in datadict.items()}
+            self.data = {}
+            for site, d in datadict.items():
+                gains, dterms = ehc.split_dtcal(d)
+                self.data[site] = gains
+                if dterms is not None:
+                    self.dterms[site] = dterms
         else:
             self.data = datadict
 
     def __setstate__(self, state):
-        # Silently upgrade legacy pickles to the current mixedpol schema.
+        # Silently upgrade legacy pickles to the current schema.
         if 'tarr' in state:
             state['tarr'] = ehc.upgrade_tarr(state['tarr'])
         if 'data' in state and isinstance(state['data'], dict):
-            state['data'] = {site: ehc.upgrade_dtcal_circ(d)
-                             for site, d in state['data'].items()}
+            gains = {}
+            dterms = dict(state.get('dterms', {}))
+            for site, d in state['data'].items():
+                g, dt = ehc.split_dtcal(d)
+                gains[site] = g
+                if dt is not None:
+                    dterms[site] = dt
+            state['data'] = gains
+            state['dterms'] = dterms
+        state.setdefault('dterms', {})
         self.__dict__.update(state)
 
     def copy(self):
@@ -410,9 +423,8 @@ class Caltable:
                     preL = 1.
                     postL = 1.
 
-                # TODO: time-dependent D-term field added but unpopulated
-                valspre = np.array([(timepre, preR, preL, 0j, 0j)], dtype=ehc.DTCAL)
-                valspost = np.array([(timepost, postR, postL, 0j, 0j)], dtype=ehc.DTCAL)
+                valspre = np.array([(timepre, preR, preL)], dtype=ehc.DTCAL)
+                valspost = np.array([(timepost, postR, postL)], dtype=ehc.DTCAL)
 
                 gg = np.insert(gg, 0, valspre)
                 gg = np.append(gg, valspost)
@@ -595,9 +607,8 @@ class Caltable:
                     # TODO can we do this faster?
                     datatable = []
                     for i in range(len(times_merge)):
-                        # TODO: time-dependent D-term field added but unpopulated
                         datatable.append(
-                            np.array((times_merge[i], rscale_merge[i], lscale_merge[i], 0j, 0j),
+                            np.array((times_merge[i], rscale_merge[i], lscale_merge[i]),
                                      dtype=ehc.DTCAL))
                     data1[site] = np.array(datatable)
 
@@ -672,8 +683,7 @@ class Caltable:
                 gains_r_avg = np.mean(gains_r[np.array(times_stable == scan[0])])
 
                 # add them to a new datatable
-                # TODO: time-dependent D-term field added but unpopulated
-                datatable.append(np.array((scan[0], gains_r_avg, gains_l_avg, 0j, 0j), dtype=ehc.DTCAL))
+                datatable.append(np.array((scan[0], gains_r_avg, gains_l_avg), dtype=ehc.DTCAL))
 
             datatables[site] = np.array(datatable)
 
@@ -745,8 +755,7 @@ def load_caltable(obs, datadir, sqrt_gains=False):
             if sqrt_gains:
                 rscale = rscale**.5
                 lscale = lscale**.5
-            # TODO: time-dependent D-term field added but unpopulated
-            datatable.append(np.array((time, rscale, lscale, 0j, 0j), dtype=ehc.DTCAL))
+            datatable.append(np.array((time, rscale, lscale), dtype=ehc.DTCAL))
 
         datatables[site] = np.array(datatable)
     if len(datatables) > 0:
@@ -826,8 +835,7 @@ def make_caltable(obs, gains, sites, times):
         datatable = []
         for t in range(0, ntimes):
             gain = gains[s * ntimes + t]
-            # TODO: time-dependent D-term field added but unpopulated
-            datatable.append(np.array((times[t], gain, gain, 0j, 0j), dtype=ehc.DTCAL))
+            datatable.append(np.array((times[t], gain, gain), dtype=ehc.DTCAL))
         datatables[sites[s]] = np.array(datatable)
     if len(datatables) > 0:
         caltable = Caltable(obs.ra, obs.dec, obs.rf,

@@ -156,8 +156,8 @@ def test_dtcal_circ_alias_equivalence():
     c = np.zeros(2, dtype=ehc.DTCAL_CIRC)
     c['rscale'] = [1 + 0j, 2 + 0j]
     assert np.array_equal(c['p1scale'], c['rscale'])
-    c['dr'] = [0.01 + 0.02j, 0.03 - 0.01j]
-    assert np.array_equal(c['d_p1'], c['dr'])
+    c['lscale'] = [3 + 0j, 4 + 0j]
+    assert np.array_equal(c['p2scale'], c['lscale'])
 
 
 def test_dtcal_lin_alias_equivalence():
@@ -272,15 +272,118 @@ def test_upgrade_dtpol_circ_idempotent():
     assert out.dtype == d.dtype
 
 
-def test_upgrade_dtcal_circ_from_legacy_adds_dterm_fields():
+_WELDED_DTCAL = [('time', 'f8'),
+                 (('p1scale', 'rscale'), 'c16'), (('p2scale', 'lscale'), 'c16'),
+                 (('d_p1', 'dr'), 'c16'), (('d_p2', 'dl'), 'c16')]
+
+_WELDED_DTCAL_LIN = [('time', 'f8'),
+                     (('p1scale', 'xscale'), 'c16'), (('p2scale', 'yscale'), 'c16'),
+                     ('d_p1', 'c16'), ('d_p2', 'c16')]
+
+
+def _welded(n=2, dr=0j, dl=0j):
+    w = np.zeros(n, dtype=_WELDED_DTCAL)
+    w['time'] = np.arange(n)
+    w['rscale'] = np.arange(1, n + 1) + 0j
+    w['lscale'] = np.arange(1, n + 1) * 2 + 0j
+    w['dr'] = dr
+    w['dl'] = dl
+    return w
+
+
+def test_split_dtcal_legacy_is_zero_copy_view():
     oc = np.zeros(2, dtype=_LEGACY_DTCAL)
     oc['rscale'] = [1 + 0j, 2 + 0j]
-    nc = ehc.upgrade_dtcal_circ(oc)
-    assert nc.dtype.names == ('time', 'rscale', 'lscale', 'dr', 'dl')
-    assert np.array_equal(nc['rscale'], oc['rscale'])
-    # dr/dl default to 0
-    assert np.all(nc['dr'] == 0)
-    assert np.all(nc['dl'] == 0)
+    gains, dterms = ehc.split_dtcal(oc)
+    assert gains.base is oc          # view, not a copy
+    assert dterms is None
+    assert gains.dtype.names == ('time', 'rscale', 'lscale')
+    assert np.array_equal(gains['p1scale'], oc['rscale'])
+
+
+def test_split_dtcal_identity_on_target_dtype():
+    g = np.zeros(2, dtype=ehc.DTCAL_CIRC)
+    gains, dterms = ehc.split_dtcal(g)
+    assert gains is g
+    assert dterms is None
+
+
+def test_split_dtcal_welded_zero_dterms_narrows_to_gains_only():
+    w = _welded()
+    gains, dterms = ehc.split_dtcal(w)
+    assert gains.dtype.names == ('time', 'rscale', 'lscale')
+    assert dterms is None
+    assert np.array_equal(gains['rscale'], w['rscale'])
+    assert np.array_equal(gains['lscale'], w['lscale'])
+    assert np.array_equal(gains['time'], w['time'])
+
+
+def test_split_dtcal_welded_nonzero_dterms_extracts_table():
+    w = _welded(dr=0.01 + 0.02j, dl=-0.03j)
+    gains, dterms = ehc.split_dtcal(w)
+    assert 'dr' not in gains.dtype.fields
+    assert dterms.dtype.names == ('time', 'dr', 'dl')
+    # the D-terms keep their own copy of the time column
+    assert np.array_equal(dterms['time'], w['time'])
+    assert np.array_equal(dterms['dr'], w['dr'])
+    assert np.array_equal(dterms['d_p2'], w['dl'])
+
+
+def test_split_dtcal_welded_lin_basis():
+    w = np.zeros(2, dtype=_WELDED_DTCAL_LIN)
+    w['xscale'] = [1 + 0j, 2 + 0j]
+    w['d_p1'] = 0.05 + 0j
+    gains, dterms = ehc.split_dtcal(w)
+    assert gains.dtype.names == ('time', 'xscale', 'yscale')
+    assert dterms.dtype.names == ('time', 'd_p1', 'd_p2')
+    assert np.array_equal(gains['xscale'], w['xscale'])
+    assert np.array_equal(dterms['d_p1'], w['d_p1'])
+
+
+def test_split_dtcal_idempotent():
+    w = _welded(dr=0.01 + 0j)
+    gains, dterms = ehc.split_dtcal(w)
+    again, again_dterms = ehc.split_dtcal(gains)
+    assert again is gains
+    assert again_dterms is None
+
+
+def test_split_dtcal_zero_d_record_normalized_to_one_row():
+    # solvers can hand over a bare record for a site seen in a single scan
+    rec = np.zeros((), dtype=_LEGACY_DTCAL)
+    gains, dterms = ehc.split_dtcal(rec)
+    assert gains.shape == (1,)
+    assert dterms is None
+
+
+def test_split_dtcal_list_of_records():
+    # a site appearing in exactly one non-first scan arrives as [record]
+    rec = np.zeros((), dtype=ehc.DTCAL_CIRC)
+    gains, dterms = ehc.split_dtcal([rec])
+    assert gains.shape == (1,)
+    assert gains.dtype.names == ('time', 'rscale', 'lscale')
+    assert dterms is None
+
+
+def test_split_dtcal_untitled_welded_passthrough():
+    # plain-named 5-field arrays predate the titles; leave them alone
+    untitled = np.zeros(2, dtype=[('time', 'f8'), ('rscale', 'c16'), ('lscale', 'c16'),
+                                  ('dr', 'c16'), ('dl', 'c16')])
+    gains, dterms = ehc.split_dtcal(untitled)
+    assert gains is untitled
+    assert dterms is None
+
+
+def test_split_dtcal_none_passthrough():
+    gains, dterms = ehc.split_dtcal(None)
+    assert gains is None
+    assert dterms is None
+
+
+def test_split_dtcal_empty_array():
+    gains, dterms = ehc.split_dtcal(np.zeros(0, dtype=_LEGACY_DTCAL))
+    assert len(gains) == 0
+    assert dterms is None
 
 
 # ----- End-to-end: Array / Obsdata / Caltable upgrade through __init__ ----
@@ -335,9 +438,9 @@ def test_caltable_upgrades_legacy_dtcal():
                          datadict={'A': oc.copy(), 'B': oc.copy()},
                          tarr=_legacy_tarr())
     for site in ('A', 'B'):
-        assert 'dr' in caltab.data[site].dtype.names
-        assert 'd_p1' in caltab.data[site].dtype.fields  # title alias
-        assert np.all(caltab.data[site]['dr'] == 0)
+        assert caltab.data[site].dtype.names == ('time', 'rscale', 'lscale')
+        assert 'p1scale' in caltab.data[site].dtype.fields  # title alias
+    assert caltab.dterms == {}
 
 
 def test_caltable_pickle_roundtrip_legacy_dtcal():
@@ -346,9 +449,29 @@ def test_caltable_pickle_roundtrip_legacy_dtcal():
     caltab = ec.Caltable(ra=0., dec=0., rf=230e9, bw=1e9,
                          datadict={'A': oc.copy()}, tarr=_legacy_tarr())
     caltab2 = pickle.loads(pickle.dumps(caltab))
-    assert 'dr' in caltab2.data['A'].dtype.names
+    assert caltab2.data['A'].dtype.names == ('time', 'rscale', 'lscale')
+    assert caltab2.dterms == {}
     assert np.array_equal(caltab2.data['A']['rscale'],
                           caltab.data['A']['rscale'])
+
+
+def test_caltable_pickle_welded_nonzero_dterms_migrates():
+    # a pickle from when the D-terms still lived in the gain rows
+    w = np.zeros(2, dtype=_WELDED_DTCAL)
+    w['rscale'] = [1 + 0j, 1.1 + 0j]
+    w['dr'] = 0.04 + 0.01j
+    caltab = ec.Caltable(ra=0., dec=0., rf=230e9, bw=1e9,
+                         datadict={'A': np.zeros(2, dtype=ehc.DTCAL)},
+                         tarr=_legacy_tarr())
+    state = dict(caltab.__dict__)
+    state['data'] = {'A': w}
+    state.pop('dterms')
+    revived = ec.Caltable.__new__(ec.Caltable)
+    revived.__setstate__(state)
+    assert revived.data['A'].dtype.names == ('time', 'rscale', 'lscale')
+    assert np.array_equal(revived.data['A']['rscale'], w['rscale'])
+    assert np.array_equal(revived.dterms['A']['dr'], w['dr'])
+    assert np.array_equal(revived.dterms['A']['time'], w['time'])
 
 
 # ============================================================================
