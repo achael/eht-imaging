@@ -409,6 +409,30 @@ def injected_gain_caltable_factory(obs_direct):
 
 
 @pytest.fixture(scope="session")
+def dterm_dict_factory():
+    """Factory: a DTDTERM datadict keyed by site name, for Caltable(dterms=...).
+
+    Tests call as ``dterm_dict_factory(sites)`` for a single-row table -- the
+    storage form of a track-constant leakage -- or pass ``times=`` for a
+    multi-row one. D-terms live on their own time grid, independent of the gain
+    table's. Returns fresh arrays per call so tests can mutate freely.
+    """
+    def _factory(sites, times=(0.0,), dr=0.03 + 0.01j, dl=-0.02 + 0.04j):
+        import numpy as np
+
+        from ehtim.const_def import DTDTERM
+
+        times = np.asarray(times, dtype=float)
+        n = len(times)
+        template = np.zeros(n, dtype=DTDTERM)
+        template['time'] = times
+        template['dr'] = np.broadcast_to(np.asarray(dr, dtype=complex), (n,))
+        template['dl'] = np.broadcast_to(np.asarray(dl, dtype=complex), (n,))
+        return {site: template.copy() for site in sites}
+    return _factory
+
+
+@pytest.fixture(scope="session")
 def obs_with_dterms(obs_pol_direct):
     """obs_pol_direct with synthetic complex D-terms injected into tarr['dr']/['dl'].
 

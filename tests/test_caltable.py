@@ -6,7 +6,7 @@ import numpy as np
 import pytest
 
 import ehtim as eh
-from ehtim.const_def import DTCAL, DTDTERM
+from ehtim.const_def import DTCAL
 
 # ---------------------------------------------------------------------------
 # Constants used across the module
@@ -561,7 +561,7 @@ class TestRelaxedInterp1d:
 def _multi_scan_caltable(obs, n_scans, samples_per_scan=PAD_SCAN_NSAMPLES,
                          dt_in_scan_sec=PAD_SCAN_DT_SEC,
                          gap_sec=PAD_SCAN_GAP_SEC,
-                         rscale=1.0 + 0j, lscale=1.0 + 0j):
+                         rscale=1.0 + 0j, lscale=1.0 + 0j, dterms=None):
     """Build a Caltable whose times form `n_scans` blocks separated by `gap_sec`.
 
     Each block has `samples_per_scan` points spaced by `dt_in_scan_sec`. The
@@ -582,11 +582,12 @@ def _multi_scan_caltable(obs, n_scans, samples_per_scan=PAD_SCAN_NSAMPLES,
     caldict = {site: template.copy().view(np.recarray) for site in obs.tarr['site']}
     return eh.caltable.Caltable(
         obs.ra, obs.dec, obs.rf, obs.bw, caldict, obs.tarr,
-        source=obs.source, mjd=obs.mjd, timetype=obs.timetype,
+        source=obs.source, mjd=obs.mjd, timetype=obs.timetype, dterms=dterms,
     )
 
 
-def _scan_aligned_caltable(obs, gains_per_scan, samples_per_scan=PAD_SCAN_NSAMPLES):
+def _scan_aligned_caltable(obs, gains_per_scan, samples_per_scan=PAD_SCAN_NSAMPLES,
+                           dterms=None):
     """Build a Caltable whose times fall inside the first len(gains_per_scan)
     scans of `obs` (so scan_avg's per-scan bucketing finds the samples).
 
@@ -617,7 +618,7 @@ def _scan_aligned_caltable(obs, gains_per_scan, samples_per_scan=PAD_SCAN_NSAMPL
     caldict = {site: template.copy().view(np.recarray) for site in obs.tarr['site']}
     return eh.caltable.Caltable(
         obs.ra, obs.dec, obs.rf, obs.bw, caldict, obs.tarr,
-        source=obs.source, mjd=obs.mjd, timetype=obs.timetype,
+        source=obs.source, mjd=obs.mjd, timetype=obs.timetype, dterms=dterms,
     )
 
 
@@ -777,16 +778,6 @@ def _clean_caldict(sites, times):
     return {site: template.copy() for site in sites}
 
 
-def _dterm_dict(sites, times=(SPLIT_DTERM_TIME,), dr=SPLIT_DR, dl=SPLIT_DL):
-    """A D-term table dict on its own (by default single-row) time grid."""
-    times = np.asarray(times, dtype=float)
-    template = np.zeros(len(times), dtype=DTDTERM)
-    template['time'] = times
-    template['dr'] = dr
-    template['dl'] = dl
-    return {site: template.copy() for site in sites}
-
-
 def _span_times(obs):
     return [obs.data['time'].min() - 1.0, obs.data['time'].max() + 1.0]
 
@@ -843,14 +834,15 @@ class TestConstructorSplit:
             # the extracted D-terms keep the time column they were welded to
             np.testing.assert_array_equal(ct.dterms[site]['time'], times)
 
-    def test_constructor_dterms_kwarg(self, obs_direct):
+    def test_constructor_dterms_kwarg(self, obs_direct, dterm_dict_factory):
         times = _span_times(obs_direct)
         sites = _first_sites(obs_direct)
         ct = eh.caltable.Caltable(
             obs_direct.ra, obs_direct.dec, obs_direct.rf, obs_direct.bw,
             _clean_caldict(sites, times), obs_direct.tarr,
             source=obs_direct.source, mjd=obs_direct.mjd,
-            dterms=_dterm_dict(sites),
+            dterms=dterm_dict_factory(sites, times=(SPLIT_DTERM_TIME,),
+                                      dr=SPLIT_DR, dl=SPLIT_DL),
         )
         for site in sites:
             # gains keep their own (two-point) grid, D-terms their one-row grid
@@ -859,7 +851,8 @@ class TestConstructorSplit:
             assert ct.dterms[site]['time'][0] == SPLIT_DTERM_TIME
             np.testing.assert_array_equal(ct.gains[site]['rscale'], SPLIT_GAIN_R)
 
-    def test_constructor_explicit_dterms_overrides_autosplit(self, obs_direct):
+    def test_constructor_explicit_dterms_overrides_autosplit(self, obs_direct,
+                                                             dterm_dict_factory):
         times = _span_times(obs_direct)
         sites = _first_sites(obs_direct, 1)
         site = sites[0]
@@ -868,7 +861,7 @@ class TestConstructorSplit:
             obs_direct.ra, obs_direct.dec, obs_direct.rf, obs_direct.bw,
             _welded_caldict(sites, times), obs_direct.tarr,
             source=obs_direct.source, mjd=obs_direct.mjd,
-            dterms=_dterm_dict(sites, dr=override, dl=override),
+            dterms=dterm_dict_factory(sites, dr=override, dl=override),
         )
         # the explicit table replaces what the weld would have contributed
         assert len(ct.dterms[site]) == 1
@@ -988,3 +981,110 @@ class TestSplitLeavesApplycalUnchanged:
             np.testing.assert_array_equal(circ_w.data[field], circ_c.data[field])
         for field in ('rrsigma', 'llsigma', 'rlsigma', 'lrsigma'):
             np.testing.assert_array_equal(circ_w.data[field], circ_c.data[field])
+
+
+class TestTransformsCarryDterms:
+    """pad_scans / scan_avg / merge resample gains; the leakage table rides
+    along on its own time grid instead of being silently dropped."""
+
+    def test_pad_scans_forwards_dterms_deepcopy(self, obs_direct, dterm_dict_factory):
+        site = _first_sites(obs_direct, 1)[0]
+        dterms = dterm_dict_factory([site], dr=SPLIT_DR, dl=SPLIT_DL)
+        ct = _multi_scan_caltable(obs_direct, n_scans=len(PAD_SCAN_MEDIAN_GAINS),
+                                  rscale=PAD_SCAN_ENDVAL_GAIN,
+                                  lscale=PAD_SCAN_ENDVAL_GAIN,
+                                  dterms=dterms)
+        out = ct.pad_scans(maxdiff=PAD_SCAN_MAXDIFF_SEC, padtype='endval')
+
+        np.testing.assert_array_equal(out.dterms[site]['dr'], SPLIT_DR)
+        # padding the gain grid must not resample leakage: one row in, one out
+        assert len(out.dterms[site]) == 1
+        # forwarded as a deep copy, so the output is not welded to the input
+        out.dterms[site]['dr'] *= 10
+        np.testing.assert_array_equal(ct.dterms[site]['dr'], SPLIT_DR)
+
+    def test_scan_avg_forwards_dterms(self, obs_direct, dterm_dict_factory):
+        site = _first_sites(obs_direct, 1)[0]
+        dterms = dterm_dict_factory([site], dr=SPLIT_DR, dl=SPLIT_DL)
+        ct = _scan_aligned_caltable(obs_direct, np.array(SCAN_COH_GAINS),
+                                    dterms=dterms)
+        out = ct.scan_avg(obs_direct, incoherent=False)
+
+        np.testing.assert_array_equal(out.dterms[site]['dr'], SPLIT_DR)
+        assert len(out.dterms[site]) == 1
+        out.dterms[site]['dr'] *= 10
+        np.testing.assert_array_equal(ct.dterms[site]['dr'], SPLIT_DR)
+
+    def test_merge_forwards_one_sided_dterms_no_aliasing(
+            self, obs_direct, constant_gain_caltable_factory, dterm_dict_factory):
+        # Only the merged-in table carries leakage ⇒ it passes through, deep
+        # copied so the merged table does not share the input's array.
+        ct_a = constant_gain_caltable_factory(MERGE_GAIN_A)
+        ct_b = constant_gain_caltable_factory(MERGE_GAIN_B)
+        site = _first_sites(obs_direct, 1)[0]
+        ct_b.dterms = dterm_dict_factory([site], dr=SPLIT_DR, dl=SPLIT_DL)
+
+        out = ct_a.merge([ct_b])
+
+        np.testing.assert_array_equal(out.dterms[site]['dr'], SPLIT_DR)
+        assert out.dterms[site] is not ct_b.dterms[site]
+        out.dterms[site]['dr'] *= 10
+        np.testing.assert_array_equal(ct_b.dterms[site]['dr'], SPLIT_DR)
+
+    def test_merge_one_sided_dterms_leave_gains_alone(
+            self, obs_direct, constant_gain_caltable_factory, dterm_dict_factory):
+        # Carrying leakage through must not perturb the gain product.
+        ct_a = constant_gain_caltable_factory(MERGE_GAIN_A)
+        ct_b = constant_gain_caltable_factory(MERGE_GAIN_B)
+        ct_b.dterms = dterm_dict_factory(_first_sites(obs_direct, 1),
+                                         dr=SPLIT_DR, dl=SPLIT_DL)
+        out = ct_a.merge([ct_b])
+        out_r, out_l = _stack_gains(out)
+        np.testing.assert_allclose(out_r, MERGE_GAIN_A * MERGE_GAIN_B,
+                                   rtol=INTERP_RTOL)
+        np.testing.assert_allclose(out_l, MERGE_GAIN_A * MERGE_GAIN_B,
+                                   rtol=INTERP_RTOL)
+
+    def test_merge_both_sides_dterms_raises(
+            self, obs_direct, constant_gain_caltable_factory, dterm_dict_factory):
+        # Composing two leakage solutions is Part C; failing loudly beats
+        # returning a table that looks calibrated and is not.
+        ct_a = constant_gain_caltable_factory(MERGE_GAIN_A)
+        ct_b = constant_gain_caltable_factory(MERGE_GAIN_B)
+        sites = _first_sites(obs_direct, 1)
+        ct_a.dterms = dterm_dict_factory(sites, dr=SPLIT_DR, dl=SPLIT_DL)
+        ct_b.dterms = dterm_dict_factory(sites, dr=SPLIT_DL, dl=SPLIT_DR)
+
+        with pytest.raises(NotImplementedError, match="D-terms"):
+            ct_a.merge([ct_b])
+
+    def test_merge_disjoint_dterm_sites_both_kept(
+            self, obs_direct, constant_gain_caltable_factory, dterm_dict_factory):
+        # Different sites on each side is not a conflict; both survive.
+        ct_a = constant_gain_caltable_factory(MERGE_GAIN_A)
+        ct_b = constant_gain_caltable_factory(MERGE_GAIN_B)
+        site_a, site_b = _first_sites(obs_direct, 2)
+        ct_a.dterms = dterm_dict_factory([site_a], dr=SPLIT_DR, dl=SPLIT_DL)
+        ct_b.dterms = dterm_dict_factory([site_b], dr=SPLIT_DL, dl=SPLIT_DR)
+
+        out = ct_a.merge([ct_b])
+
+        assert set(out.dterms) == {site_a, site_b}
+        np.testing.assert_array_equal(out.dterms[site_a]['dr'], SPLIT_DR)
+        np.testing.assert_array_equal(out.dterms[site_b]['dr'], SPLIT_DL)
+
+    def test_merge_disjoint_site_gains_not_aliased(
+            self, obs_direct, constant_gain_caltable_factory):
+        # For a site only the other table has, merge adopts its gain array.
+        # That must be a copy, or mutating the merged table reaches back into
+        # the input caltable.
+        ct_a = constant_gain_caltable_factory(MERGE_GAIN_A)
+        ct_b = constant_gain_caltable_factory(MERGE_GAIN_B)
+        site = _first_sites(obs_direct, 1)[0]
+        ct_a.data.pop(site)
+
+        out = ct_a.merge([ct_b])
+
+        assert out.data[site] is not ct_b.data[site]
+        out.data[site]['rscale'] *= 10
+        np.testing.assert_allclose(ct_b.data[site]['rscale'], MERGE_GAIN_B)

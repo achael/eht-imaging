@@ -437,7 +437,7 @@ class Caltable:
                     scandata.append(caldata[i])
 
             # This adds the last scan
-            scandata = np.array(scandata)
+            scandata = np.array(scandata, dtype=ehc.DTCAL)
             gathered_data.append(scandata)
 
             # Compute padding values and pad scans
@@ -487,8 +487,10 @@ class Caltable:
             else:
                 outdict[scope] = caldata_out
 
+        # padding is a gain-table operation; leakage rides along untouched
         return Caltable(self.ra, self.dec, self.rf, self.bw, outdict, self.tarr,
-                        source=self.source, mjd=self.mjd, timetype=self.timetype)
+                        source=self.source, mjd=self.mjd, timetype=self.timetype,
+                        dterms=copy.deepcopy(self.dterms))
 
     def applycal(self, obs, interp='linear', extrapolate=None,
                  force_singlepol=False):
@@ -613,9 +615,21 @@ class Caltable:
         tarr1 = self.tarr.copy()
         tkey1 = self.tkey.copy()
         data1 = self.gains.copy()
+        dterms1 = copy.deepcopy(self.dterms)
         for caltable in caltablelist:
 
             # TODO check metadata!
+
+            # Leakage: a site solved on only one side is carried through, but
+            # two leakage solutions for the same site cannot be composed by
+            # multiplying interpolants the way gains can. Fail rather than
+            # return a silently wrong table.
+            for site, dterm_table in caltable.dterms.items():
+                if site in dterms1:
+                    raise NotImplementedError(
+                        f"merge: both caltables carry D-terms for site {site}. "
+                        "Composing two leakage solutions is not supported.")
+                dterms1[site] = copy.deepcopy(dterm_table)
 
             # TODO CHECK ARE THEY ALL REFERENCED TO SAME MJD???
             tarr2 = caltable.tarr.copy()
@@ -661,13 +675,15 @@ class Caltable:
                 else:
                     if site not in tkey1.keys():
                         tarr1 = np.append(tarr1, tarr2[tkey2[site]])
-                    data1[site] = data2[site]
+                    # copy, so the merged table does not share the input's array
+                    data1[site] = data2[site].copy()
 
             # update tkeys every time
             tkey1 = {tarr1[i]['site']: i for i in range(len(tarr1))}
 
         new_caltable = Caltable(self.ra, self.dec, self.rf, self.bw, data1, tarr1,
-                                source=self.source, mjd=self.mjd, timetype=self.timetype)
+                                source=self.source, mjd=self.mjd, timetype=self.timetype,
+                                dterms=dterms1)
 
         return new_caltable
 
@@ -733,9 +749,12 @@ class Caltable:
             datatables[site] = np.array(datatable)
 
         if len(datatables) > 0:
+            # averaging is a gain-table operation; the leakage solution, which
+            # lives on its own time grid, is carried over as-is
             caltable = Caltable(obs.ra, obs.dec, obs.rf,
                                 obs.bw, datatables, obs.tarr, source=obs.source,
-                                mjd=obs.mjd, timetype=obs.timetype)
+                                mjd=obs.mjd, timetype=obs.timetype,
+                                dterms=copy.deepcopy(self.dterms))
         else:
             caltable = False
 
