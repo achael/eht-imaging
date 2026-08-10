@@ -1,10 +1,12 @@
 """Tests for ehtim.caltable.Caltable."""
 
+import pickle
+
 import numpy as np
 import pytest
 
 import ehtim as eh
-from ehtim.const_def import DTCAL
+from ehtim.const_def import DTCAL, DTDTERM
 
 # ---------------------------------------------------------------------------
 # Constants used across the module
@@ -730,3 +732,259 @@ class TestMerge:
         out = ct_a.merge([ct_b])
         assert x in out.data
         assert y in out.data
+
+
+# ---------------------------------------------------------------------------
+# Section 11: Gain / D-term storage split
+# ---------------------------------------------------------------------------
+
+# The row dtype from the era when D-terms shared the gain rows (PR #254),
+# reproduced here so the migration paths can be driven from a caller's side.
+_WELDED_DTCAL = [('time', 'f8'),
+                 (('p1scale', 'rscale'), 'c16'), (('p2scale', 'lscale'), 'c16'),
+                 (('d_p1', 'dr'), 'c16'), (('d_p2', 'dl'), 'c16')]
+
+# Gains and leakage used across the split tests. The gain is complex and not
+# unity so an applycal comparison has teeth; the D-terms are nonzero so the
+# split actually extracts a table instead of dropping an all-zero one.
+SPLIT_GAIN_R = 1.4 - 0.2j
+SPLIT_GAIN_L = 0.8 + 0.5j
+SPLIT_DR = 0.03 + 0.01j
+SPLIT_DL = -0.02 + 0.04j
+# A one-row D-term table is the storage form of a track-constant leakage.
+SPLIT_DTERM_TIME = 0.0
+
+
+def _welded_caldict(sites, times):
+    """A pre-split datadict: gains and D-terms welded into one row dtype."""
+    times = np.asarray(times, dtype=float)
+    template = np.zeros(len(times), dtype=_WELDED_DTCAL)
+    template['time'] = times
+    template['rscale'] = SPLIT_GAIN_R
+    template['lscale'] = SPLIT_GAIN_L
+    template['dr'] = SPLIT_DR
+    template['dl'] = SPLIT_DL
+    return {site: template.copy() for site in sites}
+
+
+def _clean_caldict(sites, times):
+    """The gains-only equivalent of :func:`_welded_caldict`."""
+    times = np.asarray(times, dtype=float)
+    template = np.zeros(len(times), dtype=DTCAL)
+    template['time'] = times
+    template['rscale'] = SPLIT_GAIN_R
+    template['lscale'] = SPLIT_GAIN_L
+    return {site: template.copy() for site in sites}
+
+
+def _dterm_dict(sites, times=(SPLIT_DTERM_TIME,), dr=SPLIT_DR, dl=SPLIT_DL):
+    """A D-term table dict on its own (by default single-row) time grid."""
+    times = np.asarray(times, dtype=float)
+    template = np.zeros(len(times), dtype=DTDTERM)
+    template['time'] = times
+    template['dr'] = dr
+    template['dl'] = dl
+    return {site: template.copy() for site in sites}
+
+
+def _span_times(obs):
+    return [obs.data['time'].min() - 1.0, obs.data['time'].max() + 1.0]
+
+
+def _first_sites(obs, n=2):
+    """The first n site names of the observation's array."""
+    return list(obs.tarr['site'])[:n]
+
+
+class TestDataAliasesGains:
+    """``data`` is the legacy name for the live gain table, not a snapshot."""
+
+    def test_data_is_live_alias_of_gains(self, unity_caltable):
+        assert unity_caltable.data is unity_caltable.gains
+
+    def test_data_mutation_persists(self, constant_gain_caltable_factory):
+        # The modeling_utils gain-assembly pattern: take .data, np.append into
+        # it per site, and expect the table itself to grow.
+        ct = constant_gain_caltable_factory(CONST_REAL_GAIN)
+        site = next(iter(ct.data))
+        n_before = len(ct.gains[site])
+        caldict = ct.data
+        caldict[site] = np.append(caldict[site], caldict[site])
+        assert len(ct.gains[site]) == 2 * n_before
+
+    def test_data_setter_replaces_gains(self, unity_caltable, obs_direct):
+        ct = unity_caltable.copy()
+        replacement = _clean_caldict(_first_sites(obs_direct, 1),
+                                     _span_times(obs_direct))
+        ct.data = replacement
+        assert ct.gains is replacement
+
+    def test_dterms_defaults_empty(self, unity_caltable):
+        assert unity_caltable.dterms == {}
+
+
+class TestConstructorSplit:
+    """``__init__`` splits welded input and honours an explicit ``dterms=``."""
+
+    def test_constructor_welded_datadict_autosplits(self, obs_direct):
+        times = _span_times(obs_direct)
+        sites = _first_sites(obs_direct)
+        ct = eh.caltable.Caltable(
+            obs_direct.ra, obs_direct.dec, obs_direct.rf, obs_direct.bw,
+            _welded_caldict(sites, times), obs_direct.tarr,
+            source=obs_direct.source, mjd=obs_direct.mjd,
+        )
+        for site in sites:
+            assert ct.gains[site].dtype.names == ('time', 'rscale', 'lscale')
+            np.testing.assert_array_equal(ct.gains[site]['rscale'], SPLIT_GAIN_R)
+            np.testing.assert_array_equal(ct.gains[site]['lscale'], SPLIT_GAIN_L)
+            np.testing.assert_array_equal(ct.dterms[site]['dr'], SPLIT_DR)
+            np.testing.assert_array_equal(ct.dterms[site]['dl'], SPLIT_DL)
+            # the extracted D-terms keep the time column they were welded to
+            np.testing.assert_array_equal(ct.dterms[site]['time'], times)
+
+    def test_constructor_dterms_kwarg(self, obs_direct):
+        times = _span_times(obs_direct)
+        sites = _first_sites(obs_direct)
+        ct = eh.caltable.Caltable(
+            obs_direct.ra, obs_direct.dec, obs_direct.rf, obs_direct.bw,
+            _clean_caldict(sites, times), obs_direct.tarr,
+            source=obs_direct.source, mjd=obs_direct.mjd,
+            dterms=_dterm_dict(sites),
+        )
+        for site in sites:
+            # gains keep their own (two-point) grid, D-terms their one-row grid
+            assert len(ct.gains[site]) == len(times)
+            assert len(ct.dterms[site]) == 1
+            assert ct.dterms[site]['time'][0] == SPLIT_DTERM_TIME
+            np.testing.assert_array_equal(ct.gains[site]['rscale'], SPLIT_GAIN_R)
+
+    def test_constructor_explicit_dterms_overrides_autosplit(self, obs_direct):
+        times = _span_times(obs_direct)
+        sites = _first_sites(obs_direct, 1)
+        site = sites[0]
+        override = 0.5 + 0.5j
+        ct = eh.caltable.Caltable(
+            obs_direct.ra, obs_direct.dec, obs_direct.rf, obs_direct.bw,
+            _welded_caldict(sites, times), obs_direct.tarr,
+            source=obs_direct.source, mjd=obs_direct.mjd,
+            dterms=_dterm_dict(sites, dr=override, dl=override),
+        )
+        # the explicit table replaces what the weld would have contributed
+        assert len(ct.dterms[site]) == 1
+        assert ct.dterms[site]['dr'][0] == override
+        np.testing.assert_array_equal(ct.gains[site]['rscale'], SPLIT_GAIN_R)
+
+    def test_constructor_single_record_list_site(self, obs_direct):
+        # network_cal / polgains_cal leave a bare list of records for a site
+        # seen in exactly one non-first scan; it must normalise, not crash.
+        times = _span_times(obs_direct)
+        site = _first_sites(obs_direct, 1)[0]
+        row = _clean_caldict([site], times)[site][0]
+        ct = eh.caltable.Caltable(
+            obs_direct.ra, obs_direct.dec, obs_direct.rf, obs_direct.bw,
+            {site: [row]}, obs_direct.tarr,
+            source=obs_direct.source, mjd=obs_direct.mjd,
+        )
+        assert len(ct.gains[site]) == 1
+        assert ct.gains[site]['rscale'][0] == SPLIT_GAIN_R
+
+    def test_constructor_non_dict_datadict_stored_verbatim(self, obs_direct):
+        site = _first_sites(obs_direct, 1)[0]
+        arr = _clean_caldict([site], _span_times(obs_direct))[site]
+        ct = eh.caltable.Caltable(
+            obs_direct.ra, obs_direct.dec, obs_direct.rf, obs_direct.bw,
+            arr, obs_direct.tarr, source=obs_direct.source, mjd=obs_direct.mjd,
+        )
+        assert ct.gains is arr
+        assert ct.data is arr
+
+
+class TestSplitStateRoundTrips:
+    """copy / pickle carry both tables, and legacy states still migrate."""
+
+    def _welded_caltable(self, obs):
+        return eh.caltable.Caltable(
+            obs.ra, obs.dec, obs.rf, obs.bw,
+            _welded_caldict(_first_sites(obs), _span_times(obs)), obs.tarr,
+            source=obs.source, mjd=obs.mjd,
+        )
+
+    def test_copy_preserves_dterms_independently(self, obs_direct):
+        ct = self._welded_caltable(obs_direct)
+        site = _first_sites(obs_direct, 1)[0]
+        cp = ct.copy()
+        np.testing.assert_array_equal(cp.dterms[site]['dr'], SPLIT_DR)
+        cp.dterms[site]['dr'] *= 10
+        np.testing.assert_array_equal(ct.dterms[site]['dr'], SPLIT_DR)
+
+    def test_pickle_roundtrip_with_dterms(self, obs_direct):
+        ct = self._welded_caltable(obs_direct)
+        revived = pickle.loads(pickle.dumps(ct))
+        assert set(revived.dterms) == set(ct.dterms)
+        for site in ct.gains:
+            np.testing.assert_array_equal(revived.gains[site], ct.gains[site])
+            np.testing.assert_array_equal(revived.dterms[site], ct.dterms[site])
+        # the alias survives the round trip as an alias, not a copy
+        assert revived.data is revived.gains
+
+    def test_setstate_non_dict_data_stored_verbatim(self, obs_direct):
+        # A pre-split pickle whose 'data' was never a dict: pass it through
+        # rather than trying to split it.
+        site = _first_sites(obs_direct, 1)[0]
+        arr = _clean_caldict([site], _span_times(obs_direct))[site]
+        ct = self._welded_caltable(obs_direct)
+        state = dict(ct.__dict__)
+        state.pop('gains')
+        state.pop('dterms')
+        state['data'] = arr
+
+        revived = eh.caltable.Caltable.__new__(eh.caltable.Caltable)
+        revived.__setstate__(state)
+        assert revived.gains is arr
+        assert revived.dterms == {}
+
+    def test_setstate_drops_legacy_data_key(self, obs_direct):
+        # 'data' is a property now, so a leftover instance-dict entry of that
+        # name would be shadowed and its gains lost.
+        ct = self._welded_caltable(obs_direct)
+        site = _first_sites(obs_direct, 1)[0]
+        state = dict(ct.__dict__)
+        state.pop('gains')
+        state.pop('dterms')
+        state['data'] = _clean_caldict([site], _span_times(obs_direct))
+
+        revived = eh.caltable.Caltable.__new__(eh.caltable.Caltable)
+        revived.__setstate__(state)
+        assert 'data' not in revived.__dict__
+        np.testing.assert_array_equal(revived.gains[site]['rscale'], SPLIT_GAIN_R)
+
+
+class TestSplitLeavesApplycalUnchanged:
+    """Splitting the input must not perturb gain application."""
+
+    def test_applycal_welded_equals_clean_gains(self, obs_direct):
+        times = _span_times(obs_direct)
+        sites = obs_direct.tarr['site']
+        kwargs = dict(source=obs_direct.source, mjd=obs_direct.mjd,
+                      timetype=obs_direct.timetype)
+        ct_welded = eh.caltable.Caltable(
+            obs_direct.ra, obs_direct.dec, obs_direct.rf, obs_direct.bw,
+            _welded_caldict(sites, times), obs_direct.tarr, **kwargs)
+        ct_clean = eh.caltable.Caltable(
+            obs_direct.ra, obs_direct.dec, obs_direct.rf, obs_direct.bw,
+            _clean_caldict(sites, times), obs_direct.tarr, **kwargs)
+
+        # the welded input carries leakage, the clean one does not
+        assert ct_welded.dterms
+        assert ct_clean.dterms == {}
+
+        out_welded = ct_welded.applycal(obs_direct, interp='nearest')
+        out_clean = ct_clean.applycal(obs_direct, interp='nearest')
+
+        circ_w = out_welded.switch_polrep('circ')
+        circ_c = out_clean.switch_polrep('circ')
+        for field in ('rrvis', 'llvis', 'rlvis', 'lrvis'):
+            np.testing.assert_array_equal(circ_w.data[field], circ_c.data[field])
+        for field in ('rrsigma', 'llsigma', 'rlsigma', 'lrsigma'):
+            np.testing.assert_array_equal(circ_w.data[field], circ_c.data[field])

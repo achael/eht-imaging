@@ -35,7 +35,14 @@ import ehtim.observing.obs_helpers as obsh
 
 
 class Caltable:
-    """
+    """A calibration table holding per-station gains and leakage (D-terms).
+
+       Gains and D-terms are stored in two separate per-site tables, each with
+       its own time column, because the two quantities have different natural
+       cadences: gains vary with the atmosphere (solved per scan or finer) while
+       D-terms are instrumental and static or slowly varying. A single-row table
+       represents a time-constant quantity.
+
        Attributes:
            source (str): The source name
            ra (float): The source Right Ascension in fractional hours
@@ -48,12 +55,17 @@ class Caltable:
            tarr (numpy.recarray): The array of telescope data with datatype DTARR
            tkey (dict): A dictionary of rows in the tarr for each site name
 
-           data (dict): keys are sites in tarr, entries are calibration data tables of type DTCAL
+           gains (dict): keys are sites in tarr, entries are gain tables of type DTCAL
+           dterms (dict): keys are sites in tarr, entries are D-term tables of type
+                          DTDTERM. Empty when the table carries no leakage solution.
+           data (dict): backwards-compatible alias for ``gains``; it is the live
+                        dict, so in-place mutation through it is visible on the table
 
     """
 
     def __init__(self, ra, dec, rf, bw, datadict, tarr,
-                 source=ehc.SOURCE_DEFAULT, mjd=ehc.MJD_DEFAULT, timetype='UTC'):
+                 source=ehc.SOURCE_DEFAULT, mjd=ehc.MJD_DEFAULT, timetype='UTC',
+                 *, dterms=None):
         """A Calibration Table.
 
            Args:
@@ -63,12 +75,18 @@ class Caltable:
                mjd (int): The integer MJD of the observation
                bw (float): The observation bandwidth in Hz
 
-               datadict (dict):  keys are sites in tarr, entries are data tables of type DTCAL
+               datadict (dict):  keys are sites in tarr, entries are gain tables of type
+                                 DTCAL. Older welded tables carrying D-term columns are
+                                 split into the gain and D-term tables automatically.
                tarr (numpy.recarray): The array of telescope data with datatype DTARR
 
                source (str): The source name
                mjd (int): The integer MJD of the observation
                timetype (str): How to interpret tstart and tstop; either 'GMST' or 'UTC'
+
+               dterms (dict): keys are sites in tarr, entries are D-term tables of type
+                              DTDTERM, on their own time grid. Keyword-only. When given,
+                              it replaces anything split out of ``datadict``.
 
            Returns:
                (Caltable): an Caltable object
@@ -93,29 +111,56 @@ class Caltable:
         # Save the data, splitting out D-terms from any older welded tables
         self.dterms = {}
         if isinstance(datadict, dict):
-            self.data = {}
+            self.gains = {}
             for site, d in datadict.items():
-                gains, dterms = ehc.split_dtcal(d)
-                self.data[site] = gains
-                if dterms is not None:
-                    self.dterms[site] = dterms
+                site_gains, site_dterms = ehc.split_dtcal(d)
+                self.gains[site] = site_gains
+                if site_dterms is not None:
+                    self.dterms[site] = site_dterms
         else:
-            self.data = datadict
+            self.gains = datadict
+
+        # An explicit D-term table replaces whatever the split produced
+        if dterms is not None:
+            self.dterms = dict(dterms)
+
+    @property
+    def data(self):
+        """The gain table, under its legacy name.
+
+        Returns the live ``gains`` dict, so callers that mutate through
+        ``ct.data[site]`` or reassign ``ct.data[site] = ...`` still act on the
+        table itself.
+        """
+        return self.gains
+
+    @data.setter
+    def data(self, datadict):
+        self.gains = datadict
 
     def __setstate__(self, state):
         # Silently upgrade legacy pickles to the current schema.
         if 'tarr' in state:
             state['tarr'] = ehc.upgrade_tarr(state['tarr'])
-        if 'data' in state and isinstance(state['data'], dict):
-            gains = {}
-            dterms = dict(state.get('dterms', {}))
-            for site, d in state['data'].items():
-                g, dt = ehc.split_dtcal(d)
-                gains[site] = g
-                if dt is not None:
-                    dterms[site] = dt
-            state['data'] = gains
-            state['dterms'] = dterms
+
+        # Pre-split pickles carry 'data'; pop it, since the property shadows any
+        # instance-dict entry of that name and the gains would become unreachable.
+        if 'data' in state:
+            legacy = state.pop('data')
+            if 'gains' not in state:  # never overwrite new-style state
+                if isinstance(legacy, dict):
+                    gains = {}
+                    dterms = dict(state.get('dterms', {}))
+                    for site, d in legacy.items():
+                        g, dt = ehc.split_dtcal(d)
+                        gains[site] = g
+                        if dt is not None:
+                            dterms[site] = dt
+                    state['gains'] = gains
+                    state['dterms'] = dterms
+                else:
+                    # old __init__ stored non-dict datadicts verbatim
+                    state['gains'] = legacy
         state.setdefault('dterms', {})
         self.__dict__.update(state)
 
@@ -151,13 +196,13 @@ class Caltable:
         """
         # sites
         if (isinstance(sites,str) and sites.lower() == 'all'):
-            sites = list(self.data.keys())
+            sites = list(self.gains.keys())
 
         if isinstance(sites,str):
             sites = [sites]
 
         if len(sites)==0:
-            sites = list(self.data.keys())
+            sites = list(self.gains.keys())
 
         keys = [self.tkey[site] for site in sites]
 
@@ -222,13 +267,13 @@ class Caltable:
 
         # sites
         if (isinstance(sites,str) and sites.lower() == 'all'):
-            sites = sorted(list(self.data.keys()))
+            sites = sorted(list(self.gains.keys()))
 
         if isinstance(sites,str):
             sites = [sites]
 
         if len(sites)==0:
-            sites = sorted(list(self.data.keys()))
+            sites = sorted(list(self.gains.keys()))
 
         if len(markersize) == 1:
             markersize = markersize * np.ones(len(sites))
@@ -237,15 +282,15 @@ class Caltable:
         tmins = tmaxes = gmins = gmaxes = []
         for s in range(len(sites)):
             site = sites[s]
-            times = self.data[site]['time']
+            times = self.gains[site]['time']
             if timetype in ['UTC', 'utc'] and self.timetype == 'GMST':
                 times = obsh.gmst_to_utc(times, self.mjd)
             elif timetype in ['GMST', 'gmst'] and self.timetype == 'UTC':
                 times = obsh.utc_to_gmst(times, self.mjd)
             if pol == 'R':
-                gains = self.data[site]['rscale']
+                gains = self.gains[site]['rscale']
             elif pol == 'L':
-                gains = self.data[site]['lscale']
+                gains = self.gains[site]['lscale']
 
             if gain_type == 'amp':
                 gains = np.abs(gains)
@@ -326,24 +371,24 @@ class Caltable:
         """
 
         if len(sites) == 0:
-            sites = self.data.keys()
+            sites = self.gains.keys()
 
         caltab_pos = self.copy()
-        for site in self.data.keys():
+        for site in self.gains.keys():
             if site not in sites:
                 continue
-            if len(self.data[site]['rscale']) == 0:
+            if len(self.gains[site]['rscale']) == 0:
                 continue
 
             if method == 'min':
-                sitemin = np.min([np.abs(self.data[site]['rscale']),
-                                  np.abs(self.data[site]['lscale'])])
+                sitemin = np.min([np.abs(self.gains[site]['rscale']),
+                                  np.abs(self.gains[site]['lscale'])])
             elif method == 'mean':
-                sitemin = np.mean([np.abs(self.data[site]['rscale']),
-                                   np.abs(self.data[site]['lscale'])])
+                sitemin = np.mean([np.abs(self.gains[site]['rscale']),
+                                   np.abs(self.gains[site]['lscale'])])
             elif method == 'median':
-                sitemin = np.median([np.abs(self.data[site]['rscale']),
-                                     np.abs(self.data[site]['lscale'])])
+                sitemin = np.median([np.abs(self.gains[site]['rscale']),
+                                     np.abs(self.gains[site]['lscale'])])
             else:
                 print('Method ' + method + ' not recognized!')
                 return caltab_pos
@@ -351,8 +396,8 @@ class Caltable:
             if sitemin < min_gain:
                 if verbose:
                     print(method + ' gain for ' + site + ' is ' + str(sitemin) + '. Rescaling.')
-                caltab_pos.data[site]['rscale'] /= sitemin
-                caltab_pos.data[site]['lscale'] /= sitemin
+                caltab_pos.gains[site]['rscale'] /= sitemin
+                caltab_pos.gains[site]['lscale'] /= sitemin
             else:
                 if verbose:
                     print(method + ' gain for ' + site + ' is ' + str(sitemin) + '. Not adjusting.')
@@ -372,12 +417,12 @@ class Caltable:
         """
 
         outdict = {}
-        scopes = list(self.data.keys())
+        scopes = list(self.gains.keys())
         for scope in scopes:
-            if np.any(self.data[scope] is None) or len(self.data[scope]) == 0:
+            if np.any(self.gains[scope] is None) or len(self.gains[scope]) == 0:
                 continue
 
-            caldata = copy.deepcopy(self.data[scope])
+            caldata = copy.deepcopy(self.gains[scope])
 
             # Gather data into "scans"
             # TODO we could use a scan table for this as well!
@@ -477,16 +522,16 @@ class Caltable:
             site = self.tarr[s]['site']
 
             try:
-                self.data[site]
+                self.gains[site]
             except KeyError:
                 skipsites.append(site)
                 print(f"No Calibration  Data for {site} !")
                 continue
 
-            time_mjd = self.data[site]['time'] / 24.0 + self.mjd
-            rinterp[site] = relaxed_interp1d(time_mjd, self.data[site]['rscale'],
+            time_mjd = self.gains[site]['time'] / 24.0 + self.mjd
+            rinterp[site] = relaxed_interp1d(time_mjd, self.gains[site]['rscale'],
                                              kind=interp, fill_value=fill_value, bounds_error=False)
-            linterp[site] = relaxed_interp1d(time_mjd, self.data[site]['lscale'],
+            linterp[site] = relaxed_interp1d(time_mjd, self.gains[site]['lscale'],
                                              kind=interp, fill_value=fill_value, bounds_error=False)
 
         bllist = obs.bllist()
@@ -567,7 +612,7 @@ class Caltable:
 
         tarr1 = self.tarr.copy()
         tkey1 = self.tkey.copy()
-        data1 = self.data.copy()
+        data1 = self.gains.copy()
         for caltable in caltablelist:
 
             # TODO check metadata!
@@ -575,7 +620,7 @@ class Caltable:
             # TODO CHECK ARE THEY ALL REFERENCED TO SAME MJD???
             tarr2 = caltable.tarr.copy()
             tkey2 = caltable.tkey.copy()
-            data2 = caltable.data.copy()
+            data2 = caltable.gains.copy()
             sites2 = list(data2.keys())
             sites1 = list(data1.keys())
             for site in sites2:
@@ -648,7 +693,7 @@ class Caltable:
            Returns:
                (Caltable): the averaged Caltable object
         """
-        sites = list(self.data.keys())
+        sites = list(self.gains.keys())
         ntele = len(sites)
 
         datatables = {}
@@ -658,7 +703,7 @@ class Caltable:
             site = sites[s]
 
             # make a list of times that is the same value for all points in the same scan
-            times = self.data[site]['time']
+            times = self.gains[site]['time']
             times_stable = times.copy()
             obs.add_scans()
             scans = obs.scans
@@ -670,8 +715,8 @@ class Caltable:
 
             datatable = []
             for scan in scans:
-                gains_l = self.data[site]['lscale']
-                gains_r = self.data[site]['rscale']
+                gains_l = self.gains[site]['lscale']
+                gains_r = self.gains[site]['rscale']
 
                 # if incoherent average then average the magnitude of gains
                 if incoherent:
@@ -697,12 +742,17 @@ class Caltable:
         return caltable
 
     def invert_gains(self):
+        """Invert the gain table in place, leaving any D-term table untouched.
 
-        sites = self.data.keys()
+           Returns:
+               (Caltable): self, with every gain replaced by its reciprocal
+        """
+
+        sites = self.gains.keys()
 
         for site in sites:
-            self.data[site]['rscale'] = 1 / self.data[site]['rscale']
-            self.data[site]['lscale'] = 1 / self.data[site]['lscale']
+            self.gains[site]['rscale'] = 1 / self.gains[site]['rscale']
+            self.gains[site]['lscale'] = 1 / self.gains[site]['lscale']
 
         return self
 
@@ -782,7 +832,7 @@ def save_caltable(caltable, obs, datadir='.', sqrt_gains=False):
 
     ehtim.io.save.save_array_txt(obs.tarr, datadir + '/array.txt')
 
-    datatables = caltable.data
+    datatables = caltable.gains
     src = caltable.source
     for site_info in caltable.tarr:
         site = site_info['site']
@@ -954,16 +1004,15 @@ def plot_compare_gains(caltab1, caltab2, obs, sites='all', pol='R', gain_type='a
 
     # sites
     if (isinstance(sites,str) and sites.lower() == 'all'):
-        sites = list(set(caltab1.data.keys()).intersection(caltab2.data.keys()))
+        sites = list(set(caltab1.gains.keys()).intersection(caltab2.gains.keys()))
 
     if isinstance(sites,str):
         sites = [sites]
 
     if len(sites)==0:
-        sites = list(set(caltab1.data.keys()).intersection(caltab2.data.keys()))
+        sites = list(set(caltab1.gains.keys()).intersection(caltab2.gains.keys()))
 
     if site_name_dict is None:
-        print('hi')
         site_name_dict = {}
         for site in sites:
             site_name_dict[site] = site
@@ -978,11 +1027,11 @@ def plot_compare_gains(caltab1, caltab2, obs, sites='all', pol='R', gain_type='a
 
         site = sites[s]
         if pol == 'R':
-            gains1 = caltab1.data[site]['rscale']
-            gains2 = caltab2.data[site]['rscale']
+            gains1 = caltab1.gains[site]['rscale']
+            gains2 = caltab2.gains[site]['rscale']
         elif pol == 'L':
-            gains1 = caltab1.data[site]['lscale']
-            gains2 = caltab2.data[site]['lscale']
+            gains1 = caltab1.gains[site]['lscale']
+            gains2 = caltab2.gains[site]['lscale']
 
         if gain_type == 'amp':
             gains1 = np.abs(gains1)

@@ -463,9 +463,11 @@ def test_caltable_pickle_welded_nonzero_dterms_migrates():
     caltab = ec.Caltable(ra=0., dec=0., rf=230e9, bw=1e9,
                          datadict={'A': np.zeros(2, dtype=ehc.DTCAL)},
                          tarr=_legacy_tarr())
+    # a pre-split pickle carries 'data' and neither 'gains' nor 'dterms'
     state = dict(caltab.__dict__)
-    state['data'] = {'A': w}
+    state.pop('gains')
     state.pop('dterms')
+    state['data'] = {'A': w}
     revived = ec.Caltable.__new__(ec.Caltable)
     revived.__setstate__(state)
     assert revived.data['A'].dtype.names == ('time', 'rscale', 'lscale')
