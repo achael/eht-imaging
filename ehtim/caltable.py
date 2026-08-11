@@ -187,6 +187,11 @@ class Caltable:
                     show=True, grid=True, export_pdf=""):
         """Make a plot of the D-terms.
 
+           Plots the leakage recorded in the array table (tarr), one point per
+           site. The cal table's own D-term table (self.dterms) is not read
+           here: it can hold several rows per site, which a single point per
+           site cannot show.
+
            Args:
                sites (list) : list of sites to plot
                label (str) : title for plot
@@ -710,6 +715,10 @@ class Caltable:
 
     def save_txt(self, obs, datadir='.', sqrt_gains=False):
         """Saves a Caltable object to text files in the given directory
+
+           Gains and D-terms go to separate per-site files; see save_caltable
+           for the layout.
+
            Args:
                obs (Obsdata): The observation object associated with the Caltable
                datadir (str): directory to save caltable in
@@ -799,6 +808,12 @@ class Caltable:
 
 def load_caltable(obs, datadir, sqrt_gains=False):
     """Load apriori Caltable object from text files in the given directory
+
+       Reads the per-site gain files, and the per-site D-term files beside them
+       when present -- a directory written before D-terms had an on-disk slot
+       simply loads with no leakage. Gain files are what makes a directory a
+       cal table: with none, this returns False even if D-term files are there.
+
        Args:
            obs (Obsdata): The observation object associated with the Caltable
            datadir (str): directory to save caltable in
@@ -889,6 +904,15 @@ def load_caltable(obs, datadir, sqrt_gains=False):
 
 def save_caltable(caltable, obs, datadir='.', sqrt_gains=False):
     """Saves a Caltable object to text files in the given directory
+
+       Three kinds of file: array.txt for the telescope array, one
+       '<source>_<site>.txt' per site of gains (headerless, five columns:
+       time_mjd rre rim lre lim), and one '<source>_<site>_dterms.txt' per site
+       that carries leakage. The gain format is unchanged and stays headerless;
+       the D-term files, being new, open with a version line. A site with no
+       D-terms gets no D-term file, and sqrt_gains is a gain convention that
+       does not touch them.
+
        Args:
            obs (Obsdata): The observation object associated with the Caltable
            datadir (str): directory to save caltable in

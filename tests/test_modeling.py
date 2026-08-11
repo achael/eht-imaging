@@ -21,10 +21,13 @@ def model_obs(gauss_model, eht_array):
 
 
 def test_modeler_func_fit_gains_caltable(gauss_model, model_obs):
-    """fit_gains=True must build a valid 5-field DTCAL caltable.
+    """fit_gains=True must build a caltable whose rows match the DTCAL dtype.
 
-    Regression for the DTCAL write-site that appended a 3-tuple gain row,
-    which fails to cast against the widened (5-field) DTCAL dtype.
+    Regression for the modeling gain write-site, which builds its rows as
+    tuple literals: the literal's width and the dtype's field count have to
+    agree, so the write-site breaks whenever DTCAL gains or loses a column.
+    The assertion compares against np.dtype(ehc.DTCAL).names rather than a
+    fixed field count, so it holds on either side of such a change.
     """
     res = eh.modeler_func(model_obs, gauss_model, gauss_model.default_prior(),
                           d1='amp', fit_model=False, fit_gains=True, quiet=True)
@@ -32,7 +35,7 @@ def test_modeler_func_fit_gains_caltable(gauss_model, model_obs):
     ct = res['caltable']
     assert isinstance(ct, eh.caltable.Caltable)
 
-    # every per-site gain table must carry the full 5-field dtype
+    # every per-site gain table must carry the current DTCAL fields
     assert len(ct.data) > 0
     for site, rows in ct.data.items():
         assert rows.dtype.names == np.dtype(ehc.DTCAL).names
