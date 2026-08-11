@@ -173,6 +173,7 @@ def test_dtcal_legacy_alias_is_dtcal_circ():
 # ----- DTDTERM -------------------------------------------------------------
 
 def test_dtdterm_circ_alias_equivalence():
+    """The generic names d_p1/d_p2 and the physical dr/dl address the same columns."""
     d = np.zeros(2, dtype=ehc.DTDTERM_CIRC)
     d['dr'] = [0.01 + 0.02j, 0.03 - 0.01j]
     assert np.array_equal(d['d_p1'], d['dr'])
@@ -181,12 +182,13 @@ def test_dtdterm_circ_alias_equivalence():
 
 
 def test_dtdterm_lin_names():
-    # linear leakage carries only the generic names (no physical dr/dl aliases)
+    """Linear leakage carries only the generic names; there are no established physical ones."""
     d = np.zeros(2, dtype=ehc.DTDTERM_LIN)
     assert d.dtype.names == ('time', 'd_p1', 'd_p2')
 
 
 def test_dtdterm_legacy_alias_is_circ():
+    """The bare DTDTERM name still means the circular dtype."""
     assert ehc.DTDTERM is ehc.DTDTERM_CIRC
 
 
@@ -292,6 +294,11 @@ def _welded(n=2, dr=0j, dl=0j):
 
 
 def test_split_dtcal_legacy_is_zero_copy_view():
+    """A legacy gains-only table is re-viewed, not copied.
+
+    The bytes already match the target layout, so only the dtype object
+    changes and the result shares its buffer with the input.
+    """
     oc = np.zeros(2, dtype=_LEGACY_DTCAL)
     oc['rscale'] = [1 + 0j, 2 + 0j]
     gains, dterms = ehc.split_dtcal(oc)
@@ -302,6 +309,7 @@ def test_split_dtcal_legacy_is_zero_copy_view():
 
 
 def test_split_dtcal_identity_on_target_dtype():
+    """A table already in the target dtype is handed straight back."""
     g = np.zeros(2, dtype=ehc.DTCAL_CIRC)
     gains, dterms = ehc.split_dtcal(g)
     assert gains is g
@@ -309,6 +317,11 @@ def test_split_dtcal_identity_on_target_dtype():
 
 
 def test_split_dtcal_welded_zero_dterms_narrows_to_gains_only():
+    """A welded table whose D-terms are all zero yields no D-term table.
+
+    Every writer between PR #254 and the split padded these columns with 0j,
+    so this is the common case and it should migrate to a clean gain table.
+    """
     w = _welded()
     gains, dterms = ehc.split_dtcal(w)
     assert gains.dtype.names == ('time', 'rscale', 'lscale')
@@ -319,6 +332,7 @@ def test_split_dtcal_welded_zero_dterms_narrows_to_gains_only():
 
 
 def test_split_dtcal_welded_nonzero_dterms_extracts_table():
+    """Real D-terms are lifted out onto their own time column, with the gains left clean."""
     w = _welded(dr=0.01 + 0.02j, dl=-0.03j)
     gains, dterms = ehc.split_dtcal(w)
     assert 'dr' not in gains.dtype.fields
@@ -330,6 +344,7 @@ def test_split_dtcal_welded_nonzero_dterms_extracts_table():
 
 
 def test_split_dtcal_welded_lin_basis():
+    """The same split works on a linear-feed table, whose columns are named differently."""
     w = np.zeros(2, dtype=_WELDED_DTCAL_LIN)
     w['xscale'] = [1 + 0j, 2 + 0j]
     w['d_p1'] = 0.05 + 0j
@@ -341,6 +356,7 @@ def test_split_dtcal_welded_lin_basis():
 
 
 def test_split_dtcal_idempotent():
+    """Splitting an already-split table changes nothing."""
     w = _welded(dr=0.01 + 0j)
     gains, dterms = ehc.split_dtcal(w)
     again, again_dterms = ehc.split_dtcal(gains)
@@ -349,7 +365,10 @@ def test_split_dtcal_idempotent():
 
 
 def test_split_dtcal_zero_d_record_normalized_to_one_row():
-    # solvers can hand over a bare record for a site seen in a single scan
+    """A bare record is promoted to a one-row table.
+
+    self_cal leaves this shape behind for a site seen in a single scan.
+    """
     rec = np.zeros((), dtype=_LEGACY_DTCAL)
     gains, dterms = ehc.split_dtcal(rec)
     assert gains.shape == (1,)
@@ -357,7 +376,11 @@ def test_split_dtcal_zero_d_record_normalized_to_one_row():
 
 
 def test_split_dtcal_list_of_records():
-    # a site appearing in exactly one non-first scan arrives as [record]
+    """A site handed over as a list of records is normalised rather than crashing.
+
+    network_cal and polgains_cal produce this for a site that turns up in
+    exactly one non-first scan; it used to raise on the missing .dtype.
+    """
     rec = np.zeros((), dtype=ehc.DTCAL_CIRC)
     gains, dterms = ehc.split_dtcal([rec])
     assert gains.shape == (1,)
@@ -366,7 +389,7 @@ def test_split_dtcal_list_of_records():
 
 
 def test_split_dtcal_untitled_welded_passthrough():
-    # plain-named 5-field arrays predate the titles; leave them alone
+    """A plain-named five-field table predates the title aliases, so it is left alone."""
     untitled = np.zeros(2, dtype=[('time', 'f8'), ('rscale', 'c16'), ('lscale', 'c16'),
                                   ('dr', 'c16'), ('dl', 'c16')])
     gains, dterms = ehc.split_dtcal(untitled)
@@ -375,12 +398,14 @@ def test_split_dtcal_untitled_welded_passthrough():
 
 
 def test_split_dtcal_none_passthrough():
+    """None is passed straight through, as pad_scans expects."""
     gains, dterms = ehc.split_dtcal(None)
     assert gains is None
     assert dterms is None
 
 
 def test_split_dtcal_empty_array():
+    """An empty table splits into an empty table and no D-terms."""
     gains, dterms = ehc.split_dtcal(np.zeros(0, dtype=_LEGACY_DTCAL))
     assert len(gains) == 0
     assert dterms is None
@@ -456,7 +481,11 @@ def test_caltable_pickle_roundtrip_legacy_dtcal():
 
 
 def test_caltable_pickle_welded_nonzero_dterms_migrates():
-    # a pickle from when the D-terms still lived in the gain rows
+    """A pickle from when D-terms lived in the gain rows loads into both tables.
+
+    The state is hand-built in the old schema rather than taken from a live
+    instance, or the new-state guard would skip the migration entirely.
+    """
     w = np.zeros(2, dtype=_WELDED_DTCAL)
     w['rscale'] = [1 + 0j, 1.1 + 0j]
     w['dr'] = 0.04 + 0.01j
