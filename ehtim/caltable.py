@@ -19,6 +19,7 @@
 
 import copy
 import os
+import warnings
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -28,6 +29,7 @@ import ehtim.const_def as ehc
 import ehtim.io.load
 import ehtim.io.save
 import ehtim.observing.obs_helpers as obsh
+from ehtim.warnings import MixedPolConventionWarning
 
 ##################################################################################################
 # Caltable object
@@ -509,6 +511,13 @@ class Caltable:
         if not (self.tarr == obs.tarr).all():
             raise Exception("The telescope array in the Caltable is not the same as in the Obsdata")
 
+        if self.dterms:
+            warnings.warn(
+                "This cal table carries D-terms for "
+                f"{', '.join(sorted(self.dterms))}, but applycal corrects gains only: "
+                "the leakage is left in the data.",
+                MixedPolConventionWarning, stacklevel=2)
+
         if extrapolate is True:  # extrapolate can be a tuple or numpy array
             fill_value = "extrapolate"
         else:
@@ -620,15 +629,21 @@ class Caltable:
 
             # TODO check metadata!
 
-            # Leakage: a site solved on only one side is carried through, but
-            # two leakage solutions for the same site cannot be composed by
-            # multiplying interpolants the way gains can. Fail rather than
-            # return a silently wrong table.
+            # Leakage: a site solved on only one side is carried through. Two
+            # solutions for the same site compose exactly, since J = G(I+D) is
+            # closed under multiplication, but not the way gains do: the leakage
+            # goes as d1*(b2/a2) + d2 to first order, weighted by the other
+            # table's gain ratio, and the product does not commute. That needs a
+            # documented order convention and the gains sampled on the D-term
+            # grid, so it waits for the solvers that actually write leakage into
+            # a cal table. Nothing produces such a table yet, so this is
+            # unreachable through the normal API.
             for site, dterm_table in caltable.dterms.items():
                 if site in dterms1:
                     raise NotImplementedError(
                         f"merge: both caltables carry D-terms for site {site}. "
-                        "Composing two leakage solutions is not supported.")
+                        "Composing two leakage solutions is deferred; it is a "
+                        "Jones product, not a gain-style multiply.")
                 dterms1[site] = copy.deepcopy(dterm_table)
 
             # TODO CHECK ARE THEY ALL REFERENCED TO SAME MJD???

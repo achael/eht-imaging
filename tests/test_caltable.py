@@ -1,12 +1,14 @@
 """Tests for ehtim.caltable.Caltable."""
 
 import pickle
+import warnings
 
 import numpy as np
 import pytest
 
 import ehtim as eh
 from ehtim.const_def import DTCAL
+from ehtim.warnings import MixedPolConventionWarning
 
 # ---------------------------------------------------------------------------
 # Constants used across the module
@@ -15,6 +17,10 @@ from ehtim.const_def import DTCAL
 # Bit-clean numerical-equality tolerances for applycal scaling and gain
 # round-trips. 1e-12 is the float-roundoff floor for products and inversions
 # of double-precision complex numbers across this module.
+# Gain used by the applycal D-term warning tests. Any well-conditioned value
+# works; the tests assert on the warning and on output equality, not on it.
+APPLYCAL_WARN_GAIN = 1.3 + 0.4j
+
 BIT_CLEAN_RTOL = 1e-12
 BIT_CLEAN_ATOL = 1e-12
 
@@ -981,6 +987,47 @@ class TestSplitLeavesApplycalUnchanged:
             np.testing.assert_array_equal(circ_w.data[field], circ_c.data[field])
         for field in ('rrsigma', 'llsigma', 'rlsigma', 'lrsigma'):
             np.testing.assert_array_equal(circ_w.data[field], circ_c.data[field])
+
+
+class TestApplycalWarnsOnDterms:
+    """applycal corrects gains only. If the table carries leakage, say so
+    rather than letting it look like the data came back fully calibrated."""
+
+    def test_applycal_warns_on_unapplied_dterms(self, obs_direct,
+                                                constant_gain_caltable_factory,
+                                                dterm_dict_factory):
+        ct = constant_gain_caltable_factory(APPLYCAL_WARN_GAIN)
+        site = _first_sites(obs_direct, 1)[0]
+        ct.dterms = dterm_dict_factory([site])
+
+        with pytest.warns(MixedPolConventionWarning, match=site):
+            ct.applycal(obs_direct)
+
+    def test_applycal_silent_without_dterms(self, obs_direct,
+                                            constant_gain_caltable_factory):
+        ct = constant_gain_caltable_factory(APPLYCAL_WARN_GAIN)
+        assert ct.dterms == {}
+
+        with warnings.catch_warnings():
+            warnings.simplefilter("error", MixedPolConventionWarning)
+            ct.applycal(obs_direct)
+
+    def test_warning_does_not_change_the_output(self, obs_direct,
+                                                constant_gain_caltable_factory,
+                                                dterm_dict_factory):
+        # the warning is advisory: the returned data is the gains-only result,
+        # identical to the same table with no leakage attached
+        ct_plain = constant_gain_caltable_factory(APPLYCAL_WARN_GAIN)
+        ct_leaky = constant_gain_caltable_factory(APPLYCAL_WARN_GAIN)
+        ct_leaky.dterms = dterm_dict_factory(list(ct_leaky.data))
+
+        out_plain = ct_plain.applycal(obs_direct)
+        with pytest.warns(MixedPolConventionWarning):
+            out_leaky = ct_leaky.applycal(obs_direct)
+
+        for field in ('vis', 'sigma'):
+            np.testing.assert_array_equal(out_plain.data[field],
+                                          out_leaky.data[field])
 
 
 class TestTransformsCarryDterms:
