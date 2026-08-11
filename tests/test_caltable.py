@@ -21,6 +21,14 @@ from ehtim.warnings import MixedPolConventionWarning
 # works; the tests assert on the warning and on output equality, not on it.
 APPLYCAL_WARN_GAIN = 1.3 + 0.4j
 
+# D-term persistence tests. DTERM_TIMES is deliberately not the gain time grid:
+# the two tables are sampled independently. TIME_ATOL is in hours and covers
+# the MJD round-trip, where a double holds ~1e-9 hr of resolution near MJD 5e4.
+SEED_DTERM_ROUNDTRIP = 20260810
+DTERM_TIMES = (0.5, 3.25)
+SINGLE_ROW_TIME_HR = 2.0
+TIME_ATOL = 1e-6
+
 BIT_CLEAN_RTOL = 1e-12
 BIT_CLEAN_ATOL = 1e-12
 
@@ -987,6 +995,126 @@ class TestSplitLeavesApplycalUnchanged:
             np.testing.assert_array_equal(circ_w.data[field], circ_c.data[field])
         for field in ('rrsigma', 'llsigma', 'rlsigma', 'lrsigma'):
             np.testing.assert_array_equal(circ_w.data[field], circ_c.data[field])
+
+
+class TestDtermPersistence:
+    """D-terms round-trip through their own per-site files. The gain files keep
+    their long-standing format, so directories written before the split still
+    load and directories written now are still readable by older code."""
+
+    def test_save_load_roundtrip_with_dterms(self, obs_direct,
+                                             injected_gain_caltable_factory,
+                                             dterm_dict_factory, tmp_path):
+        ct = injected_gain_caltable_factory(seed=SEED_DTERM_ROUNDTRIP)
+        ct.dterms = dterm_dict_factory(list(ct.data), times=DTERM_TIMES)
+        eh.caltable.save_caltable(ct, obs_direct, datadir=str(tmp_path))
+
+        loaded = eh.caltable.load_caltable(obs_direct, str(tmp_path))
+        assert set(loaded.dterms) == set(ct.dterms)
+        for site in ct.dterms:
+            np.testing.assert_allclose(loaded.dterms[site]['dr'],
+                                       ct.dterms[site]['dr'], rtol=GAIN_RTOL)
+            np.testing.assert_allclose(loaded.dterms[site]['dl'],
+                                       ct.dterms[site]['dl'], rtol=GAIN_RTOL)
+            np.testing.assert_allclose(loaded.dterms[site]['time'],
+                                       ct.dterms[site]['time'], atol=TIME_ATOL)
+
+    def test_single_row_dterm_file_roundtrip(self, obs_direct,
+                                             injected_gain_caltable_factory,
+                                             dterm_dict_factory, tmp_path):
+        # one row is the canonical shape for a track-constant D-term
+        ct = injected_gain_caltable_factory(seed=SEED_DTERM_ROUNDTRIP)
+        ct.dterms = dterm_dict_factory(list(ct.data))
+        eh.caltable.save_caltable(ct, obs_direct, datadir=str(tmp_path))
+
+        loaded = eh.caltable.load_caltable(obs_direct, str(tmp_path))
+        for site in ct.dterms:
+            assert len(loaded.dterms[site]) == 1
+            np.testing.assert_allclose(loaded.dterms[site]['dr'],
+                                       ct.dterms[site]['dr'], rtol=GAIN_RTOL)
+
+    def test_dterm_file_has_version_header(self, obs_direct,
+                                           injected_gain_caltable_factory,
+                                           dterm_dict_factory, tmp_path):
+        ct = injected_gain_caltable_factory(seed=SEED_DTERM_ROUNDTRIP)
+        site = _first_sites(obs_direct, 1)[0]
+        ct.dterms = dterm_dict_factory([site])
+        eh.caltable.save_caltable(ct, obs_direct, datadir=str(tmp_path))
+
+        path = tmp_path / f"{ct.source}_{site}{eh.caltable.DTERM_FILE_SUFFIX}"
+        first_line = path.read_text().splitlines()[0]
+        assert first_line == eh.caltable.DTERM_FILE_HEADER
+
+    def test_gains_only_dir_has_no_dterm_files(self, obs_direct,
+                                               injected_gain_caltable_factory,
+                                               tmp_path):
+        # a table with no leakage writes exactly what it always did
+        ct = injected_gain_caltable_factory(seed=SEED_DTERM_ROUNDTRIP)
+        assert ct.dterms == {}
+        eh.caltable.save_caltable(ct, obs_direct, datadir=str(tmp_path))
+
+        assert not list(tmp_path.glob("*" + eh.caltable.DTERM_FILE_SUFFIX))
+        loaded = eh.caltable.load_caltable(obs_direct, str(tmp_path))
+        assert loaded.dterms == {}
+
+    def test_sqrt_gains_does_not_touch_dterms(self, obs_direct,
+                                              injected_gain_caltable_factory,
+                                              dterm_dict_factory, tmp_path):
+        # sqrt_gains is a gain-side convention; leakage is written as-is
+        ct = injected_gain_caltable_factory(seed=SEED_DTERM_ROUNDTRIP)
+        site = _first_sites(obs_direct, 1)[0]
+        ct.dterms = dterm_dict_factory([site])
+        eh.caltable.save_caltable(ct, obs_direct, datadir=str(tmp_path),
+                                  sqrt_gains=True)
+
+        loaded = eh.caltable.load_caltable(obs_direct, str(tmp_path),
+                                           sqrt_gains=True)
+        np.testing.assert_allclose(loaded.dterms[site]['dr'],
+                                   ct.dterms[site]['dr'], rtol=GAIN_RTOL)
+
+    def test_dterm_files_without_gains_returns_false(self, obs_direct,
+                                                     injected_gain_caltable_factory,
+                                                     dterm_dict_factory, tmp_path):
+        # the directory gate is unchanged: no gain files means no caltable,
+        # even if leakage files are sitting there
+        ct = injected_gain_caltable_factory(seed=SEED_DTERM_ROUNDTRIP)
+        ct.dterms = dterm_dict_factory(list(ct.data))
+        eh.caltable.save_caltable(ct, obs_direct, datadir=str(tmp_path))
+        for gain_file in tmp_path.glob(f"{ct.source}_*.txt"):
+            if not gain_file.name.endswith(eh.caltable.DTERM_FILE_SUFFIX):
+                gain_file.unlink()
+
+        assert eh.caltable.load_caltable(obs_direct, str(tmp_path)) is False
+
+
+class TestLoadSingleRowAndLegacyGainFiles:
+    """Regressions for the gain loader: one-row files used to fail with
+    "format unknown" because a 1-D loadtxt result iterates as characters."""
+
+    def test_single_row_gain_file_loads(self, obs_direct, tmp_path):
+        site = _first_sites(obs_direct, 1)[0]
+        time_mjd = obs_direct.mjd + SINGLE_ROW_TIME_HR / 24.0
+        path = tmp_path / f"{obs_direct.source}_{site}.txt"
+        path.write_text(f"{time_mjd} 1.5 0.25 2.5 -0.5\n")
+
+        loaded = eh.caltable.load_caltable(obs_direct, str(tmp_path))
+        assert len(loaded.data[site]) == 1
+        np.testing.assert_allclose(loaded.data[site]['rscale'][0], 1.5 + 0.25j)
+        np.testing.assert_allclose(loaded.data[site]['lscale'][0], 2.5 - 0.5j)
+        np.testing.assert_allclose(loaded.data[site]['time'][0],
+                                   SINGLE_ROW_TIME_HR, atol=TIME_ATOL)
+
+    def test_load_legacy_three_column_real_gains(self, obs_direct, tmp_path):
+        # the oldest on-disk vintage: real-valued gains, three columns
+        site = _first_sites(obs_direct, 1)[0]
+        t0 = obs_direct.mjd + SINGLE_ROW_TIME_HR / 24.0
+        t1 = obs_direct.mjd + (SINGLE_ROW_TIME_HR + 1.0) / 24.0
+        path = tmp_path / f"{obs_direct.source}_{site}.txt"
+        path.write_text(f"{t0} 1.5 2.5\n{t1} 3.5 4.5\n")
+
+        loaded = eh.caltable.load_caltable(obs_direct, str(tmp_path))
+        np.testing.assert_allclose(loaded.data[site]['rscale'], [1.5, 3.5])
+        np.testing.assert_allclose(loaded.data[site]['lscale'], [2.5, 4.5])
 
 
 class TestApplycalWarnsOnDterms:

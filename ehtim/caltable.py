@@ -35,6 +35,12 @@ from ehtim.warnings import MixedPolConventionWarning
 # Caltable object
 ##################################################################################################
 
+# D-terms are saved beside the gain files, one per site. The gain files stay in
+# their long-standing headerless five-column format; these carry a version line
+# so the format can move later. np.loadtxt ignores '#' lines.
+DTERM_FILE_SUFFIX = '_dterms.txt'
+DTERM_FILE_HEADER = '# ehtim caltable dterms format v1: time_mjd d1re d1im d2re d2im'
+
 
 class Caltable:
     """A calibration table holding per-station gains and leakage (D-terms).
@@ -813,11 +819,12 @@ def load_caltable(obs, datadir, sqrt_gains=False):
         site = tarr[s]['site']
         filename = os.path.join(datadir, obs.source + '_' + site + '.txt')
         try:
-            data = np.loadtxt(filename, dtype=bytes).astype(str)
+            # ndmin=2 so a one-row file still iterates as rows, not characters
+            data = np.loadtxt(filename, dtype=bytes, ndmin=2).astype(str)
         except OSError:
             try:
                 filename = datadir + site + '.txt'
-                data = np.loadtxt(filename, dtype=bytes).astype(str)
+                data = np.loadtxt(filename, dtype=bytes, ndmin=2).astype(str)
             except OSError:
                 continue
 
@@ -842,9 +849,38 @@ def load_caltable(obs, datadir, sqrt_gains=False):
             datatable.append(np.array((time, rscale, lscale), dtype=ehc.DTCAL))
 
         datatables[site] = np.array(datatable)
+
+    # D-terms, if this directory has them. Written by save_caltable next to the
+    # gain files; older directories simply have none.
+    dterm_tables = {}
+    for s in range(0, len(tarr)):
+        site = tarr[s]['site']
+        filename = os.path.join(datadir, obs.source + '_' + site + DTERM_FILE_SUFFIX)
+        try:
+            # skip the version line explicitly: letting loadtxt treat it as a
+            # comment makes numpy warn about the skipped line on every load
+            with open(filename) as dterm_file:
+                skiprows = 1 if dterm_file.readline().lstrip().startswith('#') else 0
+            data = np.loadtxt(filename, dtype=bytes, ndmin=2,
+                              skiprows=skiprows, comments=None).astype(str)
+        except OSError:
+            continue
+
+        dterm_table = []
+        for row in data:
+            if len(row) != 5:
+                raise Exception("cannot load caltable D-terms -- format unknown!")
+            time = (float(row[0]) - obs.mjd) * 24.0  # time is given in mjd
+            d_p1 = float(row[1]) + 1j * float(row[2])
+            d_p2 = float(row[3]) + 1j * float(row[4])
+            dterm_table.append(np.array((time, d_p1, d_p2), dtype=ehc.DTDTERM))
+
+        dterm_tables[site] = np.array(dterm_table)
+
     if len(datatables) > 0:
         caltable = Caltable(obs.ra, obs.dec, obs.rf, obs.bw, datatables, tarr,
-                            source=obs.source, mjd=obs.mjd, timetype=obs.timetype)
+                            source=obs.source, mjd=obs.mjd, timetype=obs.timetype,
+                            dterms=dterm_tables)
     else:
         print(f"COULD NOT FIND CALTABLE IN DIRECTORY {datadir}")
         caltable = False
@@ -896,6 +932,27 @@ def save_caltable(caltable, obs, datadir='.', sqrt_gains=False):
                        str(float(lreal)) + ' ' + str(float(limag)) + '\n')
             outfile.write(outline)
         outfile.close()
+
+    # D-terms go in their own per-site files, on their own time grid. Looping
+    # over tarr again rather than over the gain sites: a site can carry leakage
+    # without gains. sqrt_gains is a gain convention and does not touch these.
+    for site_info in caltable.tarr:
+        site = site_info['site']
+
+        if len(caltable.dterms.get(site, [])) == 0:
+            continue
+
+        filename = datadir + '/' + src + '_' + site + DTERM_FILE_SUFFIX
+        with open(filename, 'w') as outfile:
+            outfile.write(DTERM_FILE_HEADER + '\n')
+            for entry in caltable.dterms[site]:
+                time = entry['time'] / 24.0 + obs.mjd
+                outline = (str(float(time)) + ' ' +
+                           str(float(np.real(entry['d_p1']))) + ' ' +
+                           str(float(np.imag(entry['d_p1']))) + ' ' +
+                           str(float(np.real(entry['d_p2']))) + ' ' +
+                           str(float(np.imag(entry['d_p2']))) + '\n')
+                outfile.write(outline)
 
     return
 
