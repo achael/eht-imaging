@@ -271,7 +271,8 @@ def split_dtcal(data):
     Returns
     -------
     gains : numpy.recarray
-        The gain table, dtype DTCAL_CIRC or DTCAL_LIN.
+        The gain table, dtype DTCAL_CIRC or DTCAL_LIN. A fresh array whenever
+        the dtype changed, so the caller's own table is never written through.
     dterms : numpy.recarray or None
         The D-terms lifted out of a welded table, on their own time column,
         or None if there were none to lift. Anything unrecognized is passed
@@ -295,9 +296,15 @@ def split_dtcal(data):
         return data, None
 
     if 'd_p1' not in fields and 'dr' not in fields:
-        # gains only: a view when the layout already matches, else leave it be
-        if data.dtype.names == gain_t.names and data.dtype.itemsize == gain_t.itemsize:
-            return data.view(gain_t), None
+        # Gains only. Copy per field rather than re-viewing the buffer: a view
+        # would hand the caller's own array back to Caltable, so invert_gains
+        # and enforce_positive would write through to it, and it would also
+        # reinterpret a byte-swapped (big-endian) table instead of converting.
+        if data.dtype.names == gain_t.names:
+            gains = _np.zeros(len(data), dtype=gain_t)
+            for name in gain_t.names:
+                gains[name] = data[name]
+            return gains, None
         return data, None
 
     if 'p1scale' not in fields:

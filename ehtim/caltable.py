@@ -42,6 +42,34 @@ DTERM_FILE_SUFFIX = '_dterms.txt'
 DTERM_FILE_HEADER = '# ehtim caltable dterms format v1: time_mjd d1re d1im d2re d2im'
 
 
+def _as_dterm_table(table):
+    """Normalize one site's D-term table, or return None if there is nothing in it.
+
+    Solvers build rows the same way they build gain rows, which for a single
+    time gives a 0-d record rather than a one-row table, and a sidecar file
+    holding only its version line reads back as a plain empty array. Both would
+    otherwise be stored as leakage that later code cannot index.
+
+    Parameters
+    ----------
+    table : numpy.recarray or record or None
+        One site's D-terms, in any of those shapes.
+
+    Returns
+    -------
+    numpy.recarray or None
+        A one-dimensional D-term table, or None when it holds no rows.
+    """
+    if table is None:
+        return None
+    if not isinstance(table, np.ndarray):
+        table = np.asarray(table)
+    if table.dtype.names is None:
+        return None
+    table = np.atleast_1d(table)
+    return table if len(table) else None
+
+
 class Caltable:
     """A calibration table holding per-station gains and leakage (D-terms).
 
@@ -133,7 +161,11 @@ class Caltable:
             if not isinstance(dterms, dict):
                 raise TypeError("dterms must be a dict keyed by site name, "
                                 f"got {type(dterms).__name__}")
-            self.dterms = dict(dterms)
+            self.dterms = {}
+            for site, table in dterms.items():
+                site_dterms = _as_dterm_table(table)
+                if site_dterms is not None:
+                    self.dterms[site] = site_dterms
 
     @property
     def data(self):
@@ -147,20 +179,25 @@ class Caltable:
 
     @data.setter
     def data(self, datadict):
-        # This name means the gain table. A welded (pre-split) table assigned
-        # here would be stored as-is and then fail deep inside pad_scans with a
-        # numpy cast error, so refuse it at the assignment instead. Splitting it
-        # silently is the other option and is worse: it would move leakage out
-        # of the caller's dict into self.dterms, where they never put it.
+        # Same normalization the constructor does, so a solver's caldict works
+        # either way. Leakage is refused, not split: splitting would move the
+        # D-terms out of the caller's own dict.
         if isinstance(datadict, dict):
+            normalized = {}
+            reshaped = False
             for site, table in datadict.items():
-                fields = getattr(getattr(table, 'dtype', None), 'fields', None)
-                if fields and ('d_p1' in fields or 'dr' in fields):
+                site_gains, site_dterms = ehc.split_dtcal(table)
+                if site_dterms is not None:
                     raise TypeError(
                         f"data is the gain table, but the table for {site} "
                         "carries D-term columns. Assign gains to .data and "
                         "leakage to .dterms, or hand the welded table to the "
                         "constructor, which splits it.")
+                reshaped |= site_gains is not table
+                normalized[site] = site_gains
+            # keep the caller's own dict when nothing needed reshaping
+            if reshaped:
+                datadict = normalized
         self.gains = datadict
 
     def __setstate__(self, state):
@@ -230,15 +267,25 @@ class Caltable:
            Returns:
                matplotlib.axes
         """
-        # sites
+        if self.dterms:
+            warnings.warn(
+                "This plot shows the array table's D-terms. This cal table also "
+                f"carries its own solved leakage for {', '.join(sorted(self.dterms))}, "
+                "in self.dterms, which is not what is drawn here.",
+                MixedPolConventionWarning, stacklevel=2)
+
+        # sites: a site can carry leakage without gains, so take both dicts
+        all_sites = list(self.gains.keys())
+        all_sites += [site for site in self.dterms if site not in self.gains]
+
         if (isinstance(sites,str) and sites.lower() == 'all'):
-            sites = list(self.gains.keys())
+            sites = all_sites
 
         if isinstance(sites,str):
             sites = [sites]
 
         if len(sites)==0:
-            sites = list(self.gains.keys())
+            sites = all_sites
 
         keys = [self.tkey[site] for site in sites]
 
@@ -466,46 +513,39 @@ class Caltable:
             scandata = [caldata[0]]
             for i in range(1, len(caldata)):
                 if (caldata[i]['time'] - caldata[i - 1]['time']) * 3600 > maxdiff:
-                    scandata = np.array(scandata, dtype=ehc.DTCAL)
+                    scandata = np.array(scandata, dtype=caldata.dtype)
                     gathered_data.append(scandata)
                     scandata = [caldata[i]]
                 else:
                     scandata.append(caldata[i])
 
             # This adds the last scan
-            scandata = np.array(scandata, dtype=ehc.DTCAL)
+            scandata = np.array(scandata, dtype=caldata.dtype)
             gathered_data.append(scandata)
 
             # Compute padding values and pad scans
             for i in range(len(gathered_data)):
                 gg = gathered_data[i]
 
-                medR = np.median(gg['rscale'])
-                medL = np.median(gg['lscale'])
-
+                # Generic feed names throughout, so a linear-feed table pads
+                # as itself instead of being recast as circular.
                 timepre = gg['time'][0] - maxdiff / 2. / 3600.
                 timepost = gg['time'][-1] + maxdiff / 2. / 3600.
 
                 if padtype == 'median':  # pad with median scan value
-                    medR = np.median(gg['rscale'])
-                    medL = np.median(gg['lscale'])
-                    preR = medR
-                    postR = medR
-                    preL = medL
-                    postL = medL
+                    pre1 = post1 = np.median(gg['p1scale'])
+                    pre2 = post2 = np.median(gg['p2scale'])
                 elif padtype == 'endval':  # pad with endpoints
-                    preR = gg['rscale'][0]
-                    postR = gg['rscale'][-1]
-                    preL = gg['lscale'][0]
-                    postL = gg['lscale'][-1]
+                    pre1 = gg['p1scale'][0]
+                    post1 = gg['p1scale'][-1]
+                    pre2 = gg['p2scale'][0]
+                    post2 = gg['p2scale'][-1]
                 else:  # pad with ones
-                    preR = 1.
-                    postR = 1.
-                    preL = 1.
-                    postL = 1.
+                    pre1 = post1 = 1.
+                    pre2 = post2 = 1.
 
-                valspre = np.array([(timepre, preR, preL)], dtype=ehc.DTCAL)
-                valspost = np.array([(timepost, postR, postL)], dtype=ehc.DTCAL)
+                valspre = np.array([(timepre, pre1, pre2)], dtype=caldata.dtype)
+                valspost = np.array([(timepost, post1, post2)], dtype=caldata.dtype)
 
                 gg = np.insert(gg, 0, valspre)
                 gg = np.append(gg, valspost)
@@ -657,7 +697,11 @@ class Caltable:
 
         tarr1 = self.tarr.copy()
         tkey1 = self.tkey.copy()
-        data1 = self.gains.copy()
+        # Copy the arrays, not just the dict: a site only this table has would
+        # otherwise be shared, and the merged table's invert_gains would then
+        # write back into this one.
+        data1 = {site: (table if table is None else table.copy())
+                 for site, table in self.gains.items()}
         dterms1 = copy.deepcopy(self.dterms)
         for caltable in caltablelist:
 
@@ -667,15 +711,13 @@ class Caltable:
             tarr2 = caltable.tarr.copy()
             tkey2 = caltable.tkey.copy()
 
-            # Leakage: a site solved on only one side is carried through. Two
-            # solutions for the same site compose exactly, since J = G(I+D) is
-            # closed under multiplication, but not the way gains do: the leakage
-            # goes as d1*(b2/a2) + d2 to first order, weighted by the other
-            # table's gain ratio, and the product does not commute. That needs a
-            # documented order convention and the gains sampled on the D-term
-            # grid, so it waits for the solvers that actually write leakage into
-            # a cal table. Nothing produces such a table yet, so this is
-            # unreachable through the normal API.
+            # A site solved on one side only comes through as it is. Two
+            # solutions for the same site do compose, but not the way gains do:
+            # the leakage goes as d1*(b2/a2) + d2 to first order and the product
+            # does not commute, so it needs an order convention and the gains
+            # resampled onto the D-term grid. That waits for the solvers that
+            # write leakage into a cal table. Two tables loaded from disk can
+            # reach this.
             for site, dterm_table in caltable.dterms.items():
                 if site in dterms1:
                     raise NotImplementedError(
@@ -732,8 +774,10 @@ class Caltable:
                 else:
                     if site not in tkey1.keys():
                         tarr1 = np.append(tarr1, tarr2[tkey2[site]])
-                    # copy, so the merged table does not share the input's array
-                    data1[site] = data2[site].copy()
+                    # Copy so the merged table does not share the input's array.
+                    # A site's table can be None, so there may be nothing to copy.
+                    other = data2[site]
+                    data1[site] = other if other is None else other.copy()
 
             # update tkeys every time
             tkey1 = {tarr1[i]['site']: i for i in range(len(tarr1))}
@@ -955,7 +999,9 @@ def save_caltable(caltable, obs, datadir='.', sqrt_gains=False):
     if not os.path.exists(datadir):
         os.makedirs(datadir)
 
-    ehtim.io.save.save_array_txt(obs.tarr, datadir + '/array.txt')
+    # The table's tarr, not the observation's: load_caltable rebuilds tarr from
+    # this file, so a site only the table knows about has to appear here.
+    ehtim.io.save.save_array_txt(caltable.tarr, datadir + '/array.txt')
 
     datatables = caltable.gains
     src = caltable.source
@@ -993,11 +1039,15 @@ def save_caltable(caltable, obs, datadir='.', sqrt_gains=False):
     # without gains. sqrt_gains is a gain convention and does not touch these.
     for site_info in caltable.tarr:
         site = site_info['site']
+        filename = datadir + '/' + src + '_' + site + DTERM_FILE_SUFFIX
 
         if len(caltable.dterms.get(site, [])) == 0:
+            # Left over from an earlier save into this directory; it would be
+            # read back as this table's leakage.
+            if os.path.exists(filename):
+                os.remove(filename)
             continue
 
-        filename = datadir + '/' + src + '_' + site + DTERM_FILE_SUFFIX
         with open(filename, 'w') as outfile:
             outfile.write(DTERM_FILE_HEADER + '\n')
             for entry in caltable.dterms[site]:

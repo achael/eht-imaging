@@ -293,19 +293,36 @@ def _welded(n=2, dr=0j, dl=0j):
     return w
 
 
-def test_split_dtcal_legacy_is_zero_copy_view():
-    """A legacy gains-only table is re-viewed, not copied.
+def test_split_dtcal_legacy_is_copied_not_shared():
+    """A legacy gains-only table is copied, so the caller's array is insulated.
 
-    The bytes already match the target layout, so only the dtype object
-    changes and the result shares its buffer with the input.
+    Re-viewing the buffer would be cheaper, but then invert_gains and
+    enforce_positive on the Caltable would write through to whatever dict the
+    caller handed in.
     """
     oc = np.zeros(2, dtype=_LEGACY_DTCAL)
     oc['rscale'] = [1 + 0j, 2 + 0j]
     gains, dterms = ehc.split_dtcal(oc)
-    assert gains.base is oc          # view, not a copy
     assert dterms is None
     assert gains.dtype.names == ('time', 'rscale', 'lscale')
     assert np.array_equal(gains['p1scale'], oc['rscale'])
+    gains['rscale'] *= 10
+    assert np.array_equal(oc['rscale'], [1 + 0j, 2 + 0j])
+
+
+def test_split_dtcal_byte_swapped_legacy_converts():
+    """A big-endian table is converted, not reinterpreted.
+
+    Its field names and itemsize match the target exactly, so a view would
+    silently turn the values into denormal garbage.
+    """
+    be = np.dtype([('time', '>f8'), ('rscale', '>c16'), ('lscale', '>c16')])
+    oc = np.zeros(2, dtype=be)
+    oc['time'] = [1.0, 2.0]
+    oc['rscale'] = [2 + 0j, 4 + 0j]
+    gains, _ = ehc.split_dtcal(oc)
+    np.testing.assert_array_equal(gains['time'], [1.0, 2.0])
+    np.testing.assert_array_equal(gains['rscale'], [2 + 0j, 4 + 0j])
 
 
 def test_split_dtcal_identity_on_target_dtype():
