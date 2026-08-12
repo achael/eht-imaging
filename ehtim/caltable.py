@@ -130,6 +130,9 @@ class Caltable:
 
         # An explicit D-term table replaces whatever the split produced
         if dterms is not None:
+            if not isinstance(dterms, dict):
+                raise TypeError("dterms must be a dict keyed by site name, "
+                                f"got {type(dterms).__name__}")
             self.dterms = dict(dterms)
 
     @property
@@ -147,6 +150,12 @@ class Caltable:
         self.gains = datadict
 
     def __setstate__(self, state):
+        # Rebind the migration onto a copy. Unpickling hands over a throwaway
+        # dict, but a direct call (migration script, test) hands over one the
+        # caller still owns, and rewriting it in place would both surprise them
+        # and alias the migrated tables into every object restored from it.
+        state = dict(state)
+
         # Silently upgrade legacy pickles to the current schema.
         if 'tarr' in state:
             state['tarr'] = ehc.upgrade_tarr(state['tarr'])
@@ -640,6 +649,10 @@ class Caltable:
 
             # TODO check metadata!
 
+            # TODO CHECK ARE THEY ALL REFERENCED TO SAME MJD???
+            tarr2 = caltable.tarr.copy()
+            tkey2 = caltable.tkey.copy()
+
             # Leakage: a site solved on only one side is carried through. Two
             # solutions for the same site compose exactly, since J = G(I+D) is
             # closed under multiplication, but not the way gains do: the leakage
@@ -655,11 +668,15 @@ class Caltable:
                         f"merge: both caltables carry D-terms for site {site}. "
                         "Composing two leakage solutions is deferred; it is a "
                         "Jones product, not a gain-style multiply.")
+                # A site can carry leakage with no gain rows, so it would never
+                # reach the tarr append below. Its array row still has to come
+                # along: save_caltable walks tarr, so a site missing from it
+                # loses its solved leakage silently. tkey1 is refreshed here so
+                # the gain loop does not append the row a second time.
+                if site not in tkey1 and site in tkey2:
+                    tarr1 = np.append(tarr1, tarr2[tkey2[site]])
+                    tkey1 = {tarr1[i]['site']: i for i in range(len(tarr1))}
                 dterms1[site] = copy.deepcopy(dterm_table)
-
-            # TODO CHECK ARE THEY ALL REFERENCED TO SAME MJD???
-            tarr2 = caltable.tarr.copy()
-            tkey2 = caltable.tkey.copy()
             data2 = caltable.gains.copy()
             sites2 = list(data2.keys())
             sites1 = list(data1.keys())
@@ -1013,6 +1030,12 @@ def make_caltable(obs, gains, sites, times):
 
 
 def relaxed_interp1d(x, y, **kwargs):
+    # TODO: the single-row fallback below invents a flat segment of half-width
+    # 0.5 in whatever units x carries -- half an hour for merge, which
+    # interpolates in raw hours, half a day for applycal, which interpolates in
+    # MJD. Harmless while it only ever pads a stray one-row gain table, but a
+    # time-constant D-term table is one row by construction, so the width stops
+    # being incidental as soon as leakage is interpolated. Make it explicit then.
     try:
         len(x)
     except TypeError:
