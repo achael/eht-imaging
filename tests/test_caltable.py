@@ -884,6 +884,21 @@ class TestDataAliasesGains:
         ct.data = replacement
         assert ct.gains is replacement
 
+    def test_data_setter_rejects_welded_tables(self, obs_direct, unity_caltable):
+        """A welded table assigned to .data is refused where the mistake is made.
+
+        Stored verbatim it would survive the assignment and then fail inside
+        pad_scans with a numpy cast error, far from the cause. Splitting it here
+        instead would be worse: leakage would move into .dterms silently.
+        """
+        ct = unity_caltable.copy()
+        welded = _welded_caldict(_first_sites(obs_direct, 1),
+                                 _span_times(obs_direct))
+        with pytest.raises(TypeError, match="carries D-term columns"):
+            ct.data = welded
+        # the failed assignment left the table alone
+        assert ct.gains is not welded
+
     def test_dterms_defaults_empty(self, unity_caltable):
         """A table built without leakage has an empty dterms dict."""
         assert unity_caltable.dterms == {}

@@ -147,6 +147,20 @@ class Caltable:
 
     @data.setter
     def data(self, datadict):
+        # This name means the gain table. A welded (pre-split) table assigned
+        # here would be stored as-is and then fail deep inside pad_scans with a
+        # numpy cast error, so refuse it at the assignment instead. Splitting it
+        # silently is the other option and is worse: it would move leakage out
+        # of the caller's dict into self.dterms, where they never put it.
+        if isinstance(datadict, dict):
+            for site, table in datadict.items():
+                fields = getattr(getattr(table, 'dtype', None), 'fields', None)
+                if fields and ('d_p1' in fields or 'dr' in fields):
+                    raise TypeError(
+                        f"data is the gain table, but the table for {site} "
+                        "carries D-term columns. Assign gains to .data and "
+                        "leakage to .dterms, or hand the welded table to the "
+                        "constructor, which splits it.")
         self.gains = datadict
 
     def __setstate__(self, state):
