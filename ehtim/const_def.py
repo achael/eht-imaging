@@ -272,19 +272,16 @@ def _normalize_recarray(arr):
 
 # Field names a legacy caltable can carry, used to interpret old tables
 _CAL_GAIN_FIELDS = frozenset({'rscale', 'lscale', 'xscale', 'yscale', 'p1scale', 'p2scale'})
-_CAL_DTERM_FIELDS = frozenset({'dr', 'dl', 'dx', 'dy', 'd_p1', 'd_p2'})
 
 
 def upgrade_caltable(data):
-    """Upgrade legacy per-site caltable data to the current mixed-pol format.
+    """Upgrade legacy per-site caltable gains to the current mixed-pol format.
 
-    Returns (gains, dterms). D-term columns appended to the gain table by a
-    brief older format come back as their own table; dterms is None otherwise.
     Idempotent; raises on field names it cannot interpret.
     """
     import numpy as _np
     if data is None:
-        return data, None
+        return None
     if not isinstance(data, _np.ndarray):
         data = _np.asarray(data)  # solvers can hand over a bare record or [record]
     if data.dtype.names is None:
@@ -308,39 +305,18 @@ def upgrade_caltable(data):
             _warnings.warn("cannot tell the feed basis from generic field names; "
                            "assuming circular", _MPW, stacklevel=2)
     gain_t = _np.dtype(DTCAL_LIN if lin else DTCAL_CIRC)
-    dterm_t = _np.dtype(DTDTERM_LIN if lin else DTDTERM_CIRC)
 
     if data.dtype == gain_t:
-        return data, None
+        return data
 
-    # gains only: copy into the current dtype (a copy, not a view, so the
+    # legacy gains: copy into the current dtype (a copy, not a view, so the
     # caller's array is never written through and byte order is converted)
-    if not any(k in fields for k in _CAL_DTERM_FIELDS):
-        if len(names) != 3 or names[0] != 'time' or not set(names[1:]) <= _CAL_GAIN_FIELDS:
-            raise Exception(f"cannot interpret fields {names} as a caltable gain table")
-        gains = _np.zeros(len(data), dtype=gain_t)
-        for src, dst in zip(names, gain_t.names):
-            gains[dst] = data[src]
-        return gains, None
-
-    # everything below handles the rare case where D-term columns were
-    # appended to the gain table (a brief dev-era format)
-    if (len(names) != 5 or names[0] != 'time'
-            or not set(names[1:3]) <= _CAL_GAIN_FIELDS
-            or not set(names[3:]) <= _CAL_DTERM_FIELDS):
-        raise Exception(f"cannot interpret fields {names} as a caltable")
+    if len(names) != 3 or names[0] != 'time' or not set(names[1:]) <= _CAL_GAIN_FIELDS:
+        raise Exception(f"cannot interpret fields {names} as a caltable gain table")
     gains = _np.zeros(len(data), dtype=gain_t)
-    for src, dst in zip(names[:3], gain_t.names):
+    for src, dst in zip(names, gain_t.names):
         gains[dst] = data[src]
-    d1 = data[names[3]]
-    d2 = data[names[4]]
-    if _np.any(d1 != 0) or _np.any(d2 != 0):
-        dterms = _np.zeros(len(data), dtype=dterm_t)
-        dterms['time'] = data['time']
-        dterms[dterm_t.names[1]] = d1
-        dterms[dterm_t.names[2]] = d2
-        return gains, dterms
-    return gains, None
+    return gains
 
 
 @functools.lru_cache(maxsize=16)

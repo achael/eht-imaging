@@ -88,9 +88,8 @@ class Caltable:
                mjd (int): The integer MJD of the observation
                bw (float): The observation bandwidth in Hz
 
-               datadict (dict):  keys are sites in tarr, entries are gain tables of type
-                                 DTCAL. Older welded tables carrying D-term columns are
-                                 split into the gain and D-term tables automatically.
+               datadict (dict):  keys are sites in tarr, entries are gain tables of
+                                 type DTCAL. Legacy tables are upgraded automatically.
                tarr (numpy.recarray): The array of telescope data with datatype DTARR
                dtermdict (dict): keys are sites in tarr, entries are D-term tables of
                                  type DTDTERM, on their own time grid. When given, it
@@ -120,19 +119,13 @@ class Caltable:
         self.tarr = ehc.upgrade_tarr(tarr)
         self.tkey = {self.tarr[i]['site']: i for i in range(len(self.tarr))}
 
-        # Save the data, splitting out D-terms from any older welded tables
-        self.dterms = {}
+        # Store the gains, upgrading any legacy per-site tables
         if not isinstance(datadict, dict):
             raise TypeError("datadict must be a dict of per-site gain tables "
                             f"keyed by site name, got {type(datadict).__name__}")
-        self.gains = {}
-        for site, d in datadict.items():
-            site_gains, site_dterms = ehc.upgrade_caltable(d)
-            self.gains[site] = site_gains
-            if site_dterms is not None:
-                self.dterms[site] = site_dterms
+        self.gains = {site: ehc.upgrade_caltable(d) for site, d in datadict.items()}
 
-        # An explicit D-term table replaces whatever the split produced
+        self.dterms = {}
         if dtermdict is not None:
             if not isinstance(dtermdict, dict):
                 raise TypeError("dtermdict must be a dict keyed by site name, "
@@ -155,25 +148,15 @@ class Caltable:
 
     @data.setter
     def data(self, datadict):
-        # normalize like the constructor does, but refuse welded tables:
-        # splitting here would move D-terms out of the caller's own dict
-        if isinstance(datadict, dict):
-            normalized = {}
-            reshaped = False
-            for site, table in datadict.items():
-                site_gains, site_dterms = ehc.upgrade_caltable(table)
-                if site_dterms is not None:
-                    raise TypeError(
-                        f"data is the gain table, but the table for {site} "
-                        "carries D-term columns. Assign gains to .data and "
-                        "leakage to .dterms, or hand the welded table to the "
-                        "constructor, which splits it.")
-                reshaped |= site_gains is not table
-                normalized[site] = site_gains
-            # keep the caller's own dict when nothing needed reshaping
-            if reshaped:
-                datadict = normalized
-        self.gains = datadict
+        # normalize like the constructor does
+        if not isinstance(datadict, dict):
+            raise TypeError("data must be a dict of per-site gain tables "
+                            f"keyed by site name, got {type(datadict).__name__}")
+        normalized = {site: ehc.upgrade_caltable(t) for site, t in datadict.items()}
+        # keep the caller's own dict when nothing needed reshaping
+        if all(normalized[site] is datadict[site] for site in normalized):
+            normalized = datadict
+        self.gains = normalized
 
     def __setstate__(self, state):
         # upgrade old pickled caltables to the current schema, on a copy of
@@ -189,15 +172,8 @@ class Caltable:
             legacy = state.pop('data')
             if 'gains' not in state:  # never overwrite new-style state
                 if isinstance(legacy, dict):
-                    gains = {}
-                    dterms = dict(state.get('dterms', {}))
-                    for site, d in legacy.items():
-                        g, dt = ehc.upgrade_caltable(d)
-                        gains[site] = g
-                        if dt is not None:
-                            dterms[site] = dt
-                    state['gains'] = gains
-                    state['dterms'] = dterms
+                    state['gains'] = {site: ehc.upgrade_caltable(d)
+                                      for site, d in legacy.items()}
                 else:
                     # old __init__ stored non-dict datadicts verbatim
                     state['gains'] = legacy
