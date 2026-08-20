@@ -35,21 +35,27 @@ from ehtim.warnings import MixedPolConventionWarning
 # Caltable object
 ##################################################################################################
 
-# D-terms are saved beside the gain files, one per site. The gain files stay in
-# their long-standing headerless five-column format; these carry a version line
-# so the format can move later. np.loadtxt ignores '#' lines.
+# NOTE: caltables loaded from old data carry no D-term tables; any D-term
+# information stays in the tarr, assumed fixed over the observation.
+# TODO: when the new calibration module lands, decide what happens when both
+# the tarr and the caltable define D-terms (zero the tarr? warn and prefer
+# the table?).
+
+# Any optional time-dependent D-term tables are saved beside the gain files,
+# opened with a version line. Gain files keep their headerless 5-column format.
 DTERM_FILE_SUFFIX = '_dterms.txt'
 DTERM_FILE_HEADER = '# ehtim caltable dterms format v1: time_mjd d1re d1im d2re d2im'
 
 
 class Caltable:
-    """A calibration table holding per-station gains and leakage (D-terms).
+    """A calibration table of time-dependent station gains and leakage (D-terms).
 
-       Gains and D-terms are stored in two separate per-site tables, each with
-       its own time column, because the two quantities have different natural
-       cadences: gains vary with the atmosphere (solved per scan or finer) while
-       D-terms are instrumental and static or slowly varying. A single-row table
-       represents a time-constant quantity.
+       Gains and D-terms live in separate per-site tables, each with its own
+       time column; a single-row table represents a time-constant quantity.
+       A caltable with no D-term table falls back to the D-terms in the tarr,
+       assumed fixed over the observation.
+       TODO: flag or resolve cases where both the tarr and the caltable
+       define D-terms.
 
        Attributes:
            source (str): The source name
@@ -149,9 +155,8 @@ class Caltable:
 
     @data.setter
     def data(self, datadict):
-        # Same normalization the constructor does, so a solver's caldict works
-        # either way. Leakage is refused, not split: splitting would move the
-        # D-terms out of the caller's own dict.
+        # normalize like the constructor does, but refuse welded tables:
+        # splitting here would move D-terms out of the caller's own dict
         if isinstance(datadict, dict):
             normalized = {}
             reshaped = False
@@ -171,18 +176,15 @@ class Caltable:
         self.gains = datadict
 
     def __setstate__(self, state):
-        # Rebind the migration onto a copy. Unpickling hands over a throwaway
-        # dict, but a direct call (migration script, test) hands over one the
-        # caller still owns, and rewriting it in place would both surprise them
-        # and alias the migrated tables into every object restored from it.
+        # upgrade old pickled caltables to the current schema, on a copy of
+        # the state dict since a directly passed one belongs to the caller
         state = dict(state)
 
-        # Silently upgrade legacy pickles to the current schema.
         if 'tarr' in state:
             state['tarr'] = ehc.upgrade_tarr(state['tarr'])
 
-        # Pre-split pickles carry 'data'; pop it, since the property shadows any
-        # instance-dict entry of that name and the gains would become unreachable.
+        # deal with pickles from before the old 'data' attribute was renamed
+        # to 'gains' ('data' is a property now and would shadow the entry)
         if 'data' in state:
             legacy = state.pop('data')
             if 'gains' not in state:  # never overwrite new-style state
@@ -218,9 +220,8 @@ class Caltable:
         """Make a plot of the D-terms.
 
            Plots the leakage recorded in the array table (tarr), one point per
-           site. The cal table's own D-term table (self.dterms) is not read
-           here: it can hold several rows per site, which a single point per
-           site cannot show.
+           site. The caltable's own time-dependent D-term table (self.dterms)
+           is not read here.
 
            Args:
                sites (list) : list of sites to plot
@@ -557,7 +558,7 @@ class Caltable:
 
         if self.dterms:
             warnings.warn(
-                "This cal table carries D-terms for "
+                "This cal table carries time-dependent D-terms for "
                 f"{', '.join(sorted(self.dterms))}, but applycal corrects gains only: "
                 "the leakage is left in the data.",
                 MixedPolConventionWarning, stacklevel=2)
@@ -667,9 +668,8 @@ class Caltable:
 
         tarr1 = self.tarr.copy()
         tkey1 = self.tkey.copy()
-        # Copy the arrays, not just the dict: a site only this table has would
-        # otherwise be shared, and the merged table's invert_gains would then
-        # write back into this one.
+        # copy the arrays, not just the dict, so the merged table never
+        # writes back into this one
         data1 = {site: (table if table is None else table.copy())
                  for site, table in self.gains.items()}
         dterms1 = copy.deepcopy(self.dterms)
@@ -681,24 +681,18 @@ class Caltable:
             tarr2 = caltable.tarr.copy()
             tkey2 = caltable.tkey.copy()
 
-            # A site solved on one side only comes through as it is. Two
-            # solutions for the same site do compose, but not the way gains do:
-            # the leakage goes as d1*(b2/a2) + d2 to first order and the product
-            # does not commute, so it needs an order convention and the gains
-            # resampled onto the D-term grid. That waits for the solvers that
-            # write leakage into a cal table. Two tables loaded from disk can
-            # reach this.
+            # merging time-dependent D-term tables.
+            # If both caltables carry D-terms for a site, raise for now:
+            # composing D-terms requires full Jones treatment.
             for site, dterm_table in caltable.dterms.items():
                 if site in dterms1:
                     raise NotImplementedError(
                         f"merge: both caltables carry D-terms for site {site}. "
                         "Composing two leakage solutions is deferred; it is a "
                         "Jones product, not a gain-style multiply.")
-                # A site can carry leakage with no gain rows, so it would never
-                # reach the tarr append below. Its array row still has to come
-                # along: save_caltable walks tarr, so a site missing from it
-                # loses its solved leakage silently. tkey1 is refreshed here so
-                # the gain loop does not append the row a second time.
+                # if D-terms are only in the merged-in caltable, we can add them.
+                # Be sure to add the tarr row; it may be missed in the gain
+                # merge below.
                 if site not in tkey1 and site in tkey2:
                     tarr1 = np.append(tarr1, tarr2[tkey2[site]])
                     tkey1 = {tarr1[i]['site']: i for i in range(len(tarr1))}
@@ -744,8 +738,8 @@ class Caltable:
                 else:
                     if site not in tkey1.keys():
                         tarr1 = np.append(tarr1, tarr2[tkey2[site]])
-                    # Copy so the merged table does not share the input's array.
-                    # A site's table can be None, so there may be nothing to copy.
+                    # copy (None-safe) so the merged table does not share
+                    # the input's array
                     other = data2[site]
                     data1[site] = other if other is None else other.copy()
 
@@ -827,8 +821,8 @@ class Caltable:
             datatables[site] = np.array(datatable)
 
         if len(datatables) > 0:
-            # averaging is a gain-table operation; the leakage solution, which
-            # lives on its own time grid, is carried over as-is
+            # the D-term table is carried over as-is
+            # TODO: we may want to eventually have a function to average D-terms
             caltable = Caltable(obs.ra, obs.dec, obs.rf,
                                 obs.bw, datatables, obs.tarr, source=obs.source,
                                 mjd=obs.mjd, timetype=obs.timetype,
@@ -964,13 +958,9 @@ def _caltable_filenames(caltable, datadir):
 def save_caltable(caltable, obs, datadir='.', sqrt_gains=False, overwrite=False):
     """Saves a Caltable object to text files in the given directory
 
-       Three kinds of file: array.txt for the telescope array, one
-       '<source>_<site>.txt' per site of gains (headerless, five columns:
-       time_mjd rre rim lre lim), and one '<source>_<site>_dterms.txt' per site
-       that carries leakage. The gain format is unchanged and stays headerless;
-       the D-term files, being new, open with a version line. A site with no
-       D-terms gets no D-term file, and sqrt_gains is a gain convention that
-       does not touch them.
+       Writes array.txt, one '<source>_<site>.txt' per site of gains, and one
+       '<source>_<site>_dterms.txt' per site that carries time-dependent
+       leakage.
 
        Args:
            obs (Obsdata): The observation object associated with the Caltable

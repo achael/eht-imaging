@@ -1,6 +1,9 @@
 # obs_simulate.py
 # functions to simulate interferometric observations
 #
+# TODO: consider adding time-variable D-terms to the simulated caltables
+# (D-terms are fixed per site for now, and saved via the tarr)
+#
 #    Copyright (C) 2018 Andrew Chael
 #
 #    This program is free software: you can redistribute it and/or modify
