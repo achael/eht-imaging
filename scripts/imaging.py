@@ -176,7 +176,7 @@ if image_pol:
     if realdata:
         # FIX FOR ER5 DATA! rotate polarization because of error in ALMA ... do not have to do this normally
         datadict = {t['site']:np.array([(0.0, 0.0 + 1j*1.0, 1.0 + 1j*0.0)], dtype=eh.DTCAL) for t in obs_sc_pol.tarr}
-        caltab = eh.caltable.Caltable(obs_sc_pol.ra,obs_sc_pol.dec,obs_sc_pol.rf,obs_sc_pol.bw,datadict,obs_sc_pol.tarr,source=obs_sc_pol.source,mjd=obs_sc_pol.mjd)
+        caltab = eh.caltable.Caltable(obs_sc_pol.ra,obs_sc_pol.dec,obs_sc_pol.rf,obs_sc_pol.bw,datadict,obs_sc_pol.tarr,obs_sc_pol.source,obs_sc_pol.mjd)
         obs_sc_pol = caltab.applycal(obs_sc_pol, interp='nearest',extrapolate=True)
 
 
