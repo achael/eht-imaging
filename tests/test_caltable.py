@@ -1239,7 +1239,8 @@ class TestSplitFixups:
         assert list(tmp_path.glob("*" + eh.caltable.DTERM_FILE_SUFFIX))
 
         ct.dterms = {}
-        eh.caltable.save_caltable(ct, obs_direct, datadir=str(tmp_path))
+        eh.caltable.save_caltable(ct, obs_direct, datadir=str(tmp_path),
+                                  overwrite=True)
 
         assert not list(tmp_path.glob("*" + eh.caltable.DTERM_FILE_SUFFIX))
         assert eh.caltable.load_caltable(obs_direct, str(tmp_path)).dterms == {}
@@ -1400,6 +1401,51 @@ class TestDtermPersistence:
                            f"{mjd + 1.0} 2.0 0.0 0.5 0.0\n")
         # and a leakage-free table grows no D-term sidecar
         assert not list(tmp_path.glob("*" + eh.caltable.DTERM_FILE_SUFFIX))
+
+
+class TestSaveOverwriteGuard:
+    """save_caltable refuses to clobber an existing caltable unless told to."""
+
+    def test_resave_raises_without_overwrite(self, obs_direct,
+                                             injected_gain_caltable_factory,
+                                             tmp_path):
+        """A second save into the same directory raises by default."""
+        ct = injected_gain_caltable_factory(seed=SEED_DTERM_ROUNDTRIP)
+        eh.caltable.save_caltable(ct, obs_direct, datadir=str(tmp_path))
+        with pytest.raises(Exception, match="overwrite=True"):
+            eh.caltable.save_caltable(ct, obs_direct, datadir=str(tmp_path))
+
+    def test_resave_with_overwrite_replaces(self, obs_direct,
+                                            injected_gain_caltable_factory,
+                                            tmp_path):
+        """overwrite=True re-saves, and the directory reflects the new gains."""
+        ct = injected_gain_caltable_factory(seed=SEED_DTERM_ROUNDTRIP)
+        eh.caltable.save_caltable(ct, obs_direct, datadir=str(tmp_path))
+        site = _first_sites(obs_direct, 1)[0]
+        ct.gains[site]['rscale'] *= 2
+        eh.caltable.save_caltable(ct, obs_direct, datadir=str(tmp_path),
+                                  overwrite=True)
+        loaded = eh.caltable.load_caltable(obs_direct, str(tmp_path))
+        np.testing.assert_allclose(loaded.gains[site]['rscale'],
+                                   ct.gains[site]['rscale'], rtol=GAIN_RTOL)
+
+    def test_stale_gain_file_removed_on_resave(self, obs_direct,
+                                               injected_gain_caltable_factory,
+                                               tmp_path):
+        """A site dropped from the table loses its file, same as D-terms do."""
+        ct = injected_gain_caltable_factory(seed=SEED_DTERM_ROUNDTRIP)
+        eh.caltable.save_caltable(ct, obs_direct, datadir=str(tmp_path))
+        site = _first_sites(obs_direct, 1)[0]
+        gainfile = tmp_path / f"{ct.source}_{site}.txt"
+        assert gainfile.exists()
+
+        ct.gains.pop(site)
+        eh.caltable.save_caltable(ct, obs_direct, datadir=str(tmp_path),
+                                  overwrite=True)
+
+        assert not gainfile.exists()
+        loaded = eh.caltable.load_caltable(obs_direct, str(tmp_path))
+        assert site not in loaded.gains
 
 
 class TestLoadSingleRowAndLegacyGainFiles:

@@ -755,7 +755,9 @@ def make_jones(obs, opacitycal=True, ampcal=True, phasecal=True, dcal=True,
                             datatables, obs_tmp.tarr, source=obs_tmp.source,
                             mjd=obs_tmp.mjd, timetype=obs_tmp.timetype)
 
-        caltable.save_txt(obs_tmp, datadir=caltable_path+'_simdata_caltable')
+        # each simulation rewrites its own truth table
+        caltable.save_txt(obs_tmp, datadir=caltable_path+'_simdata_caltable',
+                          overwrite=True)
 
     return out
 

@@ -758,7 +758,7 @@ class Caltable:
 
         return new_caltable
 
-    def save_txt(self, obs, datadir='.', sqrt_gains=False):
+    def save_txt(self, obs, datadir='.', sqrt_gains=False, overwrite=False):
         """Saves a Caltable object to text files in the given directory
 
            Gains and D-terms go to separate per-site files; see save_caltable
@@ -768,11 +768,14 @@ class Caltable:
                obs (Obsdata): The observation object associated with the Caltable
                datadir (str): directory to save caltable in
                sqrt_gains (bool): If True, we square gains before saving.
+               overwrite (bool): If True, allow existing caltable files in datadir
+                                 to be overwritten or deleted
 
            Returns:
         """
 
-        return save_caltable(self, obs, datadir=datadir, sqrt_gains=sqrt_gains)
+        return save_caltable(self, obs, datadir=datadir, sqrt_gains=sqrt_gains,
+                             overwrite=overwrite)
 
     def scan_avg(self, obs, incoherent=True):
         """average the gains across scans.
@@ -947,7 +950,18 @@ def load_caltable(obs, datadir, sqrt_gains=False):
     return caltable
 
 
-def save_caltable(caltable, obs, datadir='.', sqrt_gains=False):
+def _caltable_filenames(caltable, datadir):
+    """Every file save_caltable writes to or removes in datadir."""
+    src = caltable.source
+    names = [datadir + '/array.txt']
+    for site_info in caltable.tarr:
+        site = site_info['site']
+        names.append(datadir + '/' + src + '_' + site + '.txt')
+        names.append(datadir + '/' + src + '_' + site + DTERM_FILE_SUFFIX)
+    return names
+
+
+def save_caltable(caltable, obs, datadir='.', sqrt_gains=False, overwrite=False):
     """Saves a Caltable object to text files in the given directory
 
        Three kinds of file: array.txt for the telescope array, one
@@ -962,12 +976,20 @@ def save_caltable(caltable, obs, datadir='.', sqrt_gains=False):
            obs (Obsdata): The observation object associated with the Caltable
            datadir (str): directory to save caltable in
            sqrt_gains (bool): If True, we square gains before saving.
+           overwrite (bool): If True, allow existing caltable files in datadir
+                             to be overwritten or deleted
 
        Returns:
     """
 
     if not os.path.exists(datadir):
         os.makedirs(datadir)
+
+    # don't clobber an existing caltable unless asked
+    existing = [f for f in _caltable_filenames(caltable, datadir) if os.path.exists(f)]
+    if existing and not overwrite:
+        raise Exception(f"{len(existing)} caltable file(s) in {datadir} would be "
+                        "overwritten or deleted; pass overwrite=True to allow it")
 
     # The table's tarr, not the observation's: load_caltable rebuilds tarr from
     # this file, so a site only the table knows about has to appear here.
@@ -977,11 +999,14 @@ def save_caltable(caltable, obs, datadir='.', sqrt_gains=False):
     src = caltable.source
     for site_info in caltable.tarr:
         site = site_info['site']
+        filename = datadir + '/' + src + '_' + site + '.txt'
 
         if len(datatables.get(site, [])) == 0:
+            # a stale file would be read back as this table's gains
+            if os.path.exists(filename):
+                os.remove(filename)
             continue
 
-        filename = datadir + '/' + src + '_' + site + '.txt'
         outfile = open(filename, 'w')
         site_data = datatables[site]
         for entry in site_data:
@@ -1004,16 +1029,14 @@ def save_caltable(caltable, obs, datadir='.', sqrt_gains=False):
             outfile.write(outline)
         outfile.close()
 
-    # D-terms go in their own per-site files, on their own time grid. Looping
-    # over tarr again rather than over the gain sites: a site can carry leakage
-    # without gains. sqrt_gains is a gain convention and does not touch these.
+    # Time-dependent D-terms go in their own per-site files. Loop over tarr, not
+    # the gain sites: a site can carry leakage with no gains.
     for site_info in caltable.tarr:
         site = site_info['site']
         filename = datadir + '/' + src + '_' + site + DTERM_FILE_SUFFIX
 
         if len(caltable.dterms.get(site, [])) == 0:
-            # Left over from an earlier save into this directory; it would be
-            # read back as this table's leakage.
+            # a stale file would be read back as this table's leakage
             if os.path.exists(filename):
                 os.remove(filename)
             continue
