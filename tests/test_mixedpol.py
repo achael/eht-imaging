@@ -296,7 +296,7 @@ def _welded(n=2, dr=0j, dl=0j):
     return w
 
 
-def test_split_dtcal_legacy_is_copied_not_shared():
+def test_upgrade_caltable_legacy_is_copied_not_shared():
     """A legacy gains-only table is copied, so the caller's array is insulated.
 
     Re-viewing the buffer would be cheaper, but then invert_gains and
@@ -305,7 +305,7 @@ def test_split_dtcal_legacy_is_copied_not_shared():
     """
     oc = np.zeros(2, dtype=_LEGACY_DTCAL)
     oc['rscale'] = [1 + 0j, 2 + 0j]
-    gains, dterms = ehc.split_dtcal(oc)
+    gains, dterms = ehc.upgrade_caltable(oc)
     assert dterms is None
     assert gains.dtype.names == ('time', 'rscale', 'lscale')
     assert np.array_equal(gains['p1scale'], oc['rscale'])
@@ -313,7 +313,7 @@ def test_split_dtcal_legacy_is_copied_not_shared():
     assert np.array_equal(oc['rscale'], [1 + 0j, 2 + 0j])
 
 
-def test_split_dtcal_byte_swapped_legacy_converts():
+def test_upgrade_caltable_byte_swapped_legacy_converts():
     """A big-endian table is converted, not reinterpreted.
 
     Its field names and itemsize match the target exactly, so a view would
@@ -323,27 +323,27 @@ def test_split_dtcal_byte_swapped_legacy_converts():
     oc = np.zeros(2, dtype=be)
     oc['time'] = [1.0, 2.0]
     oc['rscale'] = [2 + 0j, 4 + 0j]
-    gains, _ = ehc.split_dtcal(oc)
+    gains, _ = ehc.upgrade_caltable(oc)
     np.testing.assert_array_equal(gains['time'], [1.0, 2.0])
     np.testing.assert_array_equal(gains['rscale'], [2 + 0j, 4 + 0j])
 
 
-def test_split_dtcal_identity_on_target_dtype():
+def test_upgrade_caltable_identity_on_target_dtype():
     """A table already in the target dtype is handed straight back."""
     g = np.zeros(2, dtype=ehc.DTCAL_CIRC)
-    gains, dterms = ehc.split_dtcal(g)
+    gains, dterms = ehc.upgrade_caltable(g)
     assert gains is g
     assert dterms is None
 
 
-def test_split_dtcal_welded_zero_dterms_narrows_to_gains_only():
+def test_upgrade_caltable_welded_zero_dterms_narrows_to_gains_only():
     """A welded table whose D-terms are all zero yields no D-term table.
 
     Every writer between PR #254 and the split padded these columns with 0j,
     so this is the common case and it should migrate to a clean gain table.
     """
     w = _welded()
-    gains, dterms = ehc.split_dtcal(w)
+    gains, dterms = ehc.upgrade_caltable(w)
     assert gains.dtype.names == ('time', 'rscale', 'lscale')
     assert dterms is None
     assert np.array_equal(gains['rscale'], w['rscale'])
@@ -351,10 +351,10 @@ def test_split_dtcal_welded_zero_dterms_narrows_to_gains_only():
     assert np.array_equal(gains['time'], w['time'])
 
 
-def test_split_dtcal_welded_nonzero_dterms_extracts_table():
+def test_upgrade_caltable_welded_nonzero_dterms_extracts_table():
     """Real D-terms are lifted out onto their own time column, with the gains left clean."""
     w = _welded(dr=0.01 + 0.02j, dl=-0.03j)
-    gains, dterms = ehc.split_dtcal(w)
+    gains, dterms = ehc.upgrade_caltable(w)
     assert 'dr' not in gains.dtype.fields
     assert dterms.dtype.names == ('time', 'dr', 'dl')
     # the D-terms keep their own copy of the time column
@@ -363,70 +363,99 @@ def test_split_dtcal_welded_nonzero_dterms_extracts_table():
     assert np.array_equal(dterms['d_p2'], w['dl'])
 
 
-def test_split_dtcal_welded_lin_basis():
+def test_upgrade_caltable_welded_lin_basis():
     """The same split works on a linear-feed table, whose columns are named differently."""
     w = np.zeros(2, dtype=_WELDED_DTCAL_LIN)
     w['xscale'] = [1 + 0j, 2 + 0j]
     w['d_p1'] = 0.05 + 0j
-    gains, dterms = ehc.split_dtcal(w)
+    gains, dterms = ehc.upgrade_caltable(w)
     assert gains.dtype.names == ('time', 'xscale', 'yscale')
     assert dterms.dtype.names == ('time', 'dx', 'dy')
     assert np.array_equal(gains['xscale'], w['xscale'])
     assert np.array_equal(dterms['d_p1'], w['d_p1'])
 
 
-def test_split_dtcal_idempotent():
+def test_upgrade_caltable_idempotent():
     """Splitting an already-split table changes nothing."""
     w = _welded(dr=0.01 + 0j)
-    gains, dterms = ehc.split_dtcal(w)
-    again, again_dterms = ehc.split_dtcal(gains)
+    gains, dterms = ehc.upgrade_caltable(w)
+    again, again_dterms = ehc.upgrade_caltable(gains)
     assert again is gains
     assert again_dterms is None
 
 
-def test_split_dtcal_zero_d_record_normalized_to_one_row():
+def test_upgrade_caltable_zero_d_record_normalized_to_one_row():
     """A bare record is promoted to a one-row table.
 
     self_cal leaves this shape behind for a site seen in a single scan.
     """
     rec = np.zeros((), dtype=_LEGACY_DTCAL)
-    gains, dterms = ehc.split_dtcal(rec)
+    gains, dterms = ehc.upgrade_caltable(rec)
     assert gains.shape == (1,)
     assert dterms is None
 
 
-def test_split_dtcal_list_of_records():
+def test_upgrade_caltable_list_of_records():
     """A site handed over as a list of records is normalised rather than crashing.
 
     network_cal and polgains_cal produce this for a site that turns up in
     exactly one non-first scan; it used to raise on the missing .dtype.
     """
     rec = np.zeros((), dtype=ehc.DTCAL_CIRC)
-    gains, dterms = ehc.split_dtcal([rec])
+    gains, dterms = ehc.upgrade_caltable([rec])
     assert gains.shape == (1,)
     assert gains.dtype.names == ('time', 'rscale', 'lscale')
     assert dterms is None
 
 
-def test_split_dtcal_untitled_welded_passthrough():
-    """A plain-named five-field table predates the title aliases, so it is left alone."""
+def test_upgrade_caltable_untitled_welded_splits():
+    """A plain-named five-field table is upgraded the same way as a titled one."""
     untitled = np.zeros(2, dtype=[('time', 'f8'), ('rscale', 'c16'), ('lscale', 'c16'),
                                   ('dr', 'c16'), ('dl', 'c16')])
-    gains, dterms = ehc.split_dtcal(untitled)
-    assert gains is untitled
+    untitled['rscale'] = [1 + 0j, 2 + 0j]
+    untitled['dr'] = 0.05j
+    gains, dterms = ehc.upgrade_caltable(untitled)
+    assert gains.dtype.names == ('time', 'rscale', 'lscale')
+    assert np.array_equal(gains['rscale'], untitled['rscale'])
+    assert np.array_equal(dterms['dr'], untitled['dr'])
+
+
+def test_upgrade_caltable_generic_names_assume_circular():
+    """Generic-only field names cannot reveal the basis; circular is assumed, with a warning."""
+    generic = np.zeros(2, dtype=[('time', 'f8'), ('p1scale', 'c16'), ('p2scale', 'c16')])
+    generic['p1scale'] = [1 + 0j, 2 + 0j]
+    with pytest.warns(ehw.MixedPolConventionWarning, match="assuming circular"):
+        gains, dterms = ehc.upgrade_caltable(generic)
+    assert gains.dtype == np.dtype(ehc.DTCAL_CIRC)
+    assert np.array_equal(gains['rscale'], generic['p1scale'])
     assert dterms is None
 
 
-def test_split_dtcal_none_passthrough():
+def test_upgrade_caltable_unknown_fields_raise():
+    """Field names that are not caltable fields raise instead of being relabelled."""
+    bad = np.zeros(2, dtype=[('time', 'f8'), ('foo', 'c16'), ('bar', 'c16')])
+    with pytest.raises(Exception, match="cannot interpret"):
+        ehc.upgrade_caltable(bad)
+
+
+def test_upgrade_caltable_dterm_table_raises():
+    """A D-term table passed as gain data raises instead of being stored as gains."""
+    d = np.zeros(2, dtype=ehc.DTDTERM_CIRC)
+    d['dr'] = 0.05j
+    with pytest.raises(Exception, match="cannot interpret"):
+        ehc.upgrade_caltable(d)
+
+
+def test_upgrade_caltable_none_passthrough():
     """None is passed straight through, as pad_scans expects."""
-    gains, dterms = ehc.split_dtcal(None)
+    gains, dterms = ehc.upgrade_caltable(None)
     assert gains is None
     assert dterms is None
 
 
-def test_split_dtcal_empty_array():
+def test_upgrade_caltable_empty_array():
     """An empty table splits into an empty table and no D-terms."""
-    gains, dterms = ehc.split_dtcal(np.zeros(0, dtype=_LEGACY_DTCAL))
+    gains, dterms = ehc.upgrade_caltable(np.zeros(0, dtype=_LEGACY_DTCAL))
     assert len(gains) == 0
     assert dterms is None
 

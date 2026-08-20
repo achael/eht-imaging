@@ -253,73 +253,76 @@ def upgrade_dtpol_circ(data):
     return data
 
 
-def split_dtcal(data):
-    """Split a per-site cal recarray into separate gain and D-term tables.
+# Field names a legacy caltable can carry, used to interpret old tables
+_CAL_GAIN_FIELDS = frozenset({'rscale', 'lscale', 'xscale', 'yscale', 'p1scale', 'p2scale'})
+_CAL_DTERM_FIELDS = frozenset({'dr', 'dl', 'dx', 'dy', 'd_p1', 'd_p2'})
 
-    Cal tables used to carry the D-terms in the gain rows, sharing one time
-    column. Gains and D-terms vary on different timescales, so they are stored
-    as two tables now. Use this on anything handed to Caltable to normalize it,
-    whichever vintage it came from: a legacy gains-only recarray, one of the
-    old welded recarrays, or an already-split table. Idempotent.
 
-    Parameters
-    ----------
-    data : numpy.recarray or list or None
-        One site's cal table. Solvers can hand over a bare record or a list
-        holding one, so those are accepted too and promoted to one row.
+def upgrade_caltable(data):
+    """Upgrade legacy per-site caltable data to the current mixed-pol format.
 
-    Returns
-    -------
-    gains : numpy.recarray
-        The gain table, dtype DTCAL_CIRC or DTCAL_LIN. A fresh array whenever
-        the dtype changed, so the caller's own table is never written through.
-    dterms : numpy.recarray or None
-        The D-terms lifted out of a welded table, on their own time column,
-        or None if there were none to lift. Anything unrecognized is passed
-        back untouched with no D-terms.
+    Returns (gains, dterms). D-term columns appended to the gain table by a
+    brief older format come back as their own table; dterms is None otherwise.
+    Idempotent; raises on field names it cannot interpret.
     """
     import numpy as _np
     if data is None:
         return data, None
     if not isinstance(data, _np.ndarray):
-        data = _np.asarray(data)
+        data = _np.asarray(data)  # solvers can hand over a bare record or [record]
     if data.dtype.names is None:
-        return data, None
+        raise Exception("cannot interpret caltable data: array has no named fields")
     data = _np.atleast_1d(data)
 
     fields = data.dtype.fields
-    lin = 'xscale' in fields
+    names = data.dtype.names
+
+    # feed basis from the field names; generic-only names default to circular
+    if 'xscale' in fields or 'yscale' in fields:
+        lin = True
+    elif 'rscale' in fields or 'lscale' in fields:
+        lin = False
+    else:
+        lin = False
+        if 'p1scale' in fields:
+            import warnings as _warnings
+
+            from ehtim.warnings import MixedPolConventionWarning as _MPW
+            _warnings.warn("cannot tell the feed basis from generic field names; "
+                           "assuming circular", _MPW, stacklevel=2)
     gain_t = _np.dtype(DTCAL_LIN if lin else DTCAL_CIRC)
     dterm_t = _np.dtype(DTDTERM_LIN if lin else DTDTERM_CIRC)
 
     if data.dtype == gain_t:
         return data, None
 
-    if 'd_p1' not in fields and 'dr' not in fields:
-        # Gains only. Copy per field rather than re-viewing the buffer: a view
-        # would hand the caller's own array back to Caltable, so invert_gains
-        # and enforce_positive would write through to it, and it would also
-        # reinterpret a byte-swapped (big-endian) table instead of converting.
-        if data.dtype.names == gain_t.names:
-            gains = _np.zeros(len(data), dtype=gain_t)
-            for name in gain_t.names:
-                gains[name] = data[name]
-            return gains, None
-        return data, None
+    # gains only: copy into the current dtype (a copy, not a view, so the
+    # caller's array is never written through and byte order is converted)
+    if not any(k in fields for k in _CAL_DTERM_FIELDS):
+        if len(names) != 3 or names[0] != 'time' or not set(names[1:]) <= _CAL_GAIN_FIELDS:
+            raise Exception(f"cannot interpret fields {names} as a caltable gain table")
+        gains = _np.zeros(len(data), dtype=gain_t)
+        for src, dst in zip(names, gain_t.names):
+            gains[dst] = data[src]
+        return gains, None
 
-    if 'p1scale' not in fields:
-        return data, None
-
+    # everything below handles the rare case where D-term columns were
+    # appended to the gain table (a brief dev-era format)
+    if (len(names) != 5 or names[0] != 'time'
+            or not set(names[1:3]) <= _CAL_GAIN_FIELDS
+            or not set(names[3:]) <= _CAL_DTERM_FIELDS):
+        raise Exception(f"cannot interpret fields {names} as a caltable")
     gains = _np.zeros(len(data), dtype=gain_t)
-    for name in ('time', 'p1scale', 'p2scale'):
-        gains[name] = data[name]
-
-    if _np.any(data['d_p1'] != 0) or _np.any(data['d_p2'] != 0):
+    for src, dst in zip(names[:3], gain_t.names):
+        gains[dst] = data[src]
+    d1 = data[names[3]]
+    d2 = data[names[4]]
+    if _np.any(d1 != 0) or _np.any(d2 != 0):
         dterms = _np.zeros(len(data), dtype=dterm_t)
-        for name in ('time', 'd_p1', 'd_p2'):
-            dterms[name] = data[name]
+        dterms['time'] = data['time']
+        dterms[dterm_t.names[1]] = d1
+        dterms[dterm_t.names[2]] = d2
         return gains, dterms
-
     return gains, None
 
 

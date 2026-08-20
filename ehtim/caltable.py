@@ -149,7 +149,7 @@ class Caltable:
         if isinstance(datadict, dict):
             self.gains = {}
             for site, d in datadict.items():
-                site_gains, site_dterms = ehc.split_dtcal(d)
+                site_gains, site_dterms = ehc.upgrade_caltable(d)
                 self.gains[site] = site_gains
                 if site_dterms is not None:
                     self.dterms[site] = site_dterms
@@ -186,7 +186,7 @@ class Caltable:
             normalized = {}
             reshaped = False
             for site, table in datadict.items():
-                site_gains, site_dterms = ehc.split_dtcal(table)
+                site_gains, site_dterms = ehc.upgrade_caltable(table)
                 if site_dterms is not None:
                     raise TypeError(
                         f"data is the gain table, but the table for {site} "
@@ -220,7 +220,7 @@ class Caltable:
                     gains = {}
                     dterms = dict(state.get('dterms', {}))
                     for site, d in legacy.items():
-                        g, dt = ehc.split_dtcal(d)
+                        g, dt = ehc.upgrade_caltable(d)
                         gains[site] = g
                         if dt is not None:
                             dterms[site] = dt
