@@ -995,16 +995,15 @@ class TestConstructorSplit:
                 source=obs_direct.source, mjd=obs_direct.mjd, dtermdict=table,
             )
 
-    def test_constructor_non_dict_datadict_stored_verbatim(self, obs_direct):
-        """A non-dict datadict is stored as-is, the way it always was."""
+    def test_constructor_rejects_non_dict_datadict(self, obs_direct):
+        """A bare array as datadict raises; the gains are a dict keyed by site."""
         site = _first_sites(obs_direct, 1)[0]
         arr = _clean_caldict([site], _span_times(obs_direct))[site]
-        ct = eh.caltable.Caltable(
-            obs_direct.ra, obs_direct.dec, obs_direct.rf, obs_direct.bw,
-            arr, obs_direct.tarr, source=obs_direct.source, mjd=obs_direct.mjd,
-        )
-        assert ct.gains is arr
-        assert ct.data is arr
+        with pytest.raises(TypeError, match="datadict must be a dict"):
+            eh.caltable.Caltable(
+                obs_direct.ra, obs_direct.dec, obs_direct.rf, obs_direct.bw,
+                arr, obs_direct.tarr, source=obs_direct.source, mjd=obs_direct.mjd,
+            )
 
 
 class TestSplitStateRoundTrips:

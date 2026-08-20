@@ -116,15 +116,15 @@ class Caltable:
 
         # Save the data, splitting out D-terms from any older welded tables
         self.dterms = {}
-        if isinstance(datadict, dict):
-            self.gains = {}
-            for site, d in datadict.items():
-                site_gains, site_dterms = ehc.upgrade_caltable(d)
-                self.gains[site] = site_gains
-                if site_dterms is not None:
-                    self.dterms[site] = site_dterms
-        else:
-            self.gains = datadict
+        if not isinstance(datadict, dict):
+            raise TypeError("datadict must be a dict of per-site gain tables "
+                            f"keyed by site name, got {type(datadict).__name__}")
+        self.gains = {}
+        for site, d in datadict.items():
+            site_gains, site_dterms = ehc.upgrade_caltable(d)
+            self.gains[site] = site_gains
+            if site_dterms is not None:
+                self.dterms[site] = site_dterms
 
         # An explicit D-term table replaces whatever the split produced
         if dtermdict is not None:
