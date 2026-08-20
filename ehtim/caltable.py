@@ -71,9 +71,8 @@ class Caltable:
 
     """
 
-    def __init__(self, ra, dec, rf, bw, datadict, tarr,
-                 source=ehc.SOURCE_DEFAULT, mjd=ehc.MJD_DEFAULT, timetype='UTC',
-                 *, dterms=None):
+    def __init__(self, ra, dec, rf, bw, datadict, tarr, dtermdict=None,
+                 source=ehc.SOURCE_DEFAULT, mjd=ehc.MJD_DEFAULT, timetype='UTC'):
         """A Calibration Table.
 
            Args:
@@ -87,14 +86,13 @@ class Caltable:
                                  DTCAL. Older welded tables carrying D-term columns are
                                  split into the gain and D-term tables automatically.
                tarr (numpy.recarray): The array of telescope data with datatype DTARR
+               dtermdict (dict): keys are sites in tarr, entries are D-term tables of
+                                 type DTDTERM, on their own time grid. When given, it
+                                 replaces anything split out of ``datadict``.
 
                source (str): The source name
                mjd (int): The integer MJD of the observation
                timetype (str): How to interpret tstart and tstop; either 'GMST' or 'UTC'
-
-               dterms (dict): keys are sites in tarr, entries are D-term tables of type
-                              DTDTERM, on their own time grid. Keyword-only. When given,
-                              it replaces anything split out of ``datadict``.
 
            Returns:
                (Caltable): an Caltable object
@@ -129,12 +127,12 @@ class Caltable:
             self.gains = datadict
 
         # An explicit D-term table replaces whatever the split produced
-        if dterms is not None:
-            if not isinstance(dterms, dict):
-                raise TypeError("dterms must be a dict keyed by site name, "
-                                f"got {type(dterms).__name__}")
+        if dtermdict is not None:
+            if not isinstance(dtermdict, dict):
+                raise TypeError("dtermdict must be a dict keyed by site name, "
+                                f"got {type(dtermdict).__name__}")
             self.dterms = {}
-            for site, table in dterms.items():
+            for site, table in dtermdict.items():
                 site_dterms = ehc._normalize_recarray(table)
                 if site_dterms is not None:
                     self.dterms[site] = site_dterms
@@ -538,7 +536,7 @@ class Caltable:
         # padding is a gain-table operation; leakage rides along untouched
         return Caltable(self.ra, self.dec, self.rf, self.bw, outdict, self.tarr,
                         source=self.source, mjd=self.mjd, timetype=self.timetype,
-                        dterms=copy.deepcopy(self.dterms))
+                        dtermdict=copy.deepcopy(self.dterms))
 
     def applycal(self, obs, interp='linear', extrapolate=None,
                  force_singlepol=False):
@@ -756,7 +754,7 @@ class Caltable:
 
         new_caltable = Caltable(self.ra, self.dec, self.rf, self.bw, data1, tarr1,
                                 source=self.source, mjd=self.mjd, timetype=self.timetype,
-                                dterms=dterms1)
+                                dtermdict=dterms1)
 
         return new_caltable
 
@@ -831,7 +829,7 @@ class Caltable:
             caltable = Caltable(obs.ra, obs.dec, obs.rf,
                                 obs.bw, datatables, obs.tarr, source=obs.source,
                                 mjd=obs.mjd, timetype=obs.timetype,
-                                dterms=copy.deepcopy(self.dterms))
+                                dtermdict=copy.deepcopy(self.dterms))
         else:
             caltable = False
 
@@ -942,7 +940,7 @@ def load_caltable(obs, datadir, sqrt_gains=False):
     if len(datatables) > 0:
         caltable = Caltable(obs.ra, obs.dec, obs.rf, obs.bw, datatables, tarr,
                             source=obs.source, mjd=obs.mjd, timetype=obs.timetype,
-                            dterms=dterm_tables)
+                            dtermdict=dterm_tables)
     else:
         print(f"COULD NOT FIND CALTABLE IN DIRECTORY {datadir}")
         caltable = False

@@ -647,7 +647,7 @@ def _multi_scan_caltable(obs, n_scans, samples_per_scan=PAD_SCAN_NSAMPLES,
     caldict = {site: template.copy().view(np.recarray) for site in obs.tarr['site']}
     return eh.caltable.Caltable(
         obs.ra, obs.dec, obs.rf, obs.bw, caldict, obs.tarr,
-        source=obs.source, mjd=obs.mjd, timetype=obs.timetype, dterms=dterms,
+        source=obs.source, mjd=obs.mjd, timetype=obs.timetype, dtermdict=dterms,
     )
 
 
@@ -683,7 +683,7 @@ def _scan_aligned_caltable(obs, gains_per_scan, samples_per_scan=PAD_SCAN_NSAMPL
     caldict = {site: template.copy().view(np.recarray) for site in obs.tarr['site']}
     return eh.caltable.Caltable(
         obs.ra, obs.dec, obs.rf, obs.bw, caldict, obs.tarr,
-        source=obs.source, mjd=obs.mjd, timetype=obs.timetype, dterms=dterms,
+        source=obs.source, mjd=obs.mjd, timetype=obs.timetype, dtermdict=dterms,
     )
 
 
@@ -907,7 +907,7 @@ class TestDataAliasesGains:
 
 
 class TestConstructorSplit:
-    """``__init__`` splits welded input and honours an explicit ``dterms=``."""
+    """``__init__`` splits welded input and honours an explicit ``dtermdict=``."""
 
     def test_constructor_welded_datadict_autosplits(self, obs_direct):
         """A pre-split datadict is separated into the two tables on construction.
@@ -931,7 +931,7 @@ class TestConstructorSplit:
             # the extracted D-terms keep the time column they were welded to
             np.testing.assert_array_equal(ct.dterms[site]['time'], times)
 
-    def test_constructor_dterms_kwarg(self, obs_direct, dterm_dict_factory):
+    def test_constructor_dtermdict_kwarg(self, obs_direct, dterm_dict_factory):
         """Gains and D-terms passed separately keep their own independent time grids."""
         times = _span_times(obs_direct)
         sites = _first_sites(obs_direct)
@@ -939,7 +939,7 @@ class TestConstructorSplit:
             obs_direct.ra, obs_direct.dec, obs_direct.rf, obs_direct.bw,
             _clean_caldict(sites, times), obs_direct.tarr,
             source=obs_direct.source, mjd=obs_direct.mjd,
-            dterms=dterm_dict_factory(sites, times=(SPLIT_DTERM_TIME,),
+            dtermdict=dterm_dict_factory(sites, times=(SPLIT_DTERM_TIME,),
                                       dr=SPLIT_DR, dl=SPLIT_DL),
         )
         for site in sites:
@@ -951,7 +951,7 @@ class TestConstructorSplit:
 
     def test_constructor_explicit_dterms_overrides_autosplit(self, obs_direct,
                                                              dterm_dict_factory):
-        """An explicit dterms= wins over whatever a welded datadict would have contributed."""
+        """An explicit dtermdict= wins over whatever a welded datadict would have contributed."""
         times = _span_times(obs_direct)
         sites = _first_sites(obs_direct, 1)
         site = sites[0]
@@ -960,7 +960,7 @@ class TestConstructorSplit:
             obs_direct.ra, obs_direct.dec, obs_direct.rf, obs_direct.bw,
             _welded_caldict(sites, times), obs_direct.tarr,
             source=obs_direct.source, mjd=obs_direct.mjd,
-            dterms=dterm_dict_factory(sites, dr=override, dl=override),
+            dtermdict=dterm_dict_factory(sites, dr=override, dl=override),
         )
         # the explicit table replaces what the weld would have contributed
         assert len(ct.dterms[site]) == 1
@@ -984,15 +984,15 @@ class TestConstructorSplit:
         assert len(ct.gains[site]) == 1
         assert ct.gains[site]['rscale'][0] == SPLIT_GAIN_R
 
-    def test_constructor_rejects_non_dict_dterms(self, obs_direct, dterm_dict_factory):
-        """A non-dict dterms= names the problem instead of failing inside dict()."""
+    def test_constructor_rejects_non_dict_dtermdict(self, obs_direct, dterm_dict_factory):
+        """A non-dict dtermdict= names the problem instead of failing inside dict()."""
         site = _first_sites(obs_direct, 1)[0]
         table = dterm_dict_factory([site])[site]     # the bare table, not a dict
-        with pytest.raises(TypeError, match="dterms must be a dict"):
+        with pytest.raises(TypeError, match="dtermdict must be a dict"):
             eh.caltable.Caltable(
                 obs_direct.ra, obs_direct.dec, obs_direct.rf, obs_direct.bw,
                 _clean_caldict([site], _span_times(obs_direct)), obs_direct.tarr,
-                source=obs_direct.source, mjd=obs_direct.mjd, dterms=table,
+                source=obs_direct.source, mjd=obs_direct.mjd, dtermdict=table,
             )
 
     def test_constructor_non_dict_datadict_stored_verbatim(self, obs_direct):
@@ -1206,7 +1206,7 @@ class TestSplitFixups:
         ct = eh.caltable.Caltable(
             obs_direct.ra, obs_direct.dec, obs_direct.rf, obs_direct.bw,
             _clean_caldict([site], _span_times(obs_direct)), obs_direct.tarr,
-            source=obs_direct.source, mjd=obs_direct.mjd, dterms={site: rec},
+            source=obs_direct.source, mjd=obs_direct.mjd, dtermdict={site: rec},
         )
         assert len(ct.dterms[site]) == 1
         assert ct.dterms[site]['dr'][0] == SPLIT_DR
@@ -1222,7 +1222,7 @@ class TestSplitFixups:
             obs_direct.ra, obs_direct.dec, obs_direct.rf, obs_direct.bw,
             _clean_caldict([site], _span_times(obs_direct)), obs_direct.tarr,
             source=obs_direct.source, mjd=obs_direct.mjd,
-            dterms={site: np.array([])},
+            dtermdict={site: np.array([])},
         )
         assert ct.dterms == {}
 

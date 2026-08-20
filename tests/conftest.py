@@ -410,7 +410,7 @@ def injected_gain_caltable_factory(obs_direct):
 
 @pytest.fixture(scope="session")
 def dterm_dict_factory():
-    """Factory: a DTDTERM datadict keyed by site name, for Caltable(dterms=...).
+    """Factory: a DTDTERM datadict keyed by site name, for Caltable(dtermdict=...).
 
     Tests call as ``dterm_dict_factory(sites)`` for a single-row table -- the
     storage form of a track-constant leakage -- or pass ``times=`` for a
