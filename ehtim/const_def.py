@@ -181,14 +181,14 @@ DTCAL_LIN = [('time', 'f8'),
 
 DTCAL = DTCAL_CIRC  # legacy alias
 
-# D-term (leakage) tables, kept separate from the gain tables (DTCAL_*) so gains
-# and D-terms can be sampled on independent time grids. The CIRC field specs
-# mirror the D-term columns of DTCAL_CIRC; DTDTERM_LIN mirrors DTCAL_LIN's
-# asymmetry (no established physical names for linear leakage).
+# D-term (leakage) tables, one per site, on their own time grid so gains and
+# D-terms can be sampled independently. Generic d_p1/d_p2 alias the physical
+# names: dr/dl for circular feeds, dx/dy for linear.
 DTDTERM_CIRC = [('time', 'f8'),
                 (('d_p1', 'dr'), 'c16'), (('d_p2', 'dl'), 'c16')]
 
-DTDTERM_LIN = [('time', 'f8'), ('d_p1', 'c16'), ('d_p2', 'c16')]
+DTDTERM_LIN = [('time', 'f8'),
+               (('d_p1', 'dx'), 'c16'), (('d_p2', 'dy'), 'c16')]
 
 DTDTERM = DTDTERM_CIRC  # legacy alias
 

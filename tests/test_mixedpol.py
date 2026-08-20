@@ -181,10 +181,13 @@ def test_dtdterm_circ_alias_equivalence():
     assert np.array_equal(d['d_p2'], d['dl'])
 
 
-def test_dtdterm_lin_names():
-    """Linear leakage carries only the generic names; there are no established physical ones."""
+def test_dtdterm_lin_alias_equivalence():
+    """The generic names d_p1/d_p2 and the physical dx/dy address the same columns."""
     d = np.zeros(2, dtype=ehc.DTDTERM_LIN)
-    assert d.dtype.names == ('time', 'd_p1', 'd_p2')
+    d['dx'] = [0.01 + 0.02j, 0.03 - 0.01j]
+    assert np.array_equal(d['d_p1'], d['dx'])
+    d['dy'] = [0.04 + 0.0j, -0.02 + 0.01j]
+    assert np.array_equal(d['d_p2'], d['dy'])
 
 
 def test_dtdterm_legacy_alias_is_circ():
@@ -367,7 +370,7 @@ def test_split_dtcal_welded_lin_basis():
     w['d_p1'] = 0.05 + 0j
     gains, dterms = ehc.split_dtcal(w)
     assert gains.dtype.names == ('time', 'xscale', 'yscale')
-    assert dterms.dtype.names == ('time', 'd_p1', 'd_p2')
+    assert dterms.dtype.names == ('time', 'dx', 'dy')
     assert np.array_equal(gains['xscale'], w['xscale'])
     assert np.array_equal(dterms['d_p1'], w['d_p1'])
 
