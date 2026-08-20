@@ -42,34 +42,6 @@ DTERM_FILE_SUFFIX = '_dterms.txt'
 DTERM_FILE_HEADER = '# ehtim caltable dterms format v1: time_mjd d1re d1im d2re d2im'
 
 
-def _as_dterm_table(table):
-    """Normalize one site's D-term table, or return None if there is nothing in it.
-
-    Solvers build rows the same way they build gain rows, which for a single
-    time gives a 0-d record rather than a one-row table, and a sidecar file
-    holding only its version line reads back as a plain empty array. Both would
-    otherwise be stored as leakage that later code cannot index.
-
-    Parameters
-    ----------
-    table : numpy.recarray or record or None
-        One site's D-terms, in any of those shapes.
-
-    Returns
-    -------
-    numpy.recarray or None
-        A one-dimensional D-term table, or None when it holds no rows.
-    """
-    if table is None:
-        return None
-    if not isinstance(table, np.ndarray):
-        table = np.asarray(table)
-    if table.dtype.names is None:
-        return None
-    table = np.atleast_1d(table)
-    return table if len(table) else None
-
-
 class Caltable:
     """A calibration table holding per-station gains and leakage (D-terms).
 
@@ -163,7 +135,7 @@ class Caltable:
                                 f"got {type(dterms).__name__}")
             self.dterms = {}
             for site, table in dterms.items():
-                site_dterms = _as_dterm_table(table)
+                site_dterms = ehc._normalize_recarray(table)
                 if site_dterms is not None:
                     self.dterms[site] = site_dterms
 

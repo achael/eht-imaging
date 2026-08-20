@@ -253,6 +253,23 @@ def upgrade_dtpol_circ(data):
     return data
 
 
+def _normalize_recarray(arr):
+    """Return arr as a 1-D recarray, or None if it has no rows or no named fields.
+
+    Fixes the 0-d single-record edge case and treats a truly empty array as
+    no data at all.
+    """
+    import numpy as _np
+    if arr is None:
+        return None
+    if not isinstance(arr, _np.ndarray):
+        arr = _np.asarray(arr)
+    if arr.dtype.names is None:
+        return None
+    arr = _np.atleast_1d(arr)
+    return arr if len(arr) else None
+
+
 # Field names a legacy caltable can carry, used to interpret old tables
 _CAL_GAIN_FIELDS = frozenset({'rscale', 'lscale', 'xscale', 'yscale', 'p1scale', 'p2scale'})
 _CAL_DTERM_FIELDS = frozenset({'dr', 'dl', 'dx', 'dy', 'd_p1', 'd_p2'})
