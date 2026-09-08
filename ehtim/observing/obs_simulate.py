@@ -361,8 +361,8 @@ def pack_sampled_visibilities(obsdata, data, polrep):
            obsdata (np.recarray): the data table to fill, in representation
                `polrep`. For 'mixed' it must carry a populated 'polbasis' column.
            data (list): the four visibility vectors returned by sample_vis. For
-               'stokes'/'circ'/'lin' these are the four basis correlations; for
-               'mixed' they are Stokes (I, Q, U, V).
+               'circ'/'lin' these are the four basis correlations; for
+               'stokes'/'mixed' they are the I, Q, U, V visibilities.
            polrep (str): one of 'stokes', 'circ', 'lin', 'mixed'.
 
        Returns:

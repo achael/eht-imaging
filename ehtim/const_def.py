@@ -194,10 +194,6 @@ DTCAL = DTCAL_CIRC  # legacy alias
 DTSCANS = [('time', 'f8'), ('interval', 'f8'), ('startvis', 'f8'), ('endvis', 'f8')]
 
 
-# TODO: the feed_dtype_for_polrep / feed_poldict / upgrade_* helpers below
-# should migrate to ehtim/observing/pol_conventions.py when
-# Obsdata.switch_polrep is wired up to it.
-
 def feed_dtype_for_polrep(polrep):
     """Return the DTPOL_* field-spec list for a given polrep."""
     try:

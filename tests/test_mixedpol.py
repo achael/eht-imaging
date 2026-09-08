@@ -2054,6 +2054,87 @@ def test_load_uvfits_partial_poltype_raises():
         eo.load_uvfits(hdul)
 
 
+def _drop_poltype_column(hdul, name, tag_col=None, tag=None):
+    """Return an HDUList copy whose AIPS AN table has only one POLTY column.
+
+    Rebuilding the table from its ColDefs re-reads the on-disk values, so any
+    tag to write must be applied afterwards -- hence tag_col/tag here rather
+    than editing the HDUList before the call (which would be silently undone).
+    """
+    from astropy.io import fits
+    i_an = hdul.index_of('AIPS AN')
+    an = hdul[i_an]
+    kept = fits.ColDefs([c for c in an.columns if c.name != name])
+    hdul[i_an] = fits.BinTableHDU.from_columns(kept, header=an.header)
+    assert name not in hdul[i_an].data.dtype.names
+    if tag_col is not None:
+        hdul[i_an].data[tag_col][:] = tag
+        # astropy strips padding, so compare stripped (a blank tag reads as '')
+        assert set(hdul[i_an].data[tag_col]) == {tag.strip()}
+    return hdul
+
+
+@pytest.mark.parametrize('dropped,tag_col,tag,crval3,polrep,expect_feeds', [
+    # linear tags on a circular sample file: 'xy' can only come from reading the
+    # single present tag and completing its partner
+    ('POLTYB', 'POLTYA', 'X', -5.0, 'lin', {'xy'}),   # 'X' first  -> 'Y' second
+    ('POLTYA', 'POLTYB', 'Y', -5.0, 'lin', {'xy'}),   # 'Y' second -> 'X' first
+    ('POLTYB', 'POLTYA', 'R', -1.0, 'circ', {'rl'}),  # circular stays circular
+])
+def test_load_uvfits_one_poltype_column_absent_completes_partner(
+        dropped, tag_col, tag, crval3, polrep, expect_feeds):
+    # A whole missing POLTY column is a file-level defect, but the tag that IS
+    # present still fixes the station's basis -> complete the pair from its
+    # partner feed (R <-> L, X <-> Y) and warn, rather than failing.
+    from astropy.io import fits
+    hdul = fits.open(_SAMPLE)
+    hdul[0].header['CRVAL3'] = crval3
+    hdul = _drop_poltype_column(hdul, dropped, tag_col, tag)
+    with pytest.warns(ehw.FeedTagWarning, match=f"no {dropped} column"):
+        obs = eo.load_uvfits(hdul, polrep=polrep)
+    assert obs.polrep == polrep
+    assert set(obs.tarr['feed_type']) == expect_feeds
+
+
+def test_load_uvfits_one_poltype_column_absent_unknown_feed_raises():
+    # the single present tag must still be a recognized feed character
+    from astropy.io import fits
+    hdul = fits.open(_SAMPLE)
+    hdul = _drop_poltype_column(hdul, 'POLTYB', 'POLTYA', 'Q')
+    with pytest.raises(NotImplementedError, match="partner feed cannot"):
+        eo.load_uvfits(hdul)
+
+
+def test_load_uvfits_one_poltype_column_absent_blank_tag_raises():
+    # one column absent AND the present column blank -> nothing to infer from
+    from astropy.io import fits
+    hdul = fits.open(_SAMPLE)
+    hdul = _drop_poltype_column(hdul, 'POLTYB', 'POLTYA', ' ')
+    with pytest.raises(Exception, match="empty POLTYA and POLTYB"):
+        eo.load_uvfits(hdul)
+
+
+def test_load_uvfits_mixed_from_station_table_warns_against_crval3():
+    # mixed inferred from POLTYA/POLTYB while CRVAL3=-1 names the circular
+    # product block: the station tags win, but the disagreement is reported.
+    from astropy.io import fits
+    hdul = fits.open(_SAMPLE)
+    assert hdul[0].header['CRVAL3'] == -1
+    hdul['AIPS AN'].data['POLTYA'][::2] = 'X'
+    hdul['AIPS AN'].data['POLTYB'][::2] = 'Y'
+    with pytest.warns(ehw.FeedTagWarning, match="MIXED feed basis was inferred"):
+        obs = eo.load_uvfits(hdul, polrep='mixed')
+    assert obs.polrep == 'mixed'
+
+
+def test_load_uvfits_homogeneous_does_not_warn_mixed_vs_crval3():
+    # the mixed/CRVAL3 warning must not fire on a consistent homogeneous file
+    with warnings.catch_warnings():
+        warnings.simplefilter('error', ehw.FeedTagWarning)
+        obs = eo.load_uvfits(_SAMPLE, polrep='circ')
+    assert obs.polrep == 'circ'
+
+
 def test_load_uvfits_reversed_poltype_canonicalized_to_circular():
     # A genuinely circular file with per-station POLTY order permuted
     # (alternating L/R) must NOT be reclassified as mixed: the STOKES axis fixes

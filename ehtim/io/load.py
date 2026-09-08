@@ -38,6 +38,12 @@ import ehtim.warnings as ehw
 warnings.filterwarnings("ignore", message="Mean of empty slice")
 warnings.filterwarnings("ignore", message="invalid value encountered in true_divide")
 
+# The other feed of a dual-feed station, by AIPS POLTY feed character. Used to
+# complete a station's feed pair when a uvfits file carries only one of the
+# POLTYA/POLTYB columns. Hybrid (circular + linear) stations are rejected
+# separately, so within a basis the partner is unambiguous.
+FEED_PARTNER_CHAR = {'R': 'L', 'L': 'R', 'X': 'Y', 'Y': 'X'}
+
 ##################################################################################################
 # Vex IO
 ##################################################################################################
@@ -1060,9 +1066,13 @@ def load_obs_uvfits(filename, polrep='stokes', flipbl=False,
            filename (str or HDUList): path to either an input text file or an HDUList object
            polrep (str): output representation: 'stokes', 'circ', 'lin', or 'mixed'.
                          Feed types are read per-station from the AIPS AN table
-                         POLTYA/POLTYB tags (defaulting to circular 'rl' when
-                         absent). A mixed-feed file loads only as 'mixed'; a
-                         homogeneous file cannot be loaded as 'mixed'.
+                         POLTYA/POLTYB tags. When both columns are absent the
+                         feed basis falls back to the STOKES axis reference
+                         value, which AIPS Memo 117 defines as CRVAL3=+1 for
+                         I/Q/U/V, -1 for the circular products RR/LL/RL/LR and
+                         -5 for the linear products XX/YY/XY/YX. A mixed-feed
+                         file loads only as 'mixed'; a homogeneous file cannot
+                         be loaded as 'mixed'.
            flipbl (bool): flip baseline phases if True.
            allow_singlepol (bool): If True and polrep='stokes',
                                    treat single-polarization data as Stokes I
@@ -1125,10 +1135,24 @@ def load_obs_uvfits(filename, polrep='stokes', flipbl=False,
         return (p.decode() if isinstance(p, bytes) else str(p)).strip().upper()
 
     # When POLTY tags are absent, infer the default feed basis from the STOKES
-    # axis (CRVAL3) rather than blindly assuming circular: -5 (linear XX/YY/...)
-    # -> 'xy', anything else (circular -1 or Stokes +1) -> 'rl'. This stops a
-    # POLTY-less pure-linear file from being silently mislabeled circular and its
-    # XX/YY/XY/YX read as RR/LL/RL/LR.
+    # axis (CRVAL3) rather than blindly assuming circular.
+    #
+    # AIPS Memo 117 defines the STOKES axis by its reference value CRVAL3, with
+    # the axis running in unit steps away from it (CDELT3 = +1 for the Stokes
+    # block, -1 for the feed-product blocks). The three blocks are
+    #
+    #     CRVAL3 = +1, slots  1 ..  4  ->  I,  Q,  U,  V      (Stokes)
+    #     CRVAL3 = -1, slots -1 .. -4  ->  RR, LL, RL, LR     (circular products)
+    #     CRVAL3 = -5, slots -5 .. -8  ->  XX, YY, XY, YX     (linear products)
+    #
+    # so CRVAL3 = -5 -> 'xy' feeds and anything else (circular -1, Stokes +1) ->
+    # 'rl'. This stops a POLTY-less pure-linear file from being silently
+    # mislabeled circular and its XX/YY/XY/YX read as RR/LL/RL/LR.
+    #
+    # Feed-character naming: the latest revision of AIPS Memo 117 renames the
+    # linear feed characters X and Y to V and H. ehtim keeps X and Y throughout
+    # (see docs/polarization_conventions.md sec 13); the -5 slot block is the
+    # same physical set of linear products under either naming.
     try:
         stokes_crval3 = header['CRVAL3']
     except KeyError:
@@ -1145,20 +1169,53 @@ def load_obs_uvfits(filename, polrep='stokes', flipbl=False,
     except KeyError:
         pass
     columns_absent = poltya is None and poltyb is None
+    # Exactly one POLTY column present. The station's feed basis is still known
+    # from the tag that *is* there, so complete the pair with that feed's
+    # partner (R <-> L, X <-> Y) instead of failing. This covers only a wholly
+    # missing column: a present-but-blank tag on an existing column is still an
+    # error below, because a writer that emits POLTY and leaves it empty tells
+    # us nothing about the basis, and assuming circular there is exactly wrong
+    # for a mixed-pol observation.
+    partial_column = (poltya is None) != (poltyb is None)
+    # which column survived (only meaningful when partial_column)
+    present, missing = ('POLTYA', 'POLTYB') if poltyb is None else ('POLTYB', 'POLTYA')
     if columns_absent:
         warnings.warn(
             f"no POLTYA/POLTYB columns in the AIPS AN table; inferring "
             f"{default_feed!r} feeds from CRVAL3={stokes_crval3}.",
             ehw.FeedTagWarning)
+    elif partial_column:
+        warnings.warn(
+            f"the AIPS AN table has a {present} column but no {missing} column; "
+            f"completing each station's feed pair from the tag that is present "
+            f"(R <-> L, X <-> Y).",
+            ehw.FeedTagWarning)
 
     # 1. Parse each station's raw feed_type from its POLTY tags. Blanks are
     #    errors (a possibly-mixed file must not have a feed basis assumed);
-    #    absent columns fall back to the CRVAL3-inferred default.
+    #    absent columns fall back to the CRVAL3-inferred default, and a single
+    #    absent column to the present tag's partner feed.
     raw_feeds = []
     for i in range(len(tnames)):
         a = _feedchar(poltya, i)
         b = _feedchar(poltyb, i)
         station = str(tnames[i])
+        if partial_column and (a == '') != (b == ''):
+            # One column is missing entirely; fill in the partner feed. (If the
+            # present column is also blank for this station both tags are '' and
+            # we fall through to the empty-tag error below.)
+            known = a if b == '' else b
+            partner = FEED_PARTNER_CHAR.get(known)
+            if partner is None:
+                raise NotImplementedError(
+                    f"station {station!r} has feed tag {known!r} in the only "
+                    f"POLTY column present ({present}); its partner feed cannot "
+                    f"be determined. Recognized feed characters are "
+                    f"{sorted(FEED_PARTNER_CHAR)}.")
+            if b == '':
+                b = partner
+            else:
+                a = partner
         if a == '' and b == '':
             if columns_absent:
                 # No POLTY columns at all: fall back to the CRVAL3-inferred feed.
@@ -1326,6 +1383,16 @@ def load_obs_uvfits(filename, polrep='stokes', flipbl=False,
     if crval3 == -1 and polrep_uvfits == 'lin':
         raise Exception("uvfits STOKES axis is circular (CRVAL3=-1) but station feeds "
                         "are linear (POLTYA/POLTYB=X/Y) -- inconsistent file")
+    if polrep_uvfits == 'mixed' and crval3 in (-1, -5):
+        nominal = 'circular (RR/LL/RL/LR)' if crval3 == -1 else 'linear (XX/YY/XY/YX)'
+        warnings.warn(
+            f"a MIXED feed basis was inferred from the AIPS AN station table "
+            f"(POLTYA/POLTYB), but the uvfits STOKES axis CRVAL3={crval3} would "
+            f"otherwise imply a homogeneous {nominal} file. For a mixed-feed "
+            f"array the STOKES axis is only a nominal 4-slot grid, so the "
+            f"station feed tags are taken as authoritative and each baseline's "
+            f"four correlation slots are read in per-station feed order.",
+            ehw.FeedTagWarning)
     if num_corr > 1:
         expected_cdelt3 = 1 if polrep_uvfits == 'stokes' else -1
         cdelt3 = header.get('CDELT3', expected_cdelt3)

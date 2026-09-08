@@ -434,3 +434,62 @@ Implemented at: `obs_simulate.add_jones_and_noise` (forward) and
 correlation basis; `Obsdata.switch_polrep` handles `stokes`↔`circ`/`lin`
 (a `mixed` obs must be built natively — switching *to* `'mixed'` is not
 yet supported).
+
+---
+
+## §13. uvfits encoding: the STOKES axis and AIPS feed tags
+
+Polarization enters a uvfits file in two independent places, and ehtim
+reads both.
+
+**(a) The STOKES axis (`CTYPE3 = 'STOKES'`).** AIPS Memo 117 defines this
+axis by its reference value `CRVAL3`, with the axis running in unit steps
+away from that reference (`CDELT3 = +1` for the Stokes block, `-1` for the
+two feed-product blocks). There are three blocks:
+
+| `CRVAL3` | slots | plane order | ehtim polrep |
+|---|---|---|---|
+| $+1$ | $1 \ldots 4$ | $I$, $Q$, $U$, $V$ | `'stokes'` |
+| $-1$ | $-1 \ldots -4$ | $RR$, $LL$, $RL$, $LR$ | `'circ'` |
+| $-5$ | $-5 \ldots -8$ | $XX$, $YY$, $XY$, $YX$ | `'lin'` |
+
+ehtim reads the four correlation planes **positionally** (slot 0 … slot 3),
+which is valid only for that standard unit step, so a `CDELT3` other than
+$+1$ / $-1$ is rejected rather than silently mis-slotted.
+
+**(b) The per-station feed tags (`POLTYA`/`POLTYB` in the `AIPS AN` table).**
+`POLTYA` is the station's first feed and `POLTYB` its second, giving the
+two-character `tarr['feed_type']` code (`'rl'`, `'xy'`, …).
+
+The two can disagree, and for mixed-feed arrays they *must*: a mixed array
+has no single global product block, so its STOKES axis is only a nominal
+4-slot grid and each baseline's four slots are the products of the two
+stations' own feeds. ehtim therefore treats the **station feed tags as
+authoritative** and uses `CRVAL3` only as a fallback (both POLTY columns
+absent) and as a consistency check:
+
+* homogeneous feeds contradicting the axis (linear planes at $-5$ tagged
+  $R$/$L$, or circular planes at $-1$ tagged $X$/$Y$) → raise;
+* mixed feeds under a $-1$ or $-5$ axis → warn (`FeedTagWarning`), load as
+  `'mixed'`;
+* both POLTY columns absent → infer `'xy'` from $-5$, else `'rl'`, and warn;
+* one POLTY column absent → complete each pair from the tag present
+  ($R \leftrightarrow L$, $X \leftrightarrow Y$), and warn;
+* a blank tag on a column that exists → raise. A writer that emits POLTY
+  and leaves it empty conveys nothing about the basis, and assuming circular
+  is exactly wrong for a mixed-pol observation.
+
+### Feed-character naming: X/Y vs V/H
+
+The latest revision of AIPS Memo 117 renames the linear feed characters
+**X and Y to V and H** (vertical and horizontal). **ehtim keeps X and Y**
+— in `POLTYA`/`POLTYB` parsing, in `feed_type` codes (`'xy'`), in the
+`DTPOL_LIN` column names (`xxvis`/`yyvis`/`xyvis`/`yxvis`) and throughout
+this document. The renaming is nomenclature only: the $-5$ slot block is
+the same physical set of linear products under either naming, and $X, Y$
+are the field components of §1. Files written with V/H feed tags are not
+currently recognized and will fail the feed-vocabulary check.
+
+Implemented at: `ehtim/io/load.py:load_obs_uvfits` (POLTY parsing, CRVAL3
+fallback and consistency checks) and `ehtim/io/save.py:save_obs_uvfits`
+(POLTY emission from `feed_type`, `CRVAL3` per `polrep_out`).

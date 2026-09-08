@@ -53,16 +53,22 @@ class FeedTagWarning(UserWarning):
     missing, incomplete, or not in canonical feed order.
 
     Feed types are read per station from POLTYA (first feed) and POLTYB
-    (second feed). Three situations are reported:
+    (second feed). Four situations are reported:
 
-    * neither tag is present -- the feed basis is inferred from the STOKES
+    * neither column is present -- the feed basis is inferred from the STOKES
       axis (CRVAL3) instead;
-    * one tag is present and the other is blank -- the partner feed is
-      completed from the known one (``R`` -> ``rl``, ``X`` -> ``xy``);
+    * only one of the two columns is present -- each station's pair is
+      completed from the tag that is there (``POLTYA='R'`` -> ``rl``,
+      ``POLTYB='Y'`` -> ``xy``). A tag that is *blank* on a column that does
+      exist is an error, not a warning: a writer that emits POLTY and leaves
+      it empty says nothing about the basis;
     * the tags are in reversed order (``POLTYA='L'``, ``POLTYB='R'``) --
       the pair is canonicalized to ``rl`` on read, and canonicalized (with
       the four correlation slots permuted to match) on write, because the
-      uvfits STOKES axis labels its planes absolutely.
+      uvfits STOKES axis labels its planes absolutely;
+    * the station tags imply a mixed feed basis while CRVAL3 names a
+      homogeneous circular (-1) or linear (-5) product block -- the station
+      tags win, since for a mixed array the STOKES axis is only nominal.
     """
 
 
