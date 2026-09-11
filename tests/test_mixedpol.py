@@ -156,8 +156,8 @@ def test_dtcal_circ_alias_equivalence():
     c = np.zeros(2, dtype=ehc.DTCAL_CIRC)
     c['rscale'] = [1 + 0j, 2 + 0j]
     assert np.array_equal(c['p1scale'], c['rscale'])
-    c['dr'] = [0.01 + 0.02j, 0.03 - 0.01j]
-    assert np.array_equal(c['d_p1'], c['dr'])
+    c['lscale'] = [3 + 0j, 4 + 0j]
+    assert np.array_equal(c['p2scale'], c['lscale'])
 
 
 def test_dtcal_lin_alias_equivalence():
@@ -168,6 +168,31 @@ def test_dtcal_lin_alias_equivalence():
 
 def test_dtcal_legacy_alias_is_dtcal_circ():
     assert ehc.DTCAL is ehc.DTCAL_CIRC
+
+
+# ----- DTDTERM -------------------------------------------------------------
+
+def test_dtdterm_circ_alias_equivalence():
+    """The generic names d_p1/d_p2 and the physical dr/dl address the same columns."""
+    d = np.zeros(2, dtype=ehc.DTDTERM_CIRC)
+    d['dr'] = [0.01 + 0.02j, 0.03 - 0.01j]
+    assert np.array_equal(d['d_p1'], d['dr'])
+    d['dl'] = [0.04 + 0.0j, -0.02 + 0.01j]
+    assert np.array_equal(d['d_p2'], d['dl'])
+
+
+def test_dtdterm_lin_alias_equivalence():
+    """The generic names d_p1/d_p2 and the physical dx/dy address the same columns."""
+    d = np.zeros(2, dtype=ehc.DTDTERM_LIN)
+    d['dx'] = [0.01 + 0.02j, 0.03 - 0.01j]
+    assert np.array_equal(d['d_p1'], d['dx'])
+    d['dy'] = [0.04 + 0.0j, -0.02 + 0.01j]
+    assert np.array_equal(d['d_p2'], d['dy'])
+
+
+def test_dtdterm_legacy_alias_is_circ():
+    """The bare DTDTERM name still means the circular dtype."""
+    assert ehc.DTDTERM is ehc.DTDTERM_CIRC
 
 
 # ----- Polrep / feed dispatch helpers --------------------------------------
@@ -252,60 +277,135 @@ def test_upgrade_dtpol_circ_idempotent():
     assert out.dtype == d.dtype
 
 
-def test_upgrade_dtcal_circ_from_legacy_adds_dterm_fields():
+def test_upgrade_caltable_legacy_is_copied_not_shared():
+    """A legacy gains table is copied, so the caller's array is insulated.
+
+    Re-viewing the buffer would be cheaper, but then invert_gains and
+    enforce_positive on the Caltable would write through to whatever dict the
+    caller handed in.
+    """
     oc = np.zeros(2, dtype=_LEGACY_DTCAL)
     oc['rscale'] = [1 + 0j, 2 + 0j]
-    nc = ehc.upgrade_dtcal_circ(oc)
-    assert nc.dtype.names == ('time', 'rscale', 'lscale', 'dr', 'dl')
-    assert np.array_equal(nc['rscale'], oc['rscale'])
-    # dr/dl default to 0
-    assert np.all(nc['dr'] == 0)
-    assert np.all(nc['dl'] == 0)
+    gains = ehc.upgrade_caltable(oc)
+    assert gains.dtype.names == ('time', 'rscale', 'lscale')
+    assert np.array_equal(gains['p1scale'], oc['rscale'])
+    gains['rscale'] *= 10
+    assert np.array_equal(oc['rscale'], [1 + 0j, 2 + 0j])
 
 
-# ----- End-to-end: Array / Obsdata / Caltable upgrade through __init__ ----
+def test_upgrade_caltable_byte_swapped_legacy_converts():
+    """A big-endian table is converted, not reinterpreted.
 
-def test_array_upgrades_legacy_tarr():
-    arr = ea.Array(_legacy_tarr())
-    assert 'feed_type' in arr.tarr.dtype.names
-    assert np.all(arr.tarr['feed_type'] == 'rl')
-
-
-def test_array_pickle_roundtrip_from_new():
-    arr = ea.Array(_legacy_tarr())
-    arr2 = pickle.loads(pickle.dumps(arr))
-    assert np.all(arr2.tarr['feed_type'] == 'rl')
-    assert np.array_equal(arr2.tarr['sefd_p1'], arr.tarr['sefd_p1'])
-
-
-def test_array_setstate_upgrades_legacy_pickle():
-    # Simulate a pickle made before the schema migration:
-    legacy_state = {'_tarr': _legacy_tarr(), 'ephem': {},
-                    'tkey': {'A': 0, 'B': 1}}
-    arr = ea.Array.__new__(ea.Array)
-    arr.__setstate__(legacy_state)
-    assert 'feed_type' in arr.tarr.dtype.names
-    assert np.all(arr.tarr['feed_type'] == 'rl')
+    Its field names and itemsize match the target exactly, so a view would
+    silently turn the values into denormal garbage.
+    """
+    be = np.dtype([('time', '>f8'), ('rscale', '>c16'), ('lscale', '>c16')])
+    oc = np.zeros(2, dtype=be)
+    oc['time'] = [1.0, 2.0]
+    oc['rscale'] = [2 + 0j, 4 + 0j]
+    gains = ehc.upgrade_caltable(oc)
+    np.testing.assert_array_equal(gains['time'], [1.0, 2.0])
+    np.testing.assert_array_equal(gains['rscale'], [2 + 0j, 4 + 0j])
 
 
-def test_obsdata_upgrades_legacy_datatable_and_tarr():
-    obs = eo.Obsdata(ra=0., dec=0., rf=230e9, bw=1e9,
-                     datatable=_legacy_circ_datatable(),
-                     tarr=_legacy_tarr(), polrep='circ')
-    assert obs.polrep == 'circ'
-    assert 'feed_type' in obs.tarr.dtype.names
-    assert np.all(obs.tarr['feed_type'] == 'rl')
-    # Generic accessor works on upgraded data
-    assert np.array_equal(obs.data['p1p1vis'], obs.data['rrvis'])
+def test_upgrade_caltable_identity_on_target_dtype():
+    """A table already in the target dtype is handed straight back."""
+    g = np.zeros(2, dtype=ehc.DTCAL_CIRC)
+    assert ehc.upgrade_caltable(g) is g
 
 
-def test_obsdata_pickle_roundtrip_legacy_recarrays():
-    obs = eo.Obsdata(ra=0., dec=0., rf=230e9, bw=1e9,
-                     datatable=_legacy_circ_datatable(),
-                     tarr=_legacy_tarr(), polrep='circ')
-    obs2 = pickle.loads(pickle.dumps(obs))
-    assert np.all(obs2.tarr['feed_type'] == 'rl')
-    assert np.array_equal(obs2.data['p1p1vis'], obs.data['rrvis'])
+def test_upgrade_caltable_linear_basis():
+    """A linear-feed table keeps its own dtype rather than being recast."""
+    lin = np.zeros(2, dtype=[('time', 'f8'), ('xscale', 'c16'), ('yscale', 'c16')])
+    lin['xscale'] = [1 + 0j, 2 + 0j]
+    gains = ehc.upgrade_caltable(lin)
+    assert gains.dtype.names == ('time', 'xscale', 'yscale')
+    assert np.array_equal(gains['p1scale'], lin['xscale'])
+
+
+def test_upgrade_caltable_idempotent():
+    """Upgrading an already-upgraded table changes nothing."""
+    oc = np.zeros(2, dtype=_LEGACY_DTCAL)
+    gains = ehc.upgrade_caltable(oc)
+    assert ehc.upgrade_caltable(gains) is gains
+
+
+def test_upgrade_caltable_zero_d_record_normalized_to_one_row():
+    """A bare record is promoted to a one-row table.
+
+    self_cal leaves this shape behind for a site seen in a single scan.
+    """
+    rec = np.zeros((), dtype=_LEGACY_DTCAL)
+    assert ehc.upgrade_caltable(rec).shape == (1,)
+
+
+def test_upgrade_caltable_list_of_records():
+    """A site handed over as a list of records is normalised rather than crashing.
+
+    network_cal and polgains_cal produce this for a site that turns up in
+    exactly one non-first scan; it used to raise on the missing .dtype.
+    """
+    rec = np.zeros((), dtype=ehc.DTCAL_CIRC)
+    gains = ehc.upgrade_caltable([rec])
+    assert gains.shape == (1,)
+    assert gains.dtype.names == ('time', 'rscale', 'lscale')
+
+
+def test_upgrade_caltable_generic_names_assume_circular():
+    """Generic-only field names cannot reveal the basis; circular is assumed, with a warning."""
+    generic = np.zeros(2, dtype=[('time', 'f8'), ('p1scale', 'c16'), ('p2scale', 'c16')])
+    generic['p1scale'] = [1 + 0j, 2 + 0j]
+    with pytest.warns(ehw.MixedPolConventionWarning, match="assuming circular"):
+        gains = ehc.upgrade_caltable(generic)
+    assert gains.dtype == np.dtype(ehc.DTCAL_CIRC)
+    assert np.array_equal(gains['rscale'], generic['p1scale'])
+
+
+def test_upgrade_caltable_unknown_fields_raise():
+    """Field names that are not caltable fields raise instead of being relabelled."""
+    bad = np.zeros(2, dtype=[('time', 'f8'), ('foo', 'c16'), ('bar', 'c16')])
+    with pytest.raises(Exception, match="cannot interpret"):
+        ehc.upgrade_caltable(bad)
+
+
+def test_upgrade_caltable_dterm_table_raises():
+    """A D-term table passed as gain data raises instead of being stored as gains."""
+    d = np.zeros(2, dtype=ehc.DTDTERM_CIRC)
+    d['dr'] = 0.05j
+    with pytest.raises(Exception, match="cannot interpret"):
+        ehc.upgrade_caltable(d)
+
+
+def test_upgrade_caltable_combined_gain_dterm_table_raises():
+    """The short-lived combined gain+D-term format is no longer read.
+
+    It was only ever a development format and never used for real data, so it
+    raises rather than being silently reinterpreted.
+    """
+    combined = np.zeros(2, dtype=[('time', 'f8'), ('rscale', 'c16'), ('lscale', 'c16'),
+                                  ('dr', 'c16'), ('dl', 'c16')])
+    with pytest.raises(Exception, match="cannot interpret"):
+        ehc.upgrade_caltable(combined)
+
+
+def test_upgrade_caltable_unnamed_array_raises():
+    """An array with no fields at all raises rather than being read as gains.
+
+    The shared normalizer returns None for it, which must not be confused with
+    the None that means there is no table.
+    """
+    with pytest.raises(Exception, match="no named fields"):
+        ehc.upgrade_caltable(np.zeros(3))
+
+
+def test_upgrade_caltable_none_passthrough():
+    """None is passed straight through, as pad_scans expects."""
+    assert ehc.upgrade_caltable(None) is None
+
+
+def test_upgrade_caltable_empty_array():
+    """An empty table upgrades to an empty table."""
+    assert len(ehc.upgrade_caltable(np.zeros(0, dtype=_LEGACY_DTCAL))) == 0
 
 
 def test_caltable_upgrades_legacy_dtcal():
@@ -315,9 +415,9 @@ def test_caltable_upgrades_legacy_dtcal():
                          datadict={'A': oc.copy(), 'B': oc.copy()},
                          tarr=_legacy_tarr())
     for site in ('A', 'B'):
-        assert 'dr' in caltab.data[site].dtype.names
-        assert 'd_p1' in caltab.data[site].dtype.fields  # title alias
-        assert np.all(caltab.data[site]['dr'] == 0)
+        assert caltab.data[site].dtype.names == ('time', 'rscale', 'lscale')
+        assert 'p1scale' in caltab.data[site].dtype.fields  # title alias
+    assert caltab.dterms == {}
 
 
 def test_caltable_pickle_roundtrip_legacy_dtcal():
@@ -326,9 +426,26 @@ def test_caltable_pickle_roundtrip_legacy_dtcal():
     caltab = ec.Caltable(ra=0., dec=0., rf=230e9, bw=1e9,
                          datadict={'A': oc.copy()}, tarr=_legacy_tarr())
     caltab2 = pickle.loads(pickle.dumps(caltab))
-    assert 'dr' in caltab2.data['A'].dtype.names
+    assert caltab2.data['A'].dtype.names == ('time', 'rscale', 'lscale')
+    assert caltab2.dterms == {}
     assert np.array_equal(caltab2.data['A']['rscale'],
                           caltab.data['A']['rscale'])
+
+
+def test_caltable_pickle_combined_format_raises():
+    """A pickle in the short-lived combined format is refused, not misread."""
+    combined = np.zeros(2, dtype=[('time', 'f8'), ('rscale', 'c16'), ('lscale', 'c16'),
+                                  ('dr', 'c16'), ('dl', 'c16')])
+    caltab = ec.Caltable(ra=0., dec=0., rf=230e9, bw=1e9,
+                         datadict={'A': np.zeros(2, dtype=ehc.DTCAL)},
+                         tarr=_legacy_tarr())
+    state = dict(caltab.__dict__)
+    state.pop('gains')
+    state.pop('dterms')
+    state['data'] = {'A': combined}
+    revived = ec.Caltable.__new__(ec.Caltable)
+    with pytest.raises(Exception, match="cannot interpret"):
+        revived.__setstate__(state)
 
 
 # ============================================================================
