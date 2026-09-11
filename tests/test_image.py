@@ -883,8 +883,10 @@ def test_sample_uv_zero_baseline_is_total_flux(gauss_im, ttype):
 
 
 def test_sample_uv_rejects_bad_polrep(gauss_im):
+    # 'lin' is now accepted; 'mixed' is intentionally rejected here because
+    # sample_uv has no station/feed context for the per-baseline conversion.
     with pytest.raises(Exception, match="polrep_obs"):
-        gauss_im.sample_uv(np.array([[0.0, 0.0]]), polrep_obs="lin",
+        gauss_im.sample_uv(np.array([[0.0, 0.0]]), polrep_obs="mixed",
                            verbose=False)
 
 

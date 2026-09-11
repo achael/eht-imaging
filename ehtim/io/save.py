@@ -411,7 +411,9 @@ def save_obs_uvfits(obs, fname=None, force_singlepol=None, polrep_out='circ'):
             obs (Obsdata): obsdata object
             fname (str): path to output fits file, or None to return HDUList only
             force_singlepol (str): if 'R' or 'L', will interpret stokes I field as 'RR' or 'LL'
-            polrep_out (str): 'circ' or 'stokes': how data should be stored in the uvfits file
+            polrep_out (str): how data is stored in the uvfits file: 'circ',
+                'stokes', 'lin', or 'mixed'. 'mixed' requires (and preserves) a
+                mixed-feed Obsdata; feed types are written to POLTYA/POLTYB.
        Returns:
             hdulist (astropy.io.fits.HDUList)
 
@@ -420,12 +422,20 @@ def save_obs_uvfits(obs, fname=None, force_singlepol=None, polrep_out='circ'):
     # output times must be in utc
     obs = obs.switch_timetype(timetype_out='UTC')
 
-    if polrep_out == 'circ':
-        obs = obs.switch_polrep('circ')
-    elif polrep_out == 'stokes':
-        obs = obs.switch_polrep('stokes')
+    if polrep_out not in ('circ', 'stokes', 'lin', 'mixed'):
+        raise Exception("'polrep_out' in 'save_obs_uvfits' must be "
+                        "'circ', 'stokes', 'lin', or 'mixed'!")
+    if obs.polrep == 'mixed' or polrep_out == 'mixed':
+        # A mixed-feed observation is stored as-is; it cannot be converted to or
+        # from any homogeneous basis at the data layer.
+        if obs.polrep != 'mixed':
+            raise Exception("polrep_out='mixed' requires a mixed-feed Obsdata "
+                            f"(obs.polrep is {obs.polrep!r}).")
+        if polrep_out != 'mixed':
+            raise Exception("a mixed-feed Obsdata can only be saved with "
+                            f"polrep_out='mixed' (got {polrep_out!r}).")
     else:
-        raise Exception("'polrep_out' in 'save_obs_uvfits' must be 'circ' or 'stokes'!")
+        obs = obs.switch_polrep(polrep_out)
 
     hdulist_new = fits.HDUList()
     hdulist_new.append(fits.GroupsHDU())
@@ -460,11 +470,19 @@ def save_obs_uvfits(obs, fname=None, force_singlepol=None, polrep_out='circ'):
     header['CROTA2'] = 0.e0
     header['CTYPE3'] = 'STOKES'
     if polrep_out == 'circ':
-        header['CRVAL3'] = -1.e0
+        header['CRVAL3'] = -1.e0   # RR, LL, RL, LR = -1, -2, -3, -4
         header['CDELT3'] = -1.e0
     elif polrep_out == 'stokes':
-        header['CRVAL3'] = 1.e0
+        header['CRVAL3'] = 1.e0    # I, Q, U, V = 1, 2, 3, 4
         header['CDELT3'] = 1.e0
+    elif polrep_out == 'lin':
+        header['CRVAL3'] = -5.e0   # XX, YY, XY, YX = -5, -6, -7, -8
+        header['CDELT3'] = -1.e0
+    elif polrep_out == 'mixed':
+        # Nominal circular naming; the per-baseline physical meaning is carried
+        # by the POLTYA/POLTYB feed tags in the AIPS AN table, not this axis.
+        header['CRVAL3'] = -1.e0
+        header['CDELT3'] = -1.e0
     header['CRPIX3'] = 1.e0
     header['CROTA3'] = 0.e0
     header['CTYPE4'] = 'FREQ'
@@ -521,6 +539,16 @@ def save_obs_uvfits(obs, fname=None, force_singlepol=None, polrep_out='circ'):
     elif polrep_out == 'stokes':
         obsdata = obs.unpack(['time', 'tint', 'u', 'v', 'vis', 'qvis', 'uvis', 'vvis',
                               'sigma', 'qsigma', 'usigma', 'vsigma', 't1', 't2', 'tau1', 'tau2'])
+    elif polrep_out == 'lin':
+        obsdata = obs.unpack(['time', 'tint', 'u', 'v',
+                              'xxvis', 'yyvis', 'xyvis', 'yxvis',
+                              'xxsigma', 'yysigma', 'xysigma', 'yxsigma',
+                              't1', 't2', 'tau1', 'tau2'])
+    elif polrep_out == 'mixed':
+        obsdata = obs.unpack(['time', 'tint', 'u', 'v',
+                              'p1p1vis', 'p2p2vis', 'p1p2vis', 'p2p1vis',
+                              'p1p1sigma', 'p2p2sigma', 'p1p2sigma', 'p2p1sigma',
+                              't1', 't2', 'tau1', 'tau2'])
 
     ndat = len(obsdata['time'])
 
@@ -597,6 +625,26 @@ def save_obs_uvfits(obs, fname=None, force_singlepol=None, polrep_out='circ'):
         weight3 = 1.0/(obsdata['usigma']**2)
         weight4 = 1.0/(obsdata['vsigma']**2)
 
+    elif polrep_out == 'lin':
+        dat1 = obsdata['xxvis']
+        dat2 = obsdata['yyvis']
+        dat3 = obsdata['xyvis']
+        dat4 = obsdata['yxvis']
+        weight1 = 1.0/(obsdata['xxsigma']**2)
+        weight2 = 1.0/(obsdata['yysigma']**2)
+        weight3 = 1.0/(obsdata['xysigma']**2)
+        weight4 = 1.0/(obsdata['yxsigma']**2)
+
+    elif polrep_out == 'mixed':
+        dat1 = obsdata['p1p1vis']
+        dat2 = obsdata['p2p2vis']
+        dat3 = obsdata['p1p2vis']
+        dat4 = obsdata['p2p1vis']
+        weight1 = 1.0/(obsdata['p1p1sigma']**2)
+        weight2 = 1.0/(obsdata['p2p2sigma']**2)
+        weight3 = 1.0/(obsdata['p1p2sigma']**2)
+        weight4 = 1.0/(obsdata['p2p1sigma']**2)
+
     # Replace nans by zeros (including zero weights)
     dat1 = np.nan_to_num(dat1)
     dat2 = np.nan_to_num(dat2)
@@ -641,7 +689,7 @@ def save_obs_uvfits(obs, fname=None, force_singlepol=None, polrep_out='circ'):
     tnames = tarr['site']
     tnums = np.arange(1, len(tarr)+1)
     xyz = np.array([[tarr[i]['x'], tarr[i]['y'], tarr[i]['z']] for i in np.arange(len(tarr))])
-    sefd = tarr['sefdr']
+    sefd = tarr['sefd_p1']  # generic name works for any feed type (alias of sefdr on rl arrays)
 
     nsta = len(tnames)
     col1 = fits.Column(name='ANNAME', format='8A', array=tnames)
@@ -654,14 +702,18 @@ def save_obs_uvfits(obs, fname=None, force_singlepol=None, polrep_out='circ'):
                        array=np.zeros(nsta))
     col5 = fits.Column(name='STAXOF', format='1E', unit='METERS',
                        array=np.zeros(nsta))
-    col6 = fits.Column(name='POLTYA', format='1A',
-                       array=np.array(['R' for i in range(nsta)], dtype='|S1'))
+    # Per-station feed labels from feed_type: POLTYA = first feed, POLTYB =
+    # second (e.g. 'rl' -> R/L, 'xy' -> X/Y, 'rx' -> R/X). For a purely circular
+    # array this reproduces the legacy hardcoded R/L bytes exactly.
+    feedtypes = [str(ft) for ft in tarr['feed_type']]
+    poltya_arr = np.array([ft[0].upper() for ft in feedtypes], dtype='|S1')
+    poltyb_arr = np.array([ft[1].upper() for ft in feedtypes], dtype='|S1')
+    col6 = fits.Column(name='POLTYA', format='1A', array=poltya_arr)
     col7 = fits.Column(name='POLAA', format='1E', unit='DEGREES',
                        array=np.zeros(nsta))
     col8 = fits.Column(name='POLCALA', format='3E',
                        array=np.zeros((nsta, 3)))
-    col9 = fits.Column(name='POLTYB', format='1A',
-                       array=np.array(['L' for i in range(nsta)], dtype='|S1'))
+    col9 = fits.Column(name='POLTYB', format='1A', array=poltyb_arr)
     col10 = fits.Column(name='POLAB', format='1E', unit='DEGREES',
                         array=(90.*np.ones(nsta)))
     col11 = fits.Column(name='POLCALB', format='3E',

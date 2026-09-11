@@ -252,7 +252,7 @@ class Obsdata:
             ft_arr = self.tarr['feed_type']
             self.data['polbasis'] = np.char.add(ft_arr[t1_idx], ft_arr[t2_idx])
 
-        if np.any(self.tarr['sefdr'] != 0) or np.any(self.tarr['sefdl'] != 0):
+        if np.any(self.tarr['sefd_p1'] != 0) or np.any(self.tarr['sefd_p2'] != 0):
             self.reorder_tarr_sefd(reorder_baselines=False)
 
         # reorder baselines to uvfits convention
@@ -443,7 +443,10 @@ class Obsdata:
                 self.data['sigma'], self.data['qsigma'],
                 self.data['usigma'], self.data['vsigma'])
 
-            if allow_singlepol:
+            # singlepol substitution only applies to rows with no circular-hand
+            # info (vvis missing); when there are none, skip it entirely so the
+            # default singlepol_hand does not gate a fully-polarized conversion.
+            if allow_singlepol and np.any(Vmask):
                 hand = singlepol_hand.upper() if isinstance(singlepol_hand, str) else None
                 if hand not in ('R', 'L'):
                     raise Exception(
@@ -471,7 +474,10 @@ class Obsdata:
                 self.data['sigma'], self.data['qsigma'],
                 self.data['usigma'], self.data['vsigma'])
 
-            if allow_singlepol:
+            # singlepol substitution only applies to rows with no linear-hand
+            # info (vvis missing); when there are none, skip it entirely so the
+            # default singlepol_hand does not gate a fully-polarized conversion.
+            if allow_singlepol and np.any(Vmask):
                 hand = singlepol_hand.upper() if isinstance(singlepol_hand, str) else None
                 if hand not in ('X', 'Y'):
                     raise Exception(

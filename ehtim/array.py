@@ -391,9 +391,7 @@ class Array:
                polrep (str): polarization representation, one of
                              {'stokes', 'circ', 'lin', 'mixed'}. 'circ' requires
                              all-RL feeds; 'lin' requires all-XY feeds; 'mixed'
-                             requires at least two distinct feed types. 'lin'
-                             and 'mixed' are not yet wired through the
-                             simulation backend.
+                             requires at least two distinct feed types.
                elevmin (float): station minimum elevation in degrees
                elevmax (float): station maximum elevation in degrees
                no_elevcut_space (bool): if True, do not apply elevation cut to orbiters
@@ -422,10 +420,6 @@ class Array:
             raise ValueError(
                 f"polrep='mixed' requires at least two distinct feed types; "
                 f"array has feed_types={sorted(feeds)}")
-        if polrep in ('lin', 'mixed'):
-            raise NotImplementedError(
-                f"Array.obsdata(polrep={polrep!r}) is not yet supported by "
-                f"the simulation backend")
 
         obsarr = simobs.make_uvpoints(self, ra, dec, rf, bw,
                                       tint, tadv, tstart, tstop,

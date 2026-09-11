@@ -488,3 +488,171 @@ def apply_inverse_jones_to_coherency(V_obs, J1, J2):
     J1_inv = np.linalg.inv(J1)
     J2_dagger_inv = np.linalg.inv(np.conjugate(np.swapaxes(J2, -1, -2)))
     return J1_inv @ V_obs @ J2_dagger_inv
+
+
+def apply_jones_to_coherency(V_true, J1, J2):
+    """Apply the forward Jones corruption to a true coherency matrix.
+
+    Computes ``V_obs = J1 @ V_true @ J2^dagger`` (EHT Paper VII / docs sec 9).
+    This is the exact inverse operation of
+    :func:`apply_inverse_jones_to_coherency` and is what simulation uses to
+    corrupt clean visibilities. Broadcasts over leading axes; pure (no in-place
+    mutation).
+
+    Parameters
+    ----------
+    V_true : (..., 2, 2) complex ndarray
+        True (clean) coherency matrix. Leading axes broadcast.
+    J1, J2 : (..., 2, 2) complex ndarray
+        Jones matrices at stations 1 and 2.
+
+    Returns
+    -------
+    V_obs : (..., 2, 2) complex ndarray
+    """
+    _maybe_warn_convention()
+    return J1 @ V_true @ np.conjugate(np.swapaxes(J2, -1, -2))
+
+
+# ---------------------------------------------------------------------------
+# Forward Jones assembly (feeds obs_simulate corruption; calibration reuses it)
+# ---------------------------------------------------------------------------
+#
+# The observing code (obs_simulate) generates the physical corruption
+# parameters -- complex gains, D-terms, and the field-rotation angle from
+# array geometry -- and this module assembles them into the 2x2 Jones matrix.
+# Keeping assembly here (rather than inline in obs_simulate) gives calibration
+# a single home to reuse and keeps the kernel pure/traceable for the JAX track.
+
+
+def field_rotation_matrix(feed_type, fr_angle):
+    """Field-rotation Jones factor ``Phi`` for a station's feeds.
+
+    For circular feeds (``'rl'``) field rotation is a diagonal phase,
+    ``Phi = diag(exp(-i*fr_angle), exp(+i*fr_angle))`` with R = p1 leading.
+    This reproduces the field-rotation convention baked into
+    ``obs_simulate.make_jones`` (cf. docs/polarization_conventions.md sec 8/12).
+
+    For linear feeds (``'xy'``) field rotation is a real rotation of the feed
+    axes, ``Phi = [[cos, sin], [-sin, cos]]``. This form is NOT a free choice:
+    it is FIXED by consistency with the circular convention via
+    ``Phi_lin = F^{-1} Phi_circ F`` where ``F = BASIS_LIN_TO_CIRC``.
+
+    ASSUMPTION (to verify; see docs/polarization_conventions.md sec 10): the
+    derived linear form and the sign of ``fr_angle`` (from tarr ``fr_elev``/
+    ``fr_par``) match EHT Paper VII's field-rotation Jones. Hybrid feeds
+    (e.g. ``'rx'``) have an undecided convention and raise.
+
+    Parameters
+    ----------
+    feed_type : str
+        Two-character station feed type. ``'rl'`` (circular) and ``'xy'``
+        (linear) are supported; hybrid feeds raise ``NotImplementedError``.
+    fr_angle : float or ndarray
+        Field-rotation angle(s) in radians. Broadcasts over leading axes.
+
+    Returns
+    -------
+    Phi : ndarray
+        Complex array of shape ``np.shape(fr_angle) + (2, 2)``.
+    """
+    fr_angle = np.asarray(fr_angle, dtype=float)
+    if feed_type == 'rl':
+        # Circular feeds: field rotation is a diagonal phase.
+        z = np.exp(1j * fr_angle)
+        zc = np.exp(-1j * fr_angle)
+        zeros = np.zeros_like(z)
+        row0 = np.stack([zc, zeros], axis=-1)
+        row1 = np.stack([zeros, z], axis=-1)
+        return np.stack([row0, row1], axis=-2)
+    elif feed_type == 'xy':
+        # Linear feeds: real rotation of the feed axes. Form fixed by
+        # consistency with the circular convention (F^{-1} Phi_circ F).
+        c = np.cos(fr_angle)
+        s = np.sin(fr_angle)
+        zeros = np.zeros_like(c)
+        row0 = np.stack([c, s], axis=-1)
+        row1 = np.stack([-s, c], axis=-1)
+        return np.stack([row0, row1], axis=-2).astype(complex)
+    else:
+        raise NotImplementedError(
+            f"field_rotation_matrix: feed_type {feed_type!r} not supported. Only "
+            "orthogonal same-basis feeds 'rl' (circular) and 'xy' (linear) are "
+            "implemented; hybrid feeds (e.g. 'rx') have an undecided field-"
+            "rotation convention (see docs/polarization_conventions.md sec 10).")
+
+
+def assemble_jones(g_p1, g_p2, d_p1, d_p2, feed_type, fr_angle, fr_angle_D=0.0):
+    """Assemble per-station Jones matrices ``J = G (I + D_rot) Phi``.
+
+    Factoring (EHT Paper VII Eq. 7; docs/polarization_conventions.md sec 10):
+
+        G     = diag(g_p1, g_p2)          complex per-feed gains
+        I + D = [[1, d_p1], [d_p2, 1]]    leakage / D-terms
+        Phi                              field rotation (see
+                                         :func:`field_rotation_matrix`)
+
+    ``fr_angle_D`` is the residual field-rotation angle applied to the leakage
+    when field rotation has been corrected but leakage has not (the
+    ``fr_angle_D`` term in ``obs_simulate.make_jones``); it rotates the D-terms
+    by ``Phi_D^{-1}``. With ``fr_angle_D = 0`` this is the plain
+    ``J = G (I + D) Phi``.
+
+    Reproduces ``obs_simulate.make_jones``'s circular assembly exactly for
+    ``feed_type='rl'``, and extends to linear feeds (``'xy'``) via the linear
+    ``Phi`` in :func:`field_rotation_matrix`. Pure and broadcasting (no in-place
+    mutation), so it is safe for the JAX backend.
+
+    LIMITATION (ASSUMPTION, to verify; see docs/polarization_conventions.md sec 10):
+    for non-circular feeds the one-sided ``Phi_D^{-1} @ D`` leakage rotation is
+    only correct when ``Phi`` is diagonal (circular). For linear ``Phi`` the
+    frcal-but-not-dcal case needs the full conjugation, so a nonzero
+    ``fr_angle_D`` with a non-circular feed raises ``NotImplementedError``.
+
+    Parameters
+    ----------
+    g_p1, g_p2 : complex or ndarray
+        Per-feed complex gains (diagonal of G). Broadcast over leading axes
+        (e.g. one entry per time).
+    d_p1, d_p2 : complex or ndarray
+        Per-feed D-terms (off-diagonal leakage).
+    feed_type : str
+        Station feed type; ``'rl'`` and ``'xy'`` supported.
+    fr_angle : float or ndarray
+        Field-rotation angle(s) in radians.
+    fr_angle_D : float or ndarray, optional
+        Residual leakage-rotation angle(s) in radians. Default 0. Must be 0 for
+        non-circular feeds (see LIMITATION above).
+
+    Returns
+    -------
+    J : ndarray
+        Complex array of shape ``broadcast(inputs) + (2, 2)``.
+    """
+    fr_angle_D = np.asarray(fr_angle_D, dtype=float)
+    if feed_type != 'rl' and np.any(fr_angle_D != 0.0):
+        raise NotImplementedError(
+            "assemble_jones: nonzero fr_angle_D (leakage double-rotation for the "
+            "frcal-but-not-dcal case) is only implemented for circular feeds; "
+            "the linear conjugation form is pending confirmation "
+            "(see docs/polarization_conventions.md sec 10).")
+    g_p1 = np.asarray(g_p1, dtype=complex)
+    g_p2 = np.asarray(g_p2, dtype=complex)
+    gshape = np.broadcast(g_p1, g_p2).shape
+    gzeros = np.zeros(gshape, dtype=complex)
+    G = np.stack([np.stack([np.broadcast_to(g_p1, gshape), gzeros], axis=-1),
+                  np.stack([gzeros, np.broadcast_to(g_p2, gshape)], axis=-1)],
+                 axis=-2)
+
+    d_p1 = np.asarray(d_p1, dtype=complex)
+    d_p2 = np.asarray(d_p2, dtype=complex)
+    dshape = np.broadcast(d_p1, d_p2).shape
+    dzeros = np.zeros(dshape, dtype=complex)
+    D = np.stack([np.stack([dzeros, np.broadcast_to(d_p1, dshape)], axis=-1),
+                  np.stack([np.broadcast_to(d_p2, dshape), dzeros], axis=-1)],
+                 axis=-2)
+
+    Phi = field_rotation_matrix(feed_type, fr_angle)
+    Phi_D_inv = field_rotation_matrix(feed_type, -fr_angle_D)
+    IpD = np.eye(2, dtype=complex) + Phi_D_inv @ D
+    return G @ IpD @ Phi

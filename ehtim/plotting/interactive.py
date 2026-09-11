@@ -2114,8 +2114,8 @@ def dashboard(
             gain_indices[mode].append(len(fig.data) - 1)
 
     # --- Panel 4: D-terms (R and L) in complex plane ---
-    # TODO: schema-coupled - tarr['dr'] / tarr['dl'] move to caltable.dterms
-    # in MixPol Phase 1; this lookup needs to follow.
+    # TODO: schema-coupled - tarr['dr'] / tarr['dl'] move to caltable.dterms;
+    # this lookup needs to follow.
     # Two legends: legend4 = per-site (toggle hides both R and L for that
     # site via legendgroup); legend5 = R/L type (two dummy markers showing
     # the symbol convention).

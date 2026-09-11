@@ -86,6 +86,32 @@ VALID_FEED_TYPES = frozenset({
     'xr', 'xl', 'yr', 'yl',
 })
 
+# Canonical ordering of the two feeds of a station: R before L before X before
+# Y. In memory a station's feed_type is ordered ('lr' means p1 = L, p2 = R and
+# so p1p1vis is the LL product), but on disk a uvfits STOKES axis labels its
+# planes absolutely (CRVAL3 = -1 -> RR, LL, RL, LR). The two agree only when
+# every station's feeds are in canonical order, so uvfits I/O canonicalizes.
+FEED_CHAR_ORDER = 'rlxy'
+
+
+def canonical_feed_type(feed_type):
+    """Return (canonical_feed_type, was_reversed) for a two-character feed code.
+
+       Args:
+           feed_type (str): a member of VALID_FEED_TYPES, e.g. 'rl', 'lr', 'xr'
+
+       Returns:
+           (str, bool): the pair reordered to FEED_CHAR_ORDER, and whether that
+           reordering swapped the two feeds ('lr' -> ('rl', True)).
+    """
+    ft = str(feed_type).lower()
+    if ft not in VALID_FEED_TYPES:
+        raise ValueError(f"canonical_feed_type: {feed_type!r} is not one of "
+                         f"{sorted(VALID_FEED_TYPES)}")
+    if FEED_CHAR_ORDER.index(ft[0]) <= FEED_CHAR_ORDER.index(ft[1]):
+        return ft, False
+    return ft[1] + ft[0], True
+
 # Observation recarray datatypes
 # DTARR uses generic names primary because it is a single shared dtype across
 # all stations; legacy names are title aliases. Per-Obsdata/Caltable dtypes
@@ -167,10 +193,6 @@ DTCAL = DTCAL_CIRC  # legacy alias
 
 DTSCANS = [('time', 'f8'), ('interval', 'f8'), ('startvis', 'f8'), ('endvis', 'f8')]
 
-
-# TODO: the feed_dtype_for_polrep / feed_poldict / upgrade_* helpers below
-# should migrate to ehtim/observing/pol_conventions.py (created in
-# MixPol Phase 3) when Obsdata.switch_polrep is wired up to it.
 
 def feed_dtype_for_polrep(polrep):
     """Return the DTPOL_* field-spec list for a given polrep."""

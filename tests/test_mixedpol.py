@@ -790,12 +790,13 @@ def test_obsdata_polrep_lin_on_rl_array_raises():
         arr.obsdata(polrep='lin', **_obs_kwargs())
 
 
-def test_obsdata_polrep_lin_on_xy_array_raises_not_implemented():
-    # Validation passes (all xy) but simulation backend doesn't support
-    # 'lin' yet — should raise NotImplementedError pointing to Phase 5.
+def test_obsdata_polrep_lin_on_xy_array():
+    # 'lin' simulation on an all-xy array is supported (Phase 6).
     arr = ea.Array(_eht_like_xy_array())
-    with pytest.raises(NotImplementedError, match="is not yet supported"):
-        arr.obsdata(polrep='lin', **_obs_kwargs())
+    obs = arr.obsdata(polrep='lin', **_obs_kwargs())
+    assert obs.polrep == 'lin'
+    assert len(obs.data) > 0
+    assert 'xxvis' in obs.data.dtype.names
 
 
 def test_obsdata_polrep_mixed_on_homogeneous_array_raises():
@@ -805,10 +806,14 @@ def test_obsdata_polrep_mixed_on_homogeneous_array_raises():
         arr.obsdata(polrep='mixed', **_obs_kwargs())
 
 
-def test_obsdata_polrep_mixed_on_mixed_array_raises_not_implemented():
+def test_obsdata_polrep_mixed_on_mixed_array():
+    # 'mixed' simulation on a heterogeneous-feed array is supported (Phase 6).
     arr = ea.Array(_eht_like_mixed_array())
-    with pytest.raises(NotImplementedError, match="is not yet supported"):
-        arr.obsdata(polrep='mixed', **_obs_kwargs())
+    obs = arr.obsdata(polrep='mixed', **_obs_kwargs())
+    assert obs.polrep == 'mixed'
+    assert len(obs.data) > 0
+    # every row's polbasis is two 2-char feed_types concatenated
+    assert {len(str(b)) for b in obs.data['polbasis']} == {4}
 
 
 # ----- save_array_txt v2 + load_array_txt round-trip ------------------------
@@ -1976,31 +1981,399 @@ def test_unpack_mixed_recovers_known_stokes():
 
 
 # ============================================================================
-#  load_uvfits mixed-pol detection stop-gap
+#  load_uvfits / save_uvfits mixed-pol support (Phase 3c / 6)
 # ============================================================================
 
-def test_load_uvfits_rejects_noncircular_poltya():
-    from astropy.io import fits
-    path = os.path.join(os.path.dirname(__file__), '..', 'data', 'sample.uvfits')
-    hdul = fits.open(path)
-    hdul['AIPS AN'].data['POLTYA'][:] = 'X'   # pretend the AN table flags linear feeds
-    with pytest.raises(NotImplementedError, match="mixed-pol"):
-        eo.load_uvfits(hdul)
-
-
-def test_load_uvfits_rejects_hybrid_poltyb():
-    # POLTYA stays circular but POLTYB is linear (a hybrid R/X feed) -> caught
-    from astropy.io import fits
-    path = os.path.join(os.path.dirname(__file__), '..', 'data', 'sample.uvfits')
-    hdul = fits.open(path)
-    hdul['AIPS AN'].data['POLTYB'][:] = 'X'
-    with pytest.raises(NotImplementedError, match="mixed-pol"):
-        eo.load_uvfits(hdul)
+_SAMPLE = os.path.join(os.path.dirname(__file__), '..', 'data', 'sample.uvfits')
 
 
 def test_load_uvfits_circular_unaffected():
-    # all-'R' POLTYA (the sample file) loads normally through the new check
-    path = os.path.join(os.path.dirname(__file__), '..', 'data', 'sample.uvfits')
-    obs = eo.load_uvfits(path)
+    # all-'R'/'L' POLTYA/POLTYB (the sample file) loads as a circular Obsdata
+    obs = eo.load_uvfits(_SAMPLE)
     assert obs.polrep in ('stokes', 'circ')
     assert set(obs.tarr['feed_type']) == {'rl'}
+
+
+def test_load_uvfits_parses_linear_poltype():
+    # POLTYA='X'/POLTYB='Y' on a linear STOKES axis (CRVAL3=-5) -> per-station
+    # 'xy' feed_type, detected as a linear-feed observation
+    from astropy.io import fits
+    hdul = fits.open(_SAMPLE)
+    hdul[0].header['CRVAL3'] = -5.0   # linear XX/YY/XY/YX naming
+    hdul['AIPS AN'].data['POLTYA'][:] = 'X'
+    hdul['AIPS AN'].data['POLTYB'][:] = 'Y'
+    obs = eo.load_uvfits(hdul, polrep='lin')
+    assert obs.polrep == 'lin'
+    assert set(obs.tarr['feed_type']) == {'xy'}
+
+
+def _drop_poltype_columns(hdul):
+    """Return an HDUList copy whose AIPS AN table has no POLTYA/POLTYB columns
+    (simulating a legacy / non-AIPS file that never wrote feed tags)."""
+    from astropy.io import fits
+    i_an = hdul.index_of('AIPS AN')
+    an = hdul[i_an]
+    kept = fits.ColDefs([c for c in an.columns
+                         if c.name not in ('POLTYA', 'POLTYB')])
+    hdul[i_an] = fits.BinTableHDU.from_columns(kept, header=an.header)
+    return hdul
+
+
+def test_load_uvfits_no_poltype_infers_feed_from_crval3_linear():
+    # POLTY columns absent + linear STOKES axis (CRVAL3=-5): feeds are inferred
+    # 'xy' from CRVAL3, NOT silently mislabeled circular. (Absent columns are the
+    # legacy fallback; a *present-but-blank* tag raises instead -- see below.)
+    from astropy.io import fits
+    hdul = fits.open(_SAMPLE)
+    hdul[0].header['CRVAL3'] = -5.0
+    hdul = _drop_poltype_columns(hdul)
+    with pytest.warns(ehw.FeedTagWarning):
+        obs = eo.load_uvfits(hdul, polrep='lin')
+    assert obs.polrep == 'lin'
+    assert set(obs.tarr['feed_type']) == {'xy'}
+
+
+def test_load_uvfits_blank_poltype_raises():
+    # POLTY columns present but a station's tags are blank -> a feed basis
+    # cannot be assumed for a possibly-mixed file; require it be filled.
+    from astropy.io import fits
+    hdul = fits.open(_SAMPLE)
+    hdul['AIPS AN'].data['POLTYA'][:] = ' '
+    hdul['AIPS AN'].data['POLTYB'][:] = ' '
+    with pytest.raises(Exception, match="empty POLTYA and POLTYB"):
+        eo.load_uvfits(hdul)
+
+
+def test_load_uvfits_partial_poltype_raises():
+    # exactly one feed tag present (POLTYA='R', POLTYB blank) -> incomplete;
+    # do not silently complete the pair, require the missing tag be filled.
+    from astropy.io import fits
+    hdul = fits.open(_SAMPLE)
+    hdul['AIPS AN'].data['POLTYB'][:] = ' '   # POLTYA stays 'R'
+    with pytest.raises(Exception, match="incomplete feed tag"):
+        eo.load_uvfits(hdul)
+
+
+def _drop_poltype_column(hdul, name, tag_col=None, tag=None):
+    """Return an HDUList copy whose AIPS AN table has only one POLTY column.
+
+    Rebuilding the table from its ColDefs re-reads the on-disk values, so any
+    tag to write must be applied afterwards -- hence tag_col/tag here rather
+    than editing the HDUList before the call (which would be silently undone).
+    """
+    from astropy.io import fits
+    i_an = hdul.index_of('AIPS AN')
+    an = hdul[i_an]
+    kept = fits.ColDefs([c for c in an.columns if c.name != name])
+    hdul[i_an] = fits.BinTableHDU.from_columns(kept, header=an.header)
+    assert name not in hdul[i_an].data.dtype.names
+    if tag_col is not None:
+        hdul[i_an].data[tag_col][:] = tag
+        # astropy strips padding, so compare stripped (a blank tag reads as '')
+        assert set(hdul[i_an].data[tag_col]) == {tag.strip()}
+    return hdul
+
+
+@pytest.mark.parametrize('dropped,tag_col,tag,crval3,polrep,expect_feeds', [
+    # linear tags on a circular sample file: 'xy' can only come from reading the
+    # single present tag and completing its partner
+    ('POLTYB', 'POLTYA', 'X', -5.0, 'lin', {'xy'}),   # 'X' first  -> 'Y' second
+    ('POLTYA', 'POLTYB', 'Y', -5.0, 'lin', {'xy'}),   # 'Y' second -> 'X' first
+    ('POLTYB', 'POLTYA', 'R', -1.0, 'circ', {'rl'}),  # circular stays circular
+])
+def test_load_uvfits_one_poltype_column_absent_completes_partner(
+        dropped, tag_col, tag, crval3, polrep, expect_feeds):
+    # A whole missing POLTY column is a file-level defect, but the tag that IS
+    # present still fixes the station's basis -> complete the pair from its
+    # partner feed (R <-> L, X <-> Y) and warn, rather than failing.
+    from astropy.io import fits
+    hdul = fits.open(_SAMPLE)
+    hdul[0].header['CRVAL3'] = crval3
+    hdul = _drop_poltype_column(hdul, dropped, tag_col, tag)
+    with pytest.warns(ehw.FeedTagWarning, match=f"no {dropped} column"):
+        obs = eo.load_uvfits(hdul, polrep=polrep)
+    assert obs.polrep == polrep
+    assert set(obs.tarr['feed_type']) == expect_feeds
+
+
+def test_load_uvfits_one_poltype_column_absent_unknown_feed_raises():
+    # the single present tag must still be a recognized feed character
+    from astropy.io import fits
+    hdul = fits.open(_SAMPLE)
+    hdul = _drop_poltype_column(hdul, 'POLTYB', 'POLTYA', 'Q')
+    with pytest.raises(NotImplementedError, match="partner feed cannot"):
+        eo.load_uvfits(hdul)
+
+
+def test_load_uvfits_one_poltype_column_absent_blank_tag_raises():
+    # one column absent AND the present column blank -> nothing to infer from
+    from astropy.io import fits
+    hdul = fits.open(_SAMPLE)
+    hdul = _drop_poltype_column(hdul, 'POLTYB', 'POLTYA', ' ')
+    with pytest.raises(Exception, match="empty POLTYA and POLTYB"):
+        eo.load_uvfits(hdul)
+
+
+def test_load_uvfits_mixed_from_station_table_warns_against_crval3():
+    # mixed inferred from POLTYA/POLTYB while CRVAL3=-1 names the circular
+    # product block: the station tags win, but the disagreement is reported.
+    from astropy.io import fits
+    hdul = fits.open(_SAMPLE)
+    assert hdul[0].header['CRVAL3'] == -1
+    hdul['AIPS AN'].data['POLTYA'][::2] = 'X'
+    hdul['AIPS AN'].data['POLTYB'][::2] = 'Y'
+    with pytest.warns(ehw.FeedTagWarning, match="MIXED feed basis was inferred"):
+        obs = eo.load_uvfits(hdul, polrep='mixed')
+    assert obs.polrep == 'mixed'
+
+
+def test_load_uvfits_homogeneous_does_not_warn_mixed_vs_crval3():
+    # the mixed/CRVAL3 warning must not fire on a consistent homogeneous file
+    with warnings.catch_warnings():
+        warnings.simplefilter('error', ehw.FeedTagWarning)
+        obs = eo.load_uvfits(_SAMPLE, polrep='circ')
+    assert obs.polrep == 'circ'
+
+
+def test_load_uvfits_reversed_poltype_canonicalized_to_circular():
+    # A genuinely circular file with per-station POLTY order permuted
+    # (alternating L/R) must NOT be reclassified as mixed: the STOKES axis fixes
+    # the plane meanings, so reversed tags are canonicalized to 'rl' and the
+    # visibilities are read identically.
+    from astropy.io import fits
+    ref = eo.load_uvfits(_SAMPLE, polrep='circ')          # normal R/L tags
+    hdul = fits.open(_SAMPLE)
+    hdul['AIPS AN'].data['POLTYA'][::2] = 'L'             # reverse even stations
+    hdul['AIPS AN'].data['POLTYB'][::2] = 'R'
+    with pytest.warns(ehw.FeedTagWarning, match="reversed"):
+        obs = eo.load_uvfits(hdul, polrep='circ')
+    assert obs.polrep == 'circ'
+    assert set(obs.tarr['feed_type']) == {'rl'}           # not mixed
+    ki, ko = _sort_key(ref), _sort_key(obs)
+    for f in ['rrvis', 'llvis', 'rlvis', 'lrvis']:
+        np.testing.assert_array_equal(obs.data[f][ko], ref.data[f][ki])
+
+
+def test_load_uvfits_force_singlepol_ll_matches_l():
+    # regression for `force_singlepol in ['L' or 'LL']`, which Python collapsed
+    # to ['L'] so 'LL'/'RR' were silently ignored.
+    obs_l = eo.load_uvfits(_SAMPLE, polrep='stokes', force_singlepol='L')
+    obs_ll = eo.load_uvfits(_SAMPLE, polrep='stokes', force_singlepol='LL')
+    obs_r = eo.load_uvfits(_SAMPLE, polrep='stokes', force_singlepol='R')
+    obs_rr = eo.load_uvfits(_SAMPLE, polrep='stokes', force_singlepol='RR')
+    np.testing.assert_array_equal(obs_ll.data['vis'][_sort_key(obs_ll)],
+                                  obs_l.data['vis'][_sort_key(obs_l)])
+    np.testing.assert_array_equal(obs_rr.data['vis'][_sort_key(obs_rr)],
+                                  obs_r.data['vis'][_sort_key(obs_r)])
+
+
+def test_load_uvfits_hybrid_feed_raises():
+    # a station with one circular + one linear feed (POLTYA='R', POLTYB='X' ->
+    # 'rx') has an undecided convention across the stack -> the loader rejects it
+    from astropy.io import fits
+    hdul = fits.open(_SAMPLE)
+    hdul['AIPS AN'].data['POLTYB'][::2] = 'X'   # POLTYA stays 'R' -> 'rx' hybrid
+    with pytest.raises(NotImplementedError, match="hybrid"):
+        eo.load_uvfits(hdul)
+
+
+def test_load_uvfits_crval3_feed_mismatch_raises():
+    # linear STOKES axis (CRVAL3=-5) but circular POLTY tags (R/L) -> inconsistent
+    from astropy.io import fits
+    hdul = fits.open(_SAMPLE)
+    hdul[0].header['CRVAL3'] = -5.0   # POLTYA/POLTYB stay R/L from the file
+    with pytest.raises(Exception, match="inconsistent"):
+        eo.load_uvfits(hdul)
+
+
+def test_load_uvfits_nonstandard_cdelt3_raises():
+    # planes are read positionally; a non-unit-step STOKES axis would mis-slot
+    from astropy.io import fits
+    hdul = fits.open(_SAMPLE)
+    hdul[0].header['CDELT3'] = 1.0   # a circular file must have CDELT3 = -1
+    with pytest.raises(Exception, match="CDELT3"):
+        eo.load_uvfits(hdul)
+
+
+def test_load_uvfits_parses_mixed_poltype():
+    # alternate stations linear, the rest circular -> mixed-feed Obsdata whose
+    # per-baseline polbasis is reconstructed from the station feed types
+    from astropy.io import fits
+    hdul = fits.open(_SAMPLE)
+    hdul['AIPS AN'].data['POLTYA'][::2] = 'X'
+    hdul['AIPS AN'].data['POLTYB'][::2] = 'Y'
+    obs = eo.load_uvfits(hdul, polrep='mixed')
+    assert obs.polrep == 'mixed'
+    assert set(obs.tarr['feed_type']) == {'rl', 'xy'}
+    assert 'polbasis' in obs.data.dtype.names
+    feed_of = {str(r['site']): str(r['feed_type']) for r in obs.tarr}
+    for row in obs.data:
+        assert str(row['polbasis']) == feed_of[str(row['t1'])] + feed_of[str(row['t2'])]
+
+
+def test_load_uvfits_mixed_defaults_to_mixed_with_warning():
+    # requesting the default polrep on a mixed file returns a mixed Obsdata and warns
+    from astropy.io import fits
+    hdul = fits.open(_SAMPLE)
+    hdul['AIPS AN'].data['POLTYA'][::2] = 'X'
+    hdul['AIPS AN'].data['POLTYB'][::2] = 'Y'
+    with pytest.warns(ehw.PolrepOverrideWarning, match="loads only as"):
+        obs = eo.load_uvfits(hdul)  # default polrep='stokes'
+    assert obs.polrep == 'mixed'
+
+
+def test_load_uvfits_requesting_mixed_on_homogeneous_raises():
+    with pytest.raises(Exception, match="homogeneous feeds"):
+        eo.load_uvfits(_SAMPLE, polrep='mixed')
+
+
+def test_load_uvfits_unsupported_feed_raises():
+    # a feed letter outside the recognized vocabulary fails loudly
+    from astropy.io import fits
+    hdul = fits.open(_SAMPLE)
+    hdul['AIPS AN'].data['POLTYA'][:] = 'Q'
+    with pytest.raises(NotImplementedError, match="unsupported feed pair"):
+        eo.load_uvfits(hdul)
+
+
+def test_load_uvfits_force_singlepol_on_linear_raises():
+    # force_singlepol is circular-only; on a linear file it must fail loudly
+    # rather than be silently ignored (the enforcement block is gated on 'circ')
+    from astropy.io import fits
+    hdul = fits.open(_SAMPLE)
+    hdul[0].header['CRVAL3'] = -5.0   # consistent linear file
+    hdul['AIPS AN'].data['POLTYA'][:] = 'X'
+    hdul['AIPS AN'].data['POLTYB'][:] = 'Y'
+    with pytest.raises(NotImplementedError, match="force_singlepol is only supported"):
+        eo.load_uvfits(hdul, polrep='stokes', force_singlepol='R')
+
+
+# ----- save -> load round trips (Checkpoint 3c/6) ---------------------------
+
+def _roundtrip(obs, polrep_out, tmp_path):
+    """save -> load -> save -> load; return the two loaded copies."""
+    p1, p2 = str(tmp_path / 'rt1.uvfits'), str(tmp_path / 'rt2.uvfits')
+    obs.save_uvfits(p1, polrep_out=polrep_out)
+    o1 = eo.load_uvfits(p1, polrep=polrep_out)
+    o1.save_uvfits(p2, polrep_out=polrep_out)
+    o2 = eo.load_uvfits(p2, polrep=polrep_out)
+    return o1, o2
+
+
+def _sort_key(obs):
+    return np.lexsort((obs.data['t2'], obs.data['t1'], obs.data['time']))
+
+
+def test_save_load_uvfits_lin_roundtrip(tmp_path):
+    obs = eo.Obsdata(0., 0., 230e9, 1e9,
+                     _lin_data(['S0', 'S0', 'S1'], ['S1', 'S2', 'S2'], [0.1, 0.2, 0.3]),
+                     _tarr(['xy', 'xy', 'xy']), polrep='lin')
+    o1, o2 = _roundtrip(obs, 'lin', tmp_path)
+    assert o1.polrep == 'lin'
+    assert set(o1.tarr['feed_type']) == {'xy'}
+
+    # input visibilities AND sigmas survive the round trip (uvfits stores float32)
+    ki, ko = _sort_key(obs), _sort_key(o1)
+    for f in ['xxvis', 'yyvis', 'xyvis', 'yxvis',
+              'xxsigma', 'yysigma', 'xysigma', 'yxsigma']:
+        np.testing.assert_allclose(o1.data[f][ko], obs.data[f][ki], rtol=1e-5, atol=1e-5)
+    # second load is idempotent (both files are float32-sourced)
+    for f in ['xxvis', 'yyvis', 'xyvis', 'yxvis',
+              'xxsigma', 'yysigma', 'xysigma', 'yxsigma']:
+        np.testing.assert_allclose(o2.data[f][_sort_key(o2)], o1.data[f][ko],
+                                   rtol=1e-6, atol=1e-6)
+    # linear <-> stokes physics preserved through the round trip
+    s_in = obs.switch_polrep('stokes')
+    s_out = o1.switch_polrep('stokes')
+    ksi, kso = _sort_key(s_in), _sort_key(s_out)
+    for f in ['vis', 'qvis', 'uvis', 'vvis']:
+        np.testing.assert_allclose(s_out.data[f][kso], s_in.data[f][ksi],
+                                   rtol=1e-5, atol=1e-5)
+
+
+def test_save_load_uvfits_mixed_roundtrip(tmp_path):
+    obs = eo.Obsdata(0., 0., 230e9, 1e9,
+                     _mixed_data(['S0', 'S0', 'S1'], ['S1', 'S2', 'S2'], [0.1, 0.2, 0.3]),
+                     _tarr(['rl', 'rl', 'xy']), polrep='mixed')
+    o1, o2 = _roundtrip(obs, 'mixed', tmp_path)
+    assert o1.polrep == 'mixed'
+    assert set(o1.tarr['feed_type']) == {'rl', 'xy'}
+    # feed types + polbasis survive
+    assert set(o1.data['polbasis']) == set(obs.data['polbasis'])
+    ki, ko = _sort_key(obs), _sort_key(o1)
+    np.testing.assert_array_equal(o1.data['polbasis'][ko], obs.data['polbasis'][ki])
+    for f in ['p1p1vis', 'p2p2vis', 'p1p2vis', 'p2p1vis',
+              'p1p1sigma', 'p2p2sigma', 'p1p2sigma', 'p2p1sigma']:
+        np.testing.assert_allclose(o1.data[f][ko], obs.data[f][ki], rtol=1e-5, atol=1e-5)
+    # idempotent second load
+    for f in ['p1p1vis', 'p2p2vis', 'p1p2vis', 'p2p1vis',
+              'p1p1sigma', 'p2p2sigma', 'p1p2sigma', 'p2p1sigma']:
+        np.testing.assert_allclose(o2.data[f][_sort_key(o2)], o1.data[f][ko],
+                                   rtol=1e-6, atol=1e-6)
+
+
+def test_save_load_uvfits_mixed_xyrl_first_baseline(tmp_path):
+    # first baseline is xy x rl (polbasis 'xyrl'): exercises a non-trivial
+    # per-baseline polbasis (not the all-'rlxy' case) through the uvfits IO path
+    obs = eo.Obsdata(0., 0., 230e9, 1e9,
+                     _mixed_data(['S0', 'S0', 'S1'], ['S1', 'S2', 'S2'], [0.1, 0.2, 0.3]),
+                     _tarr(['xy', 'rl', 'rl']), polrep='mixed')
+    ki0 = _sort_key(obs)
+    assert obs.data['polbasis'][ki0][0] == 'xyrl'
+    o1, _ = _roundtrip(obs, 'mixed', tmp_path)
+    ko = _sort_key(o1)
+    np.testing.assert_array_equal(o1.data['polbasis'][ko], obs.data['polbasis'][ki0])
+    for f in ['p1p1vis', 'p2p2vis', 'p1p2vis', 'p2p1vis',
+              'p1p1sigma', 'p2p2sigma', 'p1p2sigma', 'p2p1sigma']:
+        np.testing.assert_allclose(o1.data[f][ko], obs.data[f][ki0], rtol=1e-5, atol=1e-5)
+
+
+def test_save_load_uvfits_mixed_noncanonical_feed_preserved(tmp_path):
+    # a mixed obs with a non-canonical feed order ('lr') must round-trip with its
+    # feed order and polbasis intact. Canonicalizing it on load (as homogeneous
+    # files are) would mislabel correlations, since a mixed file's four slots are
+    # written in feed order, not by the (nominal) STOKES axis.
+    obs = eo.Obsdata(0., 0., 230e9, 1e9,
+                     _mixed_data(['S0', 'S0', 'S1'], ['S1', 'S2', 'S2'], [0.1, 0.2, 0.3]),
+                     _tarr(['lr', 'lr', 'xy']), polrep='mixed')
+    assert set(obs.tarr['feed_type']) == {'lr', 'xy'}
+    o1, _ = _roundtrip(obs, 'mixed', tmp_path)
+    assert set(o1.tarr['feed_type']) == {'lr', 'xy'}     # preserved, NOT canonicalized
+    ki, ko = _sort_key(obs), _sort_key(o1)
+    np.testing.assert_array_equal(o1.data['polbasis'][ko], obs.data['polbasis'][ki])
+    for f in ['p1p1vis', 'p2p2vis', 'p1p2vis', 'p2p1vis',
+              'p1p1sigma', 'p2p2sigma', 'p1p2sigma', 'p2p1sigma']:
+        np.testing.assert_allclose(o1.data[f][ko], obs.data[f][ki], rtol=1e-5, atol=1e-5)
+
+
+def test_save_load_uvfits_lin_from_stokes_source(tmp_path):
+    # regression for the stokes -> lin switch_polrep default-hand crash: a
+    # fully-polarized stokes obs on an xy array must save/load as 'lin'.
+    obs = _stokes_obs(tarr_feeds=('xy', 'xy'))
+    lin = obs.switch_polrep('lin')                 # previously raised (hand='R')
+    assert lin.polrep == 'lin'
+    p = str(tmp_path / 'sl.uvfits')
+    obs.save_uvfits(p, polrep_out='lin')           # save from a stokes source
+    o1 = eo.load_uvfits(p, polrep='lin')
+    assert o1.polrep == 'lin'
+    # linear <-> stokes physics preserved
+    s_out = o1.switch_polrep('stokes')
+    ki, ko = _sort_key(obs), _sort_key(s_out)
+    for f in ['vis', 'qvis', 'uvis', 'vvis']:
+        np.testing.assert_allclose(s_out.data[f][ko], obs.data[f][ki], rtol=1e-4, atol=1e-4)
+
+
+def test_save_uvfits_mixed_requires_mixed_polrep_out(tmp_path):
+    obs = eo.Obsdata(0., 0., 230e9, 1e9,
+                     _mixed_data(['S0', 'S0', 'S1'], ['S1', 'S2', 'S2'], [0.1, 0.2, 0.3]),
+                     _tarr(['rl', 'rl', 'xy']), polrep='mixed')
+    with pytest.raises(Exception, match="mixed"):
+        obs.save_uvfits(str(tmp_path / 'x.uvfits'), polrep_out='circ')
+
+
+def test_save_load_uvfits_circ_roundtrip_unaffected(tmp_path):
+    # a circular observation still writes POLTYA/POLTYB = R/L and reloads as circ
+    obs = eo.load_uvfits(_SAMPLE, polrep='circ')
+    o1, _ = _roundtrip(obs, 'circ', tmp_path)
+    assert o1.polrep == 'circ'
+    assert set(o1.tarr['feed_type']) == {'rl'}

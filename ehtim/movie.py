@@ -429,32 +429,32 @@ class Movie:
                                          bounds_error=self.bounds_error, fill_value=fill_value)
         self._fundict['LR'] = fun
 
-    # Pre-Phase-3 names rlvec / lrvec were inconsistent with the rest of
-    # Movie's "frames" naming and the rest of the codebase did not call them.
-    # Phase 3 renamed them to rlframes / lrframes; these shims raise so any
-    # surviving caller fails loudly with a migration message.
+    # The old names rlvec / lrvec were inconsistent with the rest of Movie's
+    # "frames" naming and the rest of the codebase did not call them. They were
+    # renamed to rlframes / lrframes; these shims raise so any surviving caller
+    # fails loudly with a migration message.
     @property
     def rlvec(self):
         raise AttributeError(
-            "Movie.rlvec was renamed to Movie.rlframes in Phase 3 mixed-pol; "
+            "Movie.rlvec was renamed to Movie.rlframes; "
             "update the caller.")
 
     @rlvec.setter
     def rlvec(self, frames):
         raise AttributeError(
-            "Movie.rlvec was renamed to Movie.rlframes in Phase 3 mixed-pol; "
+            "Movie.rlvec was renamed to Movie.rlframes; "
             "update the caller.")
 
     @property
     def lrvec(self):
         raise AttributeError(
-            "Movie.lrvec was renamed to Movie.lrframes in Phase 3 mixed-pol; "
+            "Movie.lrvec was renamed to Movie.lrframes; "
             "update the caller.")
 
     @lrvec.setter
     def lrvec(self, frames):
         raise AttributeError(
-            "Movie.lrvec was renamed to Movie.lrframes in Phase 3 mixed-pol; "
+            "Movie.lrvec was renamed to Movie.lrframes; "
             "update the caller.")
 
     @property
@@ -841,7 +841,7 @@ class Movie:
         if polrep_out == self.polrep and pol_prim_out == self.pol_prim:
             return self.copy()
 
-        # circ <-> lin goes through stokes (no direct path; plan Decision 7).
+        # circ <-> lin goes through stokes (no direct path).
         if (polrep_out, self.polrep) in [('circ', 'lin'), ('lin', 'circ')]:
             return self.switch_polrep('stokes').switch_polrep(polrep_out, pol_prim_out)
 
@@ -1221,21 +1221,9 @@ class Movie:
                                      zero_empty_pol=zero_empty_pol, verbose=verbose)
             verbose = False # only print for one frame
 
-            # Put visibilities into the obsdata
-            if obs.polrep == 'stokes':
-                obsdata['vis'] = data[0]
-                if data[1] is not None:
-                    obsdata['qvis'] = data[1]
-                    obsdata['uvis'] = data[2]
-                    obsdata['vvis'] = data[3]
-
-            elif obs.polrep == 'circ':
-                obsdata['rrvis'] = data[0]
-                if data[1] is not None:
-                    obsdata['llvis'] = data[1]
-                if data[2] is not None:
-                    obsdata['rlvis'] = data[2]
-                    obsdata['lrvis'] = data[3]
+            # Put visibilities into the obsdata (mixed: converts Stokes -> per-baseline
+            # correlations using each row's polbasis)
+            obsdata = simobs.pack_sampled_visibilities(obsdata, data, obs.polrep)
 
             if len(obsdata_out):
                 obsdata_out = np.hstack((obsdata_out, obsdata))
