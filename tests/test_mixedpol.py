@@ -388,6 +388,16 @@ def test_upgrade_caltable_combined_gain_dterm_table_raises():
         ehc.upgrade_caltable(combined)
 
 
+def test_upgrade_caltable_unnamed_array_raises():
+    """An array with no fields at all raises rather than being read as gains.
+
+    The shared normalizer returns None for it, which must not be confused with
+    the None that means there is no table.
+    """
+    with pytest.raises(Exception, match="no named fields"):
+        ehc.upgrade_caltable(np.zeros(3))
+
+
 def test_upgrade_caltable_none_passthrough():
     """None is passed straight through, as pad_scans expects."""
     assert ehc.upgrade_caltable(None) is None

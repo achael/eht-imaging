@@ -133,7 +133,7 @@ class Caltable:
             self.dterms = {}
             for site, table in dtermdict.items():
                 site_dterms = ehc._normalize_recarray(table)
-                if site_dterms is not None:
+                if site_dterms is not None and len(site_dterms):
                     self.dterms[site] = site_dterms
 
     @property

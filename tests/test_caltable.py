@@ -1173,6 +1173,21 @@ class TestSplitFixups:
         )
         assert ct.dterms == {}
 
+    def test_empty_typed_dterm_table_is_not_stored(self, obs_direct):
+        """A zero-row table of the right dtype is dropped like an untyped one.
+
+        The shared normalizer keeps empty tables so that an empty gain table
+        survives; dropping them is the D-term side's own rule.
+        """
+        site = _first_sites(obs_direct, 1)[0]
+        ct = eh.caltable.Caltable(
+            obs_direct.ra, obs_direct.dec, obs_direct.rf, obs_direct.bw,
+            _clean_caldict([site], _span_times(obs_direct)), obs_direct.tarr,
+            source=obs_direct.source, mjd=obs_direct.mjd,
+            dtermdict={site: np.zeros(0, dtype=ehc.DTDTERM)},
+        )
+        assert ct.dterms == {}
+
     def test_stale_dterm_file_removed_on_resave(self, obs_direct,
                                                 injected_gain_caltable_factory,
                                                 dterm_dict_factory, tmp_path):

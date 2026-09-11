@@ -254,10 +254,10 @@ def upgrade_dtpol_circ(data):
 
 
 def _normalize_recarray(arr):
-    """Return arr as a 1-D recarray, or None if it has no rows or no named fields.
+    """Return arr as a 1-D recarray, or None if it has no named fields.
 
-    Fixes the 0-d single-record edge case and treats a truly empty array as
-    no data at all.
+    Fixes the 0-d single-record edge case. Callers decide what an empty
+    table means: dropped for D-terms, kept as an empty gain table.
     """
     import numpy as _np
     if arr is None:
@@ -266,8 +266,7 @@ def _normalize_recarray(arr):
         arr = _np.asarray(arr)
     if arr.dtype.names is None:
         return None
-    arr = _np.atleast_1d(arr)
-    return arr if len(arr) else None
+    return _np.atleast_1d(arr)
 
 
 # Field names a legacy caltable can carry, used to interpret old tables
@@ -282,11 +281,9 @@ def upgrade_caltable(data):
     import numpy as _np
     if data is None:
         return None
-    if not isinstance(data, _np.ndarray):
-        data = _np.asarray(data)  # solvers can hand over a bare record or [record]
-    if data.dtype.names is None:
+    data = _normalize_recarray(data)  # solvers can hand over a bare record or [record]
+    if data is None:
         raise Exception("cannot interpret caltable data: array has no named fields")
-    data = _np.atleast_1d(data)
 
     fields = data.dtype.fields
     names = data.dtype.names
