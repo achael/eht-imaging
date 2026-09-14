@@ -31,7 +31,8 @@ from ehtim.observing.pulses import trianglePulse2D
 __all__ = [
     "BHIMAGE", "BOUNDS_ERROR", "C", "COLORLIST", "DEC_DEFAULT", "DEC_M87",
     "DEC_SGRA", "DEGREE", "DTAMP", "DTARR", "DTBIS", "DTCAL", "DTCAMP",
-    "DTCPHASE", "DTCPHASEDIAG", "DTERMPDEF", "DTLOGCAMPDIAG", "DTPOL_CIRC",
+    "DTCPHASE", "DTCPHASEDIAG", "DTDTERM", "DTERMPDEF", "DTLOGCAMPDIAG",
+    "DTPOL_CIRC",
     "DTPOL_STOKES", "DTSCANS", "EHTIMAGE", "ELEV_HIGH", "ELEV_LOW", "EP",
     "FFT_INTERP_DEFAULT", "FFT_PAD_DEFAULT", "FIELD_LABELS", "FIELDS",
     "FIELDS_AMPS", "FIELDS_PHASE", "FIELDS_SIGPHASE", "FIELDS_SIGS",
@@ -173,14 +174,23 @@ DTLOGCAMPDIAG = [('time', 'f8'), ('camp', 'f8'), ('sigmaca', 'f8'),
                  ('quadrangles', 'O'), ('u', 'O'), ('v', 'O'), ('tform_matrix', 'O')]
 
 DTCAL_CIRC = [('time', 'f8'),
-              (('p1scale', 'rscale'), 'c16'), (('p2scale', 'lscale'), 'c16'),
-              (('d_p1', 'dr'), 'c16'), (('d_p2', 'dl'), 'c16')]
+              (('p1scale', 'rscale'), 'c16'), (('p2scale', 'lscale'), 'c16')]
 
 DTCAL_LIN = [('time', 'f8'),
-             (('p1scale', 'xscale'), 'c16'), (('p2scale', 'yscale'), 'c16'),
-             ('d_p1', 'c16'), ('d_p2', 'c16')]
+             (('p1scale', 'xscale'), 'c16'), (('p2scale', 'yscale'), 'c16')]
 
 DTCAL = DTCAL_CIRC  # legacy alias
+
+# D-term (leakage) tables, one per site, on their own time grid so gains and
+# D-terms can be sampled independently. Generic d_p1/d_p2 alias the physical
+# names: dr/dl for circular feeds, dx/dy for linear.
+DTDTERM_CIRC = [('time', 'f8'),
+                (('d_p1', 'dr'), 'c16'), (('d_p2', 'dl'), 'c16')]
+
+DTDTERM_LIN = [('time', 'f8'),
+               (('d_p1', 'dx'), 'c16'), (('d_p2', 'dy'), 'c16')]
+
+DTDTERM = DTDTERM_CIRC  # legacy alias
 
 DTSCANS = [('time', 'f8'), ('interval', 'f8'), ('startvis', 'f8'), ('endvis', 'f8')]
 
@@ -243,23 +253,67 @@ def upgrade_dtpol_circ(data):
     return data
 
 
-def upgrade_dtcal_circ(data):
-    """Upgrade a legacy DTCAL recarray (time, rscale, lscale) to DTCAL_CIRC.
+def _normalize_recarray(arr):
+    """Return arr as a 1-D recarray, or None if it has no named fields.
 
-    Legacy DTCAL has no D-term fields; the upgrade allocates a new recarray
-    and zero-fills dr/dl. Idempotent.
+    Fixes the 0-d single-record edge case. Callers decide what an empty
+    table means: dropped for D-terms, kept as an empty gain table.
     """
     import numpy as _np
-    target = _np.dtype(DTCAL_CIRC)
-    if data.dtype == target:
+    if arr is None:
+        return None
+    if not isinstance(arr, _np.ndarray):
+        arr = _np.asarray(arr)
+    if arr.dtype.names is None:
+        return None
+    return _np.atleast_1d(arr)
+
+
+# Field names a legacy caltable can carry, used to interpret old tables
+_CAL_GAIN_FIELDS = frozenset({'rscale', 'lscale', 'xscale', 'yscale', 'p1scale', 'p2scale'})
+
+
+def upgrade_caltable(data):
+    """Upgrade legacy per-site caltable gains to the current mixed-pol format.
+
+    Idempotent; raises on field names it cannot interpret.
+    """
+    import numpy as _np
+    if data is None:
+        return None
+    data = _normalize_recarray(data)  # solvers can hand over a bare record or [record]
+    if data is None:
+        raise Exception("cannot interpret caltable data: array has no named fields")
+
+    fields = data.dtype.fields
+    names = data.dtype.names
+
+    # feed basis from the field names; generic-only names default to circular
+    if 'xscale' in fields or 'yscale' in fields:
+        lin = True
+    elif 'rscale' in fields or 'lscale' in fields:
+        lin = False
+    else:
+        lin = False
+        if 'p1scale' in fields:
+            import warnings as _warnings
+
+            from ehtim.warnings import MixedPolConventionWarning as _MPW
+            _warnings.warn("cannot tell the feed basis from generic field names; "
+                           "assuming circular", _MPW, stacklevel=2)
+    gain_t = _np.dtype(DTCAL_LIN if lin else DTCAL_CIRC)
+
+    if data.dtype == gain_t:
         return data
-    names = data.dtype.names or ()
-    if 'rscale' in names and 'dr' not in names:
-        new = _np.zeros(len(data), dtype=target)
-        for name in ('time', 'rscale', 'lscale'):
-            new[name] = data[name]
-        return new
-    return data
+
+    # legacy gains: copy into the current dtype (a copy, not a view, so the
+    # caller's array is never written through and byte order is converted)
+    if len(names) != 3 or names[0] != 'time' or not set(names[1:]) <= _CAL_GAIN_FIELDS:
+        raise Exception(f"cannot interpret fields {names} as a caltable gain table")
+    gains = _np.zeros(len(data), dtype=gain_t)
+    for src, dst in zip(names, gain_t.names):
+        gains[dst] = data[src]
+    return gains
 
 
 @functools.lru_cache(maxsize=16)

@@ -1,6 +1,9 @@
 # obs_simulate.py
 # functions to simulate interferometric observations
 #
+# TODO: consider adding time-variable D-terms to the simulated caltables
+# (D-terms are fixed per site for now, and saved via the tarr)
+#
 #    Copyright (C) 2018 Andrew Chael
 #
 #    This program is free software: you can redistribute it and/or modify
@@ -738,11 +741,13 @@ def make_jones(obs, opacitycal=True, ampcal=True, phasecal=True, dcal=True,
         out[site] = j_matrices
 
         if caltable_path:
+            # the D-terms live on the tarr, which is what gets saved alongside
+            # the gains; the cal table itself carries gains only
             obs_tmp.tarr[i]['dr'] = dR
             obs_tmp.tarr[i]['dl'] = dL
             datatable = []
             for j in range(len(times)):
-                datatable.append(np.array((times[j], gainR[j], gainL[j], dR, dL),
+                datatable.append(np.array((times[j], gainR[j], gainL[j]),
                                           dtype=ehc.DTCAL))
             datatables[site] = np.array(datatable)
 
@@ -753,7 +758,9 @@ def make_jones(obs, opacitycal=True, ampcal=True, phasecal=True, dcal=True,
                             datatables, obs_tmp.tarr, source=obs_tmp.source,
                             mjd=obs_tmp.mjd, timetype=obs_tmp.timetype)
 
-        caltable.save_txt(obs_tmp, datadir=caltable_path+'_simdata_caltable')
+        # each simulation rewrites its own truth table
+        caltable.save_txt(obs_tmp, datadir=caltable_path+'_simdata_caltable',
+                          overwrite=True)
 
     return out
 
