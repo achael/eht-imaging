@@ -523,9 +523,8 @@ class Imager:
         # (the optax path builds the jax objective itself in build_vg_ondevice below, so the
         #  user's use_jax flag is irrelevant there and is left untouched.)
 
-        # Refuse the combinations jax cannot run, before it fails somewhere inside a trace.
-        # Keyed on all three routes to jax, not just use_jax: optax builds the jax objective
-        # regardless of the flag, and sharding always does.
+        # Keyed on all three routes into jax, not just use_jax: optax builds the jax
+        # objective regardless of the flag, and sharding always does.
         if use_jax or shard or classify_optimizer(optimizer) == 'optax':
             check_jax_supported(self._config.ttype, self.dat_term_next)
 

@@ -56,11 +56,9 @@ REGULARIZERS_ISPECTRAL = REGULARIZERS_SPECIND + REGULARIZERS_CURV
 REGULARIZERS_POLSPECTRAL = REGULARIZERS_SPECIND_P + REGULARIZERS_CURV_P + REGULARIZERS_RM + REGULARIZERS_CM
 REGULARIZERS_SPECTRAL = REGULARIZERS_ISPECTRAL + REGULARIZERS_POLSPECTRAL
 
-# What the jax backend covers. 'fast' has no jaxified kernels: no chisq_*_fft dispatches
-# through array_namespace and fft_imvec is hard numpy, so it fails once the value is traced.
-# The _diag closures fail earlier, before any kernel runs: their data and sigma are ragged
-# dtype=object arrays, which device_put rejects outright. 'logamp' is numpy-only and is not
-# reachable through the Imager, but is a valid dispatch key.
+# What the jax backend covers. 'fast' has no jaxified kernels, so it dies once a value is
+# traced; the _diag closures never reach a kernel at all, since their ragged dtype=object
+# data is rejected by device_put. 'logamp' is numpy-only but is a valid dispatch key.
 JAX_TTYPES = ['direct', 'nfft']
 JAX_UNSUPPORTED_DATATERMS = ['cphase_diag', 'logamp', 'logcamp_diag']
 
@@ -1991,10 +1989,8 @@ def compute_objective_grad(imvec, initvec, config,
 def check_jax_supported(ttype, dat_terms):
     """Check that the jax backend covers this transform and these data terms.
 
-    Call before building any jax objective. Without it the run fails deep inside jax with an
-    error that says nothing about the cause: a tracer error for 'fast', whose kernels are
-    numpy-only, and a dtype error for the _diag terms, whose ragged data arrays never reach
-    a kernel at all.
+    Call before building any jax objective. Without it the run fails deep inside jax, with a
+    tracer or dtype error that says nothing about what the caller did wrong.
 
     Parameters
     ----------
@@ -2204,11 +2200,9 @@ def make_survey_value_and_grad(initvec, config, which_solve, data_tuples, logfre
 
     check_jax_supported(config.ttype, data_tuples)
 
-    # TODO: lift this. It is a keying bug, not a design limit: dat_keys below wants bare
-    # term names, but with more than one observation the keys arrive already suffixed and
-    # compute_chisq_dict suffixes them again, giving KeyError: 'vis_0_0'. Stripping the
-    # suffix here looks sufficient, but multi-observation surveys have no test coverage,
-    # so refuse clearly rather than ship an unverified path.
+    # TODO: lift this. A keying bug, not a design limit: dat_keys wants bare term names, but
+    # with several observations they arrive suffixed and get suffixed again (KeyError
+    # 'vis_0_0'). Stripping the suffix looks enough, but that path has no test coverage yet.
     if n_obs != 1:
         raise ValueError(
             f"the survey handles a single observation, got {n_obs}; pass one Obsdata, or "
