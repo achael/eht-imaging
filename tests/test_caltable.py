@@ -1,10 +1,16 @@
 """Tests for ehtim.caltable.Caltable."""
 
+import pickle
+import warnings
+
+import matplotlib.pyplot as plt
 import numpy as np
 import pytest
 
 import ehtim as eh
-from ehtim.const_def import DTCAL
+import ehtim.const_def as ehc
+from ehtim.const_def import DTARR, DTCAL
+from ehtim.warnings import MixedPolConventionWarning
 
 # ---------------------------------------------------------------------------
 # Constants used across the module
@@ -13,6 +19,18 @@ from ehtim.const_def import DTCAL
 # Bit-clean numerical-equality tolerances for applycal scaling and gain
 # round-trips. 1e-12 is the float-roundoff floor for products and inversions
 # of double-precision complex numbers across this module.
+# Gain used by the applycal D-term warning tests. Any well-conditioned value
+# works; the tests assert on the warning and on output equality, not on it.
+APPLYCAL_WARN_GAIN = 1.3 + 0.4j
+
+# D-term persistence tests. DTERM_TIMES is deliberately not the gain time grid:
+# the two tables are sampled independently. TIME_ATOL is in hours and covers
+# the MJD round-trip, where a double holds ~1e-9 hr of resolution near MJD 5e4.
+SEED_DTERM_ROUNDTRIP = 20260810
+DTERM_TIMES = (0.5, 3.25)
+SINGLE_ROW_TIME_HR = 2.0
+TIME_ATOL = 1e-6
+
 BIT_CLEAN_RTOL = 1e-12
 BIT_CLEAN_ATOL = 1e-12
 
@@ -83,7 +101,7 @@ def _unity_caltable(obs):
     caldict = {}
     for site in obs.tarr['site']:
         caldict[site] = np.array(
-            [(t, 1.0 + 0j, 1.0 + 0j, 0j, 0j) for t in times], dtype=DTCAL
+            [(t, 1.0 + 0j, 1.0 + 0j) for t in times], dtype=DTCAL
         ).view(np.recarray)
     return eh.caltable.Caltable(
         obs.ra, obs.dec, obs.rf, obs.bw, caldict, obs.tarr,
@@ -119,8 +137,10 @@ def test_applycal_unity_preserves_data(obs_direct):
 
 
 class TestCaltableConstruction:
+    """Building a table from a datadict, and the make_caltable helper."""
 
     def test_init_sets_scalar_attrs(self, unity_caltable, obs_direct):
+        """The observation's scalar metadata is copied onto the table."""
         ct = unity_caltable
         assert ct.source == obs_direct.source
         assert ct.ra == obs_direct.ra
@@ -131,12 +151,14 @@ class TestCaltableConstruction:
         assert ct.timetype == obs_direct.timetype
 
     def test_init_builds_tkey_from_tarr(self, unity_caltable):
+        """tkey maps each site name to its row index in tarr."""
         ct = unity_caltable
         idx = np.fromiter((ct.tkey[s] for s in ct.tarr['site']),
                           dtype=int, count=len(ct.tarr))
         np.testing.assert_array_equal(idx, np.arange(len(ct.tarr)))
 
     def test_init_rejects_bad_timetype(self, obs_direct):
+        """Only 'GMST' and 'UTC' are accepted as time conventions."""
         with pytest.raises(Exception, match="GMST"):
             eh.caltable.Caltable(
                 obs_direct.ra, obs_direct.dec, obs_direct.rf, obs_direct.bw,
@@ -144,11 +166,15 @@ class TestCaltableConstruction:
             )
 
     def test_init_data_keys_match_sites(self, unity_caltable, obs_direct):
+        """Every site in the array gets an entry in the gain table."""
         assert set(unity_caltable.data.keys()) == set(obs_direct.tarr['site'])
 
     def test_make_caltable_square_ntele_eq_ntimes(self, obs_direct):
-        # ntele == ntimes: indexing gains[s*ntele + t] coincides with the
-        # intended gains[s*ntimes + t] so the mapping is correct.
+        """make_caltable lays the flat gain list out as gains[site*ntimes + time].
+
+        Square case, ntele == ntimes, where a transposed index would still agree;
+        the rectangular test below is the one that can tell them apart.
+        """
         sites = list(obs_direct.tarr['site'])[:3]
         times = [obs_direct.data['time'].min(),
                  (obs_direct.data['time'].min() + obs_direct.data['time'].max()) / 2,
@@ -161,11 +187,11 @@ class TestCaltableConstruction:
         assert ct.data[sites[1]][2]['lscale'] == 5 + 0j
 
     def test_make_caltable_returns_false_on_empty(self, obs_direct):
+        """With no sites or times there is nothing to build, so it returns False."""
         assert eh.caltable.make_caltable(obs_direct, [], [], []) is False
 
     def test_make_caltable_rect_ntele_ne_ntimes(self, obs_direct):
-        # ntele=2, ntimes=3. With the correct s*ntimes + t indexing, gain at
-        # (site i, time j) is gains[i*ntimes + j].
+        """Two sites and three times, where a transposed index would disagree."""
         sites = list(obs_direct.tarr['site'])[:2]
         times = [obs_direct.data['time'].min(),
                  (obs_direct.data['time'].min() + obs_direct.data['time'].max()) / 2,
@@ -185,16 +211,20 @@ class TestCaltableConstruction:
 
 
 class TestCaltableCopy:
+    """copy() is a deep copy: the result shares no array with the original."""
 
     def test_copy_returns_caltable_instance(self, unity_caltable):
+        """copy() hands back a Caltable, not a bare dict."""
         assert isinstance(unity_caltable.copy(), eh.caltable.Caltable)
 
     def test_copy_preserves_scalar_attrs(self, unity_caltable):
+        """The copy carries the same scalar metadata."""
         ct = unity_caltable.copy()
         for attr in ('source', 'ra', 'dec', 'rf', 'bw', 'mjd', 'timetype'):
             assert getattr(ct, attr) == getattr(unity_caltable, attr)
 
     def test_copy_data_is_independent(self, constant_gain_caltable_factory):
+        """Mutating the copy's gains leaves the original alone."""
         original = constant_gain_caltable_factory(2.0 + 0j)
         cp = original.copy()
         first_site = next(iter(cp.data))
@@ -202,6 +232,7 @@ class TestCaltableCopy:
         assert original.data[first_site]['rscale'][0] == 2 + 0j
 
     def test_copy_tarr_is_independent(self, unity_caltable):
+        """The telescope array is deep-copied too, not shared."""
         cp = unity_caltable.copy()
         cp.tarr['sefdr'][0] = -1234.0
         assert unity_caltable.tarr['sefdr'][0] != -1234.0
@@ -213,8 +244,10 @@ class TestCaltableCopy:
 
 
 class TestInvertGains:
+    """invert_gains() replaces every gain by its reciprocal, in place."""
 
     def test_invert_unity_is_unity(self, unity_caltable):
+        """Inverting unit gains leaves them at unity."""
         ct = unity_caltable.copy()
         ct.invert_gains()
         r_stack, l_stack = _stack_gains(ct)
@@ -222,6 +255,7 @@ class TestInvertGains:
         np.testing.assert_allclose(l_stack, 1 + 0j)
 
     def test_invert_constant_g_yields_reciprocal(self, constant_gain_caltable_factory):
+        """A constant gain g becomes 1/g."""
         ct = constant_gain_caltable_factory(CONST_REAL_GAIN)
         ct.invert_gains()
         r_stack, l_stack = _stack_gains(ct)
@@ -229,6 +263,7 @@ class TestInvertGains:
         np.testing.assert_allclose(l_stack, 1 / CONST_REAL_GAIN)
 
     def test_invert_twice_is_identity(self, injected_gain_caltable_factory):
+        """Inverting twice returns the original gains, to roundoff."""
         ct = injected_gain_caltable_factory(seed=SEED_INVERT_ROUNDTRIP)
         ref_r, _ = _stack_gains(ct)
         ct.invert_gains()
@@ -237,6 +272,7 @@ class TestInvertGains:
         np.testing.assert_allclose(r_stack, ref_r, rtol=BIT_CLEAN_RTOL)
 
     def test_invert_returns_self(self, unity_caltable):
+        """It works in place and returns the same object, so calls can be chained."""
         ct = unity_caltable.copy()
         assert ct.invert_gains() is ct
 
@@ -267,10 +303,14 @@ def _caltable_with_times(obs, times, rscale=1.0 + 0j, lscale=1.0 + 0j):
 
 
 class TestApplycalConstantGain:
+    """applycal scales each visibility by g_i * conj(g_j) for its two stations."""
 
     def test_real_gain_scales_amp_by_g_squared(self, obs_direct,
                                                constant_gain_caltable_factory):
-        # g_i * conj(g_j) = g**2 for every baseline when all stations share g.
+        """A real gain shared by every station scales each visibility by |g|^2.
+
+        Each baseline picks up g_i * conj(g_j).
+        """
         g = CONST_REAL_GAIN
         out = constant_gain_caltable_factory(g).applycal(obs_direct, interp='nearest')
         for f in ('vis', 'qvis', 'uvis', 'vvis'):
@@ -280,7 +320,10 @@ class TestApplycalConstantGain:
             )
 
     def test_pure_phase_gain_preserves_amplitude(self, obs_direct):
-        # |g_i * conj(g_j)| = 1 for any common phase ⇒ amplitudes invariant.
+        """A phase shared by every station leaves the amplitudes untouched.
+
+        |g_i * conj(g_j)| = 1 for any phase common to all stations.
+        """
         g = np.exp(1j * CONST_PHASE)
         ct = _caltable_with_times(
             obs_direct,
@@ -296,10 +339,14 @@ class TestApplycalConstantGain:
 
 
 class TestApplycalSiteSubset:
+    """Stations missing from the table are treated as already calibrated."""
 
     def test_missing_site_baselines_unscaled(self, obs_direct,
                                              constant_gain_caltable_factory):
-        # Sites absent from caltable.data fall back to gain = 1.
+        """A site with no gain entry falls back to gain 1.
+
+        Its baselines then scale by the surviving station's g rather than g^2.
+        """
         g = CONST_REAL_GAIN
         ct = constant_gain_caltable_factory(g)
         dropped = obs_direct.tarr['site'][0]
@@ -324,20 +371,25 @@ class TestApplycalSiteSubset:
 
 
 class TestApplycalPolrep:
+    """applycal works in circular internally and hands back the caller's polrep."""
 
     def test_stokes_input_returns_stokes(self, obs_direct, unity_caltable):
+        """A Stokes observation comes back as Stokes."""
         out = unity_caltable.applycal(obs_direct, interp='nearest')
         assert out.polrep == 'stokes'
 
     def test_circ_input_returns_circ(self, obs_direct, unity_caltable):
+        """A circular observation comes back as circular."""
         obs_circ = obs_direct.switch_polrep('circ')
         out = unity_caltable.applycal(obs_circ, interp='nearest')
         assert out.polrep == 'circ'
 
 
 class TestApplycalRejectsMismatchedTarr:
+    """The table and the observation have to describe the same array."""
 
     def test_different_tarr_raises(self, obs_direct, unity_caltable):
+        """One perturbed station coordinate makes applycal refuse rather than mis-apply."""
         obs_mut = obs_direct.copy()
         obs_mut.tarr['x'][0] += 1.0
         with pytest.raises(Exception, match="telescope array"):
@@ -345,10 +397,11 @@ class TestApplycalRejectsMismatchedTarr:
 
 
 class TestApplycalInterpModes:
+    """The interp kwarg chooses how gains are sampled between cal-table times."""
 
     @pytest.mark.parametrize("interp", ["nearest", "linear"])
     def test_constant_gain_recovered_at_every_time(self, obs_direct, interp):
-        # Both modes return g**2 at every obs time when the caltable is flat.
+        """A flat table returns |g|^2 at every observation time, in either interp mode."""
         g = CONST_INTERP_GAIN
         ct = _caltable_with_times(
             obs_direct,
@@ -363,7 +416,7 @@ class TestApplycalInterpModes:
         )
 
     def test_cubic_requires_four_points(self, obs_direct):
-        # cubic interp needs >= 4 anchor points; constant g recovers g**2.
+        """Cubic interpolation needs four anchors; given them, a constant gain still comes back exactly."""
         g = CONST_CUBIC_GAIN
         t0 = obs_direct.data['time'].min() - 1.0
         t1 = obs_direct.data['time'].max() + 1.0
@@ -377,14 +430,15 @@ class TestApplycalInterpModes:
 
 
 class TestApplycalExtrapolation:
+    """What happens outside the table's time span.
 
-    # The applycal docstring only documents extrapolate=True; the False/None
-    # behaviour is left to the underlying scipy.interpolate.interp1d default
-    # (NaN fill). These tests pin that delegated behaviour rather than treat
-    # it as a bug: with extrapolate=None, samples outside the caltable span
-    # come back NaN, exactly on those rows.
+    applycal only documents extrapolate=True; the None case falls through to
+    scipy's interp1d default, which is a NaN fill. These pin that inherited
+    behaviour rather than treating it as a bug.
+    """
 
     def test_extrapolate_none_yields_nan_only_outside_span(self, obs_direct):
+        """Rows past the end of the table come back NaN, and only those rows."""
         t0 = obs_direct.data['time'].min()
         t_mid = 0.5 * (obs_direct.data['time'].min()
                        + obs_direct.data['time'].max())
@@ -397,8 +451,7 @@ class TestApplycalExtrapolation:
         assert np.all(np.isfinite(out.data['vis'][inside]))
 
     def test_extrapolate_true_fills_outside_span(self, obs_direct):
-        # With extrapolate=True, scipy's 'extrapolate' fill value is used and
-        # the calibrated visibilities are finite everywhere.
+        """With extrapolate=True scipy fills the ends and every row stays finite."""
         t0 = obs_direct.data['time'].min()
         t_mid = 0.5 * (obs_direct.data['time'].min()
                        + obs_direct.data['time'].max())
@@ -413,10 +466,12 @@ class TestApplycalExtrapolation:
 
 
 class TestSaveLoadRoundtrip:
+    """Gains survive a trip out to the per-site text files and back."""
 
     def test_save_caltable_load_caltable_roundtrip(self, obs_direct,
                                                    injected_gain_caltable_factory,
                                                    tmp_path):
+        """Saving then loading recovers the gains and their times."""
         ct = injected_gain_caltable_factory(seed=SEED_SAVE_LOAD_ROUNDTRIP)
         eh.caltable.save_caltable(ct, obs_direct, datadir=str(tmp_path))
         loaded = eh.caltable.load_caltable(obs_direct, str(tmp_path))
@@ -432,9 +487,11 @@ class TestSaveLoadRoundtrip:
     def test_sqrt_gains_roundtrip_preserves_squared_gain(self, obs_direct,
                                                         injected_gain_caltable_factory,
                                                         tmp_path):
-        # On-disk quantity is the squared gain, so loaded**2 == original**2
-        # is the exact round-trip. Comparing squares also sidesteps the
-        # principal-branch sqrt sign flip outside (-pi/2, pi/2).
+        """With sqrt_gains the on-disk quantity is the squared gain.
+
+        Comparing squares is the exact round-trip and also sidesteps the sqrt
+        branch cut, which flips sign outside (-pi/2, pi/2).
+        """
         ct = injected_gain_caltable_factory(seed=SEED_SQRT_ROUNDTRIP)
         eh.caltable.save_caltable(ct, obs_direct, datadir=str(tmp_path),
                                   sqrt_gains=True)
@@ -453,7 +510,7 @@ class TestSaveLoadRoundtrip:
     def test_save_txt_method_matches_module_function(self, obs_direct,
                                                      injected_gain_caltable_factory,
                                                      tmp_path):
-        # Caltable.save_txt is a thin wrapper; files should be byte-identical.
+        """Caltable.save_txt is a thin wrapper, so it writes byte-identical files."""
         ct = injected_gain_caltable_factory(seed=SEED_SAVE_TXT_MATCH)
         out_a = tmp_path / "a"
         out_b = tmp_path / "b"
@@ -473,8 +530,10 @@ class TestSaveLoadRoundtrip:
 
 
 class TestEnforcePositive:
+    """enforce_positive rescales a whole gain curve so no station sits below min_gain."""
 
     def test_no_op_when_all_gains_above_min(self, unity_caltable):
+        """Gains already above the floor are left alone."""
         out = unity_caltable.enforce_positive(method='median', min_gain=0.5,
                                               verbose=False)
         out_r, out_l = _stack_gains(out)
@@ -483,8 +542,7 @@ class TestEnforcePositive:
         np.testing.assert_allclose(out_l, in_l)
 
     def test_rescales_low_gains_above_threshold(self, constant_gain_caltable_factory):
-        # All gains g = CONST_LOW_GAIN < DEFAULT_MIN_GAIN ⇒ median |g| = |g|,
-        # rescale by 1/|g| ⇒ new |gain| = 1.
+        """A curve sitting below the floor is divided by its median, landing at |gain| = 1."""
         ct = constant_gain_caltable_factory(CONST_LOW_GAIN)
         out = ct.enforce_positive(method='median', min_gain=DEFAULT_MIN_GAIN,
                                   verbose=False)
@@ -493,6 +551,7 @@ class TestEnforcePositive:
         np.testing.assert_allclose(np.abs(out_l), 1.0)
 
     def test_unknown_method_returns_unchanged_copy(self, constant_gain_caltable_factory):
+        """An unrecognised method returns an unchanged copy instead of raising."""
         ct = constant_gain_caltable_factory(CONST_LOW_GAIN)
         out = ct.enforce_positive(method='nope', min_gain=DEFAULT_MIN_GAIN,
                                   verbose=False)
@@ -501,6 +560,7 @@ class TestEnforcePositive:
                                    ct.data[first]['rscale'])
 
     def test_sites_subset_only_affects_listed(self, constant_gain_caltable_factory):
+        """Passing sites= confines the rescaling to those stations."""
         ct = constant_gain_caltable_factory(CONST_LOW_GAIN)
         first, second = list(ct.data.keys())[:2]
         out = ct.enforce_positive(method='median', min_gain=DEFAULT_MIN_GAIN,
@@ -510,6 +570,7 @@ class TestEnforcePositive:
                                    np.abs(CONST_LOW_GAIN))
 
     def test_returns_independent_copy(self, constant_gain_caltable_factory):
+        """The result is a copy; mutating it does not reach the original."""
         ct = constant_gain_caltable_factory(CONST_LOW_GAIN)
         out = ct.enforce_positive(method='median', min_gain=DEFAULT_MIN_GAIN,
                                   verbose=False)
@@ -524,8 +585,15 @@ class TestEnforcePositive:
 
 
 class TestRelaxedInterp1d:
+    """relaxed_interp1d wraps scipy's interp1d so degenerate inputs still work."""
 
     def test_single_point_falls_back_to_constant(self):
+        """A one-point table is expanded to a flat two-point segment.
+
+        The value is recovered at the anchor and on either side of it. Note the
+        segment is only half a unit wide in x, which is why a one-row table is
+        constant over a limited window rather than for all time.
+        """
         f = eh.caltable.relaxed_interp1d(np.array([3.0]), np.array([2.5]),
                                          kind='linear')
         # The helper expands a 1-point input to a 2-point [x-0.5, x+0.5]
@@ -535,13 +603,12 @@ class TestRelaxedInterp1d:
         assert f(3.3) == pytest.approx(2.5)
 
     def test_scalar_x_y_are_promoted_to_arrays(self):
-        # The bare-scalar code path catches TypeError on len(x) and recovers.
+        """Bare scalars are caught by the len() TypeError path and promoted to arrays."""
         f = eh.caltable.relaxed_interp1d(0.0, 1.5, kind='linear')
         assert f(0.0) == pytest.approx(1.5)
 
     def test_multi_point_matches_scipy_interp1d(self):
-        # When len(x) > 1, relaxed_interp1d delegates straight to
-        # scipy.interpolate.interp1d ⇒ bit-identical outputs.
+        """With more than one point it delegates straight to scipy, bit for bit."""
         import scipy.interpolate as spi
         x = np.linspace(0.0, 1.0, 5)
         y = x ** 2
@@ -559,7 +626,7 @@ class TestRelaxedInterp1d:
 def _multi_scan_caltable(obs, n_scans, samples_per_scan=PAD_SCAN_NSAMPLES,
                          dt_in_scan_sec=PAD_SCAN_DT_SEC,
                          gap_sec=PAD_SCAN_GAP_SEC,
-                         rscale=1.0 + 0j, lscale=1.0 + 0j):
+                         rscale=1.0 + 0j, lscale=1.0 + 0j, dterms=None):
     """Build a Caltable whose times form `n_scans` blocks separated by `gap_sec`.
 
     Each block has `samples_per_scan` points spaced by `dt_in_scan_sec`. The
@@ -580,11 +647,12 @@ def _multi_scan_caltable(obs, n_scans, samples_per_scan=PAD_SCAN_NSAMPLES,
     caldict = {site: template.copy().view(np.recarray) for site in obs.tarr['site']}
     return eh.caltable.Caltable(
         obs.ra, obs.dec, obs.rf, obs.bw, caldict, obs.tarr,
-        source=obs.source, mjd=obs.mjd, timetype=obs.timetype,
+        source=obs.source, mjd=obs.mjd, timetype=obs.timetype, dtermdict=dterms,
     )
 
 
-def _scan_aligned_caltable(obs, gains_per_scan, samples_per_scan=PAD_SCAN_NSAMPLES):
+def _scan_aligned_caltable(obs, gains_per_scan, samples_per_scan=PAD_SCAN_NSAMPLES,
+                           dterms=None):
     """Build a Caltable whose times fall inside the first len(gains_per_scan)
     scans of `obs` (so scan_avg's per-scan bucketing finds the samples).
 
@@ -615,15 +683,19 @@ def _scan_aligned_caltable(obs, gains_per_scan, samples_per_scan=PAD_SCAN_NSAMPL
     caldict = {site: template.copy().view(np.recarray) for site in obs.tarr['site']}
     return eh.caltable.Caltable(
         obs.ra, obs.dec, obs.rf, obs.bw, caldict, obs.tarr,
-        source=obs.source, mjd=obs.mjd, timetype=obs.timetype,
+        source=obs.source, mjd=obs.mjd, timetype=obs.timetype, dtermdict=dterms,
     )
 
 
 class TestPadScans:
+    """pad_scans adds a row on each side of every scan.
+
+    Gains are solved per chunk but applied by interpolation, so without the
+    padding the interpolant ramps across the gaps between scans.
+    """
 
     def test_endval_padding_inserts_endpoint_gains(self, obs_direct):
-        # Constant gains within each scan; endval padding ⇒ the pre and post
-        # rows must equal the first/last sample of the scan (= the constant).
+        """endval padding repeats each scan's first and last sample into the pad rows."""
         n_scans = len(PAD_SCAN_MEDIAN_GAINS)
         ct = _multi_scan_caltable(obs_direct, n_scans=n_scans,
                                   rscale=PAD_SCAN_ENDVAL_GAIN,
@@ -637,7 +709,7 @@ class TestPadScans:
         np.testing.assert_allclose(out_l, PAD_SCAN_ENDVAL_GAIN)
 
     def test_median_padding_uses_per_scan_median(self, obs_direct):
-        # Each scan gets its own constant gain ⇒ that constant is the median.
+        """median padding uses each scan's own median, not one median for the track."""
         gains = np.repeat(np.array(PAD_SCAN_MEDIAN_GAINS), PAD_SCAN_NSAMPLES)
         ct = _multi_scan_caltable(obs_direct, n_scans=len(PAD_SCAN_MEDIAN_GAINS),
                                   rscale=gains, lscale=gains)
@@ -656,13 +728,15 @@ class TestPadScans:
 
 
 class TestScanAvg:
+    """scan_avg collapses each scan to a single averaged gain.
 
-    # scan_avg emits one row per scan in obs.scans (regardless of caltable
-    # coverage). Scans without caltable data come back as NaN, so the tests
-    # below assert (i) the first n_scans rows recover the input values and
-    # (ii) every other row is NaN.
+    It emits one row per scan in obs.scans whatever the table covers, so scans
+    with no cal data come back NaN. The tests check the covered scans recover
+    their input and every later row is NaN.
+    """
 
     def test_incoherent_avg_recovers_per_scan_magnitudes(self, obs_direct):
+        """Averaging |g| across random phases recovers each scan's magnitude."""
         magnitudes = np.array(SCAN_INCOH_MAGNITUDES)
         n_scans = len(magnitudes)
         rng = np.random.default_rng(SEED_SCAN_AVG_PHASES)
@@ -682,6 +756,7 @@ class TestScanAvg:
             assert np.all(np.isnan(lscale[n_scans:]))
 
     def test_coherent_avg_keeps_phase(self, obs_direct):
+        """Coherent averaging keeps the complex gain, phase included."""
         per_scan = np.array(SCAN_COH_GAINS)
         n_scans = len(per_scan)
         ct = _scan_aligned_caltable(obs_direct, per_scan)
@@ -703,11 +778,11 @@ class TestScanAvg:
 
 
 class TestMerge:
+    """merge multiplies two tables over the union of their time grids."""
 
     def test_two_constant_caltables_multiply(self, obs_direct,
                                              constant_gain_caltable_factory):
-        # Caltable.merge interpolates each input over the union of times and
-        # multiplies pointwise. Two flat caltables a, b ⇒ merged gain = a*b.
+        """Two flat tables a and b merge to the pointwise product a*b."""
         ct_a = constant_gain_caltable_factory(MERGE_GAIN_A)
         ct_b = constant_gain_caltable_factory(MERGE_GAIN_B)
         out = ct_a.merge([ct_b])
@@ -719,8 +794,7 @@ class TestMerge:
 
     def test_disjoint_sites_are_unioned(self, obs_direct,
                                         constant_gain_caltable_factory):
-        # Drop site x from ct_a and site y from ct_b ⇒ the merged caltable's
-        # data dict must contain every site that appeared in either input.
+        """A site present in only one input still appears in the merged table."""
         ct_a = constant_gain_caltable_factory(MERGE_GAIN_A)
         ct_b = constant_gain_caltable_factory(MERGE_GAIN_B)
         sites = list(ct_a.data.keys())
@@ -730,3 +804,857 @@ class TestMerge:
         out = ct_a.merge([ct_b])
         assert x in out.data
         assert y in out.data
+
+
+# ---------------------------------------------------------------------------
+# Section 11: Gain / D-term storage split
+# ---------------------------------------------------------------------------
+
+# The row dtype from the era when D-terms shared the gain rows (PR #254),
+# reproduced here so the migration paths can be driven from a caller's side.
+# Gains and leakage used across the split tests. The gain is complex and not
+# unity so an applycal comparison has teeth.
+SPLIT_GAIN_R = 1.4 - 0.2j
+SPLIT_GAIN_L = 0.8 + 0.5j
+SPLIT_DR = 0.03 + 0.01j
+SPLIT_DL = -0.02 + 0.04j
+# A one-row D-term table is the storage form of a track-constant leakage.
+SPLIT_DTERM_TIME = 0.0
+
+
+def _clean_caldict(sites, times):
+    """A datadict of constant complex gains for every listed site."""
+    times = np.asarray(times, dtype=float)
+    template = np.zeros(len(times), dtype=DTCAL)
+    template['time'] = times
+    template['rscale'] = SPLIT_GAIN_R
+    template['lscale'] = SPLIT_GAIN_L
+    return {site: template.copy() for site in sites}
+
+
+def _span_times(obs):
+    return [obs.data['time'].min() - 1.0, obs.data['time'].max() + 1.0]
+
+
+def _first_sites(obs, n=2):
+    """The first n site names of the observation's array."""
+    return list(obs.tarr['site'])[:n]
+
+
+class TestDataAliasesGains:
+    """``data`` is the legacy name for the live gain table, not a snapshot."""
+
+    def test_data_is_live_alias_of_gains(self, unity_caltable):
+        """ct.data is the gains dict itself, not a copy of it."""
+        assert unity_caltable.data is unity_caltable.gains
+
+    def test_data_mutation_persists(self, constant_gain_caltable_factory):
+        """Reassigning through ct.data reaches the table.
+
+        This is the modeling_utils gain-assembly pattern: take .data, np.append
+        into it per site, and expect the table itself to grow.
+        """
+        ct = constant_gain_caltable_factory(CONST_REAL_GAIN)
+        site = next(iter(ct.data))
+        n_before = len(ct.gains[site])
+        caldict = ct.data
+        caldict[site] = np.append(caldict[site], caldict[site])
+        assert len(ct.gains[site]) == 2 * n_before
+
+    def test_data_setter_replaces_gains(self, unity_caltable, obs_direct):
+        """Assigning to ct.data swaps in a new gain table."""
+        ct = unity_caltable.copy()
+        replacement = _clean_caldict(_first_sites(obs_direct, 1),
+                                     _span_times(obs_direct))
+        ct.data = replacement
+        assert ct.gains is replacement
+
+    def test_data_setter_rejects_combined_tables(self, obs_direct, unity_caltable):
+        """A combined gain+D-term table assigned to .data raises.
+
+        That short-lived format is no longer read anywhere.
+        """
+        ct = unity_caltable.copy()
+        combined = np.zeros(2, dtype=[('time', 'f8'), ('rscale', 'c16'),
+                                      ('lscale', 'c16'), ('dr', 'c16'), ('dl', 'c16')])
+        site = _first_sites(obs_direct, 1)[0]
+        with pytest.raises(Exception, match="cannot interpret"):
+            ct.data = {site: combined}
+
+    def test_dterms_defaults_empty(self, unity_caltable):
+        """A table built without leakage has an empty dterms dict."""
+        assert unity_caltable.dterms == {}
+
+
+class TestConstructorSplit:
+    """``__init__`` upgrades legacy gains and honours an explicit ``dtermdict=``."""
+
+    def test_constructor_rejects_combined_datadict(self, obs_direct):
+        """A combined gain+D-term table raises; that format is no longer read."""
+        times = _span_times(obs_direct)
+        site = _first_sites(obs_direct, 1)[0]
+        combined = np.zeros(len(times), dtype=[('time', 'f8'), ('rscale', 'c16'),
+                                               ('lscale', 'c16'), ('dr', 'c16'),
+                                               ('dl', 'c16')])
+        with pytest.raises(Exception, match="cannot interpret"):
+            eh.caltable.Caltable(
+                obs_direct.ra, obs_direct.dec, obs_direct.rf, obs_direct.bw,
+                {site: combined}, obs_direct.tarr,
+                source=obs_direct.source, mjd=obs_direct.mjd,
+            )
+
+    def test_constructor_dtermdict_kwarg(self, obs_direct, dterm_dict_factory):
+        """Gains and D-terms keep their own independent time grids."""
+        times = _span_times(obs_direct)
+        sites = _first_sites(obs_direct)
+        ct = eh.caltable.Caltable(
+            obs_direct.ra, obs_direct.dec, obs_direct.rf, obs_direct.bw,
+            _clean_caldict(sites, times), obs_direct.tarr,
+            dtermdict=dterm_dict_factory(sites, times=(SPLIT_DTERM_TIME,),
+                                         dr=SPLIT_DR, dl=SPLIT_DL),
+            source=obs_direct.source, mjd=obs_direct.mjd,
+        )
+        for site in sites:
+            assert len(ct.gains[site]) == len(times)
+            assert len(ct.dterms[site]) == 1
+            assert ct.dterms[site]['time'][0] == SPLIT_DTERM_TIME
+            np.testing.assert_array_equal(ct.gains[site]['rscale'], SPLIT_GAIN_R)
+            np.testing.assert_array_equal(ct.dterms[site]['dr'], SPLIT_DR)
+
+    def test_constructor_single_record_list_site(self, obs_direct):
+        """A site handed over as a bare list of records is normalised, not rejected.
+
+        network_cal and polgains_cal leave this shape behind for a site seen in
+        exactly one non-first scan.
+        """
+        times = _span_times(obs_direct)
+        site = _first_sites(obs_direct, 1)[0]
+        row = _clean_caldict([site], times)[site][0]
+        ct = eh.caltable.Caltable(
+            obs_direct.ra, obs_direct.dec, obs_direct.rf, obs_direct.bw,
+            {site: [row]}, obs_direct.tarr,
+            source=obs_direct.source, mjd=obs_direct.mjd,
+        )
+        assert len(ct.gains[site]) == 1
+        assert ct.gains[site]['rscale'][0] == SPLIT_GAIN_R
+
+    def test_constructor_rejects_non_dict_dtermdict(self, obs_direct, dterm_dict_factory):
+        """A non-dict dtermdict= names the problem instead of failing inside dict()."""
+        site = _first_sites(obs_direct, 1)[0]
+        table = dterm_dict_factory([site])[site]     # the bare table, not a dict
+        with pytest.raises(TypeError, match="dtermdict must be a dict"):
+            eh.caltable.Caltable(
+                obs_direct.ra, obs_direct.dec, obs_direct.rf, obs_direct.bw,
+                _clean_caldict([site], _span_times(obs_direct)), obs_direct.tarr,
+                source=obs_direct.source, mjd=obs_direct.mjd, dtermdict=table,
+            )
+
+    def test_constructor_rejects_non_dict_datadict(self, obs_direct):
+        """A bare array as datadict raises; the gains are a dict keyed by site."""
+        site = _first_sites(obs_direct, 1)[0]
+        arr = _clean_caldict([site], _span_times(obs_direct))[site]
+        with pytest.raises(TypeError, match="datadict must be a dict"):
+            eh.caltable.Caltable(
+                obs_direct.ra, obs_direct.dec, obs_direct.rf, obs_direct.bw,
+                arr, obs_direct.tarr, source=obs_direct.source, mjd=obs_direct.mjd,
+            )
+
+
+class TestSplitStateRoundTrips:
+    """copy / pickle carry both tables, and legacy states still migrate."""
+
+    def _dterm_caltable(self, obs):
+        sites = _first_sites(obs)
+        dterms = {site: np.array([(SPLIT_DTERM_TIME, SPLIT_DR, SPLIT_DL)],
+                                 dtype=ehc.DTDTERM) for site in sites}
+        return eh.caltable.Caltable(
+            obs.ra, obs.dec, obs.rf, obs.bw,
+            _clean_caldict(sites, _span_times(obs)), obs.tarr, dtermdict=dterms,
+            source=obs.source, mjd=obs.mjd,
+        )
+
+    def test_copy_preserves_dterms_independently(self, obs_direct):
+        """copy() deep-copies the leakage table as well as the gains."""
+        ct = self._dterm_caltable(obs_direct)
+        site = _first_sites(obs_direct, 1)[0]
+        cp = ct.copy()
+        np.testing.assert_array_equal(cp.dterms[site]['dr'], SPLIT_DR)
+        cp.dterms[site]['dr'] *= 10
+        np.testing.assert_array_equal(ct.dterms[site]['dr'], SPLIT_DR)
+
+    def test_pickle_roundtrip_with_dterms(self, obs_direct):
+        """Both tables survive a pickle round trip, and data comes back as an alias."""
+        ct = self._dterm_caltable(obs_direct)
+        revived = pickle.loads(pickle.dumps(ct))
+        assert set(revived.dterms) == set(ct.dterms)
+        for site in ct.gains:
+            np.testing.assert_array_equal(revived.gains[site], ct.gains[site])
+            np.testing.assert_array_equal(revived.dterms[site], ct.dterms[site])
+        # the alias survives the round trip as an alias, not a copy
+        assert revived.data is revived.gains
+
+    def test_setstate_non_dict_data_stored_verbatim(self, obs_direct):
+        """A pre-split pickle whose 'data' was never a dict is passed through untouched."""
+        site = _first_sites(obs_direct, 1)[0]
+        arr = _clean_caldict([site], _span_times(obs_direct))[site]
+        ct = self._dterm_caltable(obs_direct)
+        state = dict(ct.__dict__)
+        state.pop('gains')
+        state.pop('dterms')
+        state['data'] = arr
+
+        revived = eh.caltable.Caltable.__new__(eh.caltable.Caltable)
+        revived.__setstate__(state)
+        assert revived.gains is arr
+        assert revived.dterms == {}
+
+    def test_setstate_drops_legacy_data_key(self, obs_direct):
+        """A legacy pickle's 'data' key is consumed, not left in the instance dict.
+
+        data is a property now, and a property shadows an instance-dict entry of
+        the same name, so leaving one behind would make those gains unreachable.
+        """
+        ct = self._dterm_caltable(obs_direct)
+        site = _first_sites(obs_direct, 1)[0]
+        state = dict(ct.__dict__)
+        state.pop('gains')
+        state.pop('dterms')
+        state['data'] = _clean_caldict([site], _span_times(obs_direct))
+
+        revived = eh.caltable.Caltable.__new__(eh.caltable.Caltable)
+        revived.__setstate__(state)
+        assert 'data' not in revived.__dict__
+        np.testing.assert_array_equal(revived.gains[site]['rscale'], SPLIT_GAIN_R)
+
+    def test_setstate_leaves_the_caller_state_dict_alone(self, obs_direct):
+        """__setstate__ migrates onto a copy, not onto the dict it was handed.
+
+        Unpickling passes a throwaway dict, but a direct call passes one the
+        caller still owns, so consuming its 'data' key in place is visible to
+        them. It also breaks the next restore from that dict: the migration is
+        skipped as already-done and both objects end up on one gains dict.
+
+        The row arrays stay shared, which is the same zero-copy contract the
+        constructor has -- hand it the same arrays and you get the same buffers.
+        """
+        site = _first_sites(obs_direct, 1)[0]
+        ct = self._dterm_caltable(obs_direct)
+        state = dict(ct.__dict__)
+        state.pop('gains')
+        state.pop('dterms')
+        state['data'] = _clean_caldict([site], _span_times(obs_direct))
+        keys_before = set(state)
+
+        first = eh.caltable.Caltable.__new__(eh.caltable.Caltable)
+        first.__setstate__(state)
+        assert set(state) == keys_before      # 'data' not consumed, no 'gains' added
+
+        second = eh.caltable.Caltable.__new__(eh.caltable.Caltable)
+        second.__setstate__(state)
+        assert first.gains is not second.gains
+        first.gains['EXTRASITE'] = None
+        assert 'EXTRASITE' not in second.gains
+
+
+class TestSplitLeavesApplycalUnchanged:
+    """Carrying a D-term table must not perturb gain application."""
+
+    def test_applycal_with_dterms_equals_without(self, obs_direct, dterm_dict_factory):
+        """applycal ignores the D-term table, so the two give identical output."""
+        times = _span_times(obs_direct)
+        sites = obs_direct.tarr['site']
+        kwargs = dict(source=obs_direct.source, mjd=obs_direct.mjd,
+                      timetype=obs_direct.timetype)
+        ct_leaky = eh.caltable.Caltable(
+            obs_direct.ra, obs_direct.dec, obs_direct.rf, obs_direct.bw,
+            _clean_caldict(sites, times), obs_direct.tarr,
+            dtermdict=dterm_dict_factory(list(sites), dr=SPLIT_DR, dl=SPLIT_DL),
+            **kwargs)
+        ct_clean = eh.caltable.Caltable(
+            obs_direct.ra, obs_direct.dec, obs_direct.rf, obs_direct.bw,
+            _clean_caldict(sites, times), obs_direct.tarr, **kwargs)
+
+        assert ct_leaky.dterms
+        assert ct_clean.dterms == {}
+
+        with pytest.warns(MixedPolConventionWarning):
+            out_leaky = ct_leaky.applycal(obs_direct, interp='nearest')
+        out_clean = ct_clean.applycal(obs_direct, interp='nearest')
+
+        circ_l = out_leaky.switch_polrep('circ')
+        circ_c = out_clean.switch_polrep('circ')
+        for field in ('rrvis', 'llvis', 'rlvis', 'lrvis'):
+            np.testing.assert_array_equal(circ_l.data[field], circ_c.data[field])
+        for field in ('rrsigma', 'llsigma', 'rlsigma', 'lrsigma'):
+            np.testing.assert_array_equal(circ_l.data[field], circ_c.data[field])
+
+
+class TestSplitFixups:
+    """Regressions for defects found reviewing the split."""
+
+    def test_merge_self_side_gains_not_aliased(self, obs_direct,
+                                               constant_gain_caltable_factory):
+        """A site only the calling table has is copied into the merged result.
+
+        Sharing it would let the merged table's invert_gains rewrite the input's
+        gains, so a later applycal on the input divides where it should multiply.
+        """
+        ct_a = constant_gain_caltable_factory(MERGE_GAIN_A)
+        ct_b = constant_gain_caltable_factory(MERGE_GAIN_B)
+        site = _first_sites(obs_direct, 1)[0]
+        ct_b.data.pop(site)
+
+        out = ct_a.merge([ct_b])
+
+        assert out.data[site] is not ct_a.data[site]
+        out.data[site]['rscale'] *= 10
+        np.testing.assert_allclose(ct_a.data[site]['rscale'], MERGE_GAIN_A)
+
+    def test_merge_tolerates_none_gain_table(self, obs_direct,
+                                             constant_gain_caltable_factory):
+        """A site whose gain table is None merges instead of raising.
+
+        pad_scans already skips None entries, so they must not be assumed
+        copyable on the way through merge.
+        """
+        ct_a = constant_gain_caltable_factory(MERGE_GAIN_A)
+        ct_b = constant_gain_caltable_factory(MERGE_GAIN_B)
+        site = _first_sites(obs_direct, 1)[0]
+        ct_a.data.pop(site)
+        ct_b.gains[site] = None
+
+        out = ct_a.merge([ct_b])
+        assert out.data[site] is None
+
+    def test_data_setter_normalizes_list_entries(self, unity_caltable, obs_direct):
+        """A caldict holding a bare list of records is reshaped on assignment.
+
+        The solvers leave that shape behind, and the constructor already fixes
+        it, so assigning the same dict should not store something unindexable.
+        """
+        ct = unity_caltable.copy()
+        site = _first_sites(obs_direct, 1)[0]
+        row = _clean_caldict([site], _span_times(obs_direct))[site][0]
+
+        ct.data = {site: [row]}
+
+        assert isinstance(ct.gains[site], np.ndarray)
+        assert ct.gains[site]['rscale'][0] == SPLIT_GAIN_R
+
+    def test_constructor_normalizes_zero_d_dterm_record(self, obs_direct):
+        """A 0-d D-term record becomes a one-row table.
+
+        Solvers build a single time the same way they build gain rows, and
+        save_caltable calls len() on whatever is stored.
+        """
+        site = _first_sites(obs_direct, 1)[0]
+        rec = np.zeros((), dtype=ehc.DTDTERM)
+        rec['dr'] = SPLIT_DR
+        ct = eh.caltable.Caltable(
+            obs_direct.ra, obs_direct.dec, obs_direct.rf, obs_direct.bw,
+            _clean_caldict([site], _span_times(obs_direct)), obs_direct.tarr,
+            source=obs_direct.source, mjd=obs_direct.mjd, dtermdict={site: rec},
+        )
+        assert len(ct.dterms[site]) == 1
+        assert ct.dterms[site]['dr'][0] == SPLIT_DR
+
+    def test_empty_dterm_table_is_not_stored(self, obs_direct):
+        """An empty D-term table is dropped rather than kept as leakage.
+
+        A sidecar file holding only its version line reads back this way, and
+        `if self.dterms:` would then warn about leakage that is not there.
+        """
+        site = _first_sites(obs_direct, 1)[0]
+        ct = eh.caltable.Caltable(
+            obs_direct.ra, obs_direct.dec, obs_direct.rf, obs_direct.bw,
+            _clean_caldict([site], _span_times(obs_direct)), obs_direct.tarr,
+            source=obs_direct.source, mjd=obs_direct.mjd,
+            dtermdict={site: np.array([])},
+        )
+        assert ct.dterms == {}
+
+    def test_empty_typed_dterm_table_is_not_stored(self, obs_direct):
+        """A zero-row table of the right dtype is dropped like an untyped one.
+
+        The shared normalizer keeps empty tables so that an empty gain table
+        survives; dropping them is the D-term side's own rule.
+        """
+        site = _first_sites(obs_direct, 1)[0]
+        ct = eh.caltable.Caltable(
+            obs_direct.ra, obs_direct.dec, obs_direct.rf, obs_direct.bw,
+            _clean_caldict([site], _span_times(obs_direct)), obs_direct.tarr,
+            source=obs_direct.source, mjd=obs_direct.mjd,
+            dtermdict={site: np.zeros(0, dtype=ehc.DTDTERM)},
+        )
+        assert ct.dterms == {}
+
+    def test_stale_dterm_file_removed_on_resave(self, obs_direct,
+                                                injected_gain_caltable_factory,
+                                                dterm_dict_factory, tmp_path):
+        """Re-saving without leakage clears the sidecar from a reused directory.
+
+        Otherwise the next load re-attaches D-terms the user believes they
+        dropped.
+        """
+        ct = injected_gain_caltable_factory(seed=SEED_DTERM_ROUNDTRIP)
+        ct.dterms = dterm_dict_factory(list(ct.data))
+        eh.caltable.save_caltable(ct, obs_direct, datadir=str(tmp_path))
+        assert list(tmp_path.glob("*" + eh.caltable.DTERM_FILE_SUFFIX))
+
+        ct.dterms = {}
+        eh.caltable.save_caltable(ct, obs_direct, datadir=str(tmp_path),
+                                  overwrite=True)
+
+        assert not list(tmp_path.glob("*" + eh.caltable.DTERM_FILE_SUFFIX))
+        assert eh.caltable.load_caltable(obs_direct, str(tmp_path)).dterms == {}
+
+    def test_pad_scans_keeps_linear_gain_dtype(self, obs_direct):
+        """A linear-feed gain table pads as itself instead of being recast.
+
+        The rows were being rebuilt with the circular dtype, which casts by
+        position, so the X gains came back labelled rscale.
+        """
+        site = _first_sites(obs_direct, 1)[0]
+        times = np.array([0.0, 0.1])
+        lin = np.zeros(len(times), dtype=ehc.DTCAL_LIN)
+        lin['time'] = times
+        lin['xscale'] = [3 + 0j, 4 + 0j]
+        lin['yscale'] = [5 + 0j, 6 + 0j]
+        ct = eh.caltable.Caltable(
+            obs_direct.ra, obs_direct.dec, obs_direct.rf, obs_direct.bw,
+            {site: lin}, obs_direct.tarr,
+            source=obs_direct.source, mjd=obs_direct.mjd,
+        )
+
+        out = ct.pad_scans(maxdiff=PAD_SCAN_MAXDIFF_SEC, padtype='endval')
+
+        assert out.data[site].dtype.names == ('time', 'xscale', 'yscale')
+        np.testing.assert_array_equal(out.data[site]['xscale'][:2], [3 + 0j, 3 + 0j])
+
+    def test_plot_dterms_warns_when_table_has_leakage(self, obs_direct,
+                                                     constant_gain_caltable_factory,
+                                                     dterm_dict_factory):
+        """plot_dterms draws the array table, so say so when the cal table has its own.
+
+        After load_caltable the array table's leakage is zero while self.dterms
+        holds the solution, and the plot would silently read as "no leakage".
+        """
+        ct = constant_gain_caltable_factory(APPLYCAL_WARN_GAIN)
+        site = _first_sites(obs_direct, 1)[0]
+        ct.dterms = dterm_dict_factory([site])
+
+        with pytest.warns(MixedPolConventionWarning, match="self.dterms"):
+            ct.plot_dterms(sites=[site], show=False)
+        plt.close('all')
+
+
+class TestDtermPersistence:
+    """D-terms round-trip through their own per-site files. The gain files keep
+    their long-standing format, so directories written before the split still
+    load and directories written now are still readable by older code."""
+
+    def test_save_load_roundtrip_with_dterms(self, obs_direct,
+                                             injected_gain_caltable_factory,
+                                             dterm_dict_factory, tmp_path):
+        """D-terms written on their own time grid come back on that same grid."""
+        ct = injected_gain_caltable_factory(seed=SEED_DTERM_ROUNDTRIP)
+        ct.dterms = dterm_dict_factory(list(ct.data), times=DTERM_TIMES)
+        eh.caltable.save_caltable(ct, obs_direct, datadir=str(tmp_path))
+
+        loaded = eh.caltable.load_caltable(obs_direct, str(tmp_path))
+        assert set(loaded.dterms) == set(ct.dterms)
+        for site in ct.dterms:
+            np.testing.assert_allclose(loaded.dterms[site]['dr'],
+                                       ct.dterms[site]['dr'], rtol=GAIN_RTOL)
+            np.testing.assert_allclose(loaded.dterms[site]['dl'],
+                                       ct.dterms[site]['dl'], rtol=GAIN_RTOL)
+            np.testing.assert_allclose(loaded.dterms[site]['time'],
+                                       ct.dterms[site]['time'], atol=TIME_ATOL)
+
+    def test_single_row_dterm_file_roundtrip(self, obs_direct,
+                                             injected_gain_caltable_factory,
+                                             dterm_dict_factory, tmp_path):
+        """A one-row file, the storage form of a track-constant leakage, round-trips."""
+        ct = injected_gain_caltable_factory(seed=SEED_DTERM_ROUNDTRIP)
+        ct.dterms = dterm_dict_factory(list(ct.data))
+        eh.caltable.save_caltable(ct, obs_direct, datadir=str(tmp_path))
+
+        loaded = eh.caltable.load_caltable(obs_direct, str(tmp_path))
+        for site in ct.dterms:
+            assert len(loaded.dterms[site]) == 1
+            np.testing.assert_allclose(loaded.dterms[site]['dr'],
+                                       ct.dterms[site]['dr'], rtol=GAIN_RTOL)
+
+    def test_dterm_file_has_version_header(self, obs_direct,
+                                           injected_gain_caltable_factory,
+                                           dterm_dict_factory, tmp_path):
+        """The D-term file leads with its version line."""
+        ct = injected_gain_caltable_factory(seed=SEED_DTERM_ROUNDTRIP)
+        site = _first_sites(obs_direct, 1)[0]
+        ct.dterms = dterm_dict_factory([site])
+        eh.caltable.save_caltable(ct, obs_direct, datadir=str(tmp_path))
+
+        path = tmp_path / f"{ct.source}_{site}{eh.caltable.DTERM_FILE_SUFFIX}"
+        first_line = path.read_text().splitlines()[0]
+        assert first_line == eh.caltable.DTERM_FILE_HEADER
+
+    def test_gains_only_dir_has_no_dterm_files(self, obs_direct,
+                                               injected_gain_caltable_factory,
+                                               tmp_path):
+        """A table with no leakage writes exactly what it always did, and loads back empty."""
+        ct = injected_gain_caltable_factory(seed=SEED_DTERM_ROUNDTRIP)
+        assert ct.dterms == {}
+        eh.caltable.save_caltable(ct, obs_direct, datadir=str(tmp_path))
+
+        assert not list(tmp_path.glob("*" + eh.caltable.DTERM_FILE_SUFFIX))
+        loaded = eh.caltable.load_caltable(obs_direct, str(tmp_path))
+        assert loaded.dterms == {}
+
+    def test_sqrt_gains_does_not_touch_dterms(self, obs_direct,
+                                              injected_gain_caltable_factory,
+                                              dterm_dict_factory, tmp_path):
+        """sqrt_gains is a gain-side convention; leakage is written and read unchanged."""
+        ct = injected_gain_caltable_factory(seed=SEED_DTERM_ROUNDTRIP)
+        site = _first_sites(obs_direct, 1)[0]
+        ct.dterms = dterm_dict_factory([site])
+        eh.caltable.save_caltable(ct, obs_direct, datadir=str(tmp_path),
+                                  sqrt_gains=True)
+
+        loaded = eh.caltable.load_caltable(obs_direct, str(tmp_path),
+                                           sqrt_gains=True)
+        np.testing.assert_allclose(loaded.dterms[site]['dr'],
+                                   ct.dterms[site]['dr'], rtol=GAIN_RTOL)
+
+    def test_dterm_files_without_gains_returns_false(self, obs_direct,
+                                                     injected_gain_caltable_factory,
+                                                     dterm_dict_factory, tmp_path):
+        """The directory gate is unchanged: no gain files still means no table."""
+        ct = injected_gain_caltable_factory(seed=SEED_DTERM_ROUNDTRIP)
+        ct.dterms = dterm_dict_factory(list(ct.data))
+        eh.caltable.save_caltable(ct, obs_direct, datadir=str(tmp_path))
+        for gain_file in tmp_path.glob(f"{ct.source}_*.txt"):
+            if not gain_file.name.endswith(eh.caltable.DTERM_FILE_SUFFIX):
+                gain_file.unlink()
+
+        assert eh.caltable.load_caltable(obs_direct, str(tmp_path)) is False
+
+    def test_gains_only_save_dir_byte_identical_to_pre_split(self, obs_direct,
+                                                             tmp_path):
+        """The gain files keep their historic headerless five-column layout.
+
+        Every cal directory anyone already has on disk is in this format, so the
+        split must leave it alone byte for byte. The times here land on whole
+        MJDs and the gains on exact binary fractions, which makes the expected
+        bytes something this test can spell out rather than recompute.
+        """
+        site = _first_sites(obs_direct, 1)[0]
+        table = np.zeros(2, dtype=DTCAL)
+        table['time'] = [0.0, 24.0]              # mjd exactly, then mjd + 1
+        table['rscale'] = 2.0 + 0j
+        table['lscale'] = 0.5 + 0j
+        ct = eh.caltable.Caltable(
+            obs_direct.ra, obs_direct.dec, obs_direct.rf, obs_direct.bw,
+            {site: table}, obs_direct.tarr, source=obs_direct.source,
+            mjd=obs_direct.mjd, timetype=obs_direct.timetype)
+        eh.caltable.save_caltable(ct, obs_direct, datadir=str(tmp_path))
+
+        mjd = float(obs_direct.mjd)
+        written = (tmp_path / f"{obs_direct.source}_{site}.txt").read_text()
+        assert written == (f"{mjd} 2.0 0.0 0.5 0.0\n"
+                           f"{mjd + 1.0} 2.0 0.0 0.5 0.0\n")
+        # and a leakage-free table grows no D-term sidecar
+        assert not list(tmp_path.glob("*" + eh.caltable.DTERM_FILE_SUFFIX))
+
+
+class TestSaveOverwriteGuard:
+    """save_caltable refuses to clobber an existing caltable unless told to."""
+
+    def test_resave_raises_without_overwrite(self, obs_direct,
+                                             injected_gain_caltable_factory,
+                                             tmp_path):
+        """A second save into the same directory raises by default."""
+        ct = injected_gain_caltable_factory(seed=SEED_DTERM_ROUNDTRIP)
+        eh.caltable.save_caltable(ct, obs_direct, datadir=str(tmp_path))
+        with pytest.raises(Exception, match="overwrite=True"):
+            eh.caltable.save_caltable(ct, obs_direct, datadir=str(tmp_path))
+
+    def test_resave_with_overwrite_replaces(self, obs_direct,
+                                            injected_gain_caltable_factory,
+                                            tmp_path):
+        """overwrite=True re-saves, and the directory reflects the new gains."""
+        ct = injected_gain_caltable_factory(seed=SEED_DTERM_ROUNDTRIP)
+        eh.caltable.save_caltable(ct, obs_direct, datadir=str(tmp_path))
+        site = _first_sites(obs_direct, 1)[0]
+        ct.gains[site]['rscale'] *= 2
+        eh.caltable.save_caltable(ct, obs_direct, datadir=str(tmp_path),
+                                  overwrite=True)
+        loaded = eh.caltable.load_caltable(obs_direct, str(tmp_path))
+        np.testing.assert_allclose(loaded.gains[site]['rscale'],
+                                   ct.gains[site]['rscale'], rtol=GAIN_RTOL)
+
+    def test_stale_gain_file_removed_on_resave(self, obs_direct,
+                                               injected_gain_caltable_factory,
+                                               tmp_path):
+        """A site dropped from the table loses its file, same as D-terms do."""
+        ct = injected_gain_caltable_factory(seed=SEED_DTERM_ROUNDTRIP)
+        eh.caltable.save_caltable(ct, obs_direct, datadir=str(tmp_path))
+        site = _first_sites(obs_direct, 1)[0]
+        gainfile = tmp_path / f"{ct.source}_{site}.txt"
+        assert gainfile.exists()
+
+        ct.gains.pop(site)
+        eh.caltable.save_caltable(ct, obs_direct, datadir=str(tmp_path),
+                                  overwrite=True)
+
+        assert not gainfile.exists()
+        loaded = eh.caltable.load_caltable(obs_direct, str(tmp_path))
+        assert site not in loaded.gains
+
+
+class TestLoadSingleRowAndLegacyGainFiles:
+    """Regressions for the gain loader: one-row files used to fail with
+    "format unknown" because a 1-D loadtxt result iterates as characters."""
+
+    def test_single_row_gain_file_loads(self, obs_direct, tmp_path):
+        """A one-row gain file loads.
+
+        It used to fail with "format unknown": a 1-D loadtxt result iterates as
+        characters, so len(row) measured a string length instead of a column count.
+        """
+        site = _first_sites(obs_direct, 1)[0]
+        time_mjd = obs_direct.mjd + SINGLE_ROW_TIME_HR / 24.0
+        path = tmp_path / f"{obs_direct.source}_{site}.txt"
+        path.write_text(f"{time_mjd} 1.5 0.25 2.5 -0.5\n")
+
+        loaded = eh.caltable.load_caltable(obs_direct, str(tmp_path))
+        assert len(loaded.data[site]) == 1
+        np.testing.assert_allclose(loaded.data[site]['rscale'][0], 1.5 + 0.25j)
+        np.testing.assert_allclose(loaded.data[site]['lscale'][0], 2.5 - 0.5j)
+        np.testing.assert_allclose(loaded.data[site]['time'][0],
+                                   SINGLE_ROW_TIME_HR, atol=TIME_ATOL)
+
+    def test_load_legacy_three_column_real_gains(self, obs_direct, tmp_path):
+        """The oldest on-disk vintage, three columns of real-valued gains, still loads."""
+        site = _first_sites(obs_direct, 1)[0]
+        t0 = obs_direct.mjd + SINGLE_ROW_TIME_HR / 24.0
+        t1 = obs_direct.mjd + (SINGLE_ROW_TIME_HR + 1.0) / 24.0
+        path = tmp_path / f"{obs_direct.source}_{site}.txt"
+        path.write_text(f"{t0} 1.5 2.5\n{t1} 3.5 4.5\n")
+
+        loaded = eh.caltable.load_caltable(obs_direct, str(tmp_path))
+        np.testing.assert_allclose(loaded.data[site]['rscale'], [1.5, 3.5])
+        np.testing.assert_allclose(loaded.data[site]['lscale'], [2.5, 4.5])
+
+
+class TestApplycalWarnsOnDterms:
+    """applycal corrects gains only. If the table carries leakage, say so
+    rather than letting it look like the data came back fully calibrated."""
+
+    def test_applycal_warns_on_unapplied_dterms(self, obs_direct,
+                                                constant_gain_caltable_factory,
+                                                dterm_dict_factory):
+        """A table carrying leakage says so, naming the sites it did not correct."""
+        ct = constant_gain_caltable_factory(APPLYCAL_WARN_GAIN)
+        site = _first_sites(obs_direct, 1)[0]
+        ct.dterms = dterm_dict_factory([site])
+
+        with pytest.warns(MixedPolConventionWarning, match=site):
+            ct.applycal(obs_direct)
+
+    def test_applycal_silent_without_dterms(self, obs_direct,
+                                            constant_gain_caltable_factory):
+        """A gains-only table calibrates without complaint."""
+        ct = constant_gain_caltable_factory(APPLYCAL_WARN_GAIN)
+        assert ct.dterms == {}
+
+        # Match the D-term warning itself: applycal's polrep conversion emits a
+        # once-per-session warning of the same class, so escalating the whole
+        # category would make this depend on test order.
+        with warnings.catch_warnings(record=True) as caught:
+            warnings.simplefilter("always")
+            ct.applycal(obs_direct)
+
+        assert not [w for w in caught if "carries D-terms" in str(w.message)]
+
+    def test_warning_does_not_change_the_output(self, obs_direct,
+                                                constant_gain_caltable_factory,
+                                                dterm_dict_factory):
+        """The warning is advisory: the data returned is the same gains-only result."""
+        ct_plain = constant_gain_caltable_factory(APPLYCAL_WARN_GAIN)
+        ct_leaky = constant_gain_caltable_factory(APPLYCAL_WARN_GAIN)
+        ct_leaky.dterms = dterm_dict_factory(list(ct_leaky.data))
+
+        out_plain = ct_plain.applycal(obs_direct)
+        with pytest.warns(MixedPolConventionWarning):
+            out_leaky = ct_leaky.applycal(obs_direct)
+
+        for field in ('vis', 'sigma'):
+            np.testing.assert_array_equal(out_plain.data[field],
+                                          out_leaky.data[field])
+
+
+class TestPlottingWithDterms:
+    """The gain plot is unaffected by leakage riding along in the same table."""
+
+    def test_plot_gains_smoke_with_dterms_present(self, obs_direct,
+                                                 constant_gain_caltable_factory,
+                                                 dterm_dict_factory):
+        import matplotlib.pyplot as plt
+
+        ct = constant_gain_caltable_factory(CONST_REAL_GAIN)
+        ct.dterms = dterm_dict_factory(_first_sites(obs_direct, 1))
+
+        original_backend = plt.get_backend()
+        plt.switch_backend('Agg')                 # never open a window in CI
+        try:
+            axis = ct.plot_gains(_first_sites(obs_direct, 2), show=False)
+            assert axis is not None
+            assert len(axis.get_lines()) > 0
+        finally:
+            plt.close('all')
+            plt.switch_backend(original_backend)
+
+
+class TestTransformsCarryDterms:
+    """pad_scans / scan_avg / merge resample gains; the leakage table rides
+    along on its own time grid instead of being silently dropped."""
+
+    def test_pad_scans_forwards_dterms_deepcopy(self, obs_direct, dterm_dict_factory):
+        """Padding the gain grid carries the leakage through without resampling it."""
+        site = _first_sites(obs_direct, 1)[0]
+        dterms = dterm_dict_factory([site], dr=SPLIT_DR, dl=SPLIT_DL)
+        ct = _multi_scan_caltable(obs_direct, n_scans=len(PAD_SCAN_MEDIAN_GAINS),
+                                  rscale=PAD_SCAN_ENDVAL_GAIN,
+                                  lscale=PAD_SCAN_ENDVAL_GAIN,
+                                  dterms=dterms)
+        out = ct.pad_scans(maxdiff=PAD_SCAN_MAXDIFF_SEC, padtype='endval')
+
+        np.testing.assert_array_equal(out.dterms[site]['dr'], SPLIT_DR)
+        # padding the gain grid must not resample leakage: one row in, one out
+        assert len(out.dterms[site]) == 1
+        # forwarded as a deep copy, so the output does not share the input's array
+        out.dterms[site]['dr'] *= 10
+        np.testing.assert_array_equal(ct.dterms[site]['dr'], SPLIT_DR)
+
+    def test_scan_avg_forwards_dterms(self, obs_direct, dterm_dict_factory):
+        """Averaging gains per scan leaves the leakage table intact."""
+        site = _first_sites(obs_direct, 1)[0]
+        dterms = dterm_dict_factory([site], dr=SPLIT_DR, dl=SPLIT_DL)
+        ct = _scan_aligned_caltable(obs_direct, np.array(SCAN_COH_GAINS),
+                                    dterms=dterms)
+        out = ct.scan_avg(obs_direct, incoherent=False)
+
+        np.testing.assert_array_equal(out.dterms[site]['dr'], SPLIT_DR)
+        assert len(out.dterms[site]) == 1
+        out.dterms[site]['dr'] *= 10
+        np.testing.assert_array_equal(ct.dterms[site]['dr'], SPLIT_DR)
+
+    def test_merge_forwards_one_sided_dterms_no_aliasing(
+            self, obs_direct, constant_gain_caltable_factory, dterm_dict_factory):
+        """Leakage from one side is copied into the merged table, not aliased to it."""
+        ct_a = constant_gain_caltable_factory(MERGE_GAIN_A)
+        ct_b = constant_gain_caltable_factory(MERGE_GAIN_B)
+        site = _first_sites(obs_direct, 1)[0]
+        ct_b.dterms = dterm_dict_factory([site], dr=SPLIT_DR, dl=SPLIT_DL)
+
+        out = ct_a.merge([ct_b])
+
+        np.testing.assert_array_equal(out.dterms[site]['dr'], SPLIT_DR)
+        assert out.dterms[site] is not ct_b.dterms[site]
+        out.dterms[site]['dr'] *= 10
+        np.testing.assert_array_equal(ct_b.dterms[site]['dr'], SPLIT_DR)
+
+    def test_merge_one_sided_dterms_leave_gains_alone(
+            self, obs_direct, constant_gain_caltable_factory, dterm_dict_factory):
+        """Carrying leakage across a merge does not disturb the gain multiplication."""
+        ct_a = constant_gain_caltable_factory(MERGE_GAIN_A)
+        ct_b = constant_gain_caltable_factory(MERGE_GAIN_B)
+        ct_b.dterms = dterm_dict_factory(_first_sites(obs_direct, 1),
+                                         dr=SPLIT_DR, dl=SPLIT_DL)
+        out = ct_a.merge([ct_b])
+        out_r, out_l = _stack_gains(out)
+        np.testing.assert_allclose(out_r, MERGE_GAIN_A * MERGE_GAIN_B,
+                                   rtol=INTERP_RTOL)
+        np.testing.assert_allclose(out_l, MERGE_GAIN_A * MERGE_GAIN_B,
+                                   rtol=INTERP_RTOL)
+
+    def test_merge_both_sides_dterms_raises(
+            self, obs_direct, constant_gain_caltable_factory, dterm_dict_factory):
+        """Two leakage solutions for one site refuse to merge.
+
+        They do compose, since J = G(I+D) is closed under multiplication, but not
+        the way gains do and not commutatively. Raising beats a quietly wrong table.
+        """
+        ct_a = constant_gain_caltable_factory(MERGE_GAIN_A)
+        ct_b = constant_gain_caltable_factory(MERGE_GAIN_B)
+        sites = _first_sites(obs_direct, 1)
+        ct_a.dterms = dterm_dict_factory(sites, dr=SPLIT_DR, dl=SPLIT_DL)
+        ct_b.dterms = dterm_dict_factory(sites, dr=SPLIT_DL, dl=SPLIT_DR)
+
+        with pytest.raises(NotImplementedError, match="D-terms"):
+            ct_a.merge([ct_b])
+
+    def test_merge_disjoint_dterm_sites_both_kept(
+            self, obs_direct, constant_gain_caltable_factory, dterm_dict_factory):
+        """Leakage for different sites on either side is unioned."""
+        ct_a = constant_gain_caltable_factory(MERGE_GAIN_A)
+        ct_b = constant_gain_caltable_factory(MERGE_GAIN_B)
+        site_a, site_b = _first_sites(obs_direct, 2)
+        ct_a.dterms = dterm_dict_factory([site_a], dr=SPLIT_DR, dl=SPLIT_DL)
+        ct_b.dterms = dterm_dict_factory([site_b], dr=SPLIT_DL, dl=SPLIT_DR)
+
+        out = ct_a.merge([ct_b])
+
+        assert set(out.dterms) == {site_a, site_b}
+        np.testing.assert_array_equal(out.dterms[site_a]['dr'], SPLIT_DR)
+        np.testing.assert_array_equal(out.dterms[site_b]['dr'], SPLIT_DL)
+
+    def test_merge_keeps_tarr_row_for_dterm_only_site(
+            self, obs_direct, constant_gain_caltable_factory, dterm_dict_factory):
+        # A site can carry leakage with no gain rows. Its array row has to come
+        # along, or save_caltable -- which walks tarr -- drops the solved
+        # leakage without a word.
+        ct_a = constant_gain_caltable_factory(MERGE_GAIN_A)
+        ct_b = constant_gain_caltable_factory(MERGE_GAIN_B)
+
+        foreign = np.zeros(1, dtype=DTARR)
+        foreign['site'] = ['NEWSITE']
+        foreign['feed_type'] = ['rl']
+        ct_b.tarr = np.append(ct_b.tarr, foreign)
+        ct_b.tkey = {s: i for i, s in enumerate(ct_b.tarr['site'])}
+        ct_b.dterms = dterm_dict_factory(['NEWSITE'], dr=SPLIT_DR, dl=SPLIT_DL)
+
+        out = ct_a.merge([ct_b])
+
+        assert 'NEWSITE' in out.dterms
+        assert 'NEWSITE' in list(out.tarr['site'])
+        assert 'NEWSITE' not in out.gains          # leakage only, no gains
+        # exactly one row, i.e. the gain loop did not append it a second time
+        assert list(out.tarr['site']).count('NEWSITE') == 1
+
+    def test_merge_dterm_site_absent_from_both_tarrs_is_tolerated(
+            self, obs_direct, constant_gain_caltable_factory, dterm_dict_factory):
+        # No array row exists to copy, so merge cannot invent one; it must not
+        # raise either. Persisting such a site is a separate problem.
+        ct_a = constant_gain_caltable_factory(MERGE_GAIN_A)
+        ct_b = constant_gain_caltable_factory(MERGE_GAIN_B)
+        ct_b.dterms = dterm_dict_factory(['GHOST'], dr=SPLIT_DR, dl=SPLIT_DL)
+
+        out = ct_a.merge([ct_b])
+
+        assert 'GHOST' in out.dterms
+        assert 'GHOST' not in list(out.tarr['site'])
+
+    def test_merge_disjoint_site_gains_not_aliased(
+            self, obs_direct, constant_gain_caltable_factory):
+        """A gain array adopted from the other table is copied, so it cannot be mutated back."""
+        ct_a = constant_gain_caltable_factory(MERGE_GAIN_A)
+        ct_b = constant_gain_caltable_factory(MERGE_GAIN_B)
+        site = _first_sites(obs_direct, 1)[0]
+        ct_a.data.pop(site)
+
+        out = ct_a.merge([ct_b])
+
+        assert out.data[site] is not ct_b.data[site]
+        out.data[site]['rscale'] *= 10
+        np.testing.assert_allclose(ct_b.data[site]['rscale'], MERGE_GAIN_B)

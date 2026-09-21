@@ -268,8 +268,7 @@ def polgains_cal_scan(scan, reference='AA', sites=[], method='phase', minimizer_
             rscale = g_fit[site_key]**-1
             lscale = 1. + 0.j
 
-            # TODO: time-dependent D-term field added but unpopulated
-            caldict[site] = np.array((scan['time'][0], rscale, lscale, 0j, 0j), dtype=ehc.DTCAL)
+            caldict[site] = np.array((scan['time'][0], rscale, lscale), dtype=ehc.DTCAL)
         out = caldict
     else:
         g1_fit = g_fit[g1_keys]

@@ -2114,8 +2114,11 @@ def dashboard(
             gain_indices[mode].append(len(fig.data) - 1)
 
     # --- Panel 4: D-terms (R and L) in complex plane ---
-    # TODO: schema-coupled - tarr['dr'] / tarr['dl'] move to caltable.dterms
-    # in MixPol Phase 1; this lookup needs to follow.
+    # TODO: schema-coupled - a cal table can now carry leakage itself, in
+    # caltable.dterms, on its own time axis. This lookup should prefer that
+    # when it is populated and keep tarr as the fallback, since the leakage
+    # solvers still write there. Note a dterms table may hold more than one
+    # row per site, so the panel stops being one point per site once it does.
     # Two legends: legend4 = per-site (toggle hides both R and L for that
     # site via legendgroup); legend5 = R/L type (two dummy markers showing
     # the symbol convention).
