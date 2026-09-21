@@ -325,8 +325,8 @@ def test_mf_grad_finite_difference(mf_imager, mf_x0):
 
 
 # Multifrequency polarization. jax.grad differentiates image_at_freq directly and never runs
-# mf_all_grads_chain, so this is an independent check of the hand-written mf chain rule rather
-# than a second reading of it. Both mf-pol gradient bugs fixed in this PR fail here.
+# mf_all_grads_chain, so this checks the hand-written chain rule independently rather than
+# reading it back.
 @pytest.fixture(scope="module")
 def mf_pol_imager(gauss_im_pol, eht_array):
     im = gauss_im_pol.copy().add_const_mf(1.0, 0, alpha_pol=0.5)

@@ -498,15 +498,11 @@ class TestTransformGradient:
 
 
 # ============================= S7: multifrequency ============================
-# The multifreq chain rule maps a gradient w.r.t. the image at one frequency back onto the
-# reference-frequency image and the spectral coefficients. Two levels, because the two ways
-# it can go wrong live in different places:
-#
-#   S7a  mf_all_grads_chain alone, against an arbitrary DENSE upstream gradient. Dense so
-#        every coefficient slot is exercised, the same reason S6 uses a dense grad_phys.
-#   S7b  the composed chi^2 path, which is where the upstream gradient is produced by a real
-#        pol kernel under pol_solve gating. A slot can be right in S7a and still arrive as
-#        zero here if the gating drops the physical slot it chains through.
+# The chain rule maps a gradient w.r.t. the image at one frequency back onto the reference
+# image and the spectral coefficients. Tested at two levels, because the failures live in
+# different places: mf_all_grads_chain alone against a DENSE upstream gradient (dense for the
+# same reason as S6), then the composed chi^2 path, where a slot can be right on its own and
+# still arrive zero if pol_solve gating drops the physical slot it chains through.
 MF_LFR = 0.35     # log(nu/nu_ref); ~230 -> ~326 GHz
 MF_N = 24
 

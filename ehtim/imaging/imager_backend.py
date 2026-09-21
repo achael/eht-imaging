@@ -588,14 +588,9 @@ def physical_grad_slots(pol_solve, transforms, mf_solve=None):
     transforms : sequence of str
         Active change-of-variables names; only 'mcv' and 'vcv' widen the mask.
     mf_solve : sequence of int, optional
-        Full solved-DOF mask for a multifrequency run, if this is one. The 10-row mf-pol
-        layout carries spectral rows that reach the objective only through a physical slot
-        (rows 4,5 through I; 6,7 through rho; 8 through phi; see
-        multifreq_imager_utils.mf_all_grads_chain). pol_solve is built from rows 0-3 alone,
-        so the kernel never learns that a row it cannot see depends on one of them, and the
-        spectral gradient comes back identically zero. A solved spectral row therefore needs
-        its physical slot filled even when that slot is not itself a DOF. The 3-row Stokes-I
-        mf layout runs an ungated kernel and needs nothing.
+        Full solved-DOF mask when this is a multifrequency run. Spectral rows reach the
+        objective only through a physical slot, so a solved spectral row needs that slot
+        filled even when the slot is not a DOF itself.
 
     Returns
     -------
@@ -612,9 +607,8 @@ def physical_grad_slots(pol_solve, transforms, mf_solve=None):
     if mf_solve is not None:
         ms = np.asarray(mf_solve)
         if len(ms) == MF_POL_ROWS:
-            # today only slot 0 can be off (pol='P'/'QU' hold I fixed) while a spectral row
-            # is solved, but keep all three symmetric so a future mode that holds rho0 or
-            # phi0 fixed does not reintroduce this one row over.
+            # Only slot 0 can be starved today (pol='P' holds I fixed), but treat all three
+            # alike so a future mode fixing rho0 or phi0 does not hit this again.
             for slot, rows in MF_SPECTRAL_ROWS.items():
                 if np.any(ms[rows]):
                     mask[slot] = 1
@@ -1775,12 +1769,9 @@ def compute_reggrad_dict(imcur, reg_term_keys, config,
 
         if mf:
             if regname in REGULARIZERS_POL:
-                # No mf_spectral_I here, and the spectral rows below stay at zero on
-                # purpose: this regularizer is evaluated on the reference-frequency
-                # image (imcur[0:4]) and never runs through mf_all_grads_chain, so it
-                # genuinely does not depend on alpha/beta. The value side does the same
-                # thing, so the two agree. Regularizers that should see every frequency
-                # are the REGULARIZERS_ALLFREQS_I ('_mf') variants handled below.
+                # Zero spectral rows are deliberate: this runs on the reference-frequency
+                # image only, so it has no alpha/beta dependence, and the value side agrees.
+                # The '_mf' variants below are the ones that see every frequency.
                 pol_grad_slots = physical_grad_slots(
                     _pol_solve_block(which_solve, pol), config.transforms)
                 regp = compute_regularizergrad_term(
