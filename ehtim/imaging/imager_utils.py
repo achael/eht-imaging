@@ -1835,15 +1835,10 @@ def reggrad_tv(imvec, mask, **kwargs):
 def _embed_for_log(imvec, mask, **kwargs):
     """Embed onto the full grid with a fill the log transform can take.
 
-    Masked-out pixels need a strictly positive fill or log() is -inf. epsilon_tv is the
-    wrong quantity for that: it smooths the TV square root and defaults to 0. Any tiny
-    fill also puts a huge artificial edge at the mask boundary, which the regularizer then
-    measures instead of the image. Fill at the mean pixel value, the scale these functions
-    already normalize the log by.
-
-    This shrinks the boundary term rather than removing it, and on a compact source the
-    fill sits above most real pixels, so the remaining edge is one-signed. Excluding
-    cross-boundary edges from the sum outright is the fix that removes it.
+    Masked pixels need a strictly positive fill or log() is -inf, and a tiny one just puts a
+    huge fake edge at the mask boundary for the regularizer to measure. Fill at the mean
+    pixel value instead, the scale these functions already normalize the log by. That shrinks
+    the boundary term without removing it; excluding cross-boundary edges is the real fix.
 
     Parameters
     ----------

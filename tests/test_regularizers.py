@@ -395,12 +395,10 @@ class TestMFRegularizerValues:
 # ---------------------------------------------------------------------------
 # Log regularizers on a partial embed mask
 # ---------------------------------------------------------------------------
-# reg_tvlog / reg_tv2log take the log of the embedded image, so masked-out pixels
-# need a strictly positive fill. The fill used to be epsilon_tv, which defaults to
-# 0, so the value was inf/nan whenever clipfloor masked anything out. The tests
-# that follow pin more than finiteness: a tiny fill is finite too, and reports a
-# regularizer dominated by the log jump at the mask boundary rather than by the
-# image.
+# These take the log of the embedded image, so masked pixels need a positive fill.
+# It used to be epsilon_tv, which defaults to 0, giving inf/nan on any partial mask.
+# The tests pin more than finiteness: a tiny fill is finite too, and reports a
+# regularizer dominated by the boundary jump rather than by the image.
 LOG_REG_FUNCS = [("tvlog", iu.reg_tvlog, iu.reggrad_tvlog),
                  ("tv2log", iu.reg_tv2log, iu.reggrad_tv2log)]
 LOG_REG_IDS = [f[0] for f in LOG_REG_FUNCS]
@@ -453,11 +451,9 @@ class TestLogRegularizersOnPartialMask:
 
     @pytest.mark.parametrize("name,func,grad", LOG_REG_FUNCS, ids=LOG_REG_IDS)
     def test_the_fill_does_not_inflate_the_value(self, logreg_setup, name, func, grad):
-        # guards the fill-far-below-the-image failure mode, which is finite (so the test
-        # above passes) but reports a regularizer dominated by the log jump along the mask
-        # boundary. Not a universal invariant: the fill still leaves a boundary term, and
-        # on a compact core with a faint halo the partial-mask value can exceed the
-        # unmasked one slightly. On this broad fixture it does not.
+        # Guards the tiny-fill mode, which is finite but boundary-dominated. Not a universal
+        # invariant: on a compact core with a faint halo the partial-mask value can slightly
+        # exceed the unmasked one. It does not on this broad fixture.
         imvec, kwargs = logreg_setup
         full_mask = np.ones(imvec.size, dtype=bool)
         reference = func(imvec, full_mask, **kwargs)
@@ -467,10 +463,8 @@ class TestLogRegularizersOnPartialMask:
     @pytest.mark.parametrize("name,func,grad", LOG_REG_FUNCS, ids=LOG_REG_IDS)
     def test_value_grows_towards_the_unmasked_value_as_the_mask_grows(self, logreg_setup,
                                                                      name, func, grad):
-        # the fill is at the image scale, so recovering more pixels recovers more real
-        # structure and the value climbs back towards the unmasked one. Compared across
-        # widely separated mask sizes: adjacent fractions can tie, since tv2log in
-        # particular depends on exactly which pixels cross the boundary.
+        # The fill is at the image scale, so more pixels means more real structure and the
+        # value climbs back. Widely separated mask sizes, since adjacent fractions can tie.
         imvec, kwargs = logreg_setup
         few = func(*reversed(_masked_at(imvec, 0.3)), **kwargs)
         many = func(*reversed(_masked_at(imvec, 0.9)), **kwargs)
