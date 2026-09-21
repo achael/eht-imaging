@@ -39,16 +39,6 @@ def _legacy_tarr():
     return ot
 
 
-def _legacy_circ_datatable():
-    od = np.zeros(2, dtype=_LEGACY_DTPOL_CIRC)
-    od['time'] = [0.0, 0.5]
-    od['t1'] = ['A', 'A']
-    od['t2'] = ['B', 'B']
-    od['rrvis'] = [1 + 0j, 2 + 0j]
-    od['rrsigma'] = [0.1, 0.2]
-    return od
-
-
 # ============================================================================
 # Schema additions and warnings module
 # ============================================================================
