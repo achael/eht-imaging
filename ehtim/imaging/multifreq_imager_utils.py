@@ -241,26 +241,12 @@ def reggrad_l2_spec(imvec, mask, **kwargs):
     return 2 * (imvec - priorvec) / norm
 
 
-def reg_tv_spec(imvec, mask, **kwargs):
-    from ehtim.imaging.imager_utils import _safe_sqrt, embed
-    xp = array_namespace(imvec)
-    if np.any(np.invert(mask)):
-        imvec = embed(imvec, mask, clipfloor=0, randomfloor=False)
-    nx, ny, psize = kwargs['xdim'], kwargs['ydim'], kwargs['psize']
-    beam_size = kwargs.get('beam_size') or psize
-    epsilon = kwargs.get('epsilon_tv', 0.)
-    norm = len(imvec) * psize / beam_size if kwargs.get('norm_reg', True) else 1
-    im = imvec.reshape(ny, nx)
-    impad = xp.pad(im, 1, mode='constant', constant_values=0)
-    im_l1 = xp.roll(impad, -1, axis=0)[1:ny+1, 1:nx+1]
-    im_l2 = xp.roll(impad, -1, axis=1)[1:ny+1, 1:nx+1]
-    # _safe_sqrt keeps the value and its autodiff gradient finite at a flat pixel (sq == 0) when
-    # epsilon_tv == 0; identical to xp.sqrt for any epsilon_tv > 0.
-    sq = xp.abs(im_l1 - im)**2 + xp.abs(im_l2 - im)**2 + epsilon
-    return xp.sum(_safe_sqrt(xp, sq)) / norm
+def _spec_tv_setup(imvec, mask, kwargs):
+    """Embed onto the full grid and return (imvec, nx, ny, epsilon, norm).
 
-
-def reggrad_tv_spec(imvec, mask, **kwargs):
+    The fill value is irrelevant: a spectral index has no meaningful zero, so
+    boundary-crossing differences are dropped rather than taken against it.
+    """
     from ehtim.imaging.imager_utils import embed
     if np.any(np.invert(mask)):
         imvec = embed(imvec, mask, clipfloor=0, randomfloor=False)
@@ -268,29 +254,22 @@ def reggrad_tv_spec(imvec, mask, **kwargs):
     beam_size = kwargs.get('beam_size') or psize
     epsilon = kwargs.get('epsilon_tv', 0.)
     norm = len(imvec) * psize / beam_size if kwargs.get('norm_reg', True) else 1
-    im = imvec.reshape(ny, nx)
-    impad = np.pad(im, 1, mode='constant', constant_values=0)
-    im_l1 = np.roll(impad, -1, axis=0)[1:ny+1, 1:nx+1]
-    im_l2 = np.roll(impad, -1, axis=1)[1:ny+1, 1:nx+1]
-    im_r1 = np.roll(impad, 1, axis=0)[1:ny+1, 1:nx+1]
-    im_r2 = np.roll(impad, 1, axis=1)[1:ny+1, 1:nx+1]
-    im_r1l2 = np.roll(np.roll(impad,  1, axis=0), -1, axis=1)[1:ny+1, 1:nx+1]
-    im_l1r2 = np.roll(np.roll(impad, -1, axis=0),  1, axis=1)[1:ny+1, 1:nx+1]
-    d1 = np.sqrt((im - im_l1)**2 + (im - im_l2)**2 + epsilon)
-    d2 = np.sqrt((im - im_r1)**2 + (im_r1l2 - im_r1)**2 + epsilon)
-    d3 = np.sqrt((im - im_r2)**2 + (im_l1r2 - im_r2)**2 + epsilon)
-    # guarded division: at a flat pixel (d == 0 when epsilon_tv == 0) the gradient is 0, not 0/0=NaN
-    g1 = np.where(d1 > 0, (2*im - im_l1 - im_l2) / np.where(d1 > 0, d1, 1.0), 0.0)
-    g2 = np.where(d2 > 0, (im - im_r1) / np.where(d2 > 0, d2, 1.0), 0.0)
-    g3 = np.where(d3 > 0, (im - im_r2) / np.where(d3 > 0, d3, 1.0), 0.0)
-    mask1 = np.zeros(im.shape)
-    mask2 = np.zeros(im.shape)
-    mask1[0, :] = 1
-    mask2[:, 0] = 1
-    g2[mask1.astype(bool)] = 0
-    g3[mask2.astype(bool)] = 0
-    g = (g1 + g2 + g3).flatten() / norm
-    return g[mask]
+    return imvec, nx, ny, epsilon, norm
+
+
+def reg_tv_spec(imvec, mask, **kwargs):
+    """Total variation of a spectral-coefficient map (alpha, beta, RM, CM)."""
+    from ehtim.imaging.imager_utils import tv_core
+    imvec, nx, ny, epsilon, norm = _spec_tv_setup(imvec, mask, kwargs)
+    return tv_core(imvec, mask, nx, ny, 'exclude', epsilon) / norm
+
+
+def reggrad_tv_spec(imvec, mask, **kwargs):
+    """Gradient of the spectral total-variation regularizer."""
+    from ehtim.imaging.imager_utils import tvgrad_core
+    imvec, nx, ny, epsilon, norm = _spec_tv_setup(imvec, mask, kwargs)
+    g = tvgrad_core(imvec, mask, nx, ny, 'exclude', epsilon)
+    return g.flatten()[mask] / norm
 
 
 
