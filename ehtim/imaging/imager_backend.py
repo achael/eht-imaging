@@ -289,12 +289,14 @@ class FourierGridParams(NamedTuple):
       Gridding kernel: fft_conv_func, fft_gridder_prad
       Interpolation  : fft_interp_order
       NFFT accuracy  : nfft_eps
+      NFFT threading : nfft_nthreads
     """
     fft_pad_factor: float    # zero-padding factor for the Fourier grid (typical: 2)
     fft_conv_func: str       # gridding convolution kernel ('gaussian', 'pillbox', ...)
     fft_gridder_prad: float  # gridding kernel half-support in pixels
     fft_interp_order: int    # interpolation order for grid-sample lookups
     nfft_eps: float          # requested NFFT relative accuracy (finufft eps)
+    nfft_nthreads: int       # threads finufft may use per transform (0 = its own choice)
 
 
 class MfConfig(NamedTuple):
@@ -1294,6 +1296,7 @@ def compute_data_tuples(obslist, prior, embed_mask, dat_term_keys, config,
                 conv_func=fourier_grid.fft_conv_func,
                 p_rad=fourier_grid.fft_gridder_prad,
                 nfft_eps=fourier_grid.nfft_eps,
+                nfft_nthreads=fourier_grid.nfft_nthreads,
             )
 
     return data_tuples

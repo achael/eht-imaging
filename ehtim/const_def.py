@@ -39,6 +39,7 @@ __all__ = [
     "FIELDS_SNRS", "FWHM_MAJ", "FWHM_MIN", "GAINPDEF",
     "GRIDDER_CONV_FUNC_DEFAULT", "GRIDDER_P_RAD_DEFAULT", "HOUR",
     "INTERP_DEFAULT", "MJD_DEFAULT", "NFFT_EPS_DEFAULT", "NFFT_KERSIZE_DEFAULT",
+    "NFFT_NTHREADS_DEFAULT",
     "POLDICT_CIRC", "POLDICT_STOKES", "POS_ANG", "PULSE_DEFAULT", "RA_DEFAULT",
     "RA_M87", "RA_SGRA", "RADPERAS", "RADPERUAS", "RF_DEFAULT", "SCOLORS",
     "SOURCE_DEFAULT", "TAUDEF", "amp_poldict", "sig_poldict", "vis_poldict",
@@ -92,10 +93,16 @@ GRIDDER_P_RAD_DEFAULT = 2
 GRIDDER_CONV_FUNC_DEFAULT = 'gaussian'
 FFT_PAD_DEFAULT = 2
 FFT_INTERP_DEFAULT = 3
-# Requested relative accuracy of the NFFT. 1e-9 is safe for high-dynamic-range
-# imaging (ALMA polarimetry, SKA-class arrays). Tighten to 1e-12 for ~1e6
-# dynamic range; relax to 1e-6 for fast low-SNR work.
-NFFT_EPS_DEFAULT = 1e-9
+# Requested relative accuracy of the NFFT. 1e-6 sits far below any realistic
+# data noise and is ~20% cheaper per imaging run than 1e-9, whose extra accuracy
+# nothing in the chi-squared can see. Tighten to 1e-9 or 1e-12 for
+# high-dynamic-range work (ALMA polarimetry, SKA-class arrays).
+NFFT_EPS_DEFAULT = 1e-6
+
+# Threads finufft may use per transform. 0 lets finufft pick, which is what the
+# unthreaded pynfft implementation never did and is usually right. Set this
+# rather than OMP_NUM_THREADS, which OpenBLAS shares.
+NFFT_NTHREADS_DEFAULT = 0
 
 # Valid two-character feed_type strings for a single station (lowercase).
 VALID_FEED_TYPES = frozenset({
