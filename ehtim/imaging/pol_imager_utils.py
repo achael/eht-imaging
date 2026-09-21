@@ -31,6 +31,10 @@ except ImportError:
 from ehtim.const_def import FFT_PAD_DEFAULT, GRIDDER_P_RAD_DEFAULT, NFFT_EPS_DEFAULT, RADPERAS
 from ehtim.observing.obs_helpers import NFFTInfo, ftmatrix, nufft2_backend, ticks
 
+# Floor on the polarization fraction m for the entropy regularizer: I*log(m) is
+# -inf at an unpolarized pixel, which polcv can reach exactly.
+MFRAC_FLOOR = 1e-12
+
 TANWIDTH_M = 0.5
 TANWIDTH_V = 1
 TANWIDTH_PSI = 1
@@ -827,7 +831,7 @@ def reg_msimple(imarr, mask, **kwargs):
     norm = flux if kwargs.get('norm_reg', True) else 1
 
     iimage = make_i_image(imarr)
-    mimage = make_m_image(imarr)
+    mimage = xp.maximum(make_m_image(imarr), MFRAC_FLOOR)
     return xp.sum(iimage * xp.log(mimage)) / norm
 
 
@@ -846,18 +850,20 @@ def reggrad_msimple(imarr, mask, **kwargs):
     mimage = make_m_image(imarr)
     psiimage = make_psi_image(imarr)
 
+    # The value floors m, so the gradient is flat below the floor.
+    active = mimage > MFRAC_FLOOR
+    msafe = np.maximum(mimage, MFRAC_FLOOR)
+
     gradout = np.zeros(imarr.shape)
     # dR/dI
     if pol_solve[0] != 0:
-        gradout[0] = np.log(mimage)
-    # dR/drho
+        gradout[0] = np.log(msafe)
+    # dR/drho; dm/drho = cos(psi)
     if pol_solve[1] != 0:
-        gradm = iimage / mimage
-        gradout[1] = gradm * np.cos(psiimage)
-    # dR/dpsi
+        gradout[1] = np.where(active, iimage / msafe, 0.0) * np.cos(psiimage)
+    # dR/dpsi; dm/dpsi = -m*tan(psi), so the 1/m cancels outright
     if pol_solve[3] != 0:
-        gradm = iimage / mimage
-        gradout[3] = gradm * (-mimage * np.tan(psiimage))
+        gradout[3] = np.where(active, -iimage * np.tan(psiimage), 0.0)
     return gradout / norm
 
 
