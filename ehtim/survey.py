@@ -362,7 +362,7 @@ class ParameterSet:
         # Save caltab
         if hasattr(self, 'save_caltab') and self.save_caltab:
             outcal = os.path.join(self.outpath, f'{self.outfile}/')
-            eh.caltable.save_caltable(self.caltab, self.obs_sc_init, outcal)
+            eh.caltable.save_caltable(self.caltab, self.obs_sc_init, outcal, overwrite=True)
 
         # Save self-calibrated uvfits
         if self.save_uvfits:
