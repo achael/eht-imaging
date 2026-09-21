@@ -712,14 +712,22 @@ def _ref_tv(full2d, keep2d, boundary, eps, tv2=False):
             if boundary == "exclude" and not keep2d[i, j]:
                 continue
             sq = 0.0
+            n_edges = 0
             for di, dj in ((1, 0), (0, 1)):
                 ii, jj = i + di, j + dj
                 inside = ii < ny and jj < nx
                 if boundary == "zero":
                     nb = full2d[ii, jj] if inside else 0.0
                     sq += (full2d[i, j] - nb) ** 2
+                    n_edges += 1
                 elif inside and keep2d[ii, jj]:
                     sq += (full2d[i, j] - full2d[ii, jj]) ** 2
+                    n_edges += 1
+            if n_edges == 0:
+                # No neighbour to difference against, so no variation. Adding
+                # sqrt(eps) here would report a constant that depends only on
+                # how many isolated pixels the mask happens to leave.
+                continue
             total += sq if tv2 else np.sqrt(sq + eps)
     return total
 
