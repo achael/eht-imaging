@@ -4,8 +4,8 @@
 
 ### Fixed
 
-- **`tvlog` / `tv2log` no longer difference against a phantom 1 Jy pixel.** Both compute TV
-  on `log(imvec)` via `reg_tv`, which pads the grid with zeros; in log space that asserts
+- **`tvlog` / `tv2log` no longer difference against a phantom 1 Jy pixel.** Both took TV of
+  `log(imvec)` through `reg_tv`, which pads the grid with zeros; in log space that asserts
   `I = 1 Jy` just outside the field of view, against real pixel values of 1e-4 down to
   1e-20. The pad contributed **54%** of the `reg_tvlog` value on a plain Gaussian (0.023% for
   the same code on a linear image), and its sign is inverted: it rewards piling flux onto the
