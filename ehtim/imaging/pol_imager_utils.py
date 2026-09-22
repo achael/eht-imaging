@@ -995,10 +995,7 @@ def reggrad_ptv(imarr, mask, **kwargs):
     mask1[0, :] = True
     mask2[:, 0] = True
     gradout = np.zeros(imarr.shape)
-    # Slots 0, 1 and 3 all chain through dR/d|P|, so build it once. The old code
-    # computed this block three times, and for slot 0 it carried an extra factor
-    # |P| that was then divided out by I -- which is 0/0 at an empty pixel. Since
-    # |P| = I*m, that ratio is just m, so no division is needed.
+    # dR/d|P| numerators; slots 0, 1 and 3 all chain through it, so build it once
     if pol_solve[0] != 0 or pol_solve[1] != 0 or pol_solve[3] != 0:
         m1 = 2*np.abs(im) - np.abs(im_l1)*np.cos(np.angle(im_l1) - np.angle(im)) - np.abs(im_l2)*np.cos(np.angle(im_l2) - np.angle(im))
         m2 = np.abs(im) - np.abs(im_r1)*np.cos(np.angle(im) - np.angle(im_r1))
