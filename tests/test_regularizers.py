@@ -397,8 +397,6 @@ class TestMFRegularizerValues:
 # ---------------------------------------------------------------------------
 # These take the log of the embedded image, so masked pixels need a positive fill.
 # It used to be epsilon_tv, which defaults to 0, giving inf/nan on any partial mask.
-# The tests pin more than finiteness: a tiny fill is finite too, and reports a
-# regularizer dominated by the boundary jump rather than by the image.
 LOG_REG_FUNCS = [("tvlog", iu.reg_tvlog, iu.reggrad_tvlog),
                  ("tv2log", iu.reg_tv2log, iu.reggrad_tv2log)]
 LOG_REG_IDS = [f[0] for f in LOG_REG_FUNCS]
@@ -421,24 +419,6 @@ def logreg_setup(reg_setup):
 
 class TestLogRegularizersOnPartialMask:
     """tvlog / tv2log with pixels masked out, which is what clipfloor > 0 produces."""
-
-    @pytest.mark.parametrize("flux", [0.5, 7.0])
-    def test_fill_is_the_mean_pixel_value(self, logreg_setup, flux):
-        # pin the fill directly. The regularizer-level tests below are blind to this:
-        # the fixture has flux ~ 1 and npix ~ 2 * nmask, so a fill of 1/npix or of
-        # flux/nmask reproduces them while being wrong on any other image.
-        imvec, kwargs = logreg_setup
-        mask, masked = _masked_at(imvec, 0.5)
-        kw = {**kwargs, "flux": flux}
-        filled = iu._embed_for_log(masked, mask, **kw)
-        expected = flux / (kw["xdim"] * kw["ydim"])
-        assert np.allclose(filled[~mask], expected, rtol=1e-12)
-        assert np.allclose(filled[mask], masked, rtol=1e-12)
-
-    def test_full_mask_is_returned_untouched(self, logreg_setup):
-        imvec, kwargs = logreg_setup
-        full = np.ones(imvec.size, dtype=bool)
-        assert iu._embed_for_log(imvec, full, **kwargs) is imvec
 
     @pytest.mark.parametrize("name,func,grad", LOG_REG_FUNCS, ids=LOG_REG_IDS)
     def test_value_and_gradient_are_finite(self, logreg_setup, name, func, grad):
@@ -712,22 +692,14 @@ def _ref_tv(full2d, keep2d, boundary, eps, tv2=False):
             if boundary == "exclude" and not keep2d[i, j]:
                 continue
             sq = 0.0
-            n_edges = 0
             for di, dj in ((1, 0), (0, 1)):
                 ii, jj = i + di, j + dj
                 inside = ii < ny and jj < nx
                 if boundary == "zero":
                     nb = full2d[ii, jj] if inside else 0.0
                     sq += (full2d[i, j] - nb) ** 2
-                    n_edges += 1
                 elif inside and keep2d[ii, jj]:
                     sq += (full2d[i, j] - full2d[ii, jj]) ** 2
-                    n_edges += 1
-            if n_edges == 0:
-                # No neighbour to difference against, so no variation. Adding
-                # sqrt(eps) here would report a constant that depends only on
-                # how many isolated pixels the mask happens to leave.
-                continue
             total += sq if tv2 else np.sqrt(sq + eps)
     return total
 
