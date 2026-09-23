@@ -418,47 +418,19 @@ def logreg_setup(reg_setup):
 
 
 class TestLogRegularizersOnPartialMask:
-    """tvlog / tv2log with pixels masked out, which is what clipfloor > 0 produces."""
+    """tvlog / tv2log with pixels masked out, which is what clipfloor > 0 produces.
 
-    @pytest.mark.parametrize("name,func,grad", LOG_REG_FUNCS, ids=LOG_REG_IDS)
-    def test_value_and_gradient_are_finite(self, logreg_setup, name, func, grad):
-        imvec, kwargs = logreg_setup
-        mask, masked = _masked_at(imvec, 0.5)
-        val = func(masked, mask, **kwargs)
-        g = np.asarray(grad(masked, mask, **kwargs))
-        assert np.isfinite(val), f"{name} returned {val}"
-        assert np.all(np.isfinite(g)), f"{name} gradient has {np.sum(~np.isfinite(g))} non-finite"
-
-    @pytest.mark.parametrize("name,func,grad", LOG_REG_FUNCS, ids=LOG_REG_IDS)
-    def test_the_fill_does_not_inflate_the_value(self, logreg_setup, name, func, grad):
-        # Guards the tiny-fill mode, which is finite but boundary-dominated. Not a universal
-        # invariant: on a compact core with a faint halo the partial-mask value can slightly
-        # exceed the unmasked one. It does not on this broad fixture.
-        imvec, kwargs = logreg_setup
-        full_mask = np.ones(imvec.size, dtype=bool)
-        reference = func(imvec, full_mask, **kwargs)
-        mask, masked = _masked_at(imvec, 0.5)
-        assert func(masked, mask, **kwargs) <= reference
-
-    @pytest.mark.parametrize("name,func,grad", LOG_REG_FUNCS, ids=LOG_REG_IDS)
-    def test_value_grows_towards_the_unmasked_value_as_the_mask_grows(self, logreg_setup,
-                                                                     name, func, grad):
-        # The fill is at the image scale, so more pixels means more real structure and the
-        # value climbs back. Widely separated mask sizes, since adjacent fractions can tie.
-        imvec, kwargs = logreg_setup
-        few = func(*reversed(_masked_at(imvec, 0.3)), **kwargs)
-        many = func(*reversed(_masked_at(imvec, 0.9)), **kwargs)
-        reference = func(imvec, np.ones(imvec.size, dtype=bool), **kwargs)
-        assert few < many <= reference
+    Boundary correctness lives in TestTVBoundaryTopologies below, on small masks of every
+    awkward shape. What this adds is the dynamic range of a real image: the log gradient
+    carries a 1/I, so the faintest pixels of a Gaussian dominate it.
+    """
 
     @pytest.mark.parametrize("name,func,grad", LOG_REG_FUNCS, ids=LOG_REG_IDS)
     def test_gradient_matches_finite_difference(self, logreg_setup, name, func, grad):
         imvec, kwargs = logreg_setup
         mask, masked = _masked_at(imvec, 0.5)
         g = np.asarray(grad(masked, mask, **kwargs))
-        # the gradient carries a 1/I, so the largest components are the faintest pixels.
-        # Sample those plus a random spread, since this is the only partial-mask gradient
-        # coverage in the suite (test_gradients.py uses full masks throughout).
+        # the largest components are the faintest pixels, so sample those plus a random spread
         rng = np.random.default_rng(3)
         idx = np.unique(np.concatenate([np.argsort(np.abs(g))[-15:],
                                         rng.choice(g.size, 25, replace=False)]))
