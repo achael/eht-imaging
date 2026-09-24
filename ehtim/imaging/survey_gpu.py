@@ -95,6 +95,9 @@ def run_survey_gpu(imgr, *, weight_grid=None, regparam_grid=None, prior_fwhm=Non
                    device=None):
     """Reconstruct a hyperparameter grid, vmapping the scalar axes on device.
 
+    Single observation only, and jax-supported transforms and data terms only: raises
+    ValueError otherwise.
+
     Parameters
     ----------
     imgr : ehtim.imager.Imager
