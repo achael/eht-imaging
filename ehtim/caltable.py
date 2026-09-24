@@ -19,6 +19,7 @@
 
 import copy
 import os
+import warnings
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -28,14 +29,34 @@ import ehtim.const_def as ehc
 import ehtim.io.load
 import ehtim.io.save
 import ehtim.observing.obs_helpers as obsh
+from ehtim.warnings import MixedPolConventionWarning
 
 ##################################################################################################
 # Caltable object
 ##################################################################################################
 
+# NOTE: caltables loaded from old data carry no D-term tables; any D-term
+# information stays in the tarr, assumed fixed over the observation.
+# TODO: when the new calibration module lands, decide what happens when both
+# the tarr and the caltable define D-terms (zero the tarr? warn and prefer
+# the table?).
+
+# Any optional time-dependent D-term tables are saved beside the gain files,
+# opened with a version line. Gain files keep their headerless 5-column format.
+DTERM_FILE_SUFFIX = '_dterms.txt'
+DTERM_FILE_HEADER = '# ehtim caltable dterms format v1: time_mjd d1re d1im d2re d2im'
+
 
 class Caltable:
-    """
+    """A calibration table of time-dependent station gains and leakage (D-terms).
+
+       Gains and D-terms live in separate per-site tables, each with its own
+       time column; a single-row table represents a time-constant quantity.
+       A caltable with no D-term table falls back to the D-terms in the tarr,
+       assumed fixed over the observation.
+       TODO: flag or resolve cases where both the tarr and the caltable
+       define D-terms.
+
        Attributes:
            source (str): The source name
            ra (float): The source Right Ascension in fractional hours
@@ -48,11 +69,15 @@ class Caltable:
            tarr (numpy.recarray): The array of telescope data with datatype DTARR
            tkey (dict): A dictionary of rows in the tarr for each site name
 
-           data (dict): keys are sites in tarr, entries are calibration data tables of type DTCAL
+           gains (dict): keys are sites in tarr, entries are gain tables of type DTCAL
+           dterms (dict): keys are sites in tarr, entries are D-term tables of type
+                          DTDTERM. Empty when the table carries no leakage solution.
+           data (dict): backwards-compatible alias for ``gains``; it is the live
+                        dict, so in-place mutation through it is visible on the table
 
     """
 
-    def __init__(self, ra, dec, rf, bw, datadict, tarr,
+    def __init__(self, ra, dec, rf, bw, datadict, tarr, dtermdict=None,
                  source=ehc.SOURCE_DEFAULT, mjd=ehc.MJD_DEFAULT, timetype='UTC'):
         """A Calibration Table.
 
@@ -63,8 +88,12 @@ class Caltable:
                mjd (int): The integer MJD of the observation
                bw (float): The observation bandwidth in Hz
 
-               datadict (dict):  keys are sites in tarr, entries are data tables of type DTCAL
+               datadict (dict):  keys are sites in tarr, entries are gain tables of
+                                 type DTCAL. Legacy tables are upgraded automatically.
                tarr (numpy.recarray): The array of telescope data with datatype DTARR
+               dtermdict (dict): keys are sites in tarr, entries are D-term tables of
+                                 type DTDTERM, on their own time grid. When given, it
+                                 replaces anything split out of ``datadict``.
 
                source (str): The source name
                mjd (int): The integer MJD of the observation
@@ -90,20 +119,65 @@ class Caltable:
         self.tarr = ehc.upgrade_tarr(tarr)
         self.tkey = {self.tarr[i]['site']: i for i in range(len(self.tarr))}
 
-        # Save the data (upgrade per-site DTCAL recarrays as needed)
-        if isinstance(datadict, dict):
-            self.data = {site: ehc.upgrade_dtcal_circ(d)
-                         for site, d in datadict.items()}
-        else:
-            self.data = datadict
+        # Store the gains, upgrading any legacy per-site tables
+        if not isinstance(datadict, dict):
+            raise TypeError("datadict must be a dict of per-site gain tables "
+                            f"keyed by site name, got {type(datadict).__name__}")
+        self.gains = {site: ehc.upgrade_caltable(d) for site, d in datadict.items()}
+
+        self.dterms = {}
+        if dtermdict is not None:
+            if not isinstance(dtermdict, dict):
+                raise TypeError("dtermdict must be a dict keyed by site name, "
+                                f"got {type(dtermdict).__name__}")
+            self.dterms = {}
+            for site, table in dtermdict.items():
+                site_dterms = ehc._normalize_recarray(table)
+                if site_dterms is not None and len(site_dterms):
+                    self.dterms[site] = site_dterms
+
+    @property
+    def data(self):
+        """The gain table, under its legacy name.
+
+        Returns the live ``gains`` dict, so callers that mutate through
+        ``ct.data[site]`` or reassign ``ct.data[site] = ...`` still act on the
+        table itself.
+        """
+        return self.gains
+
+    @data.setter
+    def data(self, datadict):
+        # normalize like the constructor does
+        if not isinstance(datadict, dict):
+            raise TypeError("data must be a dict of per-site gain tables "
+                            f"keyed by site name, got {type(datadict).__name__}")
+        normalized = {site: ehc.upgrade_caltable(t) for site, t in datadict.items()}
+        # keep the caller's own dict when nothing needed reshaping
+        if all(normalized[site] is datadict[site] for site in normalized):
+            normalized = datadict
+        self.gains = normalized
 
     def __setstate__(self, state):
-        # Silently upgrade legacy pickles to the current mixedpol schema.
+        # upgrade old pickled caltables to the current schema, on a copy of
+        # the state dict since a directly passed one belongs to the caller
+        state = dict(state)
+
         if 'tarr' in state:
             state['tarr'] = ehc.upgrade_tarr(state['tarr'])
-        if 'data' in state and isinstance(state['data'], dict):
-            state['data'] = {site: ehc.upgrade_dtcal_circ(d)
-                             for site, d in state['data'].items()}
+
+        # deal with pickles from before the old 'data' attribute was renamed
+        # to 'gains' ('data' is a property now and would shadow the entry)
+        if 'data' in state:
+            legacy = state.pop('data')
+            if 'gains' not in state:  # never overwrite new-style state
+                if isinstance(legacy, dict):
+                    state['gains'] = {site: ehc.upgrade_caltable(d)
+                                      for site, d in legacy.items()}
+                else:
+                    # old __init__ stored non-dict datadicts verbatim
+                    state['gains'] = legacy
+        state.setdefault('dterms', {})
         self.__dict__.update(state)
 
     def copy(self):
@@ -121,6 +195,10 @@ class Caltable:
                     show=True, grid=True, export_pdf=""):
         """Make a plot of the D-terms.
 
+           Plots the leakage recorded in the array table (tarr), one point per
+           site. The caltable's own time-dependent D-term table (self.dterms)
+           is not read here.
+
            Args:
                sites (list) : list of sites to plot
                label (str) : title for plot
@@ -136,15 +214,25 @@ class Caltable:
            Returns:
                matplotlib.axes
         """
-        # sites
+        if self.dterms:
+            warnings.warn(
+                "This plot shows the array table's D-terms. This cal table also "
+                f"carries its own solved leakage for {', '.join(sorted(self.dterms))}, "
+                "in self.dterms, which is not what is drawn here.",
+                MixedPolConventionWarning, stacklevel=2)
+
+        # sites: a site can carry leakage without gains, so take both dicts
+        all_sites = list(self.gains.keys())
+        all_sites += [site for site in self.dterms if site not in self.gains]
+
         if (isinstance(sites,str) and sites.lower() == 'all'):
-            sites = list(self.data.keys())
+            sites = all_sites
 
         if isinstance(sites,str):
             sites = [sites]
 
         if len(sites)==0:
-            sites = list(self.data.keys())
+            sites = all_sites
 
         keys = [self.tkey[site] for site in sites]
 
@@ -209,13 +297,13 @@ class Caltable:
 
         # sites
         if (isinstance(sites,str) and sites.lower() == 'all'):
-            sites = sorted(list(self.data.keys()))
+            sites = sorted(list(self.gains.keys()))
 
         if isinstance(sites,str):
             sites = [sites]
 
         if len(sites)==0:
-            sites = sorted(list(self.data.keys()))
+            sites = sorted(list(self.gains.keys()))
 
         if len(markersize) == 1:
             markersize = markersize * np.ones(len(sites))
@@ -224,15 +312,15 @@ class Caltable:
         tmins = tmaxes = gmins = gmaxes = []
         for s in range(len(sites)):
             site = sites[s]
-            times = self.data[site]['time']
+            times = self.gains[site]['time']
             if timetype in ['UTC', 'utc'] and self.timetype == 'GMST':
                 times = obsh.gmst_to_utc(times, self.mjd)
             elif timetype in ['GMST', 'gmst'] and self.timetype == 'UTC':
                 times = obsh.utc_to_gmst(times, self.mjd)
             if pol == 'R':
-                gains = self.data[site]['rscale']
+                gains = self.gains[site]['rscale']
             elif pol == 'L':
-                gains = self.data[site]['lscale']
+                gains = self.gains[site]['lscale']
 
             if gain_type == 'amp':
                 gains = np.abs(gains)
@@ -313,24 +401,24 @@ class Caltable:
         """
 
         if len(sites) == 0:
-            sites = self.data.keys()
+            sites = self.gains.keys()
 
         caltab_pos = self.copy()
-        for site in self.data.keys():
+        for site in self.gains.keys():
             if site not in sites:
                 continue
-            if len(self.data[site]['rscale']) == 0:
+            if len(self.gains[site]['rscale']) == 0:
                 continue
 
             if method == 'min':
-                sitemin = np.min([np.abs(self.data[site]['rscale']),
-                                  np.abs(self.data[site]['lscale'])])
+                sitemin = np.min([np.abs(self.gains[site]['rscale']),
+                                  np.abs(self.gains[site]['lscale'])])
             elif method == 'mean':
-                sitemin = np.mean([np.abs(self.data[site]['rscale']),
-                                   np.abs(self.data[site]['lscale'])])
+                sitemin = np.mean([np.abs(self.gains[site]['rscale']),
+                                   np.abs(self.gains[site]['lscale'])])
             elif method == 'median':
-                sitemin = np.median([np.abs(self.data[site]['rscale']),
-                                     np.abs(self.data[site]['lscale'])])
+                sitemin = np.median([np.abs(self.gains[site]['rscale']),
+                                     np.abs(self.gains[site]['lscale'])])
             else:
                 print('Method ' + method + ' not recognized!')
                 return caltab_pos
@@ -338,8 +426,8 @@ class Caltable:
             if sitemin < min_gain:
                 if verbose:
                     print(method + ' gain for ' + site + ' is ' + str(sitemin) + '. Rescaling.')
-                caltab_pos.data[site]['rscale'] /= sitemin
-                caltab_pos.data[site]['lscale'] /= sitemin
+                caltab_pos.gains[site]['rscale'] /= sitemin
+                caltab_pos.gains[site]['lscale'] /= sitemin
             else:
                 if verbose:
                     print(method + ' gain for ' + site + ' is ' + str(sitemin) + '. Not adjusting.')
@@ -359,12 +447,12 @@ class Caltable:
         """
 
         outdict = {}
-        scopes = list(self.data.keys())
+        scopes = list(self.gains.keys())
         for scope in scopes:
-            if np.any(self.data[scope] is None) or len(self.data[scope]) == 0:
+            if np.any(self.gains[scope] is None) or len(self.gains[scope]) == 0:
                 continue
 
-            caldata = copy.deepcopy(self.data[scope])
+            caldata = copy.deepcopy(self.gains[scope])
 
             # Gather data into "scans"
             # TODO we could use a scan table for this as well!
@@ -372,47 +460,39 @@ class Caltable:
             scandata = [caldata[0]]
             for i in range(1, len(caldata)):
                 if (caldata[i]['time'] - caldata[i - 1]['time']) * 3600 > maxdiff:
-                    scandata = np.array(scandata, dtype=ehc.DTCAL)
+                    scandata = np.array(scandata, dtype=caldata.dtype)
                     gathered_data.append(scandata)
                     scandata = [caldata[i]]
                 else:
                     scandata.append(caldata[i])
 
             # This adds the last scan
-            scandata = np.array(scandata)
+            scandata = np.array(scandata, dtype=caldata.dtype)
             gathered_data.append(scandata)
 
             # Compute padding values and pad scans
             for i in range(len(gathered_data)):
                 gg = gathered_data[i]
 
-                medR = np.median(gg['rscale'])
-                medL = np.median(gg['lscale'])
-
+                # Generic feed names throughout, so a linear-feed table pads
+                # as itself instead of being recast as circular.
                 timepre = gg['time'][0] - maxdiff / 2. / 3600.
                 timepost = gg['time'][-1] + maxdiff / 2. / 3600.
 
                 if padtype == 'median':  # pad with median scan value
-                    medR = np.median(gg['rscale'])
-                    medL = np.median(gg['lscale'])
-                    preR = medR
-                    postR = medR
-                    preL = medL
-                    postL = medL
+                    pre1 = post1 = np.median(gg['p1scale'])
+                    pre2 = post2 = np.median(gg['p2scale'])
                 elif padtype == 'endval':  # pad with endpoints
-                    preR = gg['rscale'][0]
-                    postR = gg['rscale'][-1]
-                    preL = gg['lscale'][0]
-                    postL = gg['lscale'][-1]
+                    pre1 = gg['p1scale'][0]
+                    post1 = gg['p1scale'][-1]
+                    pre2 = gg['p2scale'][0]
+                    post2 = gg['p2scale'][-1]
                 else:  # pad with ones
-                    preR = 1.
-                    postR = 1.
-                    preL = 1.
-                    postL = 1.
+                    pre1 = post1 = 1.
+                    pre2 = post2 = 1.
 
-                # TODO: time-dependent D-term field added but unpopulated
-                valspre = np.array([(timepre, preR, preL, 0j, 0j)], dtype=ehc.DTCAL)
-                valspost = np.array([(timepost, postR, postL, 0j, 0j)], dtype=ehc.DTCAL)
+                valspre = np.array([(timepre, pre1, pre2)], dtype=caldata.dtype)
+                valspost = np.array([(timepost, post1, post2)], dtype=caldata.dtype)
 
                 gg = np.insert(gg, 0, valspre)
                 gg = np.append(gg, valspost)
@@ -430,8 +510,10 @@ class Caltable:
             else:
                 outdict[scope] = caldata_out
 
+        # padding is a gain-table operation; leakage rides along untouched
         return Caltable(self.ra, self.dec, self.rf, self.bw, outdict, self.tarr,
-                        source=self.source, mjd=self.mjd, timetype=self.timetype)
+                        source=self.source, mjd=self.mjd, timetype=self.timetype,
+                        dtermdict=copy.deepcopy(self.dterms))
 
     def applycal(self, obs, interp='linear', extrapolate=None,
                  force_singlepol=False):
@@ -450,6 +532,13 @@ class Caltable:
         if not (self.tarr == obs.tarr).all():
             raise Exception("The telescope array in the Caltable is not the same as in the Obsdata")
 
+        if self.dterms:
+            warnings.warn(
+                "This cal table carries time-dependent D-terms for "
+                f"{', '.join(sorted(self.dterms))}, but applycal corrects gains only: "
+                "the leakage is left in the data.",
+                MixedPolConventionWarning, stacklevel=2)
+
         if extrapolate is True:  # extrapolate can be a tuple or numpy array
             fill_value = "extrapolate"
         else:
@@ -465,16 +554,16 @@ class Caltable:
             site = self.tarr[s]['site']
 
             try:
-                self.data[site]
+                self.gains[site]
             except KeyError:
                 skipsites.append(site)
                 print(f"No Calibration  Data for {site} !")
                 continue
 
-            time_mjd = self.data[site]['time'] / 24.0 + self.mjd
-            rinterp[site] = relaxed_interp1d(time_mjd, self.data[site]['rscale'],
+            time_mjd = self.gains[site]['time'] / 24.0 + self.mjd
+            rinterp[site] = relaxed_interp1d(time_mjd, self.gains[site]['rscale'],
                                              kind=interp, fill_value=fill_value, bounds_error=False)
-            linterp[site] = relaxed_interp1d(time_mjd, self.data[site]['lscale'],
+            linterp[site] = relaxed_interp1d(time_mjd, self.gains[site]['lscale'],
                                              kind=interp, fill_value=fill_value, bounds_error=False)
 
         bllist = obs.bllist()
@@ -555,7 +644,11 @@ class Caltable:
 
         tarr1 = self.tarr.copy()
         tkey1 = self.tkey.copy()
-        data1 = self.data.copy()
+        # copy the arrays, not just the dict, so the merged table never
+        # writes back into this one
+        data1 = {site: (table if table is None else table.copy())
+                 for site, table in self.gains.items()}
+        dterms1 = copy.deepcopy(self.dterms)
         for caltable in caltablelist:
 
             # TODO check metadata!
@@ -563,7 +656,24 @@ class Caltable:
             # TODO CHECK ARE THEY ALL REFERENCED TO SAME MJD???
             tarr2 = caltable.tarr.copy()
             tkey2 = caltable.tkey.copy()
-            data2 = caltable.data.copy()
+
+            # merging time-dependent D-term tables.
+            # If both caltables carry D-terms for a site, raise for now:
+            # composing D-terms requires full Jones treatment.
+            for site, dterm_table in caltable.dterms.items():
+                if site in dterms1:
+                    raise NotImplementedError(
+                        f"merge: both caltables carry D-terms for site {site}. "
+                        "Composing two leakage solutions is deferred; it is a "
+                        "Jones product, not a gain-style multiply.")
+                # if D-terms are only in the merged-in caltable, we can add them.
+                # Be sure to add the tarr row; it may be missed in the gain
+                # merge below.
+                if site not in tkey1 and site in tkey2:
+                    tarr1 = np.append(tarr1, tarr2[tkey2[site]])
+                    tkey1 = {tarr1[i]['site']: i for i in range(len(tarr1))}
+                dterms1[site] = copy.deepcopy(dterm_table)
+            data2 = caltable.gains.copy()
             sites2 = list(data2.keys())
             sites1 = list(data1.keys())
             for site in sites2:
@@ -595,9 +705,8 @@ class Caltable:
                     # TODO can we do this faster?
                     datatable = []
                     for i in range(len(times_merge)):
-                        # TODO: time-dependent D-term field added but unpopulated
                         datatable.append(
-                            np.array((times_merge[i], rscale_merge[i], lscale_merge[i], 0j, 0j),
+                            np.array((times_merge[i], rscale_merge[i], lscale_merge[i]),
                                      dtype=ehc.DTCAL))
                     data1[site] = np.array(datatable)
 
@@ -605,27 +714,38 @@ class Caltable:
                 else:
                     if site not in tkey1.keys():
                         tarr1 = np.append(tarr1, tarr2[tkey2[site]])
-                    data1[site] = data2[site]
+                    # copy (None-safe) so the merged table does not share
+                    # the input's array
+                    other = data2[site]
+                    data1[site] = other if other is None else other.copy()
 
             # update tkeys every time
             tkey1 = {tarr1[i]['site']: i for i in range(len(tarr1))}
 
         new_caltable = Caltable(self.ra, self.dec, self.rf, self.bw, data1, tarr1,
-                                source=self.source, mjd=self.mjd, timetype=self.timetype)
+                                source=self.source, mjd=self.mjd, timetype=self.timetype,
+                                dtermdict=dterms1)
 
         return new_caltable
 
-    def save_txt(self, obs, datadir='.', sqrt_gains=False):
+    def save_txt(self, obs, datadir='.', sqrt_gains=False, overwrite=False):
         """Saves a Caltable object to text files in the given directory
+
+           Gains and D-terms go to separate per-site files; see save_caltable
+           for the layout.
+
            Args:
                obs (Obsdata): The observation object associated with the Caltable
                datadir (str): directory to save caltable in
                sqrt_gains (bool): If True, we square gains before saving.
+               overwrite (bool): If True, allow existing caltable files in datadir
+                                 to be overwritten or deleted
 
            Returns:
         """
 
-        return save_caltable(self, obs, datadir=datadir, sqrt_gains=sqrt_gains)
+        return save_caltable(self, obs, datadir=datadir, sqrt_gains=sqrt_gains,
+                             overwrite=overwrite)
 
     def scan_avg(self, obs, incoherent=True):
         """average the gains across scans.
@@ -637,7 +757,7 @@ class Caltable:
            Returns:
                (Caltable): the averaged Caltable object
         """
-        sites = list(self.data.keys())
+        sites = list(self.gains.keys())
         ntele = len(sites)
 
         datatables = {}
@@ -647,7 +767,7 @@ class Caltable:
             site = sites[s]
 
             # make a list of times that is the same value for all points in the same scan
-            times = self.data[site]['time']
+            times = self.gains[site]['time']
             times_stable = times.copy()
             obs.add_scans()
             scans = obs.scans
@@ -659,8 +779,8 @@ class Caltable:
 
             datatable = []
             for scan in scans:
-                gains_l = self.data[site]['lscale']
-                gains_r = self.data[site]['rscale']
+                gains_l = self.gains[site]['lscale']
+                gains_r = self.gains[site]['rscale']
 
                 # if incoherent average then average the magnitude of gains
                 if incoherent:
@@ -672,33 +792,46 @@ class Caltable:
                 gains_r_avg = np.mean(gains_r[np.array(times_stable == scan[0])])
 
                 # add them to a new datatable
-                # TODO: time-dependent D-term field added but unpopulated
-                datatable.append(np.array((scan[0], gains_r_avg, gains_l_avg, 0j, 0j), dtype=ehc.DTCAL))
+                datatable.append(np.array((scan[0], gains_r_avg, gains_l_avg), dtype=ehc.DTCAL))
 
             datatables[site] = np.array(datatable)
 
         if len(datatables) > 0:
+            # the D-term table is carried over as-is
+            # TODO: we may want to eventually have a function to average D-terms
             caltable = Caltable(obs.ra, obs.dec, obs.rf,
                                 obs.bw, datatables, obs.tarr, source=obs.source,
-                                mjd=obs.mjd, timetype=obs.timetype)
+                                mjd=obs.mjd, timetype=obs.timetype,
+                                dtermdict=copy.deepcopy(self.dterms))
         else:
             caltable = False
 
         return caltable
 
     def invert_gains(self):
+        """Invert the gain table in place, leaving any D-term table untouched.
 
-        sites = self.data.keys()
+           Returns:
+               (Caltable): self, with every gain replaced by its reciprocal
+        """
+
+        sites = self.gains.keys()
 
         for site in sites:
-            self.data[site]['rscale'] = 1 / self.data[site]['rscale']
-            self.data[site]['lscale'] = 1 / self.data[site]['lscale']
+            self.gains[site]['rscale'] = 1 / self.gains[site]['rscale']
+            self.gains[site]['lscale'] = 1 / self.gains[site]['lscale']
 
         return self
 
 
 def load_caltable(obs, datadir, sqrt_gains=False):
     """Load apriori Caltable object from text files in the given directory
+
+       Reads the per-site gain files, and the per-site D-term files beside them
+       when present -- a directory written before D-terms had an on-disk slot
+       simply loads with no leakage. Gain files are what makes a directory a
+       cal table: with none, this returns False even if D-term files are there.
+
        Args:
            obs (Obsdata): The observation object associated with the Caltable
            datadir (str): directory to save caltable in
@@ -719,11 +852,12 @@ def load_caltable(obs, datadir, sqrt_gains=False):
         site = tarr[s]['site']
         filename = os.path.join(datadir, obs.source + '_' + site + '.txt')
         try:
-            data = np.loadtxt(filename, dtype=bytes).astype(str)
+            # ndmin=2 so a one-row file still iterates as rows, not characters
+            data = np.loadtxt(filename, dtype=bytes, ndmin=2).astype(str)
         except OSError:
             try:
                 filename = datadir + site + '.txt'
-                data = np.loadtxt(filename, dtype=bytes).astype(str)
+                data = np.loadtxt(filename, dtype=bytes, ndmin=2).astype(str)
             except OSError:
                 continue
 
@@ -745,25 +879,71 @@ def load_caltable(obs, datadir, sqrt_gains=False):
             if sqrt_gains:
                 rscale = rscale**.5
                 lscale = lscale**.5
-            # TODO: time-dependent D-term field added but unpopulated
-            datatable.append(np.array((time, rscale, lscale, 0j, 0j), dtype=ehc.DTCAL))
+            datatable.append(np.array((time, rscale, lscale), dtype=ehc.DTCAL))
 
         datatables[site] = np.array(datatable)
+
+    # D-terms, if this directory has them. Written by save_caltable next to the
+    # gain files; older directories simply have none.
+    dterm_tables = {}
+    for s in range(0, len(tarr)):
+        site = tarr[s]['site']
+        filename = os.path.join(datadir, obs.source + '_' + site + DTERM_FILE_SUFFIX)
+        try:
+            # skip the version line explicitly: letting loadtxt treat it as a
+            # comment makes numpy warn about the skipped line on every load
+            with open(filename) as dterm_file:
+                skiprows = 1 if dterm_file.readline().lstrip().startswith('#') else 0
+            data = np.loadtxt(filename, dtype=bytes, ndmin=2,
+                              skiprows=skiprows, comments=None).astype(str)
+        except OSError:
+            continue
+
+        dterm_table = []
+        for row in data:
+            if len(row) != 5:
+                raise Exception("cannot load caltable D-terms -- format unknown!")
+            time = (float(row[0]) - obs.mjd) * 24.0  # time is given in mjd
+            d_p1 = float(row[1]) + 1j * float(row[2])
+            d_p2 = float(row[3]) + 1j * float(row[4])
+            dterm_table.append(np.array((time, d_p1, d_p2), dtype=ehc.DTDTERM))
+
+        dterm_tables[site] = np.array(dterm_table)
+
     if len(datatables) > 0:
         caltable = Caltable(obs.ra, obs.dec, obs.rf, obs.bw, datatables, tarr,
-                            source=obs.source, mjd=obs.mjd, timetype=obs.timetype)
+                            source=obs.source, mjd=obs.mjd, timetype=obs.timetype,
+                            dtermdict=dterm_tables)
     else:
         print(f"COULD NOT FIND CALTABLE IN DIRECTORY {datadir}")
         caltable = False
     return caltable
 
 
-def save_caltable(caltable, obs, datadir='.', sqrt_gains=False):
+def _caltable_filenames(caltable, datadir):
+    """Every file save_caltable writes to or removes in datadir."""
+    src = caltable.source
+    names = [datadir + '/array.txt']
+    for site_info in caltable.tarr:
+        site = site_info['site']
+        names.append(datadir + '/' + src + '_' + site + '.txt')
+        names.append(datadir + '/' + src + '_' + site + DTERM_FILE_SUFFIX)
+    return names
+
+
+def save_caltable(caltable, obs, datadir='.', sqrt_gains=False, overwrite=False):
     """Saves a Caltable object to text files in the given directory
+
+       Writes array.txt, one '<source>_<site>.txt' per site of gains, and one
+       '<source>_<site>_dterms.txt' per site that carries time-dependent
+       leakage.
+
        Args:
            obs (Obsdata): The observation object associated with the Caltable
            datadir (str): directory to save caltable in
            sqrt_gains (bool): If True, we square gains before saving.
+           overwrite (bool): If True, allow existing caltable files in datadir
+                             to be overwritten or deleted
 
        Returns:
     """
@@ -771,17 +951,28 @@ def save_caltable(caltable, obs, datadir='.', sqrt_gains=False):
     if not os.path.exists(datadir):
         os.makedirs(datadir)
 
-    ehtim.io.save.save_array_txt(obs.tarr, datadir + '/array.txt')
+    # don't clobber an existing caltable unless asked
+    existing = [f for f in _caltable_filenames(caltable, datadir) if os.path.exists(f)]
+    if existing and not overwrite:
+        raise Exception(f"{len(existing)} caltable file(s) in {datadir} would be "
+                        "overwritten or deleted; pass overwrite=True to allow it")
 
-    datatables = caltable.data
+    # The table's tarr, not the observation's: load_caltable rebuilds tarr from
+    # this file, so a site only the table knows about has to appear here.
+    ehtim.io.save.save_array_txt(caltable.tarr, datadir + '/array.txt')
+
+    datatables = caltable.gains
     src = caltable.source
     for site_info in caltable.tarr:
         site = site_info['site']
+        filename = datadir + '/' + src + '_' + site + '.txt'
 
         if len(datatables.get(site, [])) == 0:
+            # a stale file would be read back as this table's gains
+            if os.path.exists(filename):
+                os.remove(filename)
             continue
 
-        filename = datadir + '/' + src + '_' + site + '.txt'
         outfile = open(filename, 'w')
         site_data = datatables[site]
         for entry in site_data:
@@ -803,6 +994,29 @@ def save_caltable(caltable, obs, datadir='.', sqrt_gains=False):
                        str(float(lreal)) + ' ' + str(float(limag)) + '\n')
             outfile.write(outline)
         outfile.close()
+
+    # Time-dependent D-terms go in their own per-site files. Loop over tarr, not
+    # the gain sites: a site can carry leakage with no gains.
+    for site_info in caltable.tarr:
+        site = site_info['site']
+        filename = datadir + '/' + src + '_' + site + DTERM_FILE_SUFFIX
+
+        if len(caltable.dterms.get(site, [])) == 0:
+            # a stale file would be read back as this table's leakage
+            if os.path.exists(filename):
+                os.remove(filename)
+            continue
+
+        with open(filename, 'w') as outfile:
+            outfile.write(DTERM_FILE_HEADER + '\n')
+            for entry in caltable.dterms[site]:
+                time = entry['time'] / 24.0 + obs.mjd
+                outline = (str(float(time)) + ' ' +
+                           str(float(np.real(entry['d_p1']))) + ' ' +
+                           str(float(np.imag(entry['d_p1']))) + ' ' +
+                           str(float(np.real(entry['d_p2']))) + ' ' +
+                           str(float(np.imag(entry['d_p2']))) + '\n')
+                outfile.write(outline)
 
     return
 
@@ -826,8 +1040,7 @@ def make_caltable(obs, gains, sites, times):
         datatable = []
         for t in range(0, ntimes):
             gain = gains[s * ntimes + t]
-            # TODO: time-dependent D-term field added but unpopulated
-            datatable.append(np.array((times[t], gain, gain, 0j, 0j), dtype=ehc.DTCAL))
+            datatable.append(np.array((times[t], gain, gain), dtype=ehc.DTCAL))
         datatables[sites[s]] = np.array(datatable)
     if len(datatables) > 0:
         caltable = Caltable(obs.ra, obs.dec, obs.rf,
@@ -840,6 +1053,12 @@ def make_caltable(obs, gains, sites, times):
 
 
 def relaxed_interp1d(x, y, **kwargs):
+    # TODO: the single-row fallback below invents a flat segment of half-width
+    # 0.5 in whatever units x carries -- half an hour for merge, which
+    # interpolates in raw hours, half a day for applycal, which interpolates in
+    # MJD. Harmless while it only ever pads a stray one-row gain table, but a
+    # time-constant D-term table is one row by construction, so the width stops
+    # being incidental as soon as leakage is interpolated. Make it explicit then.
     try:
         len(x)
     except TypeError:
@@ -946,16 +1165,15 @@ def plot_compare_gains(caltab1, caltab2, obs, sites='all', pol='R', gain_type='a
 
     # sites
     if (isinstance(sites,str) and sites.lower() == 'all'):
-        sites = list(set(caltab1.data.keys()).intersection(caltab2.data.keys()))
+        sites = list(set(caltab1.gains.keys()).intersection(caltab2.gains.keys()))
 
     if isinstance(sites,str):
         sites = [sites]
 
     if len(sites)==0:
-        sites = list(set(caltab1.data.keys()).intersection(caltab2.data.keys()))
+        sites = list(set(caltab1.gains.keys()).intersection(caltab2.gains.keys()))
 
     if site_name_dict is None:
-        print('hi')
         site_name_dict = {}
         for site in sites:
             site_name_dict[site] = site
@@ -970,11 +1188,11 @@ def plot_compare_gains(caltab1, caltab2, obs, sites='all', pol='R', gain_type='a
 
         site = sites[s]
         if pol == 'R':
-            gains1 = caltab1.data[site]['rscale']
-            gains2 = caltab2.data[site]['rscale']
+            gains1 = caltab1.gains[site]['rscale']
+            gains2 = caltab2.gains[site]['rscale']
         elif pol == 'L':
-            gains1 = caltab1.data[site]['lscale']
-            gains2 = caltab2.data[site]['lscale']
+            gains1 = caltab1.gains[site]['lscale']
+            gains2 = caltab2.gains[site]['lscale']
 
         if gain_type == 'amp':
             gains1 = np.abs(gains1)
