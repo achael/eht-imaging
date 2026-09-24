@@ -1,5 +1,29 @@
 # Changelog
 
+## Unreleased
+
+### Fixed
+
+- `tvlog` and `tv2log` differenced the log image against the zero pad outside the field of
+  view, which asserts `I = 1 Jy` there and so rewards flux on the FOV rim. Boundary-crossing
+  differences are now dropped: the pad was 54% of the reported value on a Gaussian, and it
+  capped how far the regularizer could usefully be weighted. The spectral `tv_alpha`,
+  `tv_beta`, `tv_alphap`, `tv_betap`, `tv_rm` and `tv_cm` had the same pad asserting a flat
+  spectrum, and are fixed the same way.
+- `tvlog` and `tv2log` returned NaN on a partial embed mask, since the fill was `epsilon_tv`,
+  which defaults to 0. The fill is now the mean brightness, and no surviving difference reads
+  it.
+- Polarimetric gradients no longer go non-finite at unpolarized or empty pixels. Each division
+  was cancelled algebraically rather than clamped, so valid values move by at most 1-2 ulp:
+  `rho*sin(psi)/tan(psi)` is `rho*cos(psi)` (7 sites, including the `chisqgrad_vvis` data
+  term), `vimage/iimage` is `make_vf_image`, and `reggrad_ptv` divided by `iimage` a numerator
+  already carrying `|P| = I*m`. `reg_msimple`, which was `-inf` at `m = 0`, floors `m`.
+
+### Changed
+
+- `tv`, `tv2`, `ptv`, `ptv2`, `vtv`, `vtv2` are unchanged: for linear flux, complex `P` and
+  Stokes `V` a zero outside the boundary means empty sky, which is a real boundary condition.
+
 ## v1.4.0 (2026-06-02)
 
 ### Highlights

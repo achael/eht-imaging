@@ -116,3 +116,23 @@ def test_spatial_reg_partial_mask_parity():
                        float(iu.reg_tv(jnp.asarray(imvec), mask, **kw)), rtol=1e-12)
     g_jax = np.asarray(jax.grad(lambda v: iu.reg_tv(v, mask, **kw))(jnp.asarray(imvec)))
     assert np.allclose(g_jax, iu.reggrad_tv(imvec, mask, **kw), rtol=1e-8, atol=1e-10)
+
+
+def test_log_reg_partial_mask_parity():
+    # reg_tvlog / reg_tv2log embed with a positive fill so log() stays defined off-mask.
+    # The fill is computed from kwargs, not from imvec, so it must not perturb the
+    # gradient: jax.grad has to match the analytic one on the masked pixels.
+    rng = np.random.default_rng(1)
+    ny, nx = 6, 8
+    full = rng.uniform(0.05, 1.0, ny * nx)
+    mask = np.ones(ny * nx, dtype=bool)
+    mask[rng.choice(ny * nx, 12, replace=False)] = False
+    imvec = full[mask]
+    kw = dict(xdim=nx, ydim=ny, psize=1.0, flux=float(full.sum()), beam_size=2.0,
+              norm_reg=True, epsilon_tv=0.0)
+    for reg, reggrad in [(iu.reg_tvlog, iu.reggrad_tvlog), (iu.reg_tv2log, iu.reggrad_tv2log)]:
+        v_np = reg(imvec, mask, **kw)
+        v_jx = float(reg(jnp.asarray(imvec), mask, **kw))
+        assert np.isfinite(v_np) and np.allclose(v_np, v_jx, rtol=1e-12)
+        g_jax = np.asarray(jax.grad(lambda v: reg(v, mask, **kw))(jnp.asarray(imvec)))
+        assert np.allclose(g_jax, reggrad(imvec, mask, **kw), rtol=1e-8, atol=1e-10)

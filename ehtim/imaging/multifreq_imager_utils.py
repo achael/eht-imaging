@@ -241,6 +241,10 @@ def reggrad_l2_spec(imvec, mask, **kwargs):
     return 2 * (imvec - priorvec) / norm
 
 
+# The spectral maps are indices, not brightnesses: differencing against the 0
+# outside the FOV or the mask would assert a flat spectrum there, so those
+# differences are dropped. 'edge' padding makes the FOV-boundary difference zero,
+# and the neighbor masks below do the same at the mask boundary.
 def reg_tv_spec(imvec, mask, **kwargs):
     from ehtim.imaging.imager_utils import _safe_sqrt, embed
     xp = array_namespace(imvec)
@@ -251,13 +255,17 @@ def reg_tv_spec(imvec, mask, **kwargs):
     epsilon = kwargs.get('epsilon_tv', 0.)
     norm = len(imvec) * psize / beam_size if kwargs.get('norm_reg', True) else 1
     im = imvec.reshape(ny, nx)
-    impad = xp.pad(im, 1, mode='constant', constant_values=0)
-    im_l1 = xp.roll(impad, -1, axis=0)[1:ny+1, 1:nx+1]
-    im_l2 = xp.roll(impad, -1, axis=1)[1:ny+1, 1:nx+1]
+    mask2d = mask.reshape(ny, nx)
+    impad = xp.pad(im, 1, mode='edge')
+    maskpad = np.pad(mask2d, 1, mode='edge')
+    m_l1 = np.roll(maskpad, -1, axis=0)[1:ny+1, 1:nx+1]
+    m_l2 = np.roll(maskpad, -1, axis=1)[1:ny+1, 1:nx+1]
+    im_l1 = xp.where(m_l1, xp.roll(impad, -1, axis=0)[1:ny+1, 1:nx+1], im)
+    im_l2 = xp.where(m_l2, xp.roll(impad, -1, axis=1)[1:ny+1, 1:nx+1], im)
     # _safe_sqrt keeps the value and its autodiff gradient finite at a flat pixel (sq == 0) when
     # epsilon_tv == 0; identical to xp.sqrt for any epsilon_tv > 0.
     sq = xp.abs(im_l1 - im)**2 + xp.abs(im_l2 - im)**2 + epsilon
-    return xp.sum(_safe_sqrt(xp, sq)) / norm
+    return xp.sum(xp.where(mask2d, _safe_sqrt(xp, sq), 0.)) / norm
 
 
 def reggrad_tv_spec(imvec, mask, **kwargs):
@@ -269,26 +277,26 @@ def reggrad_tv_spec(imvec, mask, **kwargs):
     epsilon = kwargs.get('epsilon_tv', 0.)
     norm = len(imvec) * psize / beam_size if kwargs.get('norm_reg', True) else 1
     im = imvec.reshape(ny, nx)
-    impad = np.pad(im, 1, mode='constant', constant_values=0)
-    im_l1 = np.roll(impad, -1, axis=0)[1:ny+1, 1:nx+1]
-    im_l2 = np.roll(impad, -1, axis=1)[1:ny+1, 1:nx+1]
-    im_r1 = np.roll(impad, 1, axis=0)[1:ny+1, 1:nx+1]
-    im_r2 = np.roll(impad, 1, axis=1)[1:ny+1, 1:nx+1]
-    im_r1l2 = np.roll(np.roll(impad,  1, axis=0), -1, axis=1)[1:ny+1, 1:nx+1]
-    im_l1r2 = np.roll(np.roll(impad, -1, axis=0),  1, axis=1)[1:ny+1, 1:nx+1]
+    mask2d = mask.reshape(ny, nx)
+    impad = np.pad(im, 1, mode='edge')
+    maskpad = np.pad(mask2d, 1, mode='edge')
+    m_l1 = np.roll(maskpad, -1, axis=0)[1:ny+1, 1:nx+1]
+    m_l2 = np.roll(maskpad, -1, axis=1)[1:ny+1, 1:nx+1]
+    m_r1 = np.roll(maskpad, 1, axis=0)[1:ny+1, 1:nx+1]
+    m_r2 = np.roll(maskpad, 1, axis=1)[1:ny+1, 1:nx+1]
+    im_l1 = np.where(m_l1, np.roll(impad, -1, axis=0)[1:ny+1, 1:nx+1], im)
+    im_l2 = np.where(m_l2, np.roll(impad, -1, axis=1)[1:ny+1, 1:nx+1], im)
+    im_r1 = np.where(m_r1, np.roll(impad, 1, axis=0)[1:ny+1, 1:nx+1], im)
+    im_r2 = np.where(m_r2, np.roll(impad, 1, axis=1)[1:ny+1, 1:nx+1], im)
+    # each pixel's denominator, and the copies its two back-neighbors use. A
+    # dropped difference is 0, so the back-neighbor terms vanish on their own
     d1 = np.sqrt((im - im_l1)**2 + (im - im_l2)**2 + epsilon)
-    d2 = np.sqrt((im - im_r1)**2 + (im_r1l2 - im_r1)**2 + epsilon)
-    d3 = np.sqrt((im - im_r2)**2 + (im_l1r2 - im_r2)**2 + epsilon)
+    d2 = np.roll(d1, 1, axis=0)
+    d3 = np.roll(d1, 1, axis=1)
     # guarded division: at a flat pixel (d == 0 when epsilon_tv == 0) the gradient is 0, not 0/0=NaN
     g1 = np.where(d1 > 0, (2*im - im_l1 - im_l2) / np.where(d1 > 0, d1, 1.0), 0.0)
     g2 = np.where(d2 > 0, (im - im_r1) / np.where(d2 > 0, d2, 1.0), 0.0)
     g3 = np.where(d3 > 0, (im - im_r2) / np.where(d3 > 0, d3, 1.0), 0.0)
-    mask1 = np.zeros(im.shape)
-    mask2 = np.zeros(im.shape)
-    mask1[0, :] = 1
-    mask2[:, 0] = 1
-    g2[mask1.astype(bool)] = 0
-    g3[mask2.astype(bool)] = 0
     g = (g1 + g2 + g3).flatten() / norm
     return g[mask]
 

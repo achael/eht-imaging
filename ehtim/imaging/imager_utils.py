@@ -1832,40 +1832,76 @@ def reggrad_tv(imvec, mask, **kwargs):
     return g[mask]
 
 
-# tvlog / tv2log use clipfloor=epsilon_tv (not the default 0) so the log
-# transform stays defined where mask filled in values.
+# tvlog / tv2log difference the log image, where 0 means 1 Jy rather than empty
+# sky, so differences that leave the FOV or the mask are dropped instead. 'edge'
+# padding makes the difference across the FOV boundary zero, and the neighbor
+# masks below do the same at the mask boundary.
 def reg_tvlog(imvec, mask, **kwargs):
     """Total Variation Regularizer on the log image"""
-    # embed image
+    # embed image. Masked pixels are filled with the mean brightness only to keep
+    # log() finite: no surviving difference reads the fill
     xp = array_namespace(imvec)
-    epsilon = kwargs.get('epsilon_tv', 0.)
-    if np.any(np.invert(mask)):
-        imvec = embed(imvec, mask, clipfloor=epsilon, randomfloor=True)
-    # parameters and normalization -- update kwargs
-    nx, ny = kwargs['xdim'], kwargs['ydim']
+    nx, ny, psize = kwargs['xdim'], kwargs['ydim'], kwargs['psize']
     flux = kwargs['flux']
     npix = nx * ny
+    if np.any(np.invert(mask)):
+        imvec = embed(imvec, mask, clipfloor=flux/npix)
+    # parameters and normalization
+    beam_size = kwargs.get('beam_size') or psize
+    epsilon = kwargs.get('epsilon_tv', 0.)
     logflux = npix * np.abs(np.log(flux / npix))
-    log_kwargs = dict(kwargs)
-    log_kwargs['flux'] = logflux
-    return reg_tv(xp.log(imvec), np.ones(imvec.shape, dtype=bool), **log_kwargs)
+    norm = logflux * psize / beam_size if kwargs.get('norm_reg', True) else 1
+    # compute TV of the log image
+    im = xp.log(imvec).reshape(ny, nx)
+    mask2d = mask.reshape(ny, nx)
+    impad = xp.pad(im, 1, mode='edge')
+    maskpad = np.pad(mask2d, 1, mode='edge')
+    m_l1 = np.roll(maskpad, -1, axis=0)[1:ny+1, 1:nx+1]
+    m_l2 = np.roll(maskpad, -1, axis=1)[1:ny+1, 1:nx+1]
+    im_l1 = xp.where(m_l1, xp.roll(impad, -1, axis=0)[1:ny+1, 1:nx+1], im)
+    im_l2 = xp.where(m_l2, xp.roll(impad, -1, axis=1)[1:ny+1, 1:nx+1], im)
+    tv = _safe_sqrt(xp, xp.abs(im_l1 - im)**2 + xp.abs(im_l2 - im)**2 + epsilon)
+    return xp.sum(xp.where(mask2d, tv, 0.)) / norm
 
 
 def reggrad_tvlog(imvec, mask, **kwargs):
     """Gradient of the total variation regularizer on the log image"""
-    # embed image
-    epsilon = kwargs.get('epsilon_tv', 0.)
-    if np.any(np.invert(mask)):
-        imvec = embed(imvec, mask, clipfloor=epsilon, randomfloor=True)
-    # parameters and normalization -- update kwargs
-    nx, ny = kwargs['xdim'], kwargs['ydim']
+    # embed image (see reg_tvlog for the fill)
+    nx, ny, psize = kwargs['xdim'], kwargs['ydim'], kwargs['psize']
     flux = kwargs['flux']
     npix = nx * ny
+    if np.any(np.invert(mask)):
+        imvec = embed(imvec, mask, clipfloor=flux/npix)
+    # parameters and normalization
+    beam_size = kwargs.get('beam_size') or psize
+    epsilon = kwargs.get('epsilon_tv', 0.)
     logflux = npix * np.abs(np.log(flux / npix))
-    log_kwargs = dict(kwargs)
-    log_kwargs['flux'] = logflux
-    # compute gradient of TV on log image
-    g = reggrad_tv(np.log(imvec), np.ones_like(imvec, dtype=bool), **log_kwargs) / imvec
+    norm = logflux * psize / beam_size if kwargs.get('norm_reg', True) else 1
+    # shifted 2D log images
+    im = np.log(imvec).reshape(ny, nx)
+    mask2d = mask.reshape(ny, nx)
+    impad = np.pad(im, 1, mode='edge')
+    maskpad = np.pad(mask2d, 1, mode='edge')
+    m_l1 = np.roll(maskpad, -1, axis=0)[1:ny+1, 1:nx+1]
+    m_l2 = np.roll(maskpad, -1, axis=1)[1:ny+1, 1:nx+1]
+    m_r1 = np.roll(maskpad, 1, axis=0)[1:ny+1, 1:nx+1]
+    m_r2 = np.roll(maskpad, 1, axis=1)[1:ny+1, 1:nx+1]
+    im_l1 = np.where(m_l1, np.roll(impad, -1, axis=0)[1:ny+1, 1:nx+1], im)
+    im_l2 = np.where(m_l2, np.roll(impad, -1, axis=1)[1:ny+1, 1:nx+1], im)
+    im_r1 = np.where(m_r1, np.roll(impad, 1, axis=0)[1:ny+1, 1:nx+1], im)
+    im_r2 = np.where(m_r2, np.roll(impad, 1, axis=1)[1:ny+1, 1:nx+1], im)
+    # each pixel's denominator, and the copies its two back-neighbors use. A
+    # dropped difference is 0, so the back-neighbor terms vanish on their own
+    d1 = np.sqrt((im - im_l1)**2 + (im - im_l2)**2 + epsilon)
+    d2 = np.roll(d1, 1, axis=0)
+    d3 = np.roll(d1, 1, axis=1)
+    # gradient terms. Guarded division: at a flat pixel the denominator is 0 when
+    # epsilon_tv == 0, so the gradient is 0 rather than 0/0 = NaN
+    g1 = np.where(d1 > 0, (2*im - im_l1 - im_l2) / np.where(d1 > 0, d1, 1.0), 0.0)
+    g2 = np.where(d2 > 0, (im - im_r1) / np.where(d2 > 0, d2, 1.0), 0.0)
+    g3 = np.where(d3 > 0, (im - im_r2) / np.where(d3 > 0, d3, 1.0), 0.0)
+    # final gradient, chained through the log
+    g = (g1 + g2 + g3).flatten() / imvec / norm
     return g[mask]
 
 
@@ -1924,36 +1960,63 @@ def reggrad_tv2(imvec, mask, **kwargs):
 
 def reg_tv2log(imvec, mask, **kwargs):
     """TV2 regularizer on the log image"""
-    # embed image
+    # embed image (see reg_tvlog for the fill)
     xp = array_namespace(imvec)
-    epsilon = kwargs.get('epsilon_tv', 0.)
-    if np.any(np.invert(mask)):
-        imvec = embed(imvec, mask, clipfloor=epsilon, randomfloor=True)
-    # parameters and normalization -- update the kwargs
-    nx, ny = kwargs['xdim'], kwargs['ydim']
+    nx, ny, psize = kwargs['xdim'], kwargs['ydim'], kwargs['psize']
     flux = kwargs['flux']
     npix = nx * ny
+    if np.any(np.invert(mask)):
+        imvec = embed(imvec, mask, clipfloor=flux/npix)
+    # parameters and normalization
+    beam_size = kwargs.get('beam_size') or psize
     logflux = npix * np.abs(np.log(flux / npix))
-    log_kwargs = dict(kwargs)
-    log_kwargs['flux'] = logflux
-    return reg_tv2(xp.log(imvec), np.ones(imvec.shape, dtype=bool), **log_kwargs)
+    norm = psize**4 * logflux**2 / beam_size**4 if kwargs.get('norm_reg', True) else 1
+    # compute TV2 of the log image. Each difference belongs to the pixel it is
+    # measured from, so dropping a masked pixel's term drops its edges with it
+    im = xp.log(imvec).reshape(ny, nx)
+    mask2d = mask.reshape(ny, nx)
+    impad = xp.pad(im, 1, mode='edge')
+    maskpad = np.pad(mask2d, 1, mode='edge')
+    m_l1 = np.roll(maskpad, -1, axis=0)[1:ny+1, 1:nx+1]
+    m_l2 = np.roll(maskpad, -1, axis=1)[1:ny+1, 1:nx+1]
+    im_l1 = xp.where(m_l1, xp.roll(impad, -1, axis=0)[1:ny+1, 1:nx+1], im)
+    im_l2 = xp.where(m_l2, xp.roll(impad, -1, axis=1)[1:ny+1, 1:nx+1], im)
+    tv2 = (im_l1 - im)**2 + (im_l2 - im)**2
+    return xp.sum(xp.where(mask2d, tv2, 0.)) / norm
 
 
 def reggrad_tv2log(imvec, mask, **kwargs):
     """Gradient of the TV2 regularizer on the log image"""
-    # embed image
-    epsilon = kwargs.get('epsilon_tv', 0.)
-    if np.any(np.invert(mask)):
-        imvec = embed(imvec, mask, clipfloor=epsilon, randomfloor=True)
-    # parameters and normalization -- update the kwargs
-    nx, ny = kwargs['xdim'], kwargs['ydim']
+    # embed image (see reg_tvlog for the fill)
+    nx, ny, psize = kwargs['xdim'], kwargs['ydim'], kwargs['psize']
     flux = kwargs['flux']
     npix = nx * ny
+    if np.any(np.invert(mask)):
+        imvec = embed(imvec, mask, clipfloor=flux/npix)
+    # parameters and normalization
+    beam_size = kwargs.get('beam_size') or psize
     logflux = npix * np.abs(np.log(flux / npix))
-    log_kwargs = dict(kwargs)
-    log_kwargs['flux'] = logflux
-    # compute gradient of TV2 on the log image
-    g = reggrad_tv2(np.log(imvec), np.ones_like(imvec, dtype=bool), **log_kwargs) / imvec
+    norm = psize**4 * logflux**2 / beam_size**4 if kwargs.get('norm_reg', True) else 1
+    # shifted 2D log images
+    im = np.log(imvec).reshape(ny, nx)
+    mask2d = mask.reshape(ny, nx)
+    impad = np.pad(im, 1, mode='edge')
+    maskpad = np.pad(mask2d, 1, mode='edge')
+    m_l1 = np.roll(maskpad, -1, axis=0)[1:ny+1, 1:nx+1]
+    m_l2 = np.roll(maskpad, -1, axis=1)[1:ny+1, 1:nx+1]
+    m_r1 = np.roll(maskpad, 1, axis=0)[1:ny+1, 1:nx+1]
+    m_r2 = np.roll(maskpad, 1, axis=1)[1:ny+1, 1:nx+1]
+    im_l1 = np.where(m_l1, np.roll(impad, -1, axis=0)[1:ny+1, 1:nx+1], im)
+    im_l2 = np.where(m_l2, np.roll(impad, -1, axis=1)[1:ny+1, 1:nx+1], im)
+    im_r1 = np.where(m_r1, np.roll(impad, 1, axis=0)[1:ny+1, 1:nx+1], im)
+    im_r2 = np.where(m_r2, np.roll(impad, 1, axis=1)[1:ny+1, 1:nx+1], im)
+    # gradient terms. A dropped difference is 0, so the back-neighbor terms
+    # vanish on their own where the neighbor is outside the FOV or the mask
+    g1 = 2*im - im_l1 - im_l2
+    g2 = im - im_r1
+    g3 = im - im_r2
+    # final gradient, chained through the log
+    g = 2 * (g1 + g2 + g3).flatten() / imvec / norm
     return g[mask]
 
 
