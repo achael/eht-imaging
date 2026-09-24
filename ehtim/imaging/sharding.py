@@ -54,12 +54,73 @@ def build_mesh(devices=None, axis="shard"):
     return jax.sharding.Mesh(np.asarray(devices), (axis,))
 
 
-def _pad_rows(arr, pad, fill=0.0):
-    """Pad `pad` rows of `fill` onto axis 0 (no-op when pad == 0)."""
-    if pad == 0:
-        return arr
-    width = [(0, pad)] + [(0, 0)] * (arr.ndim - 1)
-    return np.pad(np.asarray(arr), width, constant_values=fill)
+def _sharded_padded(row_of, n_total, n_real, tail, dtype, sharding, fill):
+    """Build a sharded (n_total, *tail) array, taking real rows from `row_of`.
+
+    Rows `n_real:` are `fill`. The array is assembled per shard rather than
+    padded on the host and then transferred, because `jnp.asarray(padded)`
+    lands the *whole* array on the default device before the sharding is
+    applied: on 2 GPUs that peaks device 0 at 4x its share, and the factor grows
+    with the device count. Host cost is unchanged (jax materializes every
+    addressable shard before transferring); the saving is on device.
+
+    The leading axis is assumed to be the sharded one, which is true of every
+    sharding this module builds. Under a sharding that partitions a trailing
+    axis instead the values are still correct, but each shard materializes the
+    full leading extent first.
+    """
+    import jax
+
+    def shard(index):
+        rows = range(*index[0].indices(n_total))
+        out = np.full((len(rows),) + tuple(tail), fill, dtype=dtype)
+        for j, i in enumerate(rows):
+            if i < n_real:
+                out[j] = row_of(i)
+        return out[(slice(None),) + tuple(index[1:])]
+
+    return jax.make_array_from_callback((n_total,) + tuple(tail), sharding, shard)
+
+
+def stack_channels_on_device(per_channel, nf_pad, sharding, fill):
+    """Stack per-channel arrays onto the channel axis, assembled per shard.
+
+    Channels beyond `len(per_channel)` are padded with `fill`; the caller's
+    validity mask zeroes their contribution. See `_sharded_padded` for why this
+    is built shard by shard rather than padded on the host.
+
+    Parameters
+    ----------
+    per_channel : sequence of np.ndarray
+        One array per real channel, all the same shape.
+    nf_pad : int
+        Padded channel count, a multiple of the mesh size. Must be >= the number
+        of real channels.
+    sharding : jax.sharding.Sharding
+        Sharding for the (nf_pad, *tail) result, channel axis first.
+    fill : scalar
+        Value for padded channels. The frequency path uses 0 for data and
+        operators and 1 for sigma; the baseline path uses a different convention
+        (see the padding note at the top of this file), so this is the caller's
+        choice, not a property of the term. Only the sigma fill actually
+        matters: the validity mask zeroes a padded channel's contribution, so
+        any data or operator value gives bit-identical results, but sigma
+        reaches a 1/sigma**2 first and a zero there makes the whole objective
+        NaN before the mask can apply.
+
+    Returns
+    -------
+    jax.Array
+        Sharded array of shape (nf_pad, *per_channel[0].shape).
+    """
+    n_real = len(per_channel)
+    if nf_pad < n_real:
+        raise ValueError(
+            f"nf_pad={nf_pad} is smaller than the {n_real} channels given; "
+            "padding cannot drop channels")
+    first = np.asarray(per_channel[0])
+    return _sharded_padded(lambda i: per_channel[i], nf_pad, n_real,
+                           first.shape, first.dtype, sharding, fill)
 
 
 class _NFFTView:
@@ -159,9 +220,12 @@ def make_sharded_value_and_grad(initvec, config, which_solve, data_tuples,
         rows2d = NamedSharding(mesh, P(axis, None))  # (N, Npix) Fourier matrix
 
         def shard_rows(a, sharding, fill=0.0):
-            true_n = np.asarray(a).shape[0]
+            arr = np.asarray(a)
+            true_n = arr.shape[0]
             pad = (-true_n) % k
-            return jax.device_put(jnp.asarray(_pad_rows(a, pad, fill)), sharding), true_n, pad
+            out = _sharded_padded(lambda i: arr[i], true_n + pad, true_n,
+                                  arr.shape[1:], arr.dtype, sharding, fill)
+            return out, true_n, pad
 
         # Pad each data term out to a multiple of the device count, then split it by row.
         # Sigma is padded with infinity so the extra rows add nothing to chi^2, and the
@@ -277,17 +341,10 @@ def make_sharded_value_and_grad(initvec, config, which_solve, data_tuples,
             nvis = np.asarray(per[0][0]).shape[0]
             if any(np.asarray(d).shape[0] != nvis for d, _, _ in per):
                 raise NotImplementedError("frequency sharding assumes equal Nvis per channel")
-            npix = np.asarray(A0).shape[1]
-            data_st = np.zeros((nf_pad, nvis), dtype=np.asarray(per[0][0]).dtype)
-            sigma_st = np.ones((nf_pad, nvis), dtype=np.asarray(per[0][1]).dtype)
-            A_st = np.zeros((nf_pad, nvis, npix), dtype=np.asarray(A0).dtype)
-            for i, (d, s, A) in enumerate(per):
-                data_st[i] = np.asarray(d)
-                sigma_st[i] = np.asarray(s)
-                A_st[i] = np.asarray(A)
-            stacks[dname] = (jax.device_put(jnp.asarray(data_st), ch2d),
-                             jax.device_put(jnp.asarray(sigma_st), ch2d),
-                             jax.device_put(jnp.asarray(A_st), ch3d))
+            stacks[dname] = (
+                stack_channels_on_device([d for d, _, _ in per], nf_pad, ch2d, fill=0),
+                stack_channels_on_device([s for _, s, _ in per], nf_pad, ch2d, fill=1),
+                stack_channels_on_device([A for _, _, A in per], nf_pad, ch3d, fill=0))
         aux = {"init": init_d, "prior": prior_d, "stacks": stacks,
                "valid": jax.device_put(jnp.asarray(valid), ch),
                "logfreq": jax.device_put(jnp.asarray(logfreq), ch)}

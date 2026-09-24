@@ -25,7 +25,7 @@ from ehtim.imaging.imager_backend import (
 )
 from ehtim.imaging.optimizers import optimize_fixed, resolve_optax
 
-NHIST = 50   # optax-lbfgs memory
+NHIST = 50   # default optax-lbfgs memory; override per call with maxcor=
 MAXLS = 5    # zoom line-search cap; small so vmap doesn't pay the batch-worst-case every step
 
 
@@ -41,7 +41,8 @@ def _gaussian_prior(base, flux, fwhm_rad):
     return pri.add_gauss(flux * 1e-3, (fwhm_rad, fwhm_rad, 0, fwhm_rad, fwhm_rad))
 
 
-def _inner_survey(imgr, weight_grid, regparam_grid, maxit, x0, optimizer, device):
+def _inner_survey(imgr, weight_grid, regparam_grid, maxit, x0, optimizer, device,
+                  maxcor=NHIST):
     """Vmap the scalar sub-grid for the imager's current (already initialized) state.
 
     Returns (images[B, Npix], objval[B], grid{axis_name: [B]}, chisqs{dname: [B]}) for the
@@ -73,7 +74,8 @@ def _inner_survey(imgr, weight_grid, regparam_grid, maxit, x0, optimizer, device
         imgr._regparams(), imgr._embed_mask, device=device)
 
     maxit = int(maxit if maxit is not None else imgr.maxit_next)
-    gt, needs_ls = resolve_optax(optimizer, {"maxiter": maxit, "maxcor": NHIST, "maxls": MAXLS})
+    gt, needs_ls = resolve_optax(optimizer,
+                             {"maxiter": maxit, "maxcor": int(maxcor), "maxls": MAXLS})
     x0 = put(np.asarray(imgr._init_vec, float) if x0 is None else x0)
     init_d = put(np.asarray(imgr._init_arr))
     which_solve, transforms = imgr._which_solve, imgr._config.transforms
@@ -92,7 +94,7 @@ def _inner_survey(imgr, weight_grid, regparam_grid, maxit, x0, optimizer, device
 
 def run_survey_gpu(imgr, *, weight_grid=None, regparam_grid=None, prior_fwhm=None,
                    sys_noise=None, maxit=None, x0=None, optimizer="optax-lbfgs-bt",
-                   device=None):
+                   device=None, maxcor=NHIST):
     """Reconstruct a hyperparameter grid, vmapping the scalar axes on device.
 
     Parameters
@@ -112,6 +114,18 @@ def run_survey_gpu(imgr, *, weight_grid=None, regparam_grid=None, prior_fwhm=Non
         Fixed optax iterations per reconstruction (default imgr.maxit_next).
     x0, optimizer, device
         Shared start vector, optax optimizer name/GradientTransformation, jax device.
+    maxcor : int, optional
+        L-BFGS history length (default `NHIST`). The optimizer state is exactly
+        `2*maxcor+3` copies of the image vector and vmap replicates it per grid
+        point, so it is the largest term that scales with the grid: at 4096
+        pixels that is 3.22 MiB per point at the default 50, or 25.75 GiB of
+        state across an 8192-point grid, against 5.75 GiB at 10. Measured device
+        peak moves by about two thirds of that arithmetic, since XLA reuses
+        buffers inside the jitted loop. Lower it when a grid will not fit;
+        L-BFGS converges more slowly with a shorter history (median chi^2 0.41
+        at 50 vs 0.60 at 10, 4096 px and 30 iterations), which is why the
+        default is unchanged. Ignored by the first-order optimizers (adam, sgd,
+        rmsprop) and by a GradientTransformation you construct yourself.
 
     Returns
     -------
@@ -124,6 +138,9 @@ def run_survey_gpu(imgr, *, weight_grid=None, regparam_grid=None, prior_fwhm=Non
     chisqs : dict
         {data_term: 1-D array of length B} reduced chi^2 of each reconstruction, per data term.
     """
+    if int(maxcor) < 1 or int(maxcor) != maxcor:
+        raise ValueError(f"maxcor must be a positive integer, got {maxcor!r}")
+
     weight_grid = weight_grid or {}
     regparam_grid = regparam_grid or {}
     fwhms = list(prior_fwhm) if prior_fwhm is not None else [None]
@@ -144,7 +161,8 @@ def run_survey_gpu(imgr, *, weight_grid=None, regparam_grid=None, prior_fwhm=Non
                     imgr.obslist_next = [o.add_fractional_noise(sysn) for o in base_obs]
                 imgr.init_imager()
                 im_b, ob_b, gr_b, ch_b = _inner_survey(imgr, weight_grid, regparam_grid,
-                                                       maxit, x0, optimizer, device)
+                                                       maxit, x0, optimizer, device,
+                                                       maxcor=maxcor)
                 images.append(im_b)
                 objval.append(ob_b)
                 for k, v in gr_b.items():
