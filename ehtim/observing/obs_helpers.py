@@ -1395,6 +1395,33 @@ def image_centroid(im):
     return np.array([x0, y0])
 
 
+def adjoint_dot(Amatrix, vec):
+    """Apply the adjoint of a DFT operator without copying the operator.
+
+    Reach for this instead of ``np.dot(Amatrix.conj().T, vec)`` wherever a
+    gradient applies the conjugate transpose of a dense Fourier operator.
+    ``Amatrix.conj()`` materializes a full (nvis, npix) copy of the operator and
+    only the following ``.T`` is free, so on a direct-transform run the copy
+    dominates the memory of the gradient. Conjugating the (nvis,) input and the
+    (npix,) output is the same arithmetic on vectors orders of magnitude
+    smaller, and returns bit-identical values.
+
+    Parameters
+    ----------
+    Amatrix : np.ndarray
+        Complex (nvis, npix) DFT operator.
+    vec : np.ndarray
+        Complex (nvis,) vector to apply the adjoint operator to.
+
+    Returns
+    -------
+    np.ndarray
+        Complex (npix,) result, equal to ``np.dot(Amatrix.conj().T, vec)``.
+    """
+
+    return np.dot(vec.conj(), Amatrix).conj()
+
+
 def ftmatrix(pdim, xdim, ydim, uvlist, pulse=ehc.PULSE_DEFAULT, mask=[]):
     """Return a DFT matrix for the xdim*ydim image with pixel width pdim
        that extracts spatial frequencies of the uv points in uvlist.
@@ -1410,13 +1437,30 @@ def ftmatrix(pdim, xdim, ydim, uvlist, pulse=ehc.PULSE_DEFAULT, mask=[]):
 
     # changed the sign convention to agree with BU data (Jan 2017)
     # this is correct for a u,v definition from site 1-2 as (x1-x2)/lambda
-    ftmatrices = [pulse(2*np.pi*uv[0], 2*np.pi*uv[1], pdim, dom="F") *
-                  np.outer(np.exp(2j*np.pi*ylist*uv[1]), np.exp(2j*np.pi*xlist*uv[0]))
-                  for uv in uvlist]
-    ftmatrices = np.reshape(np.array(ftmatrices), (len(uvlist), xdim*ydim))
-
+    #
+    # Rows are written straight into the final array. Collecting them in a list
+    # and then copying with np.array() holds two full operators at once, and
+    # when a mask is given it builds the whole unmasked stack only to slice most
+    # of it away.
+    #
+    # The memory order deliberately matches what the old code happened to
+    # produce: C from the unmasked reshape, F from the masked column indexing.
+    # np.dot dispatches on layout, so preserving it keeps direct-path
+    # chi-squared and gradients byte-for-byte unchanged.
+    uvlist = np.asarray(uvlist)
+    npix = xdim*ydim
     if len(mask):
-        ftmatrices = ftmatrices[:, mask]
+        cols = np.arange(npix)[mask]
+        ncol, order = len(cols), 'F'
+    else:
+        cols = slice(None)
+        ncol, order = npix, 'C'
+
+    ftmatrices = np.empty((len(uvlist), ncol), dtype=np.complex128, order=order)
+    for k, uv in enumerate(uvlist):
+        row = (pulse(2*np.pi*uv[0], 2*np.pi*uv[1], pdim, dom="F") *
+               np.outer(np.exp(2j*np.pi*ylist*uv[1]), np.exp(2j*np.pi*xlist*uv[0])))
+        ftmatrices[k] = row.reshape(npix)[cols]
 
     return ftmatrices
 
