@@ -1,5 +1,29 @@
 # Changelog
 
+## Unreleased
+
+### Changed
+
+- **`NFFT_EPS_DEFAULT` lowered from `1e-9` to `1e-6`.** The tighter value cost ~20% per
+  imaging run (measured at npix=128) for accuracy nothing in the chi-squared can see:
+  relative transform error is 3e-6 at `1e-6`, against ~3e-4 for the pyNFFT `m=2` that
+  ehtim used before v1.4.0. Pass `nfft_eps=1e-9` (or `1e-12`) to `Imager` for
+  high-dynamic-range work. Users comparing v1.4.0 timings against v1.3.x were not
+  comparing like with like.
+
+### Added
+
+- **`nfft_nthreads` `Imager` kwarg**, plumbed like `nfft_eps` and defaulting to 0,
+  finufft's own choice. Previously the only control was `OMP_NUM_THREADS`, which
+  OpenBLAS shares.
+- **README note on the thread spin-wait**: `OPENBLAS_THREAD_TIMEOUT=4` plus
+  `OMP_WAIT_POLICY=PASSIVE` measured 13-22x faster imaging on pip-wheel numpy/scipy
+  stacks. It affects every version, not just v1.4.0.
+
+### Removed
+
+- Dead `pynfft` import guard in `pol_imager_utils`, left over from the finufft migration.
+
 ## v1.4.0 (2026-06-02)
 
 ### Highlights

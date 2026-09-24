@@ -39,6 +39,10 @@ TTYPE_PAIRS = [("direct", "fast"), ("direct", "nfft"), ("nfft", "fast")]
 # bound effectively pins nfft gradient correctness. Pairs that include the gridded 'fast' FFT
 # are limited by its interpolation accuracy, not by a gradient bug, so they stay looser.
 GRAD_MAX_TOL_DIRECT_NFFT = 1e-2
+
+# Pinned rather than taken from NFFT_EPS_DEFAULT: the bound above is what pins nfft gradient
+# correctness, so it must not slacken when the shipped default trades accuracy for speed.
+NFFT_EPS = 1e-9
 GRAD_MAX_TOL = 0.25            # any pair containing 'fast'
 
 # Diagonalized closures orthogonalize per-timestamp covariance, which amplifies tail outliers.
@@ -129,6 +133,8 @@ def _chisq_kwargs(ttype):
         kwargs["p_rad"] = P_RAD
         kwargs["conv_func"] = CONV_FUNC
         kwargs["order"] = FFT_INTERP_ORDER
+    if ttype == "nfft":
+        kwargs["nfft_eps"] = NFFT_EPS
     return kwargs
 
 

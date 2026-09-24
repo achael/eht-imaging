@@ -1460,14 +1460,15 @@ class FINUFFTPlan:
     every existing NFFT consumer in the codebase stays untouched.
     """
 
-    def __init__(self, xdim, ydim, uv_finufft, eps=ehc.NFFT_EPS_DEFAULT):
+    def __init__(self, xdim, ydim, uv_finufft, eps=ehc.NFFT_EPS_DEFAULT,
+                 nthreads=ehc.NFFT_NTHREADS_DEFAULT):
         x = np.ascontiguousarray(uv_finufft[:, 0])
         y = np.ascontiguousarray(uv_finufft[:, 1])
         self._fwd = finufft.Plan(2, (xdim, ydim), n_trans=1, eps=eps,
-                                 isign=-1, dtype='complex128')
+                                 isign=-1, dtype='complex128', nthreads=nthreads)
         self._fwd.setpts(x, y)
         self._adj = finufft.Plan(1, (xdim, ydim), n_trans=1, eps=eps,
-                                 isign=+1, dtype='complex128')
+                                 isign=+1, dtype='complex128', nthreads=nthreads)
         self._adj.setpts(x, y)
         self.f_hat = None
         self.f = None
@@ -1484,10 +1485,12 @@ class FINUFFTPlan:
 class NFFTInfo:
     """Precomputed NFFT plan + per-point pulse/centering factor.
 
-    eps is the requested relative accuracy of the NFFT. Default 1e-9 is
-    safe for high-dynamic-range imaging (ALMA polarimetry, SKA-scale
-    arrays). Tighten to 1e-12 for ~1e6 dynamic range; relax to 1e-6 for
-    faster low-SNR work where data noise dominates.
+    eps is the requested relative accuracy of the NFFT. The default 1e-6 is
+    already far below any realistic data noise; tighten to 1e-9 or 1e-12 for
+    high-dynamic-range imaging (ALMA polarimetry, SKA-scale arrays).
+
+    nthreads is the thread count finufft may use per transform, 0 meaning
+    finufft's own choice. Prefer it to OMP_NUM_THREADS, which OpenBLAS shares.
 
     npad and p_rad are accepted for backwards compatibility with the
     old pynfft.NFFT implementation but are unused under finufft, which
@@ -1495,7 +1498,7 @@ class NFFTInfo:
     """
 
     def __init__(self, xdim, ydim, psize, pulse, npad, p_rad, uv,
-                 eps=ehc.NFFT_EPS_DEFAULT):
+                 eps=ehc.NFFT_EPS_DEFAULT, nthreads=ehc.NFFT_NTHREADS_DEFAULT):
         self.xdim = int(xdim)
         self.ydim = int(ydim)
         self.psize = psize
@@ -1510,9 +1513,10 @@ class NFFTInfo:
         uv_scaled = uv * psize
         uv_finufft = 2 * np.pi * uv_scaled
         self.eps = eps
+        self.nthreads = nthreads
         self.uv_finufft = uv_finufft  # (-pi, pi] nonuniform points, for jax_finufft.nufft2
         # plan is the stateful finufft plan (numpy path only); jax uses uv_finufft.
-        self.plan = FINUFFTPlan(self.xdim, self.ydim, uv_finufft, eps=eps)
+        self.plan = FINUFFTPlan(self.xdim, self.ydim, uv_finufft, eps=eps, nthreads=nthreads)
 
         phases = np.exp(-1j*np.pi*(uv_scaled[:, 0] + uv_scaled[:, 1]))
         pulses = np.fromiter((pulse(2*np.pi*uv_scaled[i, 0], 2*np.pi*uv_scaled[i, 1], 1., dom="F")
