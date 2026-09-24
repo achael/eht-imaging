@@ -23,6 +23,7 @@
 
 import copy
 import time
+import warnings
 from dataclasses import dataclass
 from typing import Any
 
@@ -33,6 +34,7 @@ import ehtim.image
 import ehtim.imaging.imager_utils as imutils
 import ehtim.imaging.pol_imager_utils as polutils
 import ehtim.observing.obs_helpers as obsh
+import ehtim.warnings as ehw
 from ehtim.const_def import (
     FFT_INTERP_DEFAULT,
     FFT_PAD_DEFAULT,
@@ -531,7 +533,23 @@ class Imager:
         if shard and (optimizer is None or classify_optimizer(optimizer) != 'optax'):
             raise ValueError(
                 "shard=True runs the sharded objective on-device, which needs an optax "
-                "optimizer; pass optimizer='optax-lbfgs' (or another optax optimizer).")
+                "optimizer; pass optimizer='optax-lbfgs-bt' (or another optax optimizer).")
+        # Sharded nfft evaluations run the jax-finufft FFI, whose per-invocation cuFFT
+        # plan creation can trip a CUDA driver livelock (an unbounded spin in
+        # cuModuleLoadData; not an ehtim or XLA defect). Every extra objective
+        # evaluation is another chance to trip it, and the zoom line search evaluates
+        # many more times per step than backtracking. Recommend rather than switch,
+        # matching the rule above: do not silently override a chosen optimizer.
+        if shard and isinstance(optimizer, str) and optimizer.lower() == 'optax-lbfgs':
+            warnings.warn(
+                "shard=True with optimizer='optax-lbfgs' uses the zoom line search, "
+                "which multiplies objective evaluations per step. On sharded nfft "
+                "runs each evaluation can trigger a known CUDA driver livelock in "
+                "cuFFT plan loading (via jax-finufft), so more evaluations mean more "
+                "chances to hang: measured 14/16 runs against 2/16 with backtracking "
+                "on a three-term objective, and 5/5 on a single closure term. Prefer "
+                "optimizer='optax-lbfgs-bt'.",
+                ehw.ShardedLineSearchWarning, stacklevel=2)
         # (the optax path builds the jax objective itself in build_vg_ondevice below, so the
         #  user's use_jax flag is irrelevant there and is left untouched.)
 

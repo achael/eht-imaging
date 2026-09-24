@@ -1,5 +1,13 @@
 # Changelog
 
+## Unreleased
+
+- `make_image(shard=True)` now recommends `optimizer='optax-lbfgs-bt'` and warns
+  (`ShardedLineSearchWarning`) when the zoom line search is chosen for a sharded
+  run: sharded nfft evaluations can trip a CUDA driver livelock in cuFFT plan
+  loading (via jax-finufft), and zoom's extra evaluations multiply the exposure
+  (measured 14/16 hangs vs 2/16 with backtracking).
+
 ## v1.4.0 (2026-06-02)
 
 ### Highlights
