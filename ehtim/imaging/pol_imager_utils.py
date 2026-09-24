@@ -219,7 +219,7 @@ def mcv(imarr):
     """
 
     xp = array_namespace(imarr)
-    vfrac = imarr[3] # when using this transform, we interpret transformed imarr[3] as mfrac=\rho sin(\psi)
+    vfrac = imarr[3] # when using this transform, transformed imarr[3] is the fixed vfrac=\rho sin(\psi)
     mfrac_max = 1-xp.abs(vfrac)
 
     # transformed imarr[1] is m' --> the transformed mfrac = \rho cos(\psi)
@@ -817,7 +817,7 @@ def chisqgrad_vvis_nfft(imarr, A, v, sigmav,pol_solve=POL_SOLVE_DEFAULT):
 # Each returns the penalty value (defined positive; cf the old entropy style negative regularizers).
 # Spatial regularizers (ptv, vtv, vtv2) use `embed_imarr` (not `embed`) for the pre-step
 # and slice the gradient as `g[:, mask]` since the pol gradient is shaped (4, nimage)
-# — one row per Stokes component, gated on `pol_solve[0..3]`.
+# one row per Stokes component, gated on `pol_solve[0..3]`.
 ##################################################################################################
 
 def reg_msimple(imarr, mask, **kwargs):

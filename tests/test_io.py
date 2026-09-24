@@ -79,7 +79,9 @@ def test_fill_nan_sigmas_order_dependent():
 # so these run in CI; two guarded tests use the real HL Tau files when present.
 # ---------------------------------------------------------------------------
 
-_HLTAU = "/scratch/year/rdahale/jax-ehtim/benchmarks/hltau_example"
+# Large reference dataset, not in the repo. Point EHTIM_HLTAU_DIR at a local copy to
+# run these; they skip otherwise, so a fresh clone is green without it.
+_HLTAU = os.environ.get("EHTIM_HLTAU_DIR", "")
 _HLTAU_SINGLE = os.path.join(_HLTAU, "hltau_mf_223.8.uvfits")
 _HLTAU_LINEAR = os.path.join(_HLTAU, "ALMA_data/Band7/HLTau_Band7_spw02_polswap.uvfits")
 

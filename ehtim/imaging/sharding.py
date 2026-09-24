@@ -9,9 +9,13 @@ function with the same signature as the single-device one, so the optax loop in
 There are two ways to divide the work:
 
 - `shard_axis="baseline"` gives each GPU a slice of the visibilities. This is the general
-  case and works for any dataset.
-- `shard_axis="frequency"` gives each GPU a few frequency channels. Only useful for
-  multifrequency data, and you need at least as many channels as GPUs.
+  case: it takes any data term, but only the `direct` and `nfft` transforms (`fast` is
+  rejected).
+- `shard_axis="frequency"` gives each GPU a few frequency channels. Much narrower than it
+  sounds: multifrequency data only (`n_obs > 1` is enforced), dense single-matrix terms
+  only (vis/amp -- closure terms and all of nfft are rejected), and every channel must
+  carry the same number of visibilities. Note the code does not require one channel per
+  GPU; with fewer channels than devices the padding simply leaves some idle.
 
 Padding. jax insists that the split axis divide evenly across the GPUs, and real datasets
 rarely oblige, so each data term is padded up to a multiple of the device count. The padded
@@ -19,8 +23,9 @@ rows have to be inert. Sigma is set to infinity, so the row contributes exactly 
 chi^2, and the operator is set to one rather than zero, so the padded sample stays finite
 (a zero would put us at log(0) or angle(0) in the closure terms). Padding still inflates
 the 1/len(data) normalization, so each chi^2 is scaled back by pad_len/true_len. With that
-in place the sharded objective agrees with the single-device one to the last bit, for the
-linear terms (vis, amp) and the closure terms alike.
+in place the sharded objective agrees with the single-device one to the last bit. That
+holds for the linear terms (vis, amp) and the closure terms alike on the baseline axis;
+the frequency axis accepts only the linear terms in the first place.
 
 Fourier transforms. The `direct` transform simply shards its dense matrix and adds up the
 pieces with shard_map and pmean. The `nfft` transform needs more care: jax_finufft's nufft2

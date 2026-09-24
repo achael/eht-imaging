@@ -2,16 +2,16 @@
 
 Pure-NumPy implementations of three averaging routines:
 
-- :func:`coh_avg_vis` — coherent (complex) averaging into fixed time bins
+- :func:`coh_avg_vis`: coherent (complex) averaging into fixed time bins
   or per scan.
-- :func:`coh_moving_avg_vis` — coherent moving-window averaging.
-- :func:`incoh_avg_vis` — incoherent (amplitude) averaging with Rice
+- :func:`coh_moving_avg_vis`: coherent moving-window averaging.
+- :func:`incoh_avg_vis`: incoherent (amplitude) averaging with Rice
   debiasing.
 
 ``invvar_avg`` selects the value+sigma estimator pair on each routine.
 Both halves are gated together so each branch is internally consistent:
 
-  - ``invvar_avg=True`` (default) — inverse-variance weighted mean and
+  - ``invvar_avg=True`` (default): inverse-variance weighted mean and
     inverse-variance sigma:
 
     .. math:: \\langle V \\rangle = \\sum_i (V_i / \\sigma_i^2) / \\sum_i (1 / \\sigma_i^2)
@@ -22,7 +22,7 @@ Both halves are gated together so each branch is internally consistent:
     ``sqrt(max(<|V|^2>_w - (2 - 1/N) <sigma^2>_w, 0))``; the sigma is the
     same inverse-variance formula above.
 
-  - ``invvar_avg=False`` — legacy estimator formulas:
+  - ``invvar_avg=False``: legacy estimator formulas:
 
     * ``coh_avg_vis``: direct (unweighted) complex mean with
       ``sigma_avg = sqrt(sum sigma_i^2) / N``. Reproduces
@@ -109,7 +109,7 @@ def _assign_scan_bin(times_hr, scans):
     only, not both.
 
     Legacy behaviors deliberately NOT ported from
-    ``dataframes.get_bins_labels`` — flagged here in case a real dataset
+    ``dataframes.get_bins_labels``, flagged here in case a real dataset
     ever needs them back:
 
       1. **Edge padding.** The legacy default expanded each scan edge by
@@ -198,7 +198,7 @@ def _inverse_variance_weights(sig_per_row):
 def _window_sums(values, left, right):
     """Sliding-window segment sums for half-open index ranges ``[left, right)``.
 
-    ``cs[right] - cs[left]`` over a zero-prefixed cumulative sum — the
+    ``cs[right] - cs[left]`` over a zero-prefixed cumulative sum: the
     overlapping-window analogue of ``np.bincount`` over disjoint groups.
     Relies on float64 accumulation: the ``cs[right] - cs[left]``
     subtraction loses precision if ported to float32 (catastrophic
@@ -247,7 +247,7 @@ def _combine_sigma_inverse_variance(sum_w):
 def _combine_sigma_legacy(sum_sq, count):
     """Legacy sigma from segment sums: ``sqrt(sum(sigma**2)) / N``.
 
-    The formula used by ``dataframes.coh_avg_vis`` — NOT inverse variance;
+    The formula used by ``dataframes.coh_avg_vis``: NOT inverse variance;
     kept so ``invvar_avg=False`` reproduces legacy output bit-for-bit.
     Segments with no finite rows get ``NaN``.
     """
@@ -397,8 +397,8 @@ def _inverse_variance_mean_amplitude_group(amps_per_row, sigs_per_row, gids,
     weights: since ``w_i * sigma_i**2 = 1``, ``<sigma**2>_w = N / sum(w_i)``
     and the correction simplifies to ``(2N - 1) / sum(w_i)``. In the
     equal-sigma limit the amplitude reduces exactly to ``stats.deb_amp``;
-    the sigma does NOT reduce to ``stats.inc_sig`` — different estimator
-    families — see module docstring.
+    the sigma does NOT reduce to ``stats.inc_sig``: different estimator
+    families, see module docstring.
 
     Parameters
     ----------
