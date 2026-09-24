@@ -220,6 +220,7 @@ class Imager:
 
         # Imager history
         self._change_imgr_params = True
+        self._data_sig_at_build = None
         self.nruns = 0
 
         # Bundled static config consumed by the backend. Must be rebuilt via
@@ -439,7 +440,7 @@ class Imager:
 
         return self.out_last()
 
-    def make_image(self, pol=None, grads=True, mf=False, **kwargs):
+    def make_image(self, pol=None, grads=True, mf=None, **kwargs):
         """Make an image using current imager settings.
 
            Args:
@@ -475,6 +476,9 @@ class Imager:
             mf_rm=kwargs.get('mf_rm', mf_cfg.mf_rm),
             mf_cm=kwargs.get('mf_cm', mf_cfg.mf_cm),
         )
+        # mf=None keeps whatever the constructor was given; the old False default
+        # silently turned off a multifrequency imager on its first run
+        mf = self._config.mf if mf is None else mf
         self._config = self._config._replace(mf=mf, mf_config=new_mf_cfg)
         if kwargs.get('mf_which_solve') is not None:
             raise Exception("'mf_which_solve' argument for multifrequency imaging is deprecated -- use 'mf_order' instead!")
@@ -633,7 +637,12 @@ class Imager:
             self.freq_list,
         )
 
-        # Determine if we need to recompute the saved imager parameters on the next imager run
+        # Determine if we need to recompute the saved imager parameters on the next imager run.
+        # This compares against the settings the products were built with rather than against
+        # the last run, so it also catches attributes assigned before the first make_image.
+        # The history comparisons below stay for the diagnostics they print.
+        self._mark_stale_if_settings_changed()
+
         if self.nruns == 0:
             return
 
@@ -756,6 +765,8 @@ class Imager:
                 "len(_logfreqratio_list) must all match."
             )
 
+        self._mark_stale_if_settings_changed()
+
         if self._change_imgr_params:
             msg = ("Initializing imager data products . . ."
                    if self.nruns == 0
@@ -785,6 +796,7 @@ class Imager:
 
         if self._change_imgr_params:
             self._change_imgr_params = False
+        self._data_sig_at_build = self._data_signature()
 
     def make_chisq_dict(self, imcur):
         """Make a dictionary of current chi^2 term values
@@ -836,6 +848,50 @@ class Imager:
             systematic_cphase_noise=self.systematic_cphase_noise_next,
             cp_uv_min=self.cp_uv_min,
         )
+
+    def _data_signature(self):
+        """Snapshot of every setting that feeds the imager data products.
+
+        `check_params` compares this against the value taken when the products were last
+        built, so a setting marks them stale whether it arrived as a constructor kwarg or
+        was assigned afterwards. The mutable pieces are copied: an edit in place would
+        otherwise compare equal to itself.
+
+        Returns
+        -------
+        tuple
+            Comparable snapshot of the data-affecting settings.
+        """
+        # transforms is an ndarray, so the config cannot be compared as-is
+        config = self._config._replace(transforms=tuple(self._config.transforms))
+        weighting = self._data_weighting_params()
+        # snrcut and systematic_noise can both be per-term/per-site dicts
+        weighting = weighting._replace(
+            snrcut=dict(weighting.snrcut),
+            systematic_noise=(dict(weighting.systematic_noise)
+                              if isinstance(weighting.systematic_noise, dict)
+                              else weighting.systematic_noise))
+        # key the prior by value, not identity: make_image reassigns it through
+        # switch_polrep on every polarimetric call, and that copies even when the polrep
+        # already matches, so identity would rebuild the operators every run. Only the
+        # geometry and the embed mask reach the data products.
+        prior_key = (self.prior_next.xdim, self.prior_next.ydim, self.prior_next.psize,
+                     self.prior_next.pulse,
+                     (np.asarray(self.prior_next.imvec) > self.clipfloor_next).tobytes())
+        return (tuple(self.obslist_next), prior_key, tuple(self.freq_list),
+                self.reffreq, config, self.clipfloor_next,
+                tuple(sorted(self.dat_term_next.keys())), weighting,
+                self._fft_params())
+
+    def _mark_stale_if_settings_changed(self):
+        """Flag the data products for rebuild when a setting that feeds them has changed.
+
+        Called from both `check_params` and `init_imager` so the products are right
+        whichever one the caller reaches first.
+        """
+        if (getattr(self, "_data_sig_at_build", None) is None
+                or self._data_signature() != self._data_sig_at_build):
+            self._change_imgr_params = True
 
     def _fft_params(self):
         """Bundle Fourier-grid params into a FourierGridParams NamedTuple for the backend."""
@@ -1044,13 +1100,15 @@ class Imager:
 
     def _append_image_history(self, outim, logstr):
         self.logstr += (logstr + "\n")
+        # copy the mutable containers: storing them live made a later in-place edit
+        # compare equal to itself, so change detection could never see it
         self._history.append(ImagerRunState(
             out=outim,
-            obslist=self.obslist_next,
+            obslist=list(self.obslist_next),
             init=self.init_next,
             prior=self.prior_next,
-            reg_term=self.reg_term_next,
-            dat_term=self.dat_term_next,
+            reg_term=dict(self.reg_term_next),
+            dat_term=dict(self.dat_term_next),
             maxit=self.maxit_next,
             stop=self.stop_next,
             pol=self._config.pol,
@@ -1058,9 +1116,11 @@ class Imager:
             pflux=self.pflux_next,
             vflux=self.vflux_next,
             clipfloor=self.clipfloor_next,
-            snrcut=self.snrcut_next,
+            snrcut=dict(self.snrcut_next),
             debias=self.debias_next,
-            systematic_noise=self.systematic_noise_next,
+            systematic_noise=(dict(self.systematic_noise_next)
+                              if isinstance(self.systematic_noise_next, dict)
+                              else self.systematic_noise_next),
             systematic_cphase_noise=self.systematic_cphase_noise_next,
             transform=self._config.transforms,
             weighting=self.weighting_next,
