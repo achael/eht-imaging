@@ -559,7 +559,15 @@ def transform_gradients(gradarr, imarr, transforms, which_solve):
     return outarr
 
 
-def physical_grad_slots(pol_solve, transforms):
+# Multifrequency pol imarr layout: 4 physical rows then 6 spectral ones. Each spectral row
+# reaches the objective only through the physical slot listed here.
+MF_POL_ROWS = 10
+MF_SPECTRAL_ROWS = {0: slice(4, 6),   # alpha, beta   -> I
+                    1: slice(6, 8),   # alpha_pol, beta_pol -> rho
+                    2: slice(8, 9)}   # rm            -> phi
+
+
+def physical_grad_slots(pol_solve, transforms, mf_solve=None):
     """Physical gradout slots the gradient kernels must fill, given the DOF mask.
 
     pol_solve is the 4-wide Stokes DOF mask (I, rho/m', chi, psi/v'); the chisq
@@ -572,6 +580,22 @@ def physical_grad_slots(pol_solve, transforms):
     The transform <-> pol-mode pairing this branches on (mcv for P/QU/IP/IQU,
     vcv for V/IV, polcv for IPV/IQUV) is enforced in validate_params, so the
     mcv/vcv checks here are unambiguous and mutually exclusive.
+
+    Parameters
+    ----------
+    pol_solve : sequence of int
+        Stokes DOF mask, 4-wide for a polarization mode and shorter for single-pol.
+    transforms : sequence of str
+        Active change-of-variables names; only 'mcv' and 'vcv' widen the mask.
+    mf_solve : sequence of int, optional
+        Full solved-DOF mask when this is a multifrequency run. Spectral rows reach the
+        objective only through a physical slot, so a solved spectral row needs that slot
+        filled even when the slot is not a DOF itself.
+
+    Returns
+    -------
+    mask : np.ndarray of int
+        Physical slots the gradient kernel must populate.
     """
     mask = np.array(pol_solve, dtype=int).copy()
     # Cross-coupling only exists for the full 4-wide Stokes block. Single-pol
@@ -580,6 +604,14 @@ def physical_grad_slots(pol_solve, transforms):
     # check alone is not enough. Mirror transform_gradients' shape gating.
     if len(mask) < 4:
         return mask
+    if mf_solve is not None:
+        ms = np.asarray(mf_solve)
+        if len(ms) == MF_POL_ROWS:
+            # Only slot 0 can be starved today (pol='P' holds I fixed), but treat all three
+            # alike so a future mode fixing rho0 or phi0 does not hit this again.
+            for slot, rows in MF_SPECTRAL_ROWS.items():
+                if np.any(ms[rows]):
+                    mask[slot] = 1
     if 'mcv' in transforms and pol_solve[1]:     # m' (slot 1) -> rho AND psi
         mask[1] = 1
         mask[3] = 1
@@ -1569,7 +1601,8 @@ def compute_chisqgrad_dict(imcur, dat_term_keys, config,
 
     chi2grad_dict = {}
     pol_solve = _pol_solve_block(which_solve, pol)
-    pol_grad_slots = physical_grad_slots(pol_solve, config.transforms)
+    pol_grad_slots = physical_grad_slots(
+        pol_solve, config.transforms, mf_solve=which_solve if mf else None)
     # np.array((...)) below copies, so sharing zero_row across iterations is safe.
     zero_row = np.zeros(nimage)
     is_pol_mode = pol in POLARIZATION_MODES
@@ -1736,6 +1769,9 @@ def compute_reggrad_dict(imcur, reg_term_keys, config,
 
         if mf:
             if regname in REGULARIZERS_POL:
+                # Zero spectral rows are deliberate: this runs on the reference-frequency
+                # image only, so it has no alpha/beta dependence, and the value side agrees.
+                # The '_mf' variants below are the ones that see every frequency.
                 pol_grad_slots = physical_grad_slots(
                     _pol_solve_block(which_solve, pol), config.transforms)
                 regp = compute_regularizergrad_term(
