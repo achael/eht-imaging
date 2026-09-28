@@ -2993,6 +2993,7 @@ def chisqdata_vis_nfft(Obsdata, Prior, pol='I', **kwargs):
     fft_pad_factor = kwargs.get('fft_pad_factor', ehc.FFT_PAD_DEFAULT)
     p_rad = kwargs.get('p_rad', ehc.GRIDDER_P_RAD_DEFAULT)
     nfft_eps = kwargs.get('nfft_eps', ehc.NFFT_EPS_DEFAULT)
+    nfft_nthreads = kwargs.get('nfft_nthreads', ehc.NFFT_NTHREADS_DEFAULT)
 
     # unpack data
     vtype = ehc.vis_poldict[pol]
@@ -3007,7 +3008,8 @@ def chisqdata_vis_nfft(Obsdata, Prior, pol='I', **kwargs):
 
     # get NFFT info
     npad = int(fft_pad_factor * np.max((Prior.xdim, Prior.ydim)))
-    A1 = obsh.NFFTInfo(Prior.xdim, Prior.ydim, Prior.psize, Prior.pulse, npad, p_rad, uv, eps=nfft_eps)
+    A1 = obsh.NFFTInfo(Prior.xdim, Prior.ydim, Prior.psize, Prior.pulse, npad, p_rad, uv,
+                       eps=nfft_eps, nthreads=nfft_nthreads)
     A = [A1]
 
     return (vis, sigma, A)
@@ -3027,6 +3029,7 @@ def chisqdata_amp_nfft(Obsdata, Prior, pol='I', **kwargs):
     fft_pad_factor = kwargs.get('fft_pad_factor', ehc.FFT_PAD_DEFAULT)
     p_rad = kwargs.get('p_rad', ehc.GRIDDER_P_RAD_DEFAULT)
     nfft_eps = kwargs.get('nfft_eps', ehc.NFFT_EPS_DEFAULT)
+    nfft_nthreads = kwargs.get('nfft_nthreads', ehc.NFFT_NTHREADS_DEFAULT)
 
     # unpack data
     vtype = ehc.vis_poldict[pol]
@@ -3043,7 +3046,8 @@ def chisqdata_amp_nfft(Obsdata, Prior, pol='I', **kwargs):
 
     # get NFFT info
     npad = int(fft_pad_factor * np.max((Prior.xdim, Prior.ydim)))
-    A1 = obsh.NFFTInfo(Prior.xdim, Prior.ydim, Prior.psize, Prior.pulse, npad, p_rad, uv, eps=nfft_eps)
+    A1 = obsh.NFFTInfo(Prior.xdim, Prior.ydim, Prior.psize, Prior.pulse, npad, p_rad, uv,
+                       eps=nfft_eps, nthreads=nfft_nthreads)
     A = [A1]
 
     return (amp, sigma, A)
@@ -3067,6 +3071,7 @@ def chisqdata_bs_nfft(Obsdata, Prior, pol='I', **kwargs):
     fft_pad_factor = kwargs.get('fft_pad_factor', ehc.FFT_PAD_DEFAULT)
     p_rad = kwargs.get('p_rad', ehc.GRIDDER_P_RAD_DEFAULT)
     nfft_eps = kwargs.get('nfft_eps', ehc.NFFT_EPS_DEFAULT)
+    nfft_nthreads = kwargs.get('nfft_nthreads', ehc.NFFT_NTHREADS_DEFAULT)
 
     # unpack data
     vtype = ehc.vis_poldict[pol]
@@ -3084,9 +3089,12 @@ def chisqdata_bs_nfft(Obsdata, Prior, pol='I', **kwargs):
 
     # get NFFT info
     npad = int(fft_pad_factor * np.max((Prior.xdim, Prior.ydim)))
-    A1 = obsh.NFFTInfo(Prior.xdim, Prior.ydim, Prior.psize, Prior.pulse, npad, p_rad, uv1, eps=nfft_eps)
-    A2 = obsh.NFFTInfo(Prior.xdim, Prior.ydim, Prior.psize, Prior.pulse, npad, p_rad, uv2, eps=nfft_eps)
-    A3 = obsh.NFFTInfo(Prior.xdim, Prior.ydim, Prior.psize, Prior.pulse, npad, p_rad, uv3, eps=nfft_eps)
+    A1 = obsh.NFFTInfo(Prior.xdim, Prior.ydim, Prior.psize, Prior.pulse, npad, p_rad, uv1,
+                       eps=nfft_eps, nthreads=nfft_nthreads)
+    A2 = obsh.NFFTInfo(Prior.xdim, Prior.ydim, Prior.psize, Prior.pulse, npad, p_rad, uv2,
+                       eps=nfft_eps, nthreads=nfft_nthreads)
+    A3 = obsh.NFFTInfo(Prior.xdim, Prior.ydim, Prior.psize, Prior.pulse, npad, p_rad, uv3,
+                       eps=nfft_eps, nthreads=nfft_nthreads)
     A = [A1, A2, A3]
 
     return (bi, sigma, A)
@@ -3112,6 +3120,7 @@ def chisqdata_cphase_nfft(Obsdata, Prior, pol='I', **kwargs):
     fft_pad_factor = kwargs.get('fft_pad_factor', ehc.FFT_PAD_DEFAULT)
     p_rad = kwargs.get('p_rad', ehc.GRIDDER_P_RAD_DEFAULT)
     nfft_eps = kwargs.get('nfft_eps', ehc.NFFT_EPS_DEFAULT)
+    nfft_nthreads = kwargs.get('nfft_nthreads', ehc.NFFT_NTHREADS_DEFAULT)
 
     # unpack data
     vtype = ehc.vis_poldict[pol]
@@ -3133,9 +3142,12 @@ def chisqdata_cphase_nfft(Obsdata, Prior, pol='I', **kwargs):
 
     # get NFFT info
     npad = int(fft_pad_factor * np.max((Prior.xdim, Prior.ydim)))
-    A1 = obsh.NFFTInfo(Prior.xdim, Prior.ydim, Prior.psize, Prior.pulse, npad, p_rad, uv1, eps=nfft_eps)
-    A2 = obsh.NFFTInfo(Prior.xdim, Prior.ydim, Prior.psize, Prior.pulse, npad, p_rad, uv2, eps=nfft_eps)
-    A3 = obsh.NFFTInfo(Prior.xdim, Prior.ydim, Prior.psize, Prior.pulse, npad, p_rad, uv3, eps=nfft_eps)
+    A1 = obsh.NFFTInfo(Prior.xdim, Prior.ydim, Prior.psize, Prior.pulse, npad, p_rad, uv1,
+                       eps=nfft_eps, nthreads=nfft_nthreads)
+    A2 = obsh.NFFTInfo(Prior.xdim, Prior.ydim, Prior.psize, Prior.pulse, npad, p_rad, uv2,
+                       eps=nfft_eps, nthreads=nfft_nthreads)
+    A3 = obsh.NFFTInfo(Prior.xdim, Prior.ydim, Prior.psize, Prior.pulse, npad, p_rad, uv3,
+                       eps=nfft_eps, nthreads=nfft_nthreads)
     A = [A1, A2, A3]
 
     return (clphase, sigma, A)
@@ -3159,6 +3171,7 @@ def chisqdata_cphase_diag_nfft(Obsdata, Prior, pol='I', **kwargs):
     fft_pad_factor = kwargs.get('fft_pad_factor', ehc.FFT_PAD_DEFAULT)
     p_rad = kwargs.get('p_rad', ehc.GRIDDER_P_RAD_DEFAULT)
     nfft_eps = kwargs.get('nfft_eps', ehc.NFFT_EPS_DEFAULT)
+    nfft_nthreads = kwargs.get('nfft_nthreads', ehc.NFFT_NTHREADS_DEFAULT)
 
     # unpack data
     vtype = ehc.vis_poldict[pol]
@@ -3206,9 +3219,12 @@ def chisqdata_cphase_diag_nfft(Obsdata, Prior, pol='I', **kwargs):
 
     # get NFFT info
     npad = int(fft_pad_factor * np.max((Prior.xdim, Prior.ydim)))
-    A1 = obsh.NFFTInfo(Prior.xdim, Prior.ydim, Prior.psize, Prior.pulse, npad, p_rad, uv1, eps=nfft_eps)
-    A2 = obsh.NFFTInfo(Prior.xdim, Prior.ydim, Prior.psize, Prior.pulse, npad, p_rad, uv2, eps=nfft_eps)
-    A3 = obsh.NFFTInfo(Prior.xdim, Prior.ydim, Prior.psize, Prior.pulse, npad, p_rad, uv3, eps=nfft_eps)
+    A1 = obsh.NFFTInfo(Prior.xdim, Prior.ydim, Prior.psize, Prior.pulse, npad, p_rad, uv1,
+                       eps=nfft_eps, nthreads=nfft_nthreads)
+    A2 = obsh.NFFTInfo(Prior.xdim, Prior.ydim, Prior.psize, Prior.pulse, npad, p_rad, uv2,
+                       eps=nfft_eps, nthreads=nfft_nthreads)
+    A3 = obsh.NFFTInfo(Prior.xdim, Prior.ydim, Prior.psize, Prior.pulse, npad, p_rad, uv3,
+                       eps=nfft_eps, nthreads=nfft_nthreads)
     A = [A1, A2, A3]
 
     # Stack the per-time-block decorrelating transforms into one block-diagonal
@@ -3237,6 +3253,7 @@ def chisqdata_camp_nfft(Obsdata, Prior, pol='I', **kwargs):
     fft_pad_factor = kwargs.get('fft_pad_factor', ehc.FFT_PAD_DEFAULT)
     p_rad = kwargs.get('p_rad', ehc.GRIDDER_P_RAD_DEFAULT)
     nfft_eps = kwargs.get('nfft_eps', ehc.NFFT_EPS_DEFAULT)
+    nfft_nthreads = kwargs.get('nfft_nthreads', ehc.NFFT_NTHREADS_DEFAULT)
 
     # unpack data
     vtype = ehc.vis_poldict[pol]
@@ -3256,10 +3273,14 @@ def chisqdata_camp_nfft(Obsdata, Prior, pol='I', **kwargs):
 
     # get NFFT info
     npad = int(fft_pad_factor * np.max((Prior.xdim, Prior.ydim)))
-    A1 = obsh.NFFTInfo(Prior.xdim, Prior.ydim, Prior.psize, Prior.pulse, npad, p_rad, uv1, eps=nfft_eps)
-    A2 = obsh.NFFTInfo(Prior.xdim, Prior.ydim, Prior.psize, Prior.pulse, npad, p_rad, uv2, eps=nfft_eps)
-    A3 = obsh.NFFTInfo(Prior.xdim, Prior.ydim, Prior.psize, Prior.pulse, npad, p_rad, uv3, eps=nfft_eps)
-    A4 = obsh.NFFTInfo(Prior.xdim, Prior.ydim, Prior.psize, Prior.pulse, npad, p_rad, uv4, eps=nfft_eps)
+    A1 = obsh.NFFTInfo(Prior.xdim, Prior.ydim, Prior.psize, Prior.pulse, npad, p_rad, uv1,
+                       eps=nfft_eps, nthreads=nfft_nthreads)
+    A2 = obsh.NFFTInfo(Prior.xdim, Prior.ydim, Prior.psize, Prior.pulse, npad, p_rad, uv2,
+                       eps=nfft_eps, nthreads=nfft_nthreads)
+    A3 = obsh.NFFTInfo(Prior.xdim, Prior.ydim, Prior.psize, Prior.pulse, npad, p_rad, uv3,
+                       eps=nfft_eps, nthreads=nfft_nthreads)
+    A4 = obsh.NFFTInfo(Prior.xdim, Prior.ydim, Prior.psize, Prior.pulse, npad, p_rad, uv4,
+                       eps=nfft_eps, nthreads=nfft_nthreads)
     A = [A1, A2, A3, A4]
 
     return (clamp, sigma, A)
@@ -3284,6 +3305,7 @@ def chisqdata_logcamp_nfft(Obsdata, Prior, pol='I', **kwargs):
     fft_pad_factor = kwargs.get('fft_pad_factor', ehc.FFT_PAD_DEFAULT)
     p_rad = kwargs.get('p_rad', ehc.GRIDDER_P_RAD_DEFAULT)
     nfft_eps = kwargs.get('nfft_eps', ehc.NFFT_EPS_DEFAULT)
+    nfft_nthreads = kwargs.get('nfft_nthreads', ehc.NFFT_NTHREADS_DEFAULT)
 
     # unpack data
     vtype = ehc.vis_poldict[pol]
@@ -3303,10 +3325,14 @@ def chisqdata_logcamp_nfft(Obsdata, Prior, pol='I', **kwargs):
 
     # get NFFT info
     npad = int(fft_pad_factor * np.max((Prior.xdim, Prior.ydim)))
-    A1 = obsh.NFFTInfo(Prior.xdim, Prior.ydim, Prior.psize, Prior.pulse, npad, p_rad, uv1, eps=nfft_eps)
-    A2 = obsh.NFFTInfo(Prior.xdim, Prior.ydim, Prior.psize, Prior.pulse, npad, p_rad, uv2, eps=nfft_eps)
-    A3 = obsh.NFFTInfo(Prior.xdim, Prior.ydim, Prior.psize, Prior.pulse, npad, p_rad, uv3, eps=nfft_eps)
-    A4 = obsh.NFFTInfo(Prior.xdim, Prior.ydim, Prior.psize, Prior.pulse, npad, p_rad, uv4, eps=nfft_eps)
+    A1 = obsh.NFFTInfo(Prior.xdim, Prior.ydim, Prior.psize, Prior.pulse, npad, p_rad, uv1,
+                       eps=nfft_eps, nthreads=nfft_nthreads)
+    A2 = obsh.NFFTInfo(Prior.xdim, Prior.ydim, Prior.psize, Prior.pulse, npad, p_rad, uv2,
+                       eps=nfft_eps, nthreads=nfft_nthreads)
+    A3 = obsh.NFFTInfo(Prior.xdim, Prior.ydim, Prior.psize, Prior.pulse, npad, p_rad, uv3,
+                       eps=nfft_eps, nthreads=nfft_nthreads)
+    A4 = obsh.NFFTInfo(Prior.xdim, Prior.ydim, Prior.psize, Prior.pulse, npad, p_rad, uv4,
+                       eps=nfft_eps, nthreads=nfft_nthreads)
     A = [A1, A2, A3, A4]
 
     return (clamp, sigma, A)
@@ -3330,6 +3356,7 @@ def chisqdata_logcamp_diag_nfft(Obsdata, Prior, pol='I', **kwargs):
     fft_pad_factor = kwargs.get('fft_pad_factor', ehc.FFT_PAD_DEFAULT)
     p_rad = kwargs.get('p_rad', ehc.GRIDDER_P_RAD_DEFAULT)
     nfft_eps = kwargs.get('nfft_eps', ehc.NFFT_EPS_DEFAULT)
+    nfft_nthreads = kwargs.get('nfft_nthreads', ehc.NFFT_NTHREADS_DEFAULT)
 
     # unpack data & mask low snr points
     vtype = ehc.vis_poldict[pol]
@@ -3384,10 +3411,14 @@ def chisqdata_logcamp_diag_nfft(Obsdata, Prior, pol='I', **kwargs):
 
     # get NFFT info
     npad = int(fft_pad_factor * np.max((Prior.xdim, Prior.ydim)))
-    A1 = obsh.NFFTInfo(Prior.xdim, Prior.ydim, Prior.psize, Prior.pulse, npad, p_rad, uv1, eps=nfft_eps)
-    A2 = obsh.NFFTInfo(Prior.xdim, Prior.ydim, Prior.psize, Prior.pulse, npad, p_rad, uv2, eps=nfft_eps)
-    A3 = obsh.NFFTInfo(Prior.xdim, Prior.ydim, Prior.psize, Prior.pulse, npad, p_rad, uv3, eps=nfft_eps)
-    A4 = obsh.NFFTInfo(Prior.xdim, Prior.ydim, Prior.psize, Prior.pulse, npad, p_rad, uv4, eps=nfft_eps)
+    A1 = obsh.NFFTInfo(Prior.xdim, Prior.ydim, Prior.psize, Prior.pulse, npad, p_rad, uv1,
+                       eps=nfft_eps, nthreads=nfft_nthreads)
+    A2 = obsh.NFFTInfo(Prior.xdim, Prior.ydim, Prior.psize, Prior.pulse, npad, p_rad, uv2,
+                       eps=nfft_eps, nthreads=nfft_nthreads)
+    A3 = obsh.NFFTInfo(Prior.xdim, Prior.ydim, Prior.psize, Prior.pulse, npad, p_rad, uv3,
+                       eps=nfft_eps, nthreads=nfft_nthreads)
+    A4 = obsh.NFFTInfo(Prior.xdim, Prior.ydim, Prior.psize, Prior.pulse, npad, p_rad, uv4,
+                       eps=nfft_eps, nthreads=nfft_nthreads)
     A = [A1, A2, A3, A4]
 
     # Stack the per-time-block decorrelating transforms into one block-diagonal

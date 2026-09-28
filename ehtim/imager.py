@@ -39,6 +39,7 @@ from ehtim.const_def import (
     GRIDDER_CONV_FUNC_DEFAULT,
     GRIDDER_P_RAD_DEFAULT,
     NFFT_EPS_DEFAULT,
+    NFFT_NTHREADS_DEFAULT,
 )
 from ehtim.imaging.imager_backend import (
     DATATERMS,
@@ -204,6 +205,7 @@ class Imager:
         self._fft_pad_factor = kwargs.get('fft_pad_factor', FFT_PAD_DEFAULT)
         self._fft_interp_order = kwargs.get('fft_interp_order', FFT_INTERP_DEFAULT)
         self._nfft_eps = kwargs.get('nfft_eps', NFFT_EPS_DEFAULT)
+        self._nfft_nthreads = kwargs.get('nfft_nthreads', NFFT_NTHREADS_DEFAULT)
         self._optimizer = kwargs.get('optimizer', None)
         self._shard = kwargs.get('shard', False)
         self._mesh = kwargs.get('mesh', None)
@@ -845,6 +847,7 @@ class Imager:
             fft_gridder_prad=self._fft_gridder_prad,
             fft_interp_order=self._fft_interp_order,
             nfft_eps=self._nfft_eps,
+            nfft_nthreads=self._nfft_nthreads,
         )
 
     def make_reg_dict(self, imcur):
