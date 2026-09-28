@@ -16,7 +16,6 @@ from ehtim.imaging.imager_backend import (
     ImagerInitState,
     MfConfig,
     RegParams,
-    _pol_solve_block,
     compute_chisq_dict,
     compute_chisq_term,
     compute_chisqdata_term,
@@ -368,30 +367,24 @@ class TestPhysicalGradSlots:
     def test_mf_spectral_rows_widen_their_physical_slot(self):
         # each spectral row reaches the objective only through one physical slot, so solving
         # it requires that slot even when it is not itself a DOF. pol='P' holds I fixed.
-        p_solve = [0, 1, 1, 0]
         alpha = [0, 1, 1, 0, 1, 0, 0, 0, 0, 0]        # Stokes-I spectral index -> slot 0
         np.testing.assert_array_equal(
-            physical_grad_slots(p_solve, [], mf_solve=alpha), [1, 1, 1, 0])
+            physical_grad_slots(alpha, []), [1, 1, 1, 0])
 
         # and the same for the rows that are only safe today because compute_which_solve
         # happens to hardcode do_rho / do_phi to 1
         alpha_pol = [0, 0, 0, 0, 0, 0, 1, 0, 0, 0]    # -> slot 1
         np.testing.assert_array_equal(
-            physical_grad_slots([0, 0, 0, 0], [], mf_solve=alpha_pol), [0, 1, 0, 0])
+            physical_grad_slots(alpha_pol, []), [0, 1, 0, 0])
         rm = [0, 0, 0, 0, 0, 0, 0, 0, 1, 0]           # -> slot 2
         np.testing.assert_array_equal(
-            physical_grad_slots([0, 0, 0, 0], [], mf_solve=rm), [0, 0, 1, 0])
+            physical_grad_slots(rm, []), [0, 0, 1, 0])
 
     def test_mf_widening_only_for_solved_spectral_rows(self):
         # no spectral row solved -> unchanged; cm (row 9) has no effect on the objective
         no_spectral = [0, 1, 1, 0, 0, 0, 0, 0, 0, 1]
         np.testing.assert_array_equal(
-            physical_grad_slots([0, 1, 1, 0], [], mf_solve=no_spectral), [0, 1, 1, 0])
-
-    def test_mf_widening_ignores_the_stokes_i_layout(self):
-        # the 3-row Stokes-I mf mask runs an ungated kernel and needs no widening
-        np.testing.assert_array_equal(
-            physical_grad_slots([1, 0, 0, 0], [], mf_solve=[1, 1, 1]), [1, 0, 0, 0])
+            physical_grad_slots(no_spectral, []), [0, 1, 1, 0])
 
     def test_single_pol_mask_passthrough_despite_mcv(self):
         # Stokes-I carries 'mcv' in transforms inertly; a sub-4-wide mask has
@@ -3623,51 +3616,6 @@ class TestComputeChisqgradTerm(_ChisqTermFixtures):
         with pytest.raises(Exception, match="requires explicit pol_solve"):
             compute_chisqgrad_term(imcur, 'pvis', A, data, sigma,
                                    ttype='direct', mask=mask)
-
-
-class TestPolSolveBlock:
-    """Tests for _pol_solve_block.
-
-    Slices a polarimetric Stokes block out of which_solve. The function is
-    a seam for the future WhichSolve(stokes, spectral) NamedTuple refactor;
-    today it's a static 4-wide slice for the multifrequency + pol case.
-    """
-
-    def test_singlefreq_stokes_i_passthrough(self):
-        """Single-freq Stokes-I: 1-wide which_solve, non-pol mode -> identity."""
-        ws = np.array([1])
-        out = _pol_solve_block(ws, pol='I')
-        np.testing.assert_array_equal(out, ws)
-
-    def test_singlefreq_pol_passthrough(self):
-        """Single-freq pol: 4-wide which_solve, pol mode -> identity (no slicing needed)."""
-        ws = np.array([1, 1, 1, 0])
-        out = _pol_solve_block(ws, pol='IP')
-        np.testing.assert_array_equal(out, ws)
-
-    def test_multifreq_stokes_i_passthrough(self):
-        """Multifreq Stokes-I: 3-wide which_solve, non-pol mode -> identity."""
-        ws = np.array([1, 1, 1])
-        out = _pol_solve_block(ws, pol='I')
-        np.testing.assert_array_equal(out, ws)
-
-    def test_multifreq_pol_sliced(self):
-        """Multifreq pol: 10-wide which_solve, pol mode -> first 4 entries."""
-        ws = np.array([1, 1, 0, 0, 1, 1, 0, 0, 0, 0])
-        out = _pol_solve_block(ws, pol='IP')
-        np.testing.assert_array_equal(out, ws[:4])
-
-    def test_multifreq_pol_non_pol_mode_passthrough(self):
-        """If pol mode is not in POLARIZATION_MODES, do not slice even if length > 4."""
-        ws = np.array([1, 1, 1, 0, 0, 0, 0, 0, 0, 0])
-        out = _pol_solve_block(ws, pol='I')
-        np.testing.assert_array_equal(out, ws)
-
-    def test_pol_mode_short_which_solve_passthrough(self):
-        """Pol mode but 4-wide which_solve: no slicing (single-frequency case)."""
-        ws = np.array([1, 0, 0, 1])
-        out = _pol_solve_block(ws, pol='IV')
-        np.testing.assert_array_equal(out, ws)
 
 
 class TestComputeRegularizerTerm:

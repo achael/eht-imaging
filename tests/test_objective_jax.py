@@ -338,7 +338,9 @@ def mf_pol_imager(gauss_im_pol, eht_array):
     ]
     imgr = eh.imager.Imager(
         obslist, prior, prior_im=prior, flux=im.total_flux(),
-        data_term={"pvis": 100, "m": 50}, reg_term={"ptv": 1, "l2_alphap": 1},
+        data_term={"pvis": 100, "m": 50},
+        reg_term={"ptv": 1, "l2_alphap": 1, "flux_mf": 1},
+        mf_flux=[0.8 * im.total_flux(), 1.2 * im.total_flux()],
         ttype="direct", pol="P", mf=True, mf_order=1, mf_order_pol=1, mf_rm=1,
         maxit=100, epsilon_tv=EPSILON_TV,
     )

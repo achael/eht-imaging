@@ -32,11 +32,14 @@ from ehtim.imaging.imager_backend import (
     REGULARIZERS_SPECTRAL,
     ImagerConfig,
     MfConfig,
+    RegParams,
     compute_chisq_dict,
     compute_chisq_term,
     compute_chisqdata_term,
     compute_chisqgrad_dict,
     compute_chisqgrad_term,
+    compute_reg_dict,
+    compute_reggrad_dict,
     compute_regularizer_term,
     compute_regularizergrad_term,
     compute_which_solve,
@@ -630,3 +633,41 @@ class TestMfPolChisqGradient:
         assert which_solve.any(), "no slots solved: the setup exercises nothing"
         for slot in np.flatnonzero(which_solve):
             assert_grad_close(analytic[slot], fd[slot], label=f"mf pol chisq slot{slot}")
+
+
+def test_mf_pol_flux_value_and_gradient():
+    """flux_mf constrains Stokes I at each frequency, including its spectral terms."""
+    mfarr = _mfarr_pol(MF_N)
+    lfrs = [0.0, MF_LFR]
+    targets = [12.0, 15.0]
+    config = ImagerConfig(
+        pol="P", transforms=[], ttype="direct", mf=True,
+        mf_config=MfConfig(mf_order=1, mf_order_pol=1, mf_rm=1, mf_cm=0),
+    )
+    params = RegParams(
+        flux=1.0, pflux=None, vflux=None, xdim=6, ydim=4,
+        psize=1.0, beam_size=1.0, mf_flux=targets,
+        major=1.0, minor=1.0, PA=0.0, alpha_A=1.0, epsilon_tv=1e-6,
+    )
+    mask = np.ones(MF_N, dtype=bool)
+    prior = mfarr.copy()
+
+    def value(a):
+        return float(compute_reg_dict(
+            a, ["flux_mf"], config, lfrs, len(lfrs), prior,
+            True, params, mask)["flux_mf"])
+
+    expected = sum(
+        (np.sum(mfarr[0] * np.exp(mfarr[4] * lfr + mfarr[5] * lfr**2)) - flux)**2
+        / flux**2
+        for lfr, flux in zip(lfrs, targets)
+    )
+    np.testing.assert_allclose(value(mfarr), expected, rtol=1e-12)
+
+    analytic = compute_reggrad_dict(
+        mfarr, ["flux_mf"], config, lfrs, len(lfrs), prior,
+        True, params, mask, compute_which_solve(config), MF_N)["flux_mf"]
+    fd = fd_grad(value, mfarr)
+    for slot in (0, 4, 5):
+        assert_grad_close(analytic[slot], fd[slot], label=f"mf pol flux slot{slot}")
+    np.testing.assert_allclose(analytic[[1, 2, 3, 6, 7, 8, 9]], 0.0, atol=ABS_FLOOR)
