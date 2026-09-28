@@ -559,31 +559,56 @@ def transform_gradients(gradarr, imarr, transforms, which_solve):
     return outarr
 
 
-def physical_grad_slots(pol_solve, transforms):
+# Multifrequency pol imarr layout: 4 physical rows then 6 spectral ones. Each spectral row
+# reaches the objective only through the physical slot listed here.
+MF_POL_ROWS = 10
+MF_SPECTRAL_ROWS = {0: slice(4, 6),   # alpha, beta   -> I
+                    1: slice(6, 8),   # alpha_pol, beta_pol -> rho
+                    2: slice(8, 9)}   # rm            -> phi
+
+
+def physical_grad_slots(which_solve, transforms):
     """Physical gradout slots the gradient kernels must fill, given the DOF mask.
 
-    pol_solve is the 4-wide Stokes DOF mask (I, rho/m', chi, psi/v'); the chisq
-    and pol regularizer kernels return gradients in PHYSICAL slots (I, rho, chi,
-    psi). For diagonal transforms (polcv, or none) physical-need == DOF. mcv/vcv
-    are non-diagonal: the single solved pol DOF drives BOTH rho and psi (the
-    cross-term in {mcv,vcv}_grad), so both physical slots must be populated.
-    Mirror of the Jacobian sparsity in transform_gradients -- keep the two in sync.
+    Polarimetric kernels return four physical gradients (I, rho, chi, psi), even
+    when which_solve also contains multifrequency spectral rows. Spectral rows
+    need the physical slot they depend on, and mcv/vcv couple rho and psi.
+    Keep this mask in sync with transform_gradients and mf_all_grads_chain.
 
     The transform <-> pol-mode pairing this branches on (mcv for P/QU/IP/IQU,
     vcv for V/IV, polcv for IPV/IQUV) is enforced in validate_params, so the
     mcv/vcv checks here are unambiguous and mutually exclusive.
+
+    Parameters
+    ----------
+    which_solve : sequence of int
+        Full solved-DOF mask: 1 or 3 rows for Stokes I, 4 for single-frequency
+        polarization, and 10 for multifrequency polarization.
+    transforms : sequence of str
+        Active change-of-variables names; only 'mcv' and 'vcv' widen the mask.
+
+    Returns
+    -------
+    mask : np.ndarray of int
+        Physical slots the gradient kernel must populate; length 4 for a
+        polarization mode.
     """
-    mask = np.array(pol_solve, dtype=int).copy()
+    solve = np.asarray(which_solve)
+    mask = np.array(solve[:4] if len(solve) == MF_POL_ROWS else solve, dtype=int)
     # Cross-coupling only exists for the full 4-wide Stokes block. Single-pol
     # (Stokes-I, possibly mf with [I, alpha, beta]) has no rho/psi DOFs to
     # couple -- and may carry 'mcv' in transforms inertly, so the transform
     # check alone is not enough. Mirror transform_gradients' shape gating.
     if len(mask) < 4:
         return mask
-    if 'mcv' in transforms and pol_solve[1]:     # m' (slot 1) -> rho AND psi
+    if len(solve) == MF_POL_ROWS:
+        for slot, rows in MF_SPECTRAL_ROWS.items():
+            if np.any(solve[rows]):
+                mask[slot] = 1
+    if 'mcv' in transforms and solve[1]:     # m' (slot 1) -> rho AND psi
         mask[1] = 1
         mask[3] = 1
-    elif 'vcv' in transforms and pol_solve[3]:   # v' (slot 3) -> rho AND psi
+    elif 'vcv' in transforms and solve[3]:   # v' (slot 3) -> rho AND psi
         mask[1] = 1
         mask[3] = 1
     return mask
@@ -801,7 +826,7 @@ def validate_params(prior, init, config, dat_term_keys, reg_term_keys, freq_list
                 rlist = REGULARIZERS + REGULARIZERS_POL + REGULARIZERS_SPECTRAL
                 dlist = DATATERMS + DATATERMS_POL
             else:
-                rlist = REGULARIZERS_POL + REGULARIZERS_POLSPECTRAL
+                rlist = REGULARIZERS_POL + REGULARIZERS_POLSPECTRAL + REGULARIZERS_ALLFREQS_I
                 dlist = DATATERMS_POL
         else:
             rlist = REGULARIZERS + REGULARIZERS_ISPECTRAL
@@ -1072,24 +1097,6 @@ def compute_chisqdata_term(obs, prior, mask, dtype, config, **kwargs):
     if ttype == 'direct':
         return helper(obs, prior, mask, pol=pol, **kwargs)
     return helper(obs, prior, pol=pol, **kwargs)
-
-
-def _pol_solve_block(which_solve, pol):
-    """Slice the polarimetric (Stokes) block from which_solve.
-
-    Multi-frequency polarimetric `which_solve` has layout
-    [I, rho, phi, psi, alpha, beta, alpha_p, beta_p, RM, CM] (10 slots);
-    pol chi^2 gradient kernels only consume the first four (the Stokes
-    block). Single-frequency polarimetric which_solve is already 4-wide,
-    so this is a no-op there.
-
-    TODO(Phase 6): replace with a `WhichSolve(stokes, spectral)` NamedTuple
-    so arbitrary spectral layouts do not need this hardcoded slice. Flagged
-    by Andrew in #227.
-    """
-    if pol in POLARIZATION_MODES and len(which_solve) > 4:
-        return which_solve[:4]
-    return which_solve
 
 
 def _lookup_chisq_entry(dtype, ttype):
@@ -1568,8 +1575,7 @@ def compute_chisqgrad_dict(imcur, dat_term_keys, config,
     ttype = config.ttype
 
     chi2grad_dict = {}
-    pol_solve = _pol_solve_block(which_solve, pol)
-    pol_grad_slots = physical_grad_slots(pol_solve, config.transforms)
+    pol_grad_slots = physical_grad_slots(which_solve, config.transforms)
     # np.array((...)) below copies, so sharing zero_row across iterations is safe.
     zero_row = np.zeros(nimage)
     is_pol_mode = pol in POLARIZATION_MODES
@@ -1665,6 +1671,8 @@ def compute_reg_dict(imcur, reg_term_keys, config,
                         logfreqratio = logfreqratio_list[i]
                         imcur_nu = mfutils.image_at_freq(imcur, logfreqratio)
                         prior_nu = mfutils.image_at_freq(priorvec, logfreqratio)
+                        if pol in POLARIZATION_MODES:
+                            imcur_nu, prior_nu = imcur_nu[0], prior_nu[0]
                         reg = reg + compute_regularizer_term(
                             imcur_nu, regname_base, embed_mask,
                             nprior=prior_nu, norm_reg=norm_reg,
@@ -1736,8 +1744,10 @@ def compute_reggrad_dict(imcur, reg_term_keys, config,
 
         if mf:
             if regname in REGULARIZERS_POL:
-                pol_grad_slots = physical_grad_slots(
-                    _pol_solve_block(which_solve, pol), config.transforms)
+                # Zero spectral rows are deliberate: this runs on the reference-frequency
+                # image only, so it has no alpha/beta dependence, and the value side agrees.
+                # The '_mf' variants below are the ones that see every frequency.
+                pol_grad_slots = physical_grad_slots(which_solve, config.transforms)
                 regp = compute_regularizergrad_term(
                     imcur[0:4], regname, embed_mask,
                     pol_solve=pol_grad_slots,
@@ -1758,9 +1768,15 @@ def compute_reggrad_dict(imcur, reg_term_keys, config,
                         imcur_nu = mfutils.image_at_freq(imcur, logfreqratio)
                         prior_nu = mfutils.image_at_freq(priorvec, logfreqratio)
                         regi = compute_regularizergrad_term(
-                            imcur_nu, regname_base, embed_mask,
-                            nprior=prior_nu, norm_reg=norm_reg,
+                            imcur_nu[0] if pol in POLARIZATION_MODES else imcur_nu,
+                            regname_base, embed_mask,
+                            nprior=prior_nu[0] if pol in POLARIZATION_MODES else prior_nu,
+                            norm_reg=norm_reg,
                             **{**reg_kwargs, 'flux': mf_flux[i]})
+                        if pol in POLARIZATION_MODES:
+                            stokes_grad = np.zeros_like(imcur_nu)
+                            stokes_grad[0] = regi
+                            regi = stokes_grad
                         reggrad = reggrad + mfutils.mf_all_grads_chain(
                             regi, imcur_nu, imcur, logfreqratio)
                 else:
@@ -1781,8 +1797,7 @@ def compute_reggrad_dict(imcur, reg_term_keys, config,
                 raise Exception(f"regularizer term {regname} not recognized!")
 
         elif regname in REGULARIZERS_POL:
-            pol_grad_slots = physical_grad_slots(
-                _pol_solve_block(which_solve, pol), config.transforms)
+            pol_grad_slots = physical_grad_slots(which_solve, config.transforms)
             reggrad = compute_regularizergrad_term(
                 imcur, regname, embed_mask,
                 pol_solve=pol_grad_slots, norm_reg=norm_reg, **reg_kwargs)
