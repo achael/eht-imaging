@@ -1,7 +1,7 @@
 """Tests for ehtim regularizer values and boundary/edge-case gradients.
 
 Verifies that all regularizer types return finite (and, for pol/spectral,
-non-zero) values, that the TV-family gradients are correct on the zero-pad
+non-zero) values, that the TV-family gradients are correct on the edge
 boundary, and the center-of-mass regularizer semantics. The systematic
 analytic-vs-finite-difference gradient parity for every regularizer (Stokes-I,
 pol, spectral) lives in test_gradients.py, the canonical FD suite. All tests use
@@ -395,8 +395,8 @@ class TestMFRegularizerValues:
 # ---------------------------------------------------------------------------
 # Log regularizers on a partial embed mask
 # ---------------------------------------------------------------------------
-# These take the log of the embedded image, so masked pixels need a positive fill.
-# It used to be epsilon_tv, which defaults to 0, giving inf/nan on any partial mask.
+# Log only the active pixels. The shared TV code embeds them afterward, so it
+# never takes log of an off-mask zero.
 LOG_REG_FUNCS = [("tvlog", iu.reg_tvlog, iu.reggrad_tvlog),
                  ("tv2log", iu.reg_tv2log, iu.reggrad_tv2log)]
 LOG_REG_IDS = [f[0] for f in LOG_REG_FUNCS]
@@ -452,12 +452,8 @@ class TestLogRegularizersOnPartialMask:
 # ---------------------------------------------------------------------------
 # Boundary correctness on partial embed masks
 # ---------------------------------------------------------------------------
-# A neighbour difference that crosses a boundary -- the grid edge or the mask
-# edge -- has no second pixel to difference against. Zero is a real boundary
-# value for Stokes I, P and V (empty sky outside the FOV), but for a log image
-# it means 1 Jy and for a spectral index a flat spectrum, so those differences
-# are dropped instead. Every other analytic-vs-FD test in the suite runs a full
-# mask, which is why the reg_tvlog NaN below went unnoticed.
+# All TV variants now drop differences across the grid or embed-mask boundary.
+# Every other analytic-vs-FD test in the suite runs a full mask.
 
 BND_NX, BND_NY = 6, 7
 
@@ -500,9 +496,7 @@ def _bnd_masks(nx=BND_NX, ny=BND_NY):
 BND_TOPOLOGIES = sorted(_bnd_masks())
 BND_EPS = [0.0, 1e-3]
 
-# Zero is meaningless for these, so their boundary differences are dropped.
 TV_LOG = ["tvlog", "tv2log"]
-# Zero is a real boundary value for these: they must not change.
 TV_LINEAR = ["tv", "tv2"]
 TV_POL = ["ptv", "ptv2", "vtv", "vtv2"]
 
@@ -552,8 +546,8 @@ def _assert_grad_matches(name, g_an, g_fd, topology):
 class TestTVBoundaryTopologies:
     """Analytic-vs-FD parity for the TV family on every awkward mask shape.
 
-    The log variants are the ones under repair: today they return NaN on any
-    partial mask. The linear and pol variants are here as no-change guards.
+    The log variants once returned NaN on partial masks. The linear and pol
+    variants also need parity after the shared boundary rule changes.
     """
 
     @pytest.mark.parametrize("eps", BND_EPS, ids=["eps0", "epspos"])
@@ -612,10 +606,8 @@ class TestTVBoundaryTopologies:
 class TestLogTVIsFillIndependent:
     """The masked-pixel fill must not reach the value.
 
-    Masked pixels are not variables, so a difference across the mask boundary
-    measures whatever was filled there. Once those differences are dropped the
-    fill only has to keep log() finite, and any positive value gives the same
-    answer. This is strictly stronger than pinning one particular fill.
+    The log wrapper passes active pixels to TV. Any fill that TV uses for the
+    masked pixels must be ignored by its boundary differences.
     """
 
     @pytest.mark.parametrize("rtype", TV_LOG)
@@ -637,7 +629,7 @@ class TestLogTVIsFillIndependent:
         first = reg(x, mask, **kw)
         assert seen, f"{rtype} did not embed on a partial mask"
 
-        # Re-run with a wildly different positive fill.
+        # Re-run with a different fill at the masked pixels.
         def spy_big(imvec, m, clipfloor=0., randomfloor=False):
             return real_embed(imvec, m, clipfloor=1e6, randomfloor=False)
 
@@ -648,30 +640,20 @@ class TestLogTVIsFillIndependent:
             f"when the masked-pixel fill changed")
 
 
-def _ref_tv(full2d, keep2d, boundary, eps, tv2=False):
-    """Independent reference TV, by explicit loops over pixels and forward edges.
-
-    'zero'    every pixel contributes, and a neighbour outside the grid or the
-              mask counts as 0. This is what the linear family does today.
-    'exclude' only in-mask pixels contribute, and only edges whose far end is
-              also in-mask and in-grid. For a log image or a spectral index
-              there is no meaningful zero to difference against.
-    """
+def _ref_tv(full2d, keep2d, eps, tv2=False):
+    """Independent TV reference with only in-mask, in-grid forward edges."""
     ny, nx = full2d.shape
     total = 0.0
     for i in range(ny):
         for j in range(nx):
-            if boundary == "exclude" and not keep2d[i, j]:
+            if not keep2d[i, j]:
                 continue
             sq = 0.0
             for di, dj in ((1, 0), (0, 1)):
                 ii, jj = i + di, j + dj
                 inside = ii < ny and jj < nx
-                if boundary == "zero":
-                    nb = full2d[ii, jj] if inside else 0.0
-                    sq += (full2d[i, j] - nb) ** 2
-                elif inside and keep2d[ii, jj]:
-                    sq += (full2d[i, j] - full2d[ii, jj]) ** 2
+                if inside and keep2d[ii, jj]:
+                    sq += np.abs(full2d[i, j] - full2d[ii, jj]) ** 2
             total += sq if tv2 else np.sqrt(sq + eps)
     return total
 
@@ -699,15 +681,14 @@ class TestTVMatchesReference:
     @pytest.mark.parametrize("eps", BND_EPS, ids=["eps0", "epspos"])
     @pytest.mark.parametrize("topology", BND_TOPOLOGIES)
     @pytest.mark.parametrize("rtype", TV_LINEAR)
-    def test_linear_is_zero_boundary(self, rtype, topology, eps):
-        """tv / tv2 difference linear flux, where 0 outside means empty sky."""
+    def test_linear_excludes_boundary(self, rtype, topology, eps):
         mask = _bnd_masks()[topology]
         x = _bnd_imvec(mask)
         flux = float(x.sum())
         kw = _bnd_kwargs(eps, flux=flux)
         full = iu.embed(x, mask) if not mask.all() else x
         ref = _ref_tv(full.reshape(BND_NY, BND_NX), mask.reshape(BND_NY, BND_NX),
-                      "zero", eps, tv2=rtype == "tv2")
+                      eps, tv2=rtype == "tv2")
         got = getattr(iu, f"reg_{rtype}")(x, mask, **kw)
         expect = ref / _tv_norm(rtype, flux, kw)
         assert np.isclose(got, expect, rtol=1e-12), (
@@ -723,12 +704,11 @@ class TestTVMatchesReference:
         flux = float(x.sum())
         kw = _bnd_kwargs(eps, flux=flux)
         npix = BND_NX * BND_NY
-        # any positive fill: no surviving edge reads it
+        # the reference fill cannot affect any retained edge
         full = np.full(npix, 1.0)
         full[mask] = x
         ref = _ref_tv(np.log(full).reshape(BND_NY, BND_NX),
-                      mask.reshape(BND_NY, BND_NX),
-                      "exclude", eps, tv2=rtype == "tv2log")
+                      mask.reshape(BND_NY, BND_NX), eps, tv2=rtype == "tv2log")
         logflux = npix * np.abs(np.log(flux / npix))
         expect = ref / _tv_norm(rtype, logflux, kw)
         got = getattr(iu, f"reg_{rtype}")(x, mask, **kw)
@@ -746,9 +726,36 @@ class TestTVMatchesReference:
         npix = BND_NX * BND_NY
         full = np.zeros(npix)
         full[mask] = x
-        ref = _ref_tv(full.reshape(BND_NY, BND_NX), mask.reshape(BND_NY, BND_NX),
-                      "exclude", eps)
+        ref = _ref_tv(full.reshape(BND_NY, BND_NX), mask.reshape(BND_NY, BND_NX), eps)
         expect = ref / (npix * kw["psize"] / kw["beam_size"])  # tv_spec: pixel count
         got = mfu.reg_tv_spec(x, mask, **kw)
         assert np.isclose(got, expect, rtol=1e-10), (
             f"tv_spec [{topology}] {got:.10e} != reference {expect:.10e}")
+
+    @pytest.mark.parametrize("topology", BND_TOPOLOGIES)
+    @pytest.mark.parametrize("rtype", TV_POL)
+    def test_pol_excludes_boundary(self, rtype, topology):
+        mask = _bnd_masks()[topology]
+        x = _bnd_imarr(mask)
+        kw = _bnd_kwargs(0.0, flux=float(x[0].sum()), vflux=float(x[0].sum()),
+                         norm_reg=False)
+        full = np.zeros(mask.size, dtype=complex if rtype.startswith("ptv") else float)
+        image = pu.make_p_image(x) if rtype.startswith("ptv") else pu.make_v_image(x)
+        full[mask] = image
+        ref = _ref_tv(full.reshape(BND_NY, BND_NX), mask.reshape(BND_NY, BND_NX),
+                      0.0, tv2=rtype.endswith("2"))
+        got = getattr(pu, f"reg_{rtype}")(x, mask, **kw)
+        assert np.isclose(got, ref, rtol=1e-12), (
+            f"{rtype} [{topology}] {got:.10e} != reference {ref:.10e}")
+
+
+@pytest.mark.parametrize("rtype", TV_LOG)
+@pytest.mark.parametrize("flux", [0.0, -1.0])
+def test_log_tv_rejects_nonpositive_flux(rtype, flux):
+    mask = _bnd_masks()["hole"]
+    x = _bnd_imvec(mask)
+    kw = _bnd_kwargs(0.0, flux=flux)
+    with pytest.raises(ValueError, match="flux must be positive"):
+        getattr(iu, f"reg_{rtype}")(x, mask, **kw)
+    with pytest.raises(ValueError, match="flux must be positive"):
+        getattr(iu, f"reggrad_{rtype}")(x, mask, **kw)

@@ -14,6 +14,7 @@ import pytest
 
 import ehtim as eh
 import ehtim.imaging.imager_utils as iu
+import ehtim.imaging.pol_imager_utils as pu
 from ehtim.backends import array_namespace
 from ehtim.imaging.imager_backend import transform_gradients
 
@@ -119,9 +120,8 @@ def test_spatial_reg_partial_mask_parity():
 
 
 def test_log_reg_partial_mask_parity():
-    # reg_tvlog / reg_tv2log embed with a positive fill so log() stays defined off-mask.
-    # The fill is computed from kwargs, not from imvec, so it must not perturb the
-    # gradient: jax.grad has to match the analytic one on the masked pixels.
+    # Only active pixels are logged. The shared TV code embeds them afterward;
+    # jax.grad must match the analytic gradient on the masked image vector.
     rng = np.random.default_rng(1)
     ny, nx = 6, 8
     full = rng.uniform(0.05, 1.0, ny * nx)
@@ -136,3 +136,28 @@ def test_log_reg_partial_mask_parity():
         assert np.isfinite(v_np) and np.allclose(v_np, v_jx, rtol=1e-12)
         g_jax = np.asarray(jax.grad(lambda v: reg(v, mask, **kw))(jnp.asarray(imvec)))
         assert np.allclose(g_jax, reggrad(imvec, mask, **kw), rtol=1e-8, atol=1e-10)
+
+
+@pytest.mark.parametrize("rtype", ["ptv", "ptv2", "vtv", "vtv2"])
+def test_pol_tv_partial_mask_parity(rtype):
+    rng = np.random.default_rng(23)
+    ny, nx = 6, 7
+    mask = np.ones(ny * nx, dtype=bool)
+    mask[0] = False
+    mask[8:11] = False
+    mask[-1] = False
+    n = int(mask.sum())
+    imarr = np.array([1.0 + 0.3 * rng.random(n),
+                      0.3 + 0.05 * rng.random(n),
+                      0.5 + 0.2 * rng.random(n),
+                      0.2 + 0.05 * rng.random(n)])
+    kw = dict(xdim=nx, ydim=ny, psize=1.0, beam_size=2.0,
+              flux=float(imarr[0].sum()), vflux=1.0, norm_reg=True,
+              pol_solve=(1, 1, 1, 1), epsilon_tv=1e-3)
+    reg = getattr(pu, f"reg_{rtype}")
+    reggrad = getattr(pu, f"reggrad_{rtype}")
+    got_np = reg(imarr, mask, **kw)
+    got_jax = reg(jnp.asarray(imarr), mask, **kw)
+    assert np.allclose(got_np, np.asarray(got_jax), rtol=1e-9, atol=1e-12)
+    grad_jax = np.asarray(jax.grad(lambda v: reg(v, mask, **kw))(jnp.asarray(imarr)))
+    np.testing.assert_allclose(grad_jax, reggrad(imarr, mask, **kw), rtol=1e-8, atol=1e-10)
