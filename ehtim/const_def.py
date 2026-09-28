@@ -93,10 +93,6 @@ GRIDDER_P_RAD_DEFAULT = 2
 GRIDDER_CONV_FUNC_DEFAULT = 'gaussian'
 FFT_PAD_DEFAULT = 2
 FFT_INTERP_DEFAULT = 3
-# Requested relative accuracy of the NFFT. 1e-6 sits far below any realistic
-# data noise and is ~20% cheaper per imaging run than 1e-9, whose extra accuracy
-# nothing in the chi-squared can see. Tighten to 1e-9 or 1e-12 for
-# high-dynamic-range work (ALMA polarimetry, SKA-class arrays).
 NFFT_EPS_DEFAULT = 1e-6
 
 # Threads finufft may use per transform. 0 lets finufft pick, which is what the

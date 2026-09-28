@@ -1485,9 +1485,7 @@ class FINUFFTPlan:
 class NFFTInfo:
     """Precomputed NFFT plan + per-point pulse/centering factor.
 
-    eps is the requested relative accuracy of the NFFT. The default 1e-6 is
-    already far below any realistic data noise; tighten to 1e-9 or 1e-12 for
-    high-dynamic-range imaging (ALMA polarimetry, SKA-scale arrays).
+    eps is the requested relative accuracy of the NFFT.
 
     nthreads is the thread count finufft may use per transform, 0 meaning
     finufft's own choice. Prefer it to OMP_NUM_THREADS, which OpenBLAS shares.

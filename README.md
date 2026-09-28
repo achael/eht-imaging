@@ -30,23 +30,18 @@ pip install .
 
 Installing with pip will install the required libraries automatically ([numpy](http://www.numpy.org/), [scipy](http://www.scipy.org/), [matplotlib](http://www.matplotlib.org/), [astropy](http://www.astropy.org/), [finufft](https://github.com/flatironinstitute/finufft), [skyfield](https://rhodesmill.org/skyfield/), [h5py](http://www.h5py.org/), [networkx](https://networkx.github.io/), [requests](http://docs.python-requests.org/en/master/), and [future](http://pypi.python.org/pypi/future)).
 
-## Performance: thread spin-wait
+## Imaging performance
 
-On a standard pip-wheel numpy/scipy stack, idle worker threads busy-wait instead of
-sleeping: OpenBLAS spins after every BLAS call, and finufft's bundled OpenMP runtime
-does the same. L-BFGS-B calls BLAS every iteration, so the spinners never sleep, and
-imaging can spend most of its time in that spin. Setting both of
+Multithreading in SciPy and FINUFFT can slow imaging when idle worker threads
+busy-wait between iterations. Set these variables in your shell before starting Python:
 
 ```bash
 export OPENBLAS_THREAD_TIMEOUT=4
 export OMP_WAIT_POLICY=PASSIVE
 ```
 
-has measured 13-22x faster imaging, the larger factor on many-core machines. Both are
-needed: `OPENBLAS_THREAD_TIMEOUT` alone never reaches finufft's OpenMP runtime. They
-must be set **before** numpy is imported, so put them in your shell profile rather
-than in a script, and neither changes numerical results. Unlike `OMP_NUM_THREADS=1`
-they keep BLAS parallel and let the NFFT thread, which pays off at larger image sizes.
+In tests on a multicore machine with a standard NumPy and SciPy install, imaging
+ran 13 to 22 times faster.
 
 ## Optional Dependencies
 Certain functions require packages not in the default install:
