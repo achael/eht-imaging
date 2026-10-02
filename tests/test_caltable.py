@@ -1220,9 +1220,12 @@ class TestSplitFixups:
         lin['time'] = times
         lin['xscale'] = [3 + 0j, 4 + 0j]
         lin['yscale'] = [5 + 0j, 6 + 0j]
+        # the site's feed_type is what types its table, so declare it linear
+        tarr = obs_direct.tarr.copy()
+        tarr['feed_type'][np.where(tarr['site'] == site)] = 'xy'
         ct = eh.caltable.Caltable(
             obs_direct.ra, obs_direct.dec, obs_direct.rf, obs_direct.bw,
-            {site: lin}, obs_direct.tarr,
+            {site: lin}, tarr,
             source=obs_direct.source, mjd=obs_direct.mjd,
         )
 
@@ -1658,3 +1661,448 @@ class TestTransformsCarryDterms:
         assert out.data[site] is not ct_b.data[site]
         out.data[site]['rscale'] *= 10
         np.testing.assert_allclose(ct_b.data[site]['rscale'], MERGE_GAIN_B)
+
+
+# ---------------------------------------------------------------------------
+# Section 12: Per-site basis dispatch
+# ---------------------------------------------------------------------------
+
+# Gains for the basis-dispatch tests. Distinct per slot so a p1/p2 swap shows up.
+DISPATCH_P1 = 2.0 + 0.5j
+DISPATCH_P2 = 3.0 - 0.25j
+
+# A gain dtype carrying only the generic names, with no physical aliases to
+# infer a basis from. This is the case upgrade_caltable has to be told about.
+GENERIC_CAL = [('time', 'f8'), ('p1scale', 'c16'), ('p2scale', 'c16')]
+
+
+def _tarr_with_feeds(obs, feeds):
+    """A copy of obs.tarr with feed_type overridden per site.
+
+    ``feeds`` maps site name to feed type; sites left out keep theirs.
+    """
+    tarr = obs.tarr.copy()
+    for site, feed in feeds.items():
+        tarr['feed_type'][np.where(tarr['site'] == site)] = feed
+    return tarr
+
+
+def _gain_table(times, p1=DISPATCH_P1, p2=DISPATCH_P2, dtype=DTCAL):
+    """A per-site gain table with constant gains on the given time grid."""
+    table = np.zeros(len(times), dtype=dtype)
+    table['time'] = times
+    table['p1scale'] = p1
+    table['p2scale'] = p2
+    return table
+
+
+class TestCaltableDtypes:
+    """ehc.caltable_dtypes: the feed_type -> dtype map the whole phase rests on."""
+
+    def test_circular_feed_returns_circ_dtypes(self):
+        gain_t, dterm_t = ehc.caltable_dtypes('rl')
+        assert gain_t is ehc.DTCAL_CIRC
+        assert dterm_t is ehc.DTDTERM_CIRC
+
+    def test_linear_feed_returns_lin_dtypes(self):
+        gain_t, dterm_t = ehc.caltable_dtypes('xy')
+        assert gain_t is ehc.DTCAL_LIN
+        assert dterm_t is ehc.DTDTERM_LIN
+
+    @pytest.mark.parametrize('feed', ['rx', 'xr', 'ly', 'yl'])
+    def test_hybrid_feed_raises(self, feed):
+        """Hybrid feeds have no agreed convention, matching field_rotation_matrix."""
+        with pytest.raises(NotImplementedError, match='not supported'):
+            ehc.caltable_dtypes(feed)
+
+    @pytest.mark.parametrize('feed', ['lr', 'yx'])
+    def test_noncanonical_ordering_raises(self, feed):
+        """p1 is not R for an 'lr' station, so the circular aliases would lie."""
+        with pytest.raises(NotImplementedError, match='canonical order'):
+            ehc.caltable_dtypes(feed)
+
+    def test_uppercase_feed_type_accepted(self):
+        """canonical_feed_type lowercases, so a tarr may carry 'XY'."""
+        assert ehc.caltable_dtypes('XY')[0] is ehc.DTCAL_LIN
+
+    def test_unset_feed_sentinel_says_to_declare_feeds(self):
+        """'??' is 'not declared yet', not 'hybrid', and reads that way elsewhere."""
+        with pytest.raises(ValueError, match='must declare'):
+            ehc.caltable_dtypes('??')
+
+
+class TestUpgradeCaltableFeedType:
+    """upgrade_caltable's feed_type argument: the caller that knows says so."""
+
+    def test_generic_names_warn_without_feed_type(self):
+        """The baseline the next test has to beat: no context, so it guesses."""
+        table = _gain_table([0.0, 1.0], dtype=GENERIC_CAL)
+        with pytest.warns(MixedPolConventionWarning, match='assuming circular'):
+            ehc.upgrade_caltable(table)
+
+    def test_feed_type_silences_generic_name_warning(self):
+        """The warning exists for callers with no context; the Caltable has context."""
+        table = _gain_table([0.0, 1.0], dtype=GENERIC_CAL)
+        with warnings.catch_warnings():
+            warnings.simplefilter('error')
+            out = ehc.upgrade_caltable(table, feed_type='rl')
+        assert out.dtype == np.dtype(ehc.DTCAL_CIRC)
+
+    def test_feed_type_lin_retypes_generic_table(self):
+        table = _gain_table([0.0, 1.0], dtype=GENERIC_CAL)
+        out = ehc.upgrade_caltable(table, feed_type='xy')
+        # physical names are the dtype's own; the generic ones are titles
+        assert out.dtype.names == ('time', 'xscale', 'yscale')
+        assert 'p1scale' in out.dtype.fields
+        np.testing.assert_allclose(out['xscale'], DISPATCH_P1)
+        np.testing.assert_allclose(out['p1scale'], DISPATCH_P1)
+
+    def test_contradicting_physical_names_warn_and_relabel(self):
+        """An x/y table on an 'rl' station is a caller bug worth naming."""
+        table = _gain_table([0.0, 1.0], dtype=ehc.DTCAL_LIN)
+        with pytest.warns(MixedPolConventionWarning, match='declares feed_type'):
+            out = ehc.upgrade_caltable(table, feed_type='rl')
+        assert 'rscale' in out.dtype.fields
+        # relabelled, not reordered: the same values in the same slots
+        np.testing.assert_allclose(out['rscale'], DISPATCH_P1)
+        np.testing.assert_allclose(out['lscale'], DISPATCH_P2)
+
+    def test_hybrid_feed_type_raises(self):
+        with pytest.raises(NotImplementedError):
+            ehc.upgrade_caltable(_gain_table([0.0]), feed_type='rx')
+
+
+class TestConstructionBasisDispatch:
+    """The Caltable types each site's tables from that site's feed_type."""
+
+    def test_linear_site_gets_lin_gain_dtype(self, obs_direct):
+        site = _first_sites(obs_direct, 1)[0]
+        tarr = _tarr_with_feeds(obs_direct, {site: 'xy'})
+        ct = eh.caltable.Caltable(
+            obs_direct.ra, obs_direct.dec, obs_direct.rf, obs_direct.bw,
+            {site: _gain_table([0.0, 1.0])}, tarr,
+            source=obs_direct.source, mjd=obs_direct.mjd,
+        )
+        assert 'xscale' in ct.gains[site].dtype.fields
+        np.testing.assert_allclose(ct.gains[site]['xscale'], DISPATCH_P1)
+
+    def test_mixed_array_types_each_site_in_its_own_basis(self, obs_direct):
+        lin_site, circ_site = _first_sites(obs_direct, 2)
+        tarr = _tarr_with_feeds(obs_direct, {lin_site: 'xy', circ_site: 'rl'})
+        ct = eh.caltable.Caltable(
+            obs_direct.ra, obs_direct.dec, obs_direct.rf, obs_direct.bw,
+            {lin_site: _gain_table([0.0, 1.0]), circ_site: _gain_table([0.0, 1.0])},
+            tarr, source=obs_direct.source, mjd=obs_direct.mjd,
+        )
+        assert 'xscale' in ct.gains[lin_site].dtype.fields
+        assert 'rscale' in ct.gains[circ_site].dtype.fields
+
+    def test_hybrid_feed_site_raises_on_construction(self, obs_direct):
+        site = _first_sites(obs_direct, 1)[0]
+        tarr = _tarr_with_feeds(obs_direct, {site: 'rx'})
+        with pytest.raises(NotImplementedError, match='not supported'):
+            eh.caltable.Caltable(
+                obs_direct.ra, obs_direct.dec, obs_direct.rf, obs_direct.bw,
+                {site: _gain_table([0.0, 1.0])}, tarr,
+                source=obs_direct.source, mjd=obs_direct.mjd,
+            )
+
+    def test_site_absent_from_tarr_falls_back_to_name_inference(self, obs_direct):
+        """A gain table for an unknown site has always inferred its own basis."""
+        ct = eh.caltable.Caltable(
+            obs_direct.ra, obs_direct.dec, obs_direct.rf, obs_direct.bw,
+            {'GHOST': _gain_table([0.0, 1.0], dtype=ehc.DTCAL_LIN)}, obs_direct.tarr,
+            source=obs_direct.source, mjd=obs_direct.mjd,
+        )
+        assert 'xscale' in ct.gains['GHOST'].dtype.fields
+
+    def test_dterms_typed_from_feed_type(self, obs_direct):
+        site = _first_sites(obs_direct, 1)[0]
+        tarr = _tarr_with_feeds(obs_direct, {site: 'xy'})
+        dterms = np.zeros(1, dtype=ehc.DTDTERM_CIRC)
+        dterms['d_p1'] = SPLIT_DR
+        dterms['d_p2'] = SPLIT_DL
+        ct = eh.caltable.Caltable(
+            obs_direct.ra, obs_direct.dec, obs_direct.rf, obs_direct.bw,
+            {site: _gain_table([0.0, 1.0])}, tarr, dtermdict={site: dterms},
+            source=obs_direct.source, mjd=obs_direct.mjd,
+        )
+        assert 'dx' in ct.dterms[site].dtype.fields
+        np.testing.assert_allclose(ct.dterms[site]['dx'], SPLIT_DR)
+
+    def test_data_setter_dispatches_too(self, obs_direct):
+        site = _first_sites(obs_direct, 1)[0]
+        tarr = _tarr_with_feeds(obs_direct, {site: 'xy'})
+        ct = eh.caltable.Caltable(
+            obs_direct.ra, obs_direct.dec, obs_direct.rf, obs_direct.bw,
+            {site: _gain_table([0.0, 1.0])}, tarr,
+            source=obs_direct.source, mjd=obs_direct.mjd,
+        )
+        ct.data = {site: _gain_table([0.0, 2.0])}
+        assert 'xscale' in ct.gains[site].dtype.fields
+
+
+class TestLinearPersistence:
+    """DTCAL_LIN / DTDTERM_LIN survive save/load; the basis rides on array.txt."""
+
+    def test_linear_gain_table_roundtrips_as_linear(self, obs_direct, tmp_path):
+        site = _first_sites(obs_direct, 1)[0]
+        tarr = _tarr_with_feeds(obs_direct, {site: 'xy'})
+        times = np.array([0.0, 1.0])
+        ct = eh.caltable.Caltable(
+            obs_direct.ra, obs_direct.dec, obs_direct.rf, obs_direct.bw,
+            {site: _gain_table(times)}, tarr,
+            source=obs_direct.source, mjd=obs_direct.mjd,
+        )
+
+        eh.caltable.save_caltable(ct, obs_direct, datadir=str(tmp_path), overwrite=True)
+        back = eh.caltable.load_caltable(obs_direct, str(tmp_path))
+
+        assert 'xscale' in back.gains[site].dtype.fields
+        np.testing.assert_allclose(back.gains[site]['xscale'], DISPATCH_P1, rtol=GAIN_RTOL)
+        np.testing.assert_allclose(back.gains[site]['yscale'], DISPATCH_P2, rtol=GAIN_RTOL)
+
+    def test_mixed_array_roundtrips_each_site_in_its_basis(self, obs_direct, tmp_path):
+        lin_site, circ_site = _first_sites(obs_direct, 2)
+        tarr = _tarr_with_feeds(obs_direct, {lin_site: 'xy', circ_site: 'rl'})
+        times = np.array([0.0, 1.0])
+        ct = eh.caltable.Caltable(
+            obs_direct.ra, obs_direct.dec, obs_direct.rf, obs_direct.bw,
+            {lin_site: _gain_table(times), circ_site: _gain_table(times)}, tarr,
+            source=obs_direct.source, mjd=obs_direct.mjd,
+        )
+
+        eh.caltable.save_caltable(ct, obs_direct, datadir=str(tmp_path), overwrite=True)
+        back = eh.caltable.load_caltable(obs_direct, str(tmp_path))
+
+        assert 'xscale' in back.gains[lin_site].dtype.fields
+        assert 'rscale' in back.gains[circ_site].dtype.fields
+        # same numbers either way: the file format is basis-neutral
+        np.testing.assert_allclose(back.gains[lin_site]['p1scale'],
+                                   back.gains[circ_site]['p1scale'], rtol=GAIN_RTOL)
+
+    def test_linear_dterms_roundtrip_as_linear(self, obs_direct, tmp_path):
+        site = _first_sites(obs_direct, 1)[0]
+        tarr = _tarr_with_feeds(obs_direct, {site: 'xy'})
+        dterms = np.zeros(1, dtype=ehc.DTDTERM_LIN)
+        dterms['time'] = SINGLE_ROW_TIME_HR
+        dterms['dx'] = SPLIT_DR
+        dterms['dy'] = SPLIT_DL
+        ct = eh.caltable.Caltable(
+            obs_direct.ra, obs_direct.dec, obs_direct.rf, obs_direct.bw,
+            {site: _gain_table([0.0, 1.0])}, tarr, dtermdict={site: dterms},
+            source=obs_direct.source, mjd=obs_direct.mjd,
+        )
+
+        eh.caltable.save_caltable(ct, obs_direct, datadir=str(tmp_path), overwrite=True)
+        back = eh.caltable.load_caltable(obs_direct, str(tmp_path))
+
+        assert 'dx' in back.dterms[site].dtype.fields
+        np.testing.assert_allclose(back.dterms[site]['dx'], SPLIT_DR, rtol=GAIN_RTOL)
+        np.testing.assert_allclose(back.dterms[site]['dy'], SPLIT_DL, rtol=GAIN_RTOL)
+
+
+class TestMergeFeedTypes:
+    """Merging across bases is fine; the same site in two bases is not."""
+
+    def test_disjoint_circ_and_lin_sites_merge(self, obs_direct,
+                                               constant_gain_caltable_factory):
+        """ALMA solved in LIN and the rest in CIRC is the natural workflow."""
+        lin_site, circ_site = _first_sites(obs_direct, 2)
+        tarr = _tarr_with_feeds(obs_direct, {lin_site: 'xy'})
+        times = np.array([0.0, 1.0])
+        ct_lin = eh.caltable.Caltable(
+            obs_direct.ra, obs_direct.dec, obs_direct.rf, obs_direct.bw,
+            {lin_site: _gain_table(times)}, tarr,
+            source=obs_direct.source, mjd=obs_direct.mjd,
+        )
+        ct_circ = eh.caltable.Caltable(
+            obs_direct.ra, obs_direct.dec, obs_direct.rf, obs_direct.bw,
+            {circ_site: _gain_table(times)}, tarr,
+            source=obs_direct.source, mjd=obs_direct.mjd,
+        )
+
+        out = ct_lin.merge([ct_circ])
+
+        assert 'xscale' in out.gains[lin_site].dtype.fields
+        assert 'rscale' in out.gains[circ_site].dtype.fields
+
+    def test_same_site_conflicting_feed_types_raises(self, obs_direct):
+        site = _first_sites(obs_direct, 1)[0]
+        times = np.array([0.0, 1.0])
+        ct_lin = eh.caltable.Caltable(
+            obs_direct.ra, obs_direct.dec, obs_direct.rf, obs_direct.bw,
+            {site: _gain_table(times)}, _tarr_with_feeds(obs_direct, {site: 'xy'}),
+            source=obs_direct.source, mjd=obs_direct.mjd,
+        )
+        ct_circ = eh.caltable.Caltable(
+            obs_direct.ra, obs_direct.dec, obs_direct.rf, obs_direct.bw,
+            {site: _gain_table(times)}, _tarr_with_feeds(obs_direct, {site: 'rl'}),
+            source=obs_direct.source, mjd=obs_direct.mjd,
+        )
+
+        with pytest.raises(Exception, match='feed_type'):
+            ct_lin.merge([ct_circ])
+
+
+class TestPlotGainsPolArgument:
+    """pol accepts physical or generic names, and rejects the wrong basis."""
+
+    @pytest.mark.parametrize('pol', ['R', 'r', 'L', 'p1', 'P2'])
+    def test_valid_pols_on_circular_site(self, obs_direct, unity_caltable, pol):
+        site = _first_sites(obs_direct, 1)[0]
+        ax = unity_caltable.plot_gains([site], pol=pol, show=False)
+        assert ax is not None
+        plt.close('all')
+
+    @pytest.mark.parametrize('pol', ['X', 'Y'])
+    def test_linear_pol_on_circular_site_raises(self, obs_direct, unity_caltable, pol):
+        """Used to fail later on a missing field; now it says what is wrong."""
+        site = _first_sites(obs_direct, 1)[0]
+        with pytest.raises(Exception, match='feed_type'):
+            unity_caltable.plot_gains([site], pol=pol, show=False)
+        plt.close('all')
+
+    def test_unknown_pol_raises(self, obs_direct, unity_caltable):
+        site = _first_sites(obs_direct, 1)[0]
+        with pytest.raises(Exception, match='pol must be'):
+            unity_caltable.plot_gains([site], pol='Q', show=False)
+        plt.close('all')
+
+    def test_pol_both_plots_both_feeds(self, obs_direct, unity_caltable):
+        """pol='both' was accepted by the validator and then hit an unset local."""
+        site = _first_sites(obs_direct, 1)[0]
+        ax = unity_caltable.plot_gains([site], pol='both', show=False)
+        labels = [line.get_label() for line in ax.get_lines()]
+        assert f'{site} R' in labels
+        assert f'{site} L' in labels
+        plt.close('all')
+
+    def test_generic_pol_works_on_linear_site(self, obs_direct):
+        lin_site = _first_sites(obs_direct, 1)[0]
+        tarr = _tarr_with_feeds(obs_direct, {lin_site: 'xy'})
+        ct = eh.caltable.Caltable(
+            obs_direct.ra, obs_direct.dec, obs_direct.rf, obs_direct.bw,
+            {lin_site: _gain_table([0.0, 1.0])}, tarr,
+            source=obs_direct.source, mjd=obs_direct.mjd,
+        )
+        ax = ct.plot_gains([lin_site], pol='X', show=False)
+        assert ax is not None
+        plt.close('all')
+
+
+class TestColumnsMatchedByName:
+    """Legacy and user tables map to p1/p2 by field name, never by position."""
+
+    def test_reversed_gain_columns_do_not_swap_feeds(self):
+        """A (time, lscale, rscale) table used to land its L gains in rscale."""
+        table = np.zeros(2, dtype=[('time', 'f8'), ('lscale', 'c16'), ('rscale', 'c16')])
+        table['rscale'] = DISPATCH_P1
+        table['lscale'] = DISPATCH_P2
+        for feed_type in (None, 'rl'):
+            out = ehc.upgrade_caltable(table, feed_type=feed_type)
+            np.testing.assert_allclose(out['rscale'], DISPATCH_P1)
+            np.testing.assert_allclose(out['lscale'], DISPATCH_P2)
+
+    @pytest.mark.parametrize('names', [('rscale', 'p1scale'), ('rscale', 'bogus')])
+    def test_uninterpretable_gain_columns_raise(self, names):
+        """Two names for one slot, or an unknown name, has no safe reading."""
+        dtype = [('time', 'f8'), (names[0], 'c16'), (names[1], 'c16')]
+        with pytest.raises(Exception, match='cannot interpret'):
+            ehc.upgrade_caltable(np.zeros(1, dtype=dtype), feed_type='rl')
+
+    def test_reversed_dterm_columns_do_not_swap_feeds(self):
+        table = np.zeros(1, dtype=[('time', 'f8'), ('dl', 'c16'), ('dr', 'c16')])
+        table['dr'] = SPLIT_DR
+        table['dl'] = SPLIT_DL
+        out = ehc.retype_dterm_table(table, 'xy')
+        np.testing.assert_allclose(out['dx'], SPLIT_DR)
+        np.testing.assert_allclose(out['dy'], SPLIT_DL)
+
+    def test_unknown_dterm_columns_raise(self, obs_direct):
+        """Used to be stored as-is and fail later on a missing d_p1."""
+        site = _first_sites(obs_direct, 1)[0]
+        junk = np.zeros(1, dtype=[('time', 'f8'), ('a', 'c16'), ('b', 'c16')])
+        with pytest.raises(Exception, match='D-term'):
+            eh.caltable.Caltable(
+                obs_direct.ra, obs_direct.dec, obs_direct.rf, obs_direct.bw,
+                {site: _gain_table([0.0, 1.0])}, obs_direct.tarr, dtermdict={site: junk},
+                source=obs_direct.source, mjd=obs_direct.mjd,
+            )
+
+
+class TestLegacyCircularDefaultIsSilent:
+    """Solvers write ehc.DTCAL for every station, so r/l names on 'xy' are no bug."""
+
+    def test_circular_gain_table_on_linear_station_relabels_silently(self):
+        with warnings.catch_warnings():
+            warnings.simplefilter('error')
+            out = ehc.upgrade_caltable(_gain_table([0.0, 1.0]), feed_type='xy')
+        np.testing.assert_allclose(out['xscale'], DISPATCH_P1)
+        np.testing.assert_allclose(out['yscale'], DISPATCH_P2)
+
+    def test_circular_dterms_on_linear_station_relabel_silently(self):
+        table = np.zeros(1, dtype=ehc.DTDTERM_CIRC)
+        table['dr'] = SPLIT_DR
+        with warnings.catch_warnings():
+            warnings.simplefilter('error')
+            out = ehc.retype_dterm_table(table, 'xy')
+        np.testing.assert_allclose(out['dx'], SPLIT_DR)
+
+    def test_linear_dterms_on_circular_station_warn(self):
+        """x/y names only come from basis-aware code, so this one is a real mixup."""
+        table = np.zeros(1, dtype=ehc.DTDTERM_LIN)
+        table['dx'] = SPLIT_DR
+        with pytest.warns(MixedPolConventionWarning, match="declares feed_type 'rl'"):
+            out = ehc.retype_dterm_table(table, 'rl')
+        np.testing.assert_allclose(out['dr'], SPLIT_DR)
+
+
+class TestLinearCaltableConsumers:
+    """Code outside caltable.py that reads gains must not assume circular names."""
+
+    @pytest.fixture
+    def linear_caltable(self, obs_direct):
+        sites = _first_sites(obs_direct, 2)
+        tarr = _tarr_with_feeds(obs_direct, {s: 'xy' for s in sites})
+        times = np.array([obs_direct.data['time'].min(), obs_direct.data['time'].max()])
+        return eh.caltable.Caltable(
+            obs_direct.ra, obs_direct.dec, obs_direct.rf, obs_direct.bw,
+            {s: _gain_table(times) for s in sites}, tarr,
+            source=obs_direct.source, mjd=obs_direct.mjd,
+        )
+
+    def test_plot_gains_default_pol_on_linear_caltable(self, linear_caltable):
+        """The default used to be 'R', which a linear site now rejects."""
+        ax = linear_caltable.plot_gains([], show=False)
+        assert ax is not None
+        plt.close('all')
+
+    def test_plot_compare_gains_default_pol_on_linear_caltable(self, obs_direct,
+                                                               linear_caltable):
+        ax = eh.caltable.plot_compare_gains(linear_caltable, linear_caltable, obs_direct,
+                                            sites=list(linear_caltable.gains),
+                                            scan_avg=False, show=False)
+        assert ax is not None
+        plt.close('all')
+
+    def test_caltable_to_gains_on_linear_site(self, linear_caltable):
+        from ehtim.modeling.modeling_utils import caltable_to_gains
+        site = next(iter(linear_caltable.gains))
+        time = linear_caltable.gains[site]['time'][0]
+        gains = caltable_to_gains(linear_caltable, [(time, site)])
+        np.testing.assert_allclose(gains, [abs(DISPATCH_P1) - 1.0])
+
+
+def test_plot_gains_yrange_from_gains_not_times(obs_direct):
+    """tmins/gmins were one list, so the y-range reached out to the times."""
+    site = _first_sites(obs_direct, 1)[0]
+    times = np.array([0.0, 20.0])
+    ct = eh.caltable.Caltable(
+        obs_direct.ra, obs_direct.dec, obs_direct.rf, obs_direct.bw,
+        {site: _gain_table(times)}, obs_direct.tarr,
+        source=obs_direct.source, mjd=obs_direct.mjd,
+    )
+    ax = ct.plot_gains([site], pol='p1', yscale='lin', show=False)
+    assert ax.get_ylim()[1] < times.max()
+    plt.close('all')

@@ -2091,8 +2091,8 @@ def dashboard(
     default_mode = f"amp_{pol}"
     gain_indices: dict[str, list[int]] = {m[0]: [] for m in gain_modes}
     for site in sorted(caltable.data.keys()):
-        complex_R = caltable.data[site]["rscale"]
-        complex_L = caltable.data[site]["lscale"]
+        complex_R = caltable.data[site]["p1scale"]
+        complex_L = caltable.data[site]["p2scale"]
         times = caltable.data[site]["time"]
         for mode, key, gtype, ylabel in gain_modes:
             cplx = complex_R if key == "rscale" else complex_L
