@@ -174,7 +174,8 @@ class Caltable:
             for site, table in dtermdict.items():
                 site_dterms = ehc._normalize_recarray(table)
                 if site_dterms is not None and len(site_dterms):
-                    self.dterms[site] = self._retype_dterms(site, site_dterms)
+                    self.dterms[site] = ehc.retype_dterm_table(site_dterms,
+                                                               self._feed_type(site))
 
     def _feed_type(self, site):
         """The site's feed type from the tarr, or None if the tarr has no such site.
@@ -184,7 +185,7 @@ class Caltable:
         """
         if site not in self.tkey:
             return None
-        return str(self.tarr[self.tkey[site]]['feed_type'])
+        return str(self.tarr[self.tkey[site]]['feed_type']).lower()
 
     def _gain_dtype(self, site):
         """The DTCAL_* dtype for a site, from its feed type. Hybrid feeds raise."""
@@ -192,31 +193,6 @@ class Caltable:
         if feed_type is None:
             return np.dtype(ehc.DTCAL)
         return np.dtype(ehc.caltable_dtypes(feed_type)[0])
-
-    def _dterm_dtype(self, site):
-        """The DTDTERM_* dtype for a site, from its feed type. Hybrid feeds raise."""
-        feed_type = self._feed_type(site)
-        if feed_type is None:
-            return np.dtype(ehc.DTDTERM)
-        return np.dtype(ehc.caltable_dtypes(feed_type)[1])
-
-    def _retype_dterms(self, site, table):
-        """Relabel a D-term table into its site's basis, values untouched.
-
-        The three columns are positional (time, p1 leakage, p2 leakage), so
-        this copies by position the way upgrade_caltable does for gains.
-        """
-        target = self._dterm_dtype(site)
-        if table.dtype == target:
-            return table
-        names = table.dtype.names
-        if len(names) != 3 or names[0] != 'time':
-            raise Exception(f"cannot interpret fields {names} "
-                            "as a caltable D-term table")
-        retyped = np.zeros(len(table), dtype=target)
-        for src, dst in zip(names, target.names):
-            retyped[dst] = table[src]
-        return retyped
 
     @property
     def data(self):
@@ -325,7 +301,7 @@ class Caltable:
 
         return axes
 
-    def plot_gains(self, sites, gain_type='amp', pol='R', label=None,
+    def plot_gains(self, sites, gain_type='amp', pol='p1', label=None,
                    ang_unit='deg', timetype=False, yscale='log', legend=True,
                    clist=ehc.SCOLORS, rangex=False, rangey=False, markersize=[ehc.MARKERSIZE],
                    show=True, grid=False, axislabels=True, axis=False, export_pdf=""):
@@ -334,7 +310,8 @@ class Caltable:
                sites (list): a list of site names for which to plot gains. Empty list is all sites.
                gain_type (str): 'amp' or 'phase'
                pol (str): 'R', 'L', 'X', 'Y', 'p1', 'p2' or 'both'. A physical
-                          name must match the site's feed type; 'p1'/'p2' always work
+                          name must match the site's feed type; 'p1'/'p2' always work.
+                          Default 'p1', which is R on a circular site
                ang_unit (str): phase unit 'deg' or 'rad'
                timetype (str): 'GMST' or 'UTC'
                yscale (str): 'log' or 'lin',
@@ -1252,7 +1229,7 @@ def plot_tarr_dterms(tarr, keys=None, label=None, legend=True, clist=ehc.SCOLORS
     return axes
 
 
-def plot_compare_gains(caltab1, caltab2, obs, sites='all', pol='R', gain_type='amp', ang_unit='deg',
+def plot_compare_gains(caltab1, caltab2, obs, sites='all', pol='p1', gain_type='amp', ang_unit='deg',
                        scan_avg=True, site_name_dict=None, fontsize=13, legend_fontsize=13,
                        yscale='log', legend=True, clist=ehc.SCOLORS,
                        rangex=False, rangey=False, scalefac=[0.9, 1.1],

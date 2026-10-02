@@ -2490,18 +2490,17 @@ def test_save_load_uvfits_circ_roundtrip_unaffected(tmp_path):
 # ---------------------------------------------------------------------------
 # make_jones writes its simulated cal table in each station's own basis
 #
-# The writer sits inside a loop that already knows the station's feed_type, but
-# used a hardcoded circular dtype, so a linear station got a circular table
-# holding X/Y gains.
+# The writer used a hardcoded circular dtype, so once make_jones handled linear
+# feeds a linear station got a circular table holding X/Y gains.
 # ---------------------------------------------------------------------------
 
 
 def _simulated_caltable(tarr, tmp_path, name):
     """Run make_jones with caltable saving on, and load the table back.
 
-    load_caltable re-derives each dtype from array.txt, so the reloaded table
-    would look right even if the writer used the wrong one. The relabelling
-    warning is what actually pins the writer down, so it is an error here.
+    End-to-end check of the simulated table's basis. The Caltable constructor
+    types each site from its tarr, so an x/y table filed under a circular
+    station is the only writer mistake left to catch; it is an error here.
     """
     arr = ea.Array(tarr)
     polrep = 'mixed' if len(set(tarr['feed_type'])) > 1 else (

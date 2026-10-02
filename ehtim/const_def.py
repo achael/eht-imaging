@@ -273,10 +273,6 @@ def _normalize_recarray(arr):
     return _np.atleast_1d(arr)
 
 
-# Field names a legacy caltable can carry, used to interpret old tables
-_CAL_GAIN_FIELDS = frozenset({'rscale', 'lscale', 'xscale', 'yscale', 'p1scale', 'p2scale'})
-
-
 def caltable_dtypes(feed_type):
     """Return the (gain, D-term) field-spec lists for a station's feed basis.
 
@@ -291,7 +287,7 @@ def caltable_dtypes(feed_type):
     (list, list)
         The DTCAL_* and DTDTERM_* field specs for that basis.
     """
-    ft = str(feed_type)
+    ft = str(feed_type).lower()
     if ft == 'rl':
         return DTCAL_CIRC, DTDTERM_CIRC
     if ft == 'xy':
@@ -299,18 +295,82 @@ def caltable_dtypes(feed_type):
     if ft == '??':
         raise ValueError("caltable_dtypes: unknown feed_type '??'; all stations "
                          "must declare their feeds before a cal table is built")
+    if ft in ('lr', 'yx'):
+        raise NotImplementedError(
+            f"caltable_dtypes: feed_type {ft!r} is a reversed feed order; put the "
+            "station's feeds in canonical order (see canonical_feed_type) first")
     raise NotImplementedError(
         f"caltable_dtypes: feed_type {ft!r} not supported. Only orthogonal "
         "same-basis feeds 'rl' (circular) and 'xy' (linear) are implemented; "
         "hybrid feeds (e.g. 'rx') have an undecided convention (see "
-        "docs/polarization_conventions.md sec 10), and non-canonical orderings "
-        "('lr', 'yx') are canonicalized on load.")
+        "docs/polarization_conventions.md sec 10).")
 
 
-# Physical gain field names per basis, used to spot a table whose names
-# contradict the feed type its station declares
-_CAL_NAMES_CIRC = frozenset({'rscale', 'lscale'})
-_CAL_NAMES_LIN = frozenset({'xscale', 'yscale'})
+# Which slot (1 = p1, 2 = p2) each known gain / D-term field name fills
+_CAL_GAIN_SLOT = {'rscale': 1, 'xscale': 1, 'p1scale': 1,
+                  'lscale': 2, 'yscale': 2, 'p2scale': 2}
+_CAL_DTERM_SLOT = {'dr': 1, 'dx': 1, 'd_p1': 1,
+                   'dl': 2, 'dy': 2, 'd_p2': 2}
+
+
+def _copy_by_slot(data, target, slot_of, kind):
+    """Copy a (time, a, b) table into dtype `target`, matching columns by name.
+
+    Matching by name, not position, keeps a (time, lscale, rscale) table from
+    silently swapping its two feeds.
+    """
+    import numpy as _np
+    names = data.dtype.names
+    if (len(names) != 3 or names[0] != 'time'
+            or any(n not in slot_of for n in names[1:])
+            or slot_of[names[1]] == slot_of[names[2]]):
+        raise Exception(f"cannot interpret fields {names} as a caltable {kind} table")
+    out = _np.zeros(len(data), dtype=target)
+    out['time'] = data['time']
+    for n in names[1:]:
+        out[target.names[slot_of[n]]] = data[n]
+    return out
+
+
+def _warn_linear_names_on_circular(data, lin, kind):
+    """Warn when a table with x/y names is filed under a circular station.
+
+    Only this direction warns: the circular dtypes are the legacy default every
+    solver writes whatever the basis, so r/l names carry no basis information.
+    """
+    if lin or not {'xscale', 'yscale', 'dx', 'dy'} & set(data.dtype.names):
+        return
+    import warnings as _warnings
+
+    from ehtim.warnings import MixedPolConventionWarning as _MPW
+    _warnings.warn(f"{kind} table has x/y fields {data.dtype.names} but its station "
+                   "declares feed_type 'rl'; relabelling the same values as r/l",
+                   _MPW, stacklevel=3)
+
+
+def retype_dterm_table(data, feed_type=None):
+    """Return a per-site D-term table in the DTDTERM_* dtype for its station's basis.
+
+    Parameters
+    ----------
+    data : numpy.recarray
+        A (time, p1 leakage, p2 leakage) table under any known field names.
+    feed_type : str, optional
+        The station's feed type; without it the table is typed as circular.
+
+    Returns
+    -------
+    numpy.recarray
+        The input itself when already in the right dtype, else a copy.
+    """
+    import numpy as _np
+    lin = feed_type is not None and caltable_dtypes(feed_type)[1] is DTDTERM_LIN
+    target = _np.dtype(DTDTERM_LIN if lin else DTDTERM_CIRC)
+    if data.dtype == target:
+        return data
+    if feed_type is not None:
+        _warn_linear_names_on_circular(data, lin, 'D-term')
+    return _copy_by_slot(data, target, _CAL_DTERM_SLOT, 'D-term')
 
 
 def upgrade_caltable(data, feed_type=None):
@@ -324,8 +384,7 @@ def upgrade_caltable(data, feed_type=None):
         A per-site gain table, in any format this function can interpret.
     feed_type : str, optional
         The station's feed type, when the caller knows it; it decides the
-        basis instead of the field names. The columns are positional, so a
-        contradicting table is relabelled with a warning, not reordered.
+        basis instead of the field names. Columns map to p1/p2 by name.
 
     Returns
     -------
@@ -343,17 +402,9 @@ def upgrade_caltable(data, feed_type=None):
     names = data.dtype.names
 
     if feed_type is not None:
-        gain_spec, _ = caltable_dtypes(feed_type)
-        lin = gain_spec is DTCAL_LIN
-        # the station's declared basis wins, but a contradiction is a caller bug
-        wrong = _CAL_NAMES_CIRC if lin else _CAL_NAMES_LIN
-        if wrong & set(fields):
-            import warnings as _warnings
-
-            from ehtim.warnings import MixedPolConventionWarning as _MPW
-            _warnings.warn(f"gain table has {sorted(wrong & set(fields))} but its station "
-                           f"declares feed_type {feed_type!r}; relabelling the same values "
-                           f"as {'x/y' if lin else 'r/l'}", _MPW, stacklevel=2)
+        # the station's declared basis wins over the field names
+        lin = caltable_dtypes(feed_type)[0] is DTCAL_LIN
+        _warn_linear_names_on_circular(data, lin, 'gain')
     # feed basis from the field names; generic-only names default to circular
     elif 'xscale' in fields or 'yscale' in fields:
         lin = True
@@ -374,12 +425,7 @@ def upgrade_caltable(data, feed_type=None):
 
     # legacy gains: copy into the current dtype (a copy, not a view, so the
     # caller's array is never written through and byte order is converted)
-    if len(names) != 3 or names[0] != 'time' or not set(names[1:]) <= _CAL_GAIN_FIELDS:
-        raise Exception(f"cannot interpret fields {names} as a caltable gain table")
-    gains = _np.zeros(len(data), dtype=gain_t)
-    for src, dst in zip(names, gain_t.names):
-        gains[dst] = data[src]
-    return gains
+    return _copy_by_slot(data, gain_t, _CAL_GAIN_SLOT, 'gain')
 
 
 @functools.lru_cache(maxsize=16)
