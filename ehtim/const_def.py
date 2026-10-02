@@ -277,10 +277,60 @@ def _normalize_recarray(arr):
 _CAL_GAIN_FIELDS = frozenset({'rscale', 'lscale', 'xscale', 'yscale', 'p1scale', 'p2scale'})
 
 
-def upgrade_caltable(data):
+def caltable_dtypes(feed_type):
+    """Return the (gain, D-term) field-spec lists for a station's feed basis.
+
+    Parameters
+    ----------
+    feed_type : str
+        Two-character station feed type, as carried by DTARR. Only the
+        canonical same-basis pairs 'rl' and 'xy' are supported.
+
+    Returns
+    -------
+    (list, list)
+        The DTCAL_* and DTDTERM_* field specs for that basis.
+    """
+    ft = str(feed_type)
+    if ft == 'rl':
+        return DTCAL_CIRC, DTDTERM_CIRC
+    if ft == 'xy':
+        return DTCAL_LIN, DTDTERM_LIN
+    if ft == '??':
+        raise ValueError("caltable_dtypes: unknown feed_type '??'; all stations "
+                         "must declare their feeds before a cal table is built")
+    raise NotImplementedError(
+        f"caltable_dtypes: feed_type {ft!r} not supported. Only orthogonal "
+        "same-basis feeds 'rl' (circular) and 'xy' (linear) are implemented; "
+        "hybrid feeds (e.g. 'rx') have an undecided convention (see "
+        "docs/polarization_conventions.md sec 10), and non-canonical orderings "
+        "('lr', 'yx') are canonicalized on load.")
+
+
+# Physical gain field names per basis, used to spot a table whose names
+# contradict the feed type its station declares
+_CAL_NAMES_CIRC = frozenset({'rscale', 'lscale'})
+_CAL_NAMES_LIN = frozenset({'xscale', 'yscale'})
+
+
+def upgrade_caltable(data, feed_type=None):
     """Upgrade legacy per-site caltable gains to the current mixed-pol format.
 
     Idempotent; raises on field names it cannot interpret.
+
+    Parameters
+    ----------
+    data : numpy.recarray or None
+        A per-site gain table, in any format this function can interpret.
+    feed_type : str, optional
+        The station's feed type, when the caller knows it; it decides the
+        basis instead of the field names. The columns are positional, so a
+        contradicting table is relabelled with a warning, not reordered.
+
+    Returns
+    -------
+    numpy.recarray or None
+        The table in the current DTCAL_* dtype for its basis.
     """
     import numpy as _np
     if data is None:
@@ -292,8 +342,20 @@ def upgrade_caltable(data):
     fields = data.dtype.fields
     names = data.dtype.names
 
+    if feed_type is not None:
+        gain_spec, _ = caltable_dtypes(feed_type)
+        lin = gain_spec is DTCAL_LIN
+        # the station's declared basis wins, but a contradiction is a caller bug
+        wrong = _CAL_NAMES_CIRC if lin else _CAL_NAMES_LIN
+        if wrong & set(fields):
+            import warnings as _warnings
+
+            from ehtim.warnings import MixedPolConventionWarning as _MPW
+            _warnings.warn(f"gain table has {sorted(wrong & set(fields))} but its station "
+                           f"declares feed_type {feed_type!r}; relabelling the same values "
+                           f"as {'x/y' if lin else 'r/l'}", _MPW, stacklevel=2)
     # feed basis from the field names; generic-only names default to circular
-    if 'xscale' in fields or 'yscale' in fields:
+    elif 'xscale' in fields or 'yscale' in fields:
         lin = True
     elif 'rscale' in fields or 'lscale' in fields:
         lin = False

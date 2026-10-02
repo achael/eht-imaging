@@ -12,6 +12,7 @@ import ehtim.array as ea
 import ehtim.caltable as ec
 import ehtim.const_def as ehc
 import ehtim.obsdata as eo
+import ehtim.observing.obs_simulate as obs_simulate
 import ehtim.warnings as ehw
 
 # Legacy dtypes — used to verify upgrade plumbing.
@@ -2484,3 +2485,57 @@ def test_save_load_uvfits_circ_roundtrip_unaffected(tmp_path):
     o1, _ = _roundtrip(obs, 'circ', tmp_path)
     assert o1.polrep == 'circ'
     assert set(o1.tarr['feed_type']) == {'rl'}
+
+
+# ---------------------------------------------------------------------------
+# make_jones writes its simulated cal table in each station's own basis
+#
+# The writer sits inside a loop that already knows the station's feed_type, but
+# used a hardcoded circular dtype, so a linear station got a circular table
+# holding X/Y gains.
+# ---------------------------------------------------------------------------
+
+
+def _simulated_caltable(tarr, tmp_path, name):
+    """Run make_jones with caltable saving on, and load the table back.
+
+    load_caltable re-derives each dtype from array.txt, so the reloaded table
+    would look right even if the writer used the wrong one. The relabelling
+    warning is what actually pins the writer down, so it is an error here.
+    """
+    arr = ea.Array(tarr)
+    polrep = 'mixed' if len(set(tarr['feed_type'])) > 1 else (
+        'lin' if tarr['feed_type'][0] == 'xy' else 'stokes')
+    obs = arr.obsdata(polrep=polrep, **_obs_kwargs())
+    obs.add_scans()
+    prefix = str(tmp_path / name)
+    with warnings.catch_warnings():
+        warnings.filterwarnings('error', message='.*declares feed_type.*',
+                                category=ehw.MixedPolConventionWarning)
+        obs_simulate.make_jones(obs, ampcal=False, phasecal=False,
+                                caltable_path=prefix, seed=SEED_MAKE_JONES_CALTABLE)
+    return ec.load_caltable(obs, prefix + '_simdata_caltable')
+
+
+SEED_MAKE_JONES_CALTABLE = 20260924
+
+
+def test_make_jones_caltable_circular_array_is_circular(tmp_path):
+    ct = _simulated_caltable(_eht_like_rl_array(), tmp_path, 'circ')
+    for site in ct.gains:
+        assert 'rscale' in ct.gains[site].dtype.fields
+
+
+def test_make_jones_caltable_linear_array_is_linear(tmp_path):
+    """X/Y gains used to come back labelled rscale/lscale."""
+    ct = _simulated_caltable(_eht_like_xy_array(), tmp_path, 'lin')
+    for site in ct.gains:
+        assert 'xscale' in ct.gains[site].dtype.fields
+        assert 'rscale' not in ct.gains[site].dtype.fields
+
+
+def test_make_jones_caltable_mixed_array_types_per_site(tmp_path):
+    """One LIN station and one CIRC station, each typed as itself."""
+    ct = _simulated_caltable(_eht_like_mixed_array(), tmp_path, 'mixed')
+    assert 'xscale' in ct.gains['ALMA'].dtype.fields
+    assert 'rscale' in ct.gains['APEX'].dtype.fields
