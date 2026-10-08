@@ -1430,7 +1430,7 @@ class TestFourierGridParams:
 
     EXPECTED_FIELDS = (
         "fft_pad_factor", "fft_conv_func", "fft_gridder_prad", "fft_interp_order",
-        "nfft_eps",
+        "nfft_eps", "nfft_nthreads",
     )
 
     def test_full_fft_returns_namedtuple(self, gauss_im, observe, initialize_imager):
@@ -1446,6 +1446,7 @@ class TestFourierGridParams:
         assert fp.fft_gridder_prad == imgr._fft_gridder_prad
         assert fp.fft_interp_order == imgr._fft_interp_order
         assert fp.nfft_eps == imgr._nfft_eps
+        assert fp.nfft_nthreads == imgr._nfft_nthreads
 
     def test_asdict_has_expected_keys(self, gauss_im, observe, initialize_imager):
         imgr, _ = initialize_imager(observe(gauss_im), gauss_im, {"vis": 100})
@@ -1463,7 +1464,7 @@ class TestFourierGridParams:
             obs, gauss_im, prior_im=gauss_im, flux=gauss_im.total_flux(),
             data_term={"vis": 100}, ttype="direct", pol="I",
             fft_pad_factor=4, fft_conv_func="pillbox", fft_gridder_prad=3,
-            fft_interp_order=5, nfft_eps=1e-12,
+            fft_interp_order=5, nfft_eps=1e-12, nfft_nthreads=2,
         )
         imgr.check_params()
         imgr.check_limits()
@@ -1474,6 +1475,7 @@ class TestFourierGridParams:
         assert fp.fft_gridder_prad == 3
         assert fp.fft_interp_order == 5
         assert fp.nfft_eps == 1e-12
+        assert fp.nfft_nthreads == 2
 
     def test_defaults_preserved(self, gauss_im, observe, initialize_imager):
         from ehtim.const_def import (
@@ -1482,6 +1484,7 @@ class TestFourierGridParams:
             GRIDDER_CONV_FUNC_DEFAULT,
             GRIDDER_P_RAD_DEFAULT,
             NFFT_EPS_DEFAULT,
+            NFFT_NTHREADS_DEFAULT,
         )
         imgr, _ = initialize_imager(observe(gauss_im), gauss_im, {"vis": 100})
         fp = imgr._fft_params()
@@ -1490,6 +1493,7 @@ class TestFourierGridParams:
         assert fp.fft_gridder_prad == GRIDDER_P_RAD_DEFAULT
         assert fp.fft_interp_order == FFT_INTERP_DEFAULT
         assert fp.nfft_eps == NFFT_EPS_DEFAULT
+        assert fp.nfft_nthreads == NFFT_NTHREADS_DEFAULT
 
 
 class TestMfConfig:
