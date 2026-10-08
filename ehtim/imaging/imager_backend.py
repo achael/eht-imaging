@@ -56,6 +56,12 @@ REGULARIZERS_ISPECTRAL = REGULARIZERS_SPECIND + REGULARIZERS_CURV
 REGULARIZERS_POLSPECTRAL = REGULARIZERS_SPECIND_P + REGULARIZERS_CURV_P + REGULARIZERS_RM + REGULARIZERS_CM
 REGULARIZERS_SPECTRAL = REGULARIZERS_ISPECTRAL + REGULARIZERS_POLSPECTRAL
 
+# What the jax backend covers. 'fast' has no jaxified kernels, so it dies once a value is
+# traced; the _diag closures never reach a kernel at all, since their ragged dtype=object
+# data is rejected by device_put. 'logamp' is numpy-only but is a valid dispatch key.
+JAX_TTYPES = ['direct', 'nfft']
+JAX_UNSUPPORTED_DATATERMS = ['cphase_diag', 'logamp', 'logcamp_diag']
+
 # Default initial-polarization parameters used when init image has no Q/U/V.
 MEANPOL_INIT = 0.2     # mean polarization fraction
 SIGMAPOL_INIT = 1.e-2  # perturbation scale
@@ -1980,6 +1986,36 @@ def compute_objective_grad(imvec, initvec, config,
     return pack_imarr(grad, which_solve)
 
 
+def check_jax_supported(ttype, dat_terms):
+    """Check that the jax backend covers this transform and these data terms.
+
+    Call before building any jax objective. Without it the run fails deep inside jax, with a
+    tracer or dtype error that says nothing about what the caller did wrong.
+
+    Parameters
+    ----------
+    ttype : str
+        Transform type: 'direct', 'nfft' or 'fast'.
+    dat_terms : iterable of str
+        Names of the active data terms.
+
+    Raises
+    ------
+    ValueError
+        If the transform or any data term has no jax kernel.
+    """
+    if ttype not in JAX_TTYPES:
+        raise ValueError(
+            f"ttype={ttype!r} has no jax kernels; use ttype='nfft' (or 'direct') to run on "
+            f"jax, or drop use_jax and the optax optimizers to image it on numpy.")
+    unsupported = sorted(set(dat_terms) & set(JAX_UNSUPPORTED_DATATERMS))
+    if unsupported:
+        raise ValueError(
+            f"data terms {unsupported} have no jax kernels; use their undiagonalized "
+            f"counterparts ('cphase', 'logcamp') to run on jax, or drop use_jax and the "
+            f"optax optimizers to image them on numpy.")
+
+
 def _place_jax_arrays(data_tuples, priorvec, initvec, device=None):
     """Device-place the captured arrays once for a jax objective.
 
@@ -2029,6 +2065,7 @@ def _prepare_jax_loss(initvec, config, which_solve, data_tuples, logfreqratio_li
     to_device : callable
         Places a host x0 on the same device as those arrays.
     """
+    check_jax_supported(config.ttype, dat_term)
     data_d, prior_d, init_d, put = _place_jax_arrays(data_tuples, priorvec, initvec, device)
 
     def loss(x):
@@ -2153,8 +2190,23 @@ def make_survey_value_and_grad(initvec, config, which_solve, data_tuples, logfre
         Places a host x0 on the device.
     chisq_dict : callable
         chisq_dict(imcur) -> per-term reduced chi^2, weight-independent, for ranking.
+
+    Raises
+    ------
+    ValueError
+        If the transform or a data term has no jax kernel, or if `n_obs` is not 1.
     """
     import jax
+
+    check_jax_supported(config.ttype, data_tuples)
+
+    # TODO: lift this. A keying bug, not a design limit: dat_keys wants bare term names, but
+    # with several observations they arrive suffixed and get suffixed again (KeyError
+    # 'vis_0_0'). Stripping the suffix looks enough, but that path has no test coverage yet.
+    if n_obs != 1:
+        raise ValueError(
+            f"the survey handles a single observation, got {n_obs}; pass one Obsdata, or "
+            f"run a survey per observation.")
 
     data_d, prior_d, init_d, put = _place_jax_arrays(data_tuples, priorvec, initvec, device)
     dat_keys = sorted(data_d)            # single-frequency survey: keys are the data-term names
