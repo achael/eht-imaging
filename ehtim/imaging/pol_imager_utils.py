@@ -20,16 +20,18 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 from ehtim.backends import array_namespace
-
-try:
-    from pynfft.nfft import NFFT
-    _HAS_NFFT = True
-except ImportError:
-    NFFT = None
-    _HAS_NFFT = False
-
-from ehtim.const_def import FFT_PAD_DEFAULT, GRIDDER_P_RAD_DEFAULT, NFFT_EPS_DEFAULT, RADPERAS
+from ehtim.const_def import (
+    FFT_PAD_DEFAULT,
+    GRIDDER_P_RAD_DEFAULT,
+    NFFT_EPS_DEFAULT,
+    NFFT_NTHREADS_DEFAULT,
+    RADPERAS,
+)
 from ehtim.observing.obs_helpers import NFFTInfo, ftmatrix, nufft2_backend, ticks
+
+# Floor on the polarization fraction m for the entropy regularizer: I*log(m) is
+# -inf at an unpolarized pixel, which polcv can reach exactly.
+MFRAC_FLOOR = 1e-12
 
 TANWIDTH_M = 0.5
 TANWIDTH_V = 1
@@ -609,7 +611,7 @@ def chisqgrad_vvis(imarr, Amatrix, v, sigmav, pol_solve=POL_SOLVE_DEFAULT_V):
     # dchi2/dpsi
     if pol_solve[3]!=0:
         gradv = -np.real(iimage * np.dot(Amatrix.conj().T, vdiff)) / len(v)
-        gradpsi = gradv * (vfimage/np.tan(psiimage))
+        gradpsi = gradv * make_m_image(imarr)
         gradout[3] = gradpsi
 
     return gradout
@@ -801,7 +803,7 @@ def chisqgrad_vvis_nfft(imarr, A, v, sigmav,pol_solve=POL_SOLVE_DEFAULT):
     # dchi2/dpsi
     if pol_solve[3]!=0:
         gradv = np.real(iimage*vpart)
-        gradpsi = gradv * (vfimage/np.tan(psiimage))
+        gradpsi = gradv * make_m_image(imarr)
         gradout[3] = gradpsi
 
     return gradout
@@ -827,7 +829,7 @@ def reg_msimple(imarr, mask, **kwargs):
     norm = flux if kwargs.get('norm_reg', True) else 1
 
     iimage = make_i_image(imarr)
-    mimage = make_m_image(imarr)
+    mimage = xp.maximum(make_m_image(imarr), MFRAC_FLOOR)
     return xp.sum(iimage * xp.log(mimage)) / norm
 
 
@@ -846,18 +848,20 @@ def reggrad_msimple(imarr, mask, **kwargs):
     mimage = make_m_image(imarr)
     psiimage = make_psi_image(imarr)
 
+    # The value floors m, so the gradient is flat below the floor.
+    active = mimage > MFRAC_FLOOR
+    msafe = np.maximum(mimage, MFRAC_FLOOR)
+
     gradout = np.zeros(imarr.shape)
     # dR/dI
     if pol_solve[0] != 0:
-        gradout[0] = np.log(mimage)
-    # dR/drho
+        gradout[0] = np.log(msafe)
+    # dR/drho; dm/drho = cos(psi)
     if pol_solve[1] != 0:
-        gradm = iimage / mimage
-        gradout[1] = gradm * np.cos(psiimage)
-    # dR/dpsi
+        gradout[1] = np.where(active, iimage / msafe, 0.0) * np.cos(psiimage)
+    # dR/dpsi; dm/dpsi = -m*tan(psi), so the 1/m cancels outright
     if pol_solve[3] != 0:
-        gradm = iimage / mimage
-        gradout[3] = gradm * (-mimage * np.tan(psiimage))
+        gradout[3] = np.where(active, -iimage * np.tan(psiimage), 0.0)
     return gradout / norm
 
 
@@ -913,7 +917,6 @@ def reg_ptv(imarr, mask, **kwargs):
         imarr = embed_imarr(imarr, mask, randomfloor=True)
 
     # parameters and normalization
-    epsilon = kwargs.get('epsilon_tv', 0.)
     flux = kwargs['flux']
     nx, ny, psize = kwargs['xdim'], kwargs['ydim'], kwargs['psize']
     beam_size = kwargs.get('beam_size', 1) or psize
@@ -922,13 +925,19 @@ def reg_ptv(imarr, mask, **kwargs):
     # compute TV
     pimage = make_p_image(imarr)
     im = pimage.reshape(ny, nx)
-    impad = xp.pad(im, 1, mode='constant', constant_values=0)
-    im_l1 = xp.roll(impad, -1, axis=0)[1:ny+1, 1:nx+1]
-    im_l2 = xp.roll(impad, -1, axis=1)[1:ny+1, 1:nx+1]
+    mask2d = mask.reshape(ny, nx)
+    impad = xp.pad(im, 1, mode='edge')
+    maskpad = np.pad(mask2d, 1, mode='edge')
+    # Shift the mask with P so a neighbor outside the mask contributes no edge.
+    m_l1 = np.roll(maskpad, -1, axis=0)[1:ny+1, 1:nx+1]
+    m_l2 = np.roll(maskpad, -1, axis=1)[1:ny+1, 1:nx+1]
+    im_l1 = xp.where(m_l1, xp.roll(impad, -1, axis=0)[1:ny+1, 1:nx+1], im)
+    im_l2 = xp.where(m_l2, xp.roll(impad, -1, axis=1)[1:ny+1, 1:nx+1], im)
     # _safe_sqrt keeps the jax gradient finite at near-zero-|P|-difference pixels
     # (epsilon_tv default 0); the forward value is unchanged for any epsilon_tv.
     epsilon = kwargs.get('epsilon_tv', 0.)
-    return xp.sum(_safe_sqrt(xp, xp.abs(im_l1 - im)**2 + xp.abs(im_l2 - im)**2 + epsilon)) / norm
+    tv = _safe_sqrt(xp, xp.abs(im_l1 - im)**2 + xp.abs(im_l2 - im)**2 + epsilon)
+    return xp.sum(xp.where(mask2d, tv, 0.)) / norm
 
 
 def reggrad_ptv(imarr, mask, **kwargs):
@@ -961,20 +970,23 @@ def reggrad_ptv(imarr, mask, **kwargs):
 
     # shifted 2D images
     im = pimage.reshape(ny, nx)
-    impad = np.pad(im, 1, mode='constant', constant_values=0)
-    im_l1 = np.roll(impad, -1, axis=0)[1:ny+1, 1:nx+1]
-    im_l2 = np.roll(impad, -1, axis=1)[1:ny+1, 1:nx+1]
-    im_r1 = np.roll(impad, 1, axis=0)[1:ny+1, 1:nx+1]
-    im_r2 = np.roll(impad, 1, axis=1)[1:ny+1, 1:nx+1]
-    im_r1l2 = np.roll(np.roll(impad,  1, axis=0), -1, axis=1)[1:ny+1, 1:nx+1]
-    im_l1r2 = np.roll(np.roll(impad, -1, axis=0),  1, axis=1)[1:ny+1, 1:nx+1]
+    mask2d = mask.reshape(ny, nx)
+    impad = np.pad(im, 1, mode='edge')
+    maskpad = np.pad(mask2d, 1, mode='edge')
+    # The four shifted masks select valid neighbors in each direction.
+    m_l1 = np.roll(maskpad, -1, axis=0)[1:ny+1, 1:nx+1]
+    m_l2 = np.roll(maskpad, -1, axis=1)[1:ny+1, 1:nx+1]
+    m_r1 = np.roll(maskpad, 1, axis=0)[1:ny+1, 1:nx+1]
+    m_r2 = np.roll(maskpad, 1, axis=1)[1:ny+1, 1:nx+1]
+    im_l1 = np.where(m_l1, np.roll(impad, -1, axis=0)[1:ny+1, 1:nx+1], im)
+    im_l2 = np.where(m_l2, np.roll(impad, -1, axis=1)[1:ny+1, 1:nx+1], im)
+    im_r1 = np.where(m_r1, np.roll(impad, 1, axis=0)[1:ny+1, 1:nx+1], im)
+    im_r2 = np.where(m_r2, np.roll(impad, 1, axis=1)[1:ny+1, 1:nx+1], im)
 
-    # Denominators: |forward-l1|+|forward-l2|, |back-r1|+|cross|, |back-r2|+|cross|.
-    # epsilon_tv (default 0, matching reg_ptv) keeps these finite at zero-|P| diffs.
-    epsilon = kwargs.get('epsilon_tv', 0.)
+    # A back-neighbor uses the forward denominator at its own pixel.
     d1 = np.sqrt(np.abs(im_l1 - im)**2 + np.abs(im_l2 - im)**2 + epsilon)
-    d2 = np.sqrt(np.abs(im_r1 - im)**2 + np.abs(im_r1l2 - im_r1)**2 + epsilon)
-    d3 = np.sqrt(np.abs(im_r2 - im)**2 + np.abs(im_l1r2 - im_r2)**2 + epsilon)
+    d2 = np.roll(d1, 1, axis=0)
+    d3 = np.roll(d1, 1, axis=1)
     # Guarded denominators (mirror reggrad_tv_spec): at a flat-|P| pixel d == 0 when epsilon_tv == 0,
     # and the numerators below are 0 there too (cos terms cancel, sin -> 0), so each m/d term is 0
     # rather than 0/0 = NaN. Unchanged wherever d > 0, so non-flat results are identical.
@@ -983,49 +995,30 @@ def reggrad_ptv(imarr, mask, **kwargs):
     d3 = np.where(d3 > 0, d3, 1.0)
     # Numerators below use cos/sin of the single-angle difference between
     # neighbors, from d|P_l1 - P|^2/d|P| = 2|P| - 2|P_l1|*cos(angle(P_l1) - angle(P)).
-    # mask first-row/col back-neighbor terms that don't exist (as reggrad_tv does)
-    mask1 = np.zeros(im.shape, dtype=bool)
-    mask2 = np.zeros(im.shape, dtype=bool)
-    mask1[0, :] = True
-    mask2[:, 0] = True
     gradout = np.zeros(imarr.shape)
-    # dR/dI numerators (chain through |P| = I*m)
-    if pol_solve[0] != 0:
-        m1 = 2*np.abs(im*im) - np.abs(im*im_l1)*np.cos(np.angle(im_l1) - np.angle(im)) - np.abs(im*im_l2)*np.cos(np.angle(im_l2) - np.angle(im))
-        m2 = np.abs(im*im) - np.abs(im*im_r1)*np.cos(np.angle(im) - np.angle(im_r1))
-        m3 = np.abs(im*im) - np.abs(im*im_r2)*np.cos(np.angle(im) - np.angle(im_r2))
-        m2[mask1] = 0
-        m3[mask2] = 0
-        gradout[0] = (1./iimage) * (m1/d1 + m2/d2 + m3/d3).flatten()
-    # dR/drho numerators; m enters via |P| = I*m, so dR/dm = I * dR/d|P|.
-    # Then dm/drho = cos(psi)
-    if pol_solve[1] != 0:
+    # dR/d|P| numerators; slots 0, 1 and 3 all chain through it, so build it once
+    if pol_solve[0] != 0 or pol_solve[1] != 0 or pol_solve[3] != 0:
         m1 = 2*np.abs(im) - np.abs(im_l1)*np.cos(np.angle(im_l1) - np.angle(im)) - np.abs(im_l2)*np.cos(np.angle(im_l2) - np.angle(im))
         m2 = np.abs(im) - np.abs(im_r1)*np.cos(np.angle(im) - np.angle(im_r1))
         m3 = np.abs(im) - np.abs(im_r2)*np.cos(np.angle(im) - np.angle(im_r2))
-        m2[mask1] = 0
-        m3[mask2] = 0
-        gradm = iimage * (m1/d1 + m2/d2 + m3/d3).flatten()
-        gradout[1] = gradm * np.cos(psiimage)
+        grad_absp = (m1/d1 + m2/d2 + m3/d3).flatten()
+    # dR/dI, chaining through |P| = I*m
+    if pol_solve[0] != 0:
+        gradout[0] = mimage * grad_absp
+    # dR/drho; dR/dm = I * dR/d|P| and dm/drho = cos(psi)
+    if pol_solve[1] != 0:
+        gradout[1] = iimage * grad_absp * np.cos(psiimage)
     # dR/dphi numerators
     # `gradchi` is dR/dchi; chain through chi = phi/2 gives the *0.5.
     if pol_solve[2] != 0:
         c1 = -2*np.abs(im*im_l1)*np.sin(np.angle(im_l1) - np.angle(im)) - 2*np.abs(im*im_l2)*np.sin(np.angle(im_l2) - np.angle(im))
         c2 = 2*np.abs(im*im_r1)*np.sin(np.angle(im) - np.angle(im_r1))
         c3 = 2*np.abs(im*im_r2)*np.sin(np.angle(im) - np.angle(im_r2))
-        c2[mask1] = 0
-        c3[mask2] = 0
         gradchi = (c1/d1 + c2/d2 + c3/d3).flatten()
         gradout[2] = 0.5 * gradchi
-    # dR/dpsi numerators; reuse dR/dm and chain through dm/dpsi = -m*tan(psi).
+    # dR/dpsi; reuse dR/dm and chain through dm/dpsi = -m*tan(psi)
     if pol_solve[3] != 0:
-        m1 = 2*np.abs(im) - np.abs(im_l1)*np.cos(np.angle(im_l1) - np.angle(im)) - np.abs(im_l2)*np.cos(np.angle(im_l2) - np.angle(im))
-        m2 = np.abs(im) - np.abs(im_r1)*np.cos(np.angle(im) - np.angle(im_r1))
-        m3 = np.abs(im) - np.abs(im_r2)*np.cos(np.angle(im) - np.angle(im_r2))
-        m2[mask1] = 0
-        m3[mask2] = 0
-        gradm = iimage * (m1/d1 + m2/d2 + m3/d3).flatten()
-        gradout[3] = gradm * (-mimage * np.tan(psiimage))
+        gradout[3] = iimage * grad_absp * (-mimage * np.tan(psiimage))
     g = gradout / norm
     return g[:, mask] if do_slice else g
 
@@ -1053,10 +1046,15 @@ def reg_ptv2(imarr, mask, **kwargs):
     # compute TSV on the complex P image
     pimage = make_p_image(imarr)
     im = pimage.reshape(ny, nx)
-    impad = xp.pad(im, 1, mode='constant', constant_values=0)
-    im_l1 = xp.roll(impad, -1, axis=0)[1:ny+1, 1:nx+1]
-    im_l2 = xp.roll(impad, -1, axis=1)[1:ny+1, 1:nx+1]
-    return xp.sum(xp.abs(im_l1 - im)**2 + xp.abs(im_l2 - im)**2) / norm
+    mask2d = mask.reshape(ny, nx)
+    impad = xp.pad(im, 1, mode='edge')
+    maskpad = np.pad(mask2d, 1, mode='edge')
+    m_l1 = np.roll(maskpad, -1, axis=0)[1:ny+1, 1:nx+1]
+    m_l2 = np.roll(maskpad, -1, axis=1)[1:ny+1, 1:nx+1]
+    im_l1 = xp.where(m_l1, xp.roll(impad, -1, axis=0)[1:ny+1, 1:nx+1], im)
+    im_l2 = xp.where(m_l2, xp.roll(impad, -1, axis=1)[1:ny+1, 1:nx+1], im)
+    tv2 = xp.abs(im_l1 - im)**2 + xp.abs(im_l2 - im)**2
+    return xp.sum(xp.where(mask2d, tv2, 0.)) / norm
 
 
 def reggrad_ptv2(imarr, mask, **kwargs):
@@ -1088,11 +1086,17 @@ def reggrad_ptv2(imarr, mask, **kwargs):
     im = pimage.reshape(ny, nx)
 
     # shifted 2D images
-    impad = np.pad(im, 1, mode='constant', constant_values=0)
-    im_l1 = np.roll(impad, -1, axis=0)[1:ny+1, 1:nx+1]
-    im_l2 = np.roll(impad, -1, axis=1)[1:ny+1, 1:nx+1]
-    im_r1 = np.roll(impad, 1, axis=0)[1:ny+1, 1:nx+1]
-    im_r2 = np.roll(impad, 1, axis=1)[1:ny+1, 1:nx+1]
+    mask2d = mask.reshape(ny, nx)
+    impad = np.pad(im, 1, mode='edge')
+    maskpad = np.pad(mask2d, 1, mode='edge')
+    m_l1 = np.roll(maskpad, -1, axis=0)[1:ny+1, 1:nx+1]
+    m_l2 = np.roll(maskpad, -1, axis=1)[1:ny+1, 1:nx+1]
+    m_r1 = np.roll(maskpad, 1, axis=0)[1:ny+1, 1:nx+1]
+    m_r2 = np.roll(maskpad, 1, axis=1)[1:ny+1, 1:nx+1]
+    im_l1 = np.where(m_l1, np.roll(impad, -1, axis=0)[1:ny+1, 1:nx+1], im)
+    im_l2 = np.where(m_l2, np.roll(impad, -1, axis=1)[1:ny+1, 1:nx+1], im)
+    im_r1 = np.where(m_r1, np.roll(impad, 1, axis=0)[1:ny+1, 1:nx+1], im)
+    im_r2 = np.where(m_r2, np.roll(impad, 1, axis=1)[1:ny+1, 1:nx+1], im)
 
     # complex TSV gradient (Wirtinger dR/dPbar): pixel j appears in its own two
     # forward differences and as the forward neighbor of its back-pixels
@@ -1100,14 +1104,6 @@ def reggrad_ptv2(imarr, mask, **kwargs):
     g2 = im - im_r1
     g3 = im - im_r2
 
-    # The back-neighbor (g2, g3) terms reference a pixel that does not
-    # exist on the first row/column (it is the zero pad), so they must be zeroed
-    mask1 = np.zeros(im.shape, dtype=bool)
-    mask2 = np.zeros(im.shape, dtype=bool)
-    mask1[0, :] = True
-    mask2[:, 0] = True
-    g2[mask1] = 0
-    g3[mask2] = 0
     G = g1 + g2 + g3
 
     # dR/d|P| = 2 Re[G e^{-i angle(P)}] and dR/dphi = 2 Im[G conj(P)]
@@ -1167,7 +1163,7 @@ def reggrad_vflux(imarr, mask, **kwargs):
     base = 2 * (np.sum(vimage) - vflux) * np.ones(len(vimage)) #dR/dV
     # dR/dI
     if pol_solve[0] != 0:
-        gradout[0] = (vimage / iimage) * base
+        gradout[0] = vfimage * base
     # dR/drho
     if pol_solve[1] != 0:
         gradv = iimage * base
@@ -1175,7 +1171,7 @@ def reggrad_vflux(imarr, mask, **kwargs):
     # dR/dpsi
     if pol_solve[3] != 0:
         gradv = iimage * base
-        gradout[3] = gradv * (vfimage / np.tan(psiimage))
+        gradout[3] = gradv * make_m_image(imarr)
     return gradout / norm
 
 
@@ -1219,7 +1215,7 @@ def reggrad_l1v(imarr, mask, **kwargs):
     # dR/dpsi
     if pol_solve[3] != 0:
         gradv = iimage * base
-        gradout[3] = gradv * (vfimage / np.tan(psiimage))
+        gradout[3] = gradv * make_m_image(imarr)
     return gradout / norm
 
 
@@ -1263,201 +1259,66 @@ def reggrad_l2v(imarr, mask, **kwargs):
     # dR/dpsi
     if pol_solve[3] != 0:
         gradv = iimage * base
-        gradout[3] = gradv * (vfimage / np.tan(psiimage))
+        gradout[3] = gradv * make_m_image(imarr)
     return gradout / norm
 
 
 def reg_vtv(imarr, mask, **kwargs):
-    """Stokes V total-variation regularizer"""
-    # embed image if masked
-    from ehtim.imaging.imager_utils import _safe_sqrt, embed_imarr
-    xp = array_namespace(imarr)
-    if np.any(np.invert(mask)):
-        imarr = embed_imarr(imarr, mask, randomfloor=True)
-
-    # parameters and normalization
-    epsilon = kwargs.get('epsilon_tv', 0.)
-    vflux = kwargs['vflux']
-    nx, ny, psize = kwargs['xdim'], kwargs['ydim'], kwargs['psize']
-    beam_size = kwargs.get('beam_size', 1) or psize
-    norm = np.abs(vflux) * psize / beam_size if kwargs.get('norm_reg', True) else 1
-
-    # compute TV
-    vimage = make_v_image(imarr)
-    im = vimage.reshape(ny, nx)
-    impad = xp.pad(im, 1, mode='constant', constant_values=0)
-    im_l1 = xp.roll(impad, -1, axis=0)[1:ny+1, 1:nx+1]
-    im_l2 = xp.roll(impad, -1, axis=1)[1:ny+1, 1:nx+1]
-    epsilon = kwargs.get('epsilon_tv', 0.)
-    return xp.sum(_safe_sqrt(xp, xp.abs(im_l1 - im)**2 + xp.abs(im_l2 - im)**2 + epsilon)) / norm
+    """Stokes V total-variation regularizer."""
+    from ehtim.imaging.imager_utils import reg_tv
+    tv_kwargs = dict(kwargs, flux=np.abs(kwargs['vflux']),
+                     beam_size=kwargs.get('beam_size', 1) or kwargs['psize'])
+    return reg_tv(make_v_image(imarr), mask, **tv_kwargs)
 
 
 def reggrad_vtv(imarr, mask, **kwargs):
     """Gradient of the Stokes V total-variation regularizer.
 
-    pol_solve here flags the required physical gradients (I, rho, phi, psi),
-    not the solver variables.
+    pol_solve flags the required physical gradients (I, rho, phi, psi).
     """
-    # embed image if masked
-    from ehtim.imaging.imager_utils import embed_imarr
-    do_slice = np.any(np.invert(mask))
-    if do_slice:
-        imarr = embed_imarr(imarr, mask, randomfloor=True)
-
-    # pol_solve output mask
+    from ehtim.imaging.imager_utils import reggrad_tv
     pol_solve = kwargs.get('pol_solve', POL_SOLVE_DEFAULT_V)
+    tv_kwargs = dict(kwargs, flux=np.abs(kwargs['vflux']),
+                     beam_size=kwargs.get('beam_size', 1) or kwargs['psize'])
+    base = reggrad_tv(make_v_image(imarr), mask, **tv_kwargs)
 
-    # parameters and normalization
-    epsilon = kwargs.get('epsilon_tv', 0.)
-    vflux = kwargs['vflux']
-    nx, ny, psize = kwargs['xdim'], kwargs['ydim'], kwargs['psize']
-    beam_size = kwargs.get('beam_size', 1) or psize
-    norm = np.abs(vflux) * psize / beam_size if kwargs.get('norm_reg', True) else 1
-
-    # compute necessary images
-    epsilon = kwargs.get('epsilon_tv', 0.)  # default 0 -> byte-identical; matches reg_vtv
-    iimage = make_i_image(imarr)
-    vimage = make_v_image(imarr)
-    vfimage = make_vf_image(imarr)
-    psiimage = make_psi_image(imarr)
-
-    # shifted 2D images
-    im = vimage.reshape(ny, nx)
-    impad = np.pad(im, 1, mode='constant', constant_values=0)
-    im_l1 = np.roll(impad, -1, axis=0)[1:ny+1, 1:nx+1]
-    im_l2 = np.roll(impad, -1, axis=1)[1:ny+1, 1:nx+1]
-    im_r1 = np.roll(impad, 1, axis=0)[1:ny+1, 1:nx+1]
-    im_r2 = np.roll(impad, 1, axis=1)[1:ny+1, 1:nx+1]
-    im_r1l2 = np.roll(np.roll(impad,  1, axis=0), -1, axis=1)[1:ny+1, 1:nx+1]
-    im_l1r2 = np.roll(np.roll(impad, -1, axis=0),  1, axis=1)[1:ny+1, 1:nx+1]
-
-    # base gradient terms. Guarded division (mirrors reggrad_tv_spec): at a flat pixel the denominator
-    # is 0 when epsilon_tv == 0, so the gradient is 0 rather than 0/0 = NaN. Identical to the plain
-    # division wherever the denominator is > 0, so non-flat results are unchanged.
-    d1 = np.sqrt((im - im_l1)**2 + (im - im_l2)**2 + epsilon)
-    d2 = np.sqrt((im - im_r1)**2 + (im_r1l2 - im_r1)**2 + epsilon)
-    d3 = np.sqrt((im - im_r2)**2 + (im_l1r2 - im_r2)**2 + epsilon)
-    g1 = np.where(d1 > 0, (2*im - im_l1 - im_l2) / np.where(d1 > 0, d1, 1.0), 0.0)
-    g2 = np.where(d2 > 0, (im - im_r1) / np.where(d2 > 0, d2, 1.0), 0.0)
-    g3 = np.where(d3 > 0, (im - im_r2) / np.where(d3 > 0, d3, 1.0), 0.0)
-
-    # The back-neighbor (g2, g3) terms reference a pixel that does not
-    # exist on the first row/column (it is the zero pad), so they must be zeroed
-    mask1 = np.zeros(im.shape)
-    mask2 = np.zeros(im.shape)
-    mask1[0, :] = 1
-    mask2[:, 0] = 1
-    g2[mask1.astype(bool)] = 0
-    g3[mask2.astype(bool)] = 0
-
-    # final gradient
     gradout = np.zeros(imarr.shape)
-    base = (g1 + g2 + g3).flatten() #dR/dV via V = I*vf
-    # dR/dI
     if pol_solve[0] != 0:
-        gradout[0] = vfimage * base
-    # dR/drho
+        gradout[0] = make_vf_image(imarr) * base
     if pol_solve[1] != 0:
-        gradv = iimage * base
-        gradout[1] = gradv * np.sin(psiimage)
-    # dR/dpsi
+        gradout[1] = make_i_image(imarr) * base * np.sin(make_psi_image(imarr))
     if pol_solve[3] != 0:
-        gradv = iimage * base
-        gradout[3] = gradv * (vfimage / np.tan(psiimage))
-
-    g = gradout / norm
-    return g[:, mask] if do_slice else g
+        gradout[3] = make_i_image(imarr) * base * make_m_image(imarr)
+    return gradout
 
 
 def reg_vtv2(imarr, mask, **kwargs):
-    """Stokes V total-squared-variation regularizer"""
-    # embed image if masked
-    from ehtim.imaging.imager_utils import embed_imarr
-    xp = array_namespace(imarr)
-    if np.any(np.invert(mask)):
-        imarr = embed_imarr(imarr, mask, randomfloor=True)
-
-    # parameters and normalization
-    vflux = kwargs['vflux']
-    nx, ny, psize = kwargs['xdim'], kwargs['ydim'], kwargs['psize']
-    beam_size = kwargs.get('beam_size', 1) or psize
-    norm = psize**4 * np.abs(vflux**2) / beam_size**4 if kwargs.get('norm_reg', True) else 1
-
-    # compute TV2
-    vimage = make_v_image(imarr)
-    im = vimage.reshape(ny, nx)
-    impad = xp.pad(im, 1, mode='constant', constant_values=0)
-    im_l1 = xp.roll(impad, -1, axis=0)[1:ny+1, 1:nx+1]
-    im_l2 = xp.roll(impad, -1, axis=1)[1:ny+1, 1:nx+1]
-    return xp.sum((im_l1 - im)**2 + (im_l2 - im)**2) / norm
+    """Stokes V total-squared-variation regularizer."""
+    from ehtim.imaging.imager_utils import reg_tv2
+    tv_kwargs = dict(kwargs, flux=np.abs(kwargs['vflux']),
+                     beam_size=kwargs.get('beam_size', 1) or kwargs['psize'])
+    return reg_tv2(make_v_image(imarr), mask, **tv_kwargs)
 
 
 def reggrad_vtv2(imarr, mask, **kwargs):
     """Gradient of the Stokes V squared-total-variation regularizer.
 
-    pol_solve here flags the required physical gradients (I, rho, phi, psi),
-    not the solver variables.
+    pol_solve flags the required physical gradients (I, rho, phi, psi).
     """
-    # embed image if masked
-    from ehtim.imaging.imager_utils import embed_imarr
-    do_slice = np.any(np.invert(mask))
-    if do_slice:
-        imarr = embed_imarr(imarr, mask, randomfloor=True)
-
-    # pol_solve output mask
+    from ehtim.imaging.imager_utils import reggrad_tv2
     pol_solve = kwargs.get('pol_solve', POL_SOLVE_DEFAULT_V)
+    tv_kwargs = dict(kwargs, flux=np.abs(kwargs['vflux']),
+                     beam_size=kwargs.get('beam_size', 1) or kwargs['psize'])
+    base = reggrad_tv2(make_v_image(imarr), mask, **tv_kwargs)
 
-    # parameters and normalization
-    vflux = kwargs['vflux']
-    nx, ny, psize = kwargs['xdim'], kwargs['ydim'], kwargs['psize']
-    beam_size = kwargs.get('beam_size', 1) or psize
-    norm = psize**4 * np.abs(vflux**2) / beam_size**4 if kwargs.get('norm_reg', True) else 1
-
-    # necessary images
-    iimage = make_i_image(imarr)
-    vimage = make_v_image(imarr)
-    vfimage = make_vf_image(imarr)
-    psiimage = make_psi_image(imarr)
-    im = vimage.reshape(ny, nx)
-
-    # shifted 2D images
-    impad = np.pad(im, 1, mode='constant', constant_values=0)
-    im_l1 = np.roll(impad, -1, axis=0)[1:ny+1, 1:nx+1]
-    im_l2 = np.roll(impad, -1, axis=1)[1:ny+1, 1:nx+1]
-    im_r1 = np.roll(impad, 1, axis=0)[1:ny+1, 1:nx+1]
-    im_r2 = np.roll(impad, 1, axis=1)[1:ny+1, 1:nx+1]
-
-    # base gradient terms
-    g1 = 2*im - im_l1 - im_l2
-    g2 = im - im_r1
-    g3 = im - im_r2
-
-    # The back-neighbor (g2, g3) terms reference a pixel that does not
-    # exist on the first row/column (it is the zero pad), so they must be zeroed
-    mask1 = np.zeros(im.shape)
-    mask2 = np.zeros(im.shape)
-    mask1[0, :] = 1
-    mask2[:, 0] = 1
-    g2[mask1.astype(bool)] = 0
-    g3[mask2.astype(bool)] = 0
-
-    # final gradient
     gradout = np.zeros(imarr.shape)
-    base = 2 * (g1 + g2 + g3).flatten() # base = dR/dV via V = I*vf
-    # dR/dI
     if pol_solve[0] != 0:
-        gradout[0] = vfimage * base
-    # dR/drho
+        gradout[0] = make_vf_image(imarr) * base
     if pol_solve[1] != 0:
-        gradv = iimage * base
-        gradout[1] = gradv * np.sin(psiimage)
-    # dR/dpsi
+        gradout[1] = make_i_image(imarr) * base * np.sin(make_psi_image(imarr))
     if pol_solve[3] != 0:
-        gradv = iimage * base
-        gradout[3] = gradv * (vfimage / np.tan(psiimage))
-
-    g = gradout / norm
-    return g[:, mask] if do_slice else g
+        gradout[3] = make_i_image(imarr) * base * make_m_image(imarr)
+    return gradout
 
 
 ##################################################################################################
@@ -1485,6 +1346,7 @@ def chisqdata_pvis_nfft(Obsdata, Prior, **kwargs):
     fft_pad_factor = kwargs.get('fft_pad_factor',FFT_PAD_DEFAULT)
     p_rad = kwargs.get('p_rad', GRIDDER_P_RAD_DEFAULT)
     nfft_eps = kwargs.get('nfft_eps', NFFT_EPS_DEFAULT)
+    nfft_nthreads = kwargs.get('nfft_nthreads', NFFT_NTHREADS_DEFAULT)
 
     # unpack data
     data_arr = Obsdata.unpack(['u','v','pvis','psigma'], conj=True)
@@ -1494,7 +1356,8 @@ def chisqdata_pvis_nfft(Obsdata, Prior, **kwargs):
 
     # get NFFT info
     npad = int(fft_pad_factor * np.max((Prior.xdim, Prior.ydim)))
-    A1 = NFFTInfo(Prior.xdim, Prior.ydim, Prior.psize, Prior.pulse, npad, p_rad, uv, eps=nfft_eps)
+    A1 = NFFTInfo(Prior.xdim, Prior.ydim, Prior.psize, Prior.pulse, npad, p_rad, uv,
+                  eps=nfft_eps, nthreads=nfft_nthreads)
     A = [A1]
 
     return (vis, sigma, A)
@@ -1522,6 +1385,7 @@ def chisqdata_m_nfft(Obsdata, Prior, **kwargs):
     fft_pad_factor = kwargs.get('fft_pad_factor',FFT_PAD_DEFAULT)
     p_rad = kwargs.get('p_rad', GRIDDER_P_RAD_DEFAULT)
     nfft_eps = kwargs.get('nfft_eps', NFFT_EPS_DEFAULT)
+    nfft_nthreads = kwargs.get('nfft_nthreads', NFFT_NTHREADS_DEFAULT)
 
     # unpack data
     mdata = Obsdata.unpack(['u','v','m','msigma'], conj=True)
@@ -1531,7 +1395,8 @@ def chisqdata_m_nfft(Obsdata, Prior, **kwargs):
 
     # get NFFT info
     npad = int(fft_pad_factor * np.max((Prior.xdim, Prior.ydim)))
-    A1 = NFFTInfo(Prior.xdim, Prior.ydim, Prior.psize, Prior.pulse, npad, p_rad, uv, eps=nfft_eps)
+    A1 = NFFTInfo(Prior.xdim, Prior.ydim, Prior.psize, Prior.pulse, npad, p_rad, uv,
+                  eps=nfft_eps, nthreads=nfft_nthreads)
     A = [A1]
 
     return (m, sigmam, A)
@@ -1559,6 +1424,7 @@ def chisqdata_vvis_nfft(Obsdata, Prior, **kwargs):
     fft_pad_factor = kwargs.get('fft_pad_factor',FFT_PAD_DEFAULT)
     p_rad = kwargs.get('p_rad', GRIDDER_P_RAD_DEFAULT)
     nfft_eps = kwargs.get('nfft_eps', NFFT_EPS_DEFAULT)
+    nfft_nthreads = kwargs.get('nfft_nthreads', NFFT_NTHREADS_DEFAULT)
 
     # unpack data
     data_arr = Obsdata.unpack(['u','v','vvis','vsigma'], conj=False)
@@ -1568,7 +1434,8 @@ def chisqdata_vvis_nfft(Obsdata, Prior, **kwargs):
 
     # get NFFT info
     npad = int(fft_pad_factor * np.max((Prior.xdim, Prior.ydim)))
-    A1 = NFFTInfo(Prior.xdim, Prior.ydim, Prior.psize, Prior.pulse, npad, p_rad, uv, eps=nfft_eps)
+    A1 = NFFTInfo(Prior.xdim, Prior.ydim, Prior.psize, Prior.pulse, npad, p_rad, uv,
+                  eps=nfft_eps, nthreads=nfft_nthreads)
     A = [A1]
 
     return (vis, sigma, A)

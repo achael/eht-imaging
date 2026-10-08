@@ -1784,10 +1784,16 @@ def reg_tv(imvec, mask, **kwargs):
     norm = flux * psize / beam_size if kwargs.get('norm_reg', True) else 1
     # compute TV
     im = imvec.reshape(ny, nx)
-    impad = xp.pad(im, 1, mode='constant', constant_values=0)
-    im_l1 = xp.roll(impad, -1, axis=0)[1:ny+1, 1:nx+1]
-    im_l2 = xp.roll(impad, -1, axis=1)[1:ny+1, 1:nx+1]
-    return xp.sum(_safe_sqrt(xp, xp.abs(im_l1 - im)**2 + xp.abs(im_l2 - im)**2 + epsilon)) / norm
+    mask2d = mask.reshape(ny, nx)
+    impad = xp.pad(im, 1, mode='edge')
+    maskpad = np.pad(mask2d, 1, mode='edge')
+    # Roll the padded mask with the image to drop differences into masked pixels.
+    m_l1 = np.roll(maskpad, -1, axis=0)[1:ny+1, 1:nx+1]
+    m_l2 = np.roll(maskpad, -1, axis=1)[1:ny+1, 1:nx+1]
+    im_l1 = xp.where(m_l1, xp.roll(impad, -1, axis=0)[1:ny+1, 1:nx+1], im)
+    im_l2 = xp.where(m_l2, xp.roll(impad, -1, axis=1)[1:ny+1, 1:nx+1], im)
+    tv = _safe_sqrt(xp, xp.abs(im_l1 - im)**2 + xp.abs(im_l2 - im)**2 + epsilon)
+    return xp.sum(xp.where(mask2d, tv, 0.)) / norm
 
 
 def reggrad_tv(imvec, mask, **kwargs):
@@ -1803,74 +1809,57 @@ def reggrad_tv(imvec, mask, **kwargs):
     norm = flux * psize / beam_size if kwargs.get('norm_reg', True) else 1
     # shifted 2D images
     im = imvec.reshape(ny, nx)
-    impad = np.pad(im, 1, mode='constant', constant_values=0)
-    im_l1 = np.roll(impad, -1, axis=0)[1:ny+1, 1:nx+1]
-    im_l2 = np.roll(impad, -1, axis=1)[1:ny+1, 1:nx+1]
-    im_r1 = np.roll(impad, 1, axis=0)[1:ny+1, 1:nx+1]
-    im_r2 = np.roll(impad, 1, axis=1)[1:ny+1, 1:nx+1]
-    im_r1l2 = np.roll(np.roll(impad,  1, axis=0), -1, axis=1)[1:ny+1, 1:nx+1]
-    im_l1r2 = np.roll(np.roll(impad, -1, axis=0),  1, axis=1)[1:ny+1, 1:nx+1]
+    mask2d = mask.reshape(ny, nx)
+    impad = np.pad(im, 1, mode='edge')
+    maskpad = np.pad(mask2d, 1, mode='edge')
+    # The shifted masks select real neighbors; a missing edge reads this pixel.
+    m_l1 = np.roll(maskpad, -1, axis=0)[1:ny+1, 1:nx+1]
+    m_l2 = np.roll(maskpad, -1, axis=1)[1:ny+1, 1:nx+1]
+    m_r1 = np.roll(maskpad, 1, axis=0)[1:ny+1, 1:nx+1]
+    m_r2 = np.roll(maskpad, 1, axis=1)[1:ny+1, 1:nx+1]
+    im_l1 = np.where(m_l1, np.roll(impad, -1, axis=0)[1:ny+1, 1:nx+1], im)
+    im_l2 = np.where(m_l2, np.roll(impad, -1, axis=1)[1:ny+1, 1:nx+1], im)
+    im_r1 = np.where(m_r1, np.roll(impad, 1, axis=0)[1:ny+1, 1:nx+1], im)
+    im_r2 = np.where(m_r2, np.roll(impad, 1, axis=1)[1:ny+1, 1:nx+1], im)
     # gradient terms. Guarded division (mirrors reggrad_tv_spec): at a flat pixel the denominator
     # is 0 when epsilon_tv == 0, so the gradient is 0 rather than 0/0 = NaN. Identical to the plain
     # division wherever the denominator is > 0, so non-flat results are unchanged.
     d1 = np.sqrt((im - im_l1)**2 + (im - im_l2)**2 + epsilon)
-    d2 = np.sqrt((im - im_r1)**2 + (im_r1l2 - im_r1)**2 + epsilon)
-    d3 = np.sqrt((im - im_r2)**2 + (im_l1r2 - im_r2)**2 + epsilon)
+    d2 = np.roll(d1, 1, axis=0)
+    d3 = np.roll(d1, 1, axis=1)
     g1 = np.where(d1 > 0, (2*im - im_l1 - im_l2) / np.where(d1 > 0, d1, 1.0), 0.0)
     g2 = np.where(d2 > 0, (im - im_r1) / np.where(d2 > 0, d2, 1.0), 0.0)
     g3 = np.where(d3 > 0, (im - im_r2) / np.where(d3 > 0, d3, 1.0), 0.0)
-    # The back-neighbor (g2, g3) terms reference a pixel that does not
-    # exist on the first row/column (it is the zero pad), so they must be zeroed
-    mask1 = np.zeros(im.shape)
-    mask2 = np.zeros(im.shape)
-    mask1[0, :] = 1
-    mask2[:, 0] = 1
-    g2[mask1.astype(bool)] = 0
-    g3[mask2.astype(bool)] = 0
     # final gradient
     g = (g1 + g2 + g3).flatten() / norm
     return g[mask]
 
 
-# tvlog / tv2log use clipfloor=epsilon_tv (not the default 0) so the log
-# transform stays defined where mask filled in values.
 def reg_tvlog(imvec, mask, **kwargs):
     """Total Variation Regularizer on the log image"""
-    # embed image
     xp = array_namespace(imvec)
-    epsilon = kwargs.get('epsilon_tv', 0.)
-    if np.any(np.invert(mask)):
-        imvec = embed(imvec, mask, clipfloor=epsilon, randomfloor=True)
-    # parameters and normalization -- update kwargs
-    nx, ny = kwargs['xdim'], kwargs['ydim']
     flux = kwargs['flux']
-    npix = nx * ny
+    if not np.isfinite(flux) or flux <= 0:
+        raise ValueError("flux must be positive for log TV")
+    npix = kwargs['xdim'] * kwargs['ydim']
     logflux = npix * np.abs(np.log(flux / npix))
-    log_kwargs = dict(kwargs)
-    log_kwargs['flux'] = logflux
-    return reg_tv(xp.log(imvec), np.ones(imvec.shape, dtype=bool), **log_kwargs)
+    # Only active pixels are logged; reg_tv embeds them and drops mask-crossing edges.
+    return reg_tv(xp.log(imvec), mask, **dict(kwargs, flux=logflux))
 
 
 def reggrad_tvlog(imvec, mask, **kwargs):
     """Gradient of the total variation regularizer on the log image"""
-    # embed image
-    epsilon = kwargs.get('epsilon_tv', 0.)
-    if np.any(np.invert(mask)):
-        imvec = embed(imvec, mask, clipfloor=epsilon, randomfloor=True)
-    # parameters and normalization -- update kwargs
-    nx, ny = kwargs['xdim'], kwargs['ydim']
     flux = kwargs['flux']
-    npix = nx * ny
+    if not np.isfinite(flux) or flux <= 0:
+        raise ValueError("flux must be positive for log TV")
+    npix = kwargs['xdim'] * kwargs['ydim']
     logflux = npix * np.abs(np.log(flux / npix))
-    log_kwargs = dict(kwargs)
-    log_kwargs['flux'] = logflux
-    # compute gradient of TV on log image
-    g = reggrad_tv(np.log(imvec), np.ones_like(imvec, dtype=bool), **log_kwargs) / imvec
-    return g[mask]
+    grad = reggrad_tv(np.log(imvec), mask, **dict(kwargs, flux=logflux))
+    return grad / imvec
 
 
 def reg_tv2(imvec, mask, **kwargs):
-    """Total Squard Variation regularizer"""
+    """Total Squared Variation regularizer"""
     # embed image
     xp = array_namespace(imvec)
     if np.any(np.invert(mask)):
@@ -1882,10 +1871,16 @@ def reg_tv2(imvec, mask, **kwargs):
     norm = psize**4 * flux**2 / beam_size**4 if kwargs.get('norm_reg', True) else 1
     # compute TV2
     im = imvec.reshape(ny, nx)
-    impad = xp.pad(im, 1, mode='constant', constant_values=0)
-    im_l1 = xp.roll(impad, -1, axis=0)[1:ny+1, 1:nx+1]
-    im_l2 = xp.roll(impad, -1, axis=1)[1:ny+1, 1:nx+1]
-    return xp.sum((im_l1 - im)**2 + (im_l2 - im)**2) / norm
+    mask2d = mask.reshape(ny, nx)
+    impad = xp.pad(im, 1, mode='edge')
+    maskpad = np.pad(mask2d, 1, mode='edge')
+    # The shifted masks exclude neighbors beyond the mask; edge padding handles the FOV.
+    m_l1 = np.roll(maskpad, -1, axis=0)[1:ny+1, 1:nx+1]
+    m_l2 = np.roll(maskpad, -1, axis=1)[1:ny+1, 1:nx+1]
+    im_l1 = xp.where(m_l1, xp.roll(impad, -1, axis=0)[1:ny+1, 1:nx+1], im)
+    im_l2 = xp.where(m_l2, xp.roll(impad, -1, axis=1)[1:ny+1, 1:nx+1], im)
+    tv2 = (im_l1 - im)**2 + (im_l2 - im)**2
+    return xp.sum(xp.where(mask2d, tv2, 0.)) / norm
 
 
 def reggrad_tv2(imvec, mask, **kwargs):
@@ -1900,23 +1895,22 @@ def reggrad_tv2(imvec, mask, **kwargs):
     norm = psize**4 * flux**2 / beam_size**4 if kwargs.get('norm_reg', True) else 1
     # shifted 2D images
     im = imvec.reshape(ny, nx)
-    impad = np.pad(im, 1, mode='constant', constant_values=0)
-    im_l1 = np.roll(impad, -1, axis=0)[1:ny+1, 1:nx+1]
-    im_l2 = np.roll(impad, -1, axis=1)[1:ny+1, 1:nx+1]
-    im_r1 = np.roll(impad, 1, axis=0)[1:ny+1, 1:nx+1]
-    im_r2 = np.roll(impad, 1, axis=1)[1:ny+1, 1:nx+1]
+    mask2d = mask.reshape(ny, nx)
+    impad = np.pad(im, 1, mode='edge')
+    maskpad = np.pad(mask2d, 1, mode='edge')
+    # A shifted mask rejects the corresponding neighbor at each mask boundary.
+    m_l1 = np.roll(maskpad, -1, axis=0)[1:ny+1, 1:nx+1]
+    m_l2 = np.roll(maskpad, -1, axis=1)[1:ny+1, 1:nx+1]
+    m_r1 = np.roll(maskpad, 1, axis=0)[1:ny+1, 1:nx+1]
+    m_r2 = np.roll(maskpad, 1, axis=1)[1:ny+1, 1:nx+1]
+    im_l1 = np.where(m_l1, np.roll(impad, -1, axis=0)[1:ny+1, 1:nx+1], im)
+    im_l2 = np.where(m_l2, np.roll(impad, -1, axis=1)[1:ny+1, 1:nx+1], im)
+    im_r1 = np.where(m_r1, np.roll(impad, 1, axis=0)[1:ny+1, 1:nx+1], im)
+    im_r2 = np.where(m_r2, np.roll(impad, 1, axis=1)[1:ny+1, 1:nx+1], im)
     # gradient terms
     g1 = 2*im - im_l1 - im_l2
     g2 = im - im_r1
     g3 = im - im_r2
-    # The back-neighbor (g2, g3) terms reference a pixel that does not
-    # exist on the first row/column (it is the zero pad), so they must be zeroed
-    mask1 = np.zeros(im.shape)
-    mask2 = np.zeros(im.shape)
-    mask1[0, :] = 1
-    mask2[:, 0] = 1
-    g2[mask1.astype(bool)] = 0
-    g3[mask2.astype(bool)] = 0
     # final gradient
     g = 2 * (g1 + g2 + g3).flatten() / norm
     return g[mask]
@@ -1924,37 +1918,24 @@ def reggrad_tv2(imvec, mask, **kwargs):
 
 def reg_tv2log(imvec, mask, **kwargs):
     """TV2 regularizer on the log image"""
-    # embed image
     xp = array_namespace(imvec)
-    epsilon = kwargs.get('epsilon_tv', 0.)
-    if np.any(np.invert(mask)):
-        imvec = embed(imvec, mask, clipfloor=epsilon, randomfloor=True)
-    # parameters and normalization -- update the kwargs
-    nx, ny = kwargs['xdim'], kwargs['ydim']
     flux = kwargs['flux']
-    npix = nx * ny
+    if not np.isfinite(flux) or flux <= 0:
+        raise ValueError("flux must be positive for log TV")
+    npix = kwargs['xdim'] * kwargs['ydim']
     logflux = npix * np.abs(np.log(flux / npix))
-    log_kwargs = dict(kwargs)
-    log_kwargs['flux'] = logflux
-    return reg_tv2(xp.log(imvec), np.ones(imvec.shape, dtype=bool), **log_kwargs)
+    return reg_tv2(xp.log(imvec), mask, **dict(kwargs, flux=logflux))
 
 
 def reggrad_tv2log(imvec, mask, **kwargs):
     """Gradient of the TV2 regularizer on the log image"""
-    # embed image
-    epsilon = kwargs.get('epsilon_tv', 0.)
-    if np.any(np.invert(mask)):
-        imvec = embed(imvec, mask, clipfloor=epsilon, randomfloor=True)
-    # parameters and normalization -- update the kwargs
-    nx, ny = kwargs['xdim'], kwargs['ydim']
     flux = kwargs['flux']
-    npix = nx * ny
+    if not np.isfinite(flux) or flux <= 0:
+        raise ValueError("flux must be positive for log TV")
+    npix = kwargs['xdim'] * kwargs['ydim']
     logflux = npix * np.abs(np.log(flux / npix))
-    log_kwargs = dict(kwargs)
-    log_kwargs['flux'] = logflux
-    # compute gradient of TV2 on the log image
-    g = reggrad_tv2(np.log(imvec), np.ones_like(imvec, dtype=bool), **log_kwargs) / imvec
-    return g[mask]
+    grad = reggrad_tv2(np.log(imvec), mask, **dict(kwargs, flux=logflux))
+    return grad / imvec
 
 
 # TODO: figure out normalizations for compact and compact2 regularizers
@@ -2993,6 +2974,7 @@ def chisqdata_vis_nfft(Obsdata, Prior, pol='I', **kwargs):
     fft_pad_factor = kwargs.get('fft_pad_factor', ehc.FFT_PAD_DEFAULT)
     p_rad = kwargs.get('p_rad', ehc.GRIDDER_P_RAD_DEFAULT)
     nfft_eps = kwargs.get('nfft_eps', ehc.NFFT_EPS_DEFAULT)
+    nfft_nthreads = kwargs.get('nfft_nthreads', ehc.NFFT_NTHREADS_DEFAULT)
 
     # unpack data
     vtype = ehc.vis_poldict[pol]
@@ -3007,7 +2989,8 @@ def chisqdata_vis_nfft(Obsdata, Prior, pol='I', **kwargs):
 
     # get NFFT info
     npad = int(fft_pad_factor * np.max((Prior.xdim, Prior.ydim)))
-    A1 = obsh.NFFTInfo(Prior.xdim, Prior.ydim, Prior.psize, Prior.pulse, npad, p_rad, uv, eps=nfft_eps)
+    A1 = obsh.NFFTInfo(Prior.xdim, Prior.ydim, Prior.psize, Prior.pulse, npad, p_rad, uv,
+                       eps=nfft_eps, nthreads=nfft_nthreads)
     A = [A1]
 
     return (vis, sigma, A)
@@ -3027,6 +3010,7 @@ def chisqdata_amp_nfft(Obsdata, Prior, pol='I', **kwargs):
     fft_pad_factor = kwargs.get('fft_pad_factor', ehc.FFT_PAD_DEFAULT)
     p_rad = kwargs.get('p_rad', ehc.GRIDDER_P_RAD_DEFAULT)
     nfft_eps = kwargs.get('nfft_eps', ehc.NFFT_EPS_DEFAULT)
+    nfft_nthreads = kwargs.get('nfft_nthreads', ehc.NFFT_NTHREADS_DEFAULT)
 
     # unpack data
     vtype = ehc.vis_poldict[pol]
@@ -3043,7 +3027,8 @@ def chisqdata_amp_nfft(Obsdata, Prior, pol='I', **kwargs):
 
     # get NFFT info
     npad = int(fft_pad_factor * np.max((Prior.xdim, Prior.ydim)))
-    A1 = obsh.NFFTInfo(Prior.xdim, Prior.ydim, Prior.psize, Prior.pulse, npad, p_rad, uv, eps=nfft_eps)
+    A1 = obsh.NFFTInfo(Prior.xdim, Prior.ydim, Prior.psize, Prior.pulse, npad, p_rad, uv,
+                       eps=nfft_eps, nthreads=nfft_nthreads)
     A = [A1]
 
     return (amp, sigma, A)
@@ -3067,6 +3052,7 @@ def chisqdata_bs_nfft(Obsdata, Prior, pol='I', **kwargs):
     fft_pad_factor = kwargs.get('fft_pad_factor', ehc.FFT_PAD_DEFAULT)
     p_rad = kwargs.get('p_rad', ehc.GRIDDER_P_RAD_DEFAULT)
     nfft_eps = kwargs.get('nfft_eps', ehc.NFFT_EPS_DEFAULT)
+    nfft_nthreads = kwargs.get('nfft_nthreads', ehc.NFFT_NTHREADS_DEFAULT)
 
     # unpack data
     vtype = ehc.vis_poldict[pol]
@@ -3084,9 +3070,12 @@ def chisqdata_bs_nfft(Obsdata, Prior, pol='I', **kwargs):
 
     # get NFFT info
     npad = int(fft_pad_factor * np.max((Prior.xdim, Prior.ydim)))
-    A1 = obsh.NFFTInfo(Prior.xdim, Prior.ydim, Prior.psize, Prior.pulse, npad, p_rad, uv1, eps=nfft_eps)
-    A2 = obsh.NFFTInfo(Prior.xdim, Prior.ydim, Prior.psize, Prior.pulse, npad, p_rad, uv2, eps=nfft_eps)
-    A3 = obsh.NFFTInfo(Prior.xdim, Prior.ydim, Prior.psize, Prior.pulse, npad, p_rad, uv3, eps=nfft_eps)
+    A1 = obsh.NFFTInfo(Prior.xdim, Prior.ydim, Prior.psize, Prior.pulse, npad, p_rad, uv1,
+                       eps=nfft_eps, nthreads=nfft_nthreads)
+    A2 = obsh.NFFTInfo(Prior.xdim, Prior.ydim, Prior.psize, Prior.pulse, npad, p_rad, uv2,
+                       eps=nfft_eps, nthreads=nfft_nthreads)
+    A3 = obsh.NFFTInfo(Prior.xdim, Prior.ydim, Prior.psize, Prior.pulse, npad, p_rad, uv3,
+                       eps=nfft_eps, nthreads=nfft_nthreads)
     A = [A1, A2, A3]
 
     return (bi, sigma, A)
@@ -3112,6 +3101,7 @@ def chisqdata_cphase_nfft(Obsdata, Prior, pol='I', **kwargs):
     fft_pad_factor = kwargs.get('fft_pad_factor', ehc.FFT_PAD_DEFAULT)
     p_rad = kwargs.get('p_rad', ehc.GRIDDER_P_RAD_DEFAULT)
     nfft_eps = kwargs.get('nfft_eps', ehc.NFFT_EPS_DEFAULT)
+    nfft_nthreads = kwargs.get('nfft_nthreads', ehc.NFFT_NTHREADS_DEFAULT)
 
     # unpack data
     vtype = ehc.vis_poldict[pol]
@@ -3133,9 +3123,12 @@ def chisqdata_cphase_nfft(Obsdata, Prior, pol='I', **kwargs):
 
     # get NFFT info
     npad = int(fft_pad_factor * np.max((Prior.xdim, Prior.ydim)))
-    A1 = obsh.NFFTInfo(Prior.xdim, Prior.ydim, Prior.psize, Prior.pulse, npad, p_rad, uv1, eps=nfft_eps)
-    A2 = obsh.NFFTInfo(Prior.xdim, Prior.ydim, Prior.psize, Prior.pulse, npad, p_rad, uv2, eps=nfft_eps)
-    A3 = obsh.NFFTInfo(Prior.xdim, Prior.ydim, Prior.psize, Prior.pulse, npad, p_rad, uv3, eps=nfft_eps)
+    A1 = obsh.NFFTInfo(Prior.xdim, Prior.ydim, Prior.psize, Prior.pulse, npad, p_rad, uv1,
+                       eps=nfft_eps, nthreads=nfft_nthreads)
+    A2 = obsh.NFFTInfo(Prior.xdim, Prior.ydim, Prior.psize, Prior.pulse, npad, p_rad, uv2,
+                       eps=nfft_eps, nthreads=nfft_nthreads)
+    A3 = obsh.NFFTInfo(Prior.xdim, Prior.ydim, Prior.psize, Prior.pulse, npad, p_rad, uv3,
+                       eps=nfft_eps, nthreads=nfft_nthreads)
     A = [A1, A2, A3]
 
     return (clphase, sigma, A)
@@ -3159,6 +3152,7 @@ def chisqdata_cphase_diag_nfft(Obsdata, Prior, pol='I', **kwargs):
     fft_pad_factor = kwargs.get('fft_pad_factor', ehc.FFT_PAD_DEFAULT)
     p_rad = kwargs.get('p_rad', ehc.GRIDDER_P_RAD_DEFAULT)
     nfft_eps = kwargs.get('nfft_eps', ehc.NFFT_EPS_DEFAULT)
+    nfft_nthreads = kwargs.get('nfft_nthreads', ehc.NFFT_NTHREADS_DEFAULT)
 
     # unpack data
     vtype = ehc.vis_poldict[pol]
@@ -3206,9 +3200,12 @@ def chisqdata_cphase_diag_nfft(Obsdata, Prior, pol='I', **kwargs):
 
     # get NFFT info
     npad = int(fft_pad_factor * np.max((Prior.xdim, Prior.ydim)))
-    A1 = obsh.NFFTInfo(Prior.xdim, Prior.ydim, Prior.psize, Prior.pulse, npad, p_rad, uv1, eps=nfft_eps)
-    A2 = obsh.NFFTInfo(Prior.xdim, Prior.ydim, Prior.psize, Prior.pulse, npad, p_rad, uv2, eps=nfft_eps)
-    A3 = obsh.NFFTInfo(Prior.xdim, Prior.ydim, Prior.psize, Prior.pulse, npad, p_rad, uv3, eps=nfft_eps)
+    A1 = obsh.NFFTInfo(Prior.xdim, Prior.ydim, Prior.psize, Prior.pulse, npad, p_rad, uv1,
+                       eps=nfft_eps, nthreads=nfft_nthreads)
+    A2 = obsh.NFFTInfo(Prior.xdim, Prior.ydim, Prior.psize, Prior.pulse, npad, p_rad, uv2,
+                       eps=nfft_eps, nthreads=nfft_nthreads)
+    A3 = obsh.NFFTInfo(Prior.xdim, Prior.ydim, Prior.psize, Prior.pulse, npad, p_rad, uv3,
+                       eps=nfft_eps, nthreads=nfft_nthreads)
     A = [A1, A2, A3]
 
     # Stack the per-time-block decorrelating transforms into one block-diagonal
@@ -3237,6 +3234,7 @@ def chisqdata_camp_nfft(Obsdata, Prior, pol='I', **kwargs):
     fft_pad_factor = kwargs.get('fft_pad_factor', ehc.FFT_PAD_DEFAULT)
     p_rad = kwargs.get('p_rad', ehc.GRIDDER_P_RAD_DEFAULT)
     nfft_eps = kwargs.get('nfft_eps', ehc.NFFT_EPS_DEFAULT)
+    nfft_nthreads = kwargs.get('nfft_nthreads', ehc.NFFT_NTHREADS_DEFAULT)
 
     # unpack data
     vtype = ehc.vis_poldict[pol]
@@ -3256,10 +3254,14 @@ def chisqdata_camp_nfft(Obsdata, Prior, pol='I', **kwargs):
 
     # get NFFT info
     npad = int(fft_pad_factor * np.max((Prior.xdim, Prior.ydim)))
-    A1 = obsh.NFFTInfo(Prior.xdim, Prior.ydim, Prior.psize, Prior.pulse, npad, p_rad, uv1, eps=nfft_eps)
-    A2 = obsh.NFFTInfo(Prior.xdim, Prior.ydim, Prior.psize, Prior.pulse, npad, p_rad, uv2, eps=nfft_eps)
-    A3 = obsh.NFFTInfo(Prior.xdim, Prior.ydim, Prior.psize, Prior.pulse, npad, p_rad, uv3, eps=nfft_eps)
-    A4 = obsh.NFFTInfo(Prior.xdim, Prior.ydim, Prior.psize, Prior.pulse, npad, p_rad, uv4, eps=nfft_eps)
+    A1 = obsh.NFFTInfo(Prior.xdim, Prior.ydim, Prior.psize, Prior.pulse, npad, p_rad, uv1,
+                       eps=nfft_eps, nthreads=nfft_nthreads)
+    A2 = obsh.NFFTInfo(Prior.xdim, Prior.ydim, Prior.psize, Prior.pulse, npad, p_rad, uv2,
+                       eps=nfft_eps, nthreads=nfft_nthreads)
+    A3 = obsh.NFFTInfo(Prior.xdim, Prior.ydim, Prior.psize, Prior.pulse, npad, p_rad, uv3,
+                       eps=nfft_eps, nthreads=nfft_nthreads)
+    A4 = obsh.NFFTInfo(Prior.xdim, Prior.ydim, Prior.psize, Prior.pulse, npad, p_rad, uv4,
+                       eps=nfft_eps, nthreads=nfft_nthreads)
     A = [A1, A2, A3, A4]
 
     return (clamp, sigma, A)
@@ -3284,6 +3286,7 @@ def chisqdata_logcamp_nfft(Obsdata, Prior, pol='I', **kwargs):
     fft_pad_factor = kwargs.get('fft_pad_factor', ehc.FFT_PAD_DEFAULT)
     p_rad = kwargs.get('p_rad', ehc.GRIDDER_P_RAD_DEFAULT)
     nfft_eps = kwargs.get('nfft_eps', ehc.NFFT_EPS_DEFAULT)
+    nfft_nthreads = kwargs.get('nfft_nthreads', ehc.NFFT_NTHREADS_DEFAULT)
 
     # unpack data
     vtype = ehc.vis_poldict[pol]
@@ -3303,10 +3306,14 @@ def chisqdata_logcamp_nfft(Obsdata, Prior, pol='I', **kwargs):
 
     # get NFFT info
     npad = int(fft_pad_factor * np.max((Prior.xdim, Prior.ydim)))
-    A1 = obsh.NFFTInfo(Prior.xdim, Prior.ydim, Prior.psize, Prior.pulse, npad, p_rad, uv1, eps=nfft_eps)
-    A2 = obsh.NFFTInfo(Prior.xdim, Prior.ydim, Prior.psize, Prior.pulse, npad, p_rad, uv2, eps=nfft_eps)
-    A3 = obsh.NFFTInfo(Prior.xdim, Prior.ydim, Prior.psize, Prior.pulse, npad, p_rad, uv3, eps=nfft_eps)
-    A4 = obsh.NFFTInfo(Prior.xdim, Prior.ydim, Prior.psize, Prior.pulse, npad, p_rad, uv4, eps=nfft_eps)
+    A1 = obsh.NFFTInfo(Prior.xdim, Prior.ydim, Prior.psize, Prior.pulse, npad, p_rad, uv1,
+                       eps=nfft_eps, nthreads=nfft_nthreads)
+    A2 = obsh.NFFTInfo(Prior.xdim, Prior.ydim, Prior.psize, Prior.pulse, npad, p_rad, uv2,
+                       eps=nfft_eps, nthreads=nfft_nthreads)
+    A3 = obsh.NFFTInfo(Prior.xdim, Prior.ydim, Prior.psize, Prior.pulse, npad, p_rad, uv3,
+                       eps=nfft_eps, nthreads=nfft_nthreads)
+    A4 = obsh.NFFTInfo(Prior.xdim, Prior.ydim, Prior.psize, Prior.pulse, npad, p_rad, uv4,
+                       eps=nfft_eps, nthreads=nfft_nthreads)
     A = [A1, A2, A3, A4]
 
     return (clamp, sigma, A)
@@ -3330,6 +3337,7 @@ def chisqdata_logcamp_diag_nfft(Obsdata, Prior, pol='I', **kwargs):
     fft_pad_factor = kwargs.get('fft_pad_factor', ehc.FFT_PAD_DEFAULT)
     p_rad = kwargs.get('p_rad', ehc.GRIDDER_P_RAD_DEFAULT)
     nfft_eps = kwargs.get('nfft_eps', ehc.NFFT_EPS_DEFAULT)
+    nfft_nthreads = kwargs.get('nfft_nthreads', ehc.NFFT_NTHREADS_DEFAULT)
 
     # unpack data & mask low snr points
     vtype = ehc.vis_poldict[pol]
@@ -3384,10 +3392,14 @@ def chisqdata_logcamp_diag_nfft(Obsdata, Prior, pol='I', **kwargs):
 
     # get NFFT info
     npad = int(fft_pad_factor * np.max((Prior.xdim, Prior.ydim)))
-    A1 = obsh.NFFTInfo(Prior.xdim, Prior.ydim, Prior.psize, Prior.pulse, npad, p_rad, uv1, eps=nfft_eps)
-    A2 = obsh.NFFTInfo(Prior.xdim, Prior.ydim, Prior.psize, Prior.pulse, npad, p_rad, uv2, eps=nfft_eps)
-    A3 = obsh.NFFTInfo(Prior.xdim, Prior.ydim, Prior.psize, Prior.pulse, npad, p_rad, uv3, eps=nfft_eps)
-    A4 = obsh.NFFTInfo(Prior.xdim, Prior.ydim, Prior.psize, Prior.pulse, npad, p_rad, uv4, eps=nfft_eps)
+    A1 = obsh.NFFTInfo(Prior.xdim, Prior.ydim, Prior.psize, Prior.pulse, npad, p_rad, uv1,
+                       eps=nfft_eps, nthreads=nfft_nthreads)
+    A2 = obsh.NFFTInfo(Prior.xdim, Prior.ydim, Prior.psize, Prior.pulse, npad, p_rad, uv2,
+                       eps=nfft_eps, nthreads=nfft_nthreads)
+    A3 = obsh.NFFTInfo(Prior.xdim, Prior.ydim, Prior.psize, Prior.pulse, npad, p_rad, uv3,
+                       eps=nfft_eps, nthreads=nfft_nthreads)
+    A4 = obsh.NFFTInfo(Prior.xdim, Prior.ydim, Prior.psize, Prior.pulse, npad, p_rad, uv4,
+                       eps=nfft_eps, nthreads=nfft_nthreads)
     A = [A1, A2, A3, A4]
 
     # Stack the per-time-block decorrelating transforms into one block-diagonal
@@ -3556,8 +3568,3 @@ def embed_imarr(imarr, mask, clipfloor=0., randomfloor=False):
         outarr = outarr[0]
 
     return outarr
-
-
-
-
-
