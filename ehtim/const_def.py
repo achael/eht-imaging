@@ -200,6 +200,10 @@ DTDTERM_LIN = [('time', 'f8'),
 
 DTDTERM = DTDTERM_CIRC  # legacy alias
 
+# (gain, D-term) table dtypes for each supported station feed_type
+CAL_DTYPES_BY_FEED = {'rl': (DTCAL_CIRC, DTDTERM_CIRC),
+                      'xy': (DTCAL_LIN, DTDTERM_LIN)}
+
 DTSCANS = [('time', 'f8'), ('interval', 'f8'), ('startvis', 'f8'), ('endvis', 'f8')]
 
 

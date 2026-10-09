@@ -1220,9 +1220,12 @@ class TestSplitFixups:
         lin['time'] = times
         lin['xscale'] = [3 + 0j, 4 + 0j]
         lin['yscale'] = [5 + 0j, 6 + 0j]
+        # a linear table needs a linear site
+        tarr = obs_direct.tarr.copy()
+        tarr['feed_type'][np.where(tarr['site'] == site)] = 'xy'
         ct = eh.caltable.Caltable(
             obs_direct.ra, obs_direct.dec, obs_direct.rf, obs_direct.bw,
-            {site: lin}, obs_direct.tarr,
+            {site: lin}, tarr,
             source=obs_direct.source, mjd=obs_direct.mjd,
         )
 
@@ -1658,3 +1661,258 @@ class TestTransformsCarryDterms:
         assert out.data[site] is not ct_b.data[site]
         out.data[site]['rscale'] *= 10
         np.testing.assert_allclose(ct_b.data[site]['rscale'], MERGE_GAIN_B)
+
+
+
+# ---------------------------------------------------------------------------
+# Section 12: Each site's tables follow its feed_type
+# ---------------------------------------------------------------------------
+
+# Distinct per slot so a p1/p2 swap shows up.
+GAIN_P1 = 2.0 + 0.5j
+GAIN_P2 = 3.0 - 0.25j
+
+
+def _tarr_with_feeds(obs, feeds):
+    """Copy of obs.tarr with feed_type set per site from a {site: feed_type} dict."""
+    tarr = obs.tarr.copy()
+    for site, feed in feeds.items():
+        tarr['feed_type'][tarr['site'] == site] = feed
+    return tarr
+
+
+def _gain_table(times, dtype=DTCAL):
+    """A per-site gain table with constant GAIN_P1/P2 gains."""
+    table = np.zeros(len(times), dtype=dtype)
+    table['time'] = times
+    table['p1scale'] = GAIN_P1
+    table['p2scale'] = GAIN_P2
+    return table
+
+
+def _caltable(obs, gains, tarr, dterms=None):
+    return eh.caltable.Caltable(obs.ra, obs.dec, obs.rf, obs.bw, gains, tarr,
+                                dtermdict=dterms, source=obs.source, mjd=obs.mjd)
+
+
+class TestBasisDispatch:
+    """Each site's tables take the dtype of that site's feed_type."""
+
+    def test_circular_table_on_linear_site_is_relabelled_view(self, obs_direct):
+        site = _first_sites(obs_direct, 1)[0]
+        table = _gain_table([0.0, 1.0])
+        ct = _caltable(obs_direct, {site: table},
+                       _tarr_with_feeds(obs_direct, {site: 'xy'}))
+        assert ct.gains[site].dtype == np.dtype(ehc.DTCAL_LIN)
+        assert np.shares_memory(ct.gains[site], table)
+        np.testing.assert_array_equal(ct.gains[site]['xscale'], GAIN_P1)
+        np.testing.assert_array_equal(ct.gains[site]['yscale'], GAIN_P2)
+
+    def test_mixed_array_types_each_site(self, obs_direct):
+        lin_site, circ_site = _first_sites(obs_direct, 2)
+        tarr = _tarr_with_feeds(obs_direct, {lin_site: 'xy', circ_site: 'rl'})
+        ct = _caltable(obs_direct, {lin_site: _gain_table([0.0]),
+                                    circ_site: _gain_table([0.0])}, tarr)
+        assert ct.gains[lin_site].dtype == np.dtype(ehc.DTCAL_LIN)
+        assert ct.gains[circ_site].dtype == np.dtype(ehc.DTCAL_CIRC)
+
+    @pytest.mark.parametrize('feed', ['rx', 'lr', '??'])
+    def test_unsupported_feed_type_raises(self, obs_direct, feed):
+        site = _first_sites(obs_direct, 1)[0]
+        with pytest.raises(NotImplementedError, match='feed_type'):
+            _caltable(obs_direct, {site: _gain_table([0.0])},
+                      _tarr_with_feeds(obs_direct, {site: feed}))
+
+    def test_linear_table_on_circular_site_raises(self, obs_direct):
+        site = _first_sites(obs_direct, 1)[0]
+        with pytest.raises(Exception, match='feed_type'):
+            _caltable(obs_direct, {site: _gain_table([0.0], dtype=ehc.DTCAL_LIN)},
+                      obs_direct.tarr)
+
+    def test_site_missing_from_tarr_keeps_its_dtype(self, obs_direct):
+        ct = _caltable(obs_direct, {'GHOST': _gain_table([0.0], dtype=ehc.DTCAL_LIN)},
+                       obs_direct.tarr)
+        assert ct.gains['GHOST'].dtype == np.dtype(ehc.DTCAL_LIN)
+
+    def test_dterms_typed_from_feed_type(self, obs_direct):
+        site = _first_sites(obs_direct, 1)[0]
+        dterms = np.zeros(1, dtype=ehc.DTDTERM)
+        dterms['dr'] = SPLIT_DR
+        ct = _caltable(obs_direct, {site: _gain_table([0.0])},
+                       _tarr_with_feeds(obs_direct, {site: 'xy'}), dterms={site: dterms})
+        assert ct.dterms[site].dtype == np.dtype(ehc.DTDTERM_LIN)
+        np.testing.assert_array_equal(ct.dterms[site]['dx'], SPLIT_DR)
+
+    def test_data_setter_dispatches(self, obs_direct):
+        site = _first_sites(obs_direct, 1)[0]
+        ct = _caltable(obs_direct, {site: _gain_table([0.0])},
+                       _tarr_with_feeds(obs_direct, {site: 'xy'}))
+        ct.data = {site: _gain_table([0.0, 2.0])}
+        assert ct.gains[site].dtype == np.dtype(ehc.DTCAL_LIN)
+
+
+class TestLinearPersistence:
+    """Linear tables survive save/load; the basis is read back from array.txt."""
+
+    def test_mixed_array_roundtrip(self, obs_direct, tmp_path):
+        lin_site, circ_site = _first_sites(obs_direct, 2)
+        tarr = _tarr_with_feeds(obs_direct, {lin_site: 'xy', circ_site: 'rl'})
+        dterms = np.zeros(1, dtype=ehc.DTDTERM_LIN)
+        dterms['time'] = SINGLE_ROW_TIME_HR
+        dterms['dx'] = SPLIT_DR
+        dterms['dy'] = SPLIT_DL
+        ct = _caltable(obs_direct, {lin_site: _gain_table([0.0, 1.0]),
+                                    circ_site: _gain_table([0.0, 1.0])},
+                       tarr, dterms={lin_site: dterms})
+
+        eh.caltable.save_caltable(ct, obs_direct, datadir=str(tmp_path), overwrite=True)
+        back = eh.caltable.load_caltable(obs_direct, str(tmp_path))
+
+        assert back.gains[lin_site].dtype == np.dtype(ehc.DTCAL_LIN)
+        assert back.gains[circ_site].dtype == np.dtype(ehc.DTCAL_CIRC)
+        assert back.dterms[lin_site].dtype == np.dtype(ehc.DTDTERM_LIN)
+        np.testing.assert_allclose(back.gains[lin_site]['xscale'], GAIN_P1, rtol=GAIN_RTOL)
+        np.testing.assert_allclose(back.gains[lin_site]['yscale'], GAIN_P2, rtol=GAIN_RTOL)
+        np.testing.assert_allclose(back.dterms[lin_site]['dy'], SPLIT_DL, rtol=GAIN_RTOL)
+
+
+class TestMergeFeedTypes:
+
+    def test_disjoint_circular_and_linear_sites_merge(self, obs_direct):
+        lin_site, circ_site = _first_sites(obs_direct, 2)
+        tarr = _tarr_with_feeds(obs_direct, {lin_site: 'xy'})
+        ct_lin = _caltable(obs_direct, {lin_site: _gain_table([0.0, 1.0])}, tarr)
+        ct_circ = _caltable(obs_direct, {circ_site: _gain_table([0.0, 1.0])}, tarr)
+
+        out = ct_lin.merge([ct_circ])
+
+        assert out.gains[lin_site].dtype == np.dtype(ehc.DTCAL_LIN)
+        assert out.gains[circ_site].dtype == np.dtype(ehc.DTCAL_CIRC)
+
+    def test_same_site_with_different_feed_types_raises(self, obs_direct):
+        site = _first_sites(obs_direct, 1)[0]
+        ct_lin = _caltable(obs_direct, {site: _gain_table([0.0, 1.0])},
+                           _tarr_with_feeds(obs_direct, {site: 'xy'}))
+        ct_circ = _caltable(obs_direct, {site: _gain_table([0.0, 1.0])}, obs_direct.tarr)
+        with pytest.raises(Exception, match='feed_type'):
+            ct_lin.merge([ct_circ])
+
+
+class TestGainPlotPol:
+    """plot_gains and plot_compare_gains take R, L, X, Y, p1 or p2."""
+
+    @pytest.fixture
+    def linear_caltable(self, obs_direct):
+        sites = _first_sites(obs_direct, 2)
+        times = [obs_direct.data['time'].min(), obs_direct.data['time'].max()]
+        return _caltable(obs_direct, {s: _gain_table(times) for s in sites},
+                         _tarr_with_feeds(obs_direct, {s: 'xy' for s in sites}))
+
+    @pytest.mark.parametrize('pol', ['R', 'L', 'p1', 'p2'])
+    def test_circular_site_pols(self, obs_direct, unity_caltable, pol):
+        site = _first_sites(obs_direct, 1)[0]
+        assert unity_caltable.plot_gains([site], pol=pol, show=False) is not None
+        plt.close('all')
+
+    def test_wrong_basis_pol_raises(self, obs_direct, unity_caltable):
+        site = _first_sites(obs_direct, 1)[0]
+        with pytest.raises(ValueError, match='xscale'):
+            unity_caltable.plot_gains([site], pol='X', show=False)
+        plt.close('all')
+
+    def test_unknown_pol_raises(self, obs_direct, unity_caltable):
+        site = _first_sites(obs_direct, 1)[0]
+        with pytest.raises(Exception, match='pol must be'):
+            unity_caltable.plot_gains([site], pol='Q', show=False)
+        plt.close('all')
+
+    def test_pol_both_labels_each_feed(self, obs_direct, unity_caltable):
+        site = _first_sites(obs_direct, 1)[0]
+        ax = unity_caltable.plot_gains([site], pol='both', show=False)
+        labels = [line.get_label() for line in ax.get_lines()]
+        assert f'{site} R' in labels and f'{site} L' in labels
+        plt.close('all')
+
+    def test_linear_caltable_plots(self, obs_direct, linear_caltable):
+        assert linear_caltable.plot_gains([], show=False) is not None
+        assert linear_caltable.plot_gains([], pol='X', show=False) is not None
+        ax = eh.caltable.plot_compare_gains(linear_caltable, linear_caltable, obs_direct,
+                                            sites=list(linear_caltable.gains),
+                                            scan_avg=False, show=False)
+        assert ax is not None
+        plt.close('all')
+
+    def test_yrange_comes_from_gains_not_times(self, obs_direct):
+        """tmins and gmins used to be one list, so times leaked into the y-range."""
+        site = _first_sites(obs_direct, 1)[0]
+        times = np.array([0.0, 20.0])
+        ct = _caltable(obs_direct, {site: _gain_table(times)}, obs_direct.tarr)
+        ax = ct.plot_gains([site], yscale='lin', show=False)
+        assert ax.get_ylim()[1] < times.max()
+        plt.close('all')
+
+
+def test_caltable_to_gains_on_linear_site(obs_direct):
+    from ehtim.modeling.modeling_utils import caltable_to_gains
+    site = _first_sites(obs_direct, 1)[0]
+    ct = _caltable(obs_direct, {site: _gain_table([0.0, 1.0])},
+                   _tarr_with_feeds(obs_direct, {site: 'xy'}))
+    np.testing.assert_allclose(caltable_to_gains(ct, [(0.0, site)]), [abs(GAIN_P1) - 1.0])
+
+
+# ---------------------------------------------------------------------------
+# Section 13: D-term tables are copied into the tarr
+# ---------------------------------------------------------------------------
+
+def _dterm_table(times, d_p1, d_p2):
+    table = np.zeros(len(times), dtype=ehc.DTDTERM)
+    table['time'] = times
+    table['d_p1'] = d_p1
+    table['d_p2'] = d_p2
+    return table
+
+
+class TestDtermMirror:
+
+    def test_one_row_table_is_copied_into_tarr(self, obs_direct):
+        site, other = _first_sites(obs_direct, 2)
+        tarr_before = obs_direct.tarr.copy()
+        ct = _caltable(obs_direct, {site: _gain_table([0.0])}, obs_direct.tarr,
+                       dterms={site: _dterm_table([0.0], SPLIT_DR, SPLIT_DL)})
+        row = ct.tarr[ct.tkey[site]]
+        assert row['d_p1'] == SPLIT_DR
+        assert row['d_p2'] == SPLIT_DL
+        # sites without a table keep their tarr D-terms, and the caller's tarr is untouched
+        assert ct.tarr[ct.tkey[other]]['d_p1'] == obs_direct.tarr[ct.tkey[other]]['d_p1']
+        np.testing.assert_array_equal(obs_direct.tarr, tarr_before)
+
+    def test_multi_row_table_is_time_averaged(self, obs_direct):
+        site = _first_sites(obs_direct, 1)[0]
+        dterms = _dterm_table([0.0, 1.0], [0.01, 0.03 + 0.02j], [0.0, 0.0])
+        ct = _caltable(obs_direct, {site: _gain_table([0.0])}, obs_direct.tarr,
+                       dterms={site: dterms})
+        np.testing.assert_allclose(ct.tarr[ct.tkey[site]]['d_p1'], 0.02 + 0.01j)
+
+    def test_mirror_survives_save_and_load(self, obs_direct, tmp_path):
+        site = _first_sites(obs_direct, 1)[0]
+        ct = _caltable(obs_direct, {site: _gain_table([0.0])}, obs_direct.tarr,
+                       dterms={site: _dterm_table([0.0], SPLIT_DR, SPLIT_DL)})
+        eh.caltable.save_caltable(ct, obs_direct, datadir=str(tmp_path), overwrite=True)
+        back = eh.caltable.load_caltable(obs_direct, str(tmp_path))
+        np.testing.assert_allclose(back.tarr[back.tkey[site]]['d_p1'], SPLIT_DR)
+
+    def test_applycal_allows_tarr_that_differs_only_in_dterms(self, obs_direct):
+        site = _first_sites(obs_direct, 1)[0]
+        times = [obs_direct.data['time'].min(), obs_direct.data['time'].max()]
+        ct = _caltable(obs_direct, {site: _gain_table(times)}, obs_direct.tarr,
+                       dterms={site: _dterm_table([0.0], SPLIT_DR, SPLIT_DL)})
+        with warnings.catch_warnings():
+            warnings.simplefilter('ignore')
+            ct.applycal(obs_direct)
+
+    def test_applycal_still_rejects_a_different_array(self, obs_direct, unity_caltable):
+        obs = obs_direct.copy()
+        obs.tarr = obs.tarr.copy()
+        obs.tarr['x'][0] += 1.0
+        with pytest.raises(Exception, match='not the same'):
+            unity_caltable.applycal(obs)

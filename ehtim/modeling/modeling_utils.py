@@ -446,7 +446,7 @@ def default_gain_prior(sites):
 def caltable_to_gains(caltab, gain_list):
     # Generate an ordered list of gains from a caltable
     # gain_list is a set of tuples (time, site)
-    gains = [np.abs(caltab.data[site]['rscale'][caltab.data[site]['time'] == time][0]) - 1.0 for (time, site) in gain_list]
+    gains = [np.abs(caltab.data[site]['p1scale'][caltab.data[site]['time'] == time][0]) - 1.0 for (time, site) in gain_list]
     return gains
 
 def make_gain_map(Obsdata, gain_prior):
