@@ -35,55 +35,10 @@ from ehtim.warnings import MixedPolConventionWarning
 # Caltable object
 ##################################################################################################
 
-# NOTE: caltables loaded from old data carry no D-term tables; any D-term
-# information stays in the tarr, assumed fixed over the observation.
-# TODO: when the new calibration module lands, decide what happens when both
-# the tarr and the caltable define D-terms (zero the tarr? warn and prefer
-# the table?).
-
 # Any optional time-dependent D-term tables are saved beside the gain files,
 # opened with a version line. Gain files keep their headerless 5-column format.
 DTERM_FILE_SUFFIX = '_dterms.txt'
 DTERM_FILE_HEADER = '# ehtim caltable dterms format v1: time_mjd d1re d1im d2re d2im'
-
-# pol arguments accepted by the plotting functions: generic slot, and the feed
-# type a physical name belongs to (None for the always-valid generic names)
-_POL_SLOT = {'r': ('p1', 'rl'), 'l': ('p2', 'rl'),
-             'x': ('p1', 'xy'), 'y': ('p2', 'xy'),
-             'p1': ('p1', None), 'p2': ('p2', None)}
-
-
-def _normalize_pol(pol):
-    """Map a pol argument to (generic slot, the feed type it requires or None)."""
-    key = pol.strip().lower() if isinstance(pol, str) else pol
-    if key not in _POL_SLOT:
-        raise Exception("pol must be one of 'R', 'L', 'X', 'Y', 'p1', 'p2', "
-                        f"got {pol!r}")
-    return _POL_SLOT[key]
-
-
-def _pol_field(caltable, site, pol):
-    """The gain field name on a site for a user pol argument.
-
-    A physical name from the wrong basis raises here rather than failing
-    later on a missing field.
-    """
-    slot, required = _normalize_pol(pol)
-    feed_type = caltable._feed_type(site)
-    if required is not None and feed_type is not None and feed_type != required:
-        raise Exception(f"pol={pol!r} names a {required!r} feed but site {site} has "
-                        f"feed_type {feed_type!r}; use 'p1'/'p2' or the matching "
-                        "feed name")
-    return slot + 'scale'
-
-
-def _pol_label(caltable, site, pol):
-    """Physical name of a pol argument on a site, e.g. 'p1' on an 'rl' site -> 'R'."""
-    slot, _ = _normalize_pol(pol)
-    feed_type = caltable._feed_type(site)
-    if feed_type not in ('rl', 'xy'):
-        return slot
-    return feed_type[0 if slot == 'p1' else 1].upper()
 
 
 class Caltable:
@@ -91,10 +46,9 @@ class Caltable:
 
        Gains and D-terms live in separate per-site tables, each with its own
        time column; a single-row table represents a time-constant quantity.
-       A caltable with no D-term table falls back to the D-terms in the tarr,
-       assumed fixed over the observation.
-       TODO: flag or resolve cases where both the tarr and the caltable
-       define D-terms.
+       A site's D-term table is copied into its tarr row as the time average.
+       A site with no D-term table uses the D-terms in the tarr, assumed fixed
+       over the observation.
 
        Attributes:
            source (str): The source name
@@ -162,7 +116,7 @@ class Caltable:
         if not isinstance(datadict, dict):
             raise TypeError("datadict must be a dict of per-site gain tables "
                             f"keyed by site name, got {type(datadict).__name__}")
-        self.gains = {site: ehc.upgrade_caltable(d, feed_type=self._feed_type(site))
+        self.gains = {site: self._to_site_basis(site, ehc.upgrade_caltable(d))
                       for site, d in datadict.items()}
 
         self.dterms = {}
@@ -174,25 +128,44 @@ class Caltable:
             for site, table in dtermdict.items():
                 site_dterms = ehc._normalize_recarray(table)
                 if site_dterms is not None and len(site_dterms):
-                    self.dterms[site] = ehc.retype_dterm_table(site_dterms,
-                                                               self._feed_type(site))
+                    self.dterms[site] = self._to_site_basis(site, site_dterms, dterms=True)
+        self._mirror_dterms_to_tarr()
 
-    def _feed_type(self, site):
-        """The site's feed type from the tarr, or None if the tarr has no such site.
+    def _mirror_dterms_to_tarr(self):
+        """Copy each site's D-term table into its tarr row, as the time average.
 
-        None lets the caller fall back to inferring the basis from field names,
-        which is what a gain table for an unknown site has always done.
+        Sites without a D-term table keep their tarr values.
         """
-        if site not in self.tkey:
-            return None
-        return str(self.tarr[self.tkey[site]]['feed_type']).lower()
+        sites = [site for site in self.dterms if site in self.tkey]
+        if not sites:
+            return
+        self.tarr = self.tarr.copy()  # never write into the caller's tarr
+        for site in sites:
+            i = self.tkey[site]
+            self.tarr['d_p1'][i] = np.mean(self.dterms[site]['d_p1'])
+            self.tarr['d_p2'][i] = np.mean(self.dterms[site]['d_p2'])
 
-    def _gain_dtype(self, site):
-        """The DTCAL_* dtype for a site, from its feed type. Hybrid feeds raise."""
-        feed_type = self._feed_type(site)
-        if feed_type is None:
-            return np.dtype(ehc.DTCAL)
-        return np.dtype(ehc.caltable_dtypes(feed_type)[0])
+    def _to_site_basis(self, site, table, dterms=False):
+        """Return a site's gain or D-term table in the dtype for its feed_type.
+
+        A circular table on a linear site gets relabelled with a zero-copy view,
+        the way Obsdata upgrades legacy data. Any other mismatch raises.
+        """
+        if table is None or site not in self.tkey:
+            return table
+        feed_type = self.tarr[self.tkey[site]]['feed_type']
+        if feed_type not in ehc.CAL_DTYPES_BY_FEED:
+            raise NotImplementedError(f"site {site} has feed_type {feed_type!r}; "
+                                      "caltables support only 'rl' and 'xy' feeds")
+        gain_t, dterm_t = ehc.CAL_DTYPES_BY_FEED[feed_type]
+        target, legacy = (dterm_t, ehc.DTDTERM) if dterms else (gain_t, ehc.DTCAL)
+        target = np.dtype(target)
+        if table.dtype == target:
+            return table
+        if table.dtype == np.dtype(legacy):
+            return table.view(target)
+        raise Exception(f"site {site} has feed_type {feed_type!r} but its table "
+                        f"has fields {table.dtype.names}")
 
     @property
     def data(self):
@@ -210,7 +183,7 @@ class Caltable:
         if not isinstance(datadict, dict):
             raise TypeError("data must be a dict of per-site gain tables "
                             f"keyed by site name, got {type(datadict).__name__}")
-        normalized = {site: ehc.upgrade_caltable(t, feed_type=self._feed_type(site))
+        normalized = {site: self._to_site_basis(site, ehc.upgrade_caltable(t))
                       for site, t in datadict.items()}
         # keep the caller's own dict when nothing needed reshaping
         if all(normalized[site] is datadict[site] for site in normalized):
@@ -309,9 +282,8 @@ class Caltable:
            Args:
                sites (list): a list of site names for which to plot gains. Empty list is all sites.
                gain_type (str): 'amp' or 'phase'
-               pol (str): 'R', 'L', 'X', 'Y', 'p1', 'p2' or 'both'. A physical
-                          name must match the site's feed type; 'p1'/'p2' always work.
-                          Default 'p1', which is R on a circular site
+               pol (str): 'R', 'L', 'X', 'Y', 'p1', 'p2' or 'both'.
+                          'p1'/'p2' work on any site; 'R'/'L'/'X'/'Y' must match its feed_type
                ang_unit (str): phase unit 'deg' or 'rad'
                timetype (str): 'GMST' or 'UTC'
                yscale (str): 'log' or 'lin',
@@ -342,12 +314,9 @@ class Caltable:
         if gain_type not in ['amp', 'phase']:
             raise Exception("gain_type must be 'amp' or 'phase'  ")
 
-        # 'both' plots each feed; anything else is a single validated pol
-        if isinstance(pol, str) and pol.strip().lower() == 'both':
-            pols = ['p1', 'p2']
-        else:
-            _normalize_pol(pol)
-            pols = [pol]
+        if pol not in ['R', 'L', 'X', 'Y', 'p1', 'p2', 'both']:
+            raise Exception("pol must be 'R', 'L', 'X', 'Y', 'p1', 'p2' or 'both'")
+        pols = ['p1', 'p2'] if pol == 'both' else [pol]
 
         if ang_unit == 'deg':
             angle = ehc.DEGREE
@@ -375,8 +344,6 @@ class Caltable:
             markersize = markersize * np.ones(len(sites))
 
         # plot gain on each site
-        # separate lists: these used to be four names for one list, so the
-        # gain range was computed from times as well as gains
         tmins, tmaxes, gmins, gmaxes = [], [], [], []
         for s in range(len(sites)):
             site = sites[s]
@@ -388,7 +355,8 @@ class Caltable:
 
             color = next(colors)
             for ip, p in enumerate(pols):
-                gains = self.gains[site][_pol_field(self, site, p)]
+                # numpy raises if the site has no such field, e.g. 'X' on an 'rl' site
+                gains = self.gains[site][p.lower() + 'scale']
 
                 if gain_type == 'amp':
                     gains = np.abs(gains)
@@ -412,7 +380,8 @@ class Caltable:
                 else:
                     bllabel = label + ' ' + str(site)
                 if len(pols) > 1:
-                    bllabel += ' ' + _pol_label(self, site, p)
+                    # gain fields are named rscale/lscale or xscale/yscale; take the letter
+                    bllabel += ' ' + self.gains[site].dtype.names[ip + 1][0].upper()
                 plt.plot(times, gains, color=color, marker=['o', 's'][ip],
                          markersize=markersize[s], label=bllabel, linestyle='none')
 
@@ -599,7 +568,9 @@ class Caltable:
            Returns:
                (Obsdata): the calibrated Obsdata object
         """
-        if not (self.tarr == obs.tarr).all():
+        # skip the D-term columns: the caltable copies its D-term tables into its own tarr
+        fields = [n for n in self.tarr.dtype.names if n not in ('d_p1', 'd_p2')]
+        if not all(np.array_equal(self.tarr[n], obs.tarr[n]) for n in fields):
             raise Exception("The telescope array in the Caltable is not the same as in the Obsdata")
 
         if self.dterms:
@@ -727,16 +698,11 @@ class Caltable:
             tarr2 = caltable.tarr.copy()
             tkey2 = caltable.tkey.copy()
 
-            # a site in both tables must agree on its feed basis; disjoint site
-            # lists in different bases (ALMA in LIN, the rest in CIRC) are fine
-            for site, idx2 in tkey2.items():
-                if site not in tkey1:
-                    continue
-                ft1 = str(tarr1[tkey1[site]]['feed_type'])
-                ft2 = str(tarr2[idx2]['feed_type'])
-                if ft1 != ft2:
-                    raise Exception(f"merge: site {site} has feed_type {ft1!r} in one "
-                                    f"caltable and {ft2!r} in the other")
+            # a site in both caltables must have the same feed_type
+            for site in tkey1.keys() & tkey2.keys():
+                if tarr1[tkey1[site]]['feed_type'] != tarr2[tkey2[site]]['feed_type']:
+                    raise Exception(f"merge: site {site} has a different feed_type "
+                                    "in each caltable")
 
             # merging time-dependent D-term tables.
             # If both caltables carry D-terms for a site, raise for now:
@@ -784,12 +750,11 @@ class Caltable:
 
                     # put the merged data back in data1
                     # TODO can we do this faster?
-                    gain_t = self._gain_dtype(site)
                     datatable = []
                     for i in range(len(times_merge)):
                         datatable.append(
                             np.array((times_merge[i], p1scale_merge[i], p2scale_merge[i]),
-                                     dtype=gain_t))
+                                     dtype=ehc.DTCAL))
                     data1[site] = np.array(datatable)
 
                 # sites not in both caltables
@@ -859,7 +824,6 @@ class Caltable:
                         times_stable[j] = scan[0]
                         break
 
-            gain_t = self._gain_dtype(site)
             datatable = []
             for scan in scans:
                 gains_p2 = self.gains[site]['p2scale']
@@ -875,7 +839,7 @@ class Caltable:
                 gains_p1_avg = np.mean(gains_p1[np.array(times_stable == scan[0])])
 
                 # add them to a new datatable
-                datatable.append(np.array((scan[0], gains_p1_avg, gains_p2_avg), dtype=gain_t))
+                datatable.append(np.array((scan[0], gains_p1_avg, gains_p2_avg), dtype=ehc.DTCAL))
 
             datatables[site] = np.array(datatable)
 
@@ -944,8 +908,6 @@ def load_caltable(obs, datadir, sqrt_gains=False):
             except OSError:
                 continue
 
-        # the on-disk format is basis-neutral; the basis comes from array.txt
-        gain_t = np.dtype(ehc.caltable_dtypes(str(tarr[s]['feed_type']))[0])
         datatable = []
 
         for row in data:
@@ -963,7 +925,7 @@ def load_caltable(obs, datadir, sqrt_gains=False):
             if sqrt_gains:
                 p1scale = p1scale**.5
                 p2scale = p2scale**.5
-            datatable.append(np.array((time, p1scale, p2scale), dtype=gain_t))
+            datatable.append(np.array((time, p1scale, p2scale), dtype=ehc.DTCAL))
 
         datatables[site] = np.array(datatable)
 
@@ -983,7 +945,6 @@ def load_caltable(obs, datadir, sqrt_gains=False):
         except OSError:
             continue
 
-        dterm_t = np.dtype(ehc.caltable_dtypes(str(tarr[s]['feed_type']))[1])
         dterm_table = []
         for row in data:
             if len(row) != 5:
@@ -991,7 +952,7 @@ def load_caltable(obs, datadir, sqrt_gains=False):
             time = (float(row[0]) - obs.mjd) * 24.0  # time is given in mjd
             d_p1 = float(row[1]) + 1j * float(row[2])
             d_p2 = float(row[3]) + 1j * float(row[4])
-            dterm_table.append(np.array((time, d_p1, d_p2), dtype=dterm_t))
+            dterm_table.append(np.array((time, d_p1, d_p2), dtype=ehc.DTDTERM))
 
         dterm_tables[site] = np.array(dterm_table)
 
@@ -1120,20 +1081,13 @@ def make_caltable(obs, gains, sites, times):
     ntele = len(sites)
     ntimes = len(times)
 
-    tkey = {obs.tarr[i]['site']: i for i in range(len(obs.tarr))}
-
     datatables = {}
     for s in range(0, ntele):
-        site = sites[s]
-        if site in tkey:
-            gain_t = np.dtype(ehc.caltable_dtypes(str(obs.tarr[tkey[site]]['feed_type']))[0])
-        else:
-            gain_t = np.dtype(ehc.DTCAL)
         datatable = []
         for t in range(0, ntimes):
             gain = gains[s * ntimes + t]
-            datatable.append(np.array((times[t], gain, gain), dtype=gain_t))
-        datatables[site] = np.array(datatable)
+            datatable.append(np.array((times[t], gain, gain), dtype=ehc.DTCAL))
+        datatables[sites[s]] = np.array(datatable)
     if len(datatables) > 0:
         caltable = Caltable(obs.ra, obs.dec, obs.rf,
                             obs.bw, datatables, obs.tarr, source=obs.source,
@@ -1279,8 +1233,8 @@ def plot_compare_gains(caltab1, caltab2, obs, sites='all', pol='p1', gain_type='
     for s in range(len(sites)):
 
         site = sites[s]
-        gains1 = caltab1.gains[site][_pol_field(caltab1, site, pol)]
-        gains2 = caltab2.gains[site][_pol_field(caltab2, site, pol)]
+        gains1 = caltab1.gains[site][pol.lower() + 'scale']
+        gains2 = caltab2.gains[site][pol.lower() + 'scale']
 
         if gain_type == 'amp':
             gains1 = np.abs(gains1)

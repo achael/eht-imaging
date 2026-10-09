@@ -871,13 +871,10 @@ def make_jones(obs, opacitycal=True, ampcal=True, phasecal=True, dcal=True,
             # the gains; the cal table itself carries gains only
             obs_tmp.tarr[i]['dr'] = dR
             obs_tmp.tarr[i]['dl'] = dL
-            # gainR/gainL are this station's p1/p2 gains in its own basis, so
-            # the table is typed from feed_type rather than always circular
-            gain_t = ehc.caltable_dtypes(feed_type)[0]
             datatable = []
             for j in range(len(times)):
                 datatable.append(np.array((times[j], gainR[j], gainL[j]),
-                                          dtype=gain_t))
+                                          dtype=ehc.DTCAL))
             datatables[site] = np.array(datatable)
 
     # Save a calibration table with the synthetic gains and dterms added

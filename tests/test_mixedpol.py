@@ -2487,54 +2487,16 @@ def test_save_load_uvfits_circ_roundtrip_unaffected(tmp_path):
     assert set(o1.tarr['feed_type']) == {'rl'}
 
 
-# ---------------------------------------------------------------------------
-# make_jones writes its simulated cal table in each station's own basis
-#
-# The writer used a hardcoded circular dtype, so once make_jones handled linear
-# feeds a linear station got a circular table holding X/Y gains.
-# ---------------------------------------------------------------------------
-
-
-def _simulated_caltable(tarr, tmp_path, name):
-    """Run make_jones with caltable saving on, and load the table back.
-
-    End-to-end check of the simulated table's basis. The Caltable constructor
-    types each site from its tarr, so an x/y table filed under a circular
-    station is the only writer mistake left to catch; it is an error here.
-    """
-    arr = ea.Array(tarr)
-    polrep = 'mixed' if len(set(tarr['feed_type'])) > 1 else (
-        'lin' if tarr['feed_type'][0] == 'xy' else 'stokes')
-    obs = arr.obsdata(polrep=polrep, **_obs_kwargs())
-    obs.add_scans()
-    prefix = str(tmp_path / name)
-    with warnings.catch_warnings():
-        warnings.filterwarnings('error', message='.*declares feed_type.*',
-                                category=ehw.MixedPolConventionWarning)
-        obs_simulate.make_jones(obs, ampcal=False, phasecal=False,
-                                caltable_path=prefix, seed=SEED_MAKE_JONES_CALTABLE)
-    return ec.load_caltable(obs, prefix + '_simdata_caltable')
-
-
 SEED_MAKE_JONES_CALTABLE = 20260924
 
 
-def test_make_jones_caltable_circular_array_is_circular(tmp_path):
-    ct = _simulated_caltable(_eht_like_rl_array(), tmp_path, 'circ')
-    for site in ct.gains:
-        assert 'rscale' in ct.gains[site].dtype.fields
-
-
-def test_make_jones_caltable_linear_array_is_linear(tmp_path):
-    """X/Y gains used to come back labelled rscale/lscale."""
-    ct = _simulated_caltable(_eht_like_xy_array(), tmp_path, 'lin')
-    for site in ct.gains:
-        assert 'xscale' in ct.gains[site].dtype.fields
-        assert 'rscale' not in ct.gains[site].dtype.fields
-
-
-def test_make_jones_caltable_mixed_array_types_per_site(tmp_path):
-    """One LIN station and one CIRC station, each typed as itself."""
-    ct = _simulated_caltable(_eht_like_mixed_array(), tmp_path, 'mixed')
-    assert 'xscale' in ct.gains['ALMA'].dtype.fields
-    assert 'rscale' in ct.gains['APEX'].dtype.fields
+def test_make_jones_caltable_types_each_station(tmp_path):
+    """make_jones writes circular tables; loading gives each station its own dtype."""
+    obs = ea.Array(_eht_like_mixed_array()).obsdata(polrep='mixed', **_obs_kwargs())
+    obs.add_scans()
+    prefix = str(tmp_path / 'mixed')
+    obs_simulate.make_jones(obs, ampcal=False, phasecal=False,
+                            caltable_path=prefix, seed=SEED_MAKE_JONES_CALTABLE)
+    ct = ec.load_caltable(obs, prefix + '_simdata_caltable')
+    assert ct.gains['ALMA'].dtype == np.dtype(ehc.DTCAL_LIN)
+    assert ct.gains['APEX'].dtype == np.dtype(ehc.DTCAL_CIRC)

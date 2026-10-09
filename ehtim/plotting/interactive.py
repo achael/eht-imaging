@@ -1097,9 +1097,8 @@ def plot_gains(
             times = obsh.utc_to_gmst(times, caltable.mjd)
 
         for j, pol_ch in enumerate(pol_channels):
-            # TODO: schema-coupled - replace with caltable.data[site][pol_ch]
-            # once the table keys by configurable basis names instead of R/L.
-            key = "rscale" if pol_ch == "R" else "lscale"
+            # TODO: labels assume circular feeds; on a linear site R/L mean X/Y
+            key = "p1scale" if pol_ch == "R" else "p2scale"
             gains_complex = caltable.data[site][key]
 
             if gain_type == "amp":
@@ -2081,22 +2080,20 @@ def dashboard(
     panel2_end = len(fig.data)
 
     # --- Panel 3: gains per site, with amp/phase × R/L dropdown ---
-    # TODO: schema-coupled - replace 'rscale'/'lscale' once mixed-pol lands.
+    # TODO: labels assume circular feeds; on a linear site R/L mean X/Y
     gain_modes = [
-        ("amp_R",   "rscale", "amp",   "|G_R|"),
-        ("amp_L",   "lscale", "amp",   "|G_L|"),
-        ("phase_R", "rscale", "phase", "arg(G_R) (deg)"),
-        ("phase_L", "lscale", "phase", "arg(G_L) (deg)"),
+        ("amp_R",   "p1scale", "amp",   "|G_R|"),
+        ("amp_L",   "p2scale", "amp",   "|G_L|"),
+        ("phase_R", "p1scale", "phase", "arg(G_R) (deg)"),
+        ("phase_L", "p2scale", "phase", "arg(G_L) (deg)"),
     ]
     default_mode = f"amp_{pol}"
     gain_indices: dict[str, list[int]] = {m[0]: [] for m in gain_modes}
     for site in sorted(caltable.data.keys()):
-        complex_R = caltable.data[site]["p1scale"]
-        complex_L = caltable.data[site]["p2scale"]
         times = caltable.data[site]["time"]
         for mode, key, gtype, ylabel in gain_modes:
-            cplx = complex_R if key == "rscale" else complex_L
-            y = np.abs(cplx) if gtype == "amp" else np.angle(cplx, deg=True)
+            cplx = caltable.data[site][key]
+            y =np.abs(cplx) if gtype == "amp" else np.angle(cplx, deg=True)
             fig.add_trace(
                 go.Scatter(
                     x=times, y=y,
