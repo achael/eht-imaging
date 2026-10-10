@@ -393,3 +393,166 @@ class TestObsLastVsObslistLast:
         obs = imager_run.obs_last()
         assert hasattr(obs, "data")
         assert len(obs.data) > 0
+
+
+# ---------------------------------------------------------------------------
+# Data-product staleness
+# ---------------------------------------------------------------------------
+# Imager.__init__ builds the data products immediately, so every later change has to be
+# noticed or the run silently uses data built for different settings. Two ways that
+# failed: check_params returned early before the first make_image, so anything assigned
+# as an attribute was ignored, and it never compared several settings that do feed the
+# products (clipfloor, maxset, ttype, the Fourier-grid params).
+
+
+# this observation is a bright point source: the lowest amplitude SNR is about 286, so a
+# cut has to be well above the usual few-sigma value to remove anything
+SNRCUT = 500.0
+
+
+def _staleness_imager(**kwargs):
+    """Single-term imager for the staleness tests."""
+    defaults = dict(data_term={"amp": 1}, reg_term={"simple": 1}, maxit=2)
+    defaults.update(kwargs)
+    return _make_test_imager(**defaults)
+
+
+def _n_amp(imgr):
+    imgr.init_imager()
+    return int(np.asarray(imgr._data_tuples["amp"][0]).size)
+
+
+class TestSettingsAppliedAfterConstruction:
+    """Assigning an attribute must have the same effect as passing the kwarg."""
+
+    def test_snrcut_and_debias_match_the_constructor(self):
+        via_kwargs = _staleness_imager(debias=True, snrcut={"amp": SNRCUT})
+        via_attrs = _staleness_imager()
+        via_attrs.debias_next = True
+        via_attrs.snrcut_next = {**via_attrs.snrcut_next, "amp": SNRCUT}
+        assert _n_amp(via_attrs) == _n_amp(via_kwargs)
+
+    def test_an_snrcut_edited_in_place_is_noticed(self):
+        # the run history used to store the live dict, so this compared it against itself
+        imgr = _staleness_imager()
+        before = _n_amp(imgr)
+        imgr.make_image(show_updates=False)
+        imgr.snrcut_next["amp"] = SNRCUT
+        imgr.check_params()
+        assert imgr._change_imgr_params
+        assert _n_amp(imgr) < before
+
+    @staticmethod
+    def _per_site_noise(imgr):
+        # real site names, or the per-site dict applies to nothing
+        return {s: 0.1 for s in sorted(set(np.unique(imgr.obslist_next[0].data["t1"])))}
+
+    @pytest.mark.parametrize("edit", [
+        lambda g: g.snrcut_next.__setitem__("amp", SNRCUT),
+        lambda g: setattr(g, "systematic_noise_next",
+                          TestSettingsAppliedAfterConstruction._per_site_noise(g)),
+    ], ids=["snrcut-in-place", "per-site-systematic-noise"])
+    def test_edits_before_the_first_run_are_noticed(self, edit):
+        # before the first make_image there is no history, so the legacy comparisons
+        # cannot run and the signature is the only thing that can catch this
+        imgr = _staleness_imager()
+        imgr.init_imager()
+        before = float(np.asarray(imgr._data_tuples["amp"][1]).sum())
+        edit(imgr)
+        imgr.check_params()
+        assert imgr._change_imgr_params
+        imgr.init_imager()
+        # both edits move the sigmas: snrcut drops points, systematic noise inflates them
+        assert float(np.asarray(imgr._data_tuples["amp"][1]).sum()) != before
+
+    @pytest.mark.parametrize("attr,value", [
+        ("clipfloor_next", 0.02),
+        ("maxset_next", True),
+        ("weighting_next", "uniform"),
+        ("systematic_noise_next", 0.05),
+    ])
+    def test_settings_that_feed_the_data_tuples_are_noticed(self, attr, value):
+        imgr = _staleness_imager()
+        imgr.make_image(show_updates=False)
+        setattr(imgr, attr, value)
+        imgr.check_params()
+        assert imgr._change_imgr_params, f"{attr} left the data products stale"
+
+    def test_a_transform_change_is_noticed(self):
+        # ttype selects the Fourier operator, so the cached one is the wrong kind
+        imgr = _staleness_imager()
+        imgr.make_image(show_updates=False)
+        imgr._config = imgr._config._replace(ttype="nfft")
+        imgr.check_params()
+        assert imgr._change_imgr_params
+
+    def test_a_fourier_grid_change_is_noticed(self):
+        imgr = _staleness_imager(ttype="nfft")
+        imgr.make_image(show_updates=False)
+        imgr._nfft_eps = 1e-6
+        imgr.check_params()
+        assert imgr._change_imgr_params
+
+
+class TestNothingIsRecomputedWithoutCause:
+    """A fix that recomputed unconditionally would satisfy everything above."""
+
+    def test_repeated_checks_leave_the_products_alone(self):
+        imgr = _staleness_imager()
+        imgr.make_image(show_updates=False)
+        for _ in range(3):
+            imgr.check_params()
+            assert not imgr._change_imgr_params
+
+    def test_the_data_tuples_are_not_rebuilt_between_identical_runs(self):
+        imgr = _staleness_imager()
+        imgr.make_image(show_updates=False)
+        before = imgr._data_tuples["amp"][0]
+        imgr.make_image(show_updates=False)
+        assert imgr._data_tuples["amp"][0] is before
+
+    def test_a_polarimetric_run_does_not_rebuild_every_call(self):
+        # make_image reassigns prior_next through switch_polrep on every polarimetric
+        # call, and that copies even when the polrep already matches. Keying the prior by
+        # identity rebuilt the Fourier operators on every single call.
+        imgr = _staleness_imager(data_term={"pvis": 1}, reg_term={"hw": 1}, pol="P",
+                                 transform=["log", "mcv"])
+        imgr.make_image(show_updates=False)
+        before = imgr._data_tuples["pvis"][0]
+        imgr.make_image(show_updates=False)
+        assert imgr._data_tuples["pvis"][0] is before
+
+    def test_a_regularizer_weight_change_does_not_rebuild_the_data(self):
+        # regularizers do not touch the data products
+        imgr = _staleness_imager()
+        imgr.make_image(show_updates=False)
+        before = imgr._data_tuples["amp"][0]
+        imgr.reg_term_next = {"simple": 5}
+        imgr.check_params()
+        imgr.init_imager()
+        assert imgr._data_tuples["amp"][0] is before
+
+
+class TestMultifrequencyFlag:
+    def test_a_constructor_set_mf_survives_make_image(self):
+        # make_image's mf default used to overwrite whatever the constructor was given
+        im = eh.image.make_empty(32, 200 * eh.RADPERUAS, 17.761, -29.0, rf=230e9)
+        im.imvec = np.zeros(32 * 32)
+        im.imvec[32 * 16 + 16] = 1.0
+        im = im.add_const_mf(1.0, 0)
+        array = eh.array.load_txt(ARRAY_PATH)
+        obslist = [im.get_image_mf(nu).observe(array, 300, 10, 0.1, 12.0, 4e9,
+                                               add_th_noise=False, ampcal=True,
+                                               phasecal=True, ttype="direct", seed=42)
+                   for nu in (220e9, 240e9)]
+        imgr = Imager(obslist, im, prior_im=im, data_term={"vis": 1},
+                      reg_term={"simple": 1}, ttype="direct", maxit=2,
+                      mf=True, mf_order=1)
+        assert imgr._config.mf
+        imgr.make_image(show_updates=False)
+        assert imgr._config.mf
+
+    def test_make_image_can_still_turn_mf_off(self):
+        imgr = _staleness_imager()
+        imgr.make_image(mf=False, show_updates=False)
+        assert not imgr._config.mf
