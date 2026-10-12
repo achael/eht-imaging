@@ -1,9 +1,15 @@
-"""NumPy / JAX backend selection for the imaging kernels.
+"""NumPy / JAX array-module dispatch for the imaging kernels.
 
-``set_backend("jax")`` runs the kernels on JAX (GPU, autodiff); the default
-"numpy" backend is unchanged. Kernels pick their array module from their inputs
-(``array_namespace``), so they stay single-sourced and jit-safe. JAX is imported
-lazily when selected; install it with the ``[dev]`` (CPU) or ``[gpu]`` (CUDA) extra.
+Kernels pick their array module from their *inputs* (``array_namespace``
+dispatches on whether an argument is a ``jax.Array``), so they stay
+single-sourced and jit-safe. That dispatch is what decides where the maths runs:
+pass jax arrays and the kernel runs on jax.
+
+``set_backend`` does not route anything. Its only side effect is enabling
+``jax_enable_x64`` when called with "jax"; the recorded name is readable via
+``get_backend`` but no kernel consults it. Use it to turn on double precision
+before building jax inputs, not as a switch. JAX is imported lazily when
+selected; install it with the ``[dev]`` (CPU) or ``[gpu]`` (CUDA) extra.
 """
 import contextlib
 import importlib.util

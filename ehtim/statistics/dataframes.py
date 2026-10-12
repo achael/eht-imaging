@@ -36,7 +36,7 @@ from ehtim.statistics.stats import bootstrap, circular_mean, mean_incoh_avg
 
 
 # pandas is required for the closure-quantity helpers in this module but is
-# otherwise optional for ehtim — visibility averaging lives in
+# otherwise optional for ehtim: visibility averaging lives in
 # `ehtim.statistics.averaging` and is pandas-free.  Make the import lazy: on
 # ImportError, substitute a stub that raises a clear message on first use, so
 # `import ehtim` keeps working without pandas installed.
