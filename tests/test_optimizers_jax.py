@@ -21,7 +21,6 @@ optax = pytest.importorskip("optax")
 
 VALUE_RTOL = 1e-9
 GRAD_RTOL = 1e-9
-NXCORR_FLOOR = 0.8
 EPSILON_TV = 1e-10
 RNG_SEED = 4
 PERTURB = 0.10
@@ -35,13 +34,16 @@ def _nxcorr(a, b):
 
 
 @pytest.fixture(scope="module")
-def make_opt_imager(obs_direct, gauss_im, gauss_prior):
-    """Factory: a fresh Stokes-I imager per call (make_image mutates the imager)."""
-    def build():
+def make_opt_imager(obs_direct, gauss_im, flat_prior):
+    """Factory: a fresh Stokes-I imager per call (make_image mutates the imager).
+
+    Init and prior are both featureless, so the reconstruction has to come from the data.
+    """
+    def build(maxit=100):
         return eh.imager.Imager(
-            obs_direct, gauss_prior, prior_im=gauss_prior, flux=gauss_im.total_flux(),
+            obs_direct, flat_prior, prior_im=flat_prior, flux=gauss_im.total_flux(),
             data_term={"vis": 1}, reg_term={"simple": 1, "tv": 1},
-            ttype="direct", pol="I", maxit=100, epsilon_tv=EPSILON_TV)
+            ttype="direct", pol="I", maxit=maxit, epsilon_tv=EPSILON_TV)
     return build
 
 
@@ -72,7 +74,9 @@ def test_classify_optimizer():
 
 
 def test_device_vg_matches_host(make_opt_imager):
-    # the on-device value_and_grad reproduces the validated host objective
+    # both jax factories agree with each other AND with the numpy analytic. Without the numpy
+    # anchor the two factories are built from the same args by the same family, so a shared
+    # error would cancel.
     imgr = make_opt_imager()
     imgr.check_params()
     imgr.check_limits()
@@ -84,6 +88,9 @@ def test_device_vg_matches_host(make_opt_imager):
     val, grad = vg(to_device(x))
     assert np.allclose(float(val), v_host, rtol=VALUE_RTOL)
     assert np.allclose(np.asarray(grad), g_host, rtol=GRAD_RTOL)
+
+    assert np.allclose(v_host, float(imgr.objfunc(x)), rtol=VALUE_RTOL)
+    assert np.allclose(g_host, np.asarray(imgr.objgrad(x)), rtol=GRAD_RTOL)
 
 
 # ============================== scipy path (default unchanged) ==============================
@@ -105,27 +112,28 @@ def test_scipy_lane_matches_direct_scipy(make_opt_imager):
 
 
 @pytest.mark.slow
-def test_default_recovers(make_opt_imager, gauss_im):
+def test_default_recovers(make_opt_imager, gauss_im, recovery_floors):
     out = make_opt_imager().make_image(show_updates=False)
-    assert _nxcorr(out.imvec, gauss_im.imvec) > NXCORR_FLOOR
+    assert _nxcorr(out.imvec, gauss_im.imvec) > recovery_floors.floor
 
 
 # ============================== optax + custom optimizers ==============================
 @pytest.mark.slow
-def test_optax_lbfgs_recovers(make_opt_imager, gauss_im):
+def test_optax_lbfgs_recovers(make_opt_imager, gauss_im, recovery_floors):
     out = make_opt_imager().make_image(optimizer="optax-lbfgs", show_updates=False)
-    assert _nxcorr(out.imvec, gauss_im.imvec) > NXCORR_FLOOR
+    assert _nxcorr(out.imvec, gauss_im.imvec) > recovery_floors.floor
 
 
 @pytest.mark.slow
-def test_custom_gradient_transformation_recovers(make_opt_imager, gauss_im):
-    # any optax GradientTransformation works through the optax path
+def test_custom_gradient_transformation_recovers(make_opt_imager, gauss_im, recovery_floors):
+    # any optax GradientTransformation works through the optax path. adam is first-order, so
+    # it lands well short of L-BFGS at the same iteration count.
     out = make_opt_imager().make_image(optimizer=optax.adam(3e-2), show_updates=False)
-    assert _nxcorr(out.imvec, gauss_im.imvec) > NXCORR_FLOOR
+    assert _nxcorr(out.imvec, gauss_im.imvec) > recovery_floors.first_order
 
 
 @pytest.mark.slow
-def test_custom_callable_recovers(make_opt_imager, gauss_im):
+def test_custom_callable_recovers(make_opt_imager, gauss_im, recovery_floors):
     # the escape hatch: a user callable receives a host value_and_grad and returns
     # anything with .x / .fun. Here it plugs scipy CG.
     def my_optimizer(value_and_grad, x0, *, maxiter, tol, callback=None):
@@ -133,7 +141,23 @@ def test_custom_callable_recovers(make_opt_imager, gauss_im):
                                        options={"maxiter": maxiter}, callback=callback)
 
     out = make_opt_imager().make_image(optimizer=my_optimizer, show_updates=False)
-    assert _nxcorr(out.imvec, gauss_im.imvec) > NXCORR_FLOOR
+    assert _nxcorr(out.imvec, gauss_im.imvec) > recovery_floors.floor
+
+
+def test_recovery_floors_are_not_vacuous(flat_prior, gauss_im, recovery_floors):
+    """Guard on the four tests above: the start must carry none of the source.
+
+    They previously began from a blur of the truth, which scores 0.989 against it, so they
+    passed on the untouched starting image. Asserted on the fixture rather than on a
+    zero-iteration run: scipy L-BFGS-B completes one line search before it checks the
+    iteration count, so `maxit=0` is not a no-op and scores 0.186, which would leave this
+    guard measuring one optimizer step instead of the fixture.
+    """
+    # a featureless image has zero variance, so _nxcorr returns its 0.0 guard value
+    start = _nxcorr(flat_prior.imvec, gauss_im.imvec)
+    assert start < recovery_floors.no_op_ceiling, (
+        f"the starting image scores {start:.3f} against the truth, so the recovery floors "
+        "above no longer measure the reconstruction")
 
 
 def test_unknown_optimizer_raises(make_opt_imager):

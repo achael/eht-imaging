@@ -54,6 +54,22 @@ def test_survey_runs_and_shapes(obs_direct, gauss_im, gauss_prior):
     assert chis["vis"].shape == (4,) and np.all(chis["vis"] > 0)
 
 
+def test_survey_grid_changes_the_reconstruction(obs_direct, gauss_im, gauss_prior):
+    """The grid must reach the objective: the checks above pass for any four images at all."""
+    from ehtim.imaging.survey_gpu import run_survey_gpu
+    tvs, simples = np.array([1.0, 100.0]), np.array([1.0, 50.0])
+    images, _, rec, _ = run_survey_gpu(_imager(obs_direct, gauss_im, gauss_prior),
+                                       weight_grid={"tv": tvs, "simple": simples}, maxit=20)
+    np.testing.assert_allclose(np.sort(np.unique(rec["tv"])), tvs)
+    np.testing.assert_allclose(np.sort(np.unique(rec["simple"])), simples)
+
+    # meshgrid(indexing="ij") over (tv, simple): rows 0,1 share tv and differ in simple;
+    # rows 0,2 share simple and differ in tv. Both weights must move the reconstruction.
+    for a, b, label in ((0, 1, "simple"), (0, 2, "tv")):
+        spread = np.max(np.abs(images[a] - images[b])) / np.max(np.abs(images[0]))
+        assert spread > 1e-3, f"{label} did not change the image (max rel diff {spread:.2e})"
+
+
 def test_survey_batch_matches_single(obs_direct, gauss_im, gauss_prior):
     from ehtim.imaging.survey_gpu import run_survey_gpu
     tvs = np.array([1.0, 50.0])
@@ -68,19 +84,46 @@ def test_survey_batch_matches_single(obs_direct, gauss_im, gauss_prior):
 
 def test_survey_prior_fwhm_outer_axis(obs_direct, gauss_im, gauss_prior):
     from ehtim.imaging.survey_gpu import run_survey_gpu
-    images, objval, rec, chis = run_survey_gpu(_imager(obs_direct, gauss_im, gauss_prior),
-                                               weight_grid={"tv": np.array([1.0, 10.0])},
-                                               prior_fwhm=[40.0, 60.0], maxit=8)
+    imgr = _imager(obs_direct, gauss_im, gauss_prior)
+    imgr.init_imager()
+    # pin the start vector. prior_fwhm also sets init_next, and x0 defaults to imgr._init_vec,
+    # so without this the rows differ before a single iteration runs and the spread below
+    # measures the starting images rather than the prior reaching the objective.
+    x0 = np.asarray(imgr._init_vec, float)
+    images, objval, rec, chis = run_survey_gpu(imgr, weight_grid={"tv": np.array([1.0, 10.0])},
+                                               prior_fwhm=[40.0, 60.0], maxit=8, x0=x0)
     assert images.shape[0] == 4 and objval.shape == (4,)
     assert rec["tv"].shape == (4,) and set(np.unique(rec["prior_fwhm"])) == {40.0, 60.0}
     assert chis["vis"].shape == (4,) and np.all(np.isfinite(images))
+
+    # rec["prior_fwhm"] echoes the caller's own list, so it proves nothing. Rows 0 and 2 are
+    # the same tv weight at fwhm 40 vs 60.
+    spread = np.max(np.abs(images[0] - images[2])) / np.max(np.abs(images[0]))
+    assert spread > 1e-6, f"prior_fwhm 40 and 60 gave the same image (max rel diff {spread:.2e})"
 
 
 def test_survey_sys_noise_outer_axis_and_restore(obs_direct, gauss_im, gauss_prior):
     from ehtim.imaging.survey_gpu import run_survey_gpu
     imgr = _imager(obs_direct, gauss_im, gauss_prior)
-    base_prior = imgr.prior_next
+    base_prior, base_init = imgr.prior_next, imgr.init_next
+    base_obs = list(imgr.obslist_next)
+    imgr.init_imager()
+    base_sigma = np.array(imgr._data_tuples["vis"][1], copy=True)
     images, objval, rec, _ = run_survey_gpu(imgr, weight_grid={"tv": np.array([1.0])},
                                             sys_noise=[0.0, 0.05], maxit=8)
     assert images.shape[0] == 2 and set(np.unique(rec["sys_noise"])) == {0.0, 0.05}
-    assert imgr.prior_next is base_prior  # imager restored after the survey
+    # A sys_noise sweep rebuilds obslist_next and leaves the prior alone, so checking
+    # prior_next alone was the one of the three that could not fail.
+    assert imgr.prior_next is base_prior
+    assert imgr.init_next is base_init
+    assert imgr.obslist_next == base_obs
+
+    # and the data products, which are what those attributes exist to produce. Restoring the
+    # attributes is not enough: the derived sigmas are cached, so the caller was left imaging
+    # the last grid point's inflated errors.
+    imgr.init_imager()
+    np.testing.assert_allclose(imgr._data_tuples["vis"][1], base_sigma, rtol=1e-12)
+
+    # sys_noise inflates the errors, so the two rows must not be the same reconstruction
+    spread = np.max(np.abs(images[0] - images[1])) / np.max(np.abs(images[0]))
+    assert spread > 1e-6, f"sys_noise made no difference (max rel diff {spread:.2e})"
