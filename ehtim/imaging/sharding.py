@@ -28,6 +28,17 @@ has an incorrect transpose rule under shard_map, so we cannot differentiate thro
 it stands. Instead its grid->samples step is wrapped in a custom_vjp whose backward pass is
 an explicit forward nufft1 (see `_make_sharded_nufft2`).
 
+Known hazard on the nfft path. A sharded nfft objective runs the jax_finufft FFI on every
+device, and every call creates cuFFT plans. On some driver and hardware pairings (seen on
+sm_120 Blackwell) plan creation can enter an unbounded spin inside the CUDA driver's
+cuModuleLoadData. It is a livelock rather than slow work -- one hang held 100% of a core
+for 58 minutes without finishing -- and it is a driver defect, not an ehtim or XLA one, so
+nothing in this module can prevent it. What we can do is reduce how often a run rolls the
+dice: the trigger fires per plan creation, so the fewer objective evaluations, the fewer
+chances to hang. That is why `Imager.make_image` recommends `optimizer='optax-lbfgs-bt'`
+for sharded runs -- the zoom line search evaluates many more times per step, and hung 14 of
+16 runs against 2 of 16 for backtracking. See `ehtim.warnings.ShardedLineSearchWarning`.
+
 jax and the sharding machinery are imported lazily, so `import ehtim` still works for
 people who do not have jax installed.
 """
