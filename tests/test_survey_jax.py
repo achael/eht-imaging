@@ -84,3 +84,98 @@ def test_survey_sys_noise_outer_axis_and_restore(obs_direct, gauss_im, gauss_pri
                                             sys_noise=[0.0, 0.05], maxit=8)
     assert images.shape[0] == 2 and set(np.unique(rec["sys_noise"])) == {0.0, 0.05}
     assert imgr.prior_next is base_prior  # imager restored after the survey
+
+
+# ---------------------------------------------------------------------------
+# L-BFGS history size
+#
+# `optax.lbfgs(memory_size=m)` state is ~2m+3 copies of the image vector, and
+# _inner_survey vmaps the whole reconstruction, so the state is paid per batch
+# element. At the shipped memory_size=50 that is 3.22 MiB each (103x the 4096
+# pixel vector at float64): 3.22 GiB at B=1024 and 25.75 GiB at B=8192, the
+# Paper IV grid size this module models itself on. It was a module constant
+# with no way for a caller to change it.
+# ---------------------------------------------------------------------------
+
+
+def _spy_on_optdict(monkeypatch):
+    """Capture the option dict survey_gpu hands to resolve_optax."""
+    from ehtim.imaging import survey_gpu
+    seen = {}
+    real = survey_gpu.resolve_optax
+
+    def spy(optimizer, optdict):
+        seen.update(optdict)
+        return real(optimizer, optdict)
+
+    monkeypatch.setattr(survey_gpu, "resolve_optax", spy)
+    return seen
+
+
+def test_survey_lbfgs_history_defaults_to_the_module_constant(
+        obs_direct, gauss_im, gauss_prior, monkeypatch):
+    from ehtim.imaging.survey_gpu import NHIST, run_survey_gpu
+    seen = _spy_on_optdict(monkeypatch)
+    run_survey_gpu(_imager(obs_direct, gauss_im, gauss_prior),
+                   weight_grid={"tv": np.array([1.0])}, maxit=3)
+    assert seen["maxcor"] == NHIST
+
+
+def test_survey_lbfgs_history_is_tunable(obs_direct, gauss_im, gauss_prior, monkeypatch):
+    # The point of the knob: a large grid can trade convergence for memory.
+    from ehtim.imaging.survey_gpu import run_survey_gpu
+    seen = _spy_on_optdict(monkeypatch)
+    run_survey_gpu(_imager(obs_direct, gauss_im, gauss_prior),
+                   weight_grid={"tv": np.array([1.0])}, maxit=3, maxcor=7)
+    assert seen["maxcor"] == 7
+
+
+@pytest.mark.parametrize("name", ["optax-lbfgs", "optax-lbfgs-bt"])
+def test_survey_maxcor_sizes_the_optimizer_state(name):
+    # Goes through resolve_optax, which is where the optdict "maxcor" key is
+    # mapped onto optax's memory_size. Calling optax directly would not pin that
+    # mapping: hardcoding memory_size=50 inside resolve_optax passes such a test
+    # while making the knob inert.
+    pytest.importorskip("optax")
+    import jax.numpy as jnp
+
+    from ehtim.imaging.optimizers import resolve_optax
+    from ehtim.imaging.survey_gpu import MAXLS
+
+    def state_bytes(m):
+        gt, _ = resolve_optax(name, {"maxiter": 1, "maxcor": m, "maxls": MAXLS})
+        st = gt.init(jnp.zeros(4096, dtype=jnp.float64))
+        return sum(np.asarray(x).nbytes for x in jax.tree_util.tree_leaves(st))
+
+    # L-BFGS state is ~(2m+3) copies of the vector, so 50 must dominate 5.
+    small, large = state_bytes(5), state_bytes(50)
+    assert large > 4 * small, (
+        f"maxcor should size the state through resolve_optax: "
+        f"5 -> {small} B, 50 -> {large} B")
+
+
+def test_survey_smaller_history_still_reconstructs(obs_direct, gauss_im, gauss_prior):
+    # A shorter history converges more slowly, but must still reconstruct: an
+    # all-zero or noise result would pass a shape-and-finiteness check.
+    from ehtim.imaging.survey_gpu import run_survey_gpu
+    imgs, objs, _, chis = run_survey_gpu(_imager(obs_direct, gauss_im, gauss_prior),
+                                         weight_grid={"tv": np.array([1.0, 10.0])},
+                                         maxit=60, maxcor=5)
+    assert imgs.shape[0] == 2
+    assert np.all(np.isfinite(imgs)) and np.all(np.isfinite(objs))
+    assert np.all(chis["vis"] > 0)
+    truth = gauss_im.imvec
+    for b in range(imgs.shape[0]):
+        a, t = imgs[b] - imgs[b].mean(), truth - truth.mean()
+        nx = float(np.sum(a * t) / np.sqrt(np.sum(a * a) * np.sum(t * t)))
+        assert nx > 0.8, f"grid point {b}: nxcorr {nx:.3f} against the source"
+
+
+@pytest.mark.parametrize("bad", [0, -1, 7.9, None])
+def test_survey_rejects_a_nonsense_maxcor(obs_direct, gauss_im, gauss_prior, bad):
+    # Without this these reach optax (or int()) only after run_survey_gpu has
+    # already rebuilt the prior and re-noised the observations for grid point 1.
+    from ehtim.imaging.survey_gpu import run_survey_gpu
+    with pytest.raises((ValueError, TypeError)):
+        run_survey_gpu(_imager(obs_direct, gauss_im, gauss_prior),
+                       weight_grid={"tv": np.array([1.0])}, maxit=3, maxcor=bad)
