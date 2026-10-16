@@ -7,6 +7,8 @@ tight direct-vs-nfft gradient bound pins nfft gradient correctness. All tests us
 image so xdim != ydim exercises the rectangular-image code paths (rect subsumes square).
 """
 
+import tracemalloc
+
 import numpy as np
 import pytest
 
@@ -17,7 +19,8 @@ from ehtim.imaging.imager_backend import (
     compute_chisq_term,
     compute_chisqdata_term,
 )
-from ehtim.imaging.imager_utils import chisq, chisqdata, chisqgrad
+from ehtim.imaging.imager_utils import chisq, chisqdata, chisqgrad, chisqgrad_vis
+from ehtim.imaging.pol_imager_utils import chisqgrad_m, chisqgrad_p, chisqgrad_vvis
 
 # Observation parameters (must match conftest.py)
 TINT_SEC = 5
@@ -280,3 +283,79 @@ class TestPolChisqConsistency:
             vals[tt] = compute_chisq_term(imcur, dtype, A, data, sigma, ttype=tt, mask=mask)
         frac = abs((vals["direct"] - vals["nfft"]) / abs(vals["direct"]))
         assert frac < POL_CHISQ_FRAC_TOL, f"{dtype}: chisq frac diff = {frac:.6f}"
+
+
+# ---------------------------------------------------------------------------
+# Direct gradients must not copy the Fourier operator.
+# ---------------------------------------------------------------------------
+
+OP_NVIS = 1200
+OP_NPIX = 2048
+
+# This bound separates a full operator copy from vector allocations.
+OP_PEAK_FRACTION = 0.25
+
+
+def _peak_mib(fn):
+    """Measure peak traced allocation after warming lazy imports."""
+    fn()
+    was_tracing = tracemalloc.is_tracing()
+    tracemalloc.start()
+    tracemalloc.reset_peak()
+    fn()
+    _, peak = tracemalloc.get_traced_memory()
+    if not was_tracing:
+        tracemalloc.stop()
+    return peak / 2**20
+
+
+@pytest.fixture(scope="module")
+def operator_setup():
+    """Dense operator and matching Stokes-I and polarimetric inputs."""
+    rng = np.random.default_rng(0)
+    A = (rng.standard_normal((OP_NVIS, OP_NPIX))
+         + 1j * rng.standard_normal((OP_NVIS, OP_NPIX)))
+    data = rng.standard_normal(OP_NVIS) + 1j * rng.standard_normal(OP_NVIS)
+    sigma = np.abs(rng.standard_normal(OP_NVIS)) + 0.1
+    imvec = np.abs(rng.standard_normal(OP_NPIX)) + 0.1
+    imarr = np.vstack([imvec,
+                       0.3 * np.ones(OP_NPIX),      # rho
+                       0.4 * np.ones(OP_NPIX),      # phi
+                       0.2 * np.ones(OP_NPIX)])     # psi
+    return {"A": A, "data": data, "sigma": sigma, "imvec": imvec, "imarr": imarr,
+            "op_mib": A.nbytes / 2**20}
+
+
+GRAD_CASES = [
+    ("chisqgrad_vis",
+     lambda s: chisqgrad_vis(s["imvec"], s["A"], s["data"], s["sigma"])),
+    ("chisqgrad_p",
+     lambda s: chisqgrad_p(s["imarr"], s["A"], s["data"], s["sigma"],
+                           pol_solve=(1, 1, 1, 1))),
+    ("chisqgrad_m",
+     lambda s: chisqgrad_m(s["imarr"], s["A"], s["data"], s["sigma"],
+                          pol_solve=(1, 1, 1, 1))),
+    ("chisqgrad_vvis",
+     lambda s: chisqgrad_vvis(s["imarr"], s["A"], s["data"], s["sigma"],
+                              pol_solve=(1, 1, 0, 1))),
+]
+
+
+class TestGradientOperatorNotCopied:
+    """Peak allocation during a direct-path gradient stays well under the operator."""
+
+    def test_tracemalloc_sees_numpy_allocations(self, operator_setup):
+        # Confirm tracemalloc sees NumPy copies before relying on its peak.
+        A, op_mib = operator_setup["A"], operator_setup["op_mib"]
+        peak = _peak_mib(lambda: A.conj())
+        assert peak > 0.9 * op_mib, (
+            f"tracemalloc reported {peak:.2f} MiB for an explicit copy of a "
+            f"{op_mib:.2f} MiB operator; the bounds below would be vacuous")
+
+    @pytest.mark.parametrize("label,call", GRAD_CASES, ids=[c[0] for c in GRAD_CASES])
+    def test_peak_allocation_well_under_operator(self, operator_setup, label, call):
+        op_mib = operator_setup["op_mib"]
+        peak = _peak_mib(lambda: call(operator_setup))
+        assert peak < OP_PEAK_FRACTION * op_mib, (
+            f"{label} peaked at {peak:.2f} MiB against a {op_mib:.2f} MiB "
+            f"operator ({peak/op_mib:.2f}x); it is copying the operator")

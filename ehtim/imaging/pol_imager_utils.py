@@ -20,6 +20,14 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 from ehtim.backends import array_namespace
+
+try:
+    from pynfft.nfft import NFFT
+    _HAS_NFFT = True
+except ImportError:
+    NFFT = None
+    _HAS_NFFT = False
+
 from ehtim.const_def import (
     FFT_PAD_DEFAULT,
     GRIDDER_P_RAD_DEFAULT,
@@ -27,7 +35,7 @@ from ehtim.const_def import (
     NFFT_NTHREADS_DEFAULT,
     RADPERAS,
 )
-from ehtim.observing.obs_helpers import NFFTInfo, ftmatrix, nufft2_backend, ticks
+from ehtim.observing.obs_helpers import NFFTInfo, adjoint_dot, ftmatrix, nufft2_backend, ticks
 
 # Floor on the polarization fraction m for the entropy regularizer: I*log(m) is
 # -inf at an unpolarized pixel, which polcv can reach exactly.
@@ -496,23 +504,25 @@ def chisqgrad_p(imarr, Amatrix, p, sigmap,pol_solve=POL_SOLVE_DEFAULT):
     psamples = np.dot(Amatrix, pimage)
     pdiff = (p - psamples) / (sigmap**2)
 
+    adj_pdiff = adjoint_dot(Amatrix, pdiff)
+
     # dchi2/dI
     if pol_solve[0]!=0:
-        gradi = -np.real(mimage * np.exp(-2j*chiimage) * np.dot(Amatrix.conj().T, pdiff)) / len(p)
+        gradi = -np.real(mimage * np.exp(-2j*chiimage) * adj_pdiff) / len(p)
         gradout[0] = gradi
     # dchi2/drho
     if pol_solve[1]!=0:
-        gradm = -np.real(iimage * np.exp(-2j*chiimage) * np.dot(Amatrix.conj().T, pdiff)) / len(p)
+        gradm = -np.real(iimage * np.exp(-2j*chiimage) * adj_pdiff) / len(p)
         gradrho = gradm * np.cos(psiimage)
         gradout[1] = gradrho
     # dchi2/dphi
     if pol_solve[2]!=0:
-        gradchi = -2 * np.imag(pimage.conj() * np.dot(Amatrix.conj().T, pdiff)) / len(p)
+        gradchi = -2 * np.imag(pimage.conj() * adj_pdiff) / len(p)
         gradphi = 0.5*gradchi
         gradout[2] = gradphi
     # dchi2/dpsi
     if pol_solve[3]!=0:
-        gradm = -np.real(iimage * np.exp(-2j*chiimage) * np.dot(Amatrix.conj().T, pdiff)) / len(p)
+        gradm = -np.real(iimage * np.exp(-2j*chiimage) * adj_pdiff) / len(p)
         gradpsi = gradm * (-mimage*np.tan(psiimage))
         gradout[3] = gradpsi
 
@@ -548,24 +558,26 @@ def chisqgrad_m(imarr, Amatrix, m, sigmam,pol_solve=POL_SOLVE_DEFAULT):
     msamples = psamples/isamples
     mdiff = (m - msamples) / (isamples.conj() * sigmam**2)
 
+    adj_mdiff = adjoint_dot(Amatrix, mdiff)
+
     # dchi2/dI
     if pol_solve[0]!=0:
-        gradi = (-np.real(mimage * np.exp(-2j*chiimage) * np.dot(Amatrix.conj().T, mdiff)) / len(m) +
-                  np.real(np.dot(Amatrix.conj().T, msamples.conj() * mdiff)) / len(m))
+        gradi = (-np.real(mimage * np.exp(-2j*chiimage) * adj_mdiff) / len(m) +
+                  np.real(adjoint_dot(Amatrix, msamples.conj() * mdiff)) / len(m))
         gradout[0] = gradi
     # dchi2/drho
     if pol_solve[1]!=0:
-        gradm = -np.real(iimage*np.exp(-2j*chiimage) * np.dot(Amatrix.conj().T, mdiff)) / len(m)
+        gradm = -np.real(iimage*np.exp(-2j*chiimage) * adj_mdiff) / len(m)
         gradrho = gradm * np.cos(psiimage)
         gradout[1] = gradrho
     # dchi2/dphi
     if pol_solve[2]!=0:
-        gradchi = -2 * np.imag(pimage.conj() * np.dot(Amatrix.conj().T, mdiff)) / len(m)
+        gradchi = -2 * np.imag(pimage.conj() * adj_mdiff) / len(m)
         gradphi = 0.5*gradchi
         gradout[2] = gradphi
     # dchi2/dpsi
     if pol_solve[3]!=0:
-        gradm = -np.real(iimage*np.exp(-2j*chiimage) * np.dot(Amatrix.conj().T, mdiff)) / len(m)
+        gradm = -np.real(iimage*np.exp(-2j*chiimage) * adj_mdiff) / len(m)
         gradpsi = gradm * (-mimage*np.tan(psiimage))
         gradout[3] = gradpsi
 
@@ -599,18 +611,20 @@ def chisqgrad_vvis(imarr, Amatrix, v, sigmav, pol_solve=POL_SOLVE_DEFAULT_V):
     vsamples = np.dot(Amatrix, vimage)
     vdiff = (v - vsamples) / (sigmav**2)
 
+    adj_vdiff = adjoint_dot(Amatrix, vdiff)
+
     # dchi2/dI
     if pol_solve[0]!=0:
-        gradi = -np.real(vfimage * np.dot(Amatrix.conj().T, vdiff)) / len(v)
+        gradi = -np.real(vfimage * adj_vdiff) / len(v)
         gradout[0] = gradi
     # dchi2/drho
     if pol_solve[1]!=0:
-        gradv = -np.real(iimage * np.dot(Amatrix.conj().T, vdiff)) / len(v)
+        gradv = -np.real(iimage * adj_vdiff) / len(v)
         gradrho = gradv*np.sin(psiimage)
         gradout[1] = gradrho
     # dchi2/dpsi
     if pol_solve[3]!=0:
-        gradv = -np.real(iimage * np.dot(Amatrix.conj().T, vdiff)) / len(v)
+        gradv = -np.real(iimage * adj_vdiff) / len(v)
         gradpsi = gradv * make_m_image(imarr)
         gradout[3] = gradpsi
 

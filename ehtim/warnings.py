@@ -38,6 +38,16 @@ class MixedPolClosureSkipWarning(UserWarning):
     """
 
 
+class DirectMatrixSizeWarning(UserWarning):
+    """A direct data term holds more dense operators than its size threshold.
+
+    The threshold applies to the completed term, so allocation can fail before
+    this warning. Set ``ehtim.const_def.DIRECT_MATRIX_WARN_GB`` to change it.
+    Setting ``ehtim.DIRECT_MATRIX_WARN_GB`` has no effect because it is a
+    separate binding from the star import in ``ehtim/__init__.py``.
+    """
+
+
 class MixedPolUnpackNaNWarning(UserWarning):
     """Emitted when ``Obsdata.unpack`` of a physical correlation (e.g. 'rrvis')
     on a mixed-feed observation returns NaN for rows whose feed basis does not

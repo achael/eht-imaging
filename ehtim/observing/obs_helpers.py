@@ -1395,6 +1395,25 @@ def image_centroid(im):
     return np.array([x0, y0])
 
 
+def adjoint_dot(Amatrix, vec):
+    """Apply a dense DFT operator's adjoint without copying the operator.
+
+    Parameters
+    ----------
+    Amatrix : np.ndarray
+        Complex DFT operator with shape (nvis, npix).
+    vec : np.ndarray
+        Complex vector with shape (nvis,).
+
+    Returns
+    -------
+    np.ndarray
+        Complex result with shape (npix,).
+    """
+
+    return np.dot(vec.conj(), Amatrix).conj()
+
+
 def ftmatrix(pdim, xdim, ydim, uvlist, pulse=ehc.PULSE_DEFAULT, mask=[]):
     """Return a DFT matrix for the xdim*ydim image with pixel width pdim
        that extracts spatial frequencies of the uv points in uvlist.
@@ -1410,13 +1429,21 @@ def ftmatrix(pdim, xdim, ydim, uvlist, pulse=ehc.PULSE_DEFAULT, mask=[]):
 
     # changed the sign convention to agree with BU data (Jan 2017)
     # this is correct for a u,v definition from site 1-2 as (x1-x2)/lambda
-    ftmatrices = [pulse(2*np.pi*uv[0], 2*np.pi*uv[1], pdim, dom="F") *
-                  np.outer(np.exp(2j*np.pi*ylist*uv[1]), np.exp(2j*np.pi*xlist*uv[0]))
-                  for uv in uvlist]
-    ftmatrices = np.reshape(np.array(ftmatrices), (len(uvlist), xdim*ydim))
-
+    # Match the old C order without a mask and F order with one. np.dot uses it.
+    uvlist = np.asarray(uvlist)
+    npix = xdim*ydim
     if len(mask):
-        ftmatrices = ftmatrices[:, mask]
+        cols = np.arange(npix)[mask]
+        ncol, order = len(cols), 'F'
+    else:
+        cols = slice(None)
+        ncol, order = npix, 'C'
+
+    ftmatrices = np.empty((len(uvlist), ncol), dtype=np.complex128, order=order)
+    for k, uv in enumerate(uvlist):
+        row = (pulse(2*np.pi*uv[0], 2*np.pi*uv[1], pdim, dom="F") *
+               np.outer(np.exp(2j*np.pi*ylist*uv[1]), np.exp(2j*np.pi*xlist*uv[0])))
+        ftmatrices[k] = row.reshape(npix)[cols]
 
     return ftmatrices
 

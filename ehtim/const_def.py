@@ -30,10 +30,10 @@ from ehtim.observing.pulses import trianglePulse2D
 # here shows up as ehtim.<name> automatically via the star import in __init__.py.
 __all__ = [
     "BHIMAGE", "BOUNDS_ERROR", "C", "COLORLIST", "DEC_DEFAULT", "DEC_M87",
-    "DEC_SGRA", "DEGREE", "DTAMP", "DTARR", "DTBIS", "DTCAL", "DTCAMP",
-    "DTCPHASE", "DTCPHASEDIAG", "DTDTERM", "DTERMPDEF", "DTLOGCAMPDIAG",
-    "DTPOL_CIRC",
-    "DTPOL_STOKES", "DTSCANS", "EHTIMAGE", "ELEV_HIGH", "ELEV_LOW", "EP",
+    "DEC_SGRA", "DEGREE", "DIRECT_MATRIX_WARN_GB", "DTAMP", "DTARR", "DTBIS",
+    "DTCAL", "DTCAMP", "DTCPHASE", "DTCPHASEDIAG", "DTDTERM", "DTERMPDEF",
+    "DTLOGCAMPDIAG", "DTPOL_CIRC", "DTPOL_STOKES", "DTSCANS", "EHTIMAGE",
+    "ELEV_HIGH", "ELEV_LOW", "EP",
     "FFT_INTERP_DEFAULT", "FFT_PAD_DEFAULT", "FIELD_LABELS", "FIELDS",
     "FIELDS_AMPS", "FIELDS_PHASE", "FIELDS_SIGPHASE", "FIELDS_SIGS",
     "FIELDS_SNRS", "FWHM_MAJ", "FWHM_MIN", "GAINPDEF",
@@ -99,6 +99,10 @@ NFFT_EPS_DEFAULT = 1e-6
 # unthreaded pynfft implementation never did and is usually right. Set this
 # rather than OMP_NUM_THREADS, which OpenBLAS shares.
 NFFT_NTHREADS_DEFAULT = 0
+
+# Warn when one direct data term holds more than this many GB of dense operators.
+# Change the threshold through ehtim.const_def.DIRECT_MATRIX_WARN_GB.
+DIRECT_MATRIX_WARN_GB = 1.0
 
 # Valid two-character feed_type strings for a single station (lowercase).
 VALID_FEED_TYPES = frozenset({

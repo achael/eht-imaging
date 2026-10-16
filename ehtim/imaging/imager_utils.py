@@ -26,7 +26,7 @@ import scipy.sparse as sps
 import ehtim.const_def as ehc
 import ehtim.observing.obs_helpers as obsh
 from ehtim.backends import array_namespace
-from ehtim.observing.obs_helpers import nufft2_backend
+from ehtim.observing.obs_helpers import adjoint_dot, nufft2_backend
 
 ##################################################################################################
 # Constants & Definitions
@@ -144,7 +144,7 @@ def chisqgrad_vis(imvec, Amatrix, vis, sigma):
     samples = np.dot(Amatrix, imvec)
     wdiff = (vis - samples)/(sigma**2)
 
-    out = -np.real(np.dot(Amatrix.conj().T, wdiff))/len(vis)
+    out = -np.real(adjoint_dot(Amatrix, wdiff))/len(vis)
     return out
 
 
