@@ -126,9 +126,9 @@ def mf_all_grads_chain(funcgrad, image_cur, mfarr, log_freqratio):
             # TODO: what to do about rho=0?
             drho_drhoprime = (rhovec_prime**(-1-DD_RHOPOL))*((1 + rhovec_prime**(-DD_RHOPOL))**(-1-1/DD_RHOPOL))
 
-            dfunc_drho0     = dfunc_drho * drho_drhoprime * rhovec_cur / rho0
-            dfunc_dalphapol = dfunc_drho * drho_drhoprime * rhovec_cur * log_freqratio
-            dfunc_dbetapol  = dfunc_drho * drho_drhoprime * rhovec_cur * log_freqratio * log_freqratio
+            dfunc_drho0     = dfunc_drho * drho_drhoprime * rhovec_prime / rho0
+            dfunc_dalphapol = dfunc_drho * drho_drhoprime * rhovec_prime * log_freqratio
+            dfunc_dbetapol  = dfunc_drho * drho_drhoprime * rhovec_prime * log_freqratio * log_freqratio
 
             # apply chain rule for derivatives w/r/t phi and psi
             dfunc_dphi0 = dfunc_dphi
