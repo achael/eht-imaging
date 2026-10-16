@@ -39,6 +39,7 @@ __all__ = [
     "FIELDS_SNRS", "FWHM_MAJ", "FWHM_MIN", "GAINPDEF",
     "GRIDDER_CONV_FUNC_DEFAULT", "GRIDDER_P_RAD_DEFAULT", "HOUR",
     "INTERP_DEFAULT", "MJD_DEFAULT", "NFFT_EPS_DEFAULT", "NFFT_KERSIZE_DEFAULT",
+    "NFFT_NTHREADS_DEFAULT",
     "POLDICT_CIRC", "POLDICT_STOKES", "POS_ANG", "PULSE_DEFAULT", "RA_DEFAULT",
     "RA_M87", "RA_SGRA", "RADPERAS", "RADPERUAS", "RF_DEFAULT", "SCOLORS",
     "SOURCE_DEFAULT", "TAUDEF", "amp_poldict", "sig_poldict", "vis_poldict",
@@ -92,19 +93,15 @@ GRIDDER_P_RAD_DEFAULT = 2
 GRIDDER_CONV_FUNC_DEFAULT = 'gaussian'
 FFT_PAD_DEFAULT = 2
 FFT_INTERP_DEFAULT = 3
-# Requested relative accuracy of the NFFT. 1e-9 is safe for high-dynamic-range
-# imaging (ALMA polarimetry, SKA-class arrays). Tighten to 1e-12 for ~1e6
-# dynamic range; relax to 1e-6 for fast low-SNR work.
-NFFT_EPS_DEFAULT = 1e-9
+NFFT_EPS_DEFAULT = 1e-6
 
-# Total dense DFT operator per data term, in GB, above which the direct
-# transform warns. Sized as nvis x npix x 16 bytes and summed over the matrices
-# a term holds (one for vis/amp, three for closure phase, four for closure
-# amplitude): fine at EHT sizes, ~10 GB for one term at 128x128, and hopeless at
-# ALMA channel counts. Frequency-sharded runs force ttype 'direct', so without a
-# warning an oversized run is just an OOM kill. Assign to
-# ehtim.const_def.DIRECT_MATRIX_WARN_GB to change it; the ehtim.* name is a
-# separate binding made by the star import and setting it has no effect.
+# Threads finufft may use per transform. 0 lets finufft pick, which is what the
+# unthreaded pynfft implementation never did and is usually right. Set this
+# rather than OMP_NUM_THREADS, which OpenBLAS shares.
+NFFT_NTHREADS_DEFAULT = 0
+
+# Warn when one direct data term holds more than this many GB of dense operators.
+# Change the threshold through ehtim.const_def.DIRECT_MATRIX_WARN_GB.
 DIRECT_MATRIX_WARN_GB = 1.0
 
 # Valid two-character feed_type strings for a single station (lowercase).

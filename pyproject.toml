@@ -46,12 +46,12 @@ dev = [
     "pandas",
     "paramsurvey",
     "plotly",
-    "jax",
+    "jax>=0.7",
     "jax-finufft>=1.3",
     "optax>=0.2",
 ]
 gpu = [
-    "jax[cuda12]",
+    "jax[cuda12]>=0.7",
     "jax-finufft>=1.3",
     "optax>=0.2",
 ]
@@ -84,7 +84,7 @@ addopts = "-v --tb=short"
 markers = [
     "slow: optimizer-bound tests (scipy.optimize / Imager.make_image). Skip with -m 'not slow'.",
     "gpu: requires a CUDA GPU. Run with -m gpu locally; deselect with -m 'not gpu'.",
-    "jax: needs the jax dependency. Run locally; CI deselects with -m 'not jax'.",
+    "jax: needs the jax dependency. CI runs these on CPU; deselect with -m 'not jax'.",
 ]
 
 # --- ruff ---

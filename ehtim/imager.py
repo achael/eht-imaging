@@ -39,6 +39,7 @@ from ehtim.const_def import (
     GRIDDER_CONV_FUNC_DEFAULT,
     GRIDDER_P_RAD_DEFAULT,
     NFFT_EPS_DEFAULT,
+    NFFT_NTHREADS_DEFAULT,
 )
 from ehtim.imaging.imager_backend import (
     DATATERMS,
@@ -49,6 +50,7 @@ from ehtim.imaging.imager_backend import (
     ImagerConfig,
     MfConfig,
     RegParams,
+    check_jax_supported,
     compute_chisq_dict,
     compute_chisqgrad_dict,
     compute_init_state,
@@ -204,6 +206,7 @@ class Imager:
         self._fft_pad_factor = kwargs.get('fft_pad_factor', FFT_PAD_DEFAULT)
         self._fft_interp_order = kwargs.get('fft_interp_order', FFT_INTERP_DEFAULT)
         self._nfft_eps = kwargs.get('nfft_eps', NFFT_EPS_DEFAULT)
+        self._nfft_nthreads = kwargs.get('nfft_nthreads', NFFT_NTHREADS_DEFAULT)
         self._optimizer = kwargs.get('optimizer', None)
         self._shard = kwargs.get('shard', False)
         self._mesh = kwargs.get('mesh', None)
@@ -505,19 +508,6 @@ class Imager:
         self._show_updates = kwargs.get('show_updates', True)
         self._update_interval = kwargs.get('update_interval', 1)
 
-        # Plot initial image
-        self.plotcur(self._init_vec, **kwargs)
-
-        # Minimize
-        print("Imaging . . .")
-        optdict = {'maxiter': self.maxit_next,
-                   'ftol': self.stop_next, 'gtol': self.stop_next,
-                   'maxcor': NHIST, 'maxls': MAXLS}
-        def callback_func(xcur):
-            self.plotcur(xcur, **kwargs)
-
-
-        tstart = time.time()
         optimizer = kwargs.get('optimizer', self._optimizer)
         use_jax = kwargs.get('use_jax', False)
         device = kwargs.get('jax_device', None)
@@ -535,6 +525,24 @@ class Imager:
         # (the optax path builds the jax objective itself in build_vg_ondevice below, so the
         #  user's use_jax flag is irrelevant there and is left untouched.)
 
+        # Keyed on all three routes into jax, not just use_jax: optax builds the jax
+        # objective regardless of the flag, and sharding always does.
+        if use_jax or shard or classify_optimizer(optimizer) == 'optax':
+            check_jax_supported(self._config.ttype, self.dat_term_next)
+
+        # Plot initial image
+        self.plotcur(self._init_vec, **kwargs)
+
+        # Minimize
+        print("Imaging . . .")
+        optdict = {'maxiter': self.maxit_next,
+                   'ftol': self.stop_next, 'gtol': self.stop_next,
+                   'maxcor': NHIST, 'maxls': MAXLS}
+        def callback_func(xcur):
+            self.plotcur(xcur, **kwargs)
+
+
+        tstart = time.time()
         def build_vg_onhost():
             # (value, grad) as host callables, for scipy and for user-supplied optimizers.
             if use_jax:    # jitted jax objective + autodiff gradient, as a host fun(x) -> (value, grad)
@@ -845,6 +853,7 @@ class Imager:
             fft_gridder_prad=self._fft_gridder_prad,
             fft_interp_order=self._fft_interp_order,
             nfft_eps=self._nfft_eps,
+            nfft_nthreads=self._nfft_nthreads,
         )
 
     def make_reg_dict(self, imcur):

@@ -42,6 +42,10 @@ TTYPE_PAIRS = [("direct", "fast"), ("direct", "nfft"), ("nfft", "fast")]
 # bound effectively pins nfft gradient correctness. Pairs that include the gridded 'fast' FFT
 # are limited by its interpolation accuracy, not by a gradient bug, so they stay looser.
 GRAD_MAX_TOL_DIRECT_NFFT = 1e-2
+
+# Pinned rather than taken from NFFT_EPS_DEFAULT: the bound above is what pins nfft gradient
+# correctness, so it must not slacken when the shipped default trades accuracy for speed.
+NFFT_EPS = 1e-9
 GRAD_MAX_TOL = 0.25            # any pair containing 'fast'
 
 # Diagonalized closures orthogonalize per-timestamp covariance, which amplifies tail outliers.
@@ -132,6 +136,8 @@ def _chisq_kwargs(ttype):
         kwargs["p_rad"] = P_RAD
         kwargs["conv_func"] = CONV_FUNC
         kwargs["order"] = FFT_INTERP_ORDER
+    if ttype == "nfft":
+        kwargs["nfft_eps"] = NFFT_EPS
     return kwargs
 
 
@@ -280,33 +286,18 @@ class TestPolChisqConsistency:
 
 
 # ---------------------------------------------------------------------------
-# Operator memory: the direct-transform gradients must not copy the operator
-#
-# `Amatrix.conj()` materializes a full (nvis, npix) copy of the Fourier operator;
-# only the subsequent `.T` is free. Every gradient below needs nothing more than
-# `Amatrix.conj().T @ vec`, which is the same arithmetic as conjugating the
-# (nvis,) input and the (npix,) output, both orders of magnitude smaller. These
-# tests bound the peak allocation of each gradient well under the operator.
+# Direct gradients must not copy the Fourier operator.
 # ---------------------------------------------------------------------------
 
 OP_NVIS = 1200
 OP_NPIX = 2048
 
-# Measured on saturn before the fix: peak is 1.00x the operator for every
-# gradient here. After it, peak is a handful of (nvis,) and (npix,) vectors,
-# at most 1.1% of the operator. A quarter of the operator sits clearly between
-# the two and leaves room for BLAS scratch.
+# This bound separates a full operator copy from vector allocations.
 OP_PEAK_FRACTION = 0.25
 
 
 def _peak_mib(fn):
-    """Peak traced allocation in MiB during fn().
-
-    NumPy registers its own tracemalloc domain, so array allocations are
-    counted. fn() runs once first because the polarimetric gradients lazily
-    import jax on their first call, which puts ~26 MiB inside the measurement
-    window and makes the result about import cost rather than the operator.
-    """
+    """Measure peak traced allocation after warming lazy imports."""
     fn()
     was_tracing = tracemalloc.is_tracing()
     tracemalloc.start()
@@ -320,11 +311,7 @@ def _peak_mib(fn):
 
 @pytest.fixture(scope="module")
 def operator_setup():
-    """A dense complex operator plus matching Stokes-I and polarimetric inputs.
-
-    Synthetic rather than observation-derived: these tests measure allocation
-    against a known operator size, so the operator has to be sized here.
-    """
+    """Dense operator and matching Stokes-I and polarimetric inputs."""
     rng = np.random.default_rng(0)
     A = (rng.standard_normal((OP_NVIS, OP_NPIX))
          + 1j * rng.standard_normal((OP_NVIS, OP_NPIX)))
@@ -339,8 +326,6 @@ def operator_setup():
             "op_mib": A.nbytes / 2**20}
 
 
-# (label, callable taking the setup dict) for every gradient that applies the
-# adjoint operator on the direct path.
 GRAD_CASES = [
     ("chisqgrad_vis",
      lambda s: chisqgrad_vis(s["imvec"], s["A"], s["data"], s["sigma"])),
@@ -360,9 +345,7 @@ class TestGradientOperatorNotCopied:
     """Peak allocation during a direct-path gradient stays well under the operator."""
 
     def test_tracemalloc_sees_numpy_allocations(self, operator_setup):
-        # Guard. If tracemalloc did not count numpy arrays every bound below
-        # would pass while the copies were still happening. Conjugating the
-        # operator outright must register as roughly its own size.
+        # Confirm tracemalloc sees NumPy copies before relying on its peak.
         A, op_mib = operator_setup["A"], operator_setup["op_mib"]
         peak = _peak_mib(lambda: A.conj())
         assert peak > 0.9 * op_mib, (

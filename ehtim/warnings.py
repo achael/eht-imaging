@@ -39,23 +39,12 @@ class MixedPolClosureSkipWarning(UserWarning):
 
 
 class DirectMatrixSizeWarning(UserWarning):
-    """Emitted when a direct-transform data term allocates more dense DFT
-    operator than ``ehtim.const_def.DIRECT_MATRIX_WARN_GB``.
+    """A direct data term holds more dense operators than its size threshold.
 
-    The threshold is on the total for the term, not on a single matrix: a
-    closure term holds three or four (nvis, npix) operators at once, so the
-    aggregate is what runs a machine out of memory. The warning reports that
-    total and points at ``ttype='nfft'``, which computes the same visibilities
-    without the dense operator.
-
-    Raise the threshold by assigning to ``ehtim.const_def.DIRECT_MATRIX_WARN_GB``.
-    Note that ``ehtim.DIRECT_MATRIX_WARN_GB`` is a separate binding created by
-    the star import in ``ehtim/__init__.py``; setting that one has no effect.
-    Or silence the category outright:
-
-        warnings.filterwarnings(
-            'ignore', category=ehtim.warnings.DirectMatrixSizeWarning
-        )
+    The threshold applies to the completed term, so allocation can fail before
+    this warning. Set ``ehtim.const_def.DIRECT_MATRIX_WARN_GB`` to change it.
+    Setting ``ehtim.DIRECT_MATRIX_WARN_GB`` has no effect because it is a
+    separate binding from the star import in ``ehtim/__init__.py``.
     """
 
 

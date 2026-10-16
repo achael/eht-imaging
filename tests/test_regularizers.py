@@ -1,7 +1,7 @@
 """Tests for ehtim regularizer values and boundary/edge-case gradients.
 
 Verifies that all regularizer types return finite (and, for pol/spectral,
-non-zero) values, that the TV-family gradients are correct on the zero-pad
+non-zero) values, that the TV-family gradients are correct on the edge
 boundary, and the center-of-mass regularizer semantics. The systematic
 analytic-vs-finite-difference gradient parity for every regularizer (Stokes-I,
 pol, spectral) lives in test_gradients.py, the canonical FD suite. All tests use
@@ -391,3 +391,371 @@ class TestMFRegularizerValues:
         assert val != 0, f"{rtype} returned 0 - dispatch likely missed"
 
 
+
+# ---------------------------------------------------------------------------
+# Log regularizers on a partial embed mask
+# ---------------------------------------------------------------------------
+# Log only the active pixels. The shared TV code embeds them afterward, so it
+# never takes log of an off-mask zero.
+LOG_REG_FUNCS = [("tvlog", iu.reg_tvlog, iu.reggrad_tvlog),
+                 ("tv2log", iu.reg_tv2log, iu.reggrad_tv2log)]
+LOG_REG_IDS = [f[0] for f in LOG_REG_FUNCS]
+
+
+def _masked_at(imvec, keep_frac):
+    """Mask keeping the brightest `keep_frac` of pixels, as clipfloor would."""
+    mask = imvec > np.quantile(imvec, 1.0 - keep_frac)
+    return mask, imvec[mask]
+
+
+@pytest.fixture(scope="module")
+def logreg_setup(reg_setup):
+    im, imvec, _nprior, _mask, flux = reg_setup
+    kwargs = dict(xdim=im.xdim, ydim=im.ydim, psize=im.psize, flux=flux,
+                  beam_size=BEAM_SIZE, major=RGAUSS_MAJOR, minor=RGAUSS_MINOR,
+                  PA=RGAUSS_PA, alpha_A=ALPHA_A, epsilon_tv=EPSILON_TV, norm_reg=True)
+    return np.asarray(imvec, float), kwargs
+
+
+class TestLogRegularizersOnPartialMask:
+    """tvlog / tv2log with pixels masked out, which is what clipfloor > 0 produces.
+
+    Boundary correctness lives in TestTVBoundaryTopologies below, on small masks of every
+    awkward shape. What this adds is the dynamic range of a real image: the log gradient
+    carries a 1/I, so the faintest pixels of a Gaussian dominate it.
+    """
+
+    @pytest.mark.parametrize("name,func,grad", LOG_REG_FUNCS, ids=LOG_REG_IDS)
+    def test_gradient_matches_finite_difference(self, logreg_setup, name, func, grad):
+        imvec, kwargs = logreg_setup
+        mask, masked = _masked_at(imvec, 0.5)
+        g = np.asarray(grad(masked, mask, **kwargs))
+        # the largest components are the faintest pixels, so sample those plus a random spread
+        rng = np.random.default_rng(3)
+        idx = np.unique(np.concatenate([np.argsort(np.abs(g))[-15:],
+                                        rng.choice(g.size, 25, replace=False)]))
+        step = 1e-7 * masked.mean()
+        fd = np.empty(len(idx))
+        for k, j in enumerate(idx):
+            up, dn = masked.copy(), masked.copy()
+            up[j] += step
+            dn[j] -= step
+            fd[k] = (func(up, mask, **kwargs) - func(dn, mask, **kwargs)) / (2 * step)
+        # normalise against the gradient scale, not each component: the random sample
+        # includes near-zero components where a per-component relative error is dominated
+        # by the finite-difference noise rather than by any disagreement
+        rel = np.abs(fd - g[idx]) / (np.abs(g[idx]) + 1e-3 * np.abs(g).max())
+        assert np.median(rel) < 1e-5
+        assert np.max(rel) < 1e-4
+
+
+# ---------------------------------------------------------------------------
+# Boundary correctness on partial embed masks
+# ---------------------------------------------------------------------------
+# All TV variants now drop differences across the grid or embed-mask boundary.
+# Every other analytic-vs-FD test in the suite runs a full mask.
+
+BND_NX, BND_NY = 6, 7
+
+
+def _bnd_masks(nx=BND_NX, ny=BND_NY):
+    """Flat bool embed masks covering the awkward topologies, keyed by name."""
+    n = nx * ny
+    out = {}
+    out["full"] = np.ones(n, dtype=bool)
+
+    hole = np.ones((ny, nx), dtype=bool)
+    hole[3, 2] = False                      # single interior pixel missing
+    out["hole"] = hole.ravel()
+
+    rng = np.random.default_rng(3)
+    rand = np.ones((ny, nx), dtype=bool)
+    rand.ravel()[rng.permutation(n)[: n // 4]] = False
+    out["random"] = rand.ravel()
+
+    block = np.zeros((ny, nx), dtype=bool)
+    block[2:5, 1:4] = True                  # compact support, all edges are mask edges
+    out["block"] = block.ravel()
+
+    strip_h = np.zeros((ny, nx), dtype=bool)
+    strip_h[3, 1:5] = True                  # 1 px tall: no valid axis-0 edge at all
+    out["strip_h"] = strip_h.ravel()
+
+    strip_v = np.zeros((ny, nx), dtype=bool)
+    strip_v[1:6, 2] = True                  # 1 px wide: no valid axis-1 edge
+    out["strip_v"] = strip_v.ravel()
+
+    iso = np.zeros((ny, nx), dtype=bool)
+    iso[1:3, 1:3] = True
+    iso[5, 4] = True                        # a pixel with no in-mask neighbour
+    out["isolated"] = iso.ravel()
+
+    return out
+
+
+BND_TOPOLOGIES = sorted(_bnd_masks())
+BND_EPS = [0.0, 1e-3]
+
+TV_LOG = ["tvlog", "tv2log"]
+TV_LINEAR = ["tv", "tv2"]
+TV_POL = ["ptv", "ptv2", "vtv", "vtv2"]
+
+
+def _bnd_imvec(mask):
+    """Strictly positive masked-only image vector (log-safe)."""
+    rng = np.random.default_rng(17)
+    return 0.2 + rng.random(int(mask.sum()))
+
+
+def _bnd_imarr(mask):
+    """Masked-only (I, rho, phi, psi) rows with per-pixel jitter."""
+    rng = np.random.default_rng(23)
+    n = int(mask.sum())
+    return np.array([1.0 + 0.3 * rng.random(n),
+                     np.clip(0.3 + 0.10 * rng.standard_normal(n), 0.05, 0.95),
+                     0.5 + 0.30 * rng.standard_normal(n),
+                     0.2 + 0.10 * rng.standard_normal(n)])
+
+
+def _bnd_kwargs(eps, **extra):
+    kw = dict(xdim=BND_NX, ydim=BND_NY, psize=1.0, beam_size=2.0,
+              norm_reg=True, epsilon_tv=eps)
+    kw.update(extra)
+    return kw
+
+
+def _fd_scalar(fn, x, mask, kw, dx=1e-7):
+    """Central-difference gradient of a scalar-image regularizer."""
+    g = np.zeros_like(x)
+    for j in range(x.size):
+        hi, lo = x.copy(), x.copy()
+        hi[j] += dx
+        lo[j] -= dx
+        g[j] = (fn(hi, mask, **kw) - fn(lo, mask, **kw)) / (2 * dx)
+    return g
+
+
+def _assert_grad_matches(name, g_an, g_fd, topology):
+    """Compare on the gradient's own scale; a boundary bug shows up as O(1)."""
+    scale = max(np.abs(g_an).max(), np.abs(g_fd).max(), 1e-300)
+    err = np.abs(g_an - g_fd).max() / scale
+    assert np.all(np.isfinite(g_an)), f"{name} [{topology}]: analytic gradient not finite"
+    assert err < 1e-4, f"{name} [{topology}]: analytic vs FD max rel diff {err:.3e}"
+
+
+class TestTVBoundaryTopologies:
+    """Analytic-vs-FD parity for the TV family on every awkward mask shape.
+
+    The log variants once returned NaN on partial masks. The linear and pol
+    variants also need parity after the shared boundary rule changes.
+    """
+
+    @pytest.mark.parametrize("eps", BND_EPS, ids=["eps0", "epspos"])
+    @pytest.mark.parametrize("topology", BND_TOPOLOGIES)
+    @pytest.mark.parametrize("rtype", TV_LINEAR + TV_LOG)
+    def test_stokes_i_grad_matches_fd(self, rtype, topology, eps):
+        mask = _bnd_masks()[topology]
+        x = _bnd_imvec(mask)
+        kw = _bnd_kwargs(eps, flux=float(x.sum()))
+        val = getattr(iu, f"reg_{rtype}")(x, mask, **kw)
+        assert np.isfinite(val), f"{rtype} [{topology}]: value is {val}"
+        g_an = np.asarray(getattr(iu, f"reggrad_{rtype}")(x, mask, **kw))
+        g_fd = _fd_scalar(getattr(iu, f"reg_{rtype}"), x, mask, kw)
+        _assert_grad_matches(rtype, g_an, g_fd, topology)
+
+    @pytest.mark.parametrize("eps", BND_EPS, ids=["eps0", "epspos"])
+    @pytest.mark.parametrize("topology", BND_TOPOLOGIES)
+    def test_spectral_grad_matches_fd(self, topology, eps):
+        """tv_spec differences a spectral index, where 0 is a flat spectrum."""
+        mask = _bnd_masks()[topology]
+        rng = np.random.default_rng(29)
+        x = -1.0 + 0.5 * rng.standard_normal(int(mask.sum()))   # alpha, signed
+        kw = _bnd_kwargs(eps, flux=1.0)
+        val = mfu.reg_tv_spec(x, mask, **kw)
+        assert np.isfinite(val), f"tv_spec [{topology}]: value is {val}"
+        g_an = np.asarray(mfu.reggrad_tv_spec(x, mask, **kw))
+        g_fd = _fd_scalar(mfu.reg_tv_spec, x, mask, kw)
+        _assert_grad_matches("tv_spec", g_an, g_fd, topology)
+
+    @pytest.mark.parametrize("topology", BND_TOPOLOGIES)
+    @pytest.mark.parametrize("rtype", TV_POL)
+    def test_pol_grad_matches_fd(self, rtype, topology):
+        mask = _bnd_masks()[topology]
+        x = _bnd_imarr(mask)
+        kw = _bnd_kwargs(0.0, flux=float(x[0].sum()), pflux=float(x[0].sum()),
+                         vflux=float(x[0].sum()),
+                         pol_solve=np.array([1, 1, 1, 1]))
+        reg = getattr(pu, f"reg_{rtype}")
+        val = reg(x, mask, **kw)
+        assert np.isfinite(val), f"{rtype} [{topology}]: value is {val}"
+        g_an = np.asarray(getattr(pu, f"reggrad_{rtype}")(x, mask, **kw))
+        dx = 1e-7
+        g_fd = np.zeros_like(g_an)
+        for s in range(x.shape[0]):
+            for j in range(x.shape[1]):
+                hi, lo = x.copy(), x.copy()
+                hi[s, j] += dx
+                lo[s, j] -= dx
+                g_fd[s, j] = (reg(hi, mask, **kw) - reg(lo, mask, **kw)) / (2 * dx)
+        for s in range(g_an.shape[0]):
+            if np.abs(g_an[s]).max() == 0 and np.abs(g_fd[s]).max() == 0:
+                continue                      # slot not solved for this regularizer
+            _assert_grad_matches(f"{rtype} slot {s}", g_an[s], g_fd[s], topology)
+
+
+class TestLogTVIsFillIndependent:
+    """The masked-pixel fill must not reach the value.
+
+    The log wrapper passes active pixels to TV. Any fill that TV uses for the
+    masked pixels must be ignored by its boundary differences.
+    """
+
+    @pytest.mark.parametrize("rtype", TV_LOG)
+    @pytest.mark.parametrize("topology", [t for t in BND_TOPOLOGIES if t != "full"])
+    def test_value_same_under_two_fills(self, rtype, topology, monkeypatch):
+        mask = _bnd_masks()[topology]
+        x = _bnd_imvec(mask)
+        kw = _bnd_kwargs(0.0, flux=float(x.sum()))
+        reg = getattr(iu, f"reg_{rtype}")
+
+        seen = []
+        real_embed = iu.embed
+
+        def spy(imvec, m, clipfloor=0., randomfloor=False):
+            seen.append(clipfloor)
+            return real_embed(imvec, m, clipfloor=clipfloor, randomfloor=randomfloor)
+
+        monkeypatch.setattr(iu, "embed", spy)
+        first = reg(x, mask, **kw)
+        assert seen, f"{rtype} did not embed on a partial mask"
+
+        # Re-run with a different fill at the masked pixels.
+        def spy_big(imvec, m, clipfloor=0., randomfloor=False):
+            return real_embed(imvec, m, clipfloor=1e6, randomfloor=False)
+
+        monkeypatch.setattr(iu, "embed", spy_big)
+        second = reg(x, mask, **kw)
+        assert np.isclose(first, second, rtol=1e-12), (
+            f"{rtype} [{topology}]: value moved {first:.6e} -> {second:.6e} "
+            f"when the masked-pixel fill changed")
+
+
+def _ref_tv(full2d, keep2d, eps, tv2=False):
+    """Independent TV reference with only in-mask, in-grid forward edges."""
+    ny, nx = full2d.shape
+    total = 0.0
+    for i in range(ny):
+        for j in range(nx):
+            if not keep2d[i, j]:
+                continue
+            sq = 0.0
+            for di, dj in ((1, 0), (0, 1)):
+                ii, jj = i + di, j + dj
+                inside = ii < ny and jj < nx
+                if inside and keep2d[ii, jj]:
+                    sq += np.abs(full2d[i, j] - full2d[ii, jj]) ** 2
+            total += sq if tv2 else np.sqrt(sq + eps)
+    return total
+
+
+def _tv_norm(rtype, flux, kw):
+    """Reproduce each TV variant's own normalization.
+
+    The sqrt variants divide by flux*psize/beam_size; the squared ones by
+    psize^4*flux^2/beam_size^4. The log wrappers substitute logflux for flux,
+    and tv_spec uses the pixel count.
+    """
+    psize, beam = kw["psize"], kw["beam_size"]
+    if rtype in ("tv2", "tv2log"):
+        return psize**4 * flux**2 / beam**4
+    return flux * psize / beam
+
+
+class TestTVMatchesReference:
+    """Pin the boundary convention against an independent implementation.
+
+    FD parity cannot see this: a wrong boundary convention is self-consistent
+    between value and gradient, so it needs a second opinion on the value.
+    """
+
+    @pytest.mark.parametrize("eps", BND_EPS, ids=["eps0", "epspos"])
+    @pytest.mark.parametrize("topology", BND_TOPOLOGIES)
+    @pytest.mark.parametrize("rtype", TV_LINEAR)
+    def test_linear_excludes_boundary(self, rtype, topology, eps):
+        mask = _bnd_masks()[topology]
+        x = _bnd_imvec(mask)
+        flux = float(x.sum())
+        kw = _bnd_kwargs(eps, flux=flux)
+        full = iu.embed(x, mask) if not mask.all() else x
+        ref = _ref_tv(full.reshape(BND_NY, BND_NX), mask.reshape(BND_NY, BND_NX),
+                      eps, tv2=rtype == "tv2")
+        got = getattr(iu, f"reg_{rtype}")(x, mask, **kw)
+        expect = ref / _tv_norm(rtype, flux, kw)
+        assert np.isclose(got, expect, rtol=1e-12), (
+            f"{rtype} [{topology}] {got:.10e} != reference {expect:.10e}")
+
+    @pytest.mark.parametrize("eps", BND_EPS, ids=["eps0", "epspos"])
+    @pytest.mark.parametrize("topology", BND_TOPOLOGIES)
+    @pytest.mark.parametrize("rtype", TV_LOG)
+    def test_log_excludes_boundary(self, rtype, topology, eps):
+        """tvlog / tv2log difference log I, where 0 outside would mean 1 Jy."""
+        mask = _bnd_masks()[topology]
+        x = _bnd_imvec(mask)
+        flux = float(x.sum())
+        kw = _bnd_kwargs(eps, flux=flux)
+        npix = BND_NX * BND_NY
+        # the reference fill cannot affect any retained edge
+        full = np.full(npix, 1.0)
+        full[mask] = x
+        ref = _ref_tv(np.log(full).reshape(BND_NY, BND_NX),
+                      mask.reshape(BND_NY, BND_NX), eps, tv2=rtype == "tv2log")
+        logflux = npix * np.abs(np.log(flux / npix))
+        expect = ref / _tv_norm(rtype, logflux, kw)
+        got = getattr(iu, f"reg_{rtype}")(x, mask, **kw)
+        assert np.isclose(got, expect, rtol=1e-10), (
+            f"{rtype} [{topology}] {got:.10e} != reference {expect:.10e}")
+
+    @pytest.mark.parametrize("eps", BND_EPS, ids=["eps0", "epspos"])
+    @pytest.mark.parametrize("topology", BND_TOPOLOGIES)
+    def test_spectral_excludes_boundary(self, topology, eps):
+        """tv_spec differences a spectral index, where 0 outside means flat."""
+        mask = _bnd_masks()[topology]
+        rng = np.random.default_rng(29)
+        x = -1.0 + 0.5 * rng.standard_normal(int(mask.sum()))
+        kw = _bnd_kwargs(eps, flux=1.0)
+        npix = BND_NX * BND_NY
+        full = np.zeros(npix)
+        full[mask] = x
+        ref = _ref_tv(full.reshape(BND_NY, BND_NX), mask.reshape(BND_NY, BND_NX), eps)
+        expect = ref / (npix * kw["psize"] / kw["beam_size"])  # tv_spec: pixel count
+        got = mfu.reg_tv_spec(x, mask, **kw)
+        assert np.isclose(got, expect, rtol=1e-10), (
+            f"tv_spec [{topology}] {got:.10e} != reference {expect:.10e}")
+
+    @pytest.mark.parametrize("topology", BND_TOPOLOGIES)
+    @pytest.mark.parametrize("rtype", TV_POL)
+    def test_pol_excludes_boundary(self, rtype, topology):
+        mask = _bnd_masks()[topology]
+        x = _bnd_imarr(mask)
+        kw = _bnd_kwargs(0.0, flux=float(x[0].sum()), vflux=float(x[0].sum()),
+                         norm_reg=False)
+        full = np.zeros(mask.size, dtype=complex if rtype.startswith("ptv") else float)
+        image = pu.make_p_image(x) if rtype.startswith("ptv") else pu.make_v_image(x)
+        full[mask] = image
+        ref = _ref_tv(full.reshape(BND_NY, BND_NX), mask.reshape(BND_NY, BND_NX),
+                      0.0, tv2=rtype.endswith("2"))
+        got = getattr(pu, f"reg_{rtype}")(x, mask, **kw)
+        assert np.isclose(got, ref, rtol=1e-12), (
+            f"{rtype} [{topology}] {got:.10e} != reference {ref:.10e}")
+
+
+@pytest.mark.parametrize("rtype", TV_LOG)
+@pytest.mark.parametrize("flux", [0.0, -1.0])
+def test_log_tv_rejects_nonpositive_flux(rtype, flux):
+    mask = _bnd_masks()["hole"]
+    x = _bnd_imvec(mask)
+    kw = _bnd_kwargs(0.0, flux=flux)
+    with pytest.raises(ValueError, match="flux must be positive"):
+        getattr(iu, f"reg_{rtype}")(x, mask, **kw)
+    with pytest.raises(ValueError, match="flux must be positive"):
+        getattr(iu, f"reggrad_{rtype}")(x, mask, **kw)

@@ -1396,27 +1396,19 @@ def image_centroid(im):
 
 
 def adjoint_dot(Amatrix, vec):
-    """Apply the adjoint of a DFT operator without copying the operator.
-
-    Reach for this instead of ``np.dot(Amatrix.conj().T, vec)`` wherever a
-    gradient applies the conjugate transpose of a dense Fourier operator.
-    ``Amatrix.conj()`` materializes a full (nvis, npix) copy of the operator and
-    only the following ``.T`` is free, so on a direct-transform run the copy
-    dominates the memory of the gradient. Conjugating the (nvis,) input and the
-    (npix,) output is the same arithmetic on vectors orders of magnitude
-    smaller, and returns bit-identical values.
+    """Apply a dense DFT operator's adjoint without copying the operator.
 
     Parameters
     ----------
     Amatrix : np.ndarray
-        Complex (nvis, npix) DFT operator.
+        Complex DFT operator with shape (nvis, npix).
     vec : np.ndarray
-        Complex (nvis,) vector to apply the adjoint operator to.
+        Complex vector with shape (nvis,).
 
     Returns
     -------
     np.ndarray
-        Complex (npix,) result, equal to ``np.dot(Amatrix.conj().T, vec)``.
+        Complex result with shape (npix,).
     """
 
     return np.dot(vec.conj(), Amatrix).conj()
@@ -1437,16 +1429,7 @@ def ftmatrix(pdim, xdim, ydim, uvlist, pulse=ehc.PULSE_DEFAULT, mask=[]):
 
     # changed the sign convention to agree with BU data (Jan 2017)
     # this is correct for a u,v definition from site 1-2 as (x1-x2)/lambda
-    #
-    # Rows are written straight into the final array. Collecting them in a list
-    # and then copying with np.array() holds two full operators at once, and
-    # when a mask is given it builds the whole unmasked stack only to slice most
-    # of it away.
-    #
-    # The memory order deliberately matches what the old code happened to
-    # produce: C from the unmasked reshape, F from the masked column indexing.
-    # np.dot dispatches on layout, so preserving it keeps direct-path
-    # chi-squared and gradients byte-for-byte unchanged.
+    # Match the old C order without a mask and F order with one. np.dot uses it.
     uvlist = np.asarray(uvlist)
     npix = xdim*ydim
     if len(mask):
@@ -1504,14 +1487,15 @@ class FINUFFTPlan:
     every existing NFFT consumer in the codebase stays untouched.
     """
 
-    def __init__(self, xdim, ydim, uv_finufft, eps=ehc.NFFT_EPS_DEFAULT):
+    def __init__(self, xdim, ydim, uv_finufft, eps=ehc.NFFT_EPS_DEFAULT,
+                 nthreads=ehc.NFFT_NTHREADS_DEFAULT):
         x = np.ascontiguousarray(uv_finufft[:, 0])
         y = np.ascontiguousarray(uv_finufft[:, 1])
         self._fwd = finufft.Plan(2, (xdim, ydim), n_trans=1, eps=eps,
-                                 isign=-1, dtype='complex128')
+                                 isign=-1, dtype='complex128', nthreads=nthreads)
         self._fwd.setpts(x, y)
         self._adj = finufft.Plan(1, (xdim, ydim), n_trans=1, eps=eps,
-                                 isign=+1, dtype='complex128')
+                                 isign=+1, dtype='complex128', nthreads=nthreads)
         self._adj.setpts(x, y)
         self.f_hat = None
         self.f = None
@@ -1528,10 +1512,10 @@ class FINUFFTPlan:
 class NFFTInfo:
     """Precomputed NFFT plan + per-point pulse/centering factor.
 
-    eps is the requested relative accuracy of the NFFT. Default 1e-9 is
-    safe for high-dynamic-range imaging (ALMA polarimetry, SKA-scale
-    arrays). Tighten to 1e-12 for ~1e6 dynamic range; relax to 1e-6 for
-    faster low-SNR work where data noise dominates.
+    eps is the requested relative accuracy of the NFFT.
+
+    nthreads is the thread count finufft may use per transform, 0 meaning
+    finufft's own choice. Prefer it to OMP_NUM_THREADS, which OpenBLAS shares.
 
     npad and p_rad are accepted for backwards compatibility with the
     old pynfft.NFFT implementation but are unused under finufft, which
@@ -1539,7 +1523,7 @@ class NFFTInfo:
     """
 
     def __init__(self, xdim, ydim, psize, pulse, npad, p_rad, uv,
-                 eps=ehc.NFFT_EPS_DEFAULT):
+                 eps=ehc.NFFT_EPS_DEFAULT, nthreads=ehc.NFFT_NTHREADS_DEFAULT):
         self.xdim = int(xdim)
         self.ydim = int(ydim)
         self.psize = psize
@@ -1554,9 +1538,10 @@ class NFFTInfo:
         uv_scaled = uv * psize
         uv_finufft = 2 * np.pi * uv_scaled
         self.eps = eps
+        self.nthreads = nthreads
         self.uv_finufft = uv_finufft  # (-pi, pi] nonuniform points, for jax_finufft.nufft2
         # plan is the stateful finufft plan (numpy path only); jax uses uv_finufft.
-        self.plan = FINUFFTPlan(self.xdim, self.ydim, uv_finufft, eps=eps)
+        self.plan = FINUFFTPlan(self.xdim, self.ydim, uv_finufft, eps=eps, nthreads=nthreads)
 
         phases = np.exp(-1j*np.pi*(uv_scaled[:, 0] + uv_scaled[:, 1]))
         pulses = np.fromiter((pulse(2*np.pi*uv_scaled[i, 0], 2*np.pi*uv_scaled[i, 1], 1., dom="F")

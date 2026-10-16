@@ -1434,7 +1434,7 @@ class TestFourierGridParams:
 
     EXPECTED_FIELDS = (
         "fft_pad_factor", "fft_conv_func", "fft_gridder_prad", "fft_interp_order",
-        "nfft_eps",
+        "nfft_eps", "nfft_nthreads",
     )
 
     def test_full_fft_returns_namedtuple(self, gauss_im, observe, initialize_imager):
@@ -1450,6 +1450,7 @@ class TestFourierGridParams:
         assert fp.fft_gridder_prad == imgr._fft_gridder_prad
         assert fp.fft_interp_order == imgr._fft_interp_order
         assert fp.nfft_eps == imgr._nfft_eps
+        assert fp.nfft_nthreads == imgr._nfft_nthreads
 
     def test_asdict_has_expected_keys(self, gauss_im, observe, initialize_imager):
         imgr, _ = initialize_imager(observe(gauss_im), gauss_im, {"vis": 100})
@@ -1467,7 +1468,7 @@ class TestFourierGridParams:
             obs, gauss_im, prior_im=gauss_im, flux=gauss_im.total_flux(),
             data_term={"vis": 100}, ttype="direct", pol="I",
             fft_pad_factor=4, fft_conv_func="pillbox", fft_gridder_prad=3,
-            fft_interp_order=5, nfft_eps=1e-12,
+            fft_interp_order=5, nfft_eps=1e-12, nfft_nthreads=2,
         )
         imgr.check_params()
         imgr.check_limits()
@@ -1478,6 +1479,7 @@ class TestFourierGridParams:
         assert fp.fft_gridder_prad == 3
         assert fp.fft_interp_order == 5
         assert fp.nfft_eps == 1e-12
+        assert fp.nfft_nthreads == 2
 
     def test_defaults_preserved(self, gauss_im, observe, initialize_imager):
         from ehtim.const_def import (
@@ -1486,6 +1488,7 @@ class TestFourierGridParams:
             GRIDDER_CONV_FUNC_DEFAULT,
             GRIDDER_P_RAD_DEFAULT,
             NFFT_EPS_DEFAULT,
+            NFFT_NTHREADS_DEFAULT,
         )
         imgr, _ = initialize_imager(observe(gauss_im), gauss_im, {"vis": 100})
         fp = imgr._fft_params()
@@ -1494,6 +1497,7 @@ class TestFourierGridParams:
         assert fp.fft_gridder_prad == GRIDDER_P_RAD_DEFAULT
         assert fp.fft_interp_order == FFT_INTERP_DEFAULT
         assert fp.nfft_eps == NFFT_EPS_DEFAULT
+        assert fp.nfft_nthreads == NFFT_NTHREADS_DEFAULT
 
 
 class TestMfConfig:
@@ -3794,13 +3798,7 @@ class TestComputeRegularizerTerm:
 
 
 # ---------------------------------------------------------------------------
-# Direct-transform operator size guard
-#
-# The direct path holds a dense (nvis, npix) complex operator per data term,
-# and closure terms hold three or four at once. The threshold is on that
-# per-term total, checked in compute_chisqdata_term because it is the single
-# place every direct term passes through and the only one that sees the whole
-# set. Nothing warned before, so an oversized run was just an OOM kill.
+# Direct-transform operator size warning.
 # ---------------------------------------------------------------------------
 
 
@@ -3809,12 +3807,7 @@ def _direct_config(make_test_config):
 
 
 def _chisqdata_warnings(obs, prior, dtype, config):
-    """Collect size warnings raised while building one direct data term.
-
-    catch_warnings(record=True) with "always" rather than simplefilter("error"):
-    a raising filter is subject to Python's per-location dedup, so it fires only
-    for whichever call reaches a given line first.
-    """
+    """Collect size warnings for one direct data term."""
     mask = np.ones(prior.xdim * prior.ydim, dtype=bool)
     with warnings.catch_warnings(record=True) as rec:
         warnings.simplefilter("always")
@@ -3828,18 +3821,13 @@ class TestDirectMatrixSizeWarning:
 
     def test_silent_at_the_shipped_default(self, obs_direct, gauss_prior,
                                            make_test_config):
-        # An ordinary EHT-scale run must not warn at the untouched default,
-        # or the guard is noise. This pins the default in one direction.
+        # An ordinary EHT-scale term stays below the default threshold.
         got, _ = _chisqdata_warnings(obs_direct, gauss_prior, "vis",
                                      _direct_config(make_test_config))
         assert got == []
 
     def test_default_threshold_sits_between_half_a_gigabyte_and_two(self):
-        # Pins the shipped default in BOTH directions. The sizes are absolute
-        # and deliberately NOT derived from DIRECT_MATRIX_WARN_GB, or the test
-        # moves with the constant and pins nothing. A term at 0.5 GB is an
-        # ordinary EHT-scale run and must stay quiet; 2 GB is heading for an
-        # OOM and must not. No gigabyte is allocated: the guard reads .nbytes.
+        # Absolute sizes pin both sides of the default without allocating them.
         class _Stub:
             def __init__(self, nbytes):
                 self.nbytes = nbytes
@@ -3869,9 +3857,7 @@ class TestDirectMatrixSizeWarning:
 
     def test_threshold_is_the_term_total_not_a_single_matrix(
             self, obs_direct, gauss_prior, make_test_config, monkeypatch):
-        # cphase holds three operators. A threshold between one matrix and the
-        # sum must warn: checking matrices individually would stay silent, which
-        # is exactly how the first version of this guard missed real runs.
+        # The sum of cphase's three operators crosses the threshold.
         cfg = _direct_config(make_test_config)
         _, out = _chisqdata_warnings(obs_direct, gauss_prior, "cphase", cfg)
         mats = out[2]
@@ -3895,8 +3881,7 @@ class TestDirectMatrixSizeWarning:
     def test_silent_on_the_gridded_transforms(self, obs_direct, gauss_prior,
                                               make_test_config, monkeypatch,
                                               ttype):
-        # fast/nfft never build the dense operator, so the guard must not fire
-        # there however low the threshold goes.
+        # Gridded transforms have no dense operator to warn about.
         monkeypatch.setattr(ehc, "DIRECT_MATRIX_WARN_GB", 1e-12)
         cfg = make_test_config(pol="I", mf=False)._replace(ttype=ttype)
         got, _ = _chisqdata_warnings(obs_direct, gauss_prior, "vis", cfg)
@@ -3904,10 +3889,7 @@ class TestDirectMatrixSizeWarning:
 
     def test_documented_knob_actually_changes_the_threshold(
             self, obs_direct, gauss_prior, make_test_config, monkeypatch):
-        # The docstring points at ehtim.const_def.DIRECT_MATRIX_WARN_GB, not
-        # ehtim.DIRECT_MATRIX_WARN_GB: the star import in ehtim/__init__.py
-        # makes the latter a separate binding that the guard never reads.
-        # Setting the documented name must silence a warning that fires.
+        # The documented module attribute must control the warning.
         cfg = _direct_config(make_test_config)
         monkeypatch.setattr(ehc, "DIRECT_MATRIX_WARN_GB", 1e-9)
         assert len(_chisqdata_warnings(obs_direct, gauss_prior, "vis", cfg)[0]) == 1

@@ -253,24 +253,37 @@ class TestMakeUvpoints:
 # ---------------------------------------------------------------------------
 
 
+def _nfft_atol(reference):
+    """Absolute floor for a direct-vs-nfft comparison, scaled to the NFFT accuracy.
+
+    finufft bounds its error against the total flux of the input, so the error is an
+    absolute floor set by eps and the visibility scale, not a per-point relative
+    bound: near a visibility null the relative error is large while the absolute
+    error stays tiny. The previous atol=1e-9 was the old eps=1e-9 by coincidence.
+    """
+    return ehc.NFFT_EPS_DEFAULT * np.abs(reference).max()
+
+
 class TestSampleVisTtypeParity:
     """sample_vis output agrees across ttype='direct' and ttype='nfft' (existing test)."""
 
     def test_stokes_i(self, asymmetric_image, array):
         obs_direct = _observe(asymmetric_image, array, "direct")
         obs_nfft = _observe(asymmetric_image, array, "nfft")
+        ref = obs_direct.data["vis"]
         np.testing.assert_allclose(
-            obs_nfft.data["vis"], obs_direct.data["vis"],
-            rtol=1e-6, atol=1e-9,
+            obs_nfft.data["vis"], ref,
+            rtol=1e-6, atol=_nfft_atol(ref),
         )
 
     def test_polarimetric_all_stokes(self, asymmetric_image_pol, array):
         obs_direct = _observe(asymmetric_image_pol, array, "direct")
         obs_nfft = _observe(asymmetric_image_pol, array, "nfft")
         for field in ("vis", "qvis", "uvis", "vvis"):
+            ref = obs_direct.data[field]
             np.testing.assert_allclose(
-                obs_nfft.data[field], obs_direct.data[field],
-                rtol=1e-6, atol=1e-9,
+                obs_nfft.data[field], ref,
+                rtol=1e-6, atol=_nfft_atol(ref),
                 err_msg=f"direct vs nfft mismatch on {field}",
             )
 
