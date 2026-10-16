@@ -1776,11 +1776,12 @@ def compute_reggrad_dict(imcur, reg_term_keys, config,
                         logfreqratio = logfreqratio_list[i]
                         imcur_nu = mfutils.image_at_freq(imcur, logfreqratio)
                         prior_nu = mfutils.image_at_freq(priorvec, logfreqratio)
+                        reg_imcur, reg_prior = imcur_nu, prior_nu
+                        if pol in POLARIZATION_MODES:
+                            reg_imcur, reg_prior = imcur_nu[0], prior_nu[0]
                         regi = compute_regularizergrad_term(
-                            imcur_nu[0] if pol in POLARIZATION_MODES else imcur_nu,
-                            regname_base, embed_mask,
-                            nprior=prior_nu[0] if pol in POLARIZATION_MODES else prior_nu,
-                            norm_reg=norm_reg,
+                            reg_imcur, regname_base, embed_mask,
+                            nprior=reg_prior, norm_reg=norm_reg,
                             **{**reg_kwargs, 'flux': mf_flux[i]})
                         if pol in POLARIZATION_MODES:
                             stokes_grad = np.zeros_like(imcur_nu)
