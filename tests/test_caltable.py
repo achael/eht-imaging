@@ -50,6 +50,10 @@ CONST_INTERP_GAIN = 1.7 + 0.3j    # complex gain for interp-mode tests
 CONST_CUBIC_GAIN = 1.5 + 0j       # used in the cubic-interp test
 CONST_PHASE = 0.37                # pure-phase rotation for amp-preservation
 
+# Feed-type tests: different p1 and p2 gains, so a swap shows up.
+GAIN_P1 = 2.0 + 0.5j
+GAIN_P2 = 3.0 - 0.25j
+
 # enforce_positive threshold (matches the Caltable default).
 DEFAULT_MIN_GAIN = 0.9
 
@@ -1663,15 +1667,9 @@ class TestTransformsCarryDterms:
         np.testing.assert_allclose(ct_b.data[site]['rscale'], MERGE_GAIN_B)
 
 
-
 # ---------------------------------------------------------------------------
 # Section 12: Each site's tables follow its feed_type
 # ---------------------------------------------------------------------------
-
-# Distinct per slot so a p1/p2 swap shows up.
-GAIN_P1 = 2.0 + 0.5j
-GAIN_P2 = 3.0 - 0.25j
-
 
 def _tarr_with_feeds(obs, feeds):
     """Copy of obs.tarr with feed_type set per site from a {site: feed_type} dict."""
