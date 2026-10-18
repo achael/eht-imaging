@@ -12,6 +12,7 @@ import ehtim.array as ea
 import ehtim.caltable as ec
 import ehtim.const_def as ehc
 import ehtim.obsdata as eo
+import ehtim.observing.obs_simulate as obs_simulate
 import ehtim.warnings as ehw
 
 # Legacy dtypes — used to verify upgrade plumbing.
@@ -2484,3 +2485,18 @@ def test_save_load_uvfits_circ_roundtrip_unaffected(tmp_path):
     o1, _ = _roundtrip(obs, 'circ', tmp_path)
     assert o1.polrep == 'circ'
     assert set(o1.tarr['feed_type']) == {'rl'}
+
+
+SEED_MAKE_JONES_CALTABLE = 20260924
+
+
+def test_make_jones_caltable_types_each_station(tmp_path):
+    """make_jones writes circular tables; loading gives each station its own dtype."""
+    obs = ea.Array(_eht_like_mixed_array()).obsdata(polrep='mixed', **_obs_kwargs())
+    obs.add_scans()
+    prefix = str(tmp_path / 'mixed')
+    obs_simulate.make_jones(obs, ampcal=False, phasecal=False,
+                            caltable_path=prefix, seed=SEED_MAKE_JONES_CALTABLE)
+    ct = ec.load_caltable(obs, prefix + '_simdata_caltable')
+    assert ct.gains['ALMA'].dtype == np.dtype(ehc.DTCAL_LIN)
+    assert ct.gains['APEX'].dtype == np.dtype(ehc.DTCAL_CIRC)
