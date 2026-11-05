@@ -46,3 +46,17 @@ class MixedPolUnpackNaNWarning(UserWarning):
     The warning reports, per field, how many rows were NaN-filled. It is
     deliberately verbose; suppress with the standard machinery if needed.
     """
+
+
+class PolWeightingIgnoredWarning(UserWarning):
+    """Emitted when data weighting is set but the active polarimetric terms drop it.
+
+    ``chisqdata_pvis`` / ``chisqdata_m`` / ``chisqdata_vvis`` and their nfft variants
+    take the standard chisqdata kwargs so the dispatcher can pass them uniformly, but
+    they use none of them. An IP or IPV run therefore applies snrcut, debiasing,
+    systematic noise and uv-weighting to the Stokes-I terms only. Suppressible:
+
+        warnings.filterwarnings(
+            'ignore', category=ehtim.warnings.PolWeightingIgnoredWarning
+        )
+    """
