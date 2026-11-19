@@ -245,7 +245,7 @@ def circ_to_lin(rr, ll, rl, lr):
 # TODO: these per-component sigma transforms are NOT invertible. The
 # basis transforms are linear combinations of the input visibilities, so
 # the output components are correlated even when the inputs are
-# independent — but we only return marginal variances per output
+# independent, but we only return marginal variances per output
 # component, dropping the off-diagonal covariance terms. A
 # round-trip (e.g. stokes_to_circ_sigma then circ_to_stokes_sigma)
 # generally does not recover the input sigmas.
