@@ -192,6 +192,46 @@ def gauss_prior(gauss_im):
 
 
 @pytest.fixture(scope="session")
+def recovery_floors():
+    """nxcorr floors for the optax/sharding recovery tests, calibrated from a flat start.
+
+    At maxit=100: scipy 0.893, optax-lbfgs 0.879, callable CG 0.887, adam 0.530 (first-order,
+    slower). A featureless start scores 0.0. Shared so retuning one file cannot desync another.
+    """
+    from types import SimpleNamespace
+    return SimpleNamespace(floor=0.80, first_order=0.45, no_op_ceiling=0.30)
+
+
+@pytest.fixture(scope="session")
+def flat_prior(gauss_im):
+    """A featureless image at the same total flux, for recovery tests.
+
+    `gauss_prior` is a blur of the truth and already scores nxcorr 0.989 against it, so
+    "recovers the source" passes there without optimizing. Flat scores 0.0.
+
+    Only usable where the data fix absolute phase (a `vis` term). Closure-only data cannot
+    converge from flat: use `wide_prior`.
+    """
+    import numpy as np
+
+    im = gauss_im.copy()
+    im.imvec = np.full(gauss_im.imvec.size, gauss_im.total_flux() / gauss_im.imvec.size)
+    return im
+
+
+@pytest.fixture(scope="session")
+def wide_prior(gauss_im):
+    """A 100 uas Gaussian built independently of the truth, for closure-data recovery tests.
+
+    Twice the 50 uas source and carrying none of its structure, but enough of a starting
+    model for amp/cphase/logcamp to lock on, which they cannot do from flat. Scores 0.828.
+    """
+    im = gauss_im.copy()
+    im.imvec = 0.0 * im.imvec
+    return im.add_gauss(gauss_im.total_flux(), (100 * eh.RADPERUAS, 100 * eh.RADPERUAS, 0, 0, 0))
+
+
+@pytest.fixture(scope="session")
 def make_rect_image():
     """Factory fixture: construct a Gaussian image with arbitrary (xdim, ydim)."""
     import numpy as np

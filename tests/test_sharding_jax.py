@@ -25,7 +25,6 @@ requires_2gpu = pytest.mark.skipif(_N_GPU < 2, reason="needs >= 2 GPUs")
 
 VALUE_RTOL = 1e-9
 GRAD_RTOL = 1e-9
-NXCORR_FLOOR = 0.8
 EPSILON_TV = 1e-10
 
 
@@ -36,11 +35,11 @@ def _nxcorr(a, b):
     return float(np.sum(a * b) / d) if d > 0 else 0.0
 
 
-def _build_imager(obs, gauss_im, gauss_prior):
+def _build_imager(obs, gauss_im, prior, maxit=100):
     return eh.imager.Imager(
-        obs, gauss_prior, prior_im=gauss_prior, flux=gauss_im.total_flux(),
+        obs, prior, prior_im=prior, flux=gauss_im.total_flux(),
         data_term={"vis": 1}, reg_term={"simple": 1, "tv": 1},
-        ttype="direct", maxit=100, epsilon_tv=EPSILON_TV)
+        ttype="direct", maxit=maxit, epsilon_tv=EPSILON_TV)
 
 
 def _backend_args(imgr):
@@ -93,9 +92,14 @@ def test_baseline_sharded_matches(obs_direct, gauss_im, gauss_prior, ttype, data
 
 @requires_2gpu
 @pytest.mark.slow
-def test_sharded_make_image_recovers(obs_direct, gauss_im, gauss_prior):
-    out = _build_imager(obs_direct, gauss_im, gauss_prior).make_image(shard=True, show_updates=False)
-    assert _nxcorr(out.imvec, gauss_im.imvec) > NXCORR_FLOOR
+def test_sharded_make_image_recovers(obs_direct, gauss_im, flat_prior, recovery_floors):
+    # shard=True needs an optax optimizer; without one make_image raises before build_mesh
+    # and this test could never run. The guard that the floor is unreachable without
+    # optimizing lives in test_optimizers_jax: it is a property of the fixture, not of the
+    # sharded path, and asserting it here would cost a mesh build and a compile.
+    out = _build_imager(obs_direct, gauss_im, flat_prior).make_image(
+        shard=True, optimizer="optax-lbfgs", show_updates=False)
+    assert _nxcorr(out.imvec, gauss_im.imvec) > recovery_floors.floor
 
 
 @requires_2gpu
