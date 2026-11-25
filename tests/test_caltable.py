@@ -10,6 +10,7 @@ import pytest
 import ehtim as eh
 import ehtim.const_def as ehc
 from ehtim.const_def import DTARR, DTCAL
+from ehtim.observing import pol_conventions
 from ehtim.warnings import MixedPolConventionWarning
 
 # ---------------------------------------------------------------------------
@@ -58,6 +59,11 @@ CONST_PHASE = 0.37                # pure-phase rotation for amp-preservation
 # Feed-type tests: different p1 and p2 gains, so a swap shows up.
 GAIN_P1 = 2.0 + 0.5j
 GAIN_P2 = 3.0 - 0.25j
+
+# applycal feed-basis tests: random per-site, per-feed gains, so any swap of
+# stations, feeds or a conjugate shows up. JONES_RTOL covers the 2x2 matmuls.
+SEED_FEED_BASIS_GAINS = 17
+JONES_RTOL = 1e-10
 
 # enforce_positive threshold (matches the Caltable default).
 DEFAULT_MIN_GAIN = 0.9
@@ -116,6 +122,18 @@ def _unity_caltable(obs):
         obs.ra, obs.dec, obs.rf, obs.bw, caldict, obs.tarr,
         source=obs.source, mjd=obs.mjd, timetype=obs.timetype,
     )
+
+
+def _assert_same_calibration(a, b):
+    """Two calibrated observations agree slot by slot.
+
+    Not bit-exact: numpy's complex multiply can round the last bit differently
+    from run to run, so repeated applycal calls can differ by ~1e-16.
+    """
+    for slot in ('p1p1', 'p2p2', 'p1p2', 'p2p1'):
+        for kind in ('vis', 'sigma'):
+            np.testing.assert_allclose(a.data[slot + kind], b.data[slot + kind],
+                                       rtol=BIT_CLEAN_RTOL, atol=BIT_CLEAN_ATOL)
 
 
 def test_applycal_unity_preserves_data(obs_direct):
@@ -1090,12 +1108,8 @@ class TestSplitLeavesApplycalUnchanged:
             out_leaky = ct_leaky.applycal(obs_direct, interp='nearest')
         out_clean = ct_clean.applycal(obs_direct, interp='nearest')
 
-        circ_l = out_leaky.switch_polrep('circ')
-        circ_c = out_clean.switch_polrep('circ')
-        for field in ('rrvis', 'llvis', 'rlvis', 'lrvis'):
-            np.testing.assert_array_equal(circ_l.data[field], circ_c.data[field])
-        for field in ('rrsigma', 'llsigma', 'rlsigma', 'lrsigma'):
-            np.testing.assert_array_equal(circ_l.data[field], circ_c.data[field])
+        _assert_same_calibration(out_leaky.switch_polrep('circ'),
+                                 out_clean.switch_polrep('circ'))
 
 
 class TestSplitFixups:
@@ -1500,8 +1514,8 @@ class TestApplycalWarnsOnDterms:
             out_leaky = ct_leaky.applycal(obs_direct)
 
         for field in ('vis', 'sigma'):
-            np.testing.assert_array_equal(out_plain.data[field],
-                                          out_leaky.data[field])
+            np.testing.assert_allclose(out_plain.data[field], out_leaky.data[field],
+                                       rtol=BIT_CLEAN_RTOL, atol=BIT_CLEAN_ATOL)
 
 
 class TestPlottingWithDterms:
@@ -1943,3 +1957,208 @@ class TestDtermMirror:
         obs.tarr['x'][0] += 1.0
         with pytest.raises(Exception, match='not the same'):
             unity_caltable.applycal(obs)
+
+
+# ---------------------------------------------------------------------------
+# Section 14: applycal works in each array's feed basis
+# ---------------------------------------------------------------------------
+
+def _random_site_gains(sites):
+    """{site: (g_p1, g_p2)} with random amplitudes and phases."""
+    rng = np.random.default_rng(SEED_FEED_BASIS_GAINS)
+    return {s: rng.lognormal(0, 0.2, 2) * np.exp(1j * rng.uniform(-np.pi, np.pi, 2))
+            for s in sites}
+
+
+def _scale_caltable(obs, scales, tarr):
+    """A caltable holding the given (p1scale, p2scale) for each site, constant in time."""
+    times = [obs.data['time'].min() - 1.0, obs.data['time'].max() + 1.0]
+    tables = {}
+    for site, (s1, s2) in scales.items():
+        table = np.zeros(2, dtype=DTCAL)
+        table['time'] = times
+        table['p1scale'] = s1
+        table['p2scale'] = s2
+        tables[site] = table
+    return _caltable(obs, tables, tarr)
+
+
+def _corrupt_with_jones(obs, gains):
+    """Apply V -> J1 V J2^H with diagonal gain Jones matrices, using pol_conventions."""
+    out = obs.copy()
+    d = out.data
+    vis = np.stack([[d['p1p1vis'], d['p1p2vis']],
+                    [d['p2p1vis'], d['p2p2vis']]]).transpose(2, 0, 1)
+    j1 = np.array([pol_conventions.jones_matrix(*gains[t]) for t in d['t1']])
+    j2 = np.array([pol_conventions.jones_matrix(*gains[t]) for t in d['t2']])
+    vis = pol_conventions.apply_jones_to_coherency(vis, j1, j2)
+    d['p1p1vis'], d['p1p2vis'] = vis[:, 0, 0], vis[:, 0, 1]
+    d['p2p1vis'], d['p2p2vis'] = vis[:, 1, 0], vis[:, 1, 1]
+    return out
+
+
+def _linear_obs(obs):
+    """obs on an all-'xy' copy of its array, in the linear polrep."""
+    out = obs.copy()
+    out.tarr = _tarr_with_feeds(obs, {s: 'xy' for s in obs.tarr['site']})
+    return out.switch_polrep('lin')
+
+
+def _mixed_obs(obs, xy_sites):
+    """obs's circular data relabelled as mixed, with xy_sites made linear.
+
+    The numbers are not a physical linear-feed observation; gain application
+    does not care, it only needs each slot to belong to the right feeds.
+    """
+    circ = obs.switch_polrep('circ')
+    data = np.zeros(len(circ.data), dtype=ehc.DTPOL_MIXED)
+    for name in data.dtype.names:
+        if name != 'polbasis':
+            data[name] = circ.data[name]
+    tarr = _tarr_with_feeds(circ, {s: 'xy' for s in xy_sites})
+    return eh.obsdata.Obsdata(circ.ra, circ.dec, circ.rf, circ.bw, data, tarr,
+                              polrep='mixed', source=circ.source, mjd=circ.mjd,
+                              timetype=circ.timetype)
+
+
+class TestApplycalFeedBasis:
+
+    def test_circular_matches_hand_written_products(self, obs_pol_direct):
+        """Each circular slot is scaled by s_i * conj(s_j) for its two feeds."""
+        obs = obs_pol_direct.switch_polrep('circ')
+        scales = _random_site_gains(obs.tarr['site'])
+        out = _scale_caltable(obs, scales, obs.tarr).applycal(obs, interp='nearest')
+
+        d = obs.data
+        r1 = np.array([scales[t][0] for t in d['t1']])
+        l1 = np.array([scales[t][1] for t in d['t1']])
+        r2 = np.array([scales[t][0] for t in d['t2']])
+        l2 = np.array([scales[t][1] for t in d['t2']])
+        expected = {'rr': r1 * r2.conj(), 'll': l1 * l2.conj(),
+                    'rl': r1 * l2.conj(), 'lr': l1 * r2.conj()}
+        for pol, scale in expected.items():
+            np.testing.assert_allclose(out.data[pol + 'vis'], d[pol + 'vis'] * scale,
+                                       rtol=BIT_CLEAN_RTOL, atol=BIT_CLEAN_ATOL)
+            np.testing.assert_allclose(out.data[pol + 'sigma'], d[pol + 'sigma'] * np.abs(scale),
+                                       rtol=BIT_CLEAN_RTOL, atol=BIT_CLEAN_ATOL)
+
+    def test_linear_undoes_jones_gains(self, obs_pol_direct):
+        obs = _linear_obs(obs_pol_direct)
+        gains = _random_site_gains(obs.tarr['site'])
+        corrupted = _corrupt_with_jones(obs, gains)
+        ct = _scale_caltable(obs, {s: 1 / g for s, g in gains.items()}, obs.tarr)
+
+        out = ct.applycal(corrupted, interp='nearest')
+
+        assert out.polrep == 'lin'
+        for pol in ('xx', 'yy', 'xy', 'yx'):
+            np.testing.assert_allclose(out.data[pol + 'vis'], obs.data[pol + 'vis'],
+                                       rtol=JONES_RTOL, atol=BIT_CLEAN_ATOL)
+
+    def test_mixed_undoes_jones_gains(self, obs_pol_direct):
+        obs = _mixed_obs(obs_pol_direct, _first_sites(obs_pol_direct, 2))
+        gains = _random_site_gains(obs.tarr['site'])
+        corrupted = _corrupt_with_jones(obs, gains)
+        ct = _scale_caltable(obs, {s: 1 / g for s, g in gains.items()}, obs.tarr)
+
+        out = ct.applycal(corrupted, interp='nearest')
+
+        assert out.polrep == 'mixed'
+        assert {'rlxy', 'xyrl'} & set(out.data['polbasis'])  # has rl-xy baselines
+        for slot in ('p1p1', 'p2p2', 'p1p2', 'p2p1'):
+            np.testing.assert_allclose(out.data[slot + 'vis'], obs.data[slot + 'vis'],
+                                       rtol=JONES_RTOL, atol=BIT_CLEAN_ATOL)
+
+    def test_stokes_on_linear_array_is_calibrated_in_lin(self, obs_pol_direct):
+        """X/Y gains differ, so going through circ instead would not recover the truth."""
+        obs = _linear_obs(obs_pol_direct)
+        gains = _random_site_gains(obs.tarr['site'])
+        corrupted = _corrupt_with_jones(obs, gains).switch_polrep('stokes')
+        ct = _scale_caltable(obs, {s: 1 / g for s, g in gains.items()}, obs.tarr)
+
+        out = ct.applycal(corrupted, interp='nearest')
+
+        assert out.polrep == 'stokes'
+        truth = obs.switch_polrep('stokes')
+        for f in ('vis', 'qvis', 'uvis', 'vvis'):
+            np.testing.assert_allclose(out.data[f], truth.data[f],
+                                       rtol=JONES_RTOL, atol=BIT_CLEAN_ATOL)
+
+    def test_circ_data_on_linear_array_is_calibrated_in_lin(self, obs_pol_direct):
+        """Circular data from linear feeds is calibrated with its X/Y gains, in lin."""
+        obs = _linear_obs(obs_pol_direct)
+        gains = _random_site_gains(obs.tarr['site'])
+        with warnings.catch_warnings():
+            warnings.simplefilter('ignore')  # circ data on an all-'xy' tarr warns
+            corrupted = _corrupt_with_jones(obs, gains).switch_polrep('circ')
+            truth = obs.switch_polrep('circ')
+        ct = _scale_caltable(obs, {s: 1 / g for s, g in gains.items()}, obs.tarr)
+
+        with warnings.catch_warnings():
+            warnings.simplefilter('ignore')
+            out = ct.applycal(corrupted, interp='nearest')
+
+        assert out.polrep == 'circ'
+        for pol in ('rr', 'll', 'rl', 'lr'):
+            np.testing.assert_allclose(out.data[pol + 'vis'], truth.data[pol + 'vis'],
+                                       rtol=JONES_RTOL, atol=BIT_CLEAN_ATOL)
+
+    def test_calibration_flags_pass_through(self, obs_direct, unity_caltable):
+        obs = obs_direct.copy()
+        flags = ('ampcal', 'phasecal', 'opacitycal', 'dcal', 'frcal')
+        for flag in flags:
+            setattr(obs, flag, not getattr(obs_direct, flag))
+        out = unity_caltable.applycal(obs, interp='nearest')
+        for flag in flags:
+            assert getattr(out, flag) == getattr(obs, flag), flag
+
+    def test_circ_data_on_mixed_array_raises(self, obs_pol_direct):
+        obs = _mixed_obs(obs_pol_direct, _first_sites(obs_pol_direct, 1))
+        ct = _scale_caltable(obs, {}, obs.tarr)
+        obs_circ = obs_pol_direct.switch_polrep('circ')
+        obs_circ.tarr = obs.tarr
+        with pytest.raises(ValueError, match='mixed-feed'):
+            ct.applycal(obs_circ)
+
+
+class TestApplycalForceSinglepol:
+
+    @pytest.mark.parametrize('hand, generic', [('R', 'p1'), ('L', 'p2')])
+    def test_circular_hand_names(self, obs_pol_direct, hand, generic):
+        obs = obs_pol_direct.switch_polrep('circ')
+        ct = _scale_caltable(obs, _random_site_gains(obs.tarr['site']), obs.tarr)
+        a = ct.applycal(obs, interp='nearest', force_singlepol=hand)
+        b = ct.applycal(obs, interp='nearest', force_singlepol=generic)
+        _assert_same_calibration(a, b)
+
+    @pytest.mark.parametrize('hand, generic', [('X', 'p1'), ('Y', 'p2')])
+    def test_linear_hand_names(self, obs_pol_direct, hand, generic):
+        obs = _linear_obs(obs_pol_direct)
+        ct = _scale_caltable(obs, _random_site_gains(obs.tarr['site']), obs.tarr)
+        a = ct.applycal(obs, interp='nearest', force_singlepol=hand)
+        b = ct.applycal(obs, interp='nearest', force_singlepol=generic)
+        _assert_same_calibration(a, b)
+
+    @pytest.mark.parametrize('array', ['linear', 'mixed'])
+    @pytest.mark.parametrize('pol, feed', [('p1', 0), ('p2', 1)])
+    def test_uses_one_feed_gain_for_both(self, obs_pol_direct, array, pol, feed):
+        if array == 'linear':
+            obs = _linear_obs(obs_pol_direct)
+        else:
+            obs = _mixed_obs(obs_pol_direct, _first_sites(obs_pol_direct, 2))
+        scales = _random_site_gains(obs.tarr['site'])
+        ct = _scale_caltable(obs, scales, obs.tarr)
+        ct_one = _scale_caltable(obs, {s: (g[feed], g[feed]) for s, g in scales.items()},
+                                 obs.tarr)
+        _assert_same_calibration(ct.applycal(obs, interp='nearest', force_singlepol=pol),
+                                 ct_one.applycal(obs, interp='nearest'))
+
+    @pytest.mark.parametrize('pol', ['R', 'L'])
+    def test_circular_name_on_linear_array_raises(self, obs_pol_direct, pol):
+        obs = _linear_obs(obs_pol_direct)
+        with pytest.raises(ValueError, match='feed_types'):
+            _scale_caltable(obs, {}, obs.tarr).applycal(obs, force_singlepol=pol)
+
+    def test_unknown_value_raises(self, obs_direct, unity_caltable):
+        with pytest.raises(ValueError, match='force_singlepol must be'):
+            unity_caltable.applycal(obs_direct, force_singlepol='Q')

@@ -566,12 +566,18 @@ class Caltable:
                  force_singlepol=False):
         """Apply the calibration table to an observation.
 
+           The gains are applied in the array's own feed basis: circular for an
+           all-'rl' array, linear for an all-'xy' array, and per station for a
+           mixed array. Data in another polrep is converted there and back.
+           Feed types are read from every station in obs.tarr, with or without data.
+
            Args:
                obs (Obsdata): The observation  with data to be calibrated
                interp (str): Interpolation method ('linear','nearest','cubic')
                extrapolate (bool): If True, points outside interpolation range will be extrapolated.
-               force_singlepol (str): If 'L' or 'R', will set opposite polarization gains
-                                      equal to chosen polarization
+               force_singlepol (str): 'R', 'X' or 'p1' uses each station's first-feed gain
+                                      for both feeds; 'L', 'Y' or 'p2' uses the second.
+                                      'R'/'L' need an all-'rl' array, 'X'/'Y' an all-'xy' one.
 
            Returns:
                (Obsdata): the calibrated Obsdata object
@@ -593,11 +599,36 @@ class Caltable:
         else:
             fill_value = extrapolate
 
-        orig_polrep = obs.polrep
-        obs = obs.switch_polrep('circ')
+        # gains are per feed, so correct the data in the array's feed basis
+        feeds = set(obs.tarr['feed_type'])
+        if feeds == {'rl'}:
+            cal_polrep = 'circ'
+        elif feeds == {'xy'}:
+            cal_polrep = 'lin'
+        elif len(feeds) > 1:
+            cal_polrep = 'mixed'
+        else:
+            raise NotImplementedError(f"applycal supports only 'rl' and 'xy' feeds, got {feeds}")
 
-        rinterp = {}
-        linterp = {}
+        singlepol = {False: None, None: None, 'R': 'p1', 'L': 'p2', 'X': 'p1', 'Y': 'p2',
+                     'p1': 'p1', 'p2': 'p2'}
+        if force_singlepol not in singlepol:
+            raise ValueError("force_singlepol must be 'R', 'L', 'X', 'Y', 'p1' or 'p2'")
+        if ((force_singlepol in ('R', 'L') and feeds != {'rl'})
+                or (force_singlepol in ('X', 'Y') and feeds != {'xy'})):
+            raise ValueError(f"force_singlepol={force_singlepol!r} does not match the "
+                             f"array's feed_types {sorted(feeds)}; use 'p1' or 'p2'")
+        singlepol = singlepol[force_singlepol]
+
+        orig_polrep = obs.polrep
+        if obs.polrep != cal_polrep:
+            if cal_polrep == 'mixed':
+                raise ValueError(f"cannot calibrate polrep={obs.polrep!r} data from a mixed-feed "
+                                 "array; there is no single feed basis to convert it to")
+            obs = obs.switch_polrep(cal_polrep)
+
+        p1interp = {}
+        p2interp = {}
         skipsites = []
         for s in range(0, len(self.tarr)):
             site = self.tarr[s]['site']
@@ -610,11 +641,12 @@ class Caltable:
                 continue
 
             time_mjd = self.gains[site]['time'] / 24.0 + self.mjd
-            rinterp[site] = relaxed_interp1d(time_mjd, self.gains[site]['p1scale'],
-                                             kind=interp, fill_value=fill_value, bounds_error=False)
-            linterp[site] = relaxed_interp1d(time_mjd, self.gains[site]['p2scale'],
-                                             kind=interp, fill_value=fill_value, bounds_error=False)
+            p1interp[site] = relaxed_interp1d(time_mjd, self.gains[site]['p1scale'], kind=interp,
+                                              fill_value=fill_value, bounds_error=False)
+            p2interp[site] = relaxed_interp1d(time_mjd, self.gains[site]['p2scale'], kind=interp,
+                                              fill_value=fill_value, bounds_error=False)
 
+        # p1/p2 are each station's own feeds in every polrep, so one formula covers all
         bllist = obs.bllist()
         datatable = []
         for bl_obs in bllist:
@@ -623,38 +655,38 @@ class Caltable:
             time_mjd = bl_obs['time'] / 24.0 + obs.mjd
 
             if t1 in skipsites:
-                rscale1 = lscale1 = np.array(1.)
+                p1scale1 = p2scale1 = np.array(1.)
             else:
-                rscale1 = rinterp[t1](time_mjd)
-                lscale1 = linterp[t1](time_mjd)
+                p1scale1 = p1interp[t1](time_mjd)
+                p2scale1 = p2interp[t1](time_mjd)
             if t2 in skipsites:
-                rscale2 = lscale2 = np.array(1.)
+                p1scale2 = p2scale2 = np.array(1.)
             else:
-                rscale2 = rinterp[t2](time_mjd)
-                lscale2 = linterp[t2](time_mjd)
+                p1scale2 = p1interp[t2](time_mjd)
+                p2scale2 = p2interp[t2](time_mjd)
 
-            if force_singlepol == 'R':
-                lscale1 = rscale1
-                lscale2 = rscale2
+            if singlepol == 'p1':
+                p2scale1 = p1scale1
+                p2scale2 = p1scale2
 
-            if force_singlepol == 'L':
-                rscale1 = lscale1
-                rscale2 = lscale2
+            if singlepol == 'p2':
+                p1scale1 = p2scale1
+                p1scale2 = p2scale2
 
-            rrscale = rscale1 * rscale2.conj()
-            llscale = lscale1 * lscale2.conj()
-            rlscale = rscale1 * lscale2.conj()
-            lrscale = lscale1 * rscale2.conj()
+            p1p1scale = p1scale1 * p1scale2.conj()
+            p2p2scale = p2scale1 * p2scale2.conj()
+            p1p2scale = p1scale1 * p2scale2.conj()
+            p2p1scale = p2scale1 * p1scale2.conj()
 
-            bl_obs['rrvis'] = (bl_obs['rrvis']) * rrscale
-            bl_obs['llvis'] = (bl_obs['llvis']) * llscale
-            bl_obs['rlvis'] = (bl_obs['rlvis']) * rlscale
-            bl_obs['lrvis'] = (bl_obs['lrvis']) * lrscale
+            bl_obs['p1p1vis'] = (bl_obs['p1p1vis']) * p1p1scale
+            bl_obs['p2p2vis'] = (bl_obs['p2p2vis']) * p2p2scale
+            bl_obs['p1p2vis'] = (bl_obs['p1p2vis']) * p1p2scale
+            bl_obs['p2p1vis'] = (bl_obs['p2p1vis']) * p2p1scale
 
-            bl_obs['rrsigma'] = bl_obs['rrsigma'] * np.abs(rrscale)
-            bl_obs['llsigma'] = bl_obs['llsigma'] * np.abs(llscale)
-            bl_obs['rlsigma'] = bl_obs['rlsigma'] * np.abs(rlscale)
-            bl_obs['lrsigma'] = bl_obs['lrsigma'] * np.abs(lrscale)
+            bl_obs['p1p1sigma'] = bl_obs['p1p1sigma'] * np.abs(p1p1scale)
+            bl_obs['p2p2sigma'] = bl_obs['p2p2sigma'] * np.abs(p2p2scale)
+            bl_obs['p1p2sigma'] = bl_obs['p1p2sigma'] * np.abs(p1p2scale)
+            bl_obs['p2p1sigma'] = bl_obs['p2p1sigma'] * np.abs(p2p1scale)
 
             datatable.append(bl_obs)
 
@@ -667,7 +699,8 @@ class Caltable:
                                        mjd=obs.mjd, ampcal=obs.ampcal, phasecal=obs.phasecal,
                                        opacitycal=obs.opacitycal, dcal=obs.dcal,
                                        frcal=obs.frcal, timetype=obs.timetype)
-        calobs = calobs.switch_polrep(orig_polrep)
+        if orig_polrep != cal_polrep:
+            calobs = calobs.switch_polrep(orig_polrep)
 
         return calobs
 
