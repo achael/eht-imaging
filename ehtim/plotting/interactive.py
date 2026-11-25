@@ -1060,9 +1060,9 @@ def plot_gains(
         'all' / empty list means every site in `caltable.data`.
     gain_type : {'amp', 'phase'}
     pol : {'R', 'L', 'both'}
-        'both' draws R and L as separate traces per site.
-        TODO: schema-coupled - replace with pol1/pol2 once the cal-table
-        mixed-pol schema lands.
+        Each site's first ('R') or second ('L') feed; 'both' draws both as
+        separate traces per site. Traces are labelled with the site's own
+        feeds, so a linear site shows X/Y.
     timetype : {'GMST', 'UTC'} or None
         None means use `caltable.timetype`.
     ang_unit : {'deg', 'rad'}
@@ -1072,8 +1072,6 @@ def plot_gains(
     """
     if gain_type not in ("amp", "phase"):
         raise ValueError(f"gain_type must be 'amp' or 'phase', got {gain_type!r}")
-    # TODO: schema-coupled - replace R/L with pol1/pol2 lookup after the
-    # cal-table mixed-pol rewrite.
     if pol not in ("R", "L", "both"):
         raise ValueError(f"pol must be 'R', 'L', or 'both', got {pol!r}")
 
@@ -1097,9 +1095,10 @@ def plot_gains(
             times = obsh.utc_to_gmst(times, caltable.mjd)
 
         for j, pol_ch in enumerate(pol_channels):
-            # TODO: labels assume circular feeds; on a linear site R/L mean X/Y
-            key = "p1scale" if pol_ch == "R" else "p2scale"
-            gains_complex = caltable.data[site][key]
+            # the table's field names give the site's feeds (rscale or xscale)
+            field = caltable.data[site].dtype.names[1 if pol_ch == "R" else 2]
+            feed = field[0].upper()
+            gains_complex = caltable.data[site][field]
 
             if gain_type == "amp":
                 gains = np.abs(gains_complex)
@@ -1109,13 +1108,13 @@ def plot_gains(
             customdata = np.column_stack(
                 [
                     np.full(len(times), site, dtype=object),
-                    np.full(len(times), pol_ch, dtype=object),
+                    np.full(len(times), feed, dtype=object),
                     gains_complex.real,
                     gains_complex.imag,
                 ]
             )
 
-            trace_name = f"{site} ({pol_ch})" if pol == "both" else site
+            trace_name = f"{site} ({feed})" if pol == "both" else site
             symbol = _SYMBOLS[j % len(_SYMBOLS)] if pol == "both" else "circle"
 
             fig.add_trace(
@@ -2079,21 +2078,23 @@ def dashboard(
             panel2_spec_indices[key].append(spec_pair)
     panel2_end = len(fig.data)
 
-    # --- Panel 3: gains per site, with amp/phase × R/L dropdown ---
-    # TODO: labels assume circular feeds; on a linear site R/L mean X/Y
+    # --- Panel 3: gains per site, with amp/phase × first/second feed dropdown ---
+    # R is each site's first feed (X on a linear site), L its second
     gain_modes = [
-        ("amp_R",   "p1scale", "amp",   "|G_R|"),
-        ("amp_L",   "p2scale", "amp",   "|G_L|"),
-        ("phase_R", "p1scale", "phase", "arg(G_R) (deg)"),
-        ("phase_L", "p2scale", "phase", "arg(G_L) (deg)"),
+        ("amp_R",   "p1scale", "amp",   "|G_R/X|"),
+        ("amp_L",   "p2scale", "amp",   "|G_L/Y|"),
+        ("phase_R", "p1scale", "phase", "arg(G_R/X) (deg)"),
+        ("phase_L", "p2scale", "phase", "arg(G_L/Y) (deg)"),
     ]
     default_mode = f"amp_{pol}"
     gain_indices: dict[str, list[int]] = {m[0]: [] for m in gain_modes}
     for site in sorted(caltable.data.keys()):
         times = caltable.data[site]["time"]
-        for mode, key, gtype, ylabel in gain_modes:
+        for mode, key, gtype, _ in gain_modes:
             cplx = caltable.data[site][key]
-            y =np.abs(cplx) if gtype == "amp" else np.angle(cplx, deg=True)
+            y = np.abs(cplx) if gtype == "amp" else np.angle(cplx, deg=True)
+            feed = caltable.data[site].dtype.names[1 if key == "p1scale" else 2][0].upper()
+            ylabel = f"|G_{feed}|" if gtype == "amp" else f"arg(G_{feed}) (deg)"
             fig.add_trace(
                 go.Scatter(
                     x=times, y=y,
@@ -2110,21 +2111,18 @@ def dashboard(
             )
             gain_indices[mode].append(len(fig.data) - 1)
 
-    # --- Panel 4: D-terms (R and L) in complex plane ---
-    # TODO: schema-coupled - a cal table can now carry leakage itself, in
-    # caltable.dterms, on its own time axis. This lookup should prefer that
-    # when it is populated and keep tarr as the fallback, since the leakage
-    # solvers still write there. Note a dterms table may hold more than one
-    # row per site, so the panel stops being one point per site once it does.
-    # Two legends: legend4 = per-site (toggle hides both R and L for that
-    # site via legendgroup); legend5 = R/L type (two dummy markers showing
-    # the symbol convention).
+    # --- Panel 4: D-terms (first and second feed) in complex plane ---
+    # The tarr holds each site's D-term table reduced to one value, so this
+    # is one point per feed per site. Two legends: legend4 = per-site (toggle
+    # hides both feeds for that site via legendgroup); legend5 = feed type (two
+    # dummy markers showing the symbol convention).
     tarr = caltable.tarr
     sites = [str(s) for s in tarr["site"]]
     dr_indices: list[int] = []
     dl_indices: list[int] = []
     for i, site in enumerate(sites):
         color = _THEME["colorway"][i % len(_THEME["colorway"])]
+        f1, f2 = str(tarr["feed_type"][i]).upper()
         fig.add_trace(go.Scatter(
             x=[np.real(tarr["dr"][i])], y=[np.imag(tarr["dr"][i])],
             mode="markers+text",
@@ -2133,7 +2131,7 @@ def dashboard(
             name=site,
             marker=dict(size=10, symbol="circle", color=color,
                         line=dict(width=0.5, color=_THEME["marker_edge"])),
-            hovertemplate=(f"<b>{site}</b> D_R<br>Re=%{{x:.3g}}<br>Im=%{{y:.3g}}<extra></extra>"),
+            hovertemplate=(f"<b>{site}</b> D_{f1}<br>Re=%{{x:.3g}}<br>Im=%{{y:.3g}}<extra></extra>"),
             legend="legend4", legendgroup=site,
         ), row=2, col=2)
         dr_indices.append(len(fig.data) - 1)
@@ -2145,7 +2143,7 @@ def dashboard(
             name=site,
             marker=dict(size=10, symbol="square", color=color,
                         line=dict(width=0.5, color=_THEME["marker_edge"])),
-            hovertemplate=(f"<b>{site}</b> D_L<br>Re=%{{x:.3g}}<br>Im=%{{y:.3g}}<extra></extra>"),
+            hovertemplate=(f"<b>{site}</b> D_{f2}<br>Re=%{{x:.3g}}<br>Im=%{{y:.3g}}<extra></extra>"),
             legend="legend4", legendgroup=site,
             showlegend=False,  # site already named once by the R-trace above
         ), row=2, col=2)
@@ -2407,14 +2405,14 @@ def dashboard(
         dterm_btns = []
         if dr_indices:
             dterm_btns.append(dict(
-                label="D_R",
+                label="D_R/X",
                 method="restyle",
                 args=[{"visible": "legendonly"}, dr_indices],
                 args2=[{"visible": True}, dr_indices],
             ))
         if dl_indices:
             dterm_btns.append(dict(
-                label="D_L",
+                label="D_L/Y",
                 method="restyle",
                 args=[{"visible": "legendonly"}, dl_indices],
                 args2=[{"visible": True}, dl_indices],

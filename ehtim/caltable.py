@@ -46,7 +46,8 @@ class Caltable:
 
        Gains and D-terms live in separate per-site tables, each with its own
        time column; a single-row table represents a time-constant quantity.
-       A site's D-term table is copied into its tarr row as the time average.
+       Each site's D-term table is reduced to one value (median by default) in
+       its tarr row.
        A site with no D-term table uses the D-terms in the tarr, assumed fixed
        over the observation.
 
@@ -71,7 +72,8 @@ class Caltable:
     """
 
     def __init__(self, ra, dec, rf, bw, datadict, tarr, dtermdict=None,
-                 source=ehc.SOURCE_DEFAULT, mjd=ehc.MJD_DEFAULT, timetype='UTC'):
+                 source=ehc.SOURCE_DEFAULT, mjd=ehc.MJD_DEFAULT, timetype='UTC',
+                 dterm_reduce_method='median'):
         """A Calibration Table.
 
            Args:
@@ -91,6 +93,8 @@ class Caltable:
                source (str): The source name
                mjd (int): The integer MJD of the observation
                timetype (str): How to interpret tstart and tstop; either 'GMST' or 'UTC'
+               dterm_reduce_method (str): 'median' or 'mean', how a D-term table is
+                                          reduced to the single value in the tarr
 
            Returns:
                (Caltable): an Caltable object
@@ -108,6 +112,10 @@ class Caltable:
             raise Exception("timetype must by 'GMST' or 'UTC'")
         self.timetype = timetype
 
+        if dterm_reduce_method not in ('median', 'mean'):
+            raise ValueError("dterm_reduce_method must be 'median' or 'mean'")
+        self.dterm_reduce_method = dterm_reduce_method
+
         # Dictionary of array indices for site names
         self.tarr = ehc.upgrade_tarr(tarr)
         self.tkey = {self.tarr[i]['site']: i for i in range(len(self.tarr))}
@@ -116,7 +124,7 @@ class Caltable:
         if not isinstance(datadict, dict):
             raise TypeError("datadict must be a dict of per-site gain tables "
                             f"keyed by site name, got {type(datadict).__name__}")
-        self.gains = {site: self._to_site_basis(site, ehc.upgrade_caltable(d))
+        self.gains = {site: self._datatable_to_site_basis(site, ehc.upgrade_caltable(d))
                       for site, d in datadict.items()}
 
         self.dterms = {}
@@ -128,13 +136,15 @@ class Caltable:
             for site, table in dtermdict.items():
                 site_dterms = ehc._normalize_recarray(table)
                 if site_dterms is not None and len(site_dterms):
-                    self.dterms[site] = self._to_site_basis(site, site_dterms, dterms=True)
-        self._mirror_dterms_to_tarr()
+                    self.dterms[site] = self._datatable_to_site_basis(site, site_dterms,
+                                                                      dterms=True)
+        self.reduce_dterms_to_tarr()
 
-    def _mirror_dterms_to_tarr(self):
-        """Copy each site's D-term table into its tarr row, as the time average.
+    def reduce_dterms_to_tarr(self):
+        """Write each site's D-term table into its tarr row as one value.
 
-        Sites without a D-term table keep their tarr values.
+        Uses self.dterm_reduce_method; the median is taken separately on the
+        real and imaginary parts. Sites without a D-term table keep their tarr values.
         """
         sites = [site for site in self.dterms if site in self.tkey]
         if not sites:
@@ -142,10 +152,14 @@ class Caltable:
         self.tarr = self.tarr.copy()  # never write into the caller's tarr
         for site in sites:
             i = self.tkey[site]
-            self.tarr['d_p1'][i] = np.mean(self.dterms[site]['d_p1'])
-            self.tarr['d_p2'][i] = np.mean(self.dterms[site]['d_p2'])
+            for field in ('d_p1', 'd_p2'):
+                d = self.dterms[site][field]
+                if self.dterm_reduce_method == 'median':
+                    self.tarr[field][i] = np.median(d.real) + 1j * np.median(d.imag)
+                else:
+                    self.tarr[field][i] = np.mean(d)
 
-    def _to_site_basis(self, site, table, dterms=False):
+    def _datatable_to_site_basis(self, site, table, dterms=False):
         """Return a site's gain or D-term table in the dtype for its feed_type.
 
         A circular table on a linear site gets relabelled with a zero-copy view,
@@ -183,7 +197,7 @@ class Caltable:
         if not isinstance(datadict, dict):
             raise TypeError("data must be a dict of per-site gain tables "
                             f"keyed by site name, got {type(datadict).__name__}")
-        normalized = {site: self._to_site_basis(site, ehc.upgrade_caltable(t))
+        normalized = {site: self._datatable_to_site_basis(site, ehc.upgrade_caltable(t))
                       for site, t in datadict.items()}
         # keep the caller's own dict when nothing needed reshaping
         if all(normalized[site] is datadict[site] for site in normalized):
@@ -210,6 +224,7 @@ class Caltable:
                     # old __init__ stored non-dict datadicts verbatim
                     state['gains'] = legacy
         state.setdefault('dterms', {})
+        state.setdefault('dterm_reduce_method', 'median')
         self.__dict__.update(state)
 
     def copy(self):
@@ -227,9 +242,8 @@ class Caltable:
                     show=True, grid=True, export_pdf=""):
         """Make a plot of the D-terms.
 
-           Plots the leakage recorded in the array table (tarr), one point per
-           site. The caltable's own time-dependent D-term table (self.dterms)
-           is not read here.
+           Plots one point per site from the tarr. For a site with a D-term
+           table, that point is the table reduced by self.dterm_reduce_method.
 
            Args:
                sites (list) : list of sites to plot
@@ -246,13 +260,6 @@ class Caltable:
            Returns:
                matplotlib.axes
         """
-        if self.dterms:
-            warnings.warn(
-                "This plot shows the array table's D-terms. This cal table also "
-                f"carries its own solved leakage for {', '.join(sorted(self.dterms))}, "
-                "in self.dterms, which is not what is drawn here.",
-                MixedPolConventionWarning, stacklevel=2)
-
         # sites: a site can carry leakage without gains, so take both dicts
         all_sites = list(self.gains.keys())
         all_sites += [site for site in self.dterms if site not in self.gains]
@@ -552,7 +559,8 @@ class Caltable:
         # padding is a gain-table operation; leakage rides along untouched
         return Caltable(self.ra, self.dec, self.rf, self.bw, outdict, self.tarr,
                         source=self.source, mjd=self.mjd, timetype=self.timetype,
-                        dtermdict=copy.deepcopy(self.dterms))
+                        dtermdict=copy.deepcopy(self.dterms),
+                        dterm_reduce_method=self.dterm_reduce_method)
 
     def applycal(self, obs, interp='linear', extrapolate=None,
                  force_singlepol=False):
@@ -771,7 +779,8 @@ class Caltable:
 
         new_caltable = Caltable(self.ra, self.dec, self.rf, self.bw, data1, tarr1,
                                 source=self.source, mjd=self.mjd, timetype=self.timetype,
-                                dtermdict=dterms1)
+                                dtermdict=dterms1,
+                                dterm_reduce_method=self.dterm_reduce_method)
 
         return new_caltable
 
@@ -849,7 +858,8 @@ class Caltable:
             caltable = Caltable(obs.ra, obs.dec, obs.rf,
                                 obs.bw, datatables, obs.tarr, source=obs.source,
                                 mjd=obs.mjd, timetype=obs.timetype,
-                                dtermdict=copy.deepcopy(self.dterms))
+                                dtermdict=copy.deepcopy(self.dterms),
+                                dterm_reduce_method=self.dterm_reduce_method)
         else:
             caltable = False
 

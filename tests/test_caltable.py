@@ -27,6 +27,11 @@ APPLYCAL_WARN_GAIN = 1.3 + 0.4j
 # the two tables are sampled independently. TIME_ATOL is in hours and covers
 # the MJD round-trip, where a double holds ~1e-9 hr of resolution near MJD 5e4.
 SEED_DTERM_ROUNDTRIP = 20260810
+# (times, d_p1, d_p2) for a D-term table whose last row is an outlier, so its
+# median and mean differ. Medians: d_p1 = 0.02+0.01j, d_p2 = 0.01j.
+DTERM_OUTLIER_ROWS = ([0.0, 1.0, 2.0],
+                      [0.01, 0.02 + 0.01j, 0.5 + 0.5j],
+                      [0.0, 0.01j, 0.3j])
 DTERM_TIMES = (0.5, 3.25)
 SINGLE_ROW_TIME_HR = 2.0
 TIME_ATOL = 1e-6
@@ -1238,20 +1243,19 @@ class TestSplitFixups:
         assert out.data[site].dtype.names == ('time', 'xscale', 'yscale')
         np.testing.assert_array_equal(out.data[site]['xscale'][:2], [3 + 0j, 3 + 0j])
 
-    def test_plot_dterms_warns_when_table_has_leakage(self, obs_direct,
-                                                     constant_gain_caltable_factory,
-                                                     dterm_dict_factory):
-        """plot_dterms draws the array table, so say so when the cal table has its own.
-
-        After load_caltable the array table's leakage is zero while self.dterms
-        holds the solution, and the plot would silently read as "no leakage".
-        """
-        ct = constant_gain_caltable_factory(APPLYCAL_WARN_GAIN)
+    def test_plot_dterms_draws_the_reduced_table(self, obs_direct, dterm_dict_factory):
+        """The tarr holds each D-term table's reduced value, so that is what is drawn."""
         site = _first_sites(obs_direct, 1)[0]
-        ct.dterms = dterm_dict_factory([site])
+        ct = eh.caltable.Caltable(obs_direct.ra, obs_direct.dec, obs_direct.rf, obs_direct.bw,
+                                  {}, obs_direct.tarr, dtermdict=dterm_dict_factory([site]),
+                                  source=obs_direct.source, mjd=obs_direct.mjd)
 
-        with pytest.warns(MixedPolConventionWarning, match="self.dterms"):
+        with warnings.catch_warnings():
+            warnings.simplefilter('error', MixedPolConventionWarning)
             ct.plot_dterms(sites=[site], show=False)
+        xs = np.concatenate([line.get_xdata() for ax in plt.gcf().axes
+                             for line in ax.get_lines()])
+        assert np.any(np.isclose(xs, ct.tarr[ct.tkey[site]]['d_p1'].real))
         plt.close('all')
 
 
@@ -1884,12 +1888,37 @@ class TestDtermMirror:
         assert ct.tarr[ct.tkey[other]]['d_p1'] == obs_direct.tarr[ct.tkey[other]]['d_p1']
         np.testing.assert_array_equal(obs_direct.tarr, tarr_before)
 
-    def test_multi_row_table_is_time_averaged(self, obs_direct):
+    def test_multi_row_table_reduces_to_median(self, obs_direct):
+        # the outlier row moves the mean but not the median of each part
         site = _first_sites(obs_direct, 1)[0]
-        dterms = _dterm_table([0.0, 1.0], [0.01, 0.03 + 0.02j], [0.0, 0.0])
         ct = _caltable(obs_direct, {site: _gain_table([0.0])}, obs_direct.tarr,
-                       dterms={site: dterms})
+                       dterms={site: _dterm_table(*DTERM_OUTLIER_ROWS)})
         np.testing.assert_allclose(ct.tarr[ct.tkey[site]]['d_p1'], 0.02 + 0.01j)
+        np.testing.assert_allclose(ct.tarr[ct.tkey[site]]['d_p2'], 0.01j)
+
+    def test_mean_reduce_method(self, obs_direct):
+        site = _first_sites(obs_direct, 1)[0]
+        ct = eh.caltable.Caltable(obs_direct.ra, obs_direct.dec, obs_direct.rf, obs_direct.bw,
+                                  {site: _gain_table([0.0])}, obs_direct.tarr,
+                                  dtermdict={site: _dterm_table(*DTERM_OUTLIER_ROWS)},
+                                  dterm_reduce_method='mean')
+        np.testing.assert_allclose(ct.tarr[ct.tkey[site]]['d_p1'],
+                                   np.mean(DTERM_OUTLIER_ROWS[1]))
+
+    def test_unknown_reduce_method_raises(self, obs_direct):
+        with pytest.raises(ValueError, match='dterm_reduce_method'):
+            eh.caltable.Caltable(obs_direct.ra, obs_direct.dec, obs_direct.rf, obs_direct.bw,
+                                 {}, obs_direct.tarr, dterm_reduce_method='mode')
+
+    def test_reduce_method_carried_through_transforms(self, obs_direct):
+        site = _first_sites(obs_direct, 1)[0]
+        times = [obs_direct.data['time'].min(), obs_direct.data['time'].max()]
+        ct = eh.caltable.Caltable(obs_direct.ra, obs_direct.dec, obs_direct.rf, obs_direct.bw,
+                                  {site: _gain_table(times)}, obs_direct.tarr,
+                                  dtermdict={site: _dterm_table(*DTERM_OUTLIER_ROWS)},
+                                  dterm_reduce_method='mean', mjd=obs_direct.mjd)
+        assert ct.pad_scans().dterm_reduce_method == 'mean'
+        assert ct.copy().dterm_reduce_method == 'mean'
 
     def test_mirror_survives_save_and_load(self, obs_direct, tmp_path):
         site = _first_sites(obs_direct, 1)[0]
