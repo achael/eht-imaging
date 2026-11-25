@@ -517,7 +517,7 @@ def imgsum(im_or_mov, obs, obs_uncal, outname, outdir='.', title='imgsum', comme
             gain_data = []
             for station in ct_out.tarr['site']:
                 try:
-                    gain = np.median(np.abs(ct_out.data[station]['lscale']))
+                    gain = np.median(np.abs(ct_out.data[station]['p2scale']))
                 except Exception:
                     continue
                 pdiff = np.abs(gain-1)*100

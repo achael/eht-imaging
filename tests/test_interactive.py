@@ -103,3 +103,18 @@ def test_plain_fig_write_html_carries_toolbar_js(obs, tmp_path):
     assert "initToolbar" in body
     assert "Color all" in body
     assert "data-ehtim-toolbar-for" in body
+
+
+def test_plot_gains_labels_each_site_with_its_own_feeds(obs):
+    """A linear site's gains are labelled X/Y, a circular site's R/L."""
+    lin_site, circ_site = obs.tarr["site"][:2]
+    tarr = obs.tarr.copy()
+    tarr["feed_type"][0] = "xy"
+    table = np.zeros(2, dtype=eh.const_def.DTCAL)
+    table["time"] = [0.0, 1.0]
+    table["p1scale"] = table["p2scale"] = 1.0
+    caltable = eh.caltable.Caltable(obs.ra, obs.dec, obs.rf, obs.bw,
+                                    {lin_site: table, circ_site: table.copy()}, tarr)
+    fig = interactive.plot_gains(caltable, pol="both", show=False)
+    names = {trace.name for trace in fig.data}
+    assert {f"{lin_site} (X)", f"{lin_site} (Y)", f"{circ_site} (R)", f"{circ_site} (L)"} <= names

@@ -35,12 +35,6 @@ from ehtim.warnings import MixedPolConventionWarning
 # Caltable object
 ##################################################################################################
 
-# NOTE: caltables loaded from old data carry no D-term tables; any D-term
-# information stays in the tarr, assumed fixed over the observation.
-# TODO: when the new calibration module lands, decide what happens when both
-# the tarr and the caltable define D-terms (zero the tarr? warn and prefer
-# the table?).
-
 # Any optional time-dependent D-term tables are saved beside the gain files,
 # opened with a version line. Gain files keep their headerless 5-column format.
 DTERM_FILE_SUFFIX = '_dterms.txt'
@@ -52,10 +46,10 @@ class Caltable:
 
        Gains and D-terms live in separate per-site tables, each with its own
        time column; a single-row table represents a time-constant quantity.
-       A caltable with no D-term table falls back to the D-terms in the tarr,
-       assumed fixed over the observation.
-       TODO: flag or resolve cases where both the tarr and the caltable
-       define D-terms.
+       Each site's D-term table is reduced to one value (median by default) in
+       its tarr row.
+       A site with no D-term table uses the D-terms in the tarr, assumed fixed
+       over the observation.
 
        Attributes:
            source (str): The source name
@@ -78,7 +72,8 @@ class Caltable:
     """
 
     def __init__(self, ra, dec, rf, bw, datadict, tarr, dtermdict=None,
-                 source=ehc.SOURCE_DEFAULT, mjd=ehc.MJD_DEFAULT, timetype='UTC'):
+                 source=ehc.SOURCE_DEFAULT, mjd=ehc.MJD_DEFAULT, timetype='UTC',
+                 dterm_reduce_method='median'):
         """A Calibration Table.
 
            Args:
@@ -98,6 +93,8 @@ class Caltable:
                source (str): The source name
                mjd (int): The integer MJD of the observation
                timetype (str): How to interpret tstart and tstop; either 'GMST' or 'UTC'
+               dterm_reduce_method (str): 'median' or 'mean', how a D-term table is
+                                          reduced to the single value in the tarr
 
            Returns:
                (Caltable): an Caltable object
@@ -115,6 +112,10 @@ class Caltable:
             raise Exception("timetype must by 'GMST' or 'UTC'")
         self.timetype = timetype
 
+        if dterm_reduce_method not in ('median', 'mean'):
+            raise ValueError("dterm_reduce_method must be 'median' or 'mean'")
+        self.dterm_reduce_method = dterm_reduce_method
+
         # Dictionary of array indices for site names
         self.tarr = ehc.upgrade_tarr(tarr)
         self.tkey = {self.tarr[i]['site']: i for i in range(len(self.tarr))}
@@ -123,7 +124,8 @@ class Caltable:
         if not isinstance(datadict, dict):
             raise TypeError("datadict must be a dict of per-site gain tables "
                             f"keyed by site name, got {type(datadict).__name__}")
-        self.gains = {site: ehc.upgrade_caltable(d) for site, d in datadict.items()}
+        self.gains = {site: self._datatable_to_site_basis(site, ehc.upgrade_caltable(d))
+                      for site, d in datadict.items()}
 
         self.dterms = {}
         if dtermdict is not None:
@@ -134,7 +136,50 @@ class Caltable:
             for site, table in dtermdict.items():
                 site_dterms = ehc._normalize_recarray(table)
                 if site_dterms is not None and len(site_dterms):
-                    self.dterms[site] = site_dterms
+                    self.dterms[site] = self._datatable_to_site_basis(site, site_dterms,
+                                                                      dterms=True)
+        self.reduce_dterms_to_tarr()
+
+    def reduce_dterms_to_tarr(self):
+        """Write each site's D-term table into its tarr row as one value.
+
+        Uses self.dterm_reduce_method; the median is taken separately on the
+        real and imaginary parts. Sites without a D-term table keep their tarr values.
+        """
+        sites = [site for site in self.dterms if site in self.tkey]
+        if not sites:
+            return
+        self.tarr = self.tarr.copy()  # never write into the caller's tarr
+        for site in sites:
+            i = self.tkey[site]
+            for field in ('d_p1', 'd_p2'):
+                d = self.dterms[site][field]
+                if self.dterm_reduce_method == 'median':
+                    self.tarr[field][i] = np.median(d.real) + 1j * np.median(d.imag)
+                else:
+                    self.tarr[field][i] = np.mean(d)
+
+    def _datatable_to_site_basis(self, site, table, dterms=False):
+        """Return a site's gain or D-term table in the dtype for its feed_type.
+
+        A circular table on a linear site gets relabelled with a zero-copy view,
+        the way Obsdata upgrades legacy data. Any other mismatch raises.
+        """
+        if table is None or site not in self.tkey:
+            return table
+        feed_type = self.tarr[self.tkey[site]]['feed_type']
+        if feed_type not in ehc.CAL_DTYPES_BY_FEED:
+            raise NotImplementedError(f"site {site} has feed_type {feed_type!r}; "
+                                      "caltables support only 'rl' and 'xy' feeds")
+        gain_t, dterm_t = ehc.CAL_DTYPES_BY_FEED[feed_type]
+        target, legacy = (dterm_t, ehc.DTDTERM) if dterms else (gain_t, ehc.DTCAL)
+        target = np.dtype(target)
+        if table.dtype == target:
+            return table
+        if table.dtype == np.dtype(legacy):
+            return table.view(target)
+        raise Exception(f"site {site} has feed_type {feed_type!r} but its table "
+                        f"has fields {table.dtype.names}")
 
     @property
     def data(self):
@@ -152,7 +197,8 @@ class Caltable:
         if not isinstance(datadict, dict):
             raise TypeError("data must be a dict of per-site gain tables "
                             f"keyed by site name, got {type(datadict).__name__}")
-        normalized = {site: ehc.upgrade_caltable(t) for site, t in datadict.items()}
+        normalized = {site: self._datatable_to_site_basis(site, ehc.upgrade_caltable(t))
+                      for site, t in datadict.items()}
         # keep the caller's own dict when nothing needed reshaping
         if all(normalized[site] is datadict[site] for site in normalized):
             normalized = datadict
@@ -178,6 +224,7 @@ class Caltable:
                     # old __init__ stored non-dict datadicts verbatim
                     state['gains'] = legacy
         state.setdefault('dterms', {})
+        state.setdefault('dterm_reduce_method', 'median')
         self.__dict__.update(state)
 
     def copy(self):
@@ -195,9 +242,8 @@ class Caltable:
                     show=True, grid=True, export_pdf=""):
         """Make a plot of the D-terms.
 
-           Plots the leakage recorded in the array table (tarr), one point per
-           site. The caltable's own time-dependent D-term table (self.dterms)
-           is not read here.
+           Plots one point per site from the tarr. For a site with a D-term
+           table, that point is the table reduced by self.dterm_reduce_method.
 
            Args:
                sites (list) : list of sites to plot
@@ -214,13 +260,6 @@ class Caltable:
            Returns:
                matplotlib.axes
         """
-        if self.dterms:
-            warnings.warn(
-                "This plot shows the array table's D-terms. This cal table also "
-                f"carries its own solved leakage for {', '.join(sorted(self.dterms))}, "
-                "in self.dterms, which is not what is drawn here.",
-                MixedPolConventionWarning, stacklevel=2)
-
         # sites: a site can carry leakage without gains, so take both dicts
         all_sites = list(self.gains.keys())
         all_sites += [site for site in self.dterms if site not in self.gains]
@@ -242,7 +281,7 @@ class Caltable:
 
         return axes
 
-    def plot_gains(self, sites, gain_type='amp', pol='R', label=None,
+    def plot_gains(self, sites, gain_type='amp', pol='p1', label=None,
                    ang_unit='deg', timetype=False, yscale='log', legend=True,
                    clist=ehc.SCOLORS, rangex=False, rangey=False, markersize=[ehc.MARKERSIZE],
                    show=True, grid=False, axislabels=True, axis=False, export_pdf=""):
@@ -250,7 +289,8 @@ class Caltable:
            Args:
                sites (list): a list of site names for which to plot gains. Empty list is all sites.
                gain_type (str): 'amp' or 'phase'
-               pol str(str): 'R' or 'L'
+               pol (str): 'R', 'L', 'X', 'Y', 'p1', 'p2' or 'both'.
+                          'p1'/'p2' work on any site; 'R'/'L'/'X'/'Y' must match its feed_type
                ang_unit (str): phase unit 'deg' or 'rad'
                timetype (str): 'GMST' or 'UTC'
                yscale (str): 'log' or 'lin',
@@ -280,8 +320,10 @@ class Caltable:
             raise Exception("timetype should be 'GMST' or 'UTC'!")
         if gain_type not in ['amp', 'phase']:
             raise Exception("gain_type must be 'amp' or 'phase'  ")
-        if pol not in ['R', 'L', 'both']:
-            raise Exception("pol must be 'R' or 'L'")
+
+        if pol not in ['R', 'L', 'X', 'Y', 'p1', 'p2', 'both']:
+            raise Exception("pol must be 'R', 'L', 'X', 'Y', 'p1', 'p2' or 'both'")
+        pols = ['p1', 'p2'] if pol == 'both' else [pol]
 
         if ang_unit == 'deg':
             angle = ehc.DEGREE
@@ -309,7 +351,7 @@ class Caltable:
             markersize = markersize * np.ones(len(sites))
 
         # plot gain on each site
-        tmins = tmaxes = gmins = gmaxes = []
+        tmins, tmaxes, gmins, gmaxes = [], [], [], []
         for s in range(len(sites)):
             site = sites[s]
             times = self.gains[site]['time']
@@ -317,34 +359,38 @@ class Caltable:
                 times = obsh.gmst_to_utc(times, self.mjd)
             elif timetype in ['GMST', 'gmst'] and self.timetype == 'UTC':
                 times = obsh.utc_to_gmst(times, self.mjd)
-            if pol == 'R':
-                gains = self.gains[site]['rscale']
-            elif pol == 'L':
-                gains = self.gains[site]['lscale']
 
-            if gain_type == 'amp':
-                gains = np.abs(gains)
-                ylabel = r'$|G|$'
+            color = next(colors)
+            for ip, p in enumerate(pols):
+                # numpy raises if the site has no such field, e.g. 'X' on an 'rl' site
+                gains = self.gains[site][p.lower() + 'scale']
 
-            if gain_type == 'phase':
-                gains = np.angle(gains) / angle
-                if ang_unit == 'deg':
-                    ylabel = r'arg($|G|$) ($^\circ$)'
+                if gain_type == 'amp':
+                    gains = np.abs(gains)
+                    ylabel = r'$|G|$'
+
+                if gain_type == 'phase':
+                    gains = np.angle(gains) / angle
+                    if ang_unit == 'deg':
+                        ylabel = r'arg($|G|$) ($^\circ$)'
+                    else:
+                        ylabel = r'arg($|G|$) (radian)'
+
+                tmins.append(np.min(times))
+                tmaxes.append(np.max(times))
+                gmins.append(np.min(gains))
+                gmaxes.append(np.max(gains))
+
+                # Plot the data
+                if label is None:
+                    bllabel = str(site)
                 else:
-                    ylabel = r'arg($|G|$) (radian)'
-
-            tmins.append(np.min(times))
-            tmaxes.append(np.max(times))
-            gmins.append(np.min(gains))
-            gmaxes.append(np.max(gains))
-
-            # Plot the data
-            if label is None:
-                bllabel = str(site)
-            else:
-                bllabel = label + ' ' + str(site)
-            plt.plot(times, gains, color=next(colors), marker='o', markersize=markersize[s],
-                     label=bllabel, linestyle='none')
+                    bllabel = label + ' ' + str(site)
+                if len(pols) > 1:
+                    # gain fields are named rscale/lscale or xscale/yscale; take the letter
+                    bllabel += ' ' + self.gains[site].dtype.names[ip + 1][0].upper()
+                plt.plot(times, gains, color=color, marker=['o', 's'][ip],
+                         markersize=markersize[s], label=bllabel, linestyle='none')
 
         if not rangex:
             rangex = [np.min(tmins) - 0.2 * np.abs(np.min(tmins)),
@@ -407,18 +453,18 @@ class Caltable:
         for site in self.gains.keys():
             if site not in sites:
                 continue
-            if len(self.gains[site]['rscale']) == 0:
+            if len(self.gains[site]['p1scale']) == 0:
                 continue
 
             if method == 'min':
-                sitemin = np.min([np.abs(self.gains[site]['rscale']),
-                                  np.abs(self.gains[site]['lscale'])])
+                sitemin = np.min([np.abs(self.gains[site]['p1scale']),
+                                  np.abs(self.gains[site]['p2scale'])])
             elif method == 'mean':
-                sitemin = np.mean([np.abs(self.gains[site]['rscale']),
-                                   np.abs(self.gains[site]['lscale'])])
+                sitemin = np.mean([np.abs(self.gains[site]['p1scale']),
+                                   np.abs(self.gains[site]['p2scale'])])
             elif method == 'median':
-                sitemin = np.median([np.abs(self.gains[site]['rscale']),
-                                     np.abs(self.gains[site]['lscale'])])
+                sitemin = np.median([np.abs(self.gains[site]['p1scale']),
+                                     np.abs(self.gains[site]['p2scale'])])
             else:
                 print('Method ' + method + ' not recognized!')
                 return caltab_pos
@@ -426,8 +472,8 @@ class Caltable:
             if sitemin < min_gain:
                 if verbose:
                     print(method + ' gain for ' + site + ' is ' + str(sitemin) + '. Rescaling.')
-                caltab_pos.gains[site]['rscale'] /= sitemin
-                caltab_pos.gains[site]['lscale'] /= sitemin
+                caltab_pos.gains[site]['p1scale'] /= sitemin
+                caltab_pos.gains[site]['p2scale'] /= sitemin
             else:
                 if verbose:
                     print(method + ' gain for ' + site + ' is ' + str(sitemin) + '. Not adjusting.')
@@ -513,7 +559,8 @@ class Caltable:
         # padding is a gain-table operation; leakage rides along untouched
         return Caltable(self.ra, self.dec, self.rf, self.bw, outdict, self.tarr,
                         source=self.source, mjd=self.mjd, timetype=self.timetype,
-                        dtermdict=copy.deepcopy(self.dterms))
+                        dtermdict=copy.deepcopy(self.dterms),
+                        dterm_reduce_method=self.dterm_reduce_method)
 
     def applycal(self, obs, interp='linear', extrapolate=None,
                  force_singlepol=False):
@@ -529,7 +576,9 @@ class Caltable:
            Returns:
                (Obsdata): the calibrated Obsdata object
         """
-        if not (self.tarr == obs.tarr).all():
+        # skip the D-term columns: the caltable copies its D-term tables into its own tarr
+        fields = [n for n in self.tarr.dtype.names if n not in ('d_p1', 'd_p2')]
+        if not all(np.array_equal(self.tarr[n], obs.tarr[n]) for n in fields):
             raise Exception("The telescope array in the Caltable is not the same as in the Obsdata")
 
         if self.dterms:
@@ -561,9 +610,9 @@ class Caltable:
                 continue
 
             time_mjd = self.gains[site]['time'] / 24.0 + self.mjd
-            rinterp[site] = relaxed_interp1d(time_mjd, self.gains[site]['rscale'],
+            rinterp[site] = relaxed_interp1d(time_mjd, self.gains[site]['p1scale'],
                                              kind=interp, fill_value=fill_value, bounds_error=False)
-            linterp[site] = relaxed_interp1d(time_mjd, self.gains[site]['lscale'],
+            linterp[site] = relaxed_interp1d(time_mjd, self.gains[site]['p2scale'],
                                              kind=interp, fill_value=fill_value, bounds_error=False)
 
         bllist = obs.bllist()
@@ -657,6 +706,12 @@ class Caltable:
             tarr2 = caltable.tarr.copy()
             tkey2 = caltable.tkey.copy()
 
+            # a site in both caltables must have the same feed_type
+            for site in tkey1.keys() & tkey2.keys():
+                if tarr1[tkey1[site]]['feed_type'] != tarr2[tkey2[site]]['feed_type']:
+                    raise Exception(f"merge: site {site} has a different feed_type "
+                                    "in each caltable")
+
             # merging time-dependent D-term tables.
             # If both caltables carry D-terms for a site, raise for now:
             # composing D-terms requires full Jones treatment.
@@ -683,30 +738,30 @@ class Caltable:
                     time1 = data1[site]['time']
                     time2 = data2[site]['time']
 
-                    rinterp1 = relaxed_interp1d(time1, data1[site]['rscale'],
+                    rinterp1 = relaxed_interp1d(time1, data1[site]['p1scale'],
                                                 kind=interp, fill_value=fill_value,
                                                 bounds_error=False)
-                    linterp1 = relaxed_interp1d(time1, data1[site]['lscale'],
+                    linterp1 = relaxed_interp1d(time1, data1[site]['p2scale'],
                                                 kind=interp, fill_value=fill_value,
                                                 bounds_error=False)
-                    rinterp2 = relaxed_interp1d(time2, data2[site]['rscale'],
+                    rinterp2 = relaxed_interp1d(time2, data2[site]['p1scale'],
                                                 kind=interp, fill_value=fill_value,
                                                 bounds_error=False)
-                    linterp2 = relaxed_interp1d(time2, data2[site]['lscale'],
+                    linterp2 = relaxed_interp1d(time2, data2[site]['p2scale'],
                                                 kind=interp, fill_value=fill_value,
                                                 bounds_error=False)
 
                     times_merge = np.unique(np.hstack((time1, time2)))
 
-                    rscale_merge = rinterp1(times_merge) * rinterp2(times_merge)
-                    lscale_merge = linterp1(times_merge) * linterp2(times_merge)
+                    p1scale_merge = rinterp1(times_merge) * rinterp2(times_merge)
+                    p2scale_merge = linterp1(times_merge) * linterp2(times_merge)
 
                     # put the merged data back in data1
                     # TODO can we do this faster?
                     datatable = []
                     for i in range(len(times_merge)):
                         datatable.append(
-                            np.array((times_merge[i], rscale_merge[i], lscale_merge[i]),
+                            np.array((times_merge[i], p1scale_merge[i], p2scale_merge[i]),
                                      dtype=ehc.DTCAL))
                     data1[site] = np.array(datatable)
 
@@ -724,7 +779,8 @@ class Caltable:
 
         new_caltable = Caltable(self.ra, self.dec, self.rf, self.bw, data1, tarr1,
                                 source=self.source, mjd=self.mjd, timetype=self.timetype,
-                                dtermdict=dterms1)
+                                dtermdict=dterms1,
+                                dterm_reduce_method=self.dterm_reduce_method)
 
         return new_caltable
 
@@ -779,20 +835,20 @@ class Caltable:
 
             datatable = []
             for scan in scans:
-                gains_l = self.gains[site]['lscale']
-                gains_r = self.gains[site]['rscale']
+                gains_p2 = self.gains[site]['p2scale']
+                gains_p1 = self.gains[site]['p1scale']
 
                 # if incoherent average then average the magnitude of gains
                 if incoherent:
-                    gains_l = np.abs(gains_l)
-                    gains_r = np.abs(gains_r)
+                    gains_p2 = np.abs(gains_p2)
+                    gains_p1 = np.abs(gains_p1)
 
                 # average the gains
-                gains_l_avg = np.mean(gains_l[np.array(times_stable == scan[0])])
-                gains_r_avg = np.mean(gains_r[np.array(times_stable == scan[0])])
+                gains_p2_avg = np.mean(gains_p2[np.array(times_stable == scan[0])])
+                gains_p1_avg = np.mean(gains_p1[np.array(times_stable == scan[0])])
 
                 # add them to a new datatable
-                datatable.append(np.array((scan[0], gains_r_avg, gains_l_avg), dtype=ehc.DTCAL))
+                datatable.append(np.array((scan[0], gains_p1_avg, gains_p2_avg), dtype=ehc.DTCAL))
 
             datatables[site] = np.array(datatable)
 
@@ -802,7 +858,8 @@ class Caltable:
             caltable = Caltable(obs.ra, obs.dec, obs.rf,
                                 obs.bw, datatables, obs.tarr, source=obs.source,
                                 mjd=obs.mjd, timetype=obs.timetype,
-                                dtermdict=copy.deepcopy(self.dterms))
+                                dtermdict=copy.deepcopy(self.dterms),
+                                dterm_reduce_method=self.dterm_reduce_method)
         else:
             caltable = False
 
@@ -818,8 +875,8 @@ class Caltable:
         sites = self.gains.keys()
 
         for site in sites:
-            self.gains[site]['rscale'] = 1 / self.gains[site]['rscale']
-            self.gains[site]['lscale'] = 1 / self.gains[site]['lscale']
+            self.gains[site]['p1scale'] = 1 / self.gains[site]['p1scale']
+            self.gains[site]['p2scale'] = 1 / self.gains[site]['p2scale']
 
         return self
 
@@ -856,11 +913,10 @@ def load_caltable(obs, datadir, sqrt_gains=False):
             data = np.loadtxt(filename, dtype=bytes, ndmin=2).astype(str)
         except OSError:
             try:
-                filename = datadir + site + '.txt'
+                filename = os.path.join(datadir, site + '.txt')
                 data = np.loadtxt(filename, dtype=bytes, ndmin=2).astype(str)
             except OSError:
                 continue
-
 
         datatable = []
 
@@ -869,17 +925,17 @@ def load_caltable(obs, datadir, sqrt_gains=False):
             time = (float(row[0]) - obs.mjd) * 24.0  # time is given in mjd
 
             if len(row) == 3:
-                rscale = float(row[1])
-                lscale = float(row[2])
+                p1scale = float(row[1])
+                p2scale = float(row[2])
             elif len(row) == 5:
-                rscale = float(row[1]) + 1j * float(row[2])
-                lscale = float(row[3]) + 1j * float(row[4])
+                p1scale = float(row[1]) + 1j * float(row[2])
+                p2scale = float(row[3]) + 1j * float(row[4])
             else:
                 raise Exception("cannot load caltable -- format unknown!")
             if sqrt_gains:
-                rscale = rscale**.5
-                lscale = lscale**.5
-            datatable.append(np.array((time, rscale, lscale), dtype=ehc.DTCAL))
+                p1scale = p1scale**.5
+                p2scale = p2scale**.5
+            datatable.append(np.array((time, p1scale, p2scale), dtype=ehc.DTCAL))
 
         datatables[site] = np.array(datatable)
 
@@ -979,19 +1035,19 @@ def save_caltable(caltable, obs, datadir='.', sqrt_gains=False, overwrite=False)
             time = entry['time'] / 24.0 + obs.mjd
 
             if sqrt_gains:
-                rscale = np.square(entry['rscale'])
-                lscale = np.square(entry['lscale'])
+                p1scale = np.square(entry['p1scale'])
+                p2scale = np.square(entry['p2scale'])
             else:
-                rscale = entry['rscale']
-                lscale = entry['lscale']
+                p1scale = entry['p1scale']
+                p2scale = entry['p2scale']
 
-            rreal = float(np.real(rscale))
-            rimag = float(np.imag(rscale))
-            lreal = float(np.real(lscale))
-            limag = float(np.imag(lscale))
+            p1real = float(np.real(p1scale))
+            p1imag = float(np.imag(p1scale))
+            p2real = float(np.real(p2scale))
+            p2imag = float(np.imag(p2scale))
             outline = (str(float(time)) + ' ' +
-                       str(float(rreal)) + ' ' + str(float(rimag)) + ' ' +
-                       str(float(lreal)) + ' ' + str(float(limag)) + '\n')
+                       str(float(p1real)) + ' ' + str(float(p1imag)) + ' ' +
+                       str(float(p2real)) + ' ' + str(float(p2imag)) + '\n')
             outfile.write(outline)
         outfile.close()
 
@@ -1137,7 +1193,7 @@ def plot_tarr_dterms(tarr, keys=None, label=None, legend=True, clist=ehc.SCOLORS
     return axes
 
 
-def plot_compare_gains(caltab1, caltab2, obs, sites='all', pol='R', gain_type='amp', ang_unit='deg',
+def plot_compare_gains(caltab1, caltab2, obs, sites='all', pol='p1', gain_type='amp', ang_unit='deg',
                        scan_avg=True, site_name_dict=None, fontsize=13, legend_fontsize=13,
                        yscale='log', legend=True, clist=ehc.SCOLORS,
                        rangex=False, rangey=False, scalefac=[0.9, 1.1],
@@ -1187,12 +1243,8 @@ def plot_compare_gains(caltab1, caltab2, obs, sites='all', pol='R', gain_type='a
     for s in range(len(sites)):
 
         site = sites[s]
-        if pol == 'R':
-            gains1 = caltab1.gains[site]['rscale']
-            gains2 = caltab2.gains[site]['rscale']
-        elif pol == 'L':
-            gains1 = caltab1.gains[site]['lscale']
-            gains2 = caltab2.gains[site]['lscale']
+        gains1 = caltab1.gains[site][pol.lower() + 'scale']
+        gains2 = caltab2.gains[site][pol.lower() + 'scale']
 
         if gain_type == 'amp':
             gains1 = np.abs(gains1)
