@@ -24,6 +24,7 @@ jobs:
       # Interim gradient suite only. pynfft (NFFT C library) is not installed
       # here, so the nfft cases skip and the direct-FT cases run.
       - run: pytest tests/test_gradients_main_tmp.py
+      - run: pytest tests/test_rex.py
 
   package:
     runs-on: ubuntu-latest
